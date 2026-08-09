@@ -14,6 +14,12 @@
 </p>
 
 <p align="center">
+  <a href="#quick-start">Quick start</a> ·
+  <a href="API.md">Library API</a> ·
+  <a href="https://www.wavealgo.com/leaderboard">See it in production: the wavealgo leaderboard ↗</a>
+</p>
+
+<p align="center">
   <img src="docs/hero.svg" width="640" alt="Terminal session: a Pine Script indicator is compiled to JavaScript with resin build and executed with resin run">
 </p>
 
@@ -26,6 +32,9 @@ let a script leave the platform; this is how you get it out.
   implementation at 1e-9
 - **Zero runtime dependencies** — the CLI runs straight from a clone, no
   install step, no build step
+- **Running in production** — every score on the
+  [wavealgo leaderboard](https://www.wavealgo.com/leaderboard) is computed by
+  this engine
 
 ## Quick start
 
@@ -69,6 +78,20 @@ the script to run somewhere else.
 
 Resin is a compiler and a runtime, not a charting product. It gives you the
 values; what you do with them is yours.
+
+## In production: the wavealgo leaderboard
+
+The clearest demonstration of "run Pine outside TradingView" is a site that
+does it at scale. [wavealgo.com/leaderboard](https://www.wavealgo.com/leaderboard)
+— built by the same team — grades Pine strategies the way a single chart
+never can: each script is compiled by this engine and backtested across
+**6 markets × 3 timeframes, 18 cells per script**, with TradingView's
+next-bar-open fill rule and per-side fees, then given a verdict and an alpha
+score. Every number on that page came out of this compiler; the
+[methodology](https://www.wavealgo.com/methodology) is public.
+
+If you want to see what Resin's output looks like before cloning anything,
+start there.
 
 ## Coverage, and where the number comes from
 
