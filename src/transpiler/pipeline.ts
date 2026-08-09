@@ -1,5 +1,6 @@
-// 트랜스파일 파이프라인 오케스트레이션: Lexer -> Parser -> Analyzer -> TransformPasses(Hoisting)
-// -> CodeGen. GOAL.md의 5단계 아키텍처 불변 원칙을 그대로 노출한다.
+// Pipeline orchestration: Lexer -> Parser -> Analyzer -> transform passes
+// (hoisting) -> CodeGen. The five stages are fixed; this file is just the
+// sequence.
 
 import { analyze, type AnalyzeOptions } from "./analyzer";
 import { generateCode } from "./codegen";
@@ -13,13 +14,13 @@ export interface TranspileOk {
   taSlotCount: number;
   fnVarSlotCount: number;
   historySlotCount: number;
-  taScratchSize: number; // 다중 반환 TA용 공유 스크래치 배열 크기 (없으면 0 — Context.taScratch 참조)
-  plotTitles: string[]; // slot 순서대로 plot() 콜사이트 title (C135, engine.ts run()의 plotTitles 인자로 스레딩)
-  securityTfs: string[]; // slot 순서대로 request.security() 콜사이트의 컴파일타임 tf 문자열 (engine.ts run()의 securityTfs 인자로 스레딩)
-  refHistorySlotCount: number; // $.refHistSlots 배열 전체 크기 (배치25 (1), drawing 핸들 '=' 로컬 히스토리)
-  condCallHistorySlotCount: number; // $.condCallHistSlots 배열 전체 크기 (C671, 조건부 위치 stateful 콜 압축 히스토리)
-  condCallRefHistorySlotCount: number; // $.condCallRefHistSlots 배열 전체 크기 (C700, drawing 생성자 콜 인라인 히스토리 압축 인덱스)
-  isStrategy: boolean; // top-level strategy() 지시어 유무 (배치28 (2), corpus_scan --exec 성과 요약 덤프가 strategy 스크립트만 골라내는 데 사용)
+  taScratchSize: number; // size of the shared scratch array for multi-return TA calls (0 if unused)
+  plotTitles: string[]; // plot() call-site titles, in slot order
+  securityTfs: string[]; // compile-time timeframe of each request.security() call site, in slot order
+  refHistorySlotCount: number; // size of $.refHistSlots — history for '=' locals holding drawing handles
+  condCallHistorySlotCount: number; // size of $.condCallHistSlots — call-count history for stateful calls inside a conditional
+  condCallRefHistorySlotCount: number; // size of $.condCallRefHistSlots — the same, for drawing-constructor results
+  isStrategy: boolean; // whether the script declares strategy() at top level
 }
 
 export interface TranspileErr {

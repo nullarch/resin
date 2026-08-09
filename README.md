@@ -161,11 +161,21 @@ oracle, the external arbiter for validity, and a standing rule that no claim
 counts until it has been re-measured are the reasons a machine could write this
 without quietly breaking it.
 
-One consequence is visible immediately: **about a third of the comments in
-`src/` are in Korean**, because that is the language the loop was driven in.
-The code, the identifiers, and all documentation are English. Translating the
-comments is real work and is in progress; it is not a licence to skip them,
-since a good deal of the reasoning behind an odd-looking branch lives there.
+One consequence is visible immediately, and you should know about it before you
+run anything:
+
+- **Compiler error messages are still in Korean** — 378 of them. If your script
+  fails to compile, the reason will come back in a language you may not read.
+  This is the first thing being fixed, ahead of everything else on this list,
+  because it is the only one that affects using the tool rather than reading it.
+- **About a third of the comments in `src/` are in Korean**, roughly 14,000
+  lines. Skipping them is not really an option — much of the reasoning behind an
+  odd-looking branch lives there — so they are being translated rather than
+  stripped.
+- Code, identifiers, README and API docs are English throughout.
+
+Translation happens upstream in the development repository and lands here by
+re-snapshot, so it arrives in batches rather than a trickle.
 
 ## License
 
