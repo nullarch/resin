@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-label="Resin — Run TradingView Pine Script outside TradingView">
+  <defs>
+    <radialGradient id="amber" cx="0.42" cy="0.38" r="0.85">
+      <stop offset="0" stop-color="#FAD46B"/>
+      <stop offset="0.55" stop-color="#F0B429"/>
+      <stop offset="1" stop-color="#DE8F10"/>
+    </radialGradient>
+  </defs>
+  <rect width="1280" height="640" fill="#0d1117"/>
+  <g transform="translate(576, 96) scale(1.55)">
+    <path d="M64 6 C64 6 22 58 22 82 A42 42 0 1 0 106 82 C106 58 64 6 64 6 Z" fill="url(#amber)"/>
+    <ellipse cx="45" cy="52" rx="9" ry="15" transform="rotate(-24 45 52)" fill="#ffffff" opacity="0.28"/>
+    <g fill="#4A2E05" stroke="#4A2E05" stroke-linecap="round">
+      <line x1="45" y1="62" x2="45" y2="100" stroke-width="4"/>
+      <rect x="39" y="72" width="12" height="18" rx="2.5" stroke="none"/>
+      <line x1="64" y1="52" x2="64" y2="94" stroke-width="4"/>
+      <rect x="58" y="60" width="12" height="23" rx="2.5" stroke="none"/>
+      <line x1="83" y1="60" x2="83" y2="104" stroke-width="4"/>
+      <rect x="77" y="70" width="12" height="21" rx="2.5" stroke="none"/>
+    </g>
+  </g>
+  <text x="640" y="410" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace" font-size="76" font-weight="700" fill="#e6edf3">resin</text>
+  <text x="640" y="472" text-anchor="middle" font-family="-apple-system, 'Helvetica Neue', Arial, sans-serif" font-size="34" fill="#8b949e">Run TradingView Pine Script outside TradingView</text>
+  <text x="640" y="540" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace" font-size="24" fill="#F0B429">Pine v5/v6 → JavaScript · 95.1% of 10,618 real scripts compile</text>
+</svg>

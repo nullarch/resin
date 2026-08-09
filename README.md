@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/logo.svg" width="96" alt="Resin logo — an amber droplet with a candlestick chart preserved inside">
+</p>
+
 <h1 align="center">Resin</h1>
 
 <p align="center"><strong>Run TradingView Pine Script outside TradingView.</strong></p>
