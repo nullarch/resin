@@ -1,26 +1,59 @@
-# Resin
+<h1 align="center">Resin</h1>
 
-**Run TradingView Pine Script outside TradingView.**
+<p align="center"><strong>Run TradingView Pine Script outside TradingView.</strong></p>
 
-Resin compiles Pine Script v5/v6 to a JavaScript module and runs it — same
-indicators, same series semantics, your own machine. TradingView will not let a
-script leave the platform; this is how you get it out.
+<p align="center">
+  <a href="https://github.com/nullarch/resin/actions/workflows/ci.yml"><img src="https://github.com/nullarch/resin/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <img src="https://img.shields.io/badge/Pine_Script-v5%20%2F%20v6-1a7f37" alt="Pine Script v5 / v6">
+  <img src="https://img.shields.io/badge/dependencies-none-success" alt="Zero dependencies">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="License: Apache-2.0"></a>
+</p>
+
+<p align="center">
+  <img src="docs/hero.svg" width="640" alt="Terminal session: a Pine Script indicator is compiled to JavaScript with resin build and executed with resin run">
+</p>
+
+Resin compiles Pine Script v5/v6 to a plain JavaScript module and runs it —
+same indicators, same series semantics, your own machine. TradingView will not
+let a script leave the platform; this is how you get it out.
+
+- **95.1%** of 10,618 real-world scripts compile ([measured, method below](#coverage-and-where-the-number-comes-from))
+- **9,822 tests**, plus a differential oracle matched to an independent
+  implementation at 1e-9
+- **Zero runtime dependencies** — the CLI runs straight from a clone, no
+  install step, no build step
+
+## Quick start
+
+Requires Node 22.18+ (it executes the TypeScript source directly). Nothing to
+install:
 
 ```bash
 git clone https://github.com/nullarch/resin.git
-cd resin && npm install
+cd resin
 
-# compile a script to JavaScript
-node bin/resin.mjs build my-indicator.pine
-
-# run it and print the last bar's plot values
-node bin/resin.mjs run my-indicator.pine --bars 500
-
-# point it at a folder and find out how much of it compiles
-node bin/resin.mjs check ./my-scripts
+# run an indicator and print the last bar's plot values
+node bin/resin.mjs run examples/rsi-cross.pine --bars 300
 ```
 
-Not on npm yet — clone it for now.
+```text
+RSI                      57.66239695569333
+Smoothed                 54.056462491106444
+```
+
+```bash
+# compile it to a JavaScript module you can read
+node bin/resin.mjs build examples/rsi-cross.pine -o rsi-cross.js
+
+# point it at a folder of your scripts and find out how much of it compiles
+node bin/resin.mjs check ./my-scripts
+
+# optional: get `resin` on your PATH instead of typing node bin/resin.mjs
+npm install -g .
+```
+
+`run` synthesizes deterministic bars by default; pass `--data bars.json` to use
+your own OHLCV data. Not on npm yet — clone it for now.
 
 ## Why
 
@@ -32,24 +65,6 @@ the script to run somewhere else.
 
 Resin is a compiler and a runtime, not a charting product. It gives you the
 values; what you do with them is yours.
-
-## What works
-
-Pine's semantics are unusual and most of the work is there rather than in the
-syntax. Every value is a time series, `var` and `varip` have their own
-initialization rules, `na` is not `NaN` in every context, technical-analysis
-functions carry hidden per-call state that has to be allocated at compile time,
-and a conditionally-executed `ta.*` call still has to advance its state on bars
-where the branch is not taken. Those are the parts that are implemented and
-tested.
-
-**9,819 tests** in this repository, covering the lexer, parser, analyzer, code
-generator, and every implemented runtime builtin.
-
-68 `ta.*` functions, the strategy engine (entries, exits, pyramiding,
-`strategy.*` state), user-defined types and methods, arrays, maps, matrices,
-`request.security` with higher-timeframe aggregation, drawing objects, and the
-`input.*` family.
 
 ## Coverage, and where the number comes from
 
@@ -73,33 +88,6 @@ under mixed and often absent licenses, and redistributing it is not ours to do.
 So you cannot reproduce that specific number here — you can only reproduce the
 method, by running `resin check` over scripts you already have.
 
-## What this does not do
-
-- **No charts.** Resin computes plot series. Drawing them is your problem.
-- **Order fills follow TradingView's documented rule — market orders at the next
-  bar's open — but that has not been confirmed against TradingView itself.** The
-  rule is implemented from the specification, not from a side-by-side run. If
-  you are relying on backtest numbers rather than indicator values, treat them
-  as provisional.
-- **Intrabar fills cannot be confirmed from bar data at all.** A stop, a limit or
-  a trailing exit fills somewhere inside a bar and OHLC does not record where.
-  Any engine, this one included, is guessing a path. TradingView has the same
-  limitation and says so.
-- **`request.security` is aggregated from the bars you supply**, not fetched. If
-  you feed daily bars and the script asks for weekly, Resin builds the weekly
-  series by calendar aggregation.
-- **No `v4` or earlier.** v5 is the floor.
-- **Some semantics are reasoned, not confirmed.** TradingView does not document
-  everything — what `dayofweek` returns at a week boundary, how `na` propagates
-  through a particular builtin. Where the behaviour had to be inferred, the
-  reasoning and its evidence sit in a comment at the call site, marked as a
-  hypothesis rather than a measurement.
-- **Known gaps are recorded where they bite.** The long tail is things like
-  history access on a user-defined-type field through a multi-hop function
-  parameter, or `request.security` given an expression built from a loop
-  variable. Each is commented at the point where it is refused, with a
-  workaround when one exists.
-
 ## How it is verified
 
 Three independent checks, because a compiler that is merely self-consistent is
@@ -107,7 +95,7 @@ not worth much:
 
 1. **Differential against a reference implementation.** A separate Python
    implementation of the same language runs the same script over the same bars
-   and the outputs are compared bar by bar — 262 scripts in `oracle/`, matched
+   and the outputs are compared bar by bar — 263 scripts in `oracle/`, matched
    to 1e-9. The two disagree in a handful of places on purpose, because the
    reference is the one that is wrong there; each of those is argued at the
    call site rather than silently waived.
@@ -115,6 +103,21 @@ not worth much:
    This is what turns "we fail on this script" into either "our gap" or "not
    valid Pine" without anyone guessing.
 3. **The test suite**, which is where the semantics actually live.
+
+## What works
+
+Pine's semantics are unusual and most of the work is there rather than in the
+syntax. Every value is a time series, `var` and `varip` have their own
+initialization rules, `na` is not `NaN` in every context, technical-analysis
+functions carry hidden per-call state that has to be allocated at compile time,
+and a conditionally-executed `ta.*` call still has to advance its state on bars
+where the branch is not taken. Those are the parts that are implemented and
+tested.
+
+68 `ta.*` functions, the strategy engine (entries, exits, pyramiding,
+`strategy.*` state), user-defined types and methods, arrays, maps, matrices,
+`request.security` with higher-timeframe aggregation, drawing objects, and the
+`input.*` family.
 
 ## Using it as a library
 
@@ -141,15 +144,37 @@ it goes. The supported surface is exactly what `src/index.ts` exports and
 nothing else — everything under `src/` beyond that is internal and will change.
 See [API.md](API.md).
 
-## Notice on PineTS
+## What this does not do
 
-[PineTS](https://github.com/alaa-eddine/PineTS) is an existing AGPL-3.0
-Pine-to-JavaScript project. Resin shares no code with it. It was consulted as a
-black-box behavioural reference for TradingView semantics that are otherwise
-undocumented — the value of `dayofweek`, which plot styles exist, that sort of
-thing — and every place that happened is cited in a source comment so the
-provenance is auditable rather than asserted. Facts about a third-party product
-are not copyrightable; its implementation was not read into this one.
+- **No charts.** Resin computes plot series. Drawing them is your problem.
+- **Visualization-only calls compile to no-ops.** `plotshape`, `plotchar`,
+  `bgcolor`, `barcolor`, `hline`, `alertcondition`, `alert` and friends mark up
+  a chart that does not exist here, so they are dropped at compile time —
+  `plot()` calls nested in their arguments still record. If you need a shape's
+  condition as data, `plot()` it.
+- **Order fills follow TradingView's documented rule — market orders at the next
+  bar's open — but that has not been confirmed against TradingView itself.** The
+  rule is implemented from the specification, not from a side-by-side run. If
+  you are relying on backtest numbers rather than indicator values, treat them
+  as provisional.
+- **Intrabar fills cannot be confirmed from bar data at all.** A stop, a limit or
+  a trailing exit fills somewhere inside a bar and OHLC does not record where.
+  Any engine, this one included, is guessing a path. TradingView has the same
+  limitation and says so.
+- **`request.security` is aggregated from the bars you supply**, not fetched. If
+  you feed daily bars and the script asks for weekly, Resin builds the weekly
+  series by calendar aggregation.
+- **No `v4` or earlier.** v5 is the floor.
+- **Some semantics are reasoned, not confirmed.** TradingView does not document
+  everything — what `dayofweek` returns at a week boundary, how `na` propagates
+  through a particular builtin. Where the behaviour had to be inferred, the
+  reasoning and its evidence sit in a comment at the call site, marked as a
+  hypothesis rather than a measurement.
+- **Known gaps are recorded where they bite.** The long tail is things like
+  history access on a user-defined-type field through a multi-hop function
+  parameter, or `request.security` given an expression built from a loop
+  variable. Each is commented at the point where it is refused, with a
+  workaround when one exists.
 
 ## How this was built
 
@@ -176,6 +201,16 @@ run anything:
 
 Translation happens upstream in the development repository and lands here by
 re-snapshot, so it arrives in batches rather than a trickle.
+
+## Notice on PineTS
+
+[PineTS](https://github.com/alaa-eddine/PineTS) is an existing AGPL-3.0
+Pine-to-JavaScript project. Resin shares no code with it. It was consulted as a
+black-box behavioural reference for TradingView semantics that are otherwise
+undocumented — the value of `dayofweek`, which plot styles exist, that sort of
+thing — and every place that happened is cited in a source comment so the
+provenance is auditable rather than asserted. Facts about a third-party product
+are not copyrightable; its implementation was not read into this one.
 
 ## License
 

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="408" viewBox="0 0 640 408" role="img" aria-label="Terminal session: a Pine Script indicator is compiled to JavaScript with resin build and executed with resin run">
+  <style>
+    text {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 13px;
+      white-space: pre;
+    }
+    .p  { fill: #7ee787; }
+    .t  { fill: #e6edf3; }
+    .c  { fill: #8b949e; }
+    .s  { fill: #a5d6ff; }
+    .n  { fill: #79c0ff; }
+  </style>
+  <rect x="0.5" y="0.5" width="639" height="407" rx="10" fill="#0d1117" stroke="#30363d"/>
+  <circle cx="24" cy="22" r="6" fill="#ff5f57"/>
+  <circle cx="44" cy="22" r="6" fill="#febc2e"/>
+  <circle cx="64" cy="22" r="6" fill="#28c840"/>
+  <text x="320" y="26" text-anchor="middle" class="c">resin</text>
+
+  <text x="24" y="62" xml:space="preserve"><tspan class="p">$</tspan><tspan class="t"> cat rsi-cross.pine</tspan></text>
+  <text x="24" y="82" xml:space="preserve" class="c">//@version=6</text>
+  <text x="24" y="102" xml:space="preserve"><tspan class="t">indicator(</tspan><tspan class="s">"RSI + EMA cross"</tspan><tspan class="t">)</tspan></text>
+  <text x="24" y="122" xml:space="preserve"><tspan class="t">rsi      = ta.rsi(close, </tspan><tspan class="n">14</tspan><tspan class="t">)</tspan></text>
+  <text x="24" y="142" xml:space="preserve"><tspan class="t">smoothed = ta.ema(rsi, </tspan><tspan class="n">9</tspan><tspan class="t">)</tspan></text>
+  <text x="24" y="162" xml:space="preserve"><tspan class="t">plot(rsi, </tspan><tspan class="s">"RSI"</tspan><tspan class="t">)</tspan></text>
+  <text x="24" y="182" xml:space="preserve"><tspan class="t">plot(smoothed, </tspan><tspan class="s">"Smoothed"</tspan><tspan class="t">)</tspan></text>
+
+  <text x="24" y="222" xml:space="preserve"><tspan class="p">$</tspan><tspan class="t"> resin build rsi-cross.pine</tspan></text>
+  <text x="24" y="242" xml:space="preserve" class="c">wrote rsi-cross.js (179 bytes)</text>
+
+  <text x="24" y="282" xml:space="preserve"><tspan class="p">$</tspan><tspan class="t"> resin run rsi-cross.pine --bars 300</tspan></text>
+  <text x="24" y="302" xml:space="preserve"><tspan class="t">RSI                      </tspan><tspan class="n">57.66239695569333</tspan></text>
+  <text x="24" y="322" xml:space="preserve"><tspan class="t">Smoothed                 </tspan><tspan class="n">54.056462491106444</tspan></text>
+
+  <text x="24" y="362" xml:space="preserve"><tspan class="p">$</tspan><tspan class="t"> resin check oracle/cases</tspan></text>
+  <text x="24" y="382" xml:space="preserve"><tspan class="n">263</tspan><tspan class="t">/</tspan><tspan class="n">263</tspan><tspan class="t"> compiled (100.0%)</tspan></text>
+</svg>

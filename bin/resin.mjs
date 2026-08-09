@@ -129,7 +129,8 @@ switch (cmd) {
   case 'build': {
     const file = positional[0] ?? fail(USAGE);
     const result = compileOrDie(file);
-    const out = flag('o') ?? rest[rest.indexOf('-o') + 1];
+    const oIdx = rest.indexOf('-o');
+    const out = flag('o') ?? (oIdx >= 0 ? rest[oIdx + 1] : null);
     if (out && out !== '-o') {
       writeFileSync(out, result.code);
       console.error(`wrote ${out} (${result.code.length} bytes)`);

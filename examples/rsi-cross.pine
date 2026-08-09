@@ -1,0 +1,8 @@
+//@version=6
+indicator("RSI + EMA cross")
+
+rsi      = ta.rsi(close, 14)
+smoothed = ta.ema(rsi, 9)
+
+plot(rsi, "RSI")
+plot(smoothed, "Smoothed")

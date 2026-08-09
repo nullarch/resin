@@ -33,7 +33,7 @@
     "API.md"
   ],
   "engines": {
-    "node": ">=20.6"
+    "node": ">=22.18"
   },
   "scripts": {
     "test": "vitest run",
