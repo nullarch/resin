@@ -1,0 +1,15 @@
+//@version=5
+indicator("EnumSig")
+enum Signal
+    LONG
+    SHORT
+    NEUTRAL
+var string result = ""
+var Signal sig = Signal.NEUTRAL
+rsiVal = ta.rsi(close, 5)
+if not na(rsiVal)
+    if rsiVal > 70
+        sig := Signal.SHORT
+    else if rsiVal < 30
+        sig := Signal.LONG
+result := str.tostring(sig)

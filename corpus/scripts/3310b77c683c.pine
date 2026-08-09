@@ -1,0 +1,22 @@
+
+//@version=5
+indicator("Port Full")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+atr = nz(ta.atr(3), 1.0)
+
+var float portValue = 10000.0
+var float peak = 10000.0
+var float maxDD = 0.0
+
+ret = close[1] > 0 ? (close - close[1]) / close[1] : 0.0
+eqWeight = rsi > 55 and sma3 > sma5 ? 0.8 : rsi < 45 ? 0.3 : 0.5
+portRet = nz(ret, 0.0) * eqWeight
+portValue := portValue * (1 + portRet)
+peak := math.max(peak, portValue)
+dd = peak > 0 ? (peak - portValue) / peak * 100 : 0.0
+maxDD := math.max(maxDD, dd)
+
+plot(portValue, "PV")
+plot(maxDD, "MDD")

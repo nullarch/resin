@@ -1,0 +1,10 @@
+//@version=5
+indicator("Str Replace")
+msg = "foo bar foo"
+var string result = ""
+result := str.replace(msg, "foo", "baz", 0)
+var int len_ = 0
+len_ := str.length(result)
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

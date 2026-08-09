@@ -1,0 +1,17 @@
+//@version=5
+indicator("Williams %R")
+// TV 빌트인 "Williams %R" 인디케이터 E2E 재현(ROADMAP P2 "TV 빌트인 인디케이터 15종 E2E" 세
+// 번째 슬라이스, 3종 중 2: MFI/WPR/VWAP). ta.wpr 자체의 계산은 이미 oracle/cases/ta_wpr.pine
+// (순수 __obs 미러, length=4)으로 개별 검증됐다 -- 이 케이스는 그 위에
+// indicator()/input.int/plot()을 얹어 완성된 빌트인 스크립트 구조 전체를 검증한다. length=4는
+// ta_wpr.pine과 동일 파라미터를 재사용(sample10.json 10바 안에서 워밍업/유효 구간을 이미
+// 커버해둔 조합 그대로 재사용). TV 실제 Williams %R 빌트인은 소스 선택이 없는 지표(high/low/close가
+// 항상 고정)라 stoch/dmi와 동일하게 input.source를 쓰지 않는다.
+lengthInput = input.int(4, "Length")
+
+wprValue = ta.wpr(lengthInput)
+
+plot(wprValue, "%R")
+
+var float __obs_r = na
+__obs_r := wprValue

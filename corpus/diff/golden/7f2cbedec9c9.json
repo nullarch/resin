@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:birthLevel": 0.0,
+   "var:deathLevel": 0.0,
+   "var:featureAlive": false,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:birthLevel": 0.0,
+   "var:deathLevel": 0.0,
+   "var:featureAlive": false,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:birthLevel": 0.0,
+   "var:deathLevel": 0.0,
+   "var:featureAlive": false,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:birthLevel": 105,
+   "var:deathLevel": 0.0,
+   "var:featureAlive": true,
+   "var:__obs_plot0": 105.0
+  },
+  {
+   "var:birthLevel": 105,
+   "var:deathLevel": 0.0,
+   "var:featureAlive": true,
+   "var:__obs_plot0": 105.0
+  },
+  {
+   "var:birthLevel": 105,
+   "var:deathLevel": 0.0,
+   "var:featureAlive": true,
+   "var:__obs_plot0": 105.0
+  },
+  {
+   "var:birthLevel": 105,
+   "var:deathLevel": 0.0,
+   "var:featureAlive": true,
+   "var:__obs_plot0": 105.0
+  },
+  {
+   "var:birthLevel": 105,
+   "var:deathLevel": 0.0,
+   "var:featureAlive": true,
+   "var:__obs_plot0": 105.0
+  },
+  {
+   "var:birthLevel": 105,
+   "var:deathLevel": 0.0,
+   "var:featureAlive": true,
+   "var:__obs_plot0": 105.0
+  },
+  {
+   "var:birthLevel": 105,
+   "var:deathLevel": 0.0,
+   "var:featureAlive": true,
+   "var:__obs_plot0": 105.0
+  }
+ ],
+ "finalVarState": {
+  "birthLevel": 105,
+  "deathLevel": 0.0,
+  "featureAlive": true,
+  "__obs_plot0": 105.0
+ }
+}

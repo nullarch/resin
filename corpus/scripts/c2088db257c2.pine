@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Dist Zone")
+sma5 = ta.sma(close, 5)
+stdev = nz(ta.stdev(close, 5), 1.0)
+zscore = stdev > 0 ? (close - sma5) / stdev : 0.0
+zone = switch
+    zscore > 2 => "extreme_high"
+    zscore > 1 => "high"
+    zscore < -2 => "extreme_low"
+    zscore < -1 => "low"
+    => "normal"
+isExtreme = zone == "extreme_high" or zone == "extreme_low"
+plot(isExtreme ? 1 : 0, "Ext")

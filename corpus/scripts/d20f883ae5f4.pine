@@ -1,0 +1,8 @@
+//@version=5
+indicator("ManualAvg")
+var float runAvg = 0
+sum = 0.0
+count = 3
+for i = 0 to count - 1
+    sum := sum + close[i]
+runAvg := sum / count

@@ -1,0 +1,5 @@
+//@version=5
+indicator("mod zero")
+var float result = 0.0
+x = 5.0 % 0.0
+result := na(x) ? 1.0 : 0.0

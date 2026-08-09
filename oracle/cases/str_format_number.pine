@@ -1,0 +1,38 @@
+//@version=5
+indicator("str_format_number")
+// str.format_number(value, format_str="") — pine2py str_funcs.format_number(L218-225): value가
+// NaN이면 "NaN"(format_str 유무와 무관), 아니면 format_str이 truthy면 str.format(C110)의
+// {idx,number,pattern} 내부 헬퍼(_apply_number_format)를 그대로 재사용, 없으면 pine2py `str(value)`
+// 와 동치인 pyFloatStr. All channels are bar-independent (pure literal args, like str_format.pine) —
+// numeric args deliberately use float literals to avoid the int/float string-representation
+// ambiguity documented in DIVERGENCES.md #28a. A null format_str channel is NOT covered here:
+// pine2py itself crashes on it (AttributeError: 'float' object has no attribute 'find', confirmed
+// via direct python execution) — hand-verified in runtime.test.ts instead (LIMITATIONS.md).
+var string __obs_a = na
+__obs_a := str.format_number(1234.5678)
+var string __obs_b = na
+__obs_b := str.format_number(1234.5678, "#.##")
+var string __obs_c = na
+__obs_c := str.format_number(1234.5, "0.000")
+var string __obs_d = na
+__obs_d := str.format_number(1234.5, "#")
+var string __obs_e = na
+__obs_e := str.format_number(2.5, "#")
+var string __obs_f = na
+__obs_f := str.format_number(3.5, "#")
+var string __obs_g = na
+__obs_g := str.format_number(-1234.5678, "#.##")
+var string __obs_h = na
+__obs_h := str.format_number(0.0)
+var string __obs_i = na
+__obs_i := str.format_number(0.0, "#.##")
+var string __obs_j = na
+__obs_j := str.format_number(-0.0, "#.##")
+var string __obs_k = na
+__obs_k := str.format_number(na)
+var string __obs_l = na
+__obs_l := str.format_number(na, "#.##")
+var string __obs_m = na
+__obs_m := str.format_number(str.tonumber("Infinity"))
+var string __obs_n = na
+__obs_n := str.format_number(str.tonumber("Infinity"), "#.##")

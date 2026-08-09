@@ -1,0 +1,11 @@
+//@version=5
+indicator("UDT Multi Instance")
+var float result = 0.0
+
+type Point
+    float x = 0.0
+    float y = 0.0
+
+p1 = Point.new(1.0, 2.0)
+p2 = Point.new(3.0, 4.0)
+result := p1.x + p2.y

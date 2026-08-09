@@ -1,0 +1,10 @@
+//@version=5
+indicator("Variance Ratio")
+float varShort = ta.stdev(close, 3)
+float varLong = ta.stdev(close, 5)
+float shortSq = nz(varShort, 1.0) * nz(varShort, 1.0)
+float longSq = nz(varLong, 1.0) * nz(varLong, 1.0)
+float vratio = longSq > 0 ? shortSq / longSq : 1.0
+var float __obs_plot0 = na
+__obs_plot0 := vratio
+plot(vratio, "VRatio")

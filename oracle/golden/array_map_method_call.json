@@ -1,0 +1,182 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:arrA": [],
+   "var:__obs_a_size": 1,
+   "var:__obs_a_last": 101,
+   "var:__obs_a_pop": 101,
+   "var:__obs_b0": 3.0,
+   "var:__obs_b_size": 3,
+   "var:mC": {
+    "close": 108.0
+   },
+   "var:__obs_c_get": 101.0,
+   "var:__obs_c_size": 1,
+   "var:__obs_c_contains": true,
+   "var:__obs_d_x": 1.0,
+   "var:__obs_d_size": 2
+  },
+  {
+   "var:arrA": [],
+   "var:__obs_a_size": 1,
+   "var:__obs_a_last": 102,
+   "var:__obs_a_pop": 102,
+   "var:__obs_b0": 3.0,
+   "var:__obs_b_size": 3,
+   "var:mC": {
+    "close": 108.0
+   },
+   "var:__obs_c_get": 102.0,
+   "var:__obs_c_size": 1,
+   "var:__obs_c_contains": true,
+   "var:__obs_d_x": 1.0,
+   "var:__obs_d_size": 2
+  },
+  {
+   "var:arrA": [],
+   "var:__obs_a_size": 1,
+   "var:__obs_a_last": 103,
+   "var:__obs_a_pop": 103,
+   "var:__obs_b0": 3.0,
+   "var:__obs_b_size": 3,
+   "var:mC": {
+    "close": 108.0
+   },
+   "var:__obs_c_get": 103.0,
+   "var:__obs_c_size": 1,
+   "var:__obs_c_contains": true,
+   "var:__obs_d_x": 1.0,
+   "var:__obs_d_size": 2
+  },
+  {
+   "var:arrA": [],
+   "var:__obs_a_size": 1,
+   "var:__obs_a_last": 102,
+   "var:__obs_a_pop": 102,
+   "var:__obs_b0": 3.0,
+   "var:__obs_b_size": 3,
+   "var:mC": {
+    "close": 108.0
+   },
+   "var:__obs_c_get": 102.0,
+   "var:__obs_c_size": 1,
+   "var:__obs_c_contains": true,
+   "var:__obs_d_x": 1.0,
+   "var:__obs_d_size": 2
+  },
+  {
+   "var:arrA": [],
+   "var:__obs_a_size": 1,
+   "var:__obs_a_last": 104,
+   "var:__obs_a_pop": 104,
+   "var:__obs_b0": 3.0,
+   "var:__obs_b_size": 3,
+   "var:mC": {
+    "close": 108.0
+   },
+   "var:__obs_c_get": 104.0,
+   "var:__obs_c_size": 1,
+   "var:__obs_c_contains": true,
+   "var:__obs_d_x": 1.0,
+   "var:__obs_d_size": 2
+  },
+  {
+   "var:arrA": [],
+   "var:__obs_a_size": 1,
+   "var:__obs_a_last": 105,
+   "var:__obs_a_pop": 105,
+   "var:__obs_b0": 3.0,
+   "var:__obs_b_size": 3,
+   "var:mC": {
+    "close": 108.0
+   },
+   "var:__obs_c_get": 105.0,
+   "var:__obs_c_size": 1,
+   "var:__obs_c_contains": true,
+   "var:__obs_d_x": 1.0,
+   "var:__obs_d_size": 2
+  },
+  {
+   "var:arrA": [],
+   "var:__obs_a_size": 1,
+   "var:__obs_a_last": 106,
+   "var:__obs_a_pop": 106,
+   "var:__obs_b0": 3.0,
+   "var:__obs_b_size": 3,
+   "var:mC": {
+    "close": 108.0
+   },
+   "var:__obs_c_get": 106.0,
+   "var:__obs_c_size": 1,
+   "var:__obs_c_contains": true,
+   "var:__obs_d_x": 1.0,
+   "var:__obs_d_size": 2
+  },
+  {
+   "var:arrA": [],
+   "var:__obs_a_size": 1,
+   "var:__obs_a_last": 105,
+   "var:__obs_a_pop": 105,
+   "var:__obs_b0": 3.0,
+   "var:__obs_b_size": 3,
+   "var:mC": {
+    "close": 108.0
+   },
+   "var:__obs_c_get": 105.0,
+   "var:__obs_c_size": 1,
+   "var:__obs_c_contains": true,
+   "var:__obs_d_x": 1.0,
+   "var:__obs_d_size": 2
+  },
+  {
+   "var:arrA": [],
+   "var:__obs_a_size": 1,
+   "var:__obs_a_last": 107,
+   "var:__obs_a_pop": 107,
+   "var:__obs_b0": 3.0,
+   "var:__obs_b_size": 3,
+   "var:mC": {
+    "close": 108.0
+   },
+   "var:__obs_c_get": 107.0,
+   "var:__obs_c_size": 1,
+   "var:__obs_c_contains": true,
+   "var:__obs_d_x": 1.0,
+   "var:__obs_d_size": 2
+  },
+  {
+   "var:arrA": [],
+   "var:__obs_a_size": 1,
+   "var:__obs_a_last": 108,
+   "var:__obs_a_pop": 108,
+   "var:__obs_b0": 3.0,
+   "var:__obs_b_size": 3,
+   "var:mC": {
+    "close": 108.0
+   },
+   "var:__obs_c_get": 108.0,
+   "var:__obs_c_size": 1,
+   "var:__obs_c_contains": true,
+   "var:__obs_d_x": 1.0,
+   "var:__obs_d_size": 2
+  }
+ ],
+ "finalVarState": {
+  "arrA": [],
+  "__obs_a_size": 1,
+  "__obs_a_last": 108,
+  "__obs_a_pop": 108,
+  "__obs_b0": 3.0,
+  "__obs_b_size": 3,
+  "mC": {
+   "close": 108.0
+  },
+  "__obs_c_get": 108.0,
+  "__obs_c_size": 1,
+  "__obs_c_contains": true,
+  "__obs_d_x": 1.0,
+  "__obs_d_size": 2
+ }
+}

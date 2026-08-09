@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Cum Vol")
+var float cumBuyVol = 0.0
+var float cumSellVol = 0.0
+if close > open
+    cumBuyVol := cumBuyVol + volume
+else
+    cumSellVol := cumSellVol + volume
+totalVol = cumBuyVol + cumSellVol
+buyRatio = totalVol > 0 ? cumBuyVol / totalVol : 0.5
+var float __obs_plot0 = na
+__obs_plot0 := buyRatio
+plot(buyRatio, "BuyRatio")

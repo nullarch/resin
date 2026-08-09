@@ -1,0 +1,8 @@
+//@version=5
+indicator("Na Compare Right")
+float x = na
+var bool check = false
+check := x == na
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

@@ -1,0 +1,33 @@
+//@version=5
+indicator("Comprehensive C80")
+var float result = 0.0
+
+type Indicator
+    float value = 0.0
+    string name = ""
+
+method describe(Indicator self) =>
+    self.name
+
+calc_sma(float src, int len) =>
+    ta.sma(src, len)
+
+// Use func
+float sma_val = nz(calc_sma(close, 3), 0.0)
+
+// Use UDT
+ind = Indicator.new(sma_val, "SMA3")
+
+// Array
+float[] vals = array.from(1.0, 2.0, 3.0)
+float arr_sum = 0.0
+for v in vals
+    arr_sum += v
+
+// Switch
+string label_text = switch
+    sma_val > 110 => "high"
+    sma_val > 105 => "mid"
+    => "low"
+
+result := ind.value + arr_sum

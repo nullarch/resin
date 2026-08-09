@@ -1,0 +1,116 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:zzPrice": 0.0,
+   "var:zzBar": 0,
+   "var:zzDir": 0,
+   "var:pivotCount": 0,
+   "var:__obs_zzPrice": 0.0,
+   "var:__obs_zzBar": 0,
+   "var:__obs_zzDir": 0,
+   "var:__obs_pivotCount": 0
+  },
+  {
+   "var:zzPrice": 0.0,
+   "var:zzBar": 0,
+   "var:zzDir": 0,
+   "var:pivotCount": 0,
+   "var:__obs_zzPrice": 0.0,
+   "var:__obs_zzBar": 0,
+   "var:__obs_zzDir": 0,
+   "var:__obs_pivotCount": 0
+  },
+  {
+   "var:zzPrice": 0.0,
+   "var:zzBar": 0,
+   "var:zzDir": 0,
+   "var:pivotCount": 0,
+   "var:__obs_zzPrice": 0.0,
+   "var:__obs_zzBar": 0,
+   "var:__obs_zzDir": 0,
+   "var:__obs_pivotCount": 0
+  },
+  {
+   "var:zzPrice": 104.0,
+   "var:zzBar": 2,
+   "var:zzDir": 1,
+   "var:pivotCount": 1,
+   "var:__obs_zzPrice": 104.0,
+   "var:__obs_zzBar": 2,
+   "var:__obs_zzDir": 1,
+   "var:__obs_pivotCount": 1
+  },
+  {
+   "var:zzPrice": 100.0,
+   "var:zzBar": 3,
+   "var:zzDir": -1,
+   "var:pivotCount": 2,
+   "var:__obs_zzPrice": 100.0,
+   "var:__obs_zzBar": 3,
+   "var:__obs_zzDir": -1,
+   "var:__obs_pivotCount": 2
+  },
+  {
+   "var:zzPrice": 100.0,
+   "var:zzBar": 3,
+   "var:zzDir": -1,
+   "var:pivotCount": 2,
+   "var:__obs_zzPrice": 100.0,
+   "var:__obs_zzBar": 3,
+   "var:__obs_zzDir": -1,
+   "var:__obs_pivotCount": 2
+  },
+  {
+   "var:zzPrice": 100.0,
+   "var:zzBar": 3,
+   "var:zzDir": -1,
+   "var:pivotCount": 2,
+   "var:__obs_zzPrice": 100.0,
+   "var:__obs_zzBar": 3,
+   "var:__obs_zzDir": -1,
+   "var:__obs_pivotCount": 2
+  },
+  {
+   "var:zzPrice": 107.0,
+   "var:zzBar": 6,
+   "var:zzDir": 1,
+   "var:pivotCount": 3,
+   "var:__obs_zzPrice": 107.0,
+   "var:__obs_zzBar": 6,
+   "var:__obs_zzDir": 1,
+   "var:__obs_pivotCount": 3
+  },
+  {
+   "var:zzPrice": 103.0,
+   "var:zzBar": 7,
+   "var:zzDir": -1,
+   "var:pivotCount": 4,
+   "var:__obs_zzPrice": 103.0,
+   "var:__obs_zzBar": 7,
+   "var:__obs_zzDir": -1,
+   "var:__obs_pivotCount": 4
+  },
+  {
+   "var:zzPrice": 103.0,
+   "var:zzBar": 7,
+   "var:zzDir": -1,
+   "var:pivotCount": 4,
+   "var:__obs_zzPrice": 103.0,
+   "var:__obs_zzBar": 7,
+   "var:__obs_zzDir": -1,
+   "var:__obs_pivotCount": 4
+  }
+ ],
+ "finalVarState": {
+  "zzPrice": 103.0,
+  "zzBar": 7,
+  "zzDir": -1,
+  "pivotCount": 4,
+  "__obs_zzPrice": 103.0,
+  "__obs_zzBar": 7,
+  "__obs_zzDir": -1,
+  "__obs_pivotCount": 4
+ }
+}

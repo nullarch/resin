@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("If Expr")
+sma3 = ta.sma(close, 3)
+signal = if close > sma3
+    1.0
+else if close < sma3
+    -1.0
+else
+    0.0
+plot(signal, "Sig")

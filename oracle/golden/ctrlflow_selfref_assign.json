@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:x": -0.5,
+   "var:p": "pine_fn.<locals>.Particle(energy=102.5)",
+   "var:__obs_x": -0.5,
+   "var:__obs_energy": 99.5,
+   "var:__obs_f": 9.0,
+   "var:acc": 9.0
+  },
+  {
+   "var:x": 0.5,
+   "var:p": "pine_fn.<locals>.Particle(energy=102.5)",
+   "var:__obs_x": 0.5,
+   "var:__obs_energy": 100.5,
+   "var:__obs_f": 11.0,
+   "var:acc": 11.0
+  },
+  {
+   "var:x": 0.0,
+   "var:p": "pine_fn.<locals>.Particle(energy=102.5)",
+   "var:__obs_x": 0.0,
+   "var:__obs_energy": 100.0,
+   "var:__obs_f": 10.0,
+   "var:acc": 10.0
+  },
+  {
+   "var:x": 1.0,
+   "var:p": "pine_fn.<locals>.Particle(energy=102.5)",
+   "var:__obs_x": 1.0,
+   "var:__obs_energy": 101.0,
+   "var:__obs_f": 12.0,
+   "var:acc": 12.0
+  },
+  {
+   "var:x": 2.0,
+   "var:p": "pine_fn.<locals>.Particle(energy=102.5)",
+   "var:__obs_x": 2.0,
+   "var:__obs_energy": 102.0,
+   "var:__obs_f": 14.0,
+   "var:acc": 14.0
+  },
+  {
+   "var:x": 1.5,
+   "var:p": "pine_fn.<locals>.Particle(energy=102.5)",
+   "var:__obs_x": 1.5,
+   "var:__obs_energy": 101.5,
+   "var:__obs_f": 13.0,
+   "var:acc": 13.0
+  },
+  {
+   "var:x": 2.5,
+   "var:p": "pine_fn.<locals>.Particle(energy=102.5)",
+   "var:__obs_x": 2.5,
+   "var:__obs_energy": 102.5,
+   "var:__obs_f": 15.0,
+   "var:acc": 15.0
+  },
+  {
+   "var:x": 2.0,
+   "var:p": "pine_fn.<locals>.Particle(energy=102.5)",
+   "var:__obs_x": 2.0,
+   "var:__obs_energy": 102.0,
+   "var:__obs_f": 14.0,
+   "var:acc": 14.0
+  },
+  {
+   "var:x": 1.5,
+   "var:p": "pine_fn.<locals>.Particle(energy=102.5)",
+   "var:__obs_x": 1.5,
+   "var:__obs_energy": 101.5,
+   "var:__obs_f": 13.0,
+   "var:acc": 13.0
+  },
+  {
+   "var:x": 2.5,
+   "var:p": "pine_fn.<locals>.Particle(energy=102.5)",
+   "var:__obs_x": 2.5,
+   "var:__obs_energy": 102.5,
+   "var:__obs_f": 15.0,
+   "var:acc": 15.0
+  }
+ ],
+ "finalVarState": {
+  "x": 2.5,
+  "p": "pine_fn.<locals>.Particle(energy=102.5)",
+  "__obs_x": 2.5,
+  "__obs_energy": 102.5,
+  "__obs_f": 15.0,
+  "acc": 15.0
+ }
+}

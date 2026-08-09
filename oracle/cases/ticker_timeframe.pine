@@ -1,0 +1,29 @@
+//@version=5
+indicator("ticker_timeframe")
+// ticker.*(8종)/timeframe.change(C235) — bar-independent (pure literal args, no OHLCV dependency,
+// str_basic.pine/math_const.pine 패턴과 동일). pine2py wavealgo/__init__.py 전부가 순수 문자열
+// pass-through/접합 + timeframe_change 상수 반환이라 바마다 값이 바뀌지 않는다.
+var string __obs_new0 = na
+__obs_new0 := ticker.new("BINANCE", "BTCUSDT")
+var string __obs_new1 = na
+__obs_new1 := ticker.new()
+var string __obs_new2 = na
+__obs_new2 := ticker.new("", "BTCUSDT")
+var string __obs_std = na
+__obs_std := ticker.standard("BINANCE:BTCUSDT")
+var string __obs_mod = na
+__obs_mod := ticker.modify("BINANCE:BTCUSDT")
+var string __obs_ha = na
+__obs_ha := ticker.heikinashi("BINANCE:BTCUSDT")
+var string __obs_renko = na
+__obs_renko := ticker.renko("BINANCE:BTCUSDT")
+var string __obs_kagi = na
+__obs_kagi := ticker.kagi("BINANCE:BTCUSDT")
+var string __obs_lb = na
+__obs_lb := ticker.linebreak("BINANCE:BTCUSDT")
+var string __obs_pf = na
+__obs_pf := ticker.pointfigure("BINANCE:BTCUSDT")
+var bool __obs_tf0 = na
+__obs_tf0 := timeframe.change("D")
+var bool __obs_tf1 = na
+__obs_tf1 := timeframe.change()

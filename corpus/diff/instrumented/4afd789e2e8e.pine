@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("Run Sharpe")
+var float sumRet = 0.0
+var float sumSqRet = 0.0
+var int n = 0
+ret = close - close[1]
+if not na(ret)
+    sumRet := sumRet + ret
+    sumSqRet := sumSqRet + ret * ret
+    n := n + 1
+avgRet = n > 0 ? sumRet / n : 0.0
+variance = n > 1 ? (sumSqRet / n - avgRet * avgRet) : 0.0
+sd = math.sqrt(math.abs(variance))
+sharpe = sd > 0 ? avgRet / sd : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := sharpe
+plot(sharpe, "Sharpe")

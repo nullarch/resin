@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Map Str")
+var labels = map.new<string, string>()
+rsi = nz(ta.rsi(close, 3), 50.0)
+map.put(labels, "momentum", rsi > 60 ? "bull" : rsi < 40 ? "bear" : "neutral")
+map.put(labels, "trend", close > ta.sma(close, 3) ? "up" : "down")
+mom = map.get(labels, "momentum", "neutral")
+trend = map.get(labels, "trend", "flat")
+bullUp = mom == "bull" and trend == "up"
+var float __obs_plot0 = na
+__obs_plot0 := bullUp ? 1 : 0
+plot(bullUp ? 1 : 0, "BullUp")

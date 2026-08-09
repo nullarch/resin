@@ -1,0 +1,36 @@
+//@version=5
+indicator("func_local_shadows_var")
+// C568: 함수 본문 안의 '=' 신규 로컬(non-var)이 top-level var와 같은 이름을 쓸 때 — TV는 이 로컬이
+// 함수 본문 안에서 바깥 var를 shadow해야 정상이다(wild `f() => arr = array.new<T>() ... arr` 관용구가
+// `var array<T> arr = f()`로 결과를 동명 var에 받는 패턴, corpus_scan --exec "Cannot read properties
+// of undefined" 클러스터의 최다 서브축 — sessionInfos/strikes 등 실제 wild 스크립트에서 확인).
+// pine2py는 Python 함수 스코프가 자연히 shadow해 정합(python 직접 실행으로 오라클 대조 가능함을 확인).
+//
+// __obs_scalar_call: f_scalar() 매 바 재호출 결과 — 함수 안 로컬 x(:=재대입 포함)만 반영해야 함.
+// codegen이 바깥 var x 슬롯을 잘못 읽으면 초기화 전 undefined 오염으로 NaN이 섞인다.
+// __obs_scalar_var: 바깥 var x는 f_scalar() 결과로 한 번만 초기화된 뒤 매 바 +100 누적.
+// __obs_arr: 바깥 var arr(f_arr() 결과, 원소 1개)의 값 — f_arr() 내부 로컬 arr과 동명.
+
+f_scalar() =>
+    x = bar_index * 2.0
+    x := x + 1.0
+    x
+
+var float x = f_scalar()
+x := x + 100.0
+
+f_arr() =>
+    arr = array.new_float(0)
+    arr.push(bar_index * 3.0)
+    arr
+
+var array<float> arr = f_arr()
+
+var float __obs_scalar_call = na
+__obs_scalar_call := f_scalar()
+
+var float __obs_scalar_var = na
+__obs_scalar_var := x
+
+var float __obs_arr = na
+__obs_arr := array.get(arr, 0)

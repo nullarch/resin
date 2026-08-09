@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:bayesFactor": 0.9974522306792805,
+   "var:__obs_plot0": 0.9974522306792805
+  },
+  {
+   "var:bayesFactor": 1.007896661719587,
+   "var:__obs_plot0": 1.007896661719587
+  },
+  {
+   "var:bayesFactor": 0.963546670551913,
+   "var:__obs_plot0": 0.963546670551913
+  },
+  {
+   "var:bayesFactor": 1.0010606527977033,
+   "var:__obs_plot0": 1.0010606527977033
+  },
+  {
+   "var:bayesFactor": 1.0256900917112637,
+   "var:__obs_plot0": 1.0256900917112637
+  },
+  {
+   "var:bayesFactor": 1.0080366570887238,
+   "var:__obs_plot0": 1.0080366570887238
+  },
+  {
+   "var:bayesFactor": 1.0328377290307789,
+   "var:__obs_plot0": 1.0328377290307789
+  },
+  {
+   "var:bayesFactor": 1.0582489902602468,
+   "var:__obs_plot0": 1.0582489902602468
+  },
+  {
+   "var:bayesFactor": 1.040035175468725,
+   "var:__obs_plot0": 1.040035175468725
+  },
+  {
+   "var:bayesFactor": 1.0656235179438511,
+   "var:__obs_plot0": 1.0656235179438511
+  }
+ ],
+ "finalVarState": {
+  "bayesFactor": 1.0656235179438511,
+  "__obs_plot0": 1.0656235179438511
+ }
+}

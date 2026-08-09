@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_rising": 0.0,
+   "var:__obs_falling": 0.0
+  },
+  {
+   "var:__obs_rising": 0.0,
+   "var:__obs_falling": 0.0
+  },
+  {
+   "var:__obs_rising": 1.0,
+   "var:__obs_falling": 0.0
+  },
+  {
+   "var:__obs_rising": 0.0,
+   "var:__obs_falling": 1.0
+  },
+  {
+   "var:__obs_rising": 0.0,
+   "var:__obs_falling": 0.0
+  },
+  {
+   "var:__obs_rising": 1.0,
+   "var:__obs_falling": 0.0
+  },
+  {
+   "var:__obs_rising": 1.0,
+   "var:__obs_falling": 0.0
+  },
+  {
+   "var:__obs_rising": 0.0,
+   "var:__obs_falling": 1.0
+  },
+  {
+   "var:__obs_rising": 0.0,
+   "var:__obs_falling": 0.0
+  },
+  {
+   "var:__obs_rising": 1.0,
+   "var:__obs_falling": 0.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_rising": 1.0,
+  "__obs_falling": 0.0
+ }
+}

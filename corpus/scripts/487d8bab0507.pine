@@ -1,0 +1,9 @@
+//@version=5
+indicator("Session barstate")
+inMarket = session.ismarket
+isFirst = barstate.isfirst
+isLast = barstate.islast
+bi = bar_index
+var int firstBar = -1
+if isFirst
+    firstBar := bi

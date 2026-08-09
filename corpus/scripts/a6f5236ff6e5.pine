@@ -1,0 +1,13 @@
+//@version=5
+indicator("DG-14 Torsion")
+var float torsion = 0.0
+atrVal = nz(ta.atr(3), 1.0)
+if not na(close[2]) and not na(volume[2])
+    dp = close - close[1]
+    dv = (volume - volume[1]) / 1000.0
+    dp2 = (close - close[1]) - (close[1] - close[2])
+    dv2 = ((volume - volume[1]) - (volume[1] - volume[2])) / 1000.0
+    cross = dp * dv2 - dp2 * dv
+    normSq = dp * dp + dv * dv + atrVal * atrVal
+    torsion := normSq > 0.001 ? cross / normSq : 0.0
+plot(torsion)

@@ -1,0 +1,7 @@
+//@version=5
+indicator("Amplitude")
+amp = high - low
+smoothAmp = ta.sma(amp, 3)
+var float __obs_plot0 = na
+__obs_plot0 := smoothAmp
+plot(smoothAmp, title="amplitude")

@@ -1,0 +1,7 @@
+//@version=5
+indicator("Free Energy")
+float energy = math.abs(close - ta.sma(close, 3))
+float barRange = high - low
+float entropy = math.log(math.max(barRange * 10.0, 1.0))
+float temperature = nz(ta.atr(3), 1.0)
+float freeEnergy = energy - temperature * entropy

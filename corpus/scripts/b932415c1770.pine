@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Slide Win")
+var float[] window = array.new_float(0)
+array.push(window, close)
+if array.size(window) > 8
+    array.shift(window)
+sz = array.size(window)
+avg = sz > 0 ? array.avg(window) : close
+maxV = sz > 0 ? array.max(window) : close
+minV = sz > 0 ? array.min(window) : close
+rng = maxV - minV
+pos = rng > 0 ? (close - minV) / rng * 100 : 50.0
+plot(pos, "Pos")

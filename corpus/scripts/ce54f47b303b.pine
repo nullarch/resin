@@ -1,0 +1,10 @@
+//@version=5
+indicator("UDF Var Counter")
+var float result = 0.0
+
+counter() =>
+    var int cnt = 0
+    cnt := cnt + 1
+    cnt
+
+result := counter()

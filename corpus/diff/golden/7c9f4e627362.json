@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:__obs_plot0": 105.0138888889
+  },
+  {
+   "var:__obs_plot0": 106.0954861112
+  },
+  {
+   "var:__obs_plot0": 107.0217013889
+  },
+  {
+   "var:__obs_plot0": 107.9626736112
+  }
+ ],
+ "finalVarState": {
+  "__obs_plot0": 107.9626736112
+ }
+}

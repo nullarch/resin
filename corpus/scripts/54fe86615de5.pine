@@ -1,0 +1,36 @@
+
+//@version=5
+indicator("Quant Full")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+[m, s, h] = ta.macd(close, 3, 5, 3)
+
+var float equity = 10000.0
+var float maxEquity = 10000.0
+var int totalTrades = 0
+var bool inPos = false
+var float entry = 0.0
+
+trendOK = close > sma3 and sma3 > sma5
+momOK = rsi > 50 and h > 0
+volOK = avgATR > 0 and atr < avgATR * 1.5
+
+if not inPos and trendOK and momOK and volOK
+    inPos := true
+    entry := close
+    totalTrades := totalTrades + 1
+if inPos and (not trendOK or rsi > 80)
+    equity := equity + (close - entry) * 100
+    maxEquity := math.max(maxEquity, equity)
+    inPos := false
+
+dd = maxEquity > 0 ? (maxEquity - equity) / maxEquity * 100 : 0.0
+
+var int bars = 0
+bars := bars + 1
+
+plot(equity, "Eq")
+plot(dd, "DD")

@@ -1,0 +1,6 @@
+//@version=5
+indicator("BB Full")
+var float result = 0.0
+[mid, upper, lower] = ta.bb(close, 5, 2.0)
+float bandwidth = nz(upper, 0.0) - nz(lower, 0.0)
+result := bandwidth

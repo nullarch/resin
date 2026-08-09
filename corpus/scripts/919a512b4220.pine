@@ -1,0 +1,7 @@
+//@version=5
+indicator("While")
+var int result = 0
+x = 0
+while x < 5
+    x := x + 1
+result := x

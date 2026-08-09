@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Candle Lbl")
+body = math.abs(close - open)
+totalRange = high - low
+bodyPct = totalRange > 0 ? body / totalRange * 100 : 0.0
+shape = bodyPct < 10 ? "DOJI" : bodyPct > 60 ? "MARUBOZU" : "NORMAL"
+direction = close > open ? "UP" : "DN"
+label = shape + "_" + direction
+isMarubozuUp = label == "MARUBOZU_UP"
+plot(isMarubozuUp ? 1 : 0, "MU")

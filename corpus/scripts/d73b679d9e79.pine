@@ -1,0 +1,9 @@
+//@version=5
+indicator("DayOfWeek")
+isWeekend = dayofweek == dayofweek.sunday or dayofweek == dayofweek.saturday
+isMon = dayofweek == dayofweek.monday
+isTue = dayofweek == dayofweek.tuesday
+isWed = dayofweek == dayofweek.wednesday
+isThu = dayofweek == dayofweek.thursday
+isFri = dayofweek == dayofweek.friday
+plot(isWeekend ? 0 : 1)

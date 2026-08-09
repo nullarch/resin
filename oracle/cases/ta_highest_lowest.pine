@@ -1,0 +1,10 @@
+//@version=5
+indicator("ta_highest_lowest")
+// ta.highest/ta.lowest 오라클 검증(ROADMAP P2 "ta.* 44종" — highest/lowest). length=4로
+// sample10.json 10바 안에서 워밍업 구간(NaN, 바 0~2)과 정상 구간(바 3~9)을 모두 커버.
+// close를 source로 관측(pine2py highest.py/lowest.py는 source 생략 시 암묵 high/low를 쓰지만
+// pine2js TA_REGISTRY는 2-인자 고정이라 명시 source만 지원 — LIMITATIONS.md 참조).
+var float __obs_hi = na
+var float __obs_lo = na
+__obs_hi := ta.highest(close, 4)
+__obs_lo := ta.lowest(close, 4)

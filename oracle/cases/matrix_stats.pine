@@ -1,0 +1,93 @@
+//@version=5
+indicator("matrix_stats")
+
+// C95: matrix.* 여섯 번째 슬라이스(sum/avg/min/max/median/mode — 38/49 완료, 분모 정정은
+// matrix.ts 헤더 주석 참조). pine2py matrix.py의 `_flat_valid`가 array.py `_valid_nums`
+// (array_stats.pine, C81)와 로직이 완전히 동일함을 소스 대조로 확인해 그 오라클 설계를 그대로
+// 2D로 옮김(all-valid/na-embedded/all-na/single-valid/mode 동률/mode 무동률 6그룹). bar-derived
+// 값(open/high/low/close)은 matrix.set의 latent Series 버그(matrix_basic.pine 참조)를 pine2py
+// 쪽에서만 우회하기 위해 전부 `+ 0.0` 산술 강제 스칼라 변환(matrix_mutate.pine과 동일 설계) —
+// out-of-range 인덱스 접근(close[15] 등)은 이미 스칼라라 강제 불필요(array_stats.pine과 동일).
+
+// A: all-valid 2x2(open/high/low/close, 미정렬 순서) — 짝수 개(4) median은 가운데 두 값 평균.
+maA = matrix.new<float>(2, 2, 0.0)
+matrix.set(maA, 0, 0, open + 0.0)
+matrix.set(maA, 0, 1, high + 0.0)
+matrix.set(maA, 1, 0, low + 0.0)
+matrix.set(maA, 1, 1, close + 0.0)
+var float __obs_a_sum = na
+__obs_a_sum := matrix.sum(maA)
+var float __obs_a_avg = na
+__obs_a_avg := matrix.avg(maA)
+var float __obs_a_min = na
+__obs_a_min := matrix.min(maA)
+var float __obs_a_max = na
+__obs_a_max := matrix.max(maA)
+var float __obs_a_median = na
+__obs_a_median := matrix.median(maA)
+
+// B: na-embedded 2x2(close[15] — sample10 10바 범위 밖) + 유효 3개 — 홀수 개 median(가운데 값).
+mbB = matrix.new<float>(2, 2, 0.0)
+matrix.set(mbB, 0, 0, open + 0.0)
+matrix.set(mbB, 0, 1, close[15])
+matrix.set(mbB, 1, 0, high + 0.0)
+matrix.set(mbB, 1, 1, low + 0.0)
+var float __obs_b_sum = na
+__obs_b_sum := matrix.sum(mbB)
+var float __obs_b_avg = na
+__obs_b_avg := matrix.avg(mbB)
+var float __obs_b_min = na
+__obs_b_min := matrix.min(mbB)
+var float __obs_b_max = na
+__obs_b_max := matrix.max(mbB)
+var float __obs_b_median = na
+__obs_b_median := matrix.median(mbB)
+
+// C: all-na 1x2 — sum만 0(Python sum([])==0), avg/min/max/median은 na(array_stats.pine C그룹과
+// 동일한 갈림).
+mcC = matrix.new<float>(1, 2, 0.0)
+matrix.set(mcC, 0, 0, close[15])
+matrix.set(mcC, 0, 1, close[16])
+var float __obs_c_sum = na
+__obs_c_sum := matrix.sum(mcC)
+var float __obs_c_avg = na
+__obs_c_avg := matrix.avg(mcC)
+var float __obs_c_min = na
+__obs_c_min := matrix.min(mcC)
+var float __obs_c_max = na
+__obs_c_max := matrix.max(mcC)
+var float __obs_c_median = na
+__obs_c_median := matrix.median(mcC)
+
+// D: 유효값 1개 + na 1개 — sum/avg/min/max/median 전부 그 단일 값과 같아야 함.
+mdD = matrix.new<float>(1, 2, 0.0)
+matrix.set(mdD, 0, 0, close + 0.0)
+matrix.set(mdD, 0, 1, close[15])
+var float __obs_d_sum = na
+__obs_d_sum := matrix.sum(mdD)
+var float __obs_d_avg = na
+__obs_d_avg := matrix.avg(mdD)
+var float __obs_d_min = na
+__obs_d_min := matrix.min(mdD)
+var float __obs_d_max = na
+__obs_d_max := matrix.max(mdD)
+var float __obs_d_median = na
+__obs_d_median := matrix.median(mdD)
+
+// E: mode 동률 — 컴파일타임 리터럴(2.0/1.0 둘 다 2회, 3.0 1회 — 2.0이 먼저 등장해 동률 승자).
+meE = matrix.new<float>(1, 5, 0.0)
+matrix.set(meE, 0, 0, 2.0)
+matrix.set(meE, 0, 1, 1.0)
+matrix.set(meE, 0, 2, 1.0)
+matrix.set(meE, 0, 3, 2.0)
+matrix.set(meE, 0, 4, 3.0)
+var float __obs_e_mode = na
+__obs_e_mode := matrix.mode(meE)
+
+// F: mode 무동률 — close 2회 + open 1회(sample10은 매 바 open != close) → mode는 매 바 close 추종.
+mfF = matrix.new<float>(1, 3, 0.0)
+matrix.set(mfF, 0, 0, close + 0.0)
+matrix.set(mfF, 0, 1, close + 0.0)
+matrix.set(mfF, 0, 2, open + 0.0)
+var float __obs_f_mode = na
+__obs_f_mode := matrix.mode(mfF)

@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Perf Metrics")
+var metrics = map.new<string, float>()
+var float cumReturn = 0.0
+chg = ta.change(close, 1)
+cumReturn := cumReturn + nz(chg, 0.0)
+map.put(metrics, "cumReturn", cumReturn)
+map.put(metrics, "lastChange", nz(chg, 0.0))
+map.put(metrics, "avgPrice", ta.sma(close, 5))
+cr = map.get(metrics, "cumReturn", 0.0)
+plot(cr, "CumRet")

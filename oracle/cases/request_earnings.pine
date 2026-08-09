@@ -1,0 +1,16 @@
+//@version=5
+indicator("request_earnings")
+// request.earnings(신규, C397 — wild kwarg 블랑켓 잔여 94건 재세분류 1위, ignore_invalid_symbol=
+// 21건/gaps= 3건 = 24건). pine2py wavealgo/__init__.py L130-132 request_earnings(ticker=None,
+// field=None, gaps=False, lookahead=False, **kwargs)가 dividends/splits(C239)와 완전히 동일한
+// 형태의 순수 스텁(인자 전부 무시, 항상 0.0 반환) — corpus 최다빈도 폼(위치 4개 + trailing
+// ignore_invalid_symbol=), 전체 키워드 폼, field 상수 3종(actual/estimate/standardized), 0-인자
+// 호출까지 전 갈래 관측.
+var float __obs_v1 = na
+__obs_v1 := request.earnings(syminfo.tickerid, earnings.actual, barmerge.gaps_on, barmerge.lookahead_on, ignore_invalid_symbol = true)
+var float __obs_v2 = na
+__obs_v2 := request.earnings(ticker = syminfo.tickerid, field = earnings.estimate, gaps = barmerge.gaps_off, lookahead = barmerge.lookahead_off, ignore_invalid_symbol = true)
+var float __obs_v3 = na
+__obs_v3 := request.earnings(syminfo.tickerid, earnings.standardized)
+var float __obs_bare = na
+__obs_bare := request.earnings()

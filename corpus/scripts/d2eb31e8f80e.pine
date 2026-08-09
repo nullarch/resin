@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Neg Idx")
+val = close[0]
+val1 = nz(close[1], close)
+val2 = nz(close[5], close)
+avg = (val + val1 + val2) / 3
+plot(avg, "Avg")

@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Math Comp")
+sqrtClose = math.sqrt(close)
+logClose = math.log(close)
+sinVal = math.sin(close / 100)
+absChange = math.abs(close - close[1])
+maxHL = math.max(high, high[1])
+minHL = math.min(low, low[1])
+roundVal = math.round(close * 100) / 100
+composite = sqrtClose + logClose * 0.1 + sinVal
+plot(composite, "C")

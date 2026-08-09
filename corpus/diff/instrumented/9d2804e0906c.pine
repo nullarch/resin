@@ -1,0 +1,18 @@
+//@version=5
+indicator("UpperTailDep")
+var int jointExceed = 0
+var int closeExceed = 0
+smaC = nz(ta.sma(close, 5), close)
+smaV = nz(ta.sma(volume, 5), volume)
+threshC = smaC + 2.0
+threshV = smaV + 100.0
+cAbove = close > threshC ? true : false
+vAbove = volume > threshV ? true : false
+if cAbove
+    closeExceed := closeExceed + 1
+if cAbove and vAbove
+    jointExceed := jointExceed + 1
+tailDep = closeExceed > 0 ? float(jointExceed) / float(closeExceed) : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := tailDep
+plot(tailDep, "UTD")

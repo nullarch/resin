@@ -1,0 +1,3 @@
+//@version=5
+indicator("Test")
+maType = input.enum("SMA", "MA Type", options=["SMA", "EMA", "WMA"])

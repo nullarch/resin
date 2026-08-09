@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("While Conv")
+sma_val = ta.sma(close, 10)
+var float approx = 100.0
+count = 0
+while count < 5
+    approx := (approx + sma_val) / 2.0
+    count += 1
+var float __obs_plot0 = na
+__obs_plot0 := approx
+plot(approx)

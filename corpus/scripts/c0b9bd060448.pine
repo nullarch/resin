@@ -1,0 +1,7 @@
+//@version=5
+indicator("Salinity Gradient")
+surfaceSalinity = close / high * 35.0
+deepSalinity = close / low * 35.0
+gradient = deepSalinity - surfaceSalinity
+var float maxGradient = 0.0
+maxGradient := math.max(maxGradient, gradient)

@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Parts")
+p1 = close > open ? "UP" : "DN"
+p2 = close > ta.sma(close, 3) ? "TREND" : "RANGE"
+p3 = nz(ta.rsi(close, 3), 50.0) > 50 ? "BULL" : "BEAR"
+combined = p1 + "|" + p2 + "|" + p3
+allBull = combined == "UP|TREND|BULL"
+plot(allBull ? 1 : 0, "All")

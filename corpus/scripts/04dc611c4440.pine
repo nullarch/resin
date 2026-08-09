@@ -1,0 +1,10 @@
+//@version=5
+indicator("FE01")
+var float accum = 0.0
+safeDelta(a, b) =>
+    math.abs(a - b)
+prevC = not na(close[1]) ? close[1] : close
+total = 0.0
+for i = 1 to 3
+    total := total + safeDelta(close, prevC)
+accum := accum + (total > 5 ? 1.0 : 0.0)

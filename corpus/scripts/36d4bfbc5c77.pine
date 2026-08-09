@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Vol RSI")
+rsiVal = ta.rsi(close, 3)
+avgVol = ta.sma(volume, 5)
+highVol = volume > avgVol
+signal = highVol and rsiVal < 30 ? 1 : highVol and rsiVal > 70 ? -1 : 0
+var int sigCount = 0
+if signal != 0
+    sigCount := sigCount + 1
+plot(signal, "Signal")

@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Color RGB")
+rsiVal = ta.rsi(close, 3)
+r = rsiVal > 50 ? 0 : 255
+g = rsiVal > 50 ? 255 : 0
+clr = color.rgb(r, g, 0, 20)
+var float __obs_plot0 = na
+__obs_plot0 := rsiVal
+plot(rsiVal, "RSI", color=clr)

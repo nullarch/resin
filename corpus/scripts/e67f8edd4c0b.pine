@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Multi State")
+var float sumClose = 0.0
+var float sumVolume = 0.0
+var int barCount = 0
+var float vwap_ = 0.0
+sumClose := sumClose + close * volume
+sumVolume := sumVolume + volume
+barCount := barCount + 1
+vwap_ := sumVolume > 0 ? sumClose / sumVolume : close
+plot(vwap_, "VWAP Manual")

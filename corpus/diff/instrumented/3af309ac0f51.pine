@@ -1,0 +1,11 @@
+//@version=5
+indicator("ForIn Array TA")
+lengths = array.from(3, 5, 7)
+var float total = 0.0
+total := 0.0
+for length in lengths
+    s = ta.sma(close, length)
+    total := total + nz(s)
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

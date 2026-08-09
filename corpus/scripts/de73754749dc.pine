@@ -1,0 +1,7 @@
+//@version=5
+indicator("Input TA")
+len = input.int(3, "Length")
+src = input.source(close, "Source")
+sma_ = ta.sma(src, len)
+ema_ = ta.ema(src, len)
+diff = sma_ - ema_

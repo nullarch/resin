@@ -1,0 +1,57 @@
+//@version=5
+indicator("Squeeze Momentum Oscillator")
+// 패턴: 실전 지표 재현(ROADMAP P3, LazyBear Squeeze Momentum Indicator [SQZMOM_LB] 커뮤니티
+// 인디케이터 이식). WaveTrend(C187, e2e_wavetrend.pine)와 달리 이 스크립트는 이미 개별 검증된
+// 다중 반환 빌트인(ta.bb/ta.kc, e2e_bb.pine/e2e_kc.pine)을 그대로 재사용해 sqzOn/sqzOff/noSqz
+// 불리언 조합을 얹고, 그 위에 별개로 ta.highest/ta.lowest/ta.sma/math.avg/ta.linreg를 조합한 val
+// (모멘텀 히스토그램)을 계산한다 -- val 자체는 bb/kc에 의존하지 않는 독립 조각이라 그 채널은
+// 표준 compareToGolden으로 바별 정확 일치를 기대할 수 있다. 단 ta.kc(useTrueRange=true)는
+// ta.atr 워밍업이 basis까지 전파되는 기존 divergence(DIVERGENCES.md #9, e2e_kc.test.ts가 이미
+// 문서화한 "골든보다 pine2js가 한 바 먼저 유효값을 냄")를 그대로 물려받으므로, basisKC/upperKC/
+// lowerKC와 그 값에서 파생되는 sqzOn/sqzOff/noSqz 채널은 hand-verified로 분리 검증한다
+// (compareToGolden onlyKeys로 제외, e2e_wavetrend.test.ts C187 패턴 재사용). lengthBB=lengthKC=3/
+// multBB=2.0(e2e_bb.pine과 동일 파라미터)/multKC=1.5(LazyBear 기본값)로 sample10.json 10바 안에서
+// val/bb/kc 전부 워밍업 이후 유효 구간을 확보한다.
+lengthBB = input.int(3, "BB Length")
+multBB = input.float(2.0, "BB Mult")
+lengthKC = input.int(3, "KC Length")
+multKC = input.float(1.5, "KC Mult")
+useTrueRange = input.bool(true, "Use TrueRange (KC)")
+
+[basisBB, upperBB, lowerBB] = ta.bb(close, lengthBB, multBB)
+[basisKC, upperKC, lowerKC] = ta.kc(close, lengthKC, multKC, useTrueRange)
+
+sqzOn = (lowerBB > lowerKC) and (upperBB < upperKC)
+sqzOff = (lowerBB < lowerKC) and (upperBB > upperKC)
+noSqz = (sqzOn == false) and (sqzOff == false)
+
+hh = ta.highest(high, lengthKC)
+ll = ta.lowest(low, lengthKC)
+avgHL = math.avg(hh, ll)
+avgAll = math.avg(avgHL, ta.sma(close, lengthKC))
+val = ta.linreg(close - avgAll, lengthKC, 0)
+
+plot(val, "Val")
+plot(basisBB, "BB Basis")
+plot(basisKC, "KC Basis")
+
+var float __obs_val = na
+var float __obs_basisBB = na
+var float __obs_upperBB = na
+var float __obs_lowerBB = na
+var float __obs_basisKC = na
+var float __obs_upperKC = na
+var float __obs_lowerKC = na
+var float __obs_sqzOn = na
+var float __obs_sqzOff = na
+var float __obs_noSqz = na
+__obs_val := val
+__obs_basisBB := basisBB
+__obs_upperBB := upperBB
+__obs_lowerBB := lowerBB
+__obs_basisKC := basisKC
+__obs_upperKC := upperKC
+__obs_lowerKC := lowerKC
+__obs_sqzOn := sqzOn ? 1.0 : 0.0
+__obs_sqzOff := sqzOff ? 1.0 : 0.0
+__obs_noSqz := noSqz ? 1.0 : 0.0

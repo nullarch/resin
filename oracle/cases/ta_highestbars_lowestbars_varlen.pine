@@ -1,0 +1,22 @@
+//@version=5
+indicator("ta_highestbars_lowestbars_varlen")
+// ta.highestbars/ta.lowestbars series(가변) length 오라클 검증(배치25 (4) 세 번째, C549 —
+// runtime/ta.ts highestbarsVarLen/lowestbarsVarLen). pine2py highest.py의 highestbars()/
+// lowestbars()는 highest()와 동일한 무상태 재스캔이라 series length 오라클이 성립한다.
+// len1 = 5 - (bar_index % 5): sample10.json 10바에서 5,4,3,2,1 순환 — 바 0/1은 워밍업 NaN,
+// 바 2~9는 정상 구간(동률 없는 close 소스로 오프셋 자체를 검증).
+len1 = 5 - (bar_index % 5)
+var float __obs_hb1 = na
+var float __obs_lb1 = na
+__obs_hb1 := ta.highestbars(close, len1)
+__obs_lb1 := ta.lowestbars(close, len1)
+
+// len2 = bar_index % 3: 0,1,2 순환 — 0이 되는 바(0/3/6/9)에서 length<1 분기(pine2py
+// highestbars() range(0) 빈 루프로 max_idx=0이 남아 -max_idx=0 반환 — highest의 -inf와 다른
+// 정의된 동작)를 오라클로 직접 검증. source는 인라인 표현식(high - low)이라 Series 백업 없이
+// 콜사이트 자체 히스토리 버퍼만으로 동작함을 함께 확인.
+len2 = bar_index % 3
+var float __obs_hb2 = na
+var float __obs_lb2 = na
+__obs_hb2 := ta.highestbars(high - low, len2)
+__obs_lb2 := ta.lowestbars(high - low, len2)

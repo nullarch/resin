@@ -1,0 +1,6 @@
+//@version=5
+indicator("Multi Plot")
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+plot(sma3, title="SMA")
+plot(ema5, title="EMA")

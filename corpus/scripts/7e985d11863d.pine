@@ -1,0 +1,8 @@
+//@version=5
+indicator("Multiline ternary")
+sma5 = ta.sma(close, 5)
+result = not na(sma5) ?
+    close > nz(sma5) ?
+        "above" :
+        "below" :
+    "unknown"

@@ -1,0 +1,9 @@
+//@version=5
+indicator("UPDATE SET")
+var float max_seen = 0.0
+var float min_seen = 99999.0
+if close > max_seen
+    max_seen := close
+if close < min_seen
+    min_seen := close
+spread = max_seen - min_seen

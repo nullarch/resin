@@ -1,0 +1,10 @@
+//@version=5
+indicator("Switch String")
+var string ma_type = "EMA"
+float ma_val = switch ma_type
+    "SMA" => ta.sma(close, 5)
+    "EMA" => ta.ema(close, 5)
+    => close
+var float result = 0.0
+result := nz(ma_val, 0.0)
+plot(result)

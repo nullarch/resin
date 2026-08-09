@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Williams %R")
+hi5 = ta.highest(high, 5)
+lo5 = ta.lowest(low, 5)
+wr = hi5 != lo5 ? (hi5 - close) / (hi5 - lo5) * -100 : -50.0
+overbought = wr > -20
+oversold = wr < -80
+plot(wr, "WR")

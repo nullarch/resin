@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("OHLCV Str")
+o = str.tostring(open, "#.#")
+h = str.tostring(high, "#.#")
+l = str.tostring(low, "#.#")
+c = str.tostring(close, "#.#")
+v = str.tostring(volume)
+summary = "O" + o + " H" + h + " L" + l + " C" + c + " V" + v
+len = str.length(summary)
+var float __obs_plot0 = na
+__obs_plot0 := len
+plot(len, "Len")

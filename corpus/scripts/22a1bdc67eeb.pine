@@ -1,0 +1,11 @@
+//@version=5
+indicator("Hilbert11")
+var float prevDet = 0.0
+var float prevPrevDet = 0.0
+trend = nz(ta.sma(close, 5), close)
+detrended = close - trend
+hilbert = 0.5 * detrended + 0.25 * prevDet - 0.25 * prevPrevDet
+prevPrevDet := prevDet
+prevDet := detrended
+amplitude = math.sqrt(detrended * detrended + hilbert * hilbert)
+plot(amplitude, "amp")

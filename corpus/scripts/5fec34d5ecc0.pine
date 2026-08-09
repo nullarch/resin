@@ -1,0 +1,5 @@
+//@version=5
+indicator("WhileSafe")
+x = 0
+while x < 5
+    x := x + 1

@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Str Rank")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+score = (close > sma3 ? 1 : 0) + (sma3 > sma5 ? 1 : 0) + (rsi > 55 ? 1 : 0)
+rank = switch score
+    3 => "top"
+    2 => "above_avg"
+    1 => "below_avg"
+    => "bottom"
+isTop = rank == "top"
+plot(isTop ? 1 : 0, "T")

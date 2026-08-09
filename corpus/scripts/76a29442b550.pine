@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Candle Met")
+var cm = map.new<string, float>()
+body = math.abs(close - open)
+totalRange = high - low
+map.put(cm, "body", body)
+map.put(cm, "range", totalRange)
+map.put(cm, "body_pct", totalRange > 0 ? body / totalRange : 0.0)
+map.put(cm, "upper_wick_pct", totalRange > 0 ? (high - math.max(open, close)) / totalRange : 0.0)
+bPct = map.get(cm, "body_pct", 0.0)
+plot(bPct, "BPct")

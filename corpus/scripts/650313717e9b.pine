@@ -1,0 +1,8 @@
+//@version=5
+indicator("MultiSMA")
+var float diff = 0
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+sma7 = ta.sma(close, 7)
+if not na(sma3) and not na(sma5) and not na(sma7)
+    diff := sma3 - sma7

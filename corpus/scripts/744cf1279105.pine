@@ -1,0 +1,10 @@
+//@version=5
+indicator("UDT Copy")
+var float result = 0.0
+
+type Data
+    float val = 0.0
+
+d1 = Data.new(42.0)
+d2 = Data.copy(d1)
+result := d2.val

@@ -1,0 +1,17 @@
+//@version=5
+indicator("Renko Like")
+brickSize = ta.atr(5)
+var float lastBrick = 0.0
+var int brickCount = 0
+if not na(brickSize) and brickSize > 0
+    if lastBrick == 0.0
+        lastBrick := close
+    if close >= lastBrick + brickSize
+        brickCount := brickCount + 1
+        lastBrick := lastBrick + brickSize
+    else if close <= lastBrick - brickSize
+        brickCount := brickCount - 1
+        lastBrick := lastBrick - brickSize
+var float __obs_plot0 = na
+__obs_plot0 := brickCount
+plot(brickCount)

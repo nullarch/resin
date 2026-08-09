@@ -1,0 +1,33 @@
+//@version=5
+indicator("array_new_named_drawing")
+
+// C236: array.new_label/new_line/new_box/new_table/new_linefill(size, initial_value) -- v4식
+// 명명 typed array 생성자(drawing 핸들 전용, `array.new<label>()` 같은 제네릭 문법(C230)보다
+// 오래된 형태). corpus 5건 전부 size=0 관용구(a8a69da599d1/860a11be9871/87568dd17b10/
+// 7534fb0deb07/bbc2e320717f). pine2py codegen.py L1497-1501이 5종 전부 array.new<T> 제네릭과
+// 동일한 무타입 단일 생성자 wa.builtins.array.new로 라우팅하므로 array_new_generic_types.pine과
+// 같은 관측 전략(size만 비교 -- 원소가 참조형 핸들이라 필드 접근은 오라클 대상 아님) 재사용.
+
+var labels = array.new_label(0)
+var lines = array.new_line(0)
+var boxes = array.new_box(0)
+var tables = array.new_table(0)
+var fills = array.new_linefill(0)
+
+var float __obs_labels_size0 = na
+__obs_labels_size0 := array.size(labels)
+var float __obs_lines_size0 = na
+__obs_lines_size0 := array.size(lines)
+var float __obs_boxes_size0 = na
+__obs_boxes_size0 := array.size(boxes)
+var float __obs_tables_size0 = na
+__obs_tables_size0 := array.size(tables)
+var float __obs_fills_size0 = na
+__obs_fills_size0 := array.size(fills)
+
+// push round trip (corpus bbc2e320717f 실사용 패턴 -- label.new()로 만든 실제 핸들을 push)
+if close > open
+    lbl = label.new(bar_index, high, "up")
+    array.push(labels, lbl)
+var float __obs_labels_size_after = na
+__obs_labels_size_after := array.size(labels)

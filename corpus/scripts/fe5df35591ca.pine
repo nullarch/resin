@@ -1,0 +1,3 @@
+//@version=5
+indicator("ColorPlot")
+plot(close, color=#00FF00)

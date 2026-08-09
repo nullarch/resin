@@ -1,0 +1,8 @@
+//@version=5
+indicator("KyleLambda")
+prevClose = nz(close[1], close)
+priceChange = math.abs(close - prevClose)
+kyleLam = volume > 0 ? priceChange / float(volume) : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := kyleLam * 1000.0
+plot(kyleLam * 1000.0, "KL")

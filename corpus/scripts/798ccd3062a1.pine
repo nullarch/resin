@@ -1,0 +1,8 @@
+//@version=5
+indicator("Sliding Window")
+var window = array.new_float(0)
+array.push(window, close)
+if array.size(window) > 3
+    array.shift(window)
+var float windowAvg = 0.0
+windowAvg := array.avg(window)

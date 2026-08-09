@@ -1,0 +1,10 @@
+//@version=5
+indicator("Array Push Pop")
+arr = array.new<float>(0)
+array.push(arr, 10.0)
+array.push(arr, 20.0)
+array.push(arr, 30.0)
+float last = array.pop(arr)
+var float result = 0.0
+result := last + float(array.size(arr))
+plot(result)

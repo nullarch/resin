@@ -1,0 +1,116 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:t1": "pine_fn.<locals>.TrendInfo(dir=<Direction.Flat: 'Flat'>, strength=0.0)",
+   "var:__obs_t1_is_flat": true,
+   "var:t2": "pine_fn.<locals>.TrendInfo(dir=<Direction.Up: 'Up'>, strength=1)",
+   "var:__obs_t2_is_up": true,
+   "var:__obs_t2_is_down": false,
+   "var:__obs_t2_strength": 1,
+   "var:t3": "pine_fn.<locals>.TrendInfo(dir=<Direction.Down: 'Down'>, strength=5.0)",
+   "var:__obs_t3_is_down": true
+  },
+  {
+   "var:t1": "pine_fn.<locals>.TrendInfo(dir=<Direction.Flat: 'Flat'>, strength=0.0)",
+   "var:__obs_t1_is_flat": false,
+   "var:t2": "pine_fn.<locals>.TrendInfo(dir=<Direction.Up: 'Up'>, strength=1)",
+   "var:__obs_t2_is_up": true,
+   "var:__obs_t2_is_down": false,
+   "var:__obs_t2_strength": 1,
+   "var:t3": "pine_fn.<locals>.TrendInfo(dir=<Direction.Down: 'Down'>, strength=5.0)",
+   "var:__obs_t3_is_down": false
+  },
+  {
+   "var:t1": "pine_fn.<locals>.TrendInfo(dir=<Direction.Flat: 'Flat'>, strength=0.0)",
+   "var:__obs_t1_is_flat": false,
+   "var:t2": "pine_fn.<locals>.TrendInfo(dir=<Direction.Up: 'Up'>, strength=1)",
+   "var:__obs_t2_is_up": true,
+   "var:__obs_t2_is_down": false,
+   "var:__obs_t2_strength": 1,
+   "var:t3": "pine_fn.<locals>.TrendInfo(dir=<Direction.Down: 'Down'>, strength=5.0)",
+   "var:__obs_t3_is_down": false
+  },
+  {
+   "var:t1": "pine_fn.<locals>.TrendInfo(dir=<Direction.Flat: 'Flat'>, strength=0.0)",
+   "var:__obs_t1_is_flat": false,
+   "var:t2": "pine_fn.<locals>.TrendInfo(dir=<Direction.Up: 'Up'>, strength=1)",
+   "var:__obs_t2_is_up": true,
+   "var:__obs_t2_is_down": false,
+   "var:__obs_t2_strength": 1,
+   "var:t3": "pine_fn.<locals>.TrendInfo(dir=<Direction.Down: 'Down'>, strength=5.0)",
+   "var:__obs_t3_is_down": false
+  },
+  {
+   "var:t1": "pine_fn.<locals>.TrendInfo(dir=<Direction.Flat: 'Flat'>, strength=0.0)",
+   "var:__obs_t1_is_flat": false,
+   "var:t2": "pine_fn.<locals>.TrendInfo(dir=<Direction.Up: 'Up'>, strength=1)",
+   "var:__obs_t2_is_up": true,
+   "var:__obs_t2_is_down": false,
+   "var:__obs_t2_strength": 1,
+   "var:t3": "pine_fn.<locals>.TrendInfo(dir=<Direction.Down: 'Down'>, strength=5.0)",
+   "var:__obs_t3_is_down": false
+  },
+  {
+   "var:t1": "pine_fn.<locals>.TrendInfo(dir=<Direction.Flat: 'Flat'>, strength=0.0)",
+   "var:__obs_t1_is_flat": false,
+   "var:t2": "pine_fn.<locals>.TrendInfo(dir=<Direction.Up: 'Up'>, strength=1)",
+   "var:__obs_t2_is_up": true,
+   "var:__obs_t2_is_down": false,
+   "var:__obs_t2_strength": 1,
+   "var:t3": "pine_fn.<locals>.TrendInfo(dir=<Direction.Down: 'Down'>, strength=5.0)",
+   "var:__obs_t3_is_down": false
+  },
+  {
+   "var:t1": "pine_fn.<locals>.TrendInfo(dir=<Direction.Flat: 'Flat'>, strength=0.0)",
+   "var:__obs_t1_is_flat": false,
+   "var:t2": "pine_fn.<locals>.TrendInfo(dir=<Direction.Up: 'Up'>, strength=1)",
+   "var:__obs_t2_is_up": true,
+   "var:__obs_t2_is_down": false,
+   "var:__obs_t2_strength": 1,
+   "var:t3": "pine_fn.<locals>.TrendInfo(dir=<Direction.Down: 'Down'>, strength=5.0)",
+   "var:__obs_t3_is_down": false
+  },
+  {
+   "var:t1": "pine_fn.<locals>.TrendInfo(dir=<Direction.Flat: 'Flat'>, strength=0.0)",
+   "var:__obs_t1_is_flat": false,
+   "var:t2": "pine_fn.<locals>.TrendInfo(dir=<Direction.Up: 'Up'>, strength=1)",
+   "var:__obs_t2_is_up": true,
+   "var:__obs_t2_is_down": false,
+   "var:__obs_t2_strength": 1,
+   "var:t3": "pine_fn.<locals>.TrendInfo(dir=<Direction.Down: 'Down'>, strength=5.0)",
+   "var:__obs_t3_is_down": false
+  },
+  {
+   "var:t1": "pine_fn.<locals>.TrendInfo(dir=<Direction.Flat: 'Flat'>, strength=0.0)",
+   "var:__obs_t1_is_flat": false,
+   "var:t2": "pine_fn.<locals>.TrendInfo(dir=<Direction.Up: 'Up'>, strength=1)",
+   "var:__obs_t2_is_up": true,
+   "var:__obs_t2_is_down": false,
+   "var:__obs_t2_strength": 1,
+   "var:t3": "pine_fn.<locals>.TrendInfo(dir=<Direction.Down: 'Down'>, strength=5.0)",
+   "var:__obs_t3_is_down": false
+  },
+  {
+   "var:t1": "pine_fn.<locals>.TrendInfo(dir=<Direction.Flat: 'Flat'>, strength=0.0)",
+   "var:__obs_t1_is_flat": false,
+   "var:t2": "pine_fn.<locals>.TrendInfo(dir=<Direction.Up: 'Up'>, strength=1)",
+   "var:__obs_t2_is_up": true,
+   "var:__obs_t2_is_down": false,
+   "var:__obs_t2_strength": 1,
+   "var:t3": "pine_fn.<locals>.TrendInfo(dir=<Direction.Down: 'Down'>, strength=5.0)",
+   "var:__obs_t3_is_down": false
+  }
+ ],
+ "finalVarState": {
+  "t1": "pine_fn.<locals>.TrendInfo(dir=<Direction.Flat: 'Flat'>, strength=0.0)",
+  "__obs_t1_is_flat": false,
+  "t2": "pine_fn.<locals>.TrendInfo(dir=<Direction.Up: 'Up'>, strength=1)",
+  "__obs_t2_is_up": true,
+  "__obs_t2_is_down": false,
+  "__obs_t2_strength": 1,
+  "t3": "pine_fn.<locals>.TrendInfo(dir=<Direction.Down: 'Down'>, strength=5.0)",
+  "__obs_t3_is_down": false
+ }
+}

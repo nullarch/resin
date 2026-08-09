@@ -1,0 +1,33 @@
+//@version=5
+strategy("Torture 10")
+enum Trend
+    Up = 1
+    Down = 2
+    Sideways = 3
+type Position
+    float size = 0.0
+    float score = 0.0
+method isActive(Position this) =>
+    this.size > 0.0
+var float totalPnL = 0.0
+float sma3 = nz(ta.sma(close, 3), close)
+float sma5 = nz(ta.sma(close, 5), close)
+float rsiVal = nz(ta.rsi(close, 5), 50.0)
+float atrVal = nz(ta.atr(3), 1.0)
+float trend = switch
+    sma3 > sma5 and rsiVal > 50 => 1.0
+    sma3 < sma5 and rsiVal < 50 => 2.0
+    => 3.0
+weights = array.new<float>(0)
+for idx = 0 to 3
+    weights.push(1.0 / (idx + 1))
+float wSum = 0.0
+for w in weights
+    wSum := wSum + w
+float normalizedScore = wSum > 0 ? rsiVal / 100.0 * wSum : 0.0
+pos = Position.new(normalizedScore > 1.0 ? 1.0 : 0.0, normalizedScore)
+if trend == 1.0 and pos.isActive()
+    strategy.entry("TrendL", strategy.long)
+if trend == 2.0
+    strategy.close("TrendL")
+totalPnL := totalPnL + (close - open) * pos.size

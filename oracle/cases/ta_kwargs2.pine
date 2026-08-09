@@ -1,0 +1,24 @@
+//@version=5
+indicator("ta_kwargs2")
+// ta.rma/ta.wma/ta.vwma/ta.stdev(source=/length=) 키워드 인자 오라클 검증(C473, next_hint(C472)
+// 지시대로 재노출된 wild "SMMA" 클러스터 9528a6345fa3.pine 세분화 결과 — 이 4종 전부가 완전 키워드
+// 폼으로 호출됨). pine2py wavealgo/ta/rma.py·wma.py·vwma.py·stdev.py의 첫 두 파라미터 이름이
+// 정확히 "source"/"length"(TV 공식 이름과 일치)라 sma/ema/rsi(ta_kwargs.pine, C400)와 동일한
+// 패턴으로 진짜 오라클 대조가 가능하다. 완전 키워드 폼과 위치 폼을 모두 관측해 두 경로가 같은 값을
+// 내는지 함께 확인한다.
+var float __obs_rma_kw = na
+var float __obs_rma_pos = na
+var float __obs_wma_kw = na
+var float __obs_wma_pos = na
+var float __obs_vwma_kw = na
+var float __obs_vwma_pos = na
+var float __obs_stdev_kw = na
+var float __obs_stdev_pos = na
+__obs_rma_kw := ta.rma(source=close, length=3)
+__obs_rma_pos := ta.rma(close, 3)
+__obs_wma_kw := ta.wma(source=close, length=3)
+__obs_wma_pos := ta.wma(close, 3)
+__obs_vwma_kw := ta.vwma(source=close, length=3)
+__obs_vwma_pos := ta.vwma(close, 3)
+__obs_stdev_kw := ta.stdev(source=close, length=3)
+__obs_stdev_pos := ta.stdev(close, 3)

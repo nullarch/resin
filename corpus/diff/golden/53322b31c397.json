@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:crossings": 0,
+   "var:prevCycle": 0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:crossings": 0,
+   "var:prevCycle": 0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:crossings": 0,
+   "var:prevCycle": -1.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:crossings": 1,
+   "var:prevCycle": 1.3333333333000041,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:crossings": 1,
+   "var:prevCycle": 2.333333333300004,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:crossings": 1,
+   "var:prevCycle": 0.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:crossings": 1,
+   "var:prevCycle": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:crossings": 1,
+   "var:prevCycle": 2.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:crossings": 1,
+   "var:prevCycle": 0.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:crossings": 1,
+   "var:prevCycle": 1.0,
+   "var:__obs_plot0": 1.0
+  }
+ ],
+ "finalVarState": {
+  "crossings": 1,
+  "prevCycle": 1.0,
+  "__obs_plot0": 1.0
+ }
+}

@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_tsi": "NaN"
+  },
+  {
+   "var:__obs_tsi": "NaN"
+  },
+  {
+   "var:__obs_tsi": "NaN"
+  },
+  {
+   "var:__obs_tsi": "NaN"
+  },
+  {
+   "var:__obs_tsi": 0.6
+  },
+  {
+   "var:__obs_tsi": 0.7777777778
+  },
+  {
+   "var:__obs_tsi": 0.873015873
+  },
+  {
+   "var:__obs_tsi": 0.3220815752
+  },
+  {
+   "var:__obs_tsi": 0.5707660916
+  },
+  {
+   "var:__obs_tsi": 0.7151485311
+  }
+ ],
+ "finalVarState": {
+  "__obs_tsi": 0.7151485311
+ }
+}

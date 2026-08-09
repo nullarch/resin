@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_result": false
+  },
+  {
+   "var:__obs_result": true
+  },
+  {
+   "var:__obs_result": true
+  },
+  {
+   "var:__obs_result": true
+  },
+  {
+   "var:__obs_result": true
+  },
+  {
+   "var:__obs_result": true
+  },
+  {
+   "var:__obs_result": false
+  },
+  {
+   "var:__obs_result": true
+  },
+  {
+   "var:__obs_result": false
+  },
+  {
+   "var:__obs_result": false
+  }
+ ],
+ "finalVarState": {
+  "__obs_result": false
+ }
+}

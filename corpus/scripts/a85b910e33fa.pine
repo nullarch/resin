@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("CrossReset")
+var float filterVal = 0.0
+sma3 = nz(ta.sma(close, 3), close)
+sma5 = nz(ta.sma(close, 5), close)
+crossed = ta.crossover(sma3, sma5)
+if crossed
+    filterVal := close
+else
+    filterVal := filterVal * 0.9 + close * 0.1
+plot(filterVal, "F")

@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Adapt Alpha")
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+volRatio = avgATR > 0 ? atr / avgATR : 1.0
+alpha = volRatio > 1.5 ? 0.5 : volRatio > 1.0 ? 0.3 : 0.1
+var float smooth = 0.0
+smooth := alpha * close + (1 - alpha) * smooth
+plot(smooth, "Smooth")

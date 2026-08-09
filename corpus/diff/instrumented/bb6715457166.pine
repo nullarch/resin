@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Abs Vals")
+changes = array.from(close - open, high - close, open - low)
+absVals = array.abs(changes)
+maxAbs = array.max(absVals)
+var float __obs_plot0 = na
+__obs_plot0 := maxAbs
+plot(maxAbs, "MaxAbs")

@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Run Stats")
+var float runMean = 0.0
+var float runM2 = 0.0
+var int n = 0
+n := n + 1
+delta = close - runMean
+runMean := runMean + delta / n
+delta2 = close - runMean
+runM2 := runM2 + delta * delta2
+runVar = n > 1 ? runM2 / (n - 1) : 0.0
+plot(runMean, "Mean")
+plot(runVar, "Var")

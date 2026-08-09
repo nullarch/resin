@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Run Avg")
+data = array.from(close, open, high, low)
+runSum = 0.0
+runAvg = 0.0
+count = 0
+for val in data
+    count := count + 1
+    runSum := runSum + float(val)
+    runAvg := runSum / count
+var float __obs_plot0 = na
+__obs_plot0 := runAvg
+plot(runAvg, "RunAvg")

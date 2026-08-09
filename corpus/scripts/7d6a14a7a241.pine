@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("MA Sig UDF")
+maSignal(float fast, float slow, float price) =>
+    spread = fast - slow
+    pricePos = price > fast ? 1.0 : price < slow ? -1.0 : 0.0
+    spread > 0 ? pricePos : -pricePos
+
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+sig = maSignal(sma3, sma5, close)
+plot(sig, "Sig")

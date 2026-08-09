@@ -1,0 +1,130 @@
+//@version=5
+indicator("matrix_pinv")
+
+// C104: matrix.* 열다섯 번째 슬라이스 — pinv(Moore-Penrose 유사역행렬, 행렬 대수 11종의 아홉 번째
+// 항목, 46/49 -> 47/49). pine2py pinv()(matrix.py L323-329)는 mt=transpose(m) 후 기본적으로
+// mult(mt, inv(mult(m, mt)))(오른쪽 유사역행렬 공식)를 시도하고, inv 내부에서 ValueError(singular)가
+// 나면 except로 mult(inv(mult(mt, m)), mt)(왼쪽 유사역행렬 공식)로 대체한다. pine2js는 예외를
+// 던지지 않는 아키텍처(GOAL.md)라 이미 구현된 rt.matrix.mult(C97)/rt.matrix.inv(C100)/
+// rt.matrix.transpose(C96)를 그대로 재호출하는 합성으로 이식(hma/linreg/stoch/cog/tsi/pow류 원칙의
+// matrix.* 재적용, C102 next_hint 예고대로) — inv가 singular에서 이미 null을 반환하므로
+// "mult(mt,inv(...))가 null이면 두 번째 공식으로 폴백"하는 조건 분기로 try/except를 대체.
+//
+// python 직접 실행 + node fuzz 666케이스(scratch/gen_pinv_cases.mjs+compare_pinv_fuzz.mjs, 정사각/
+// 와이드/톨 각 형태 60트라이얼 + 명시적 특이/degenerate 6종, 10% NaN 임베딩)로 착수 전 전수 검증
+// (전부 일치, crashAbsorbed=6). **핵심 발견**: rank(AA^T)=rank(A^TA)=rank(A) 항등식은 수학적으로
+// 항상 성립하지만, 우리 Gauss-Jordan의 정확-0 pivot 판정은 "일반적인"(구조적 관계가 없는) 톨/와이드
+// 행렬에서는 부동소수점 나눗셈 잔차 때문에 이 이론적 특이성을 검출하지 못한다(bar-derived 톨
+// 2x3/와이드 2x3 전부 formula1으로 성공, node로 10바 전수 확인) — 오직 행 사이에 **명시적** 정확
+// 스칼라배 관계(리터럴로 구성, 부동소수점 나눗셈 없이 곱셈/뺄셈만으로 정확히 0에 도달)가 있을 때만
+// 폴백(formula2)이 실제로 트리거된다(F그룹, [[1,2],[2,4],[3,5]] — row1=2*row0). 정사각 특이/랭크
+// 결핍 행렬은 두 공식 모두 같은 이유로 실패해(rank(A)<n이면 AA^T/A^TA 둘 다 특이) 크래시
+// (na 흡수, 오라클 트리거 불가 — runtime.test.ts hand-verified 대체). m===null/m=[]/m=[[]]도 동일.
+
+// A: 2x3 wide(bar-derived, full row rank) — formula1 성공, 결과 3x2 전부 관측.
+maA = matrix.new<float>(2, 3, 0.0)
+matrix.set(maA, 0, 0, open + 0.0)
+matrix.set(maA, 0, 1, high + 0.0)
+matrix.set(maA, 0, 2, low + 0.0)
+matrix.set(maA, 1, 0, close + 0.0)
+matrix.set(maA, 1, 1, open + 1.0)
+matrix.set(maA, 1, 2, low - 1.0)
+raA = matrix.pinv(maA)
+var float __obs_a00 = na
+__obs_a00 := matrix.get(raA, 0, 0)
+var float __obs_a01 = na
+__obs_a01 := matrix.get(raA, 0, 1)
+var float __obs_a10 = na
+__obs_a10 := matrix.get(raA, 1, 0)
+var float __obs_a11 = na
+__obs_a11 := matrix.get(raA, 1, 1)
+var float __obs_a20 = na
+__obs_a20 := matrix.get(raA, 2, 0)
+var float __obs_a21 = na
+__obs_a21 := matrix.get(raA, 2, 1)
+
+// B: 3x2 tall(bar-derived, full column rank) — node로 10바 전수 사전검증 결과 formula1로 성공
+// (톨이라고 항상 폴백이 트리거되는 게 아님, 위 주석 핵심 발견 참조), 결과 2x3 전부 관측.
+mbB = matrix.new<float>(3, 2, 0.0)
+matrix.set(mbB, 0, 0, open + 0.0)
+matrix.set(mbB, 0, 1, high + 0.0)
+matrix.set(mbB, 1, 0, low + 0.0)
+matrix.set(mbB, 1, 1, close + 0.0)
+matrix.set(mbB, 2, 0, open + 1.0)
+matrix.set(mbB, 2, 1, high - 1.0)
+rbB = matrix.pinv(mbB)
+var float __obs_b00 = na
+__obs_b00 := matrix.get(rbB, 0, 0)
+var float __obs_b01 = na
+__obs_b01 := matrix.get(rbB, 0, 1)
+var float __obs_b02 = na
+__obs_b02 := matrix.get(rbB, 0, 2)
+var float __obs_b10 = na
+__obs_b10 := matrix.get(rbB, 1, 0)
+var float __obs_b11 = na
+__obs_b11 := matrix.get(rbB, 1, 1)
+var float __obs_b12 = na
+__obs_b12 := matrix.get(rbB, 1, 2)
+
+// C: 2x2 square(bar-derived, invertible) — formula1 성공(정사각은 A^-1과 사실상 동치), 결과 2x2
+// 전부 관측.
+mcC = matrix.new<float>(2, 2, 0.0)
+matrix.set(mcC, 0, 0, open + 0.0)
+matrix.set(mcC, 0, 1, high + 0.0)
+matrix.set(mcC, 1, 0, low + 0.0)
+matrix.set(mcC, 1, 1, close + 0.0)
+rcC = matrix.pinv(mcC)
+var float __obs_c00 = na
+__obs_c00 := matrix.get(rcC, 0, 0)
+var float __obs_c01 = na
+__obs_c01 := matrix.get(rcC, 0, 1)
+var float __obs_c10 = na
+__obs_c10 := matrix.get(rcC, 1, 0)
+var float __obs_c11 = na
+__obs_c11 := matrix.get(rcC, 1, 1)
+
+// D: 2x3 wide(na-embedded, close[15] — sample10 10바 범위 밖이라 매 바 항상 na) — na 원소 하나가
+// mult/inv 연쇄를 타고 결과 전체(3x2)로 수렴하는지 확인.
+mdD = matrix.new<float>(2, 3, 0.0)
+matrix.set(mdD, 0, 0, open + 0.0)
+matrix.set(mdD, 0, 1, close[15])
+matrix.set(mdD, 0, 2, low + 0.0)
+matrix.set(mdD, 1, 0, close + 0.0)
+matrix.set(mdD, 1, 1, open + 1.0)
+matrix.set(mdD, 1, 2, low - 1.0)
+rdD = matrix.pinv(mdD)
+var float __obs_d00 = na
+__obs_d00 := matrix.get(rdD, 0, 0)
+var float __obs_d21 = na
+__obs_d21 := matrix.get(rdD, 2, 1)
+
+// E: 1x1(bar-derived) — trivial 역수.
+meE = matrix.new<float>(1, 1, 0.0)
+matrix.set(meE, 0, 0, close + 0.0)
+reE = matrix.pinv(meE)
+var float __obs_e00 = na
+__obs_e00 := matrix.get(reE, 0, 0)
+
+// F: 3x2 tall(리터럴, row1=2*row0 정확한 스칼라배 — 부동소수점 나눗셈 없이 곱셈/뺄셈만으로 AA^T의
+// 첫 pivot이 정확히 0에 도달) — formula1이 실제로 실패해(inv(mult(m,mt))가 null) formula2
+// (mult(inv(mult(mt,m)), mt))로 폴백하는 유일한 그룹, python 직접 실행으로 폴백 성공 확인.
+mfF = matrix.new<float>(3, 2, 0.0)
+matrix.set(mfF, 0, 0, 1.0)
+matrix.set(mfF, 0, 1, 2.0)
+matrix.set(mfF, 1, 0, 2.0)
+matrix.set(mfF, 1, 1, 4.0)
+matrix.set(mfF, 2, 0, 3.0)
+matrix.set(mfF, 2, 1, 5.0)
+rfF = matrix.pinv(mfF)
+var float __obs_f00 = na
+__obs_f00 := matrix.get(rfF, 0, 0)
+var float __obs_f01 = na
+__obs_f01 := matrix.get(rfF, 0, 1)
+var float __obs_f02 = na
+__obs_f02 := matrix.get(rfF, 0, 2)
+var float __obs_f10 = na
+__obs_f10 := matrix.get(rfF, 1, 0)
+var float __obs_f11 = na
+__obs_f11 := matrix.get(rfF, 1, 1)
+var float __obs_f12 = na
+__obs_f12 := matrix.get(rfF, 1, 2)

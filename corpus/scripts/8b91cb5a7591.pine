@@ -1,0 +1,31 @@
+//@version=5
+indicator("comprehensive 112")
+type Band
+    float upper = 0.0
+    float lower = 0.0
+enum Trend
+    Up = 1
+    Down = -1
+    Flat = 0
+calcBands(src, len, mult) =>
+    [mid, up, low] = ta.bb(src, len, mult)
+    Band.new(nz(up, 0.0), nz(low, 0.0))
+method width(Band b) =>
+    b.upper - b.lower
+var float maxWidth = 0.0
+var int trendBars = 0
+bands = calcBands(close, 5, 2.0)
+w = bands.width()
+sma5 = ta.sma(close, 5)
+ema3 = ta.ema(close, 3)
+rsiVal = ta.rsi(close, 5)
+trend = switch
+    not na(ema3) and not na(sma5) and ema3 > sma5 => Trend.Up
+    not na(ema3) and not na(sma5) and ema3 < sma5 => Trend.Down
+    => Trend.Flat
+arr = array.from(close, nz(sma5, 0.0), nz(ema3, 0.0))
+avgPrice = array.avg(arr)
+if w > maxWidth
+    maxWidth := w
+if trend == Trend.Up
+    trendBars := trendBars + 1

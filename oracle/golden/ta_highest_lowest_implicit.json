@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_hi_implicit": "NaN",
+   "var:__obs_lo_implicit": "NaN",
+   "var:__obs_hi_explicit_high": "NaN",
+   "var:__obs_lo_explicit_low": "NaN"
+  },
+  {
+   "var:__obs_hi_implicit": "NaN",
+   "var:__obs_lo_implicit": "NaN",
+   "var:__obs_hi_explicit_high": "NaN",
+   "var:__obs_lo_explicit_low": "NaN"
+  },
+  {
+   "var:__obs_hi_implicit": "NaN",
+   "var:__obs_lo_implicit": "NaN",
+   "var:__obs_hi_explicit_high": "NaN",
+   "var:__obs_lo_explicit_low": "NaN"
+  },
+  {
+   "var:__obs_hi_implicit": 104,
+   "var:__obs_lo_implicit": 99,
+   "var:__obs_hi_explicit_high": 104,
+   "var:__obs_lo_explicit_low": 99
+  },
+  {
+   "var:__obs_hi_implicit": 105,
+   "var:__obs_lo_implicit": 100,
+   "var:__obs_hi_explicit_high": 105,
+   "var:__obs_lo_explicit_low": 100
+  },
+  {
+   "var:__obs_hi_implicit": 106,
+   "var:__obs_lo_implicit": 100,
+   "var:__obs_hi_explicit_high": 106,
+   "var:__obs_lo_explicit_low": 100
+  },
+  {
+   "var:__obs_hi_implicit": 107,
+   "var:__obs_lo_implicit": 100,
+   "var:__obs_hi_explicit_high": 107,
+   "var:__obs_lo_explicit_low": 100
+  },
+  {
+   "var:__obs_hi_implicit": 107,
+   "var:__obs_lo_implicit": 102,
+   "var:__obs_hi_explicit_high": 107,
+   "var:__obs_lo_explicit_low": 102
+  },
+  {
+   "var:__obs_hi_implicit": 108,
+   "var:__obs_lo_implicit": 103,
+   "var:__obs_hi_explicit_high": 108,
+   "var:__obs_lo_explicit_low": 103
+  },
+  {
+   "var:__obs_hi_implicit": 109,
+   "var:__obs_lo_implicit": 103,
+   "var:__obs_hi_explicit_high": 109,
+   "var:__obs_lo_explicit_low": 103
+  }
+ ],
+ "finalVarState": {
+  "__obs_hi_implicit": 109,
+  "__obs_lo_implicit": 103,
+  "__obs_hi_explicit_high": 109,
+  "__obs_lo_explicit_low": 103
+ }
+}

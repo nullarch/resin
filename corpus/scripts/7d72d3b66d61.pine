@@ -1,0 +1,9 @@
+//@version=5
+indicator("Alert Complex")
+rsi_ = ta.rsi(close, 5)
+sma_ = ta.sma(close, 5)
+bullish = not na(rsi_) and rsi_ < 30 and close > sma_
+bearish = not na(rsi_) and rsi_ > 70 and close < sma_
+alertcondition(bullish, "Bullish", "RSI oversold + above SMA")
+alertcondition(bearish, "Bearish", "RSI overbought + below SMA")
+plot(rsi_)

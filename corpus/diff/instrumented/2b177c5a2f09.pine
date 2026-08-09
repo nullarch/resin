@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Alert Cond")
+var ac = map.new<string, float>()
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+map.put(ac, "above_ma", close > sma3 ? 1.0 : 0.0)
+map.put(ac, "rsi_ob", rsi > 70 ? 1.0 : 0.0)
+map.put(ac, "rsi_os", rsi < 30 ? 1.0 : 0.0)
+activeAlerts = 0
+for [k, v] in ac
+    if v > 0
+        activeAlerts := activeAlerts + 1
+var float __obs_plot0 = na
+__obs_plot0 := activeAlerts
+plot(activeAlerts, "AA")

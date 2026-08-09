@@ -1,0 +1,8 @@
+//@version=5
+indicator("Mom Osc")
+length = 10
+mom = ta.mom(close, length)
+highest_mom = ta.highest(mom, length)
+lowest_mom = ta.lowest(mom, length)
+norm_mom = highest_mom != lowest_mom ? (mom - lowest_mom) / (highest_mom - lowest_mom) * 100 : 50
+plot(norm_mom)

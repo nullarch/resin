@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Converge Det")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+gap = math.abs(sma3 - sma5)
+prevGap = math.abs(sma3[1] - sma5[1])
+converging = gap < nz(prevGap, gap)
+convergenceRate = nz(prevGap, 0.0) > 0 ? gap / prevGap : 1.0
+plot(gap, "Gap")
+plot(converging ? 1 : 0, "Conv")

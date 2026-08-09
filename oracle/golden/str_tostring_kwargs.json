@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_kw_value_int": "5",
+   "var:__obs_kw_value_float": "5.25",
+   "var:__obs_kw_value_loop": "2"
+  },
+  {
+   "var:__obs_kw_value_int": "5",
+   "var:__obs_kw_value_float": "5.25",
+   "var:__obs_kw_value_loop": "2"
+  },
+  {
+   "var:__obs_kw_value_int": "5",
+   "var:__obs_kw_value_float": "5.25",
+   "var:__obs_kw_value_loop": "2"
+  },
+  {
+   "var:__obs_kw_value_int": "5",
+   "var:__obs_kw_value_float": "5.25",
+   "var:__obs_kw_value_loop": "2"
+  },
+  {
+   "var:__obs_kw_value_int": "5",
+   "var:__obs_kw_value_float": "5.25",
+   "var:__obs_kw_value_loop": "2"
+  },
+  {
+   "var:__obs_kw_value_int": "5",
+   "var:__obs_kw_value_float": "5.25",
+   "var:__obs_kw_value_loop": "2"
+  },
+  {
+   "var:__obs_kw_value_int": "5",
+   "var:__obs_kw_value_float": "5.25",
+   "var:__obs_kw_value_loop": "2"
+  },
+  {
+   "var:__obs_kw_value_int": "5",
+   "var:__obs_kw_value_float": "5.25",
+   "var:__obs_kw_value_loop": "2"
+  },
+  {
+   "var:__obs_kw_value_int": "5",
+   "var:__obs_kw_value_float": "5.25",
+   "var:__obs_kw_value_loop": "2"
+  },
+  {
+   "var:__obs_kw_value_int": "5",
+   "var:__obs_kw_value_float": "5.25",
+   "var:__obs_kw_value_loop": "2"
+  }
+ ],
+ "finalVarState": {
+  "__obs_kw_value_int": "5",
+  "__obs_kw_value_float": "5.25",
+  "__obs_kw_value_loop": "2"
+ }
+}

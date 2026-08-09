@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Plot Candle")
+sma3 = ta.sma(close, 3)
+bullish = close > sma3
+plotcandle(open, high, low, close, "Candle", color=bullish ? color.green : color.red)
+plot(sma3, "SMA")

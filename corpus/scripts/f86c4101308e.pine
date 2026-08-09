@@ -1,0 +1,7 @@
+//@version=5
+indicator("Multiline If")
+if close > open and
+    volume > 500
+    plot(1)
+else
+    plot(0)

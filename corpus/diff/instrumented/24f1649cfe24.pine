@@ -1,0 +1,7 @@
+//@version=5
+indicator("Temperature Anomaly")
+baseline = ta.sma(close, 5)
+anomaly = close - baseline
+var float __obs_plot0 = na
+__obs_plot0 := anomaly
+plot(anomaly, title="anomaly")

@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:cumPnl": 0.0,
+   "var:entryPrice": 2.0,
+   "var:inPosition": true,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:cumPnl": -1.0,
+   "var:entryPrice": 1.0,
+   "var:inPosition": true,
+   "var:__obs_plot0": -1.0
+  },
+  {
+   "var:cumPnl": 1.0,
+   "var:entryPrice": 3.0,
+   "var:inPosition": true,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:cumPnl": -2.0,
+   "var:entryPrice": 0.0,
+   "var:inPosition": true,
+   "var:__obs_plot0": -2.0
+  },
+  {
+   "var:cumPnl": -2.0,
+   "var:entryPrice": 0.0,
+   "var:inPosition": true,
+   "var:__obs_plot0": -2.0
+  },
+  {
+   "var:cumPnl": -2.0,
+   "var:entryPrice": 0.0,
+   "var:inPosition": true,
+   "var:__obs_plot0": -2.0
+  },
+  {
+   "var:cumPnl": -2.0,
+   "var:entryPrice": 0.0,
+   "var:inPosition": true,
+   "var:__obs_plot0": -2.0
+  },
+  {
+   "var:cumPnl": -2.0,
+   "var:entryPrice": 0.0,
+   "var:inPosition": true,
+   "var:__obs_plot0": -2.0
+  },
+  {
+   "var:cumPnl": -2.0,
+   "var:entryPrice": 0.0,
+   "var:inPosition": true,
+   "var:__obs_plot0": -2.0
+  },
+  {
+   "var:cumPnl": -2.0,
+   "var:entryPrice": 0.0,
+   "var:inPosition": true,
+   "var:__obs_plot0": -2.0
+  }
+ ],
+ "finalVarState": {
+  "cumPnl": -2.0,
+  "entryPrice": 0.0,
+  "inPosition": true,
+  "__obs_plot0": -2.0
+ }
+}

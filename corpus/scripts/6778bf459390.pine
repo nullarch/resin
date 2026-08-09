@@ -1,0 +1,23 @@
+//@version=5
+indicator("AllFeat 003")
+enum Direction
+    Up
+    Down
+    Flat
+type Signal
+    float price
+    int dir
+var signals = array.new_float(0)
+var int upCount = 0
+diff = close - open
+dir = switch
+    diff > 1 => 1
+    diff < -1 => -1
+    => 0
+label = dir == 1 ? "bullish" : dir == -1 ? "bearish" : "flat"
+array.push(signals, close)
+total = 0.0
+for i = 0 to array.size(signals) - 1
+    total := total + array.get(signals, i)
+if dir == 1
+    upCount := upCount + 1

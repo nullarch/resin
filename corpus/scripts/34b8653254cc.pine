@@ -1,0 +1,16 @@
+//@version=5
+indicator("FStatProxy")
+var float sseRestricted = 0.0
+var float sseUnrestricted = 0.0
+var int cnt = 0
+cnt := cnt + 1
+prevClose = nz(close[1], close)
+prevVol = nz(volume[1], volume)
+predRestricted = prevClose
+predFull = 0.5 * prevClose + 0.0005 * prevVol
+errR = close - predRestricted
+errU = close - predFull
+sseRestricted := sseRestricted + errR * errR
+sseUnrestricted := sseUnrestricted + errU * errU
+fProxy = sseUnrestricted > 0.01 ? (sseRestricted - sseUnrestricted) / sseUnrestricted * float(cnt) : 0.0
+plot(fProxy, "FStat")

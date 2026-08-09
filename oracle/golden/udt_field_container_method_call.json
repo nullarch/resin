@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:b": "pine_fn.<locals>.Basket(prices=[103.0, 102.0, 104.0, 105.0, 106.0, 105.0, 107.0, 108.0], tags={'last': 108.0})",
+   "var:barN": 1,
+   "var:__obs_size": 0,
+   "var:__obs_last": "NaN",
+   "var:__obs_tag": "NaN",
+   "var:__obs_contains": false
+  },
+  {
+   "var:b": "pine_fn.<locals>.Basket(prices=[103.0, 102.0, 104.0, 105.0, 106.0, 105.0, 107.0, 108.0], tags={'last': 108.0})",
+   "var:barN": 2,
+   "var:__obs_size": 0,
+   "var:__obs_last": "NaN",
+   "var:__obs_tag": "NaN",
+   "var:__obs_contains": false
+  },
+  {
+   "var:b": "pine_fn.<locals>.Basket(prices=[103.0, 102.0, 104.0, 105.0, 106.0, 105.0, 107.0, 108.0], tags={'last': 108.0})",
+   "var:barN": 3,
+   "var:__obs_size": 1,
+   "var:__obs_last": 103.0,
+   "var:__obs_tag": 103.0,
+   "var:__obs_contains": true
+  },
+  {
+   "var:b": "pine_fn.<locals>.Basket(prices=[103.0, 102.0, 104.0, 105.0, 106.0, 105.0, 107.0, 108.0], tags={'last': 108.0})",
+   "var:barN": 4,
+   "var:__obs_size": 2,
+   "var:__obs_last": 102.0,
+   "var:__obs_tag": 102.0,
+   "var:__obs_contains": true
+  },
+  {
+   "var:b": "pine_fn.<locals>.Basket(prices=[103.0, 102.0, 104.0, 105.0, 106.0, 105.0, 107.0, 108.0], tags={'last': 108.0})",
+   "var:barN": 5,
+   "var:__obs_size": 3,
+   "var:__obs_last": 104.0,
+   "var:__obs_tag": 104.0,
+   "var:__obs_contains": true
+  },
+  {
+   "var:b": "pine_fn.<locals>.Basket(prices=[103.0, 102.0, 104.0, 105.0, 106.0, 105.0, 107.0, 108.0], tags={'last': 108.0})",
+   "var:barN": 6,
+   "var:__obs_size": 4,
+   "var:__obs_last": 105.0,
+   "var:__obs_tag": 105.0,
+   "var:__obs_contains": true
+  },
+  {
+   "var:b": "pine_fn.<locals>.Basket(prices=[103.0, 102.0, 104.0, 105.0, 106.0, 105.0, 107.0, 108.0], tags={'last': 108.0})",
+   "var:barN": 7,
+   "var:__obs_size": 5,
+   "var:__obs_last": 106.0,
+   "var:__obs_tag": 106.0,
+   "var:__obs_contains": true
+  },
+  {
+   "var:b": "pine_fn.<locals>.Basket(prices=[103.0, 102.0, 104.0, 105.0, 106.0, 105.0, 107.0, 108.0], tags={'last': 108.0})",
+   "var:barN": 8,
+   "var:__obs_size": 6,
+   "var:__obs_last": 105.0,
+   "var:__obs_tag": 105.0,
+   "var:__obs_contains": true
+  },
+  {
+   "var:b": "pine_fn.<locals>.Basket(prices=[103.0, 102.0, 104.0, 105.0, 106.0, 105.0, 107.0, 108.0], tags={'last': 108.0})",
+   "var:barN": 9,
+   "var:__obs_size": 7,
+   "var:__obs_last": 107.0,
+   "var:__obs_tag": 107.0,
+   "var:__obs_contains": true
+  },
+  {
+   "var:b": "pine_fn.<locals>.Basket(prices=[103.0, 102.0, 104.0, 105.0, 106.0, 105.0, 107.0, 108.0], tags={'last': 108.0})",
+   "var:barN": 10,
+   "var:__obs_size": 8,
+   "var:__obs_last": 108.0,
+   "var:__obs_tag": 108.0,
+   "var:__obs_contains": true
+  }
+ ],
+ "finalVarState": {
+  "b": "pine_fn.<locals>.Basket(prices=[103.0, 102.0, 104.0, 105.0, 106.0, 105.0, 107.0, 108.0], tags={'last': 108.0})",
+  "barN": 10,
+  "__obs_size": 8,
+  "__obs_last": 108.0,
+  "__obs_tag": 108.0,
+  "__obs_contains": true
+ }
+}

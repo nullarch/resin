@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Switch Calc")
+atrVal = ta.atr(3)
+smaATR = ta.sma(atrVal, 5)
+rsiVal = ta.rsi(close, 3)
+target = switch
+    rsiVal > 70 => close - atrVal * 2
+    rsiVal > 50 => close + atrVal * 0.5
+    rsiVal < 30 => close + atrVal * 2
+    => close
+plot(target, "Target")

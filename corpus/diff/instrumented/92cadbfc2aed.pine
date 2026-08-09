@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Range Trend")
+hi5 = ta.highest(high, 5)
+lo5 = ta.lowest(low, 5)
+rangeWidth = hi5 - lo5
+sma5 = ta.sma(close, 5)
+trendStr = sma5 > 0 ? math.abs(close - sma5) / sma5 * 100 : 0.0
+isTrending = trendStr > 1.0
+isRange = rangeWidth > 0 and trendStr < 0.5
+var float __obs_plot0 = na
+__obs_plot0 := isTrending ? 1 : isRange ? -1 : 0
+plot(isTrending ? 1 : isRange ? -1 : 0, "RT")

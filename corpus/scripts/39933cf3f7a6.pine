@@ -1,0 +1,9 @@
+//@version=5
+indicator("Glial Support")
+var float metabolicBuffer = 50.0
+neuralDemand = math.abs(close - open) * 2.0
+supply = ta.sma(close, 3)
+supplyVal = not na(supply) ? supply * 0.05 : 2.5
+metabolicBuffer := metabolicBuffer - neuralDemand + supplyVal
+metabolicBuffer := math.max(0.0, math.min(100.0, metabolicBuffer))
+plot(metabolicBuffer)

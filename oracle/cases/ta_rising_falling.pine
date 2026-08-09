@@ -1,0 +1,10 @@
+//@version=5
+indicator("ta_rising_falling")
+// ta.rising(source,length)/ta.falling(source,length) 오라클 검증(ROADMAP P2 "ta.* 44종").
+// rising은 close(연속 상승 구간이 여러 개 있어 다중 바 streak 누적까지 커버 — bar1~2/4~6/8~9)로
+// length=2, falling은 open(고립된 단일 바 하락만 존재 — bar3/bar7)으로 length=1을 써서 서로 다른
+// length로 두 함수를 함께 검증한다(sample10.json 재사용).
+var float __obs_rising = na
+var float __obs_falling = na
+__obs_rising := ta.rising(close, 2) ? 1.0 : 0.0
+__obs_falling := ta.falling(open, 1) ? 1.0 : 0.0

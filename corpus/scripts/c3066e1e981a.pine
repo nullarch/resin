@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Input TA")
+length = input.int(5, "Length")
+mult = input.float(2.0, "Mult")
+useEMA = input.bool(false, "Use EMA")
+ma = useEMA ? ta.ema(close, length) : ta.sma(close, length)
+dev = ta.stdev(close, length) * mult
+upper = ma + dev
+lower = ma - dev
+plot(ma, "MA")
+plot(upper, "Upper")
+plot(lower, "Lower")

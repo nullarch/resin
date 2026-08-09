@@ -1,0 +1,116 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:acc": 101.0,
+   "var:__obs_var_dyn": 101.0,
+   "var:__obs_loc_dyn": 202,
+   "var:__obs_param_dyn": 101,
+   "var:__obs_flocal_dyn": 203,
+   "var:__obs_fvar_dyn": 101.0,
+   "var:vacc2": 101.0,
+   "var:__obs_neg_dyn": "NaN"
+  },
+  {
+   "var:acc": 203.0,
+   "var:__obs_var_dyn": 101.0,
+   "var:__obs_loc_dyn": 202,
+   "var:__obs_param_dyn": 101,
+   "var:__obs_flocal_dyn": 203,
+   "var:__obs_fvar_dyn": 101.0,
+   "var:vacc2": 203.0,
+   "var:__obs_neg_dyn": "NaN"
+  },
+  {
+   "var:acc": 306.0,
+   "var:__obs_var_dyn": 101.0,
+   "var:__obs_loc_dyn": 202,
+   "var:__obs_param_dyn": 101,
+   "var:__obs_flocal_dyn": 203,
+   "var:__obs_fvar_dyn": 101.0,
+   "var:vacc2": 306.0,
+   "var:__obs_neg_dyn": "NaN"
+  },
+  {
+   "var:acc": 408.0,
+   "var:__obs_var_dyn": 408.0,
+   "var:__obs_loc_dyn": 204,
+   "var:__obs_param_dyn": 102,
+   "var:__obs_flocal_dyn": 205,
+   "var:__obs_fvar_dyn": 408.0,
+   "var:vacc2": 408.0,
+   "var:__obs_neg_dyn": "NaN"
+  },
+  {
+   "var:acc": 512.0,
+   "var:__obs_var_dyn": 408.0,
+   "var:__obs_loc_dyn": 204,
+   "var:__obs_param_dyn": 102,
+   "var:__obs_flocal_dyn": 205,
+   "var:__obs_fvar_dyn": 408.0,
+   "var:vacc2": 512.0,
+   "var:__obs_neg_dyn": "NaN"
+  },
+  {
+   "var:acc": 617.0,
+   "var:__obs_var_dyn": 408.0,
+   "var:__obs_loc_dyn": 204,
+   "var:__obs_param_dyn": 102,
+   "var:__obs_flocal_dyn": 205,
+   "var:__obs_fvar_dyn": 408.0,
+   "var:vacc2": 617.0,
+   "var:__obs_neg_dyn": "NaN"
+  },
+  {
+   "var:acc": 723.0,
+   "var:__obs_var_dyn": 723.0,
+   "var:__obs_loc_dyn": 212,
+   "var:__obs_param_dyn": 106,
+   "var:__obs_flocal_dyn": 213,
+   "var:__obs_fvar_dyn": 723.0,
+   "var:vacc2": 723.0,
+   "var:__obs_neg_dyn": "NaN"
+  },
+  {
+   "var:acc": 828.0,
+   "var:__obs_var_dyn": 723.0,
+   "var:__obs_loc_dyn": 212,
+   "var:__obs_param_dyn": 106,
+   "var:__obs_flocal_dyn": 213,
+   "var:__obs_fvar_dyn": 723.0,
+   "var:vacc2": 828.0,
+   "var:__obs_neg_dyn": "NaN"
+  },
+  {
+   "var:acc": 935.0,
+   "var:__obs_var_dyn": 723.0,
+   "var:__obs_loc_dyn": 212,
+   "var:__obs_param_dyn": 106,
+   "var:__obs_flocal_dyn": 213,
+   "var:__obs_fvar_dyn": 723.0,
+   "var:vacc2": 935.0,
+   "var:__obs_neg_dyn": "NaN"
+  },
+  {
+   "var:acc": 1043.0,
+   "var:__obs_var_dyn": 1043.0,
+   "var:__obs_loc_dyn": 216,
+   "var:__obs_param_dyn": 108,
+   "var:__obs_flocal_dyn": 217,
+   "var:__obs_fvar_dyn": 1043.0,
+   "var:vacc2": 1043.0,
+   "var:__obs_neg_dyn": "NaN"
+  }
+ ],
+ "finalVarState": {
+  "acc": 1043.0,
+  "__obs_var_dyn": 1043.0,
+  "__obs_loc_dyn": 216,
+  "__obs_param_dyn": 108,
+  "__obs_flocal_dyn": 217,
+  "__obs_fvar_dyn": 1043.0,
+  "vacc2": 1043.0,
+  "__obs_neg_dyn": "NaN"
+ }
+}

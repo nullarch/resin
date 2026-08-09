@@ -1,0 +1,9 @@
+//@version=5
+indicator("Action Potential")
+var float membrane = -70.0
+stimulus = close - open
+membrane := membrane + stimulus * 0.5
+fired = membrane > -55.0 ? 1.0 : 0.0
+if membrane > -55.0
+    membrane := -70.0
+plot(fired)

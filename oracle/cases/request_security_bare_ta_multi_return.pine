@@ -1,0 +1,18 @@
+//@version=5
+indicator("request_security_bare_ta_multi_return")
+// request.security bare 다중 반환 ta.* 콜 expression(C433, wild bareTaMultiReturn 서브클러스터,
+// next_hint(C432)) — `[a,b,c] = request.security(sym, tf, ta.macd(...))`에서 expression 인자가
+// 브래킷 없이 그대로 다중 반환 ta.* 콜인 폼(macd/bb/kc/supertrend/dmi/vwap 3-인자 공통 메커니즘).
+// pine2py wavealgo/security.py._resolve_expression은 Series가 아닌 값(튜플 포함)을 그대로
+// 통과시켜 HTF 재계산이 아예 없다(C432 bareUdfCall과 동일 오라클 근거 — python 직접 실행
+// 재검증: 합성 60바 데이터로 wrapped/direct가 완전 일치, mismatch 0/180). fast=2/slow=3/signal=2로
+// sample10.json 10바 안에서 워밍업(바 0~1)/macd만 유효(바 2)/3값 모두 유효(바 3~9) 구간을 전부
+// 커버(oracle/cases/ta_macd.pine과 동일 설계 — 이 케이스는 그 값이 request.security로 감싸도
+// 바이트 단위로 동일한 codegen을 내는지까지 함께 검증).
+[macdLine, signalLine, histLine] = request.security(syminfo.tickerid, "D", ta.macd(close, 2, 3, 2))
+var float __obs_macd = na
+var float __obs_signal = na
+var float __obs_hist = na
+__obs_macd := macdLine
+__obs_signal := signalLine
+__obs_hist := histLine

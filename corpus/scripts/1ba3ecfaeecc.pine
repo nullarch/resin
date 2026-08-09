@@ -1,0 +1,20 @@
+
+//@version=5
+strategy("Trail Stop", overlay=true)
+sma3 = ta.sma(close, 3)
+atrVal = ta.atr(3)
+var float trailStop = 0.0
+var bool inTrade = false
+if ta.crossover(close, sma3) and not inTrade
+    strategy.entry("Long", strategy.long)
+    trailStop := close - atrVal * 2
+    inTrade := true
+if inTrade
+    newStop = close - atrVal * 2
+    if newStop > trailStop
+        trailStop := newStop
+    if close < trailStop
+        strategy.close("Long")
+        inTrade := false
+        trailStop := 0.0
+plot(trailStop, "Trail")

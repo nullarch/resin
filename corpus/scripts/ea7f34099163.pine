@@ -1,0 +1,4 @@
+//@version=5
+indicator("Ticker New")
+sym = ticker.new("BINANCE", "BTCUSDT")
+plot(close)

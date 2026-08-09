@@ -1,0 +1,14 @@
+//@version=5
+indicator("IslandModel")
+island1 = array.new_float(0)
+island2 = array.new_float(0)
+for i = 0 to 3
+    array.push(island1, close + float(i))
+    array.push(island2, open + float(3 - i))
+best1 = array.max(island1)
+best2 = array.max(island2)
+migrant = math.max(best1, best2)
+array.push(island1, migrant)
+array.push(island2, migrant)
+globalBest = math.max(array.max(island1), array.max(island2))
+plot(globalBest, "Global")

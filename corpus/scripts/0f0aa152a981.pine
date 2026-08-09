@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Multi SMA")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+alignment = close > sma3 and sma3 > sma5 ? 1 : close < sma3 and sma3 < sma5 ? -1 : 0
+plot(alignment, "A")

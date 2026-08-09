@@ -1,0 +1,7 @@
+//@version=5
+indicator("Map Acc")
+var m = map.new<string, float>()
+map.put(m, "sum", nz(map.get(m, "sum")) + close)
+map.put(m, "count", nz(map.get(m, "count")) + 1)
+avg_ = map.get(m, "sum") / map.get(m, "count")
+plot(avg_)

@@ -1,0 +1,41 @@
+{
+ "ok": true,
+ "data": "switch_basic.json",
+ "bars": [
+  {
+   "var:__obs_tag": 10.0,
+   "var:__obs_label": 1.0,
+   "var:__obs_acc": 1.0
+  },
+  {
+   "var:__obs_tag": 20.0,
+   "var:__obs_label": -1.0,
+   "var:__obs_acc": -1.0
+  },
+  {
+   "var:__obs_tag": 20.0,
+   "var:__obs_label": 0.0,
+   "var:__obs_acc": 0.0
+  },
+  {
+   "var:__obs_tag": 10.0,
+   "var:__obs_label": 1.0,
+   "var:__obs_acc": 1.0
+  },
+  {
+   "var:__obs_tag": 20.0,
+   "var:__obs_label": -1.0,
+   "var:__obs_acc": -1.0
+  },
+  {
+   "var:__obs_tag": 20.0,
+   "var:__obs_label": 0.0,
+   "var:__obs_acc": 0.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_tag": 20.0,
+  "__obs_label": 0.0,
+  "__obs_acc": 0.0
+ }
+}

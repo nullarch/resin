@@ -1,0 +1,15 @@
+//@version=5
+indicator("Matrix Ops")
+m = matrix.new<float>(2, 2, 0.0)
+matrix.set(m, 0, 0, close)
+matrix.set(m, 0, 1, open)
+matrix.set(m, 1, 0, high)
+matrix.set(m, 1, 1, low)
+tr = matrix.trace(m)
+d = matrix.det(m)
+var float __obs_plot0 = na
+__obs_plot0 := tr
+plot(tr)
+var float __obs_plot1 = na
+__obs_plot1 := d
+plot(d)

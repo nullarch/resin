@@ -1,0 +1,5 @@
+
+//@version=5
+indicator("Range Precision")
+r = ta.range(close, 10)
+plot(r)

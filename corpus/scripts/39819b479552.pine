@@ -1,0 +1,7 @@
+//@version=5
+indicator("Personal Best")
+var float pBest = na
+if na(pBest) or close > nz(pBest)
+    pBest := close
+distToBest = nz(pBest) - close
+plot(distToBest)

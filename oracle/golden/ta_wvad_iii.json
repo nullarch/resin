@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_wvad": 333.3333333333,
+   "var:__obs_iii": 0.0003333333
+  },
+  {
+   "var:__obs_wvad": 366.6666666667,
+   "var:__obs_iii": 0.0003030303
+  },
+  {
+   "var:__obs_wvad": 400.0,
+   "var:__obs_iii": 0.0002777778
+  },
+  {
+   "var:__obs_wvad": 383.3333333333,
+   "var:__obs_iii": 0.0002898551
+  },
+  {
+   "var:__obs_wvad": 433.3333333333,
+   "var:__obs_iii": 0.0002564103
+  },
+  {
+   "var:__obs_wvad": 416.6666666667,
+   "var:__obs_iii": 0.0002666667
+  },
+  {
+   "var:__obs_wvad": 466.6666666667,
+   "var:__obs_iii": 0.0002380952
+  },
+  {
+   "var:__obs_wvad": 450.0,
+   "var:__obs_iii": 0.0002469136
+  },
+  {
+   "var:__obs_wvad": 500.0,
+   "var:__obs_iii": 0.0002222222
+  },
+  {
+   "var:__obs_wvad": 483.3333333333,
+   "var:__obs_iii": 0.0002298851
+  }
+ ],
+ "finalVarState": {
+  "__obs_wvad": 483.3333333333,
+  "__obs_iii": 0.0002298851
+ }
+}

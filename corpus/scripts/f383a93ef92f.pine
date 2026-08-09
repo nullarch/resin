@@ -1,0 +1,10 @@
+//@version=5
+indicator("shorthand param")
+mySum(float[] arr) =>
+    float total = 0.0
+    for i = 0 to array.size(arr) - 1
+        total := total + array.get(arr, i)
+    total
+var float[] data = array.from(1.0, 2.0, 3.0)
+var float result = 0.0
+result := mySum(data)

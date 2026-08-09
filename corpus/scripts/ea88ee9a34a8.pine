@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Clamp")
+clamp(float val, float lo, float hi) =>
+    math.max(lo, math.min(hi, val))
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+clamped = clamp(rsi, 20.0, 80.0)
+normalized = (clamped - 20.0) / 60.0
+plot(normalized, "Norm")

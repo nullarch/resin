@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Auction Composite")
+calcAuctionScore(c, h, l, v) =>
+    mid = (h + l) / 2.0
+    bias = c > mid ? 1.0 : -1.0
+    bias * math.log(math.max(v, 1.0))
+score = calcAuctionScore(close, high, low, volume)
+scores = map.new<string, float>()
+map.put(scores, "current", score)
+map.put(scores, "abs", math.abs(score))
+total = 0.0
+for [k, v] in scores
+    total := total + v
+plot(total, "AuctScore")

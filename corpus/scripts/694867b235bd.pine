@@ -1,0 +1,9 @@
+//@version=5
+indicator("Switch NoDisk")
+var string signal = "hold"
+signal := switch
+    close > 109 => "strong_buy"
+    close > 105 => "buy"
+    close < 102 => "sell"
+    => "hold"
+plot(close)

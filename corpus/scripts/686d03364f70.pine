@@ -1,0 +1,4 @@
+//@version=5
+indicator("Test")
+arr = array.from(1, 5, 3)
+r = array.range(arr)

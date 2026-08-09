@@ -1,0 +1,39 @@
+//@version=5
+indicator("Comprehensive 60")
+
+// Switch (verifies _SWITCH_VAR constant)
+var int mode = 2
+float sw = switch mode
+    1 => 10.0
+    2, 3 => 20.0
+    => 0.0
+
+// Division by zero → NaN
+float div0 = 1.0 / 0.0
+var bool d0_na = na(div0)
+
+// NaN propagation
+float x = float(na) + 5.0
+var bool x_na = na(x)
+
+// Chained ternary
+float t = mode == 1 ? 1.0 : mode == 2 ? 2.0 : 0.0
+
+// For accumulation
+float fsum = 0.0
+for i = 1 to 3
+    fsum := fsum + i
+
+// Series inline index
+float prev_close = nz(close[1], close)
+
+// Math edge
+float sq = math.sqrt(-1.0)
+var bool sq_na = na(sq)
+
+// Unary minus
+float neg = -5.0 + 10.0
+
+var float result = 0.0
+result := sw + t + fsum + prev_close + neg + (d0_na ? 1.0 : 0.0) + (x_na ? 1.0 : 0.0) + (sq_na ? 1.0 : 0.0)
+plot(close)

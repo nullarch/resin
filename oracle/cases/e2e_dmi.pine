@@ -1,0 +1,26 @@
+//@version=5
+indicator("Directional Movement Index")
+// TV 빌트인 "Directional Movement Index" 인디케이터 E2E 재현(ROADMAP P2 "TV 빌트인 인디케이터
+// 15종 E2E" 두 번째 슬라이스, 3종 중 3: Stoch/CCI/ADX·DMI). ta.dmi 자체의 계산은 이미
+// oracle/cases/ta_dmi.pine(순수 __obs 미러, diLength=3/adxSmoothing=2)으로 개별 검증됐다 -- 이
+// 케이스는 그 위에 indicator()/input.int/plot()을 얹어 완성된 빌트인 스크립트 구조 전체(다중 반환
+// 튜플 + 3-plot 슬롯 배정, macd/bb와 동일 returnArity:3 패턴)를 검증한다. ta.dmi(diLength,
+// adxSmoothing)는 high/low/close를 bar series 암묵 사용해 소스 선택이 없는 지표라 input.source는
+// 쓰지 않는다(stoch와 동일 사유). diLength=3/adxSmoothing=2는 ta_dmi.pine과 동일 파라미터를
+// 재사용(sample10.json 10바 안에서 게이트/시드/DI-only/DI+ADX 네 구간을 이미 커버해둔 조합 그대로
+// 재사용).
+diLengthInput = input.int(3, "DI Length")
+adxSmoothingInput = input.int(2, "ADX Smoothing")
+
+[plusDi, minusDi, adx] = ta.dmi(diLengthInput, adxSmoothingInput)
+
+plot(plusDi, "+DI")
+plot(minusDi, "-DI")
+plot(adx, "ADX")
+
+var float __obs_plus_di = na
+var float __obs_minus_di = na
+var float __obs_adx = na
+__obs_plus_di := plusDi
+__obs_minus_di := minusDi
+__obs_adx := adx

@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("VWAP Dev")
+vwapVal = ta.vwap(close)
+sd = ta.stdev(close, 5)
+deviation = sd > 0 ? (close - vwapVal) / sd : 0.0
+plot(deviation, "Dev")

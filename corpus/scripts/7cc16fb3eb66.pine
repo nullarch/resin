@@ -1,0 +1,4 @@
+//@version=5
+indicator("Nested Call Args")
+var float result = 0.0
+result := math.max(math.abs(-5.0), math.abs(-3.0))

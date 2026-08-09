@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_vwap": 101.0
+  },
+  {
+   "var:__obs_vwap": 101.5238095238
+  },
+  {
+   "var:__obs_vwap": 102.0606060606
+  },
+  {
+   "var:__obs_vwap": 102.0449438202
+  },
+  {
+   "var:__obs_vwap": 102.4869565217
+  },
+  {
+   "var:__obs_vwap": 102.9357142857
+  },
+  {
+   "var:__obs_vwap": 103.4464285714
+  },
+  {
+   "var:__obs_vwap": 103.6615384615
+  },
+  {
+   "var:__obs_vwap": 104.1066666667
+  },
+  {
+   "var:__obs_vwap": 104.5511811024
+  }
+ ],
+ "finalVarState": {
+  "__obs_vwap": 104.5511811024
+ }
+}

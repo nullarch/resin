@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("RegHist")
+var int[] regimes = array.new_int(0)
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+regime = rsiVal > 60 ? 2 : rsiVal < 40 ? 0 : 1
+array.push(regimes, regime)
+if array.size(regimes) > 5
+    array.shift(regimes)
+lastReg = array.size(regimes) > 0 ? array.get(regimes, array.size(regimes) - 1) : 1
+var float __obs_plot0 = na
+__obs_plot0 := lastReg
+plot(lastReg, "LR")

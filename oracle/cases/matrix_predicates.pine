@@ -1,0 +1,199 @@
+//@version=5
+indicator("matrix_predicates")
+
+// C94: matrix.* 다섯 번째 슬라이스(is_square/is_symmetric/is_antisymmetric/is_diagonal/
+// is_antidiagonal/is_identity/is_triangular/is_stochastic/is_binary/is_zero — 순수 read-only
+// 술어 10종, C93 next_hint 1순위). 전부 매 바 동일 결과가 나오는 컴파일타임 float 리터럴로
+// 구성(구조 검사라 close 기반 값이 필요 없음 — matrix.set의 latent Series 버그도 리터럴 인자엔
+// 애초에 적용 안 됨, matrix.ts 주석 참조). bool은 var float 0.0/1.0 미러로 관측(MEMORY.md 패턴,
+// ta_crossover_crossunder.pine과 동일). na(null) 행렬/0행 등 크래시·경계 지점은 python 직접
+// 실행으로 확인 후 tests/unit/runtime.test.ts의 hand-verified로 대체(matrix_transform.pine과
+// 동일 원칙).
+
+// A: matrix.is_square — 정사각(2x2)=true, 비정사각(2x3)=false, 0x0(빈 행렬)=true(예외 경계).
+maT = matrix.new<float>(2, 2, 0.0)
+var float __obs_a_square = na
+__obs_a_square := matrix.is_square(maT) ? 1.0 : 0.0
+maF = matrix.new<float>(2, 3, 0.0)
+var float __obs_a_nonsquare = na
+__obs_a_nonsquare := matrix.is_square(maF) ? 1.0 : 0.0
+maE = matrix.new<float>(0, 0, 0.0)
+var float __obs_a_empty = na
+__obs_a_empty := matrix.is_square(maE) ? 1.0 : 0.0
+
+// B: matrix.is_symmetric — 대각 원소는 검사 대상이 아님을 증명하기 위해 대각에 서로 다른 값을 둠.
+mbT = matrix.new<float>(3, 3, 0.0)
+matrix.set(mbT, 0, 0, 99.0)
+matrix.set(mbT, 0, 1, 2.0)
+matrix.set(mbT, 0, 2, 3.0)
+matrix.set(mbT, 1, 0, 2.0)
+matrix.set(mbT, 1, 1, 55.0)
+matrix.set(mbT, 1, 2, 6.0)
+matrix.set(mbT, 2, 0, 3.0)
+matrix.set(mbT, 2, 1, 6.0)
+matrix.set(mbT, 2, 2, 77.0)
+var float __obs_b_symmetric = na
+__obs_b_symmetric := matrix.is_symmetric(mbT) ? 1.0 : 0.0
+mbF = matrix.new<float>(3, 3, 0.0)
+matrix.set(mbF, 0, 0, 99.0)
+matrix.set(mbF, 0, 1, 2.0)
+matrix.set(mbF, 0, 2, 3.0)
+matrix.set(mbF, 1, 0, 2.0)
+matrix.set(mbF, 1, 1, 55.0)
+matrix.set(mbF, 1, 2, 60.0)
+matrix.set(mbF, 2, 0, 3.0)
+matrix.set(mbF, 2, 1, 6.0)
+matrix.set(mbF, 2, 2, 77.0)
+var float __obs_b_asymmetric = na
+__obs_b_asymmetric := matrix.is_symmetric(mbF) ? 1.0 : 0.0
+
+// C: matrix.is_antisymmetric — 대각 무관 동일 원칙, 비대각 m[i][j] = -m[j][i].
+mcT = matrix.new<float>(3, 3, 0.0)
+matrix.set(mcT, 0, 0, 99.0)
+matrix.set(mcT, 0, 1, 2.0)
+matrix.set(mcT, 0, 2, -3.0)
+matrix.set(mcT, 1, 0, -2.0)
+matrix.set(mcT, 1, 1, 55.0)
+matrix.set(mcT, 1, 2, 4.0)
+matrix.set(mcT, 2, 0, 3.0)
+matrix.set(mcT, 2, 1, -4.0)
+matrix.set(mcT, 2, 2, 77.0)
+var float __obs_c_antisymmetric = na
+__obs_c_antisymmetric := matrix.is_antisymmetric(mcT) ? 1.0 : 0.0
+mcF = matrix.new<float>(3, 3, 0.0)
+matrix.set(mcF, 0, 0, 99.0)
+matrix.set(mcF, 0, 1, 2.0)
+matrix.set(mcF, 0, 2, -3.0)
+matrix.set(mcF, 1, 0, -2.0)
+matrix.set(mcF, 1, 1, 55.0)
+matrix.set(mcF, 1, 2, 5.0)
+matrix.set(mcF, 2, 0, 3.0)
+matrix.set(mcF, 2, 1, -4.0)
+matrix.set(mcF, 2, 2, 77.0)
+var float __obs_c_not_antisymmetric = na
+__obs_c_not_antisymmetric := matrix.is_antisymmetric(mcF) ? 1.0 : 0.0
+
+// D: matrix.is_diagonal — 순수 대각 행렬 vs 비대각 원소가 하나라도 있는 행렬.
+mdT = matrix.new<float>(3, 3, 0.0)
+matrix.set(mdT, 0, 0, 5.0)
+matrix.set(mdT, 1, 1, 6.0)
+matrix.set(mdT, 2, 2, 7.0)
+var float __obs_d_diagonal = na
+__obs_d_diagonal := matrix.is_diagonal(mdT) ? 1.0 : 0.0
+mdF = matrix.new<float>(3, 3, 0.0)
+matrix.set(mdF, 0, 0, 5.0)
+matrix.set(mdF, 0, 1, 1.0)
+matrix.set(mdF, 1, 1, 6.0)
+matrix.set(mdF, 2, 2, 7.0)
+var float __obs_d_not_diagonal = na
+__obs_d_not_diagonal := matrix.is_diagonal(mdF) ? 1.0 : 0.0
+
+// E: matrix.is_antidiagonal — i+j==n-1 원소만 0이 아님 vs 그 외 자리에도 0이 아닌 원소.
+meT = matrix.new<float>(3, 3, 0.0)
+matrix.set(meT, 0, 2, 5.0)
+matrix.set(meT, 1, 1, 6.0)
+matrix.set(meT, 2, 0, 7.0)
+var float __obs_e_antidiagonal = na
+__obs_e_antidiagonal := matrix.is_antidiagonal(meT) ? 1.0 : 0.0
+meF = matrix.new<float>(3, 3, 0.0)
+matrix.set(meF, 0, 0, 1.0)
+matrix.set(meF, 0, 2, 5.0)
+matrix.set(meF, 1, 1, 6.0)
+matrix.set(meF, 2, 0, 7.0)
+var float __obs_e_not_antidiagonal = na
+__obs_e_not_antidiagonal := matrix.is_antidiagonal(meF) ? 1.0 : 0.0
+
+// F: matrix.is_identity — 단위행렬 vs 대각이지만 1이 아닌 값이 섞인 행렬.
+mfT = matrix.new<float>(3, 3, 0.0)
+matrix.set(mfT, 0, 0, 1.0)
+matrix.set(mfT, 1, 1, 1.0)
+matrix.set(mfT, 2, 2, 1.0)
+var float __obs_f_identity = na
+__obs_f_identity := matrix.is_identity(mfT) ? 1.0 : 0.0
+mfF = matrix.new<float>(3, 3, 0.0)
+matrix.set(mfF, 0, 0, 1.0)
+matrix.set(mfF, 1, 1, 2.0)
+matrix.set(mfF, 2, 2, 1.0)
+var float __obs_f_not_identity = na
+__obs_f_not_identity := matrix.is_identity(mfF) ? 1.0 : 0.0
+
+// G: matrix.is_triangular — 상삼각/하삼각 각각 true, 둘 다 아니면 false.
+mgUpper = matrix.new<float>(3, 3, 0.0)
+matrix.set(mgUpper, 0, 0, 1.0)
+matrix.set(mgUpper, 0, 1, 2.0)
+matrix.set(mgUpper, 0, 2, 3.0)
+matrix.set(mgUpper, 1, 1, 4.0)
+matrix.set(mgUpper, 1, 2, 5.0)
+matrix.set(mgUpper, 2, 2, 6.0)
+var float __obs_g_upper = na
+__obs_g_upper := matrix.is_triangular(mgUpper) ? 1.0 : 0.0
+mgLower = matrix.new<float>(3, 3, 0.0)
+matrix.set(mgLower, 0, 0, 1.0)
+matrix.set(mgLower, 1, 0, 2.0)
+matrix.set(mgLower, 1, 1, 4.0)
+matrix.set(mgLower, 2, 0, 3.0)
+matrix.set(mgLower, 2, 1, 5.0)
+matrix.set(mgLower, 2, 2, 6.0)
+var float __obs_g_lower = na
+__obs_g_lower := matrix.is_triangular(mgLower) ? 1.0 : 0.0
+mgNeither = matrix.new<float>(2, 2, 0.0)
+matrix.set(mgNeither, 0, 0, 1.0)
+matrix.set(mgNeither, 0, 1, 2.0)
+matrix.set(mgNeither, 1, 0, 3.0)
+matrix.set(mgNeither, 1, 1, 4.0)
+var float __obs_g_neither = na
+__obs_g_neither := matrix.is_triangular(mgNeither) ? 1.0 : 0.0
+
+// H: matrix.is_stochastic — 정사각 요구 없음(2x3 직사각도 행합 1이면 true)을 함께 증명.
+mhSquareT = matrix.new<float>(2, 2, 0.0)
+matrix.set(mhSquareT, 0, 0, 0.5)
+matrix.set(mhSquareT, 0, 1, 0.5)
+matrix.set(mhSquareT, 1, 0, 0.25)
+matrix.set(mhSquareT, 1, 1, 0.75)
+var float __obs_h_square = na
+__obs_h_square := matrix.is_stochastic(mhSquareT) ? 1.0 : 0.0
+mhRectT = matrix.new<float>(2, 3, 0.0)
+matrix.set(mhRectT, 0, 0, 0.2)
+matrix.set(mhRectT, 0, 1, 0.3)
+matrix.set(mhRectT, 0, 2, 0.5)
+matrix.set(mhRectT, 1, 0, 0.1)
+matrix.set(mhRectT, 1, 1, 0.4)
+matrix.set(mhRectT, 1, 2, 0.5)
+var float __obs_h_rect = na
+__obs_h_rect := matrix.is_stochastic(mhRectT) ? 1.0 : 0.0
+mhF = matrix.new<float>(2, 2, 0.0)
+matrix.set(mhF, 0, 0, 0.5)
+matrix.set(mhF, 0, 1, 0.4)
+matrix.set(mhF, 1, 0, 1.0)
+matrix.set(mhF, 1, 1, 1.0)
+var float __obs_h_not_stochastic = na
+__obs_h_not_stochastic := matrix.is_stochastic(mhF) ? 1.0 : 0.0
+
+// I: matrix.is_binary — 모든 원소가 0 또는 1(엡실론 없는 정확 비교).
+miT = matrix.new<float>(2, 2, 0.0)
+matrix.set(miT, 0, 0, 0.0)
+matrix.set(miT, 0, 1, 1.0)
+matrix.set(miT, 1, 0, 1.0)
+matrix.set(miT, 1, 1, 0.0)
+var float __obs_i_binary = na
+__obs_i_binary := matrix.is_binary(miT) ? 1.0 : 0.0
+miF = matrix.new<float>(2, 2, 0.0)
+matrix.set(miF, 0, 0, 0.0)
+matrix.set(miF, 0, 1, 1.0)
+matrix.set(miF, 1, 0, 1.0)
+matrix.set(miF, 1, 1, 2.0)
+var float __obs_i_not_binary = na
+__obs_i_not_binary := matrix.is_binary(miF) ? 1.0 : 0.0
+
+// J: matrix.is_zero — 정확히 0, 1e-10 미만 오차(epsilon 통과), epsilon 밖(false) 세 경우.
+mjExact = matrix.new<float>(2, 2, 0.0)
+var float __obs_j_exact_zero = na
+__obs_j_exact_zero := matrix.is_zero(mjExact) ? 1.0 : 0.0
+mjEpsilon = matrix.new<float>(2, 2, 0.0)
+matrix.set(mjEpsilon, 0, 0, 0.00000000001)
+var float __obs_j_epsilon_zero = na
+__obs_j_epsilon_zero := matrix.is_zero(mjEpsilon) ? 1.0 : 0.0
+mjNonzero = matrix.new<float>(2, 2, 0.0)
+matrix.set(mjNonzero, 1, 1, 0.001)
+var float __obs_j_not_zero = na
+__obs_j_not_zero := matrix.is_zero(mjNonzero) ? 1.0 : 0.0

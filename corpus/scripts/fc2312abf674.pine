@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Cyc Reg")
+var int barNum = 0
+barNum := barNum + 1
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+regime = switch
+    barNum % 5 == 0 => "reset"
+    close > sma3 and rsi > 60 => "expansion"
+    close > sma3 => "growth"
+    close < sma3 and rsi < 40 => "contraction"
+    => "transition"
+isExpansion = regime == "expansion"
+plot(isExpansion ? 1 : 0, "Exp")

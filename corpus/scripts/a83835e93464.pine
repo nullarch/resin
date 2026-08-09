@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("UDFRegime")
+classifyRegime(rsiVal, atrVal) =>
+    rsiVal > 60 and atrVal > 1.5 ? 3.0 : rsiVal > 60 ? 2.0 : atrVal > 1.5 ? 1.0 : 0.0
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = nz(ta.atr(3), 1.0)
+regime = classifyRegime(rsi, atr)
+plot(regime, "Reg")

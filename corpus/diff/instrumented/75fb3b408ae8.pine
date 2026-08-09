@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Run Mean")
+var float sumVal = 0.0
+var int count = 0
+sumVal := sumVal + close
+count := count + 1
+runMean = sumVal / count
+var float __obs_plot0 = na
+__obs_plot0 := runMean
+plot(runMean, "Mean")

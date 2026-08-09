@@ -1,0 +1,9 @@
+//@version=5
+indicator("Varip Backtest")
+varip float cnt = 0.0
+cnt := cnt + 1.0
+var float result = 0.0
+result := cnt
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

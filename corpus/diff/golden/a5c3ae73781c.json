@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:rm": {
+    "ma_cross": 1.0,
+    "rsi_dir": 1.0,
+    "price_pos": 1.0
+   },
+   "var:__obs_plot0": -2.0
+  },
+  {
+   "var:rm": {
+    "ma_cross": 1.0,
+    "rsi_dir": 1.0,
+    "price_pos": 1.0
+   },
+   "var:__obs_plot0": -2.0
+  },
+  {
+   "var:rm": {
+    "ma_cross": 1.0,
+    "rsi_dir": 1.0,
+    "price_pos": 1.0
+   },
+   "var:__obs_plot0": -3.0
+  },
+  {
+   "var:rm": {
+    "ma_cross": 1.0,
+    "rsi_dir": 1.0,
+    "price_pos": 1.0
+   },
+   "var:__obs_plot0": -1.0
+  },
+  {
+   "var:rm": {
+    "ma_cross": 1.0,
+    "rsi_dir": 1.0,
+    "price_pos": 1.0
+   },
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:rm": {
+    "ma_cross": 1.0,
+    "rsi_dir": 1.0,
+    "price_pos": 1.0
+   },
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:rm": {
+    "ma_cross": 1.0,
+    "rsi_dir": 1.0,
+    "price_pos": 1.0
+   },
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:rm": {
+    "ma_cross": 1.0,
+    "rsi_dir": 1.0,
+    "price_pos": 1.0
+   },
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:rm": {
+    "ma_cross": 1.0,
+    "rsi_dir": 1.0,
+    "price_pos": 1.0
+   },
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:rm": {
+    "ma_cross": 1.0,
+    "rsi_dir": 1.0,
+    "price_pos": 1.0
+   },
+   "var:__obs_plot0": 3.0
+  }
+ ],
+ "finalVarState": {
+  "rm": {
+   "ma_cross": 1.0,
+   "rsi_dir": 1.0,
+   "price_pos": 1.0
+  },
+  "__obs_plot0": 3.0
+ }
+}

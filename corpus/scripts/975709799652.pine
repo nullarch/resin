@@ -1,0 +1,9 @@
+//@version=5
+indicator("VWAP", overlay=true)
+src = input.source(hlc3, title="Source")
+vwap_val = ta.vwap(src)
+upper_band = vwap_val + ta.stdev(src, 20)
+lower_band = vwap_val - ta.stdev(src, 20)
+plot(vwap_val, title="VWAP", color=color.blue)
+plot(upper_band, title="Upper", color=color.green)
+plot(lower_band, title="Lower", color=color.red)

@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:cumVol": 1000.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:cumVol": 2200.0,
+   "var:__obs_plot0": 0.5454545454545454
+  },
+  {
+   "var:cumVol": 3000.0,
+   "var:__obs_plot0": 0.26666666666666666
+  },
+  {
+   "var:cumVol": 4500.0,
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:cumVol": 5800.0,
+   "var:__obs_plot0": 0.22413793103448276
+  },
+  {
+   "var:cumVol": 6700.0,
+   "var:__obs_plot0": 0.13432835820895522
+  },
+  {
+   "var:cumVol": 7800.0,
+   "var:__obs_plot0": 0.14102564102564102
+  },
+  {
+   "var:cumVol": 9200.0,
+   "var:__obs_plot0": 0.15217391304347827
+  },
+  {
+   "var:cumVol": 10200.0,
+   "var:__obs_plot0": 0.09803921568627451
+  },
+  {
+   "var:cumVol": 11800.0,
+   "var:__obs_plot0": 0.13559322033898305
+  }
+ ],
+ "finalVarState": {
+  "cumVol": 11800.0,
+  "__obs_plot0": 0.13559322033898305
+ }
+}

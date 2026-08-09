@@ -1,0 +1,12 @@
+//@version=5
+indicator("nz_basic")
+// close[20]은 10바 데이터셋에서 항상 범위 밖(na) — nz의 기본값/명시 replacement 분기를 매 바
+// 동일하게 커버. close(항상 non-na)로 pass-through 분기도 함께 커버.
+var float __obs_default = na
+__obs_default := nz(close[20])
+
+var float __obs_replacement = na
+__obs_replacement := nz(close[20], -1.0)
+
+var float __obs_passthrough = na
+__obs_passthrough := nz(close, -999.0)

@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Exp Growth")
+val = 1.0
+periods = 0
+while val < close
+    val := val * 1.1
+    periods := periods + 1
+    if periods > 200
+        break
+plot(periods, "Periods")

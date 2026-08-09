@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Slice")
+var float[] data = array.new_float(0)
+array.push(data, close)
+if array.size(data) > 8
+    array.shift(data)
+sz = array.size(data)
+if sz >= 4
+    recent = array.slice(data, sz - 2, sz)
+    older = array.slice(data, 0, 2)
+    recentAvg = array.avg(recent)
+    olderAvg = array.avg(older)
+    trending = recentAvg > olderAvg
+    var float __obs_plot0 = na
+    __obs_plot0 := trending ? 1 : 0
+    plot(trending ? 1 : 0, "Trending")
+else
+    var float __obs_plot1 = na
+    __obs_plot1 := 0
+    plot(0, "Trending")

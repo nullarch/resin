@@ -1,0 +1,13 @@
+//@version=5
+indicator("BestRespP2")
+b11 = -(close - open)
+b12 = close - low
+b21 = -(high - close)
+b22 = high - low
+pOpp = nz(ta.rsi(volume, 5), 50.0) / 100.0
+euCol1 = pOpp * b11 + (1.0 - pOpp) * b21
+euCol2 = pOpp * b12 + (1.0 - pOpp) * b22
+bestResp = euCol1 >= euCol2 ? 1.0 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := bestResp
+plot(bestResp, "BR2")

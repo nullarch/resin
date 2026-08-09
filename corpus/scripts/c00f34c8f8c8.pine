@@ -1,0 +1,5 @@
+//@version=5
+indicator("Generic")
+var float result = 0.0
+a = array.new<float>(3, 0.0)
+result := array.size(a)

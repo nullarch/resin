@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Vol Map")
+var vm = map.new<string, float>()
+avgVol = ta.sma(volume, 5)
+map.put(vm, "current", volume)
+map.put(vm, "average", avgVol)
+map.put(vm, "ratio", avgVol > 0 ? volume / avgVol : 1.0)
+total = 0.0
+for [k, v] in vm
+    total := total + v
+plot(total, "T")

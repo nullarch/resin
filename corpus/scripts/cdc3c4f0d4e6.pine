@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Equilibrium")
+hi = ta.highest(high, 5)
+lo = ta.lowest(low, 5)
+mid = (hi + lo) / 2.0
+offset = (hi - lo) * 0.1
+iters = 0
+while math.abs(close - mid) > offset and iters < 10
+    if close > mid
+        lo := mid
+    else
+        hi := mid
+    mid := (hi + lo) / 2.0
+    iters := iters + 1
+plot(mid, "Eq")

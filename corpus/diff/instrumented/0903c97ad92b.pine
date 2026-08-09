@@ -1,0 +1,15 @@
+//@version=5
+indicator("UDT Copy Import")
+type Trade
+    float entry = 0.0
+    float target = 0.0
+
+var orig = Trade.new(100.0, 200.0)
+var clone = Trade.copy(orig)
+clone.entry := 999.0  // should not affect orig
+
+var float orig_entry = 0.0
+orig_entry := orig.entry
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

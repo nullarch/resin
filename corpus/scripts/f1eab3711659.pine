@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Risk State")
+var float maxRisk = 0.0
+var float cumRisk = 0.0
+var int riskEvents = 0
+atr = nz(ta.atr(3), 1.0)
+riskLevel = atr / close * 100
+maxRisk := math.max(maxRisk, riskLevel)
+cumRisk := cumRisk + riskLevel
+riskEvents := riskEvents + (riskLevel > 1.0 ? 1 : 0)
+plot(maxRisk, "MR")

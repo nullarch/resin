@@ -1,0 +1,6 @@
+//@version=5
+indicator("Input Float")
+mult = input.float(2.0, title="Multiplier")
+var float result = 0.0
+result := close * mult
+plot(close)

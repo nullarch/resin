@@ -1,0 +1,19 @@
+//@version=5
+indicator("ADX DMI Full")
+adxLen = 14
+[diPlus, diMinus, adx] = ta.dmi(adxLen, adxLen)
+strongTrend = adx > 25
+bullish = diPlus > diMinus and strongTrend
+bearish = diMinus > diPlus and strongTrend
+var float __obs_plot0 = na
+__obs_plot0 := adx
+plot(adx)
+var float __obs_plot1 = na
+__obs_plot1 := diPlus
+plot(diPlus)
+var float __obs_plot2 = na
+__obs_plot2 := diMinus
+plot(diMinus)
+var float __obs_plot3 = na
+__obs_plot3 := bullish ? 1.0 : bearish ? -1.0 : 0.0
+plot(bullish ? 1.0 : bearish ? -1.0 : 0.0)

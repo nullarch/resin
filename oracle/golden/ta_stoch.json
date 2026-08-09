@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_k": "NaN"
+  },
+  {
+   "var:__obs_k": "NaN"
+  },
+  {
+   "var:__obs_k": "NaN"
+  },
+  {
+   "var:__obs_k": 60.0
+  },
+  {
+   "var:__obs_k": 80.0
+  },
+  {
+   "var:__obs_k": 83.3333333333
+  },
+  {
+   "var:__obs_k": 85.7142857143
+  },
+  {
+   "var:__obs_k": 60.0
+  },
+  {
+   "var:__obs_k": 80.0
+  },
+  {
+   "var:__obs_k": 83.3333333333
+  }
+ ],
+ "finalVarState": {
+  "__obs_k": 83.3333333333
+ }
+}

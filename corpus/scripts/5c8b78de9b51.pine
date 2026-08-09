@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("BB Pct")
+[mid, upper, lower] = ta.bb(close, 5, 2.0)
+bbWidth = upper - lower
+pctB = bbWidth > 0 ? (close - lower) / bbWidth : 0.5
+isOB = pctB > 0.8
+isOS = pctB < 0.2
+plot(pctB, "PctB")

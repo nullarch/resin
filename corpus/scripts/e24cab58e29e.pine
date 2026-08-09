@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Grad Desc")
+target = ta.sma(close, 3)
+param = close * 1.1
+lr = 0.1
+iters = 0
+while iters < 30 and math.abs(param - target) > 0.01
+    grad = param - target
+    param := param - lr * grad
+    iters := iters + 1
+plot(param, "Param")
+plot(iters, "Iters")

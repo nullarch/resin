@@ -1,0 +1,14 @@
+//@version=5
+strategy("Optimized Pipeline Strategy")
+float sma3 = nz(ta.sma(close, 3), close)
+float sma5 = nz(ta.sma(close, 5), close)
+float atrVal = nz(ta.atr(3), 1.0)
+float deviation = close - sma3
+float normDev = atrVal > 0.01 ? deviation / atrVal : 0.0
+float trend = sma3 - sma5
+float normTrend = atrVal > 0.01 ? trend / atrVal : 0.0
+float signal = normDev + normTrend
+if signal > 1.0
+    strategy.entry("Long", strategy.long)
+if signal < -1.0
+    strategy.close("Long")

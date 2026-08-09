@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("While WMA")
+sum = 0.0
+wSum = 0.0
+i = 0
+len = 5
+while i < len
+    val = close[i]
+    if na(val)
+        break
+    w = float(len - i)
+    sum := sum + val * w
+    wSum := wSum + w
+    i := i + 1
+result = wSum > 0 ? sum / wSum : close
+plot(result, "WMA")

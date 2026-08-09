@@ -1,0 +1,9 @@
+//@version=5
+indicator("Decay Heat")
+float operatingPower = 3000.0
+float timeAfterShutdown = bar_index + 1.0
+float operatingTime = 365.0 * 24.0
+float term1 = math.pow(timeAfterShutdown, -0.2)
+float term2 = math.pow(timeAfterShutdown + operatingTime, -0.2)
+float decayHeatFraction = 0.066 * (term1 - term2)
+float decayHeat = operatingPower * decayHeatFraction

@@ -1,0 +1,51 @@
+//@version=5
+indicator("udf_nested_call")
+// UDF-in-UDF 중첩 호출(C267[part2], corpus "UDF 안에서 다른 UDF를 호출하는 것은 아직 지원하지
+// 않음" 클러스터 18건 실측) — analyzeUserFuncCall의 blanket scope.func!==null 거부를 걷어내고
+// 기존 콜사이트별(AST 노드 키) slotBase 배정 메커니즘을 그대로 재사용했다(codegen 변경 0줄 —
+// slotBase는 "이 CallExpr이 소스 어디에 있는가"만으로 정해지는 컴파일타임 상수라 중첩 깊이와
+// 무관, DIVERGENCES 참조).
+//
+// 이 케이스는 실제 corpus 패턴과 동일하게 함수당 콜사이트 1개만 쓴다 — 같은 스테이트풀 함수를
+// 다른 함수 안에서 두 곳 이상에서 부르면 pine2py의 ta state_key/UDF 내부 var가 AST 콜사이트
+// 하나로 고정돼(codegen.py _inject_stateful_kwargs, MEMORY.md Pitfalls C9와 동일 축) 모든
+// 콜사이트가 상태를 공유하는 별개의 pine2py 버그가 트리거돼 오라클이 무효가 된다
+// (udf_forward_ref.pine이 이미 확립한 원칙) — 그 다중 콜사이트 독립성 검증은
+// tests/unit/codegen.test.ts exact-string 테스트 + hand-verified 실행 테스트가 담당한다.
+
+// __obs_result: 3단 체인(outer -> mid -> leaf) — leaf는 stateful ta.sma, mid는 var 누산 상태를
+// 갖는다. 둘 다 top-level이 아니라 다른 UDF 본문 안에서만 호출되는 콜사이트를 거친다.
+leaf(x) =>
+    ta.sma(x, 3)
+
+mid(x) =>
+    var float acc = 0.0
+    v = leaf(x)
+    acc := acc + nz(v)
+    acc
+
+outer(x) =>
+    mid(x) * 2.0
+
+result = outer(close)
+var float __obs_result = na
+__obs_result := result
+
+// __obs_normed: 실제 corpus 패턴(ec24188fce2b.pine)과 동형 — normalize(stateless)가 getRSI
+// (stateful ta.rsi)의 결과를 받아 lo/hi 범위로 정규화한다. getNormRSI 본문 안에서 getRSI/
+// normalize 둘 다 호출(각 콜사이트 1개).
+normalize(val, lo, hi) =>
+    hi > lo ? (val - lo) / (hi - lo) * 100.0 : 50.0
+
+getRSI(len) =>
+    ta.rsi(close, len)
+
+getNormRSI(len, lookback) =>
+    r = getRSI(len)
+    lo = ta.lowest(r, lookback)
+    hi = ta.highest(r, lookback)
+    normalize(r, lo, hi)
+
+normed = getNormRSI(5, 5)
+var float __obs_normed = na
+__obs_normed := normed

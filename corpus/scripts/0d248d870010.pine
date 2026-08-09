@@ -1,0 +1,11 @@
+//@version=5
+indicator("UDF Chain")
+f_double(x) =>
+    x * 2.0
+
+f_quad(x) =>
+    f_double(f_double(x))
+
+var float result = 0.0
+result := f_quad(5.0)
+plot(result)

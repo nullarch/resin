@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Band Data")
+var bd = map.new<string, float>()
+[mid, upper, lower] = ta.bb(close, 5, 2.0)
+map.put(bd, "bb_upper", upper)
+map.put(bd, "bb_lower", lower)
+map.put(bd, "bb_mid", mid)
+map.put(bd, "bb_width", upper - lower)
+width = map.get(bd, "bb_width", 0.0)
+var float __obs_plot0 = na
+__obs_plot0 := width
+plot(width, "W")

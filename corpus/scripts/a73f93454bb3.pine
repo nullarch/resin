@@ -1,0 +1,14 @@
+
+//@version=5
+strategy("NN Strat")
+sigmoid(x) =>
+    1.0 / (1.0 + math.exp(-math.max(math.min(x, 10.0), -10.0)))
+inp1 = (close - 100.0) / 10.0
+inp2 = (volume - 1000.0) / 500.0
+h = math.max(0.5 * inp1 + 0.3 * inp2 + 0.1, 0.0)
+out = sigmoid(h - 0.5)
+if out > 0.6
+    strategy.entry("NNLong", strategy.long)
+if out < 0.4
+    strategy.close("NNLong")
+plot(out, "NNOut")

@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_kwarg": "#FF52527F",
+   "var:__obs_pos": "#FF52527F",
+   "var:__obs_kwarg_zero": "#2196F3"
+  },
+  {
+   "var:__obs_kwarg": "#FF52527F",
+   "var:__obs_pos": "#FF52527F",
+   "var:__obs_kwarg_zero": "#2196F3"
+  },
+  {
+   "var:__obs_kwarg": "#FF52527F",
+   "var:__obs_pos": "#FF52527F",
+   "var:__obs_kwarg_zero": "#2196F3"
+  },
+  {
+   "var:__obs_kwarg": "#FF52527F",
+   "var:__obs_pos": "#FF52527F",
+   "var:__obs_kwarg_zero": "#2196F3"
+  },
+  {
+   "var:__obs_kwarg": "#FF52527F",
+   "var:__obs_pos": "#FF52527F",
+   "var:__obs_kwarg_zero": "#2196F3"
+  },
+  {
+   "var:__obs_kwarg": "#FF52527F",
+   "var:__obs_pos": "#FF52527F",
+   "var:__obs_kwarg_zero": "#2196F3"
+  },
+  {
+   "var:__obs_kwarg": "#FF52527F",
+   "var:__obs_pos": "#FF52527F",
+   "var:__obs_kwarg_zero": "#2196F3"
+  },
+  {
+   "var:__obs_kwarg": "#FF52527F",
+   "var:__obs_pos": "#FF52527F",
+   "var:__obs_kwarg_zero": "#2196F3"
+  },
+  {
+   "var:__obs_kwarg": "#FF52527F",
+   "var:__obs_pos": "#FF52527F",
+   "var:__obs_kwarg_zero": "#2196F3"
+  },
+  {
+   "var:__obs_kwarg": "#FF52527F",
+   "var:__obs_pos": "#FF52527F",
+   "var:__obs_kwarg_zero": "#2196F3"
+  }
+ ],
+ "finalVarState": {
+  "__obs_kwarg": "#FF52527F",
+  "__obs_pos": "#FF52527F",
+  "__obs_kwarg_zero": "#2196F3"
+ }
+}

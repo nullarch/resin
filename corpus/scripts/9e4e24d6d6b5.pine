@@ -1,0 +1,16 @@
+//@version=5
+indicator("Method Return")
+var float result = 0.0
+
+type Counter
+    int count = 0
+
+method increment(Counter self) =>
+    self.count := self.count + 1
+    self.count
+
+c = Counter.new(0)
+c.increment()
+c.increment()
+c.increment()
+result := c.count

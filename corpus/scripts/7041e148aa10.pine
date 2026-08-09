@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Normalize")
+normalize(float val, float minVal, float maxVal) =>
+    rng = maxVal - minVal
+    rng > 0 ? (val - minVal) / rng : 0.5
+
+hi5 = ta.highest(high, 5)
+lo5 = ta.lowest(low, 5)
+normClose = normalize(close, lo5, hi5)
+normRSI = normalize(nz(ta.rsi(close, 3), 50.0), 0.0, 100.0)
+plot(normClose, "NC")
+plot(normRSI, "NR")

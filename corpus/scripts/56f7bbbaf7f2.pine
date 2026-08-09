@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Reg Track")
+var int currentRegime = 0
+var int regimeChanges = 0
+var int regimeBars = 0
+sma3 = ta.sma(close, 3)
+newRegime = close > sma3 ? 1 : -1
+if newRegime != currentRegime
+    regimeChanges := regimeChanges + 1
+    currentRegime := newRegime
+    regimeBars := 0
+regimeBars := regimeBars + 1
+plot(regimeChanges, "RC")

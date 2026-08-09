@@ -1,0 +1,18 @@
+//@version=5
+indicator("Matrix Pred")
+m = matrix.new<float>(3, 3, 0.0)
+matrix.set(m, 0, 0, 1.0)
+matrix.set(m, 1, 1, 1.0)
+matrix.set(m, 2, 2, 1.0)
+isDiag = m.is_diagonal() ? 1.0 : 0.0
+isIdent = m.is_identity() ? 1.0 : 0.0
+isSq = m.is_square() ? 1.0 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := isDiag
+plot(isDiag)
+var float __obs_plot1 = na
+__obs_plot1 := isIdent
+plot(isIdent)
+var float __obs_plot2 = na
+__obs_plot2 := isSq
+plot(isSq)

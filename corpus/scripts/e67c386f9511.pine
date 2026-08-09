@@ -1,0 +1,4 @@
+//@version=5
+indicator("NzValid")
+var float result = 0
+result := nz(close)

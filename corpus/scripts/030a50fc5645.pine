@@ -1,0 +1,9 @@
+//@version=5
+strategy("ATR Stop", overlay=true)
+sma5 = ta.sma(close, 5)
+atr3 = ta.atr(3)
+longCond = ta.crossover(close, sma5)
+if longCond and not na(atr3)
+    strategy.entry("L", strategy.long)
+    stopPrice = close - nz(atr3) * 2
+    strategy.exit("SL", "L", stop=stopPrice)

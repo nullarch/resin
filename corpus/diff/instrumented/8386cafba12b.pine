@@ -1,0 +1,19 @@
+
+//@version=5
+indicator("Stat UDT")
+type StatTracker
+    float maxZ = 0.0
+    float minZ = 0.0
+    int extremeBars = 0
+
+var StatTracker stt = StatTracker.new()
+sma5 = ta.sma(close, 5)
+stdev5 = ta.stdev(close, 5)
+z = stdev5 > 0 ? (close - sma5) / stdev5 : 0.0
+stt.maxZ := math.max(stt.maxZ, z)
+stt.minZ := math.min(stt.minZ, z)
+if math.abs(z) > 1.5
+    stt.extremeBars := stt.extremeBars + 1
+var float __obs_plot0 = na
+__obs_plot0 := stt.extremeBars
+plot(stt.extremeBars, "EB")

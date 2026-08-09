@@ -1,0 +1,13 @@
+//@version=5
+indicator("while search")
+var float result = 0.0
+lo = 0.0
+hi = 100.0
+target = 42.0
+while hi - lo > 0.01
+    mid = (lo + hi) / 2.0
+    if mid < target
+        lo := mid
+    else
+        hi := mid
+result := lo

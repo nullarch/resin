@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Norm Range")
+hi = ta.highest(high, 5)
+lo = ta.lowest(low, 5)
+rng = hi - lo
+normClose = rng > 0 ? (close - lo) / rng : 0.5
+normOpen = rng > 0 ? (open - lo) / rng : 0.5
+bodyNorm = normClose - normOpen
+plot(bodyNorm, "Body")

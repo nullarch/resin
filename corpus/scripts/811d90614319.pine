@@ -1,0 +1,5 @@
+//@version=5
+indicator("Empty UDF")
+f() =>
+    na
+result = f()

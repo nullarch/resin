@@ -1,0 +1,4 @@
+//@version=5
+indicator("StrFormat")
+var string lastFmt = ""
+lastFmt := str.tostring(close, "#.##")

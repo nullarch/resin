@@ -1,0 +1,12 @@
+//@version=5
+indicator("Array Chain")
+var float[] prices = array.new<float>(0)
+prices.push(close)
+if prices.size() > 5
+    prices.shift()
+sorted = prices.copy()
+sorted.sort()
+median = sorted.get(math.floor(sorted.size() / 2))
+var float __obs_plot0 = na
+__obs_plot0 := median
+plot(median)

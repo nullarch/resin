@@ -1,0 +1,7 @@
+//@version=5
+indicator("ta_cog")
+// ta.cog 오라클 검증(ROADMAP P2 "ta.* 44종" — cog). length=3으로 sample10.json 10바 안에서
+// 워밍업 구간(NaN, 바 0~1)과 정상 구간(바 2~9)을 모두 커버. result=-num/denom의 음수 부호가
+// 정확히 이식됐는지(부호를 놓치면 오라클이 정확히 반대 부호로 전부 실패) 바이트 단위로 검증.
+var float __obs_cog = na
+__obs_cog := ta.cog(close, 3)

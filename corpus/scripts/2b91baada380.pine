@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Adapt Smooth")
+target = ta.sma(close, 5)
+estimate = close
+alpha = 0.5
+iters = 0
+while math.abs(estimate - target) > 0.01 and iters < 20
+    estimate := alpha * target + (1 - alpha) * estimate
+    iters := iters + 1
+plot(estimate, "Est")

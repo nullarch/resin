@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("EMA Filt")
+raw = close - close[1]
+filtered = ta.ema(nz(raw, 0.0), 3)
+isSignal = math.abs(filtered) > math.abs(nz(raw, 0.0)) * 0.3
+var float __obs_plot0 = na
+__obs_plot0 := filtered
+plot(filtered, "F")

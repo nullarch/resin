@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_v1": 0.0,
+   "var:__obs_v2": 0.0,
+   "var:__obs_v3": 0.0,
+   "var:__obs_bare": 0.0
+  },
+  {
+   "var:__obs_v1": 0.0,
+   "var:__obs_v2": 0.0,
+   "var:__obs_v3": 0.0,
+   "var:__obs_bare": 0.0
+  },
+  {
+   "var:__obs_v1": 0.0,
+   "var:__obs_v2": 0.0,
+   "var:__obs_v3": 0.0,
+   "var:__obs_bare": 0.0
+  },
+  {
+   "var:__obs_v1": 0.0,
+   "var:__obs_v2": 0.0,
+   "var:__obs_v3": 0.0,
+   "var:__obs_bare": 0.0
+  },
+  {
+   "var:__obs_v1": 0.0,
+   "var:__obs_v2": 0.0,
+   "var:__obs_v3": 0.0,
+   "var:__obs_bare": 0.0
+  },
+  {
+   "var:__obs_v1": 0.0,
+   "var:__obs_v2": 0.0,
+   "var:__obs_v3": 0.0,
+   "var:__obs_bare": 0.0
+  },
+  {
+   "var:__obs_v1": 0.0,
+   "var:__obs_v2": 0.0,
+   "var:__obs_v3": 0.0,
+   "var:__obs_bare": 0.0
+  },
+  {
+   "var:__obs_v1": 0.0,
+   "var:__obs_v2": 0.0,
+   "var:__obs_v3": 0.0,
+   "var:__obs_bare": 0.0
+  },
+  {
+   "var:__obs_v1": 0.0,
+   "var:__obs_v2": 0.0,
+   "var:__obs_v3": 0.0,
+   "var:__obs_bare": 0.0
+  },
+  {
+   "var:__obs_v1": 0.0,
+   "var:__obs_v2": 0.0,
+   "var:__obs_v3": 0.0,
+   "var:__obs_bare": 0.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_v1": 0.0,
+  "__obs_v2": 0.0,
+  "__obs_v3": 0.0,
+  "__obs_bare": 0.0
+ }
+}

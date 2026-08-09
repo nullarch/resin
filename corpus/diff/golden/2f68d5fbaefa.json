@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:sumD2": 0.0,
+   "var:nObs": 1,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:sumD2": 0.0,
+   "var:nObs": 2,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:sumD2": 0.0,
+   "var:nObs": 3,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:sumD2": 0.0,
+   "var:nObs": 4,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:sumD2": 0.022500000000000006,
+   "var:nObs": 5,
+   "var:__obs_plot0": 0.998875
+  },
+  {
+   "var:sumD2": 0.06196128561007384,
+   "var:nObs": 6,
+   "var:__obs_plot0": 0.9982296775539979
+  },
+  {
+   "var:sumD2": 0.10735133801102337,
+   "var:nObs": 7,
+   "var:__obs_plot0": 0.9980830118212317
+  },
+  {
+   "var:sumD2": 0.13971488097683693,
+   "var:nObs": 8,
+   "var:__obs_plot0": 0.9983367276074187
+  },
+  {
+   "var:sumD2": 0.19349347362557356,
+   "var:nObs": 9,
+   "var:__obs_plot0": 0.9983875543864535
+  },
+  {
+   "var:sumD2": 0.2116301253903663,
+   "var:nObs": 10,
+   "var:__obs_plot0": 0.9987173931794523
+  }
+ ],
+ "finalVarState": {
+  "sumD2": 0.2116301253903663,
+  "nObs": 10,
+  "__obs_plot0": 0.9987173931794523
+ }
+}

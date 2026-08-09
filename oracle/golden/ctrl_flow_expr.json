@@ -1,0 +1,76 @@
+{
+ "ok": true,
+ "data": "ctrl_flow_expr.json",
+ "bars": [
+  {
+   "var:__obs_a": 2,
+   "var:b": 1.0,
+   "var:__obs_b": 1.0,
+   "var:__obs_c": 1.0,
+   "var:d": 100.0,
+   "var:__obs_d": 100.0,
+   "var:__obs_e": 105,
+   "var:__obs_f": 104.0
+  },
+  {
+   "var:__obs_a": 2,
+   "var:b": -1.0,
+   "var:__obs_b": -1.0,
+   "var:__obs_c": -1.0,
+   "var:d": -100.0,
+   "var:__obs_d": -100.0,
+   "var:__obs_e": 103,
+   "var:__obs_f": 102.0
+  },
+  {
+   "var:__obs_a": 0,
+   "var:b": 0.0,
+   "var:__obs_b": 0.0,
+   "var:__obs_c": 0.0,
+   "var:d": 0.0,
+   "var:__obs_d": 0.0,
+   "var:__obs_e": 103,
+   "var:__obs_f": 102.0
+  },
+  {
+   "var:__obs_a": 2,
+   "var:b": 1.0,
+   "var:__obs_b": 1.0,
+   "var:__obs_c": 1.0,
+   "var:d": 100.0,
+   "var:__obs_d": 100.0,
+   "var:__obs_e": 110,
+   "var:__obs_f": 109.0
+  },
+  {
+   "var:__obs_a": 3,
+   "var:b": -1.0,
+   "var:__obs_b": -1.0,
+   "var:__obs_c": -1.0,
+   "var:d": -100.0,
+   "var:__obs_d": -100.0,
+   "var:__obs_e": 103,
+   "var:__obs_f": 102.0
+  },
+  {
+   "var:__obs_a": 0,
+   "var:b": 0.0,
+   "var:__obs_b": 0.0,
+   "var:__obs_c": 0.0,
+   "var:d": 0.0,
+   "var:__obs_d": 0.0,
+   "var:__obs_e": 111,
+   "var:__obs_f": 110.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_a": 0,
+  "b": 0.0,
+  "__obs_b": 0.0,
+  "__obs_c": 0.0,
+  "d": 0.0,
+  "__obs_d": 0.0,
+  "__obs_e": 111,
+  "__obs_f": 110.0
+ }
+}

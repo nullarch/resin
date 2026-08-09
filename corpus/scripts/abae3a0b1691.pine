@@ -1,0 +1,8 @@
+//@version=5
+indicator("Method ML")
+arr = array.new_float(0)
+arr.push(close +
+    open)
+arr.push(high -
+    low)
+plot(arr.avg())

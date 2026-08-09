@@ -1,0 +1,18 @@
+//@version=5
+indicator("Combo12")
+var float totalWeight = 0.0
+var float weightedSum = 0.0
+data = map.new<string, float>()
+map.put(data, "ret1", close - nz(close[1], close))
+map.put(data, "ret2", nz(close[1], close) - nz(close[2], close))
+map.put(data, "vol", high - low)
+for [key, val] in data
+    w = switch key
+        "ret1" => 0.5
+        "ret2" => 0.3
+        => 0.2
+    totalWeight := totalWeight + w
+    weightedSum := weightedSum + w * val
+result = totalWeight > 0.0 ? weightedSum / totalWeight : 0.0
+scaled = math.round(result * 100.0) / 100.0
+plot(scaled, "Weighted")

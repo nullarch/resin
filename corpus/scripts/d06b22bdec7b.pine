@@ -1,0 +1,11 @@
+//@version=5
+indicator("Hoist Type")
+var float result = 0.0
+p = Point.new(10.0, 20.0)
+result := p.x + p.y
+
+type Point
+    float x
+    float y
+
+plot(result)

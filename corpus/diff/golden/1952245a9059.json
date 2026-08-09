@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:priorMean": 104.96000000000001,
+   "var:priorPrec": 1.0204081632653061,
+   "var:nObs": 1,
+   "var:__obs_plot0": 104.96000000000001
+  },
+  {
+   "var:priorMean": 104.93455922120066,
+   "var:priorPrec": 1.0481859410430838,
+   "var:nObs": 2,
+   "var:__obs_plot0": 104.93455922120066
+  },
+  {
+   "var:priorMean": 104.82668944966555,
+   "var:priorPrec": 1.0881859410430839,
+   "var:nObs": 3,
+   "var:__obs_plot0": 104.82668944966555
+  },
+  {
+   "var:priorMean": 104.83100337302396,
+   "var:priorPrec": 1.1159637188208615,
+   "var:nObs": 4,
+   "var:__obs_plot0": 104.83100337302396
+  },
+  {
+   "var:priorMean": 104.8836812783759,
+   "var:priorPrec": 1.1437414965986392,
+   "var:nObs": 5,
+   "var:__obs_plot0": 104.8836812783759
+  },
+  {
+   "var:priorMean": 104.91015020130077,
+   "var:priorPrec": 1.171519274376417,
+   "var:nObs": 6,
+   "var:__obs_plot0": 104.91015020130077
+  },
+  {
+   "var:priorMean": 104.98171642496555,
+   "var:priorPrec": 1.1992970521541946,
+   "var:nObs": 7,
+   "var:__obs_plot0": 104.98171642496555
+  },
+  {
+   "var:priorMean": 105.09531729312198,
+   "var:priorPrec": 1.2270748299319723,
+   "var:nObs": 8,
+   "var:__obs_plot0": 105.09531729312198
+  },
+  {
+   "var:priorMean": 105.18175247113253,
+   "var:priorPrec": 1.25485260770975,
+   "var:nObs": 9,
+   "var:__obs_plot0": 105.18175247113253
+  },
+  {
+   "var:priorMean": 105.30775758432932,
+   "var:priorPrec": 1.2826303854875276,
+   "var:nObs": 10,
+   "var:__obs_plot0": 105.30775758432932
+  }
+ ],
+ "finalVarState": {
+  "priorMean": 105.30775758432932,
+  "priorPrec": 1.2826303854875276,
+  "nObs": 10,
+  "__obs_plot0": 105.30775758432932
+ }
+}

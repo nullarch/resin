@@ -1,0 +1,12 @@
+//@version=5
+indicator("ta_supertrend")
+// ta.supertrend 오라클 검증(ROADMAP P2 "ta.* 44종"). factor=2.0, atrPeriod=3, sample10.json 전 구간
+// 관측. DIVERGENCES.md #10: 내부 ta.atr(#8, O(1) RMA 스트리밍)이 pine2py atr.py(재스캔)보다 한 바
+// 일찍 유효값을 내고, supertrend는 그 atr_val에 상태 전이(band hold/direction flip)를 누적하므로
+// 워밍업 시점 차이가 전체 궤적으로 전파된다 — 이 골든은 참고용이며 __obs_value/__obs_direction
+// 어느 채널도 골든과 직접 비교하지 않는다(hand-verified 대체, tests/oracle/ta_supertrend.test.ts).
+[value, direction] = ta.supertrend(2.0, 3)
+var float __obs_value = na
+var float __obs_direction = na
+__obs_value := value
+__obs_direction := direction

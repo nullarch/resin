@@ -1,0 +1,12 @@
+//@version=5
+indicator("Input Switch")
+maType = input.string("EMA", "Type", options=["EMA", "SMA", "WMA", "RMA"])
+len = input.int(14, "Length", minval=1, maxval=200)
+src = input.source(close, "Source")
+val = switch maType
+    "EMA" => ta.ema(src, len)
+    "SMA" => ta.sma(src, len)
+    "WMA" => ta.wma(src, len)
+    "RMA" => ta.rma(src, len)
+    => ta.sma(src, len)
+plot(val)

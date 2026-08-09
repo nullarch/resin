@@ -1,0 +1,16 @@
+//@version=5
+indicator("Multi MA Score")
+sma3 = ta.sma(close, 3)
+ema3 = ta.ema(close, 3)
+wma5 = ta.wma(close, 5)
+rma5 = ta.rma(close, 5)
+var int maScore = 0
+maScore := 0
+if not na(sma3) and close > nz(sma3)
+    maScore := maScore + 1
+if not na(ema3) and close > nz(ema3)
+    maScore := maScore + 1
+if not na(wma5) and close > nz(wma5)
+    maScore := maScore + 1
+if not na(rma5) and close > nz(rma5)
+    maScore := maScore + 1

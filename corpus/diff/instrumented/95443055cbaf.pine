@@ -1,0 +1,9 @@
+//@version=5
+indicator("DiscReward")
+var float discReward = 0.0
+gammaDisc = 0.95
+reward = close > open ? 1.0 : -0.5
+discReward := gammaDisc * discReward + reward
+var float __obs_plot0 = na
+__obs_plot0 := discReward
+plot(discReward, "DiscR")

@@ -1,0 +1,7 @@
+//@version=5
+indicator("ta_cmo")
+// ta.cmo 오라클 검증(ROADMAP P2 "ta.* 44종" — cmo). length=3으로 sample10.json 10바 안에서
+// momentum 워밍업(바 0, source.get(1) 없음)과 gain/loss 윈도우 축적 구간(바 1~3, NaN)과
+// 정상 구간(바 4~9)을 모두 커버.
+var float __obs_cmo = na
+__obs_cmo := ta.cmo(close, 3)

@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_wma": "NaN"
+  },
+  {
+   "var:__obs_wma": "NaN"
+  },
+  {
+   "var:__obs_wma": 102.3333333333
+  },
+  {
+   "var:__obs_wma": 102.3333333333
+  },
+  {
+   "var:__obs_wma": 103.1666666667
+  },
+  {
+   "var:__obs_wma": 104.1666666667
+  },
+  {
+   "var:__obs_wma": 105.3333333333
+  },
+  {
+   "var:__obs_wma": 105.3333333333
+  },
+  {
+   "var:__obs_wma": 106.1666666667
+  },
+  {
+   "var:__obs_wma": 107.1666666667
+  }
+ ],
+ "finalVarState": {
+  "__obs_wma": 107.1666666667
+ }
+}

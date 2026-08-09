@@ -1,0 +1,57 @@
+//@version=5
+indicator("timeframe_basic")
+// timeframe.*(9종 속성 + main_period 별칭) + in_seconds/from_seconds 정적 함수 오라클 검증
+// (ROADMAP P2 "barstate/session/syminfo/timeframe" 세 번째(마지막) 슬라이스). 9개 속성은
+// pine2py Context.timeframe이 DataProvider 없이는 Timeframe(period="D") 고정이라 syminfo.*와
+// 동일하게 바 데이터와 무관한 컴파일타임 상수. in_seconds/from_seconds는 pine2py codegen.py의
+// 함수-이름 매핑 테이블(L1708-1710)이 실제로 라우팅하는 wa.timeframe_in_seconds/
+// wa.timeframe_from_seconds(wavealgo/__init__.py)를 대조 대상으로 쓴다 — 이 두 함수는
+// wavealgo/builtins/timeframe.py의 Timeframe.in_seconds/from_seconds staticmethod와 로직이
+// 다르다(직접 python 실행으로 확인, PROGRESS.md C150 참조) — 실제 codegen 경로만 오라클 기준이다.
+var string __obs_period = na
+var string __obs_main_period = na
+var float __obs_multiplier = na
+var float __obs_isseconds = na
+var float __obs_isminutes = na
+var float __obs_isintraday = na
+var float __obs_isdaily = na
+var float __obs_isweekly = na
+var float __obs_ismonthly = na
+var float __obs_isdwm = na
+var float __obs_in_seconds_d = na
+var float __obs_in_seconds_w = na
+var float __obs_in_seconds_m = na
+var float __obs_in_seconds_60 = na
+var float __obs_in_seconds_5 = na
+var float __obs_in_seconds_1w = na
+var float __obs_in_seconds_empty = na
+var string __obs_from_seconds_60 = na
+var string __obs_from_seconds_86400 = na
+var string __obs_from_seconds_30 = na
+var string __obs_from_seconds_604800 = na
+var string __obs_from_seconds_2592000 = na
+var string __obs_from_seconds_0 = na
+
+__obs_period := timeframe.period
+__obs_main_period := timeframe.main_period
+__obs_multiplier := timeframe.multiplier
+__obs_isseconds := timeframe.isseconds ? 1.0 : 0.0
+__obs_isminutes := timeframe.isminutes ? 1.0 : 0.0
+__obs_isintraday := timeframe.isintraday ? 1.0 : 0.0
+__obs_isdaily := timeframe.isdaily ? 1.0 : 0.0
+__obs_isweekly := timeframe.isweekly ? 1.0 : 0.0
+__obs_ismonthly := timeframe.ismonthly ? 1.0 : 0.0
+__obs_isdwm := timeframe.isdwm ? 1.0 : 0.0
+__obs_in_seconds_d := timeframe.in_seconds("D")
+__obs_in_seconds_w := timeframe.in_seconds("W")
+__obs_in_seconds_m := timeframe.in_seconds("M")
+__obs_in_seconds_60 := timeframe.in_seconds("60")
+__obs_in_seconds_5 := timeframe.in_seconds("5")
+__obs_in_seconds_1w := timeframe.in_seconds("1W")
+__obs_in_seconds_empty := timeframe.in_seconds("")
+__obs_from_seconds_60 := timeframe.from_seconds(60)
+__obs_from_seconds_86400 := timeframe.from_seconds(86400)
+__obs_from_seconds_30 := timeframe.from_seconds(30)
+__obs_from_seconds_604800 := timeframe.from_seconds(604800)
+__obs_from_seconds_2592000 := timeframe.from_seconds(2592000)
+__obs_from_seconds_0 := timeframe.from_seconds(0)

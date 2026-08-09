@@ -1,0 +1,17 @@
+//@version=5
+strategy("FE15")
+avgSpread(arr) =>
+    sz = array.size(arr)
+    s = 0.0
+    for i = 0 to sz - 1
+        s := s + array.get(arr, i)
+    sz > 0 ? s / sz : 0.0
+[bbMid, bbUp, bbLow] = ta.bb(close, 5, 2.0)
+spreads = array.new_float(0)
+array.push(spreads, nz(bbUp - bbMid, 0.0))
+array.push(spreads, nz(bbMid - bbLow, 0.0))
+avg = avgSpread(spreads)
+if close < bbLow and avg > 0
+    strategy.entry("BuyDip", strategy.long)
+if close > bbUp
+    strategy.close("BuyDip")

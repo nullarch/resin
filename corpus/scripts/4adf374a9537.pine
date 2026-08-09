@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Vol Regime")
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 5)
+ratio = avgATR > 0 ? atr / avgATR : 1.0
+regime = switch
+    ratio > 1.5 => "extreme"
+    ratio > 1.2 => "high"
+    ratio < 0.7 => "low"
+    => "normal"
+mult = regime == "extreme" ? 3.0 : regime == "high" ? 2.5 : regime == "low" ? 1.5 : 2.0
+plot(mult, "Mult")

@@ -1,0 +1,2 @@
+indicator("No Version")
+result = close + 1.0

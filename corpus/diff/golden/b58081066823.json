@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:trailStop": 101.0,
+   "var:__obs_plot0": 101.0
+  },
+  {
+   "var:trailStop": 102.0,
+   "var:__obs_plot0": 102.0
+  },
+  {
+   "var:trailStop": 102.0,
+   "var:__obs_plot0": 102.0
+  },
+  {
+   "var:trailStop": 102.0,
+   "var:__obs_plot0": 102.0
+  },
+  {
+   "var:trailStop": 102.0,
+   "var:__obs_plot0": 102.0
+  },
+  {
+   "var:trailStop": 102.0,
+   "var:__obs_plot0": 102.0
+  },
+  {
+   "var:trailStop": 102.0,
+   "var:__obs_plot0": 102.0
+  },
+  {
+   "var:trailStop": 102.0,
+   "var:__obs_plot0": 102.0
+  },
+  {
+   "var:trailStop": 102.0,
+   "var:__obs_plot0": 102.0
+  },
+  {
+   "var:trailStop": 102.0,
+   "var:__obs_plot0": 102.0
+  }
+ ],
+ "finalVarState": {
+  "trailStop": 102.0,
+  "__obs_plot0": 102.0
+ }
+}

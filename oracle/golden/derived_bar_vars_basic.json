@@ -1,0 +1,105 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_hl2": 100.5,
+   "var:__obs_hlc3": 100.66666666666667,
+   "var:__obs_ohlc4": 100.5,
+   "var:__obs_hlcc4": 100.75,
+   "var:__obs_bar_index": 0,
+   "var:__obs_hl2_prev": "NaN",
+   "var:__obs_bar_index_prev": "NaN"
+  },
+  {
+   "var:__obs_hl2": 101.5,
+   "var:__obs_hlc3": 101.66666666666667,
+   "var:__obs_ohlc4": 101.5,
+   "var:__obs_hlcc4": 101.75,
+   "var:__obs_bar_index": 1,
+   "var:__obs_hl2_prev": 100.5,
+   "var:__obs_bar_index_prev": 0
+  },
+  {
+   "var:__obs_hl2": 102.5,
+   "var:__obs_hlc3": 102.66666666666667,
+   "var:__obs_ohlc4": 102.5,
+   "var:__obs_hlcc4": 102.75,
+   "var:__obs_bar_index": 2,
+   "var:__obs_hl2_prev": 101.5,
+   "var:__obs_bar_index_prev": 1
+  },
+  {
+   "var:__obs_hl2": 101.5,
+   "var:__obs_hlc3": 101.66666666666667,
+   "var:__obs_ohlc4": 101.5,
+   "var:__obs_hlcc4": 101.75,
+   "var:__obs_bar_index": 3,
+   "var:__obs_hl2_prev": 102.5,
+   "var:__obs_bar_index_prev": 2
+  },
+  {
+   "var:__obs_hl2": 103.5,
+   "var:__obs_hlc3": 103.66666666666667,
+   "var:__obs_ohlc4": 103.5,
+   "var:__obs_hlcc4": 103.75,
+   "var:__obs_bar_index": 4,
+   "var:__obs_hl2_prev": 101.5,
+   "var:__obs_bar_index_prev": 3
+  },
+  {
+   "var:__obs_hl2": 104.5,
+   "var:__obs_hlc3": 104.66666666666667,
+   "var:__obs_ohlc4": 104.5,
+   "var:__obs_hlcc4": 104.75,
+   "var:__obs_bar_index": 5,
+   "var:__obs_hl2_prev": 103.5,
+   "var:__obs_bar_index_prev": 4
+  },
+  {
+   "var:__obs_hl2": 105.5,
+   "var:__obs_hlc3": 105.66666666666667,
+   "var:__obs_ohlc4": 105.5,
+   "var:__obs_hlcc4": 105.75,
+   "var:__obs_bar_index": 6,
+   "var:__obs_hl2_prev": 104.5,
+   "var:__obs_bar_index_prev": 5
+  },
+  {
+   "var:__obs_hl2": 104.5,
+   "var:__obs_hlc3": 104.66666666666667,
+   "var:__obs_ohlc4": 104.5,
+   "var:__obs_hlcc4": 104.75,
+   "var:__obs_bar_index": 7,
+   "var:__obs_hl2_prev": 105.5,
+   "var:__obs_bar_index_prev": 6
+  },
+  {
+   "var:__obs_hl2": 106.5,
+   "var:__obs_hlc3": 106.66666666666667,
+   "var:__obs_ohlc4": 106.5,
+   "var:__obs_hlcc4": 106.75,
+   "var:__obs_bar_index": 8,
+   "var:__obs_hl2_prev": 104.5,
+   "var:__obs_bar_index_prev": 7
+  },
+  {
+   "var:__obs_hl2": 107.5,
+   "var:__obs_hlc3": 107.66666666666667,
+   "var:__obs_ohlc4": 107.5,
+   "var:__obs_hlcc4": 107.75,
+   "var:__obs_bar_index": 9,
+   "var:__obs_hl2_prev": 106.5,
+   "var:__obs_bar_index_prev": 8
+  }
+ ],
+ "finalVarState": {
+  "__obs_hl2": 107.5,
+  "__obs_hlc3": 107.66666666666667,
+  "__obs_ohlc4": 107.5,
+  "__obs_hlcc4": 107.75,
+  "__obs_bar_index": 9,
+  "__obs_hl2_prev": 106.5,
+  "__obs_bar_index_prev": 8
+ }
+}

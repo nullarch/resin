@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("UDTRisk")
+type RiskSnap
+    float equity = 0.0
+    float maxDD = 0.0
+    int barNum = 0
+
+var float eq = 100.0
+var float pk = 100.0
+var float mdd = 0.0
+pnl = close > open ? 1.0 : -0.5
+eq := eq + pnl
+pk := eq > pk ? eq : pk
+dd = pk - eq
+mdd := dd > mdd ? dd : mdd
+snap = RiskSnap.new(eq, mdd, bar_index)
+plot(snap.maxDD, "MDD")

@@ -1,0 +1,23 @@
+//@version=5
+indicator("Comprehensive")
+// TA calculations
+sma20 = ta.sma(close, 5)
+ema9 = ta.ema(close, 3)
+rsi_ = ta.rsi(close, 5)
+[macdLine, signalLine, histogram] = ta.macd(close, 3, 5, 3)
+atrVal = ta.atr(high, low, close, 3)
+
+// Derived calculations
+upperBand = sma20 + atrVal * 2
+lowerBand = sma20 - atrVal * 2
+trendUp = ema9 > sma20
+rsiOB = not na(rsi_) and rsi_ > 70
+rsiOS = not na(rsi_) and rsi_ < 30
+
+// Signal logic
+signal = switch
+    trendUp and rsiOS => 2
+    not trendUp and rsiOB => -2
+    trendUp => 1
+    => -1
+plot(signal)

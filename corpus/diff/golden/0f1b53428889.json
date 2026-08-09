@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:sessionBars": 1,
+   "var:sessionHigh": 105,
+   "var:sessionLow": 98,
+   "var:__obs_plot0": 7
+  },
+  {
+   "var:sessionBars": 2,
+   "var:sessionHigh": 106,
+   "var:sessionLow": 98,
+   "var:__obs_plot0": 8
+  },
+  {
+   "var:sessionBars": 3,
+   "var:sessionHigh": 106,
+   "var:sessionLow": 98,
+   "var:__obs_plot0": 8
+  },
+  {
+   "var:sessionBars": 4,
+   "var:sessionHigh": 107,
+   "var:sessionLow": 98,
+   "var:__obs_plot0": 9
+  },
+  {
+   "var:sessionBars": 5,
+   "var:sessionHigh": 109,
+   "var:sessionLow": 98,
+   "var:__obs_plot0": 11
+  },
+  {
+   "var:sessionBars": 6,
+   "var:sessionHigh": 109,
+   "var:sessionLow": 98,
+   "var:__obs_plot0": 11
+  },
+  {
+   "var:sessionBars": 7,
+   "var:sessionHigh": 110,
+   "var:sessionLow": 98,
+   "var:__obs_plot0": 12
+  },
+  {
+   "var:sessionBars": 8,
+   "var:sessionHigh": 112,
+   "var:sessionLow": 98,
+   "var:__obs_plot0": 14
+  },
+  {
+   "var:sessionBars": 9,
+   "var:sessionHigh": 112,
+   "var:sessionLow": 98,
+   "var:__obs_plot0": 14
+  },
+  {
+   "var:sessionBars": 10,
+   "var:sessionHigh": 113,
+   "var:sessionLow": 98,
+   "var:__obs_plot0": 15
+  }
+ ],
+ "finalVarState": {
+  "sessionBars": 10,
+  "sessionHigh": 113,
+  "sessionLow": 98,
+  "__obs_plot0": 15
+ }
+}

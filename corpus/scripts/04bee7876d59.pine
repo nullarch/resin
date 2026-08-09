@@ -1,0 +1,6 @@
+//@version=5
+indicator("Kleene Star")
+var int repetitions = 0
+pattern = close > open
+repetitions := pattern ? repetitions + 1 : 0
+plot(repetitions, "Reps")

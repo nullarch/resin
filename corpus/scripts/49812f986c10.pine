@@ -1,0 +1,44 @@
+//@version=5
+indicator("Cycle47 All")
+// TA edge: length=1
+sma1 = ta.sma(close, 1)
+
+// MACD tuple
+[m_line, sig, hist] = ta.macd(close, 3, 5, 3)
+
+// Squeeze pattern
+basis = ta.sma(close, 5)
+dev_ = 2.0 * ta.stdev(close, 5)
+atr_ = ta.atr(5)
+var bool sqzOn = false
+sqzOn := nz(basis - dev_) > nz(basis) - 1.5 * nz(atr_)
+
+// String operations
+info = str.format("{0}: {1}", "Price", str.tostring(close))
+var int info_len = 0
+info_len := str.length(info)
+
+// Array stats
+var arr = array.new_float(0)
+array.push(arr, close)
+var float arr_med = 0.0
+arr_med := array.median(arr)
+
+// Map tracking
+var m = map.new<string, float>()
+m.put("sma1", nz(sma1))
+m.put("hist", nz(hist))
+var int m_sz = 0
+m_sz := m.size()
+
+// var counter
+var int bars = 0
+bars := bars + 1
+
+// na check
+var float safe = 0.0
+safe := nz(sma1) + nz(hist) + arr_med + m_sz + bars
+
+var float result = 0.0
+result := safe
+plot(close)

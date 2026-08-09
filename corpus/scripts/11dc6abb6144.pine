@@ -1,0 +1,6 @@
+//@version=5
+indicator("test")
+var int count = 0
+if session.isfirstbar_regular
+    count := count + 1
+plot(count)

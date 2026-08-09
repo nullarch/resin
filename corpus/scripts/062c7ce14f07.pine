@@ -1,0 +1,5 @@
+//@version=5
+indicator("Log Zero")
+val = math.log(0.0)
+isNeg = val < -1000 ? 1 : 0
+plot(isNeg)

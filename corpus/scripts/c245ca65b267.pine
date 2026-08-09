@@ -1,0 +1,18 @@
+//@version=5
+indicator("Dashboard")
+var float lastSma = 0
+var float lastEma = 0
+var float lastRsi = 0
+var float lastMacd = 0
+sma20 = ta.sma(close, 3)
+ema20 = ta.ema(close, 3)
+rsi14 = ta.rsi(close, 5)
+[macdLine, signal, hist] = ta.macd(close, 3, 5, 3)
+if not na(sma20)
+    lastSma := sma20
+if not na(ema20)
+    lastEma := ema20
+if not na(rsi14)
+    lastRsi := rsi14
+if not na(macdLine)
+    lastMacd := macdLine

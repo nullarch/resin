@@ -1,0 +1,7 @@
+//@version=5
+indicator("Ichimoku")
+tenkan = (ta.highest(high, 9) + ta.lowest(low, 9)) / 2
+kijun = (ta.highest(high, 26) + ta.lowest(low, 26)) / 2
+spanA = (tenkan + kijun) / 2
+signal = close > spanA ? 1 : -1
+plot(signal)

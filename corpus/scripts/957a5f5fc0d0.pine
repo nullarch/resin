@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Candle Wt")
+body = math.abs(close - open)
+totalRange = high - low
+bodyPct = totalRange > 0 ? body / totalRange * 100 : 0.0
+weight = bodyPct > 70 ? 2.0 : bodyPct > 40 ? 1.0 : 0.5
+rsi = nz(ta.rsi(close, 3), 50.0)
+signal = (rsi - 50) / 50 * weight
+plot(signal, "Sig")

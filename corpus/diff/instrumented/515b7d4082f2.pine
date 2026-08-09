@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("Mom Lookback")
+bestMom = -99999.0
+bestPeriod = 0
+for period = 1 to 5
+    prev = close[period]
+    if not na(prev)
+        mom = (close - prev) / prev * 100
+        if mom > bestMom
+            bestMom := mom
+            bestPeriod := period
+var float __obs_plot0 = na
+__obs_plot0 := bestMom
+plot(bestMom, "BestMom")
+var float __obs_plot1 = na
+__obs_plot1 := bestPeriod
+plot(bestPeriod, "BestPeriod")

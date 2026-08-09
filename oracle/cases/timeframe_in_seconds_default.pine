@@ -1,0 +1,10 @@
+//@version=5
+indicator("timeframe_in_seconds_default")
+// timeframe.in_seconds() 0-인자(현재 타임프레임 기본값) 오버로드 — C269, ROADMAP P4 corpus
+// "호출 인자 개수 불일치" 클러스터 잔여(390cd5d7f5f3.pine). pine2py wavealgo/__init__.py
+// timeframe_in_seconds(timeframe: str = "")는 인자 생략 시 빈 문자열 기본값으로 떨어져
+// 항상 86400(1일 고정 근사치, 실제 차트 타임프레임 감지 아님)을 반환한다 — timeframe_basic.pine의
+// __obs_in_seconds_empty(명시적 "" 인자)와 동일 값이어야 함을 이 케이스가 별도로 확인한다.
+var float __obs_in_seconds_omitted = na
+
+__obs_in_seconds_omitted := timeframe.in_seconds()

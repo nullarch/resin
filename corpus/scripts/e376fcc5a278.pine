@@ -1,0 +1,10 @@
+
+//@version=5
+strategy("MR Strat", overlay=true)
+rsi = nz(ta.rsi(close, 3), 50.0)
+[mid, upper, lower] = ta.bb(close, 5, 2.0)
+if rsi < 35 and close < lower
+    strategy.entry("Long", strategy.long)
+if rsi > 60 or close > mid
+    strategy.close("Long")
+plot(mid, "Mid")

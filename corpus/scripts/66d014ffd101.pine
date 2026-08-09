@@ -1,0 +1,9 @@
+//@version=5
+indicator("Bifurcation")
+float emaFast = nz(ta.ema(close, 2), close)
+float emaSlow = nz(ta.ema(close, 5), close)
+float amplitude = math.abs(emaFast - emaSlow)
+var float prevAmp = 0.0
+float ampChange = math.abs(amplitude - prevAmp)
+bool bifurcation = ampChange > 2.0 * prevAmp and prevAmp > 0.01
+prevAmp := amplitude

@@ -1,0 +1,6 @@
+//@version=5
+indicator("ALMA")
+var float lastA = 0
+a = ta.alma(close, 5, 0.85, 6)
+if not na(a)
+    lastA := a

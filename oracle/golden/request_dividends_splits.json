@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_div": 0.0,
+   "var:__obs_div_net": 0.0,
+   "var:__obs_spl": 0.0,
+   "var:__obs_spl_num": 0.0,
+   "var:__obs_div_bare": 0.0,
+   "var:__obs_spl_bare": 0.0
+  },
+  {
+   "var:__obs_div": 0.0,
+   "var:__obs_div_net": 0.0,
+   "var:__obs_spl": 0.0,
+   "var:__obs_spl_num": 0.0,
+   "var:__obs_div_bare": 0.0,
+   "var:__obs_spl_bare": 0.0
+  },
+  {
+   "var:__obs_div": 0.0,
+   "var:__obs_div_net": 0.0,
+   "var:__obs_spl": 0.0,
+   "var:__obs_spl_num": 0.0,
+   "var:__obs_div_bare": 0.0,
+   "var:__obs_spl_bare": 0.0
+  },
+  {
+   "var:__obs_div": 0.0,
+   "var:__obs_div_net": 0.0,
+   "var:__obs_spl": 0.0,
+   "var:__obs_spl_num": 0.0,
+   "var:__obs_div_bare": 0.0,
+   "var:__obs_spl_bare": 0.0
+  },
+  {
+   "var:__obs_div": 0.0,
+   "var:__obs_div_net": 0.0,
+   "var:__obs_spl": 0.0,
+   "var:__obs_spl_num": 0.0,
+   "var:__obs_div_bare": 0.0,
+   "var:__obs_spl_bare": 0.0
+  },
+  {
+   "var:__obs_div": 0.0,
+   "var:__obs_div_net": 0.0,
+   "var:__obs_spl": 0.0,
+   "var:__obs_spl_num": 0.0,
+   "var:__obs_div_bare": 0.0,
+   "var:__obs_spl_bare": 0.0
+  },
+  {
+   "var:__obs_div": 0.0,
+   "var:__obs_div_net": 0.0,
+   "var:__obs_spl": 0.0,
+   "var:__obs_spl_num": 0.0,
+   "var:__obs_div_bare": 0.0,
+   "var:__obs_spl_bare": 0.0
+  },
+  {
+   "var:__obs_div": 0.0,
+   "var:__obs_div_net": 0.0,
+   "var:__obs_spl": 0.0,
+   "var:__obs_spl_num": 0.0,
+   "var:__obs_div_bare": 0.0,
+   "var:__obs_spl_bare": 0.0
+  },
+  {
+   "var:__obs_div": 0.0,
+   "var:__obs_div_net": 0.0,
+   "var:__obs_spl": 0.0,
+   "var:__obs_spl_num": 0.0,
+   "var:__obs_div_bare": 0.0,
+   "var:__obs_spl_bare": 0.0
+  },
+  {
+   "var:__obs_div": 0.0,
+   "var:__obs_div_net": 0.0,
+   "var:__obs_spl": 0.0,
+   "var:__obs_spl_num": 0.0,
+   "var:__obs_div_bare": 0.0,
+   "var:__obs_spl_bare": 0.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_div": 0.0,
+  "__obs_div_net": 0.0,
+  "__obs_spl": 0.0,
+  "__obs_spl_num": 0.0,
+  "__obs_div_bare": 0.0,
+  "__obs_spl_bare": 0.0
+ }
+}

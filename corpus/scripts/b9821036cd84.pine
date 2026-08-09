@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Change Analysis")
+chg1 = ta.change(close, 1)
+chg3 = ta.change(close, 3)
+chg5 = ta.change(close, 5)
+accelerating = nz(chg1) > 0 and nz(chg3) > 0 and nz(chg5) > 0
+decelerating = nz(chg1) < nz(chg3)
+plot(nz(chg1), "Chg1")
+plot(accelerating ? 1 : 0, "Accel")

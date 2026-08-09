@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("Flow UDT")
+type FlowTracker
+    float cumNetFlow = 0.0
+    int buyBars = 0
+    float maxBuyPress = 0.0
+
+var FlowTracker ft = FlowTracker.new()
+totalRange = high - low
+netFlow = totalRange > 0 ? (close - low) / totalRange - 0.5 : 0.0
+ft.cumNetFlow := ft.cumNetFlow + netFlow
+if netFlow > 0
+    ft.buyBars := ft.buyBars + 1
+ft.maxBuyPress := math.max(ft.maxBuyPress, netFlow)
+var float __obs_plot0 = na
+__obs_plot0 := ft.buyBars
+plot(ft.buyBars, "BB")

@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Win Loss")
+var int wins = 0
+var int losses = 0
+chg = ta.change(close, 1)
+if not na(chg)
+    if chg > 0
+        wins := wins + 1
+    else if chg < 0
+        losses := losses + 1
+winRate = wins + losses > 0 ? float(wins) / float(wins + losses) * 100 : 50.0
+plot(winRate, "WinRate%")

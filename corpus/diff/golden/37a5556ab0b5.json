@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:vt": "pine_fn.<locals>.VolTracker(avgVol=1200.0, relVol=1.3333333333333333, isSpike=False)",
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:vt": "pine_fn.<locals>.VolTracker(avgVol=1200.0, relVol=1.3333333333333333, isSpike=False)",
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:vt": "pine_fn.<locals>.VolTracker(avgVol=1200.0, relVol=1.3333333333333333, isSpike=False)",
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:vt": "pine_fn.<locals>.VolTracker(avgVol=1200.0, relVol=1.3333333333333333, isSpike=False)",
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:vt": "pine_fn.<locals>.VolTracker(avgVol=1200.0, relVol=1.3333333333333333, isSpike=False)",
+   "var:__obs_plot0": 1.1206896551724137
+  },
+  {
+   "var:vt": "pine_fn.<locals>.VolTracker(avgVol=1200.0, relVol=1.3333333333333333, isSpike=False)",
+   "var:__obs_plot0": 0.7894736842105263
+  },
+  {
+   "var:vt": "pine_fn.<locals>.VolTracker(avgVol=1200.0, relVol=1.3333333333333333, isSpike=False)",
+   "var:__obs_plot0": 0.9821428571428571
+  },
+  {
+   "var:vt": "pine_fn.<locals>.VolTracker(avgVol=1200.0, relVol=1.3333333333333333, isSpike=False)",
+   "var:__obs_plot0": 1.1290322580645162
+  },
+  {
+   "var:vt": "pine_fn.<locals>.VolTracker(avgVol=1200.0, relVol=1.3333333333333333, isSpike=False)",
+   "var:__obs_plot0": 0.8771929824561403
+  },
+  {
+   "var:vt": "pine_fn.<locals>.VolTracker(avgVol=1200.0, relVol=1.3333333333333333, isSpike=False)",
+   "var:__obs_plot0": 1.3333333333333333
+  }
+ ],
+ "finalVarState": {
+  "vt": "pine_fn.<locals>.VolTracker(avgVol=1200.0, relVol=1.3333333333333333, isSpike=False)",
+  "__obs_plot0": 1.3333333333333333
+ }
+}

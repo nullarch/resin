@@ -1,0 +1,10 @@
+//@version=5
+indicator("Sediment Transport")
+var sediment = array.new<float>(0)
+transportRate = (high - low) * volume / 10000.0
+array.push(sediment, transportRate)
+var float totalSediment = 0.0
+totalTransport = 0.0
+for i = 0 to array.size(sediment) - 1
+    totalTransport := totalTransport + array.get(sediment, i)
+totalSediment := totalTransport

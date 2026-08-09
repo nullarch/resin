@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("RSI MA")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+bullConfirm = close > sma3 and rsi > 50
+bearConfirm = close < sma3 and rsi < 50
+score = bullConfirm ? 2 : bearConfirm ? -2 : 0
+plot(score, "Score")

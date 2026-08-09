@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:ss": {
+    "mean_rev": -1.0,
+    "trend": 1.0,
+    "breakout": 0.0
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:ss": {
+    "mean_rev": -1.0,
+    "trend": 1.0,
+    "breakout": 0.0
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:ss": {
+    "mean_rev": -1.0,
+    "trend": 1.0,
+    "breakout": 0.0
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:ss": {
+    "mean_rev": -1.0,
+    "trend": 1.0,
+    "breakout": 0.0
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:ss": {
+    "mean_rev": -1.0,
+    "trend": 1.0,
+    "breakout": 0.0
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:ss": {
+    "mean_rev": -1.0,
+    "trend": 1.0,
+    "breakout": 0.0
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:ss": {
+    "mean_rev": -1.0,
+    "trend": 1.0,
+    "breakout": 0.0
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:ss": {
+    "mean_rev": -1.0,
+    "trend": 1.0,
+    "breakout": 0.0
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:ss": {
+    "mean_rev": -1.0,
+    "trend": 1.0,
+    "breakout": 0.0
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:ss": {
+    "mean_rev": -1.0,
+    "trend": 1.0,
+    "breakout": 0.0
+   },
+   "var:__obs_plot0": 1.0
+  }
+ ],
+ "finalVarState": {
+  "ss": {
+   "mean_rev": -1.0,
+   "trend": 1.0,
+   "breakout": 0.0
+  },
+  "__obs_plot0": 1.0
+ }
+}

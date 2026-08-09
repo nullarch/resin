@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Mov Var")
+sma5 = ta.sma(close, 5)
+sd = ta.stdev(close, 5)
+variance = math.pow(sd, 2)
+cv = sma5 > 0 ? sd / sma5 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := variance
+plot(variance, "Var")
+var float __obs_plot1 = na
+__obs_plot1 := cv
+plot(cv, "CV")

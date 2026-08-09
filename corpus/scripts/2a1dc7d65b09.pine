@@ -1,0 +1,8 @@
+//@version=5
+indicator("Round Robin")
+int numTasks = 4
+float quantum = 2.0
+float barIdx = close - 100.0
+int taskId = math.floor(barIdx) % numTasks
+float cpuUsed = quantum * (barIdx + 1.0)
+float fairShare = cpuUsed / numTasks

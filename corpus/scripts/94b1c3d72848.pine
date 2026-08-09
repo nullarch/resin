@@ -1,0 +1,11 @@
+//@version=5
+indicator("Enum switch")
+enum Direction
+    Up = 1
+    Down = -1
+    Flat = 0
+dir = close > open ? Direction.Up : close < open ? Direction.Down : Direction.Flat
+label = switch dir
+    Direction.Up => "bullish"
+    Direction.Down => "bearish"
+    => "flat"

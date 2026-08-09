@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_a_value": "NaN",
+   "var:__obs_a_direction": -1,
+   "var:__obs_b_value": 1.0,
+   "var:__obs_b_direction": 1,
+   "var:__obs_c_value": 101.0,
+   "var:__obs_c_direction": 1
+  },
+  {
+   "var:__obs_a_value": 1.0,
+   "var:__obs_a_direction": 1,
+   "var:__obs_b_value": 1.0,
+   "var:__obs_b_direction": 1,
+   "var:__obs_c_value": 102.0,
+   "var:__obs_c_direction": 1
+  },
+  {
+   "var:__obs_a_value": 1.0,
+   "var:__obs_a_direction": 1,
+   "var:__obs_b_value": 1.0,
+   "var:__obs_b_direction": 1,
+   "var:__obs_c_value": 103.0,
+   "var:__obs_c_direction": 1
+  },
+  {
+   "var:__obs_a_value": -1.0,
+   "var:__obs_a_direction": -1,
+   "var:__obs_b_value": 1.0,
+   "var:__obs_b_direction": 1,
+   "var:__obs_c_value": 102.0,
+   "var:__obs_c_direction": 1
+  },
+  {
+   "var:__obs_a_value": 2.0,
+   "var:__obs_a_direction": 1,
+   "var:__obs_b_value": 1.0,
+   "var:__obs_b_direction": 1,
+   "var:__obs_c_value": 104.0,
+   "var:__obs_c_direction": 1
+  },
+  {
+   "var:__obs_a_value": 1.0,
+   "var:__obs_a_direction": 1,
+   "var:__obs_b_value": 1.0,
+   "var:__obs_b_direction": 1,
+   "var:__obs_c_value": 105.0,
+   "var:__obs_c_direction": 1
+  },
+  {
+   "var:__obs_a_value": 1.0,
+   "var:__obs_a_direction": 1,
+   "var:__obs_b_value": 1.0,
+   "var:__obs_b_direction": 1,
+   "var:__obs_c_value": 106.0,
+   "var:__obs_c_direction": 1
+  },
+  {
+   "var:__obs_a_value": -1.0,
+   "var:__obs_a_direction": -1,
+   "var:__obs_b_value": 1.0,
+   "var:__obs_b_direction": 1,
+   "var:__obs_c_value": 105.0,
+   "var:__obs_c_direction": 1
+  },
+  {
+   "var:__obs_a_value": 2.0,
+   "var:__obs_a_direction": 1,
+   "var:__obs_b_value": 1.0,
+   "var:__obs_b_direction": 1,
+   "var:__obs_c_value": 107.0,
+   "var:__obs_c_direction": 1
+  },
+  {
+   "var:__obs_a_value": 1.0,
+   "var:__obs_a_direction": 1,
+   "var:__obs_b_value": 1.0,
+   "var:__obs_b_direction": 1,
+   "var:__obs_c_value": 108.0,
+   "var:__obs_c_direction": 1
+  }
+ ],
+ "finalVarState": {
+  "__obs_a_value": 1.0,
+  "__obs_a_direction": 1,
+  "__obs_b_value": 1.0,
+  "__obs_b_direction": 1,
+  "__obs_c_value": 108.0,
+  "__obs_c_direction": 1
+ }
+}

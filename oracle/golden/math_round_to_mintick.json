@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_m0": 14.43,
+   "var:__obs_m1": 1.0,
+   "var:__obs_m2": 0.7000000000000028,
+   "var:__obs_m3": "NaN",
+   "var:__obs_m4": 0.0
+  },
+  {
+   "var:__obs_m0": 14.57,
+   "var:__obs_m1": 2.0,
+   "var:__obs_m2": 1.7000000000000028,
+   "var:__obs_m3": "NaN",
+   "var:__obs_m4": 2.0
+  },
+  {
+   "var:__obs_m0": 14.71,
+   "var:__obs_m1": 3.0,
+   "var:__obs_m2": 2.700000000000003,
+   "var:__obs_m3": "NaN",
+   "var:__obs_m4": 2.0
+  },
+  {
+   "var:__obs_m0": 14.57,
+   "var:__obs_m1": 2.0,
+   "var:__obs_m2": 1.7000000000000028,
+   "var:__obs_m3": "NaN",
+   "var:__obs_m4": 2.0
+  },
+  {
+   "var:__obs_m0": 14.86,
+   "var:__obs_m1": 4.0,
+   "var:__obs_m2": 3.700000000000003,
+   "var:__obs_m3": "NaN",
+   "var:__obs_m4": 4.0
+  },
+  {
+   "var:__obs_m0": 15.0,
+   "var:__obs_m1": 5.0,
+   "var:__obs_m2": 4.700000000000003,
+   "var:__obs_m3": "NaN",
+   "var:__obs_m4": 4.0
+  },
+  {
+   "var:__obs_m0": 15.14,
+   "var:__obs_m1": 6.0,
+   "var:__obs_m2": 5.700000000000003,
+   "var:__obs_m3": "NaN",
+   "var:__obs_m4": 6.0
+  },
+  {
+   "var:__obs_m0": 15.0,
+   "var:__obs_m1": 5.0,
+   "var:__obs_m2": 4.700000000000003,
+   "var:__obs_m3": "NaN",
+   "var:__obs_m4": 4.0
+  },
+  {
+   "var:__obs_m0": 15.290000000000001,
+   "var:__obs_m1": 7.0,
+   "var:__obs_m2": 6.700000000000003,
+   "var:__obs_m3": "NaN",
+   "var:__obs_m4": 6.0
+  },
+  {
+   "var:__obs_m0": 15.43,
+   "var:__obs_m1": 8.0,
+   "var:__obs_m2": 7.700000000000003,
+   "var:__obs_m3": "NaN",
+   "var:__obs_m4": 8.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_m0": 15.43,
+  "__obs_m1": 8.0,
+  "__obs_m2": 7.700000000000003,
+  "__obs_m3": "NaN",
+  "__obs_m4": 8.0
+ }
+}

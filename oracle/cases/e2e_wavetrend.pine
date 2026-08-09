@@ -1,0 +1,39 @@
+//@version=5
+indicator("WaveTrend Oscillator")
+// 패턴: 실전 지표 재현(ROADMAP P3, LazyBear WaveTrend Oscillator [WT] 커뮤니티 인디케이터 이식).
+// TV 빌트인이 아닌 순수 조합(hlc3 bare 식별자 + ta.ema 이중 스무딩(esa/d 체인) + math.abs + ta.sma +
+// ta.crossover/crossunder)이 실전 스크립트 그대로 파이프라인을 통과하는지 검증 -- 개별 빌트인은
+// 이미 ta_ema/math_abs/ta_sma/ta_crossover_crossunder.pine이 각각 검증했으나, 이 조합 전체(중간
+// 로컬 esa/d/ci 연쇄 + 동일 ta.ema를 서로 다른 인자로 2회 호출 + 다중 plot + input.int 파라미터화)는
+// 처음. n1=3/n2=2로 sample10.json 10바 안에서 esa/d/ci/wt1/wt2가 모두 여러 바 유효값을 갖도록 축소
+// (원본 LazyBear 기본값 10/21은 10바로는 전부 warmup만 나옴).
+n1 = input.int(3, "Channel Length")
+n2 = input.int(2, "Average Length")
+
+ap = hlc3
+esa = ta.ema(ap, n1)
+d = ta.ema(math.abs(ap - esa), n1)
+ci = (ap - esa) / (0.015 * d)
+wt1 = ta.ema(ci, n2)
+wt2 = ta.sma(wt1, 4)
+
+plot(wt1, "WT1")
+plot(wt2, "WT2")
+plot(wt1 - wt2, "WT Hist")
+
+var float __obs_esa = na
+var float __obs_d = na
+var float __obs_ci = na
+var float __obs_wt1 = na
+var float __obs_wt2 = na
+var float __obs_diff = na
+var float __obs_co = na
+var float __obs_cu = na
+__obs_esa := esa
+__obs_d := d
+__obs_ci := ci
+__obs_wt1 := wt1
+__obs_wt2 := wt2
+__obs_diff := wt1 - wt2
+__obs_co := ta.crossover(wt1, wt2) ? 1.0 : 0.0
+__obs_cu := ta.crossunder(wt1, wt2) ? 1.0 : 0.0

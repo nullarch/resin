@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_kcw": "NaN"
+  },
+  {
+   "var:__obs_kcw": "NaN"
+  },
+  {
+   "var:__obs_kcw": "NaN"
+  },
+  {
+   "var:__obs_kcw": 11.7647058824
+  },
+  {
+   "var:__obs_kcw": 11.6504854369
+  },
+  {
+   "var:__obs_kcw": 11.5384615385
+  },
+  {
+   "var:__obs_kcw": 11.4285714286
+  },
+  {
+   "var:__obs_kcw": 11.4285714286
+  },
+  {
+   "var:__obs_kcw": 11.320754717
+  },
+  {
+   "var:__obs_kcw": 11.214953271
+  }
+ ],
+ "finalVarState": {
+  "__obs_kcw": 11.214953271
+ }
+}

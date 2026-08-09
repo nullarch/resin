@@ -1,0 +1,19 @@
+
+//@version=5
+indicator("Rebalance")
+var weights = map.new<string, float>()
+var int rebalCount = 0
+targetEq = 0.6
+targetBond = 0.4
+currentEq = close > ta.sma(close, 5) ? 0.65 : 0.55
+drift = math.abs(currentEq - targetEq)
+if drift > 0.05
+    map.put(weights, "equity", targetEq)
+    map.put(weights, "bond", targetBond)
+    rebalCount := rebalCount + 1
+else
+    map.put(weights, "equity", currentEq)
+    map.put(weights, "bond", 1.0 - currentEq)
+var float __obs_plot0 = na
+__obs_plot0 := map.get(weights, "equity", 0.5)
+plot(map.get(weights, "equity", 0.5), "EqWt")

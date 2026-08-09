@@ -1,0 +1,29 @@
+//@version=5
+indicator("enum_forward_ref")
+// top-level EnumDecl forward-reference(C255, corpus 실측 3건 — `Dir.Up` 멤버 참조가 `enum Dir`
+// 선언보다 스크립트 앞쪽에 오는 패턴). TV/pine2py 둘 다 enum 선언 순서 무관(hoisting)이 정상
+// 동작이다(python으로 pine2wave.transpiler.transpile()을 이 정확한 순서로 직접 실행해 errors=[]
+// 확인 완료). analyzer.ts가 udt_forward_ref.pine(C233)과 동일한 prepass 원칙을 EnumDecl에도
+// 적용해(analyzer/udt-decls.ts prepassEnumDecl) 지원한다 — enum_basic.pine과 동일하게 값 자체가
+// 아니라 등가 비교 결과만 관측(pine2py/pine2js 표현 방식 차이 회피).
+//
+// __obs_* 미러는 전부 이 바의 재대입(if/else) *뒤*에 배치한다 — 재대입보다 먼저 읽으면 pine2py
+// ctx.param()의 "읽는 시점" inline push와 pine2js의 "바 종료 후 1회 record"가 갈린다(MEMORY.md
+// Pitfalls C11, DIVERGENCES.md #6 — "오라클 케이스는 재대입을 히스토리 읽기보다 먼저 배치").
+
+var Dir d = Dir.Up
+
+enum Dir
+    Up
+    Down
+
+diff = close - close[1]
+if diff > 0
+    d := Dir.Up
+else
+    d := Dir.Down
+
+var bool __obs_is_up = na
+__obs_is_up := d == Dir.Up
+var bool __obs_is_down = na
+__obs_is_down := d == Dir.Down

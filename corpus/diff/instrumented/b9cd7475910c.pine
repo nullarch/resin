@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("BB KC Comb")
+[bbM, bbU, bbL] = ta.bb(close, 5, 2.0)
+[kcM, kcU, kcL] = ta.kc(close, 5, 1.5)
+bbWidth = bbM > 0 ? (bbU - bbL) / bbM : 0.0
+kcWidth = kcM > 0 ? (kcU - kcL) / kcM : 0.0
+ratio = kcWidth > 0 ? bbWidth / kcWidth : 1.0
+var float __obs_plot0 = na
+__obs_plot0 := ratio
+plot(ratio, "Ratio")

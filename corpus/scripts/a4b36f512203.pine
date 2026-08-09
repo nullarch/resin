@@ -1,0 +1,8 @@
+//@version=5
+indicator("Matrix")
+var m = matrix.new<float>(3, 3, 0.0)
+matrix.set(m, 0, 0, close)
+matrix.set(m, 1, 1, high)
+matrix.set(m, 2, 2, low)
+diag = matrix.get(m, 0, 0) + matrix.get(m, 1, 1) + matrix.get(m, 2, 2)
+plot(diag)

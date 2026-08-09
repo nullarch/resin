@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("Arr Var Risk")
+var float[] risks = array.new_float(0)
+var float maxRiskSeen = 0.0
+atr = ta.atr(3)
+risk = close > 0 ? atr / close * 100 : 0.0
+array.push(risks, risk)
+if array.size(risks) > 8
+    array.shift(risks)
+maxRiskSeen := math.max(maxRiskSeen, risk)
+avgRisk = array.avg(risks)
+var float __obs_plot0 = na
+__obs_plot0 := avgRisk
+plot(avgRisk, "Avg")
+var float __obs_plot1 = na
+__obs_plot1 := maxRiskSeen
+plot(maxRiskSeen, "Max")

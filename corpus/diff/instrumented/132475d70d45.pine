@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("TransCount")
+atrVal = nz(ta.atr(3), 1.0)
+regime = atrVal > 1.5 ? 1 : 0
+var int prevReg = 0
+var int transitions = 0
+transitions := regime != prevReg ? transitions + 1 : transitions
+prevReg := regime
+var float __obs_plot0 = na
+__obs_plot0 := transitions
+plot(transitions, "TC")

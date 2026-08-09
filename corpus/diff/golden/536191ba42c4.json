@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:last_m": 0,
+   "var:last_sig": 0,
+   "var:last_hist": 0,
+   "var:__obs_plot0": 103
+  },
+  {
+   "var:last_m": 0,
+   "var:last_sig": 0,
+   "var:last_hist": 0,
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:last_m": 0,
+   "var:last_sig": 0,
+   "var:last_hist": 0,
+   "var:__obs_plot0": 102
+  },
+  {
+   "var:last_m": 0,
+   "var:last_sig": 0,
+   "var:last_hist": 0,
+   "var:__obs_plot0": 105
+  },
+  {
+   "var:last_m": 1.3,
+   "var:last_sig": 0,
+   "var:last_hist": 0,
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:last_m": 0.95,
+   "var:last_sig": 0,
+   "var:last_hist": 0,
+   "var:__obs_plot0": 106
+  },
+  {
+   "var:last_m": 1.0083333333,
+   "var:last_sig": 1.0861111111,
+   "var:last_hist": -0.0777777778,
+   "var:__obs_plot0": 108
+  },
+  {
+   "var:last_m": 1.1930555555,
+   "var:last_sig": 1.1395833333,
+   "var:last_hist": 0.0534722222,
+   "var:__obs_plot0": 110
+  },
+  {
+   "var:last_m": 0.8891203703,
+   "var:last_sig": 1.0143518518,
+   "var:last_hist": -0.1252314815,
+   "var:__obs_plot0": 109
+  },
+  {
+   "var:last_m": 0.9729552469,
+   "var:last_sig": 0.9936535494,
+   "var:last_hist": -0.0206983025,
+   "var:__obs_plot0": 111
+  }
+ ],
+ "finalVarState": {
+  "last_m": 0.9729552469,
+  "last_sig": 0.9936535494,
+  "last_hist": -0.0206983025,
+  "__obs_plot0": 111
+ }
+}

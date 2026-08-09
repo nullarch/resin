@@ -1,0 +1,10 @@
+//@version=5
+indicator("Logic Ops")
+var bool a = true
+var bool b = false
+var bool r1 = a and not b
+var bool r2 = a or b
+var bool r3 = not a and b
+var float result = 0.0
+result := (r1 ? 1.0 : 0.0) + (r2 ? 10.0 : 0.0) + (r3 ? 100.0 : 0.0)
+plot(result)

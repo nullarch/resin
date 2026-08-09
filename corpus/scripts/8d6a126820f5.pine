@@ -1,0 +1,6 @@
+//@version=5
+indicator("StrCase")
+var string u = ""
+var string l = ""
+u := str.upper("hello")
+l := str.lower("HELLO")

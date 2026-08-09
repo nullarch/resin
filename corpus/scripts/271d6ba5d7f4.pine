@@ -1,0 +1,12 @@
+//@version=5
+indicator("Liquefaction Potential")
+var float porePressure = 0.0
+shaking = (high - low) * volume / 10000.0
+drainRate = 0.2
+porePressure := porePressure + shaking - porePressure * drainRate
+if porePressure < 0
+    porePressure := 0.0
+overburden = 10.0
+liquefactionRatio = overburden > 0 ? porePressure / overburden : 0.0
+isLiquefied = liquefactionRatio > 1.0 ? 1 : 0
+plot(liquefactionRatio)

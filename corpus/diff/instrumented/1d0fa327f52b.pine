@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("EMA-SMA Dev")
+emaVal = ta.ema(close, 5)
+smaVal = ta.sma(close, 5)
+dev = emaVal - smaVal
+var float maxDev = 0.0
+if math.abs(dev) > maxDev
+    maxDev := math.abs(dev)
+var float __obs_plot0 = na
+__obs_plot0 := dev
+plot(dev, "Dev")

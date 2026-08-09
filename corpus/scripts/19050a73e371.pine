@@ -1,0 +1,9 @@
+//@version=5
+indicator("Squeeze")
+[bbMid, bbUp, bbLo] = ta.bb(close, 5, 2)
+[kcMid, kcUp, kcLo] = ta.kc(close, 5, 1.5)
+var int squeezeCount = 0
+if not na(bbUp) and not na(kcUp)
+    sqzOn = bbLo > kcLo and bbUp < kcUp
+    if sqzOn
+        squeezeCount := squeezeCount + 1

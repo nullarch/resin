@@ -1,0 +1,8 @@
+//@version=5
+indicator("Burst Detect")
+float volSma = ta.sma(volume, 5)
+float threshold = nz(volSma, volume) * 1.5
+var int burstCount = 0
+if volume > threshold
+    burstCount := burstCount + 1
+plot(burstCount, "Bursts")

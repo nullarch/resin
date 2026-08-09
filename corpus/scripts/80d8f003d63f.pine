@@ -1,0 +1,5 @@
+//@version=5
+indicator("Binary Search Right")
+var arr = array.from(10.0, 20.0, 20.0, 30.0)
+var int idx = array.binary_search_rightmost(arr, 20.0)
+plot(idx)

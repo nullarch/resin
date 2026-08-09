@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Hoist")
+result = double(close)
+
+double(x) =>
+    x * 2.0
+
+plot(result)

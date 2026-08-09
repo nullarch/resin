@@ -1,0 +1,6 @@
+//@version=5
+indicator("NaEqRHS")
+var int count = 0
+sma2 = ta.sma(close, 2)
+if sma2 == na
+    count := count + 1

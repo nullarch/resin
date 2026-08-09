@@ -1,0 +1,8 @@
+//@version=5
+indicator("Entropy Proxy")
+var float cumVol = 0.0
+var float entropySum = 0.0
+cumVol := cumVol + volume
+pBar = volume > 0 ? volume / (cumVol > 0 ? cumVol : 1.0) : 0.0
+logP = pBar > 0.001 ? math.log(pBar) : 0.0
+entropySum := entropySum - pBar * logP

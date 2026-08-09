@@ -1,0 +1,4 @@
+//@version=5
+indicator("Chained Dot")
+var float result = 0.0
+result := math.abs(-7.0)

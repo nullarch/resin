@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:ci": "pine_fn.<locals>.CustomInd(value=40.5615942029, signal=38.3859764708, direction=1)",
+   "var:__obs_plot0": -1
+  },
+  {
+   "var:ci": "pine_fn.<locals>.CustomInd(value=40.5615942029, signal=38.3859764708, direction=1)",
+   "var:__obs_plot0": -1
+  },
+  {
+   "var:ci": "pine_fn.<locals>.CustomInd(value=40.5615942029, signal=38.3859764708, direction=1)",
+   "var:__obs_plot0": -1
+  },
+  {
+   "var:ci": "pine_fn.<locals>.CustomInd(value=40.5615942029, signal=38.3859764708, direction=1)",
+   "var:__obs_plot0": -1
+  },
+  {
+   "var:ci": "pine_fn.<locals>.CustomInd(value=40.5615942029, signal=38.3859764708, direction=1)",
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:ci": "pine_fn.<locals>.CustomInd(value=40.5615942029, signal=38.3859764708, direction=1)",
+   "var:__obs_plot0": -1
+  },
+  {
+   "var:ci": "pine_fn.<locals>.CustomInd(value=40.5615942029, signal=38.3859764708, direction=1)",
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:ci": "pine_fn.<locals>.CustomInd(value=40.5615942029, signal=38.3859764708, direction=1)",
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:ci": "pine_fn.<locals>.CustomInd(value=40.5615942029, signal=38.3859764708, direction=1)",
+   "var:__obs_plot0": -1
+  },
+  {
+   "var:ci": "pine_fn.<locals>.CustomInd(value=40.5615942029, signal=38.3859764708, direction=1)",
+   "var:__obs_plot0": 1
+  }
+ ],
+ "finalVarState": {
+  "ci": "pine_fn.<locals>.CustomInd(value=40.5615942029, signal=38.3859764708, direction=1)",
+  "__obs_plot0": 1
+ }
+}

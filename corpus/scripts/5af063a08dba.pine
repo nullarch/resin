@@ -1,0 +1,5 @@
+//@version=5
+indicator("history multi")
+prev1 = close[1]
+prev2 = close[2]
+prev5 = close[5]

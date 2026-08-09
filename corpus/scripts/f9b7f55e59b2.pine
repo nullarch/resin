@@ -1,0 +1,8 @@
+//@version=5
+indicator("Exp Family Param")
+var float theta = 0.0
+var float cumObs = 0.0
+var int barCnt = 0
+barCnt := barCnt + 1
+cumObs := cumObs + close
+theta := barCnt > 0 ? cumObs / barCnt : 0.0

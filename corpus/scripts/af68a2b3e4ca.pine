@@ -1,0 +1,10 @@
+//@version=5
+indicator("Hoist Func")
+// Use function before declaration (hoisting)
+var float result = 0.0
+result := add(3.0, 4.0)
+
+add(a, b) =>
+    a + b
+
+plot(result)

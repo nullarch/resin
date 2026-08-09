@@ -1,0 +1,5 @@
+//@version=5
+indicator("drawing noop")
+l = label.new(bar_index, close, "test")
+ln = line.new(bar_index, close, bar_index + 1, close + 1)
+b = box.new(bar_index, close, bar_index + 1, close - 1)

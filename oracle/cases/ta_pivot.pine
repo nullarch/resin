@@ -1,0 +1,11 @@
+//@version=5
+indicator("ta_pivot")
+// ta.pivothigh/ta.pivotlow 오라클 검증(ROADMAP P2 "ta.* 44종"). left=1, right=1(가장 작은 비자명
+// 창, total=3바)로 close 위에서 관측 — sample10.json에서 워밍업 구간(바 0~1, total 미달로 NaN)과
+// 창 안 NaN 없는 정상 구간(바 2~9)을 모두 커버하며, 이 조합은 바3(hi=103)/바7(hi=106) 두 개의 피벗
+// 고점과 바4(lo=102)/바8(lo=105) 두 개의 피벗 저점을 만들어 "성립/불성립"이 섞인 케이스가 된다
+// (right=1바 지연이라 결과는 후행 — 예: 바3의 피벗은 바2 값 103을 가리키지만 바3에서야 확정됨).
+var float __obs_hi = na
+var float __obs_lo = na
+__obs_hi := ta.pivothigh(close, 1, 1)
+__obs_lo := ta.pivotlow(close, 1, 1)

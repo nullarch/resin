@@ -1,0 +1,8 @@
+//@version=5
+indicator("Generic Type")
+array<float> arr = array.new<float>(0)
+array.push(arr, 1.0)
+array.push(arr, 2.0)
+var float result = 0.0
+result := array.sum(arr)
+plot(result)

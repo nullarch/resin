@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:sseRestricted": 0.0,
+   "var:sseUnrestricted": 2601.0,
+   "var:cnt": 1,
+   "var:__obs_plot0": -1.0
+  },
+  {
+   "var:sseRestricted": 1.0,
+   "var:sseUnrestricted": 5305.0,
+   "var:cnt": 2,
+   "var:__obs_plot0": -1.9996229971724788
+  },
+  {
+   "var:sseRestricted": 5.0,
+   "var:sseUnrestricted": 7745.36,
+   "var:cnt": 3,
+   "var:__obs_plot0": -2.998063356641912
+  },
+  {
+   "var:sseRestricted": 14.0,
+   "var:sseUnrestricted": 10618.32,
+   "var:cnt": 4,
+   "var:__obs_plot0": -3.994726096030257
+  },
+  {
+   "var:sseRestricted": 18.0,
+   "var:sseUnrestricted": 13507.3825,
+   "var:cnt": 5,
+   "var:__obs_plot0": -4.993336977019789
+  },
+  {
+   "var:sseRestricted": 19.0,
+   "var:sseUnrestricted": 16195.805,
+   "var:cnt": 6,
+   "var:__obs_plot0": -5.992961140245885
+  },
+  {
+   "var:sseRestricted": 23.0,
+   "var:sseUnrestricted": 19171.5075,
+   "var:cnt": 7,
+   "var:__obs_plot0": -6.991602121012132
+  },
+  {
+   "var:sseRestricted": 27.0,
+   "var:sseUnrestricted": 22246.21,
+   "var:cnt": 8,
+   "var:__obs_plot0": -7.990290480940349
+  },
+  {
+   "var:sseRestricted": 28.0,
+   "var:sseUnrestricted": 25087.1,
+   "var:cnt": 9,
+   "var:__obs_plot0": -8.98995499679118
+  },
+  {
+   "var:sseRestricted": 32.0,
+   "var:sseUnrestricted": 28223.1,
+   "var:cnt": 10,
+   "var:__obs_plot0": -9.988661769968573
+  }
+ ],
+ "finalVarState": {
+  "sseRestricted": 32.0,
+  "sseUnrestricted": 28223.1,
+  "cnt": 10,
+  "__obs_plot0": -9.988661769968573
+ }
+}

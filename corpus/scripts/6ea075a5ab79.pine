@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Sig Regime")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+regime = switch
+    close > sma3 and rsi > 65 => "strong_bull"
+    close > sma3 and rsi > 50 => "mild_bull"
+    close < sma3 and rsi < 35 => "strong_bear"
+    close < sma3 and rsi < 50 => "mild_bear"
+    => "neutral"
+isStrong = regime == "strong_bull" or regime == "strong_bear"
+plot(isStrong ? 1 : 0, "Strong")

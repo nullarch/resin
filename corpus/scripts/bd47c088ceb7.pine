@@ -1,0 +1,31 @@
+
+//@version=5
+indicator("Boundary")
+// NA handling
+prev5 = nz(close[5], close)
+prev9 = nz(close[9], close)
+
+// Division safety
+rng = high - low
+safeRatio = rng > 0 ? (close - low) / rng : 0.5
+
+// Array safety
+var float[] buf = array.new_float(0)
+array.push(buf, safeRatio)
+if array.size(buf) > 5
+    array.shift(buf)
+safeAvg = array.size(buf) > 0 ? array.avg(buf) : 0.5
+
+// Map safety
+var m = map.new<string, float>()
+map.put(m, "ratio", safeRatio)
+retrieved = map.get(m, "ratio", 0.5)
+
+// Boolean accumulation
+score = (close > open ? 1 : 0) + (safeRatio > 0.5 ? 1 : 0) + (prev5 < close ? 1 : 0)
+
+var int bars = 0
+bars := bars + 1
+
+plot(safeRatio, "Ratio")
+plot(score, "Score")

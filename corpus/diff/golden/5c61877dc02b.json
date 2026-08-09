@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:strongFlowBars": 0,
+   "var:__obs_plot0": 25.714285714285715,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:strongFlowBars": 0,
+   "var:__obs_plot0": 19.999999999999996,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:strongFlowBars": 0,
+   "var:__obs_plot0": -4.000000000000002,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:strongFlowBars": 1,
+   "var:__obs_plot0": 36.0,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:strongFlowBars": 2,
+   "var:__obs_plot0": 38.41379310344827,
+   "var:__obs_plot1": 2
+  },
+  {
+   "var:strongFlowBars": 3,
+   "var:__obs_plot0": 31.789473684210524,
+   "var:__obs_plot1": 3
+  },
+  {
+   "var:strongFlowBars": 4,
+   "var:__obs_plot0": 35.64285714285714,
+   "var:__obs_plot1": 4
+  },
+  {
+   "var:strongFlowBars": 5,
+   "var:__obs_plot0": 38.58064516129032,
+   "var:__obs_plot1": 5
+  },
+  {
+   "var:strongFlowBars": 6,
+   "var:__obs_plot0": 33.54385964912281,
+   "var:__obs_plot1": 6
+  },
+  {
+   "var:strongFlowBars": 7,
+   "var:__obs_plot0": 42.666666666666664,
+   "var:__obs_plot1": 7
+  }
+ ],
+ "finalVarState": {
+  "strongFlowBars": 7,
+  "__obs_plot0": 42.666666666666664,
+  "__obs_plot1": 7
+ }
+}

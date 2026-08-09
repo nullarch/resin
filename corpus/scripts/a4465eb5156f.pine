@@ -1,0 +1,12 @@
+//@version=5
+indicator("UDT field")
+type Config
+    float threshold = 0.0
+    int count = 0
+var Config cfg = Config.new()
+cfg.threshold := 99.5
+cfg.count := 7
+var float t = 0.0
+var int c = 0
+t := cfg.threshold
+c := cfg.count

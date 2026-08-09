@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("RSI Alert")
+rsi = nz(ta.rsi(close, 3), 50.0)
+overbought = rsi > 70
+oversold = rsi < 30
+alertcondition(overbought, "OB")
+alertcondition(oversold, "OS")
+plot(overbought ? 1 : oversold ? -1 : 0, "A")

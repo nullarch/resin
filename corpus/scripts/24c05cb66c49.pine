@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("MA Dist")
+sma5 = ta.sma(close, 5)
+totalDist = 0.0
+for i = 0 to 4
+    if not na(close[i])
+        totalDist := totalDist + math.abs(close[i] - sma5)
+avgDist = totalDist / 5
+plot(avgDist, "AD")

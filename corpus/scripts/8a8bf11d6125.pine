@@ -1,0 +1,6 @@
+//@version=5
+indicator("WAD")
+var float lastW = 0
+w = ta.wad(high, low, close)
+if not na(w)
+    lastW := w

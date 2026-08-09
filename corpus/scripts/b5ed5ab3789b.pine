@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Candle Stats")
+var float[] bodies = array.new_float(0)
+body = math.abs(close - open)
+array.push(bodies, body)
+if array.size(bodies) > 6
+    array.shift(bodies)
+avgBody = array.avg(bodies)
+maxBody = array.max(bodies)
+isLargeBody = body > avgBody * 1.5
+plot(isLargeBody ? 1 : 0, "LB")

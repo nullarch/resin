@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:gt": false,
+   "var:lt": false,
+   "var:eq": false,
+   "var:result": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:gt": false,
+   "var:lt": false,
+   "var:eq": false,
+   "var:result": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:gt": false,
+   "var:lt": false,
+   "var:eq": false,
+   "var:result": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:gt": false,
+   "var:lt": false,
+   "var:eq": false,
+   "var:result": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:gt": false,
+   "var:lt": false,
+   "var:eq": false,
+   "var:result": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:gt": false,
+   "var:lt": false,
+   "var:eq": false,
+   "var:result": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:gt": false,
+   "var:lt": false,
+   "var:eq": false,
+   "var:result": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:gt": false,
+   "var:lt": false,
+   "var:eq": false,
+   "var:result": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:gt": false,
+   "var:lt": false,
+   "var:eq": false,
+   "var:result": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:gt": false,
+   "var:lt": false,
+   "var:eq": false,
+   "var:result": 0.0,
+   "var:__obs_plot0": 0.0
+  }
+ ],
+ "finalVarState": {
+  "gt": false,
+  "lt": false,
+  "eq": false,
+  "result": 0.0,
+  "__obs_plot0": 0.0
+ }
+}

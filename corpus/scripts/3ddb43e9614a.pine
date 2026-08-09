@@ -1,0 +1,11 @@
+//@version=5
+indicator("SigHist")
+var int totalSignals = 0
+signals = array.new_float(0)
+smaVal = ta.sma(close, 3)
+if not na(smaVal)
+    if close > smaVal
+        signals.push(1.0)
+    else
+        signals.push(-1.0)
+totalSignals := array.size(signals)

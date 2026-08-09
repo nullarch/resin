@@ -1,0 +1,16 @@
+//@version=5
+indicator("Squeeze Multi TA")
+length = 20
+src = close
+sma_val = ta.sma(src, length)
+sd = ta.stdev(src, length)
+bb_upper = sma_val + 2.0 * sd
+bb_lower = sma_val - 2.0 * sd
+atr_val = ta.atr(length)
+kc_upper = sma_val + 1.5 * atr_val
+kc_lower = sma_val - 1.5 * atr_val
+var bool sqz_on = false
+sqz_on := bb_lower > kc_lower and bb_upper < kc_upper
+var float last_sma = 0.0
+last_sma := nz(sma_val, 0.0)
+plot(close)

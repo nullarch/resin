@@ -1,0 +1,9 @@
+//@version=5
+indicator("Density Matrix Purity")
+float p0 = close > open ? 0.8 : 0.3
+float p1 = 1.0 - p0
+float rho00 = p0
+float rho11 = p1
+float offDiag = math.sqrt(p0 * p1) * 0.5
+float purity = rho00 * rho00 + rho11 * rho11 + 2.0 * offDiag * offDiag
+float clampedPurity = math.min(purity, 1.0)

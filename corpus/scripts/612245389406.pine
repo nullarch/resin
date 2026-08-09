@@ -1,0 +1,5 @@
+
+//@version=5
+indicator("Percentile Near")
+p = ta.percentile_nearest_rank(close, 10, 50)
+plot(p)

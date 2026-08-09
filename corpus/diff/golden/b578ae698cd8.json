@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:f": "pine_fn.<locals>.Forecast(predicted=110.91875, actual=Series(current=111, length=10), error=0.08124999999999716)",
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:f": "pine_fn.<locals>.Forecast(predicted=110.91875, actual=Series(current=111, length=10), error=0.08124999999999716)",
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:f": "pine_fn.<locals>.Forecast(predicted=110.91875, actual=Series(current=111, length=10), error=0.08124999999999716)",
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:f": "pine_fn.<locals>.Forecast(predicted=110.91875, actual=Series(current=111, length=10), error=0.08124999999999716)",
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:f": "pine_fn.<locals>.Forecast(predicted=110.91875, actual=Series(current=111, length=10), error=0.08124999999999716)",
+   "var:__obs_plot0": 0.20000000000000284
+  },
+  {
+   "var:f": "pine_fn.<locals>.Forecast(predicted=110.91875, actual=Series(current=111, length=10), error=0.08124999999999716)",
+   "var:__obs_plot0": -0.7000000000000028
+  },
+  {
+   "var:f": "pine_fn.<locals>.Forecast(predicted=110.91875, actual=Series(current=111, length=10), error=0.08124999999999716)",
+   "var:__obs_plot0": -0.15000000000000568
+  },
+  {
+   "var:f": "pine_fn.<locals>.Forecast(predicted=110.91875, actual=Series(current=111, length=10), error=0.08124999999999716)",
+   "var:__obs_plot0": 0.32500000000000284
+  },
+  {
+   "var:f": "pine_fn.<locals>.Forecast(predicted=110.91875, actual=Series(current=111, length=10), error=0.08124999999999716)",
+   "var:__obs_plot0": -0.4375
+  },
+  {
+   "var:f": "pine_fn.<locals>.Forecast(predicted=110.91875, actual=Series(current=111, length=10), error=0.08124999999999716)",
+   "var:__obs_plot0": 0.08124999999999716
+  }
+ ],
+ "finalVarState": {
+  "f": "pine_fn.<locals>.Forecast(predicted=110.91875, actual=Series(current=111, length=10), error=0.08124999999999716)",
+  "__obs_plot0": 0.08124999999999716
+ }
+}

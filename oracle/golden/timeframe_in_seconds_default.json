@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_in_seconds_omitted": 86400
+  },
+  {
+   "var:__obs_in_seconds_omitted": 86400
+  },
+  {
+   "var:__obs_in_seconds_omitted": 86400
+  },
+  {
+   "var:__obs_in_seconds_omitted": 86400
+  },
+  {
+   "var:__obs_in_seconds_omitted": 86400
+  },
+  {
+   "var:__obs_in_seconds_omitted": 86400
+  },
+  {
+   "var:__obs_in_seconds_omitted": 86400
+  },
+  {
+   "var:__obs_in_seconds_omitted": 86400
+  },
+  {
+   "var:__obs_in_seconds_omitted": 86400
+  },
+  {
+   "var:__obs_in_seconds_omitted": 86400
+  }
+ ],
+ "finalVarState": {
+  "__obs_in_seconds_omitted": 86400
+ }
+}

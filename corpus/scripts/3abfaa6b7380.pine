@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("R:R")
+atr = nz(ta.atr(3), 1.0)
+stopDist = atr * 2.0
+targetDist = atr * 4.0
+rrRatio = stopDist > 0 ? targetDist / stopDist : 0.0
+plot(rrRatio, "RR")

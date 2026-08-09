@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_mode": "NaN"
+  },
+  {
+   "var:__obs_mode": "NaN"
+  },
+  {
+   "var:__obs_mode": 101.0
+  },
+  {
+   "var:__obs_mode": 102.0
+  },
+  {
+   "var:__obs_mode": 102.0
+  },
+  {
+   "var:__obs_mode": 102.0
+  },
+  {
+   "var:__obs_mode": 104.0
+  },
+  {
+   "var:__obs_mode": 105.0
+  },
+  {
+   "var:__obs_mode": 105.0
+  },
+  {
+   "var:__obs_mode": 105.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_mode": 105.0
+ }
+}

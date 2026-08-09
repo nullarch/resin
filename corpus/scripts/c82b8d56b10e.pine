@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("BSR Combo")
+basis = ta.sma(close, 5)
+dev = ta.stdev(close, 5)
+upper = basis + dev * 2
+lower = basis - dev * 2
+bbPos = upper > lower ? (close - lower) / (upper - lower) * 100 : 50.0
+k = ta.stoch(close, high, low, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+composite = (bbPos - 50) * 0.3 + (k - 50) * 0.3 + (rsi - 50) * 0.4
+plot(composite, "C")

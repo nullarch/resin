@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Corr Regime")
+priceChg = close - close[1]
+volChg = volume - volume[1]
+sameDir = not na(priceChg) and not na(volChg) and ((priceChg > 0 and volChg > 0) or (priceChg < 0 and volChg < 0))
+rsi = nz(ta.rsi(close, 3), 50.0)
+regime = switch
+    sameDir and rsi > 55 => "confirmed_bull"
+    sameDir and rsi < 45 => "confirmed_bear"
+    not sameDir => "divergent"
+    => "neutral"
+isConfirmed = str.contains(regime, "confirmed")
+plot(isConfirmed ? 1 : 0, "Conf")

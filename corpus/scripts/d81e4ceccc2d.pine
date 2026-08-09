@@ -1,0 +1,12 @@
+//@version=5
+indicator("MapRegime17")
+var float est = 100.0
+params = map.new<string, float>()
+map.put(params, "fast", 0.5)
+map.put(params, "slow", 0.1)
+map.put(params, "med", 0.3)
+isBull = close > open
+key = isBull ? "fast" : "slow"
+gain = map.get(params, key)
+est := est + nz(gain, 0.3) * (close - est)
+plot(est, "e")

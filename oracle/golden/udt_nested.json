@@ -1,0 +1,127 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:o1": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=1.0, y=2.0), label=0.0)",
+   "var:__obs_o1_inner_x": 1.0,
+   "var:__obs_o1_inner_y": 2.0,
+   "var:o2": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=10.0, y=20.0), label=0.0)",
+   "var:__obs_o2_inner_x": 10.0,
+   "var:__obs_o2_inner_y": 20.0,
+   "var:acc": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=1044.0, y=2.0), label=10.0)",
+   "var:__obs_acc_inner_x": 102.0,
+   "var:__obs_acc_label": 1.0
+  },
+  {
+   "var:o1": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=1.0, y=2.0), label=0.0)",
+   "var:__obs_o1_inner_x": 1.0,
+   "var:__obs_o1_inner_y": 2.0,
+   "var:o2": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=10.0, y=20.0), label=0.0)",
+   "var:__obs_o2_inner_x": 10.0,
+   "var:__obs_o2_inner_y": 20.0,
+   "var:acc": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=1044.0, y=2.0), label=10.0)",
+   "var:__obs_acc_inner_x": 204.0,
+   "var:__obs_acc_label": 2.0
+  },
+  {
+   "var:o1": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=1.0, y=2.0), label=0.0)",
+   "var:__obs_o1_inner_x": 1.0,
+   "var:__obs_o1_inner_y": 2.0,
+   "var:o2": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=10.0, y=20.0), label=0.0)",
+   "var:__obs_o2_inner_x": 10.0,
+   "var:__obs_o2_inner_y": 20.0,
+   "var:acc": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=1044.0, y=2.0), label=10.0)",
+   "var:__obs_acc_inner_x": 307.0,
+   "var:__obs_acc_label": 3.0
+  },
+  {
+   "var:o1": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=1.0, y=2.0), label=0.0)",
+   "var:__obs_o1_inner_x": 1.0,
+   "var:__obs_o1_inner_y": 2.0,
+   "var:o2": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=10.0, y=20.0), label=0.0)",
+   "var:__obs_o2_inner_x": 10.0,
+   "var:__obs_o2_inner_y": 20.0,
+   "var:acc": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=1044.0, y=2.0), label=10.0)",
+   "var:__obs_acc_inner_x": 409.0,
+   "var:__obs_acc_label": 4.0
+  },
+  {
+   "var:o1": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=1.0, y=2.0), label=0.0)",
+   "var:__obs_o1_inner_x": 1.0,
+   "var:__obs_o1_inner_y": 2.0,
+   "var:o2": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=10.0, y=20.0), label=0.0)",
+   "var:__obs_o2_inner_x": 10.0,
+   "var:__obs_o2_inner_y": 20.0,
+   "var:acc": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=1044.0, y=2.0), label=10.0)",
+   "var:__obs_acc_inner_x": 513.0,
+   "var:__obs_acc_label": 5.0
+  },
+  {
+   "var:o1": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=1.0, y=2.0), label=0.0)",
+   "var:__obs_o1_inner_x": 1.0,
+   "var:__obs_o1_inner_y": 2.0,
+   "var:o2": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=10.0, y=20.0), label=0.0)",
+   "var:__obs_o2_inner_x": 10.0,
+   "var:__obs_o2_inner_y": 20.0,
+   "var:acc": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=1044.0, y=2.0), label=10.0)",
+   "var:__obs_acc_inner_x": 618.0,
+   "var:__obs_acc_label": 6.0
+  },
+  {
+   "var:o1": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=1.0, y=2.0), label=0.0)",
+   "var:__obs_o1_inner_x": 1.0,
+   "var:__obs_o1_inner_y": 2.0,
+   "var:o2": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=10.0, y=20.0), label=0.0)",
+   "var:__obs_o2_inner_x": 10.0,
+   "var:__obs_o2_inner_y": 20.0,
+   "var:acc": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=1044.0, y=2.0), label=10.0)",
+   "var:__obs_acc_inner_x": 724.0,
+   "var:__obs_acc_label": 7.0
+  },
+  {
+   "var:o1": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=1.0, y=2.0), label=0.0)",
+   "var:__obs_o1_inner_x": 1.0,
+   "var:__obs_o1_inner_y": 2.0,
+   "var:o2": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=10.0, y=20.0), label=0.0)",
+   "var:__obs_o2_inner_x": 10.0,
+   "var:__obs_o2_inner_y": 20.0,
+   "var:acc": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=1044.0, y=2.0), label=10.0)",
+   "var:__obs_acc_inner_x": 829.0,
+   "var:__obs_acc_label": 8.0
+  },
+  {
+   "var:o1": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=1.0, y=2.0), label=0.0)",
+   "var:__obs_o1_inner_x": 1.0,
+   "var:__obs_o1_inner_y": 2.0,
+   "var:o2": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=10.0, y=20.0), label=0.0)",
+   "var:__obs_o2_inner_x": 10.0,
+   "var:__obs_o2_inner_y": 20.0,
+   "var:acc": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=1044.0, y=2.0), label=10.0)",
+   "var:__obs_acc_inner_x": 936.0,
+   "var:__obs_acc_label": 9.0
+  },
+  {
+   "var:o1": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=1.0, y=2.0), label=0.0)",
+   "var:__obs_o1_inner_x": 1.0,
+   "var:__obs_o1_inner_y": 2.0,
+   "var:o2": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=10.0, y=20.0), label=0.0)",
+   "var:__obs_o2_inner_x": 10.0,
+   "var:__obs_o2_inner_y": 20.0,
+   "var:acc": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=1044.0, y=2.0), label=10.0)",
+   "var:__obs_acc_inner_x": 1044.0,
+   "var:__obs_acc_label": 10.0
+  }
+ ],
+ "finalVarState": {
+  "o1": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=1.0, y=2.0), label=0.0)",
+  "__obs_o1_inner_x": 1.0,
+  "__obs_o1_inner_y": 2.0,
+  "o2": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=10.0, y=20.0), label=0.0)",
+  "__obs_o2_inner_x": 10.0,
+  "__obs_o2_inner_y": 20.0,
+  "acc": "pine_fn.<locals>.Outer(inner=pine_fn.<locals>.Inner(x=1044.0, y=2.0), label=10.0)",
+  "__obs_acc_inner_x": 1044.0,
+  "__obs_acc_label": 10.0
+ }
+}

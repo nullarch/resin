@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("VWMA")
+vwma5 = ta.vwma(close, 5)
+sma5 = ta.sma(close, 5)
+diff = vwma5 - sma5
+bullPressure = diff > 0
+plot(diff, "Diff")
+plot(bullPressure ? 1 : 0, "BullP")

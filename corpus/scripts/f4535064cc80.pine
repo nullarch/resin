@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Strat Mode")
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+volR = avgATR > 0 ? atr / avgATR : 1.0
+mode = switch
+    volR < 0.7 => "mean_revert"
+    volR > 1.5 => "breakout"
+    close > sma3 and rsi > 55 => "trend_follow"
+    => "wait"
+isActive = mode != "wait"
+plot(isActive ? 1 : 0, "Active")

@@ -1,0 +1,20 @@
+
+//@version=5
+indicator("Regime Class E")
+enum RegimeClass
+    BullTrend = 2
+    BullRange = 1
+    Neutral = 0
+    BearRange = -1
+    BearTrend = -2
+
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+rc = switch
+    sma3 > sma5 and rsi > 60 => RegimeClass.BullTrend
+    sma3 > sma5 => RegimeClass.BullRange
+    sma3 < sma5 and rsi < 40 => RegimeClass.BearTrend
+    sma3 < sma5 => RegimeClass.BearRange
+    => RegimeClass.Neutral
+plot(int(rc), "RC")

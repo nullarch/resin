@@ -1,0 +1,4 @@
+//@version=5
+indicator("SAR")
+sarVal = ta.sar(0.02, 0.02, 0.2)
+aboveSAR = not na(sarVal) ? close > nz(sarVal) : true

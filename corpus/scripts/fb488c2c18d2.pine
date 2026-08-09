@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("UDF Pipeline")
+calcTrend(float src, int len) =>
+    ma = ta.sma(src, len)
+    src > ma ? 1.0 : -1.0
+
+calcMom(float src, int len) =>
+    rsi = ta.rsi(src, len)
+    rsi > 50 ? 1.0 : -1.0
+
+trend = calcTrend(close, 3)
+mom = calcMom(close, 3)
+combined = trend + mom
+plot(combined, "Combined")

@@ -1,0 +1,8 @@
+//@version=5
+indicator("Func Default")
+var float result = 0.0
+
+myFunc(float src = close, int len = 3) =>
+    ta.sma(src, len)
+
+result := nz(myFunc(), 0.0)

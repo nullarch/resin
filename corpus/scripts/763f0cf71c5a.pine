@@ -1,0 +1,13 @@
+//@version=5
+indicator("Input Types")
+length = input.int(14, "Length", minval=1, maxval=100)
+mult = input.float(2.0, "Multiplier")
+maType = input.string("EMA", "MA Type", options=["EMA", "SMA", "WMA"])
+src = input.source(close, "Source")
+show = input.bool(true, "Show")
+result = switch maType
+    "EMA" => ta.ema(src, length)
+    "SMA" => ta.sma(src, length)
+    "WMA" => ta.wma(src, length)
+    => ta.sma(src, length)
+plot(show ? result * mult : na)

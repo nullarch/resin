@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Regime Trans")
+var float[] regimeHist = array.new_float(0)
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+regime = sma3 > sma5 ? 1.0 : -1.0
+array.push(regimeHist, regime)
+if array.size(regimeHist) > 10
+    array.shift(regimeHist)
+transitions = 0
+for i = 1 to math.max(array.size(regimeHist) - 1, 1)
+    if i < array.size(regimeHist) and array.get(regimeHist, i) != array.get(regimeHist, i - 1)
+        transitions := transitions + 1
+plot(transitions, "T")

@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Kelly")
+var int wins = 0
+var int total = 0
+total := total + 1
+if close > open
+    wins := wins + 1
+winRate = total > 0 ? wins / total : 0.5
+avgWin = math.abs(close - open)
+avgLoss = avgWin * 0.8
+payoff = avgLoss > 0 ? avgWin / avgLoss : 1.0
+kelly = winRate - (1 - winRate) / payoff
+kellyCapped = math.max(0.0, math.min(kelly, 0.25))
+var float __obs_plot0 = na
+__obs_plot0 := kellyCapped
+plot(kellyCapped, "Kelly")

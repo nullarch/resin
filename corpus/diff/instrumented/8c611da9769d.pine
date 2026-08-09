@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Compound")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+c1 = close > sma3 and rsi > 50
+c2 = atr < avgATR * 1.5 or rsi > 60
+c3 = not (close < sma3 and rsi < 30)
+combined = c1 and c2 and c3
+var float __obs_plot0 = na
+__obs_plot0 := combined ? 1 : 0
+plot(combined ? 1 : 0, "Comb")

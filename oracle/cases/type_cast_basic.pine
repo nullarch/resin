@@ -1,0 +1,50 @@
+//@version=5
+indicator("type_cast_basic")
+// C207: LIMITATIONS.md 잔여 스코프 (3) "int() 타입캐스트 함수 자체 구현" 채택 -- 조사 결과 pine2py
+// wavealgo.core.pine_int/pine_float/pine_bool/pine_str(bare int()/float()/bool()/string() 콜)가
+// 이미 동일 패턴(na-safe, 크래시 없음)으로 구현돼 있어(python 직접 실행으로 확인) 4종을 긴밀한
+// 묶음으로 함께 구현. int()는 0을 향한 트렁케이션(Python int()와 동일 방향), string(x)는 pine2py
+// 실측 결과 str.tostring(x)(format_str 생략)와 완전히 동일한 값을 낸다(둘 다 wa.pine_str 위임).
+// Infinity 인자는 pine2py가 OverflowError로 크래시하는 latent 버그라(GOAL.md "알려진 버그는
+// 따르지 않는다") 오라클에서 제외 -- hand-verified로 codegen.test.ts에서 별도 검증(DIVERGENCES #88).
+// bar-독립(close/open 미참조) -- 전 바에서 값이 동일해야 정상.
+var float naFloat = na
+
+var float __obs_int_pos = na
+__obs_int_pos := int(5.7)
+var float __obs_int_neg = na
+__obs_int_neg := int(-2.7)
+var float __obs_int_zero_half = na
+__obs_int_zero_half := int(-0.5)
+var float __obs_int_na = na
+__obs_int_na := int(naFloat)
+var float __obs_int_bool = na
+__obs_int_bool := int(true)
+
+var float __obs_float_int = na
+__obs_float_int := float(5)
+var float __obs_float_bool = na
+__obs_float_bool := float(false)
+var float __obs_float_na = na
+__obs_float_na := float(naFloat)
+
+var bool __obs_bool_zero = na
+__obs_bool_zero := bool(0.0)
+var bool __obs_bool_nonzero = na
+__obs_bool_nonzero := bool(3.2)
+var bool __obs_bool_na = na
+__obs_bool_na := bool(naFloat)
+var bool __obs_bool_true = na
+__obs_bool_true := bool(true)
+
+var string __obs_string_int = na
+__obs_string_int := string(5)
+var string __obs_string_float = na
+__obs_string_float := string(5.7)
+var string __obs_string_bool = na
+__obs_string_bool := string(true)
+var string __obs_string_na = na
+__obs_string_na := string(naFloat)
+var string __obs_string_loop = na
+for k = 0 to 2
+    __obs_string_loop := string(k)

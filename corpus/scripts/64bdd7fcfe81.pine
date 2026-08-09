@@ -1,0 +1,8 @@
+//@version=5
+indicator("Cavitation Index")
+refPressure = ta.sma(close, 3)
+vaporPressure = 95.0
+dynamicPressure = 0.5 * math.pow(math.abs(close - open), 2)
+sigma = not na(refPressure) and dynamicPressure > 0 ? (refPressure - vaporPressure) / dynamicPressure : 10.0
+cavitating = sigma < 1.0 ? 1.0 : 0.0
+plot(sigma)

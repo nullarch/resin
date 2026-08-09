@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("VW Close")
+var float sumPV = 0.0
+var float sumV = 0.0
+sumPV := sumPV + close * volume
+sumV := sumV + volume
+vwClose = sumV > 0 ? sumPV / sumV : close
+plot(vwClose, "VWC")

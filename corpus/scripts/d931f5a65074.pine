@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Hist Bins")
+var int[] bins = array.new_int(5, 0)
+rsi = ta.rsi(close, 3)
+rsiVal = nz(rsi, 50.0)
+binIdx = math.min(4, int(rsiVal / 20.0))
+if binIdx >= 0
+    prev = array.get(bins, binIdx)
+    array.set(bins, binIdx, prev + 1)
+maxBin = array.max(bins)
+plot(maxBin, "MaxBin")

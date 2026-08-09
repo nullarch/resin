@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Pos Sizer")
+calcSize(float equity, float riskPct, float atrVal) =>
+    riskAmount = equity * riskPct / 100
+    atrVal > 0 ? math.max(1.0, riskAmount / atrVal) : 1.0
+
+atr = ta.atr(3)
+size = calcSize(10000.0, 2.0, atr)
+plot(size, "Size")

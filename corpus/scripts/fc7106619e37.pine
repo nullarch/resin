@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Risk Scen")
+atr = nz(ta.atr(3), 1.0)
+bestRR = 0.0
+bestMult = 1.0
+for mult = 1 to 4
+    stopDist = atr * mult
+    targetDist = stopDist * 2
+    rr = stopDist > 0 ? targetDist / stopDist : 0
+    if rr > bestRR
+        bestRR := rr
+        bestMult := float(mult)
+plot(bestMult, "BM")

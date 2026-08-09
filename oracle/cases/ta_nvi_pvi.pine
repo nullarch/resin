@@ -1,0 +1,10 @@
+//@version=5
+indicator("ta_nvi_pvi")
+// ta.nvi/ta.pvi 오라클 검증(ROADMAP P2 "ta.* 44종"). 둘 다 인자 없음(close/volume 암묵 사용) —
+// sample10.json 전 구간 관측. obv/pvt/wad(C55/56)와 같은 "NaN이면 state 전혀 안 건드림" 부류지만
+// 초기 시드가 1.0이고 prevClose===0 가드가 volume 비교 조건보다 우선(runtime/ta.ts nvi()/pvi() 주석
+// 참조).
+var float __obs_nvi = na
+var float __obs_pvi = na
+__obs_nvi := ta.nvi()
+__obs_pvi := ta.pvi()

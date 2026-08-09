@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:diff": 0,
+   "var:avg_diff": 103.0,
+   "var:__obs_plot0": 103
+  },
+  {
+   "var:diff": 1,
+   "var:avg_diff": 103.66666666666667,
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:diff": -2,
+   "var:avg_diff": 103.0,
+   "var:__obs_plot0": 102
+  },
+  {
+   "var:diff": 3,
+   "var:avg_diff": 103.66666666666667,
+   "var:__obs_plot0": 105
+  },
+  {
+   "var:diff": 2,
+   "var:avg_diff": 104.66666666666667,
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:diff": -1,
+   "var:avg_diff": 106.0,
+   "var:__obs_plot0": 106
+  },
+  {
+   "var:diff": 2,
+   "var:avg_diff": 107.0,
+   "var:__obs_plot0": 108
+  },
+  {
+   "var:diff": 2,
+   "var:avg_diff": 108.0,
+   "var:__obs_plot0": 110
+  },
+  {
+   "var:diff": -1,
+   "var:avg_diff": 109.0,
+   "var:__obs_plot0": 109
+  },
+  {
+   "var:diff": 2,
+   "var:avg_diff": 110.0,
+   "var:__obs_plot0": 111
+  }
+ ],
+ "finalVarState": {
+  "diff": 2,
+  "avg_diff": 110.0,
+  "__obs_plot0": 111
+ }
+}

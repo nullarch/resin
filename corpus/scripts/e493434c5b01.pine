@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Consensus")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+sig1 = close > sma3 ? 1 : -1
+sig2 = sma3 > sma5 ? 1 : -1
+sig3 = rsi > 50 ? 1 : -1
+consensus = sig1 + sig2 + sig3
+plot(consensus, "Con")

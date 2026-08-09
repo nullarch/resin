@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Underwater")
+var float equity = 100.0
+var float peak = 100.0
+pnl = close > open ? 0.5 : -0.3
+equity := equity + pnl
+peak := equity > peak ? equity : peak
+underwater = equity - peak
+var float __obs_plot0 = na
+__obs_plot0 := underwater
+plot(underwater, "UW")

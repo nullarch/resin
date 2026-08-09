@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Bar Stats")
+type BarStats
+    float avgBody = 0.0
+    float avgRange = 0.0
+    int bullBars = 0
+
+var BarStats bs = BarStats.new()
+body = math.abs(close - open_)
+barRange = high - low
+bs.avgBody := ta.sma(body, 5)
+bs.avgRange := ta.sma(barRange, 5)
+if close > open_
+    bs.bullBars := bs.bullBars + 1
+plot(bs.bullBars, "BB")

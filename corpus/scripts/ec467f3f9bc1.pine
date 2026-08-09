@@ -1,0 +1,7 @@
+//@version=5
+indicator("Detrend02")
+trend = nz(ta.sma(close, 5), close)
+cycle = close - trend
+amplitude = math.abs(cycle)
+plot(cycle, "cyc")
+plot(amplitude, "amp")

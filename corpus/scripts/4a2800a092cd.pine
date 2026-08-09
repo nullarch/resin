@@ -1,0 +1,9 @@
+//@version=5
+indicator("String ops")
+s1 = str.tostring(close)
+s2 = str.tostring(high, "#.##")
+combined = s1 + " / " + s2
+hasSlash = str.contains(combined, "/")
+upper = str.upper("hello")
+lower = str.lower("WORLD")
+replaced = str.replace_all("aaa", "a", "b")

@@ -1,0 +1,7 @@
+//@version=5
+indicator("Ternary TA")
+sma5 = ta.sma(close, 5)
+ema5 = ta.ema(close, 5)
+var float result = 0.0
+result := close > 105 ? nz(sma5) : nz(ema5)
+plot(close)

@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:result": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:result": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:result": 103.0,
+   "var:__obs_plot0": 103.0
+  },
+  {
+   "var:result": 103.6666666667,
+   "var:__obs_plot0": 103.6666666667
+  },
+  {
+   "var:result": 208.86666666669998,
+   "var:__obs_plot0": 208.86666666669998
+  },
+  {
+   "var:result": 210.8,
+   "var:__obs_plot0": 210.8
+  },
+  {
+   "var:result": 212.86666666669998,
+   "var:__obs_plot0": 212.86666666669998
+  },
+  {
+   "var:result": 215.2444444445,
+   "var:__obs_plot0": 215.2444444445
+  },
+  {
+   "var:result": 216.82962962969998,
+   "var:__obs_plot0": 216.82962962969998
+  },
+  {
+   "var:result": 218.8864197531,
+   "var:__obs_plot0": 218.8864197531
+  }
+ ],
+ "finalVarState": {
+  "result": 218.8864197531,
+  "__obs_plot0": 218.8864197531
+ }
+}

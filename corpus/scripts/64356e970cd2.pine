@@ -1,0 +1,7 @@
+//@version=5
+indicator("Dead Code Overwrite")
+float temp = 999.0
+temp := close
+float temp2 = -1.0
+temp2 := open
+float result = temp + temp2

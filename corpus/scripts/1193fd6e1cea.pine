@@ -1,0 +1,8 @@
+//@version=5
+indicator("Array Stats")
+var prices = array.new_float(0)
+array.push(prices, close)
+if array.size(prices) > 5
+    array.shift(prices)
+avg_ = array.avg(prices)
+plot(avg_)

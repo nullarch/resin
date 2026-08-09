@@ -1,0 +1,23 @@
+
+//@version=5
+indicator("FullRegime")
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = nz(ta.atr(3), 1.0)
+smaFast = nz(ta.sma(close, 2), close)
+smaSlow = nz(ta.sma(close, 5), close)
+trendUp = smaFast > smaSlow
+var int regimeCode = 0
+var int regimeDuration = 0
+var int totalTransitions = 0
+newRegime = trendUp and rsi > 55 ? 2 : not trendUp and rsi < 45 ? 0 : 1
+totalTransitions := newRegime != regimeCode ? totalTransitions + 1 : totalTransitions
+regimeDuration := newRegime == regimeCode ? regimeDuration + 1 : 1
+regimeCode := newRegime
+var float[] durHistory = array.new_float(0)
+array.push(durHistory, regimeDuration)
+if array.size(durHistory) > 5
+    array.shift(durHistory)
+avgDur = array.size(durHistory) > 0 ? array.avg(durHistory) : 0.0
+adaptiveFactor = atr > 1.5 ? 0.5 : 1.0
+composite = regimeCode * 10.0 + avgDur * adaptiveFactor + totalTransitions
+plot(composite, "Full")

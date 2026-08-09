@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Upper Shd")
+topBody = math.max(close, open)
+upperShadow = high - topBody
+totalRange = high - low
+shadowRatio = totalRange > 0 ? upperShadow / totalRange * 100 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := shadowRatio
+plot(shadowRatio, "US")

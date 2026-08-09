@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("Dbl Exp")
+var float level = 0.0
+var float trend = 0.0
+var bool init = false
+alpha = 0.4
+beta = 0.3
+if not init
+    level := close
+    trend := 0.0
+    init := true
+else
+    prevLevel = level
+    level := alpha * close + (1 - alpha) * (level + trend)
+    trend := beta * (level - prevLevel) + (1 - beta) * trend
+forecast = level + trend
+plot(forecast, "Fcst")

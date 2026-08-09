@@ -1,0 +1,15 @@
+//@version=5
+indicator("Compound Member")
+type Stats
+    float total = 0.0
+    int count = 0
+
+var s = Stats.new()
+s.total += close
+s.count += 1
+
+var float avg_ = 0.0
+avg_ := s.total / s.count
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

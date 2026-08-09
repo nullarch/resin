@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Event Type")
+enum EventType
+    CrossUp = 3
+    CrossDn = 2
+    RSIExtreme = 1
+    None_ = 0
+
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+evType = switch
+    ta.crossover(close, sma3) => EventType.CrossUp
+    ta.crossunder(close, sma3) => EventType.CrossDn
+    rsi > 70 or rsi < 30 => EventType.RSIExtreme
+    => EventType.None_
+plot(int(evType), "ET")

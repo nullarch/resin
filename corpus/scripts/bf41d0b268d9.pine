@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Pos Size")
+atr = ta.atr(3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+baseSize = 100.0
+volAdj = atr > 0 ? 10.0 / atr : 1.0
+momAdj = rsi > 70 ? 0.5 : rsi < 30 ? 0.5 : 1.0
+posSize = baseSize * volAdj * momAdj
+capped = math.min(posSize, 500.0)
+plot(capped, "Size")

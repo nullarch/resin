@@ -1,0 +1,19 @@
+
+//@version=5
+indicator("Streak")
+var int upStreak = 0
+var int downStreak = 0
+var int maxUp = 0
+var int maxDown = 0
+if close > close[1]
+    upStreak := upStreak + 1
+    downStreak := 0
+else if close < close[1]
+    downStreak := downStreak + 1
+    upStreak := 0
+if upStreak > maxUp
+    maxUp := upStreak
+if downStreak > maxDown
+    maxDown := downStreak
+plot(upStreak, "UpStreak")
+plot(maxUp, "MaxUp")

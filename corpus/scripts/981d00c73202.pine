@@ -1,0 +1,11 @@
+//@version=5
+indicator("EnergyRatio")
+prev = nz(close[1], close)
+dFine = close - prev
+s2 = nz(ta.sma(close, 3), close)
+dCoarse = close - s2
+eFine = dFine * dFine
+eCoarse = dCoarse * dCoarse
+eTotal = eFine + eCoarse
+ratio = eTotal > 0.001 ? eFine / eTotal : 0.5
+plot(ratio, "ERatio")

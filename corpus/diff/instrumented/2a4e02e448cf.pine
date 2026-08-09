@@ -1,0 +1,13 @@
+//@version=5
+indicator("If Expr Var")
+var float max_close = 0.0
+float new_val = if close > max_close
+    close
+else
+    max_close
+max_close := new_val
+var float result = 0.0
+result := max_close
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

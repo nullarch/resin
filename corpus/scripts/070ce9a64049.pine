@@ -1,0 +1,8 @@
+//@version=5
+indicator("Monad Bind")
+float step1 = not na(close) ? close - 100.0 : 0.0
+float step2 = not na(step1) ? step1 * 0.01 : 0.0
+float step3 = not na(step2) ? math.abs(step2) : 0.0
+float result = step3
+var float cumResult = 0.0
+cumResult := cumResult + result

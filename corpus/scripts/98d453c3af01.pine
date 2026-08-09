@@ -1,0 +1,8 @@
+//@version=5
+indicator("Information Velocity")
+var float prevInfo = 0.0
+var float infoVelocity = 0.0
+spread = high - low
+curInfo = spread > 0.01 ? 1.0 / (spread * spread) : 1.0
+infoVelocity := curInfo - prevInfo
+prevInfo := curInfo

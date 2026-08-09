@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("MACD Hist")
+[macdLine, signalLine, hist] = ta.macd(close, 3, 5, 3)
+histRising = hist > hist[1]
+var float __obs_plot0 = na
+__obs_plot0 := histRising ? 1 : 0
+plot(histRising ? 1 : 0, "HR")

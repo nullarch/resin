@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Map Sum")
+m = map.new<string, float>()
+map.put(m, "x", 10.0)
+map.put(m, "y", 20.0)
+map.put(m, "z", 30.0)
+total = 0.0
+for [k, v] in m
+    total := total + v
+var float __obs_plot0 = na
+__obs_plot0 := total
+plot(total, "Sum")

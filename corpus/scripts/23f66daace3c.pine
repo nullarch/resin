@@ -1,0 +1,44 @@
+//@version=5
+indicator("Comprehensive 63")
+
+// UDF with arrow
+double(x) =>
+    x * 2.0
+
+// UDT + method
+type Pair
+    float a
+    float b
+
+method total_val(Pair p) =>
+    p.a + p.b
+
+// if expression
+float if_val = if close > 100
+    double(close)
+else
+    close
+
+// switch expression
+var int mode = 1
+float sw_val = switch mode
+    1 => nz(ta.sma(close, 3), 0.0)
+    2 => nz(ta.ema(close, 5), 0.0)
+    => 0.0
+
+// for expression
+float total = 0.0
+float for_val = for i = 1 to 4
+    total := total + i
+    total
+
+// Logical ops
+var bool flag = true and not false
+
+// UDT method
+var p = Pair.new(10.0, 20.0)
+float pair_val = p.total_val()
+
+var float result = 0.0
+result := if_val + sw_val + for_val + pair_val + (flag ? 1.0 : 0.0)
+plot(close)

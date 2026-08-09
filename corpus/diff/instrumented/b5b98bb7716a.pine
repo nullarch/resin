@@ -1,0 +1,11 @@
+//@version=5
+indicator("Var Map Persist")
+var m = map.new<string, float>()
+if not map.contains(m, "count")
+    map.put(m, "count", 0.0)
+map.put(m, "count", map.get(m, "count") + 1.0)
+var float result = 0.0
+result := map.get(m, "count")
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

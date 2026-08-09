@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Comp Score")
+compositeScore(float rsi, float price, float ma, float vol, float avgVol) =>
+    rsiScore = rsi > 55 ? 1.0 : rsi < 45 ? -1.0 : 0.0
+    maScore = price > ma ? 1.0 : -1.0
+    volScore = vol > avgVol ? 0.5 : 0.0
+    rsiScore + maScore + volScore
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+avgVol = ta.sma(volume, 3)
+score = compositeScore(rsi, close, sma3, volume, avgVol)
+plot(score, "CS")

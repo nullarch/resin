@@ -1,0 +1,47 @@
+//@version=5
+indicator("tuple_branch_tail_return")
+// C612: 분기 꼬리(if/switch/삼항)의 튜플 UDF 콜/security passthrough 전파 — 4채널 대조.
+// (1) pick: if 분기 꼬리가 튜플 UDF 콜/튜플 리터럴 혼합 (wild if<tuple-literal|udf-call>).
+// (2) choose: subject-less switch 분기 꼬리가 튜플 UDF 콜 (wild switch<udf-call>, 3534874277ea).
+// (3) tern: UDF 마지막 문장이 삼항이고 양 분기가 튜플 값 (wild ternary<...>).
+// (4) wrapIf: if 분기 꼬리가 request.security(sym, tf, tupleUdf(...)) bare UDF 콜 —
+//     pine2py request_security._resolve_expression은 비-Series 값을 그대로 통과(C432 오라클
+//     근거)시키므로 passthrough 폼은 골든 대조 가능(HTF 집계 없음).
+calc2(x) =>
+    [x + 1.0, x * 2.0]
+pick(sel) =>
+    if sel
+        calc2(close)
+    else
+        [close, close]
+[p1, p2] = pick(bar_index % 2 == 0)
+choose(sel2) =>
+    switch
+        sel2 => calc2(high)
+        => [low, low]
+[q1, q2] = choose(bar_index % 3 == 0)
+tern(c) =>
+    c ? calc2(low) : [high, high]
+[r1, r2] = tern(bar_index % 2 == 1)
+wrapIf(useSec) =>
+    if useSec
+        request.security(syminfo.tickerid, "D", calc2(close))
+    else
+        calc2(open)
+[w1, w2] = wrapIf(bar_index % 2 == 0)
+var float __obs_p1 = na
+__obs_p1 := p1
+var float __obs_p2 = na
+__obs_p2 := p2
+var float __obs_q1 = na
+__obs_q1 := q1
+var float __obs_q2 = na
+__obs_q2 := q2
+var float __obs_r1 = na
+__obs_r1 := r1
+var float __obs_r2 = na
+__obs_r2 := r2
+var float __obs_w1 = na
+__obs_w1 := w1
+var float __obs_w2 = na
+__obs_w2 := w2

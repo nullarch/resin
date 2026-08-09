@@ -1,0 +1,43 @@
+//@version=5
+indicator("enum_basic")
+// enum(리터럴 멤버만, UDT ROADMAP 두 번째 슬라이스) 오라클 검증.
+// pine2py는 enum을 실제 Python Enum 클래스로 codegen하고(codegen.py), gen_oracle.py의 enc()가
+// Enum 멤버를 v.value(bare 멤버 이름 문자열, 예: "long")로 인코딩한다 — 반면 pine2js는 멤버
+// 접근을 "EnumName.MemberName" qualified 문자열로 접는다(서로 다른 enum의 동명 멤버를 구분하기
+// 위해, analyzer.ts EnumTypeInfo 주석 참조). 두 표현이 문자열 레벨에서 다르므로 enum 값 자체를
+// 직접 var 미러(`__obs_d := d`)로 노출하면 바이트 단위 불일치가 난다 — 그래서 UDT 오라클
+// (udt_basic.pine)이 dataclass repr()을 제외한 것과 동일 원칙으로, 이 케이스는 값 자체가 아니라
+// 등가/비교 결과(boolean)와 switch 분기 결과만 관측한다(둘 다 표현 방식과 무관하게 항상 일치).
+enum Direction
+    long
+    short
+    flat
+
+var Direction d = Direction.long
+diff = close - close[1]
+if diff > 0
+    d := Direction.long
+else if diff < 0
+    d := Direction.short
+else
+    d := Direction.flat
+
+var bool __obs_is_long = na
+__obs_is_long := d == Direction.long
+var bool __obs_is_short = na
+__obs_is_short := d == Direction.short
+var bool __obs_is_flat = na
+__obs_is_flat := d == Direction.flat
+var bool __obs_not_long = na
+__obs_not_long := d != Direction.long
+
+// switch dispatch: enum-typed subject를 case 값(다른 enum 멤버)과 매칭 — case 순서와 무관하게
+// 정확히 하나의 분기만 타는지 확인.
+var float __obs_switch_val = na
+switch d
+    Direction.long =>
+        __obs_switch_val := 1.0
+    Direction.short =>
+        __obs_switch_val := 2.0
+    Direction.flat =>
+        __obs_switch_val := 3.0

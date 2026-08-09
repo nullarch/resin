@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Cndl Str")
+candleStrength(float o, float h, float l, float c) =>
+    body = math.abs(c - o)
+    fullRange = h - l
+    strength = fullRange > 0 ? body / fullRange : 0.0
+    c > o ? strength : -strength
+
+str = candleStrength(open_, high, low, close)
+plot(str, "Str")

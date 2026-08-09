@@ -1,0 +1,6 @@
+//@version=5
+indicator("Array Some")
+var arr = array.from(0.0, 0.0, 1.0)
+var bool any_true = array.some(arr)
+var float val = any_true ? 1.0 : 0.0
+plot(val)

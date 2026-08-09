@@ -1,0 +1,9 @@
+//@version=5
+indicator("local_history_basic")
+x = close * 2
+var float __obs_x = na
+__obs_x := x
+var float __obs_x_prev = na
+__obs_x_prev := x[1]
+var float __obs_x_prev2 = na
+__obs_x_prev2 := x[2]

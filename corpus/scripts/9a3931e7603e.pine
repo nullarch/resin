@@ -1,0 +1,4 @@
+//@version=5
+indicator("Test")
+arr = array.new_float(10, 0)
+m = arr.mode()

@@ -1,0 +1,19 @@
+
+//@version=5
+indicator("MA State")
+enum MAState
+    BullCross = 2
+    BullTrend = 1
+    Neutral = 0
+    BearTrend = -1
+    BearCross = -2
+
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+state = switch
+    ta.crossover(sma3, sma5) => MAState.BullCross
+    sma3 > sma5 => MAState.BullTrend
+    ta.crossunder(sma3, sma5) => MAState.BearCross
+    sma3 < sma5 => MAState.BearTrend
+    => MAState.Neutral
+plot(int(state), "St")

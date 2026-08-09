@@ -1,0 +1,6 @@
+//@version=5
+indicator("TA Implicit")
+tr_val = ta.tr
+var float last_tr = 0.0
+last_tr := nz(tr_val)
+plot(close)

@@ -1,0 +1,17 @@
+//@version=5
+indicator("Center of Gravity")
+// TV 빌트인 "Center of Gravity" 인디케이터 E2E 재현(ROADMAP P2 "TV 빌트인 인디케이터 15종 E2E" 네
+// 번째 슬라이스, 3종 중 3: OBV/ACCDIST/COG). ta.cog 자체의 계산은 이미
+// oracle/cases/ta_cog.pine(순수 __obs 미러, length=3)으로 개별 검증됐다 -- 이 케이스는 그 위에
+// indicator()/input.source/input.int/plot()을 얹어 완성된 빌트인 스크립트 구조 전체를 검증한다.
+// length=3은 ta_cog.pine과 동일 파라미터를 재사용(sample10.json 10바 안에서 워밍업 구간(NaN, 바
+// 0~1)과 정상 구간(바 2~9)을 이미 커버해둔 조합 그대로 재사용).
+src = input.source(close, "Source")
+lengthInput = input.int(3, "Length")
+
+cogValue = ta.cog(src, lengthInput)
+
+plot(cogValue, "COG")
+
+var float __obs_cog = na
+__obs_cog := cogValue

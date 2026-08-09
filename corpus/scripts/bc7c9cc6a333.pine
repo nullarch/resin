@@ -1,0 +1,16 @@
+//@version=5
+indicator("Trap Velocity")
+float maxVel = 5.0
+float accelTime = 3.0
+float cruiseTime = 4.0
+float totalTime = 10.0
+float tNorm = (close - 100.0)
+float vel = 0.0
+if tNorm < accelTime
+    vel := maxVel * tNorm / accelTime
+else if tNorm < accelTime + cruiseTime
+    vel := maxVel
+else
+    float decelProgress = (tNorm - accelTime - cruiseTime) / (totalTime - accelTime - cruiseTime)
+    vel := maxVel * (1.0 - math.max(0.0, math.min(1.0, decelProgress)))
+float position = vel * 1.0

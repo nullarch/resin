@@ -1,0 +1,51 @@
+//@version=5
+indicator("for_in_loop")
+// C216: for-in 루프(`for x in arr` / `for [i, v] in arr` / `for [k, v] in map` / `for k in map`)
+// analyzer+codegen 실제 구현 -- pine2py parser.py _parse_for(L392-441)/codegen.py
+// _gen_for_in(L525-537) literal port. array는 인덱스 for로 데슈가링, map은 네이티브 JS Map
+// for...of(entries/keys) 재사용(genForInStmt 주석 참조). 이 오라클은 4가지 형태(bare array/
+// destructure array/destructure map/bare map)와 break/continue를 각각 별도 채널로 검증한다.
+var a = array.from(10.0, 20.0, 30.0)
+sumA = 0.0
+for x in a
+    sumA := sumA + x
+var float __obs_sum_bare_array = na
+__obs_sum_bare_array := sumA
+
+weighted = 0.0
+for [i, v] in a
+    weighted := weighted + v * i
+var float __obs_weighted_array = na
+__obs_weighted_array := weighted
+
+var m = map.new<string, float>()
+map.put(m, "a", 1.0)
+map.put(m, "b", 2.0)
+map.put(m, "c", 3.0)
+sumM = 0.0
+for [k, v] in m
+    sumM := sumM + v
+var float __obs_sum_map = na
+__obs_sum_map := sumM
+
+keyCount = 0.0
+for k in m
+    keyCount := keyCount + 1
+var float __obs_key_count = na
+__obs_key_count := keyCount
+
+brk = 0.0
+for x in a
+    if x > 15
+        break
+    brk := brk + x
+var float __obs_break = na
+__obs_break := brk
+
+cont = 0.0
+for x in a
+    if x == 20
+        continue
+    cont := cont + x
+var float __obs_continue = na
+__obs_continue := cont

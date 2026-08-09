@@ -1,0 +1,7 @@
+//@version=5
+indicator("Multi SMA")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+sma8 = ta.sma(close, 8)
+diff35 = nz(sma3) - nz(sma5)
+diff58 = nz(sma5) - nz(sma8)

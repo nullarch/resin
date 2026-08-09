@@ -1,0 +1,9 @@
+//@version=5
+indicator("XOR Flip")
+float chg = close - open
+float prevChg = not na(close[1]) ? close[1] - open[1] : chg
+bool curUp = chg > 0
+bool prevUp = prevChg > 0
+float flipBit = curUp != prevUp ? 1.0 : 0.0
+var float totalFlips = 0.0
+totalFlips := totalFlips + flipBit

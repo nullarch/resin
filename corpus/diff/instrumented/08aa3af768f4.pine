@@ -1,0 +1,7 @@
+//@version=5
+indicator("Triangular Number")
+n = bar_index + 1.0
+tri = n * (n + 1.0) / 2.0
+var float __obs_plot0 = na
+__obs_plot0 := tri
+plot(tri, "Tri")

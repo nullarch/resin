@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("Reg Metrics")
+var rm = map.new<string, float>()
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+map.put(rm, "trend", close > sma3 ? 1.0 : -1.0)
+map.put(rm, "momentum", (rsi - 50) / 50)
+map.put(rm, "vol_adj", avgATR > 0 and atr < avgATR * 1.5 ? 1.0 : -1.0)
+score = 0.0
+for [k, v] in rm
+    score := score + v
+normScore = score / 3.0
+var float __obs_plot0 = na
+__obs_plot0 := normScore
+plot(normScore, "NS")

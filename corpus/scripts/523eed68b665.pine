@@ -1,0 +1,4 @@
+//@version=5
+indicator("Str Pos")
+var int p = str.pos("hello world", "world")
+plot(p)

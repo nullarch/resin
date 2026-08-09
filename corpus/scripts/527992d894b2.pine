@@ -1,0 +1,4 @@
+//@version=5
+indicator("cast int")
+var int result = 0
+result := int(42.7)

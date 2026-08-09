@@ -1,0 +1,19 @@
+
+//@version=5
+indicator("Pos Accum")
+var float[] deltas = array.new_float(0)
+delta = close - open
+array.push(deltas, delta)
+if array.size(deltas) > 6
+    array.shift(deltas)
+posSum = 0.0
+negSum = 0.0
+for v in deltas
+    if v > 0
+        posSum := posSum + v
+    else
+        negSum := negSum + math.abs(v)
+ratio = (posSum + negSum) > 0 ? posSum / (posSum + negSum) : 0.5
+var float __obs_plot0 = na
+__obs_plot0 := ratio
+plot(ratio, "Ratio")

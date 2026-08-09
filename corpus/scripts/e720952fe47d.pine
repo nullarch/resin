@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Accumulate")
+prices = array.from(close, open, high, low)
+sma3 = ta.sma(close, 3)
+aboveSum = 0.0
+belowSum = 0.0
+for val in prices
+    fv = float(val)
+    if fv > sma3
+        aboveSum := aboveSum + fv
+    else
+        belowSum := belowSum + fv
+ratio = (aboveSum + belowSum) > 0 ? aboveSum / (aboveSum + belowSum) : 0.5
+plot(ratio, "Ratio")

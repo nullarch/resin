@@ -1,0 +1,8 @@
+//@version=5
+indicator("time components")
+h = hour
+m = minute
+d = dayofmonth
+dow = dayofweek
+mo = month
+y = year

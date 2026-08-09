@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("MA Conv")
+fast = ta.sma(close, 3)
+slow = ta.sma(close, 5)
+gap = math.abs(fast - slow)
+simGap = gap
+steps = 0
+while simGap > 0.01 and steps < 30
+    simGap := simGap * 0.85
+    steps := steps + 1
+plot(steps, "St")

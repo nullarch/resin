@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Pat Count")
+var pc = map.new<string, float>()
+isBull = close > open
+isBear = close < open
+isDoji = math.abs(close - open) < (high - low) * 0.1
+if isBull
+    map.put(pc, "bull", map.get(pc, "bull", 0.0) + 1)
+if isBear
+    map.put(pc, "bear", map.get(pc, "bear", 0.0) + 1)
+if isDoji
+    map.put(pc, "doji", map.get(pc, "doji", 0.0) + 1)
+bullCount = map.get(pc, "bull", 0.0)
+var float __obs_plot0 = na
+__obs_plot0 := bullCount
+plot(bullCount, "Bulls")

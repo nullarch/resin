@@ -1,0 +1,17 @@
+//@version=5
+indicator("Volume Weighted Average Price")
+// TV 빌트인 "Volume Weighted Average Price" 인디케이터 E2E 재현(ROADMAP P2 "TV 빌트인
+// 인디케이터 15종 E2E" 세 번째 슬라이스, 3종 중 3: MFI/WPR/VWAP). ta.vwap 자체의 계산은 이미
+// oracle/cases/ta_vwap.pine(순수 __obs 미러, close/high 두 콜사이트)으로 개별 검증됐다 -- 이
+// 케이스는 그 위에 indicator()/input.source/plot()을 얹어 완성된 빌트인 스크립트 구조 전체를
+// 검증한다. volume은 Pine 인자가 아니라 내장 bar series로 암묵 사용된다(mfi와 동일,
+// analyzer.ts TA_REGISTRY.vwap 주석 참조). 세션/anchor 리셋 없는 바0부터 전체 누적(pine2py
+// vwap.py 동일 시맨틱, LIMITATIONS.md 참조) -- 워밍업 구간이 없어 바0부터 전 구간 검증됨.
+src = input.source(close, "Source")
+
+vwapValue = ta.vwap(src)
+
+plot(vwapValue, "VWAP")
+
+var float __obs_vwap = na
+__obs_vwap := vwapValue

@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Candle UDT")
+type CandleInfo
+    float bodySize = 0.0
+    float wickRatio = 0.0
+    bool isBullish = false
+
+var CandleInfo ci = CandleInfo.new()
+ci.bodySize := math.abs(close - open)
+range_ = high - low
+ci.wickRatio := range_ > 0 ? ci.bodySize / range_ : 0.0
+ci.isBullish := close > open
+var float __obs_plot0 = na
+__obs_plot0 := ci.wickRatio
+plot(ci.wickRatio, "WR")

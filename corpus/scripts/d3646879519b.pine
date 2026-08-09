@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Win Sum")
+var float[] win = array.new_float(0)
+array.push(win, close - open)
+if array.size(win) > 5
+    array.shift(win)
+winSum = array.sum(win)
+winAvg = array.avg(win)
+plot(winSum, "Sum")
+plot(winAvg, "Avg")

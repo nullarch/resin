@@ -1,0 +1,4 @@
+//@version=5
+indicator("Financial stub")
+rev = request.financial(syminfo.tickerid, "TOTAL_REVENUE", "FQ")
+div = request.dividends(syminfo.tickerid, dividends.gross)

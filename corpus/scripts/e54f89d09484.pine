@@ -1,0 +1,12 @@
+//@version=5
+indicator("User Method")
+type Pair
+    float a = 0.0
+    float b = 0.0
+
+method total(Pair p) =>
+    p.a + p.b
+
+var float result = 0.0
+p = Pair.new(a=3.0, b=7.0)
+result := p.total()

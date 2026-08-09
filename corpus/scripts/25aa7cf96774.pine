@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Map No Default")
+var m = map.new<string, float>()
+m.put("exists", 10.0)
+val = m.get("exists")
+plot(val)

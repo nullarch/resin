@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Candle Map FI")
+var cm = map.new<string, float>()
+body = math.abs(close - open)
+totalRange = high - low
+topBody = math.max(close, open)
+botBody = math.min(close, open)
+map.put(cm, "body_pct", totalRange > 0 ? body / totalRange * 100 : 0.0)
+map.put(cm, "upper_pct", totalRange > 0 ? (high - topBody) / totalRange * 100 : 0.0)
+map.put(cm, "lower_pct", totalRange > 0 ? (botBody - low) / totalRange * 100 : 0.0)
+total = 0.0
+for [k, v] in cm
+    total := total + v
+plot(total, "T")

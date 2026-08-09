@@ -1,0 +1,5 @@
+//@version=5
+indicator("Catalan Proxy")
+n = bar_index + 1.0
+approx = math.pow(4.0, n) / (math.sqrt(3.14159 * n) * (n + 1.0))
+plot(approx, "Catalan")

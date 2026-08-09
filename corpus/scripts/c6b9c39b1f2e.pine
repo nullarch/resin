@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Multi EMA")
+e3 = ta.ema(close, 3)
+e5 = ta.ema(close, 5)
+e8 = ta.ema(close, 8)
+spread = e3 - e8
+aligned = e3 > e5 and e5 > e8
+plot(spread, "Spread")

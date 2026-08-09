@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_plus_di": "NaN",
+   "var:__obs_minus_di": "NaN",
+   "var:__obs_adx": "NaN"
+  },
+  {
+   "var:__obs_plus_di": "NaN",
+   "var:__obs_minus_di": "NaN",
+   "var:__obs_adx": "NaN"
+  },
+  {
+   "var:__obs_plus_di": "NaN",
+   "var:__obs_minus_di": "NaN",
+   "var:__obs_adx": "NaN"
+  },
+  {
+   "var:__obs_plus_di": "NaN",
+   "var:__obs_minus_di": "NaN",
+   "var:__obs_adx": "NaN"
+  },
+  {
+   "var:__obs_plus_di": 22.2222222222,
+   "var:__obs_minus_di": 22.2222222222,
+   "var:__obs_adx": "NaN"
+  },
+  {
+   "var:__obs_plus_di": 25.9259259259,
+   "var:__obs_minus_di": 14.8148148148,
+   "var:__obs_adx": 13.6363636364
+  },
+  {
+   "var:__obs_plus_di": 28.3950617284,
+   "var:__obs_minus_di": 9.8765432099,
+   "var:__obs_adx": 31.0117302052
+  },
+  {
+   "var:__obs_plus_di": 18.9300411523,
+   "var:__obs_minus_di": 17.695473251,
+   "var:__obs_adx": 17.1912583611
+  },
+  {
+   "var:__obs_plus_di": 34.8422496571,
+   "var:__obs_minus_di": 11.7969821674,
+   "var:__obs_adx": 33.3015115335
+  },
+  {
+   "var:__obs_plus_di": 34.3392775492,
+   "var:__obs_minus_di": 7.8646547782,
+   "var:__obs_adx": 48.0158695263
+  }
+ ],
+ "finalVarState": {
+  "__obs_plus_di": 34.3392775492,
+  "__obs_minus_di": 7.8646547782,
+  "__obs_adx": 48.0158695263
+ }
+}

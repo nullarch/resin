@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Histogram")
+var float[] buckets = array.new_float(5, 0.0)
+rsi = nz(ta.rsi(close, 3), 50.0)
+bucketIdx = math.floor(rsi / 20.0)
+bucketIdx := math.max(0, math.min(4, bucketIdx))
+oldVal = array.get(buckets, int(bucketIdx))
+array.set(buckets, int(bucketIdx), oldVal + 1.0)
+maxBucket = array.max(buckets)
+plot(maxBucket, "MB")

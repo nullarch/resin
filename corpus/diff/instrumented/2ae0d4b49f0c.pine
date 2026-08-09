@@ -1,0 +1,7 @@
+//@version=5
+indicator("Builtin Safe")
+len = 5
+sma_ = ta.sma(close, len)
+var float __obs_plot0 = na
+__obs_plot0 := nz(sma_)
+plot(nz(sma_))

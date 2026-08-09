@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Reg Stats")
+var rs = map.new<string, float>()
+var int bullBars = 0
+var int bearBars = 0
+sma3 = ta.sma(close, 3)
+if close > sma3
+    bullBars := bullBars + 1
+else
+    bearBars := bearBars + 1
+total = float(bullBars + bearBars)
+map.put(rs, "bull_pct", total > 0 ? float(bullBars) / total * 100 : 50.0)
+map.put(rs, "bear_pct", total > 0 ? float(bearBars) / total * 100 : 50.0)
+map.put(rs, "bias", float(bullBars - bearBars))
+plot(map.get(rs, "bias", 0.0), "Bias")

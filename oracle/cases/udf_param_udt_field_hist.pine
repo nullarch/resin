@@ -1,0 +1,17 @@
+//@version=5
+indicator("udf_param_udt_field_hist")
+// UDF/method 매개변수(UDT) 필드 히스토리(C750, LIMITATIONS C749 hist-index(all) 잔여 서브그룹 —
+// wild `evaluateTrade(c, inTradeWindow) => ... c.close[1]`류, c가 매개변수). 매개변수는 본문에서
+// ':=' 재대입이 불가능해 함수 진입 시점 값이 곧 이 콜의 확정값이므로 C364 스칼라 매개변수 히스토리와
+// 동일 원칙(진입 직후 1회 record)으로 지원 가능.
+type Pt
+    float v = na
+
+f(p) =>
+    p.v[1] + p.v[2]
+
+var Pt obj = Pt.new(na)
+obj.v := close
+
+var float __obs_x = na
+__obs_x := f(obj)

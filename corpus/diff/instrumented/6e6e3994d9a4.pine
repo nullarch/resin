@@ -1,0 +1,8 @@
+//@version=5
+indicator("RhoProxy")
+rateProxy = nz(ta.rsi(close, 5), 50.0) / 100.0
+priceChg = close - nz(close[1], close)
+rhoProxy = rateProxy * priceChg
+var float __obs_plot0 = na
+__obs_plot0 := rhoProxy
+plot(rhoProxy, "Rho")

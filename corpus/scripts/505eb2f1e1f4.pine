@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Regime Map")
+var rd = map.new<string, float>()
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = nz(ta.atr(3), 1.0)
+map.put(rd, "trend", sma3 > sma5 ? 1.0 : -1.0)
+map.put(rd, "momentum", rsi > 55 ? 1.0 : rsi < 45 ? -1.0 : 0.0)
+map.put(rd, "volatility", atr)
+total = 0.0
+for [k, v] in rd
+    total := total + v
+plot(total, "T")

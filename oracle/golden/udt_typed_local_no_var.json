@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_p_x": 102.0,
+   "var:__obs_p_n": 5
+  },
+  {
+   "var:__obs_p_x": 103.0,
+   "var:__obs_p_n": 5
+  },
+  {
+   "var:__obs_p_x": 104.0,
+   "var:__obs_p_n": 5
+  },
+  {
+   "var:__obs_p_x": 103.0,
+   "var:__obs_p_n": 5
+  },
+  {
+   "var:__obs_p_x": 105.0,
+   "var:__obs_p_n": 5
+  },
+  {
+   "var:__obs_p_x": 106.0,
+   "var:__obs_p_n": 5
+  },
+  {
+   "var:__obs_p_x": 107.0,
+   "var:__obs_p_n": 5
+  },
+  {
+   "var:__obs_p_x": 106.0,
+   "var:__obs_p_n": 5
+  },
+  {
+   "var:__obs_p_x": 108.0,
+   "var:__obs_p_n": 5
+  },
+  {
+   "var:__obs_p_x": 109.0,
+   "var:__obs_p_n": 5
+  }
+ ],
+ "finalVarState": {
+  "__obs_p_x": 109.0,
+  "__obs_p_n": 5
+ }
+}

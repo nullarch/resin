@@ -1,0 +1,6 @@
+//@version=5
+indicator("Tuple TA")
+[macdLine, signalLine, hist] = ta.macd(close, 3, 5, 3)
+[bbU, bbM, bbL] = ta.bb(close, 5, 2.0)
+macdAbove = not na(macdLine) and not na(signalLine) ? nz(macdLine) > nz(signalLine) : false
+inBB = not na(bbU) and not na(bbL) ? close <= nz(bbU) and close >= nz(bbL) : true

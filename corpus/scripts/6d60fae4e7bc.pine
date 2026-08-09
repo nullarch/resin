@@ -1,0 +1,4 @@
+//@version=5
+strategy("Kwargs Strategy")
+if close > open
+    strategy.entry("Long", strategy.long, qty=2)

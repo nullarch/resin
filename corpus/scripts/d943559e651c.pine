@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Trend Sigs")
+var ts = map.new<string, float>()
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+map.put(ts, "price_above_sma", close > sma3 ? 1.0 : -1.0)
+map.put(ts, "sma_above_ema", sma3 > ema5 ? 1.0 : -1.0)
+map.put(ts, "price_rising", close > close[1] ? 1.0 : -1.0)
+total = 0.0
+for [k, v] in ts
+    total := total + v
+consensus = total / 3.0
+plot(consensus, "Con")

@@ -1,0 +1,138 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_a": 0.0,
+   "var:__obs_b": 101.0,
+   "var:__obs_c": "NaN",
+   "var:__obs_d": 2.0,
+   "var:__obs_e": "NaN",
+   "var:__obs_f": 1009002.9999999999,
+   "var:__obs_g": 0.0,
+   "var:__obs_h": "NaN",
+   "var:__obs_i": "NaN",
+   "var:__obs_j": -3.0
+  },
+  {
+   "var:__obs_a": 0.0,
+   "var:__obs_b": 102.0,
+   "var:__obs_c": "NaN",
+   "var:__obs_d": 2.0,
+   "var:__obs_e": "NaN",
+   "var:__obs_f": 1039495.0000000001,
+   "var:__obs_g": 0.0,
+   "var:__obs_h": "NaN",
+   "var:__obs_i": "NaN",
+   "var:__obs_j": -3.0
+  },
+  {
+   "var:__obs_a": 0.0,
+   "var:__obs_b": 103.0,
+   "var:__obs_c": "NaN",
+   "var:__obs_d": 2.0,
+   "var:__obs_e": "NaN",
+   "var:__obs_f": 1070594.9999999998,
+   "var:__obs_g": 0.0,
+   "var:__obs_h": "NaN",
+   "var:__obs_i": "NaN",
+   "var:__obs_j": -3.0
+  },
+  {
+   "var:__obs_a": 0.0,
+   "var:__obs_b": 102.0,
+   "var:__obs_c": "NaN",
+   "var:__obs_d": 2.0,
+   "var:__obs_e": "NaN",
+   "var:__obs_f": 1039495.0000000001,
+   "var:__obs_g": 0.0,
+   "var:__obs_h": "NaN",
+   "var:__obs_i": "NaN",
+   "var:__obs_j": -3.0
+  },
+  {
+   "var:__obs_a": 0.0,
+   "var:__obs_b": 104.0,
+   "var:__obs_c": "NaN",
+   "var:__obs_d": 2.0,
+   "var:__obs_e": "NaN",
+   "var:__obs_f": 1102309.0,
+   "var:__obs_g": 0.0,
+   "var:__obs_h": "NaN",
+   "var:__obs_i": "NaN",
+   "var:__obs_j": -3.0
+  },
+  {
+   "var:__obs_a": 0.0,
+   "var:__obs_b": 105.0,
+   "var:__obs_c": "NaN",
+   "var:__obs_d": 2.0,
+   "var:__obs_e": "NaN",
+   "var:__obs_f": 1134643.0,
+   "var:__obs_g": 0.0,
+   "var:__obs_h": "NaN",
+   "var:__obs_i": "NaN",
+   "var:__obs_j": -3.0
+  },
+  {
+   "var:__obs_a": 0.0,
+   "var:__obs_b": 106.0,
+   "var:__obs_c": "NaN",
+   "var:__obs_d": 2.0,
+   "var:__obs_e": "NaN",
+   "var:__obs_f": 1167603.0,
+   "var:__obs_g": 0.0,
+   "var:__obs_h": "NaN",
+   "var:__obs_i": "NaN",
+   "var:__obs_j": -3.0
+  },
+  {
+   "var:__obs_a": 0.0,
+   "var:__obs_b": 105.0,
+   "var:__obs_c": "NaN",
+   "var:__obs_d": 2.0,
+   "var:__obs_e": "NaN",
+   "var:__obs_f": 1134643.0,
+   "var:__obs_g": 0.0,
+   "var:__obs_h": "NaN",
+   "var:__obs_i": "NaN",
+   "var:__obs_j": -3.0
+  },
+  {
+   "var:__obs_a": 0.0,
+   "var:__obs_b": 107.0,
+   "var:__obs_c": "NaN",
+   "var:__obs_d": 2.0,
+   "var:__obs_e": "NaN",
+   "var:__obs_f": 1201195.0,
+   "var:__obs_g": 0.0,
+   "var:__obs_h": "NaN",
+   "var:__obs_i": "NaN",
+   "var:__obs_j": -3.0
+  },
+  {
+   "var:__obs_a": 0.0,
+   "var:__obs_b": 108.0,
+   "var:__obs_c": "NaN",
+   "var:__obs_d": 2.0,
+   "var:__obs_e": "NaN",
+   "var:__obs_f": 1235425.0,
+   "var:__obs_g": 0.0,
+   "var:__obs_h": "NaN",
+   "var:__obs_i": "NaN",
+   "var:__obs_j": -3.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_a": 0.0,
+  "__obs_b": 108.0,
+  "__obs_c": "NaN",
+  "__obs_d": 2.0,
+  "__obs_e": "NaN",
+  "__obs_f": 1235425.0,
+  "__obs_g": 0.0,
+  "__obs_h": "NaN",
+  "__obs_i": "NaN",
+  "__obs_j": -3.0
+ }
+}

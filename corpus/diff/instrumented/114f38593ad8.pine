@@ -1,0 +1,13 @@
+//@version=5
+indicator("NS-18 Kelvin-Helmholtz")
+var int unstable = 0
+fast = ta.ema(close, 3)
+slow = ta.ema(close, 5)
+if not na(fast) and not na(slow)
+    shear = math.abs(nz(fast, 0.0) - nz(slow, 0.0))
+    threshold = nz(ta.atr(3), 1.0) * 0.5
+    if shear > threshold
+        unstable := unstable + 1
+var float __obs_plot0 = na
+__obs_plot0 := unstable
+plot(unstable)

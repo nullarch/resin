@@ -1,0 +1,9 @@
+//@version=5
+indicator("NestedTA")
+var int signals = 0
+rsiVal = ta.rsi(close, 5)
+if not na(rsiVal)
+    if rsiVal > 50
+        smaFast = ta.sma(close, 3)
+        if not na(smaFast) and smaFast > 100
+            signals := signals + 1

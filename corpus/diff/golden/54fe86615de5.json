@@ -1,0 +1,116 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:equity": 10000.0,
+   "var:maxEquity": 10000.0,
+   "var:totalTrades": 0,
+   "var:inPos": false,
+   "var:entry": 0.0,
+   "var:bars": 1,
+   "var:__obs_plot0": 10000.0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:equity": 10000.0,
+   "var:maxEquity": 10000.0,
+   "var:totalTrades": 0,
+   "var:inPos": false,
+   "var:entry": 0.0,
+   "var:bars": 2,
+   "var:__obs_plot0": 10000.0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:equity": 10000.0,
+   "var:maxEquity": 10000.0,
+   "var:totalTrades": 0,
+   "var:inPos": false,
+   "var:entry": 0.0,
+   "var:bars": 3,
+   "var:__obs_plot0": 10000.0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:equity": 10000.0,
+   "var:maxEquity": 10000.0,
+   "var:totalTrades": 0,
+   "var:inPos": false,
+   "var:entry": 0.0,
+   "var:bars": 4,
+   "var:__obs_plot0": 10000.0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:equity": 10000.0,
+   "var:maxEquity": 10000.0,
+   "var:totalTrades": 0,
+   "var:inPos": false,
+   "var:entry": 0.0,
+   "var:bars": 5,
+   "var:__obs_plot0": 10000.0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:equity": 10000.0,
+   "var:maxEquity": 10000.0,
+   "var:totalTrades": 0,
+   "var:inPos": false,
+   "var:entry": 0.0,
+   "var:bars": 6,
+   "var:__obs_plot0": 10000.0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:equity": 10000.0,
+   "var:maxEquity": 10000.0,
+   "var:totalTrades": 0,
+   "var:inPos": false,
+   "var:entry": 0.0,
+   "var:bars": 7,
+   "var:__obs_plot0": 10000.0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:equity": 10000.0,
+   "var:maxEquity": 10000.0,
+   "var:totalTrades": 1,
+   "var:inPos": false,
+   "var:entry": 110,
+   "var:bars": 8,
+   "var:__obs_plot0": 10000.0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:equity": 10000.0,
+   "var:maxEquity": 10000.0,
+   "var:totalTrades": 1,
+   "var:inPos": false,
+   "var:entry": 110,
+   "var:bars": 9,
+   "var:__obs_plot0": 10000.0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:equity": 10000.0,
+   "var:maxEquity": 10000.0,
+   "var:totalTrades": 1,
+   "var:inPos": false,
+   "var:entry": 110,
+   "var:bars": 10,
+   "var:__obs_plot0": 10000.0,
+   "var:__obs_plot1": 0.0
+  }
+ ],
+ "finalVarState": {
+  "equity": 10000.0,
+  "maxEquity": 10000.0,
+  "totalTrades": 1,
+  "inPos": false,
+  "entry": 110,
+  "bars": 10,
+  "__obs_plot0": 10000.0,
+  "__obs_plot1": 0.0
+ }
+}

@@ -1,0 +1,7 @@
+//@version=5
+indicator("na coalesce")
+var float result = 0.0
+a = na
+b = na
+c = 42.0
+result := nz(nz(a, b), c)

@@ -1,0 +1,10 @@
+
+//@version=5
+strategy("RSI Break", overlay=true)
+rsi = ta.rsi(close, 3)
+sma5 = ta.sma(close, 5)
+if rsi > 55 and close > sma5
+    strategy.entry("Long", strategy.long)
+if rsi < 40
+    strategy.close("Long")
+plot(sma5, "SMA5")

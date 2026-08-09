@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Zone Type")
+enum ZoneType
+    Resistance = 2
+    Upper = 1
+    Middle = 0
+    Lower = -1
+    Support = -2
+
+hi5 = ta.highest(high, 5)
+lo5 = ta.lowest(low, 5)
+range_ = hi5 - lo5
+pos = range_ > 0 ? (close - lo5) / range_ : 0.5
+zt = switch
+    pos > 0.8 => ZoneType.Resistance
+    pos > 0.6 => ZoneType.Upper
+    pos < 0.2 => ZoneType.Support
+    pos < 0.4 => ZoneType.Lower
+    => ZoneType.Middle
+plot(int(zt), "ZT")

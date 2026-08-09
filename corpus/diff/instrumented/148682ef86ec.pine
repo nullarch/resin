@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Sharpe")
+ret = close[1] > 0 ? (close - close[1]) / close[1] : 0.0
+avgRet = ta.sma(ret, 5)
+stdRet = ta.stdev(ret, 5)
+sharpe = nz(stdRet, 0.0) > 0 ? avgRet / stdRet : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := sharpe
+plot(sharpe, "S")

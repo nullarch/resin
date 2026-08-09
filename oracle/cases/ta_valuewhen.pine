@@ -1,0 +1,13 @@
+//@version=5
+indicator("ta_valuewhen")
+// ta.valuewhen(condition, source, occurrence) 오라클 검증(ROADMAP P2 "ta.* 44종"). condition =
+// close > 105, source = close (sample10.json 재사용). occurrence=0(가장 최근)과 occurrence=1
+// (그 전 발생) 둘 다 관측해 occurrence+1 크기 bounded 순환 버퍼의 다중-occurrence 인덱싱과 eviction을
+// 함께 검증.
+// close=[101,102,103,102,104,105,106,105,107,108] > 105 -> [F,F,F,F,F,F,T,F,T,T] (true @ bar6,8,9)
+// occurrence=0 기대: bar0~5=na(한 번도 true 아님), bar6=106, bar7=106(유지), bar8=107, bar9=108
+// occurrence=1 기대: bar0~7=na(true 2회 미달), bar8=106(직전 occurrence), bar9=107
+var float __obs_occ0 = na
+var float __obs_occ1 = na
+__obs_occ0 := ta.valuewhen(close > 105, close, 0)
+__obs_occ1 := ta.valuewhen(close > 105, close, 1)

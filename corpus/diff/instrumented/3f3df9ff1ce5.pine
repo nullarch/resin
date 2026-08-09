@@ -1,0 +1,7 @@
+//@version=5
+indicator("Two-State Toggle")
+var int state = 0
+state := state == 0 ? 1 : 0
+var float __obs_plot0 = na
+__obs_plot0 := state
+plot(state, "State")

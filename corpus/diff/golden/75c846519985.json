@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:regime": "flat",
+   "var:regimeAge": 0,
+   "var:transitions": 1,
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:regime": "flat",
+   "var:regimeAge": 1,
+   "var:transitions": 1,
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:regime": "flat",
+   "var:regimeAge": 2,
+   "var:transitions": 1,
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 2
+  },
+  {
+   "var:regime": "flat",
+   "var:regimeAge": 3,
+   "var:transitions": 1,
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 3
+  },
+  {
+   "var:regime": "bull",
+   "var:regimeAge": 0,
+   "var:transitions": 2,
+   "var:__obs_plot0": 2,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:regime": "bull",
+   "var:regimeAge": 1,
+   "var:transitions": 2,
+   "var:__obs_plot0": 2,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:regime": "bull",
+   "var:regimeAge": 2,
+   "var:transitions": 2,
+   "var:__obs_plot0": 2,
+   "var:__obs_plot1": 2
+  },
+  {
+   "var:regime": "bull",
+   "var:regimeAge": 3,
+   "var:transitions": 2,
+   "var:__obs_plot0": 2,
+   "var:__obs_plot1": 3
+  },
+  {
+   "var:regime": "bull",
+   "var:regimeAge": 4,
+   "var:transitions": 2,
+   "var:__obs_plot0": 2,
+   "var:__obs_plot1": 4
+  },
+  {
+   "var:regime": "bull",
+   "var:regimeAge": 5,
+   "var:transitions": 2,
+   "var:__obs_plot0": 2,
+   "var:__obs_plot1": 5
+  }
+ ],
+ "finalVarState": {
+  "regime": "bull",
+  "regimeAge": 5,
+  "transitions": 2,
+  "__obs_plot0": 2,
+  "__obs_plot1": 5
+ }
+}

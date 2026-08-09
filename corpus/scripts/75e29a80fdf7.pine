@@ -1,0 +1,6 @@
+//@version=5
+indicator("Matrix Dispatch")
+var float result = 0.0
+m = matrix.new<float>(2, 2, 0.0)
+matrix.set(m, 0, 0, 5.0)
+result := matrix.get(m, 0, 0)

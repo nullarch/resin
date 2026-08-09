@@ -1,0 +1,22 @@
+//@version=5
+indicator("ATR Trail")
+atrPeriod = 5
+atrMult = 2.0
+atr = ta.atr(atrPeriod)
+var float trailStop = na
+var int direction = 1
+longStop = close - atrMult * atr
+shortStop = close + atrMult * atr
+if direction == 1
+    trailStop := na(trailStop) ? longStop : math.max(longStop, nz(trailStop))
+    if close < nz(trailStop)
+        direction := -1
+        trailStop := shortStop
+else
+    trailStop := na(trailStop) ? shortStop : math.min(shortStop, nz(trailStop))
+    if close > nz(trailStop)
+        direction := 1
+        trailStop := longStop
+var float __obs_plot0 = na
+__obs_plot0 := nz(trailStop, close)
+plot(nz(trailStop, close))

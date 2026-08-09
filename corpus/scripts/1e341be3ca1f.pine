@@ -1,0 +1,6 @@
+//@version=5
+indicator("Tidal Cycle")
+tidalPhase = bar_index % 4
+tideLevel = tidalPhase == 0 ? 10.0 : tidalPhase == 1 ? 8.0 : tidalPhase == 2 ? 5.0 : 3.0
+var float lastTide = 0.0
+lastTide := tideLevel

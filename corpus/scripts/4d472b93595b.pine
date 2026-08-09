@@ -1,0 +1,5 @@
+//@version=5
+indicator("input float")
+mult = input.float(2.0, "Multiplier")
+var float result = 0.0
+result := mult

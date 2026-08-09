@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:os": "pine_fn.<locals>.OscState(rsi=80.5615942029, stoch=81.8181818182, composite=81.18988801054999, divergence=False)",
+   "var:prevComp": "NaN",
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:os": "pine_fn.<locals>.OscState(rsi=80.5615942029, stoch=81.8181818182, composite=81.18988801054999, divergence=False)",
+   "var:prevComp": "NaN",
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:os": "pine_fn.<locals>.OscState(rsi=80.5615942029, stoch=81.8181818182, composite=81.18988801054999, divergence=False)",
+   "var:prevComp": "NaN",
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:os": "pine_fn.<locals>.OscState(rsi=80.5615942029, stoch=81.8181818182, composite=81.18988801054999, divergence=False)",
+   "var:prevComp": "NaN",
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:os": "pine_fn.<locals>.OscState(rsi=80.5615942029, stoch=81.8181818182, composite=81.18988801054999, divergence=False)",
+   "var:prevComp": 82.57575757575,
+   "var:__obs_plot0": 82.57575757575
+  },
+  {
+   "var:os": "pine_fn.<locals>.OscState(rsi=80.5615942029, stoch=81.8181818182, composite=81.18988801054999, divergence=False)",
+   "var:prevComp": 67.52032520325,
+   "var:__obs_plot0": 67.52032520325
+  },
+  {
+   "var:os": "pine_fn.<locals>.OscState(rsi=80.5615942029, stoch=81.8181818182, composite=81.18988801054999, divergence=False)",
+   "var:prevComp": 80.36987522285,
+   "var:__obs_plot0": 80.36987522285
+  },
+  {
+   "var:os": "pine_fn.<locals>.OscState(rsi=80.5615942029, stoch=81.8181818182, composite=81.18988801054999, divergence=False)",
+   "var:prevComp": 84.30386817485001,
+   "var:__obs_plot0": 84.30386817485001
+  },
+  {
+   "var:os": "pine_fn.<locals>.OscState(rsi=80.5615942029, stoch=81.8181818182, composite=81.18988801054999, divergence=False)",
+   "var:prevComp": 68.90339033904999,
+   "var:__obs_plot0": 68.90339033904999
+  },
+  {
+   "var:os": "pine_fn.<locals>.OscState(rsi=80.5615942029, stoch=81.8181818182, composite=81.18988801054999, divergence=False)",
+   "var:prevComp": 81.18988801054999,
+   "var:__obs_plot0": 81.18988801054999
+  }
+ ],
+ "finalVarState": {
+  "os": "pine_fn.<locals>.OscState(rsi=80.5615942029, stoch=81.8181818182, composite=81.18988801054999, divergence=False)",
+  "prevComp": 81.18988801054999,
+  "__obs_plot0": 81.18988801054999
+ }
+}

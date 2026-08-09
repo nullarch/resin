@@ -1,0 +1,8 @@
+//@version=5
+indicator("NaN Cmp")
+x = float(na)
+var int r = 0
+r := x > 10 ? 1 : 0
+var float __obs_plot0 = na
+__obs_plot0 := r
+plot(r)

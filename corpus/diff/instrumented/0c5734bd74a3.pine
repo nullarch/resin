@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Vol Break")
+atr = nz(ta.atr(3), 1.0)
+sma5 = ta.sma(close, 5)
+upperBand = sma5 + atr * 2
+lowerBand = sma5 - atr * 2
+breakUp = close > upperBand
+breakDn = close < lowerBand
+var float __obs_plot0 = na
+__obs_plot0 := breakUp ? 1 : breakDn ? -1 : 0
+plot(breakUp ? 1 : breakDn ? -1 : 0, "VB")

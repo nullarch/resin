@@ -1,0 +1,32 @@
+//@version=5
+indicator("Mega 18")
+type Candle
+    float body = 0.0
+    float upperWick = 0.0
+    float lowerWick = 0.0
+type Stats
+    float mean = 0.0
+    float maxVal = 0.0
+var float totalBodies = 0.0
+float sma3 = nz(ta.sma(close, 3), close)
+float rsiVal = nz(ta.rsi(close, 5), 50.0)
+float bodySize = math.abs(close - open)
+float upperW = high - math.max(close, open)
+float lowerW = math.min(close, open) - low
+candle = Candle.new(bodySize, upperW, lowerW)
+features = array.new<float>(0)
+features.push(candle.body)
+features.push(candle.upperWick)
+features.push(candle.lowerWick)
+features.push(rsiVal * 0.01)
+float mean = 0.0
+for f in features
+    mean := mean + f
+mean := features.size() > 0 ? mean / features.size() : 0.0
+float maxF = 0.0
+for f in features
+    maxF := math.max(maxF, f)
+stats = Stats.new(mean, maxF)
+totalBodies := totalBodies + candle.body
+float ratio = candle.body > 0.01 ? candle.upperWick / candle.body : 0.0
+float classified = ratio > 1.5 ? 1.0 : ratio < 0.3 ? -1.0 : 0.0

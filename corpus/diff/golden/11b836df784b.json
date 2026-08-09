@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:stats": "pine_fn.<locals>.BarStats(avgBody=2.0, avgRange=6.0, count=10)",
+   "var:__obs_plot0": 3.0,
+   "var:__obs_plot1": 7.0
+  },
+  {
+   "var:stats": "pine_fn.<locals>.BarStats(avgBody=2.0, avgRange=6.0, count=10)",
+   "var:__obs_plot0": 2.5,
+   "var:__obs_plot1": 6.5
+  },
+  {
+   "var:stats": "pine_fn.<locals>.BarStats(avgBody=2.0, avgRange=6.0, count=10)",
+   "var:__obs_plot0": 2.0,
+   "var:__obs_plot1": 6.0
+  },
+  {
+   "var:stats": "pine_fn.<locals>.BarStats(avgBody=2.0, avgRange=6.0, count=10)",
+   "var:__obs_plot0": 2.0,
+   "var:__obs_plot1": 6.0
+  },
+  {
+   "var:stats": "pine_fn.<locals>.BarStats(avgBody=2.0, avgRange=6.0, count=10)",
+   "var:__obs_plot0": 2.0,
+   "var:__obs_plot1": 6.0
+  },
+  {
+   "var:stats": "pine_fn.<locals>.BarStats(avgBody=2.0, avgRange=6.0, count=10)",
+   "var:__obs_plot0": 2.0,
+   "var:__obs_plot1": 6.0
+  },
+  {
+   "var:stats": "pine_fn.<locals>.BarStats(avgBody=2.0, avgRange=6.0, count=10)",
+   "var:__obs_plot0": 2.0,
+   "var:__obs_plot1": 6.0
+  },
+  {
+   "var:stats": "pine_fn.<locals>.BarStats(avgBody=2.0, avgRange=6.0, count=10)",
+   "var:__obs_plot0": 2.0,
+   "var:__obs_plot1": 6.0
+  },
+  {
+   "var:stats": "pine_fn.<locals>.BarStats(avgBody=2.0, avgRange=6.0, count=10)",
+   "var:__obs_plot0": 2.0,
+   "var:__obs_plot1": 6.0
+  },
+  {
+   "var:stats": "pine_fn.<locals>.BarStats(avgBody=2.0, avgRange=6.0, count=10)",
+   "var:__obs_plot0": 2.0,
+   "var:__obs_plot1": 6.0
+  }
+ ],
+ "finalVarState": {
+  "stats": "pine_fn.<locals>.BarStats(avgBody=2.0, avgRange=6.0, count=10)",
+  "__obs_plot0": 2.0,
+  "__obs_plot1": 6.0
+ }
+}

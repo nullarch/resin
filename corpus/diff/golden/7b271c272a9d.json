@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:qBuy": 0.1,
+   "var:qHold": 0.0,
+   "var:__obs_plot0": 0.1
+  },
+  {
+   "var:qBuy": 0.19,
+   "var:qHold": 0.0,
+   "var:__obs_plot0": 0.19
+  },
+  {
+   "var:qBuy": 0.271,
+   "var:qHold": 0.0,
+   "var:__obs_plot0": 0.271
+  },
+  {
+   "var:qBuy": 0.34390000000000004,
+   "var:qHold": 0.0,
+   "var:__obs_plot0": 0.34390000000000004
+  },
+  {
+   "var:qBuy": 0.40951000000000004,
+   "var:qHold": 0.0,
+   "var:__obs_plot0": 0.40951000000000004
+  },
+  {
+   "var:qBuy": 0.46855900000000006,
+   "var:qHold": 0.0,
+   "var:__obs_plot0": 0.46855900000000006
+  },
+  {
+   "var:qBuy": 0.5217031000000001,
+   "var:qHold": 0.0,
+   "var:__obs_plot0": 0.5217031000000001
+  },
+  {
+   "var:qBuy": 0.5695327900000001,
+   "var:qHold": 0.0,
+   "var:__obs_plot0": 0.5695327900000001
+  },
+  {
+   "var:qBuy": 0.6125795110000001,
+   "var:qHold": 0.0,
+   "var:__obs_plot0": 0.6125795110000001
+  },
+  {
+   "var:qBuy": 0.6513215599000001,
+   "var:qHold": 0.0,
+   "var:__obs_plot0": 0.6513215599000001
+  }
+ ],
+ "finalVarState": {
+  "qBuy": 0.6513215599000001,
+  "qHold": 0.0,
+  "__obs_plot0": 0.6513215599000001
+ }
+}

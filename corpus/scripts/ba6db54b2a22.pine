@@ -1,0 +1,13 @@
+//@version=5
+indicator("Map accumulator")
+var m = map.new<string, float>()
+var float score = 0.0
+score := 0.0
+if close > open
+    score := score + 1.0
+if close > close[1]
+    score := score + 1.0
+map.put(m, "score", score)
+map.put(m, "close", close)
+map.put(m, "bar", float(bar_index))
+sz = map.size(m)

@@ -1,0 +1,13 @@
+//@version=5
+indicator("string_var_hist")
+var string s = na
+if bar_index % 2 == 0
+    s := "even"
+else
+    s := "odd"
+var string __obs_cur = na
+__obs_cur := s
+var string __obs_prev = na
+__obs_prev := s[1]
+var string __obs_prev2 = na
+__obs_prev2 := s[2]

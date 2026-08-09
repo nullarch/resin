@@ -1,0 +1,4 @@
+//@version=5
+indicator("runtime err")
+if close < 0
+    runtime.error("Negative close")

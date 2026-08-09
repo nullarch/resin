@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("RSI Div")
+rsi = nz(ta.rsi(close, 3), 50.0)
+priceLow = close < close[1] and close < close[2]
+rsiLow = rsi < rsi[1] and rsi < rsi[2]
+bullDiv = priceLow and not rsiLow
+var float __obs_plot0 = na
+__obs_plot0 := bullDiv ? 1 : 0
+plot(bullDiv ? 1 : 0, "BDiv")

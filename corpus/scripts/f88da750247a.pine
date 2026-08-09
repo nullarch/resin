@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Monthly Ret")
+var float periodStart = 0.0
+var float periodReturn = 0.0
+var int barInPeriod = 0
+barInPeriod := barInPeriod + 1
+if barInPeriod == 1
+    periodStart := close
+periodReturn := periodStart > 0 ? (close - periodStart) / periodStart * 100 : 0.0
+plot(periodReturn, "PeriodRet")

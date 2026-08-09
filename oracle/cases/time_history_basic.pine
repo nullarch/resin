@@ -1,0 +1,36 @@
+//@version=5
+indicator("time_history_basic")
+// C368: time 계열 빌트인 히스토리 인덱싱(time[n]/hour[n] 등) 오라클.
+// pine2py 함수 모드는 이 축을 ctx.param(ctx.time, "ctx.time")[n](읽기 시점 inline push)으로
+// 지원한다 — 모든 읽기가 top-level 무조건 + 이름(param 키)당 바별 첫 읽기 1회 push 구조라
+// DIVERGENCES #6(재대입 순서/조건부 스킵/같은 바 다중 catch-up) 트리거가 전혀 없어 골든 대조
+// 가능. time_close(pine2py는 항상 0인 dead 프로퍼티)/timenow(벽시계, 비결정적)는 제외하고
+// hand-verified E2E(tests/unit/time_history.test.ts)로 검증한다.
+var float __obs_t1 = na
+var float __obs_t2 = na
+var float __obs_tdyn = na
+var float __obs_y1 = na
+var float __obs_mo2 = na
+var float __obs_dm1 = na
+var float __obs_dw1 = na
+var float __obs_h1 = na
+var float __obs_mi1 = na
+var float __obs_s2 = na
+var float __obs_w1 = na
+var float __obs_td1 = na
+var float __obs_lbi1 = na
+var float __obs_lbt2 = na
+__obs_t1 := time[1]
+__obs_t2 := time[2]
+__obs_tdyn := time[bar_index % 3]
+__obs_y1 := year[1]
+__obs_mo2 := month[2]
+__obs_dm1 := dayofmonth[1]
+__obs_dw1 := dayofweek[1]
+__obs_h1 := hour[1]
+__obs_mi1 := minute[1]
+__obs_s2 := second[2]
+__obs_w1 := weekofyear[1]
+__obs_td1 := time_tradingday[1]
+__obs_lbi1 := last_bar_index[1]
+__obs_lbt2 := last_bar_time[2]

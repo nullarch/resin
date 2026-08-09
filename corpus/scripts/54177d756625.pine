@@ -1,0 +1,9 @@
+//@version=5
+indicator("Stoch")
+k = ta.stoch(close, high, low, 5)
+d = ta.sma(k, 3)
+var float last_k = 50.0
+last_k := nz(k, 50.0)
+var float last_d = 50.0
+last_d := nz(d, 50.0)
+plot(close)

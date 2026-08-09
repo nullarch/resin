@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("History Pattern")
+c0 = close
+c1 = close[1]
+c2 = close[2]
+c3 = close[3]
+upTrend = not na(c3) and c0 > c1 and c1 > c2 and c2 > c3
+var int trendBars = 0
+if upTrend
+    trendBars := trendBars + 1
+plot(trendBars, "Trend Bars")

@@ -1,0 +1,10 @@
+//@version=5
+indicator("Tectonic Stress")
+var float stress = 0.0
+var float ruptureThreshold = 30.0
+strain = math.abs(close - open) * 0.5
+stress := stress + strain
+if stress > ruptureThreshold
+    stress := stress * 0.3
+    ruptureThreshold := ruptureThreshold * 1.1
+plot(stress)

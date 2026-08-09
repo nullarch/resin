@@ -1,0 +1,10 @@
+//@version=5
+indicator("Nested CF")
+var float result = 0.0
+float total = 0.0
+if close > 105
+    for i = 1 to 3
+        total := total + i
+else
+    total := -1
+result := total

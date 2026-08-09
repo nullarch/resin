@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Cascade Filter")
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+rsi = ta.rsi(close, 3)
+atr = ta.atr(3)
+passed = 0
+if close > sma3
+    passed := passed + 1
+    if sma3 > ema5
+        passed := passed + 1
+        if rsi > 45
+            passed := passed + 1
+            if atr > 0
+                passed := passed + 1
+plot(passed, "Passed")

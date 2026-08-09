@@ -1,0 +1,8 @@
+//@version=5
+indicator("Array Slice")
+var arr = array.from(10.0, 20.0, 30.0, 40.0, 50.0)
+var sub = array.slice(arr, 1, 4)
+var int sz = array.size(sub)
+var float first = array.get(sub, 0)
+var float last_ = array.get(sub, 2)
+plot(sz)

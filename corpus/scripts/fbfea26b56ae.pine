@@ -1,0 +1,11 @@
+//@version=5
+indicator("NS-06 Vorticity")
+var float vorticity = 0.0
+if not na(close[1]) and not na(volume[1])
+    dpdt = close - close[1]
+    dvdt = (volume - volume[1]) / 1000.0
+    vorticity := dpdt * dvdt
+else
+    vorticity := 0.0
+smoothVort = ta.ema(close, 3)
+plot(vorticity)

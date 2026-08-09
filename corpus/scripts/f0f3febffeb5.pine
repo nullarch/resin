@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Vol Profile")
+var float[] volAtPrice = array.new_float(0)
+var float[] priceLevel = array.new_float(0)
+array.push(volAtPrice, volume)
+array.push(priceLevel, close)
+if array.size(volAtPrice) > 8
+    array.shift(volAtPrice)
+    array.shift(priceLevel)
+maxVolIdx = array.indexof(volAtPrice, array.max(volAtPrice))
+poc = maxVolIdx >= 0 ? array.get(priceLevel, maxVolIdx) : close
+distFromPOC = close - poc
+plot(distFromPOC, "Dist")

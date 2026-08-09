@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Weighted Avg")
+lookback = 5
+weightSum = 0.0
+valueSum = 0.0
+for i = 0 to lookback - 1
+    w = float(lookback - i)
+    val = close[i]
+    if not na(val)
+        valueSum := valueSum + val * w
+        weightSum := weightSum + w
+wAvg = weightSum > 0 ? valueSum / weightSum : close
+plot(wAvg, "WAvg")

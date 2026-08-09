@@ -1,0 +1,20 @@
+//@version=5
+indicator("AdjMatrix3x3")
+adj = array.new_float(9, 0.0)
+n0 = close
+n1 = open
+n2 = (high + low) / 2.0
+e01 = math.abs(n0 - n1) < 3.0 ? 1.0 : 0.0
+e02 = math.abs(n0 - n2) < 3.0 ? 1.0 : 0.0
+e12 = math.abs(n1 - n2) < 3.0 ? 1.0 : 0.0
+array.set(adj, 1, e01)
+array.set(adj, 2, e02)
+array.set(adj, 3, e01)
+array.set(adj, 5, e12)
+array.set(adj, 6, e02)
+array.set(adj, 7, e12)
+edgeCount = e01 + e02 + e12
+density = edgeCount / 3.0
+var float __obs_plot0 = na
+__obs_plot0 := density
+plot(density, "Density")

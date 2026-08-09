@@ -1,0 +1,6 @@
+//@version=5
+indicator("Test")
+var t = table.new(position.top_right, 2, 2)
+if barstate.islast
+    t.cell(0, 0, "Price")
+    t.cell_set_bgcolor(0, 0, color.green)

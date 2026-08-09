@@ -1,0 +1,11 @@
+//@version=5
+indicator("Process FSM")
+var int state = 0
+float rsiVal = nz(ta.rsi(close, 5), 50.0)
+if state == 0
+    state := 1
+else if state == 1 and rsiVal > 60.0
+    state := 2
+else if state == 2 and rsiVal < 40.0
+    state := 0
+float stateFloat = state

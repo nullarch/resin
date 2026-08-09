@@ -1,0 +1,248 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:dir": "<Direction.flat: 'flat'>",
+   "var:counts": {
+    "up": 7.0,
+    "down": 2.0,
+    "flat": 1.0
+   },
+   "var:__obs_count_up": 0.0,
+   "var:__obs_count_down": 0.0,
+   "var:__obs_count_flat": 1.0,
+   "var:streak": 1,
+   "var:prevDir": "<Direction.flat: 'flat'>",
+   "var:__obs_streak": 1,
+   "var:window": [
+    -1,
+    1,
+    1
+   ],
+   "var:__obs_window_size": 1,
+   "var:__obs_window_last": 0,
+   "var:__obs_up_in_window": 0
+  },
+  {
+   "var:dir": "<Direction.up: 'up'>",
+   "var:counts": {
+    "up": 7.0,
+    "down": 2.0,
+    "flat": 1.0
+   },
+   "var:__obs_count_up": 1.0,
+   "var:__obs_count_down": 0.0,
+   "var:__obs_count_flat": 1.0,
+   "var:streak": 1,
+   "var:prevDir": "<Direction.up: 'up'>",
+   "var:__obs_streak": 1,
+   "var:window": [
+    -1,
+    1,
+    1
+   ],
+   "var:__obs_window_size": 2,
+   "var:__obs_window_last": 1,
+   "var:__obs_up_in_window": 1
+  },
+  {
+   "var:dir": "<Direction.up: 'up'>",
+   "var:counts": {
+    "up": 7.0,
+    "down": 2.0,
+    "flat": 1.0
+   },
+   "var:__obs_count_up": 2.0,
+   "var:__obs_count_down": 0.0,
+   "var:__obs_count_flat": 1.0,
+   "var:streak": 1,
+   "var:prevDir": "<Direction.up: 'up'>",
+   "var:__obs_streak": 1,
+   "var:window": [
+    -1,
+    1,
+    1
+   ],
+   "var:__obs_window_size": 3,
+   "var:__obs_window_last": 1,
+   "var:__obs_up_in_window": 2
+  },
+  {
+   "var:dir": "<Direction.down: 'down'>",
+   "var:counts": {
+    "up": 7.0,
+    "down": 2.0,
+    "flat": 1.0
+   },
+   "var:__obs_count_up": 2.0,
+   "var:__obs_count_down": 1.0,
+   "var:__obs_count_flat": 1.0,
+   "var:streak": 1,
+   "var:prevDir": "<Direction.down: 'down'>",
+   "var:__obs_streak": 1,
+   "var:window": [
+    -1,
+    1,
+    1
+   ],
+   "var:__obs_window_size": 3,
+   "var:__obs_window_last": -1,
+   "var:__obs_up_in_window": 2
+  },
+  {
+   "var:dir": "<Direction.up: 'up'>",
+   "var:counts": {
+    "up": 7.0,
+    "down": 2.0,
+    "flat": 1.0
+   },
+   "var:__obs_count_up": 3.0,
+   "var:__obs_count_down": 1.0,
+   "var:__obs_count_flat": 1.0,
+   "var:streak": 1,
+   "var:prevDir": "<Direction.up: 'up'>",
+   "var:__obs_streak": 1,
+   "var:window": [
+    -1,
+    1,
+    1
+   ],
+   "var:__obs_window_size": 3,
+   "var:__obs_window_last": 1,
+   "var:__obs_up_in_window": 2
+  },
+  {
+   "var:dir": "<Direction.up: 'up'>",
+   "var:counts": {
+    "up": 7.0,
+    "down": 2.0,
+    "flat": 1.0
+   },
+   "var:__obs_count_up": 4.0,
+   "var:__obs_count_down": 1.0,
+   "var:__obs_count_flat": 1.0,
+   "var:streak": 1,
+   "var:prevDir": "<Direction.up: 'up'>",
+   "var:__obs_streak": 1,
+   "var:window": [
+    -1,
+    1,
+    1
+   ],
+   "var:__obs_window_size": 3,
+   "var:__obs_window_last": 1,
+   "var:__obs_up_in_window": 2
+  },
+  {
+   "var:dir": "<Direction.up: 'up'>",
+   "var:counts": {
+    "up": 7.0,
+    "down": 2.0,
+    "flat": 1.0
+   },
+   "var:__obs_count_up": 5.0,
+   "var:__obs_count_down": 1.0,
+   "var:__obs_count_flat": 1.0,
+   "var:streak": 1,
+   "var:prevDir": "<Direction.up: 'up'>",
+   "var:__obs_streak": 1,
+   "var:window": [
+    -1,
+    1,
+    1
+   ],
+   "var:__obs_window_size": 3,
+   "var:__obs_window_last": 1,
+   "var:__obs_up_in_window": 3
+  },
+  {
+   "var:dir": "<Direction.down: 'down'>",
+   "var:counts": {
+    "up": 7.0,
+    "down": 2.0,
+    "flat": 1.0
+   },
+   "var:__obs_count_up": 5.0,
+   "var:__obs_count_down": 2.0,
+   "var:__obs_count_flat": 1.0,
+   "var:streak": 1,
+   "var:prevDir": "<Direction.down: 'down'>",
+   "var:__obs_streak": 1,
+   "var:window": [
+    -1,
+    1,
+    1
+   ],
+   "var:__obs_window_size": 3,
+   "var:__obs_window_last": -1,
+   "var:__obs_up_in_window": 2
+  },
+  {
+   "var:dir": "<Direction.up: 'up'>",
+   "var:counts": {
+    "up": 7.0,
+    "down": 2.0,
+    "flat": 1.0
+   },
+   "var:__obs_count_up": 6.0,
+   "var:__obs_count_down": 2.0,
+   "var:__obs_count_flat": 1.0,
+   "var:streak": 1,
+   "var:prevDir": "<Direction.up: 'up'>",
+   "var:__obs_streak": 1,
+   "var:window": [
+    -1,
+    1,
+    1
+   ],
+   "var:__obs_window_size": 3,
+   "var:__obs_window_last": 1,
+   "var:__obs_up_in_window": 2
+  },
+  {
+   "var:dir": "<Direction.up: 'up'>",
+   "var:counts": {
+    "up": 7.0,
+    "down": 2.0,
+    "flat": 1.0
+   },
+   "var:__obs_count_up": 7.0,
+   "var:__obs_count_down": 2.0,
+   "var:__obs_count_flat": 1.0,
+   "var:streak": 1,
+   "var:prevDir": "<Direction.up: 'up'>",
+   "var:__obs_streak": 1,
+   "var:window": [
+    -1,
+    1,
+    1
+   ],
+   "var:__obs_window_size": 3,
+   "var:__obs_window_last": 1,
+   "var:__obs_up_in_window": 2
+  }
+ ],
+ "finalVarState": {
+  "dir": "<Direction.up: 'up'>",
+  "counts": {
+   "up": 7.0,
+   "down": 2.0,
+   "flat": 1.0
+  },
+  "__obs_count_up": 7.0,
+  "__obs_count_down": 2.0,
+  "__obs_count_flat": 1.0,
+  "streak": 1,
+  "prevDir": "<Direction.up: 'up'>",
+  "__obs_streak": 1,
+  "window": [
+   -1,
+   1,
+   1
+  ],
+  "__obs_window_size": 3,
+  "__obs_window_last": 1,
+  "__obs_up_in_window": 2
+ }
+}

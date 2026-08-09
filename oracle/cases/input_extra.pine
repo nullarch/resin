@@ -1,0 +1,41 @@
+//@version=5
+indicator("input_extra")
+// input.* 세 번째 슬라이스(C133) -- (defval, title) 시그니처뿐인 8종(color/source/symbol/
+// timeframe/session/price/text_area/time) + bare input()(pine2py any_input) 오라클 검증.
+// pine2py wavealgo/builtins/input_funcs.py의 대응 함수는 전부 defval을 그대로 반환하는 순수
+// 스텁이라(python 직접 transpile로 전량 정상 컴파일 확인) input_basic.pine(C131)과 동일하게
+// "오버라이드 없음" 경로만 검증한다. source는 bar series(close)를 인자로 받는 채널을 별도로
+// 추가해 pine2js의 자동 스칼라화(genIdentifier가 BAR_SERIES_NAMES를 항상 .get(0)으로 낮춤)를
+// 확인한다 -- pine2py는 이 스칼라화가 없어(codegen.py가 close를 Series 객체 그대로 넘김) 그대로
+// 두면 골든이 Series repr로 오염되므로, map_basic.pine 관례(DIVERGENCES.md #29/#53 계열)대로
+// `close + 0.0`으로 강제 스칼라 변환해 pine2py 쪽도 스칼라 경로를 타게 맞춘다. input.enum은
+// 범위 밖(ROADMAP 참조, 다음 슬라이스).
+
+col = input.color("#ff0000", "Line Color")
+sym = input.symbol("AAPL", "Symbol")
+tf = input.timeframe("60", "Timeframe")
+sess = input.session("0930-1600", "Session")
+pr = input.price(100.5, "Price")
+txt = input.text_area("notes", "Notes")
+t = input.time(0, "Time")
+src = input.source(close + 0.0, "Source")
+any_ = input(7, "Any Input")
+
+var string __obs_col = na
+__obs_col := col
+var string __obs_sym = na
+__obs_sym := sym
+var string __obs_tf = na
+__obs_tf := tf
+var string __obs_sess = na
+__obs_sess := sess
+var float __obs_pr = na
+__obs_pr := pr
+var string __obs_txt = na
+__obs_txt := txt
+var int __obs_t = na
+__obs_t := t
+var float __obs_src = na
+__obs_src := src
+var int __obs_any = na
+__obs_any := any_

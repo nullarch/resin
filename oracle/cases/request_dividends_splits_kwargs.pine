@@ -1,0 +1,16 @@
+//@version=5
+indicator("request_dividends_splits_kwargs")
+// request.dividends/request.splits kwargs(C398, next_hint(C397) 1순위 — wild 20건이 정확히
+// `request.dividends(syminfo.tickerid, dividends.gross, barmerge.gaps_on, barmerge.lookahead_on,
+// ignore_invalid_symbol=true)` 폼(+1건 gaps= 단독)). pine2py wavealgo/__init__.py L122-128
+// request_splits/request_dividends가 인자 전부 무시하고 항상 0.0을 반환하는 순수 스텁 — bar-
+// independent. request.earnings(C397)와 동일 원칙으로 corpus 최다빈도 폼(위치 4개 + trailing
+// ignore_invalid_symbol=), 전체 키워드 폼, 단독 gaps= 폼까지 관측.
+var float __obs_div_v1 = na
+__obs_div_v1 := request.dividends(syminfo.tickerid, dividends.gross, barmerge.gaps_on, barmerge.lookahead_on, ignore_invalid_symbol = true)
+var float __obs_div_v2 = na
+__obs_div_v2 := request.dividends(ticker = syminfo.tickerid, field = dividends.net, gaps = barmerge.gaps_off, lookahead = barmerge.lookahead_off, ignore_invalid_symbol = true)
+var float __obs_spl_v1 = na
+__obs_spl_v1 := request.splits(syminfo.tickerid, splits.denominator, barmerge.gaps_on, barmerge.lookahead_on, ignore_invalid_symbol = true)
+var float __obs_spl_v2 = na
+__obs_spl_v2 := request.splits(ticker = syminfo.tickerid, field = splits.numerator, gaps = true)

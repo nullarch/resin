@@ -1,0 +1,4 @@
+//@version=5
+indicator("MathRound")
+var float result = 0
+result := math.round(close / 3)

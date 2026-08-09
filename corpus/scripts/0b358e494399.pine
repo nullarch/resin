@@ -1,0 +1,8 @@
+//@version=5
+indicator("Maxwell-Boltzmann")
+float chg = not na(close[1]) ? math.abs(close - close[1]) : 0.0
+var float sumSqChg = 0.0
+var int cnt = 0
+cnt := cnt + 1
+sumSqChg := sumSqChg + chg * chg
+float vRms = cnt > 0 ? math.sqrt(sumSqChg / cnt) : 0.0

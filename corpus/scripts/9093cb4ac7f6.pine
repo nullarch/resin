@@ -1,0 +1,12 @@
+//@version=5
+indicator("Map Iter")
+var m = map.new<string, float>()
+map.put(m, "open", open)
+map.put(m, "high", high)
+map.put(m, "low", low)
+map.put(m, "close", close)
+total = 0.0
+for [k, v] in m
+    total += v
+avg = total / map.size(m)
+plot(avg)

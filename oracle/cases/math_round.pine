@@ -1,0 +1,12 @@
+//@version=5
+indicator("math_round")
+// r0: precision 0, positive .5 boundary (close/10.0이 바 5/7에서 정확히 x.5가 됨)
+var float __obs_r0 = na
+__obs_r0 := math.round(close / 10.0)
+// r1: precision 0, sample10.json에서 (open-close)/2.0이 매 바 정확히 -0.5 — half-away-from-zero의
+// 핵심 검증 지점(JS Math.round(-0.5)는 -0을 주는 실제 버그, MEMORY.md Pitfalls 참조)
+var float __obs_r1 = na
+__obs_r1 := math.round((open - close) / 2.0)
+// r2: precision > 0 분기
+var float __obs_r2 = na
+__obs_r2 := math.round(close / 7.0, 2)

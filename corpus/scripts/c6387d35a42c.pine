@@ -1,0 +1,10 @@
+//@version=5
+indicator("Switch String")
+var float result = 0.0
+string mode = "fast"
+int length = switch mode
+    "fast" => 3
+    "medium" => 10
+    "slow" => 20
+    => 14
+result := length

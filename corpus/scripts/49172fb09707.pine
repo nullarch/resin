@@ -1,0 +1,5 @@
+//@version=5
+indicator("t")
+a = array.from(1.0)
+for [i, v] in a
+    x = v

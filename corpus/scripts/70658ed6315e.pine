@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("ROC")
+period = 3
+prevClose = close[period]
+roc = not na(prevClose) and prevClose > 0 ? (close - prevClose) / prevClose * 100 : 0.0
+rocMA = ta.sma(roc, 3)
+plot(roc, "ROC")
+plot(rocMA, "MA")

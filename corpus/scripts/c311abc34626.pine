@@ -1,0 +1,5 @@
+//@version=5
+indicator("Multi Plot")
+plot(close)
+plot(open)
+plot(high)

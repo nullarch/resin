@@ -1,0 +1,11 @@
+//@version=5
+indicator("UDT na")
+type Config
+    float threshold = na
+    int period = 5
+    string mode = na
+cfg = Config.new()
+hasThreshold = not na(cfg.threshold)
+hasPeriod = not na(cfg.period)
+cfg.threshold := 0.5
+cfg.mode := "fast"

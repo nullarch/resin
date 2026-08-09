@@ -1,0 +1,7 @@
+//@version=5
+strategy("Test Strategy")
+if bar_index == 3
+    strategy.entry("Long", strategy.long)
+if bar_index == 7
+    strategy.close("Long")
+plot(close)

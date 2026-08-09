@@ -1,0 +1,13 @@
+//@version=5
+indicator("FE08")
+var float volScore = 0.0
+classify(val) =>
+    val > 3.0 ? 3 : val > 1.0 ? 2 : 1
+dev = nz(ta.stdev(close, 5), 0.0)
+prevDev = not na(close[2]) ? dev : 0.0
+cnt = 0
+x = 0
+while x < classify(dev)
+    cnt := cnt + 1
+    x := x + 1
+volScore := volScore + cnt

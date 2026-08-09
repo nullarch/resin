@@ -1,0 +1,171 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:obs": [
+    "pine_fn.<locals>.OrderBlock(top=1.0, bottom=0.5, isBullish=True)",
+    "pine_fn.<locals>.OrderBlock(top=2.0, bottom=1.5, isBullish=False)"
+   ],
+   "var:popArr": [
+    "pine_fn.<locals>.OrderBlock(top=9.0, bottom=8.0, isBullish=True)"
+   ],
+   "var:basket": "pine_fn.<locals>.Basket(items=[pine_fn.<locals>.OrderBlock(top=3.0, bottom=2.5, isBullish=True)])",
+   "var:barN": 1,
+   "var:__obs_first_top": 1.0,
+   "var:__obs_first_bull": true,
+   "var:__obs_popped_top": 4.0,
+   "var:__obs_item_top": 3.0
+  },
+  {
+   "var:obs": [
+    "pine_fn.<locals>.OrderBlock(top=1.0, bottom=0.5, isBullish=True)",
+    "pine_fn.<locals>.OrderBlock(top=2.0, bottom=1.5, isBullish=False)"
+   ],
+   "var:popArr": [
+    "pine_fn.<locals>.OrderBlock(top=9.0, bottom=8.0, isBullish=True)"
+   ],
+   "var:basket": "pine_fn.<locals>.Basket(items=[pine_fn.<locals>.OrderBlock(top=3.0, bottom=2.5, isBullish=True)])",
+   "var:barN": 2,
+   "var:__obs_first_top": 1.0,
+   "var:__obs_first_bull": true,
+   "var:__obs_popped_top": 4.0,
+   "var:__obs_item_top": 3.0
+  },
+  {
+   "var:obs": [
+    "pine_fn.<locals>.OrderBlock(top=1.0, bottom=0.5, isBullish=True)",
+    "pine_fn.<locals>.OrderBlock(top=2.0, bottom=1.5, isBullish=False)"
+   ],
+   "var:popArr": [
+    "pine_fn.<locals>.OrderBlock(top=9.0, bottom=8.0, isBullish=True)"
+   ],
+   "var:basket": "pine_fn.<locals>.Basket(items=[pine_fn.<locals>.OrderBlock(top=3.0, bottom=2.5, isBullish=True)])",
+   "var:barN": 3,
+   "var:__obs_first_top": 1.0,
+   "var:__obs_first_bull": true,
+   "var:__obs_popped_top": 4.0,
+   "var:__obs_item_top": 3.0
+  },
+  {
+   "var:obs": [
+    "pine_fn.<locals>.OrderBlock(top=1.0, bottom=0.5, isBullish=True)",
+    "pine_fn.<locals>.OrderBlock(top=2.0, bottom=1.5, isBullish=False)"
+   ],
+   "var:popArr": [
+    "pine_fn.<locals>.OrderBlock(top=9.0, bottom=8.0, isBullish=True)"
+   ],
+   "var:basket": "pine_fn.<locals>.Basket(items=[pine_fn.<locals>.OrderBlock(top=3.0, bottom=2.5, isBullish=True)])",
+   "var:barN": 4,
+   "var:__obs_first_top": 1.0,
+   "var:__obs_first_bull": true,
+   "var:__obs_popped_top": 4.0,
+   "var:__obs_item_top": 3.0
+  },
+  {
+   "var:obs": [
+    "pine_fn.<locals>.OrderBlock(top=1.0, bottom=0.5, isBullish=True)",
+    "pine_fn.<locals>.OrderBlock(top=2.0, bottom=1.5, isBullish=False)"
+   ],
+   "var:popArr": [
+    "pine_fn.<locals>.OrderBlock(top=9.0, bottom=8.0, isBullish=True)"
+   ],
+   "var:basket": "pine_fn.<locals>.Basket(items=[pine_fn.<locals>.OrderBlock(top=3.0, bottom=2.5, isBullish=True)])",
+   "var:barN": 5,
+   "var:__obs_first_top": 1.0,
+   "var:__obs_first_bull": true,
+   "var:__obs_popped_top": 4.0,
+   "var:__obs_item_top": 3.0
+  },
+  {
+   "var:obs": [
+    "pine_fn.<locals>.OrderBlock(top=1.0, bottom=0.5, isBullish=True)",
+    "pine_fn.<locals>.OrderBlock(top=2.0, bottom=1.5, isBullish=False)"
+   ],
+   "var:popArr": [
+    "pine_fn.<locals>.OrderBlock(top=9.0, bottom=8.0, isBullish=True)"
+   ],
+   "var:basket": "pine_fn.<locals>.Basket(items=[pine_fn.<locals>.OrderBlock(top=3.0, bottom=2.5, isBullish=True)])",
+   "var:barN": 6,
+   "var:__obs_first_top": 1.0,
+   "var:__obs_first_bull": true,
+   "var:__obs_popped_top": 4.0,
+   "var:__obs_item_top": 3.0
+  },
+  {
+   "var:obs": [
+    "pine_fn.<locals>.OrderBlock(top=1.0, bottom=0.5, isBullish=True)",
+    "pine_fn.<locals>.OrderBlock(top=2.0, bottom=1.5, isBullish=False)"
+   ],
+   "var:popArr": [
+    "pine_fn.<locals>.OrderBlock(top=9.0, bottom=8.0, isBullish=True)"
+   ],
+   "var:basket": "pine_fn.<locals>.Basket(items=[pine_fn.<locals>.OrderBlock(top=3.0, bottom=2.5, isBullish=True)])",
+   "var:barN": 7,
+   "var:__obs_first_top": 1.0,
+   "var:__obs_first_bull": true,
+   "var:__obs_popped_top": 4.0,
+   "var:__obs_item_top": 3.0
+  },
+  {
+   "var:obs": [
+    "pine_fn.<locals>.OrderBlock(top=1.0, bottom=0.5, isBullish=True)",
+    "pine_fn.<locals>.OrderBlock(top=2.0, bottom=1.5, isBullish=False)"
+   ],
+   "var:popArr": [
+    "pine_fn.<locals>.OrderBlock(top=9.0, bottom=8.0, isBullish=True)"
+   ],
+   "var:basket": "pine_fn.<locals>.Basket(items=[pine_fn.<locals>.OrderBlock(top=3.0, bottom=2.5, isBullish=True)])",
+   "var:barN": 8,
+   "var:__obs_first_top": 1.0,
+   "var:__obs_first_bull": true,
+   "var:__obs_popped_top": 4.0,
+   "var:__obs_item_top": 3.0
+  },
+  {
+   "var:obs": [
+    "pine_fn.<locals>.OrderBlock(top=1.0, bottom=0.5, isBullish=True)",
+    "pine_fn.<locals>.OrderBlock(top=2.0, bottom=1.5, isBullish=False)"
+   ],
+   "var:popArr": [
+    "pine_fn.<locals>.OrderBlock(top=9.0, bottom=8.0, isBullish=True)"
+   ],
+   "var:basket": "pine_fn.<locals>.Basket(items=[pine_fn.<locals>.OrderBlock(top=3.0, bottom=2.5, isBullish=True)])",
+   "var:barN": 9,
+   "var:__obs_first_top": 1.0,
+   "var:__obs_first_bull": true,
+   "var:__obs_popped_top": 4.0,
+   "var:__obs_item_top": 3.0
+  },
+  {
+   "var:obs": [
+    "pine_fn.<locals>.OrderBlock(top=1.0, bottom=0.5, isBullish=True)",
+    "pine_fn.<locals>.OrderBlock(top=2.0, bottom=1.5, isBullish=False)"
+   ],
+   "var:popArr": [
+    "pine_fn.<locals>.OrderBlock(top=9.0, bottom=8.0, isBullish=True)"
+   ],
+   "var:basket": "pine_fn.<locals>.Basket(items=[pine_fn.<locals>.OrderBlock(top=3.0, bottom=2.5, isBullish=True)])",
+   "var:barN": 10,
+   "var:__obs_first_top": 1.0,
+   "var:__obs_first_bull": true,
+   "var:__obs_popped_top": 4.0,
+   "var:__obs_item_top": 3.0
+  }
+ ],
+ "finalVarState": {
+  "obs": [
+   "pine_fn.<locals>.OrderBlock(top=1.0, bottom=0.5, isBullish=True)",
+   "pine_fn.<locals>.OrderBlock(top=2.0, bottom=1.5, isBullish=False)"
+  ],
+  "popArr": [
+   "pine_fn.<locals>.OrderBlock(top=9.0, bottom=8.0, isBullish=True)"
+  ],
+  "basket": "pine_fn.<locals>.Basket(items=[pine_fn.<locals>.OrderBlock(top=3.0, bottom=2.5, isBullish=True)])",
+  "barN": 10,
+  "__obs_first_top": 1.0,
+  "__obs_first_bull": true,
+  "__obs_popped_top": 4.0,
+  "__obs_item_top": 3.0
+ }
+}

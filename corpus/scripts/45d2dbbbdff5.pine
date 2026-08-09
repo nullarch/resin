@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Event Log")
+var events = map.new<string, float>()
+var int barNum = 0
+barNum := barNum + 1
+rsi = ta.rsi(close, 3)
+if rsi > 70
+    map.put(events, "last_ob", float(barNum))
+if rsi < 30
+    map.put(events, "last_os", float(barNum))
+lastOB = map.get(events, "last_ob", 0.0)
+barsSinceOB = float(barNum) - lastOB
+plot(barsSinceOB, "BarsSinceOB")

@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Str Num")
+numStr = str.tostring(close, "#.##")
+backToNum = str.tonumber(numStr)
+diff = close - backToNum
+plot(diff, "RoundErr")

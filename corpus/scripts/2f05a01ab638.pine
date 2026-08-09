@@ -1,0 +1,4 @@
+//@version=5
+indicator("Str Concat")
+s = "Price: " + str.tostring(close)
+plot(close)

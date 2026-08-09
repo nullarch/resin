@@ -1,0 +1,9 @@
+//@version=5
+indicator("ta_ema_rsi")
+// ta.ema/ta.rsi 오라클 검증(ROADMAP P1 "Oracle: SMA/EMA/RSI 3종" — SMA는 smoke_var_sma.pine에서
+// 이미 검증됨). length=3으로 sample10.json 10바 안에서 초기화 구간(NaN)과 정상 구간을 모두 커버.
+var float __obs_ema = na
+__obs_ema := ta.ema(close, 3)
+
+var float __obs_rsi = na
+__obs_rsi := ta.rsi(close, 3)

@@ -1,0 +1,8 @@
+//@version=5
+indicator("Filtration")
+float atrVal = nz(ta.atr(3), 1.0)
+var float filtLevel = 0.0
+filtLevel := math.max(filtLevel, atrVal)
+var float __obs_plot0 = na
+__obs_plot0 := filtLevel
+plot(filtLevel, "FiltLevel")

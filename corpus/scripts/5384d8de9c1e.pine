@@ -1,0 +1,11 @@
+//@version=5
+indicator("DISTINCT Count")
+var float[] seen_buckets = array.new_float(0)
+bucket = math.floor(close / 2.0)
+found = false
+for i = 0 to array.size(seen_buckets) - 1
+    if array.get(seen_buckets, i) == bucket
+        found := true
+if not found
+    array.push(seen_buckets, bucket)
+distinct_count = array.size(seen_buckets)

@@ -1,0 +1,13 @@
+//@version=5
+indicator("Histogram")
+var float posSum = 0.0
+var float negSum = 0.0
+float macdLine = nz(ta.ema(close, 2), close) - nz(ta.ema(close, 5), close)
+float signalLine = ta.sma(macdLine, 3)
+float hist = macdLine - nz(signalLine, 0.0)
+if hist > 0
+    posSum := posSum + hist
+else
+    negSum := negSum + math.abs(hist)
+float dominance = posSum + negSum > 0 ? posSum / (posSum + negSum) : 0.5
+plot(dominance, "Dominance")

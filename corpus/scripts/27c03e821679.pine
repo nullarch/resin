@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("StochRSI")
+rsi = nz(ta.rsi(close, 3), 50.0)
+hiRSI = ta.highest(rsi, 5)
+loRSI = ta.lowest(rsi, 5)
+stochRSI = hiRSI != loRSI ? (rsi - loRSI) / (hiRSI - loRSI) * 100 : 50.0
+kLine = ta.sma(stochRSI, 3)
+plot(stochRSI, "SR")
+plot(kLine, "K")

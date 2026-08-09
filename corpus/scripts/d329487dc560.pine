@@ -1,0 +1,5 @@
+
+//@version=5
+indicator("Div")
+result = close / 2.0
+plot(result)

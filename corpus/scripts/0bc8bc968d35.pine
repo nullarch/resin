@@ -1,0 +1,6 @@
+//@version=5
+indicator("Compound Ops")
+var float val = 100.0
+val += close
+val -= open
+val *= 1.01

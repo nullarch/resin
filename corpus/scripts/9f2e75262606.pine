@@ -1,0 +1,9 @@
+//@version=5
+indicator("GBM Adjusted")
+float prevC = not na(close[1]) ? close[1] : close
+float logRet = prevC > 0 ? math.log(close / prevC) : 0.0
+float drift = ta.sma(logRet, 5)
+float sigma = ta.stdev(logRet, 5)
+float sigSq = sigma * sigma
+float adjDrift = drift - 0.5 * sigSq
+plot(adjDrift, "AdjDrift")

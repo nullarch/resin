@@ -1,0 +1,5 @@
+//@version=5
+indicator("Congestion Window")
+float cwnd = nz(ta.ema(volume, 3), volume)
+float ratio = volume > 0 ? cwnd / volume : 1.0
+plot(ratio, "CwndRatio")

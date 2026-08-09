@@ -1,0 +1,9 @@
+//@version=5
+indicator("Array OOB")
+var arr = array.from(1.0, 2.0, 3.0)
+var float val = array.get(arr, 0)
+var int sz = array.size(arr)
+// Normal access is fine
+var float result = 0.0
+result := val + sz
+plot(result)

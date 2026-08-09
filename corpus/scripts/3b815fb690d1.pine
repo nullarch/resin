@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("FC Adj")
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = ta.atr(3)
+baseForecast = sma3
+adj = rsi > 65 ? -atr * 0.5 : rsi < 35 ? atr * 0.5 : 0.0
+adjusted = baseForecast + adj
+plot(adjusted, "Adj")

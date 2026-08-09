@@ -1,0 +1,9 @@
+//@version=5
+indicator("Autocorr Lag1")
+float dc = ta.sma(close, 5)
+float x0 = close - nz(dc, close)
+float prevClose = not na(close[1]) ? close[1] : close
+float x1 = prevClose - nz(dc, close)
+float corr = x0 * x1
+float avgCorr = ta.sma(corr, 3)
+plot(nz(avgCorr, 0.0), "AutoCorr1")

@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Enum First")
+enum Status
+    Active = 1
+    Inactive = 0
+
+st = Status.Active
+val = int(st)
+var float __obs_plot0 = na
+__obs_plot0 := val
+plot(val, "V")

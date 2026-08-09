@@ -1,0 +1,16 @@
+//@version=5
+indicator("MACD Tuple")
+[macdLine, signalLine, hist] = ta.macd(close, 3, 5, 3)
+bullish = macdLine > signalLine
+var float __obs_plot0 = na
+__obs_plot0 := macdLine
+plot(macdLine)
+var float __obs_plot1 = na
+__obs_plot1 := signalLine
+plot(signalLine)
+var float __obs_plot2 = na
+__obs_plot2 := hist
+plot(hist)
+var float __obs_plot3 = na
+__obs_plot3 := bullish ? 1.0 : 0.0
+plot(bullish ? 1.0 : 0.0)

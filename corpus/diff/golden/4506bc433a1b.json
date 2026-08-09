@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:c": "pine_fn.<locals>.Candle(body=2, upperWick=2, lowerWick=2, bullish=True)",
+   "var:__obs_plot0": 0.42857142857142855
+  },
+  {
+   "var:c": "pine_fn.<locals>.Candle(body=2, upperWick=2, lowerWick=2, bullish=True)",
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:c": "pine_fn.<locals>.Candle(body=2, upperWick=2, lowerWick=2, bullish=True)",
+   "var:__obs_plot0": 0.2
+  },
+  {
+   "var:c": "pine_fn.<locals>.Candle(body=2, upperWick=2, lowerWick=2, bullish=True)",
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:c": "pine_fn.<locals>.Candle(body=2, upperWick=2, lowerWick=2, bullish=True)",
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:c": "pine_fn.<locals>.Candle(body=2, upperWick=2, lowerWick=2, bullish=True)",
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:c": "pine_fn.<locals>.Candle(body=2, upperWick=2, lowerWick=2, bullish=True)",
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:c": "pine_fn.<locals>.Candle(body=2, upperWick=2, lowerWick=2, bullish=True)",
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:c": "pine_fn.<locals>.Candle(body=2, upperWick=2, lowerWick=2, bullish=True)",
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:c": "pine_fn.<locals>.Candle(body=2, upperWick=2, lowerWick=2, bullish=True)",
+   "var:__obs_plot0": 0.3333333333333333
+  }
+ ],
+ "finalVarState": {
+  "c": "pine_fn.<locals>.Candle(body=2, upperWick=2, lowerWick=2, bullish=True)",
+  "__obs_plot0": 0.3333333333333333
+ }
+}

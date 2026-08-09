@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:resTests": 0,
+   "var:supTests": 0,
+   "var:__obs_plot0": 0.5,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:resTests": 0,
+   "var:supTests": 0,
+   "var:__obs_plot0": 0.5,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:resTests": 0,
+   "var:supTests": 0,
+   "var:__obs_plot0": 0.5,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:resTests": 0,
+   "var:supTests": 0,
+   "var:__obs_plot0": 0.5,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:resTests": 1,
+   "var:supTests": 0,
+   "var:__obs_plot0": 0.8181818181818182,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:resTests": 2,
+   "var:supTests": 0,
+   "var:__obs_plot0": 0.7,
+   "var:__obs_plot1": 2
+  },
+  {
+   "var:resTests": 3,
+   "var:supTests": 0,
+   "var:__obs_plot0": 0.8181818181818182,
+   "var:__obs_plot1": 3
+  },
+  {
+   "var:resTests": 4,
+   "var:supTests": 0,
+   "var:__obs_plot0": 0.8181818181818182,
+   "var:__obs_plot1": 4
+  },
+  {
+   "var:resTests": 5,
+   "var:supTests": 0,
+   "var:__obs_plot0": 0.7,
+   "var:__obs_plot1": 5
+  },
+  {
+   "var:resTests": 6,
+   "var:supTests": 0,
+   "var:__obs_plot0": 0.8181818181818182,
+   "var:__obs_plot1": 6
+  }
+ ],
+ "finalVarState": {
+  "resTests": 6,
+  "supTests": 0,
+  "__obs_plot0": 0.8181818181818182,
+  "__obs_plot1": 6
+ }
+}

@@ -1,0 +1,14 @@
+//@version=5
+indicator("Kurtosis Proxy")
+float prevC = not na(close[1]) ? close[1] : close
+float ret = close - prevC
+float mu = ta.sma(ret, 5)
+float dev = ret - mu
+float dev2 = dev * dev
+float dev4 = dev2 * dev2
+float m4 = ta.sma(dev4, 5)
+float m2 = ta.sma(dev2, 5)
+float kurt = m2 > 0.0001 ? m4 / (m2 * m2) : 3.0
+var float __obs_plot0 = na
+__obs_plot0 := kurt
+plot(kurt, "Kurt")

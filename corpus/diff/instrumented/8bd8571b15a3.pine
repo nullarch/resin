@@ -1,0 +1,9 @@
+//@version=5
+indicator("Array Fill")
+var arr = array.from(1.0, 2.0, 3.0, 4.0, 5.0)
+array.fill(arr, 99.0)
+var float first = array.get(arr, 0)
+var float last_ = array.get(arr, 4)
+var float __obs_plot0 = na
+__obs_plot0 := first
+plot(first)

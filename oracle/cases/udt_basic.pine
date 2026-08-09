@@ -1,0 +1,60 @@
+//@version=5
+indicator("udt_basic")
+// UDT(type 선언 + Type.new(...) 생성 + 필드 읽기/쓰기, ROADMAP P2 첫 슬라이스) 오라클 검증.
+// pine2py는 이 슬라이스가 다루는 서브셋(스칼라 필드 5종 float/int/bool/string/color, 위치 인자
+// .new(), 명시/암시 기본값, 필드 읽기/':=' 대입)을 @dataclass 코드젠으로 완전히 지원해 bit-parity
+// 대조가 가능하다 — na 생성자 인자/na 필드 대입(string/color 필드)은 pine2py가 모든 na 리터럴을
+// 타입 무관 float('nan')으로 컴파일하는 구조적 한계로 오라클 비교 자체가 불가능하다(C107/C110과
+// 동일 급 divergence, DIVERGENCES.md 참조) — 그 채널은 tests/unit/codegen.test.ts의
+// hand-verified e2e로 이미 검증했으므로 여기서는 제외한다. UDT 인스턴스를 담는 변수는 전부 'var'
+// 선언만 지원한다('=' 로컬 UDT 추적은 array/map/matrix와 동일하게 이번 슬라이스 범위 밖,
+// LIMITATIONS.md 참조) — 그래서 채널 B의 위치 인자도 var 게이팅상 첫 바 값에 고정된다.
+
+type Bar
+    float x = 1.0
+    int n = 2
+    bool flag = true
+    string label = "hi"
+    color c = color.red
+    float y
+
+// 채널 A: 인자 없는 '.new()' — 명시 기본값 5종(x/n/flag/label/c) + 암시 기본값(y, float -> 0.0)
+var Bar b1 = Bar.new()
+var float __obs_b1_x = na
+__obs_b1_x := b1.x
+var float __obs_b1_n = na
+__obs_b1_n := b1.n
+var bool __obs_b1_flag = na
+__obs_b1_flag := b1.flag
+var string __obs_b1_label = na
+__obs_b1_label := b1.label
+var string __obs_b1_c = na
+__obs_b1_c := b1.c
+var float __obs_b1_y = na
+__obs_b1_y := b1.y
+
+// 채널 B: 위치 인자 부분 채움(x, n만 지정 — flag/label/c/y는 여전히 기본값). `close + 0.0`으로
+// bar series를 강제 스칼라 변환(array_basic.pine/map_basic.pine과 동일 관례) — bare `close`를
+// 그대로 넘기면 pine2py가 Series 참조를 필드에 그대로 저장해(map.put/matrix.set과 동일한
+// `_scalar()` 가드 부재 latent 버그, DIVERGENCES.md #29/#30과 같은 급) 이후 어느 바에서 읽어도
+// "그 바의 현재 close"가 나와 var 게이팅과 무관하게 매 바 값이 바뀌는 것을 실측으로 확인—
+// pine2js는 GOAL.md "Series 산술은 scalar" 원칙상 애초에 이 leak이 구조적으로 불가능해(생성자
+// 인자 위치에서도 항상 .get(0)으로 낮춤) 오라클 비교가 불가능한 채널이었다.
+var Bar b2 = Bar.new(close + 0.0, 10)
+var float __obs_b2_x = na
+__obs_b2_x := b2.x
+var float __obs_b2_n = na
+__obs_b2_n := b2.n
+var float __obs_b2_y = na
+__obs_b2_y := b2.y
+
+// 채널 C: 필드 대입(':=')으로 매 바 갱신 — close 누적합(ta.cum(close)와 동치인 러닝 합계) +
+// bar-derived boolean 대입. var 게이팅과 무관하게 매 바 실행되는 top-level 문장이라 바마다
+// 값이 바뀌는 실제 동적 신호를 준다.
+var Bar acc = Bar.new(0.0)
+acc.x := acc.x + close
+acc.flag := close > open
+var float __obs_acc_x = na
+__obs_acc_x := acc.x
+var bool __obs_acc_flag = na
+__obs_acc_flag := acc.flag

@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("While Arr")
+var float[] vals = array.new_float(0)
+array.push(vals, close)
+if array.size(vals) > 5
+    array.shift(vals)
+maxVal = array.size(vals) > 0 ? array.max(vals) : close
+minVal = array.size(vals) > 0 ? array.min(vals) : close
+target = (maxVal + minVal) / 2
+estimate = close
+steps = 0
+while math.abs(estimate - target) > 0.1 and steps < 15
+    estimate := estimate + (target - estimate) * 0.3
+    steps := steps + 1
+plot(steps, "St")

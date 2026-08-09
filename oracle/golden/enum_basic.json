@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:d": "<Direction.flat: 'flat'>",
+   "var:__obs_is_long": false,
+   "var:__obs_is_short": false,
+   "var:__obs_is_flat": true,
+   "var:__obs_not_long": true,
+   "var:__obs_switch_val": 3.0
+  },
+  {
+   "var:d": "<Direction.long: 'long'>",
+   "var:__obs_is_long": true,
+   "var:__obs_is_short": false,
+   "var:__obs_is_flat": false,
+   "var:__obs_not_long": false,
+   "var:__obs_switch_val": 1.0
+  },
+  {
+   "var:d": "<Direction.long: 'long'>",
+   "var:__obs_is_long": true,
+   "var:__obs_is_short": false,
+   "var:__obs_is_flat": false,
+   "var:__obs_not_long": false,
+   "var:__obs_switch_val": 1.0
+  },
+  {
+   "var:d": "<Direction.short: 'short'>",
+   "var:__obs_is_long": false,
+   "var:__obs_is_short": true,
+   "var:__obs_is_flat": false,
+   "var:__obs_not_long": true,
+   "var:__obs_switch_val": 2.0
+  },
+  {
+   "var:d": "<Direction.long: 'long'>",
+   "var:__obs_is_long": true,
+   "var:__obs_is_short": false,
+   "var:__obs_is_flat": false,
+   "var:__obs_not_long": false,
+   "var:__obs_switch_val": 1.0
+  },
+  {
+   "var:d": "<Direction.long: 'long'>",
+   "var:__obs_is_long": true,
+   "var:__obs_is_short": false,
+   "var:__obs_is_flat": false,
+   "var:__obs_not_long": false,
+   "var:__obs_switch_val": 1.0
+  },
+  {
+   "var:d": "<Direction.long: 'long'>",
+   "var:__obs_is_long": true,
+   "var:__obs_is_short": false,
+   "var:__obs_is_flat": false,
+   "var:__obs_not_long": false,
+   "var:__obs_switch_val": 1.0
+  },
+  {
+   "var:d": "<Direction.short: 'short'>",
+   "var:__obs_is_long": false,
+   "var:__obs_is_short": true,
+   "var:__obs_is_flat": false,
+   "var:__obs_not_long": true,
+   "var:__obs_switch_val": 2.0
+  },
+  {
+   "var:d": "<Direction.long: 'long'>",
+   "var:__obs_is_long": true,
+   "var:__obs_is_short": false,
+   "var:__obs_is_flat": false,
+   "var:__obs_not_long": false,
+   "var:__obs_switch_val": 1.0
+  },
+  {
+   "var:d": "<Direction.long: 'long'>",
+   "var:__obs_is_long": true,
+   "var:__obs_is_short": false,
+   "var:__obs_is_flat": false,
+   "var:__obs_not_long": false,
+   "var:__obs_switch_val": 1.0
+  }
+ ],
+ "finalVarState": {
+  "d": "<Direction.long: 'long'>",
+  "__obs_is_long": true,
+  "__obs_is_short": false,
+  "__obs_is_flat": false,
+  "__obs_not_long": false,
+  "__obs_switch_val": 1.0
+ }
+}

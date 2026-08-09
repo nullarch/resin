@@ -1,0 +1,6 @@
+//@version=5
+indicator("HighEMA")
+var float result = 0
+hEma = ta.highest(ta.ema(close, 3), 3)
+if not na(hEma)
+    result := hEma

@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("PV Corr")
+priceChg = nz(close - close[1], 0.0)
+volChg = nz(volume - volume[1], 0.0)
+sameDirn = (priceChg > 0 and volChg > 0) or (priceChg < 0 and volChg < 0)
+plot(sameDirn ? 1 : 0, "SD")

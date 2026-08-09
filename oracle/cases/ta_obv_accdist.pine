@@ -1,0 +1,8 @@
+//@version=5
+indicator("ta_obv_accdist")
+// ta.obv/ta.accdist 오라클 검증(ROADMAP P2 "ta.* 44종"). 둘 다 인자 없음(close/high/low/volume
+// 암묵 사용) — sample10.json 전 구간 관측.
+var float __obs_obv = na
+var float __obs_accdist = na
+__obs_obv := ta.obv()
+__obs_accdist := ta.accdist()

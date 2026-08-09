@@ -1,0 +1,10 @@
+//@version=5
+indicator("ta_linreg_implicit")
+// ta.linreg(source, length) 2-인자 축약형(offset 생략, 기본값 0) 오라클 검증(C252). pine2py
+// linreg.py 시그니처가 이미 `offset: int = 0`이라 실제 지원함을 소스 대조로 확인(ta_linreg.pine
+// 자매 케이스와 동일 length=4, sample10.json 재사용) — 2-인자 폼과 명시 offset=0 3-인자 폼을
+// 나란히 관측해 두 폼이 정확히 같은 값을 냄을 같은 골든에서 대조한다.
+var float __obs_lr_implicit = na
+var float __obs_lr_explicit0 = na
+__obs_lr_implicit := ta.linreg(close, 4)
+__obs_lr_explicit0 := ta.linreg(close, 4, 0)

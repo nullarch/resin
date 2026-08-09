@@ -1,0 +1,14 @@
+//@version=5
+indicator("math_sum")
+// s0: math.sum(close, 3) — normal 3-bar sliding window, no na (bars 0-1 have a partial window:
+// pine2py sums whatever's available, min(length, len(source)), no na-poisoning like ta.sma).
+var float __obs_s0 = na
+__obs_s0 := math.sum(close, 3)
+// s1: math.sum(volume, 100) — length (100) far exceeds the 10-bar dataset for the whole run, so
+// every bar sums the entire history so far (cumulative) — same min(length, len(source)) behavior,
+// exercised at the opposite extreme (window never fills).
+var float __obs_s1 = na
+__obs_s1 := math.sum(volume, 100)
+// s2: math.sum(high, 1) — length=1 degenerates to the current bar's value every time.
+var float __obs_s2 = na
+__obs_s2 := math.sum(high, 1)

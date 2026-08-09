@@ -1,0 +1,11 @@
+//@version=5
+indicator("test")
+TREND_UP = 1
+TREND_DOWN = -1
+TREND_FLAT = 0
+trend = close > close[1] ? TREND_UP : close < close[1] ? TREND_DOWN : TREND_FLAT
+label = switch trend
+    TREND_UP => "UP"
+    TREND_DOWN => "DOWN"
+    => "FLAT"
+plot(trend)

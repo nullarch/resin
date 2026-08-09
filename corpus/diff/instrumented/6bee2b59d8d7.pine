@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Eq Sim")
+var float equity = 10000.0
+var bool long = false
+sma3 = ta.sma(close, 3)
+if not long and close > sma3
+    long := true
+else if long and close < sma3
+    pnl = close - close[1]
+    equity := equity + nz(pnl, 0.0) * 10
+    long := false
+var float __obs_plot0 = na
+__obs_plot0 := equity
+plot(equity, "Eq")

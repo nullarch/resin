@@ -1,0 +1,62 @@
+//@version=5
+indicator("str_split")
+// str.split(source, separator) — pine2py str_funcs.py L137: source.split(separator). All channels
+// use string-literal args (bar-independent, str_transform.pine pattern) so pine2py won't crash.
+// na channels (source=na, separator=na, separator="") are NOT covered here — all three are
+// pine2js-only na(null) design decisions (DIVERGENCES.md 신규), and separator="" is an actual
+// pine2py crash boundary (Python str.split() rejects empty separator) so it can't be oracled at
+// all — hand-verified in runtime.test.ts instead.
+// Array results are reduced to observable scalar channels via array.size/array.get (str_transform.pine
+// pattern extended to array<string> — array.get's declared TS return type is float but the runtime
+// body is a plain arr[i] read with no type coercion, so it passes string elements through untouched,
+// same bypass precedent as array.new_string/new_color, C84).
+
+// A: normal split, 3 parts, no empty elements.
+resA = str.split("a,b,c", ",")
+var float __obs_a_size = na
+__obs_a_size := array.size(resA)
+var string __obs_a0 = na
+__obs_a0 := array.get(resA, 0)
+var string __obs_a2 = na
+__obs_a2 := array.get(resA, 2)
+
+// B: consecutive separators produce an empty-string element in the middle.
+resB = str.split("a,,b", ",")
+var float __obs_b_size = na
+__obs_b_size := array.size(resB)
+var string __obs_b1 = na
+__obs_b1 := array.get(resB, 1)
+
+// C: leading/trailing separator produce empty-string elements at both ends.
+resC = str.split(",a,", ",")
+var float __obs_c_size = na
+__obs_c_size := array.size(resC)
+var string __obs_c0 = na
+__obs_c0 := array.get(resC, 0)
+var string __obs_c2 = na
+__obs_c2 := array.get(resC, 2)
+
+// D: empty source string — Python "".split(",") == [""] (single empty-string element, size 1).
+resD = str.split("", ",")
+var float __obs_d_size = na
+__obs_d_size := array.size(resD)
+var string __obs_d0 = na
+__obs_d0 := array.get(resD, 0)
+
+// E: separator not present in source — whole string is a single element.
+resE = str.split("abc", ",")
+var float __obs_e_size = na
+__obs_e_size := array.size(resE)
+var string __obs_e0 = na
+__obs_e0 := array.get(resE, 0)
+
+// F: multi-character separator.
+resF = str.split("aXXbXXc", "XX")
+var float __obs_f_size = na
+__obs_f_size := array.size(resF)
+var string __obs_f0 = na
+__obs_f0 := array.get(resF, 0)
+var string __obs_f1 = na
+__obs_f1 := array.get(resF, 1)
+var string __obs_f2 = na
+__obs_f2 := array.get(resF, 2)

@@ -1,0 +1,6 @@
+//@version=5
+indicator("scope isolation")
+var float outer = 0.0
+if close > open
+    float inner = close
+    outer := inner

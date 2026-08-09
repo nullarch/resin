@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Cust Mom")
+mom3 = close - close[3]
+mom5 = not na(close[5]) ? close - close[5] : 0.0
+customMom = nz(mom3, 0.0) * 0.6 + nz(mom5, 0.0) * 0.4
+plot(customMom, "CM")

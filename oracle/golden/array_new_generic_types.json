@@ -1,0 +1,1172 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:entries": [
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))"
+   ],
+   "var:__obs_entries_size": 1,
+   "var:labels": [
+    {
+     "type": "label",
+     "id": 1933003146560
+    },
+    {
+     "type": "label",
+     "id": 1933814123264
+    },
+    {
+     "type": "label",
+     "id": 1933814283264
+    },
+    {
+     "type": "label",
+     "id": 1933814481856
+    },
+    {
+     "type": "label",
+     "id": 1933814483136
+    },
+    {
+     "type": "label",
+     "id": 1933814486720
+    },
+    {
+     "type": "label",
+     "id": 1933814489152
+    },
+    {
+     "type": "label",
+     "id": 1933814490560
+    },
+    {
+     "type": "label",
+     "id": 1933814492480
+    },
+    {
+     "type": "label",
+     "id": 1933814371072
+    }
+   ],
+   "var:__obs_labels_size": 1,
+   "var:pts": [
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    }
+   ],
+   "var:__obs_pts_size": 1
+  },
+  {
+   "var:entries": [
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))"
+   ],
+   "var:__obs_entries_size": 1,
+   "var:labels": [
+    {
+     "type": "label",
+     "id": 1933003146560
+    },
+    {
+     "type": "label",
+     "id": 1933814123264
+    },
+    {
+     "type": "label",
+     "id": 1933814283264
+    },
+    {
+     "type": "label",
+     "id": 1933814481856
+    },
+    {
+     "type": "label",
+     "id": 1933814483136
+    },
+    {
+     "type": "label",
+     "id": 1933814486720
+    },
+    {
+     "type": "label",
+     "id": 1933814489152
+    },
+    {
+     "type": "label",
+     "id": 1933814490560
+    },
+    {
+     "type": "label",
+     "id": 1933814492480
+    },
+    {
+     "type": "label",
+     "id": 1933814371072
+    }
+   ],
+   "var:__obs_labels_size": 2,
+   "var:pts": [
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    }
+   ],
+   "var:__obs_pts_size": 2
+  },
+  {
+   "var:entries": [
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))"
+   ],
+   "var:__obs_entries_size": 2,
+   "var:labels": [
+    {
+     "type": "label",
+     "id": 1933003146560
+    },
+    {
+     "type": "label",
+     "id": 1933814123264
+    },
+    {
+     "type": "label",
+     "id": 1933814283264
+    },
+    {
+     "type": "label",
+     "id": 1933814481856
+    },
+    {
+     "type": "label",
+     "id": 1933814483136
+    },
+    {
+     "type": "label",
+     "id": 1933814486720
+    },
+    {
+     "type": "label",
+     "id": 1933814489152
+    },
+    {
+     "type": "label",
+     "id": 1933814490560
+    },
+    {
+     "type": "label",
+     "id": 1933814492480
+    },
+    {
+     "type": "label",
+     "id": 1933814371072
+    }
+   ],
+   "var:__obs_labels_size": 3,
+   "var:pts": [
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    }
+   ],
+   "var:__obs_pts_size": 3
+  },
+  {
+   "var:entries": [
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))"
+   ],
+   "var:__obs_entries_size": 2,
+   "var:labels": [
+    {
+     "type": "label",
+     "id": 1933003146560
+    },
+    {
+     "type": "label",
+     "id": 1933814123264
+    },
+    {
+     "type": "label",
+     "id": 1933814283264
+    },
+    {
+     "type": "label",
+     "id": 1933814481856
+    },
+    {
+     "type": "label",
+     "id": 1933814483136
+    },
+    {
+     "type": "label",
+     "id": 1933814486720
+    },
+    {
+     "type": "label",
+     "id": 1933814489152
+    },
+    {
+     "type": "label",
+     "id": 1933814490560
+    },
+    {
+     "type": "label",
+     "id": 1933814492480
+    },
+    {
+     "type": "label",
+     "id": 1933814371072
+    }
+   ],
+   "var:__obs_labels_size": 4,
+   "var:pts": [
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    }
+   ],
+   "var:__obs_pts_size": 4
+  },
+  {
+   "var:entries": [
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))"
+   ],
+   "var:__obs_entries_size": 3,
+   "var:labels": [
+    {
+     "type": "label",
+     "id": 1933003146560
+    },
+    {
+     "type": "label",
+     "id": 1933814123264
+    },
+    {
+     "type": "label",
+     "id": 1933814283264
+    },
+    {
+     "type": "label",
+     "id": 1933814481856
+    },
+    {
+     "type": "label",
+     "id": 1933814483136
+    },
+    {
+     "type": "label",
+     "id": 1933814486720
+    },
+    {
+     "type": "label",
+     "id": 1933814489152
+    },
+    {
+     "type": "label",
+     "id": 1933814490560
+    },
+    {
+     "type": "label",
+     "id": 1933814492480
+    },
+    {
+     "type": "label",
+     "id": 1933814371072
+    }
+   ],
+   "var:__obs_labels_size": 5,
+   "var:pts": [
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    }
+   ],
+   "var:__obs_pts_size": 5
+  },
+  {
+   "var:entries": [
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))"
+   ],
+   "var:__obs_entries_size": 3,
+   "var:labels": [
+    {
+     "type": "label",
+     "id": 1933003146560
+    },
+    {
+     "type": "label",
+     "id": 1933814123264
+    },
+    {
+     "type": "label",
+     "id": 1933814283264
+    },
+    {
+     "type": "label",
+     "id": 1933814481856
+    },
+    {
+     "type": "label",
+     "id": 1933814483136
+    },
+    {
+     "type": "label",
+     "id": 1933814486720
+    },
+    {
+     "type": "label",
+     "id": 1933814489152
+    },
+    {
+     "type": "label",
+     "id": 1933814490560
+    },
+    {
+     "type": "label",
+     "id": 1933814492480
+    },
+    {
+     "type": "label",
+     "id": 1933814371072
+    }
+   ],
+   "var:__obs_labels_size": 6,
+   "var:pts": [
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    }
+   ],
+   "var:__obs_pts_size": 6
+  },
+  {
+   "var:entries": [
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))"
+   ],
+   "var:__obs_entries_size": 4,
+   "var:labels": [
+    {
+     "type": "label",
+     "id": 1933003146560
+    },
+    {
+     "type": "label",
+     "id": 1933814123264
+    },
+    {
+     "type": "label",
+     "id": 1933814283264
+    },
+    {
+     "type": "label",
+     "id": 1933814481856
+    },
+    {
+     "type": "label",
+     "id": 1933814483136
+    },
+    {
+     "type": "label",
+     "id": 1933814486720
+    },
+    {
+     "type": "label",
+     "id": 1933814489152
+    },
+    {
+     "type": "label",
+     "id": 1933814490560
+    },
+    {
+     "type": "label",
+     "id": 1933814492480
+    },
+    {
+     "type": "label",
+     "id": 1933814371072
+    }
+   ],
+   "var:__obs_labels_size": 7,
+   "var:pts": [
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    }
+   ],
+   "var:__obs_pts_size": 7
+  },
+  {
+   "var:entries": [
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))"
+   ],
+   "var:__obs_entries_size": 4,
+   "var:labels": [
+    {
+     "type": "label",
+     "id": 1933003146560
+    },
+    {
+     "type": "label",
+     "id": 1933814123264
+    },
+    {
+     "type": "label",
+     "id": 1933814283264
+    },
+    {
+     "type": "label",
+     "id": 1933814481856
+    },
+    {
+     "type": "label",
+     "id": 1933814483136
+    },
+    {
+     "type": "label",
+     "id": 1933814486720
+    },
+    {
+     "type": "label",
+     "id": 1933814489152
+    },
+    {
+     "type": "label",
+     "id": 1933814490560
+    },
+    {
+     "type": "label",
+     "id": 1933814492480
+    },
+    {
+     "type": "label",
+     "id": 1933814371072
+    }
+   ],
+   "var:__obs_labels_size": 8,
+   "var:pts": [
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    }
+   ],
+   "var:__obs_pts_size": 8
+  },
+  {
+   "var:entries": [
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))"
+   ],
+   "var:__obs_entries_size": 5,
+   "var:labels": [
+    {
+     "type": "label",
+     "id": 1933003146560
+    },
+    {
+     "type": "label",
+     "id": 1933814123264
+    },
+    {
+     "type": "label",
+     "id": 1933814283264
+    },
+    {
+     "type": "label",
+     "id": 1933814481856
+    },
+    {
+     "type": "label",
+     "id": 1933814483136
+    },
+    {
+     "type": "label",
+     "id": 1933814486720
+    },
+    {
+     "type": "label",
+     "id": 1933814489152
+    },
+    {
+     "type": "label",
+     "id": 1933814490560
+    },
+    {
+     "type": "label",
+     "id": 1933814492480
+    },
+    {
+     "type": "label",
+     "id": 1933814371072
+    }
+   ],
+   "var:__obs_labels_size": 9,
+   "var:pts": [
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    }
+   ],
+   "var:__obs_pts_size": 9
+  },
+  {
+   "var:entries": [
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+    "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))"
+   ],
+   "var:__obs_entries_size": 5,
+   "var:labels": [
+    {
+     "type": "label",
+     "id": 1933003146560
+    },
+    {
+     "type": "label",
+     "id": 1933814123264
+    },
+    {
+     "type": "label",
+     "id": 1933814283264
+    },
+    {
+     "type": "label",
+     "id": 1933814481856
+    },
+    {
+     "type": "label",
+     "id": 1933814483136
+    },
+    {
+     "type": "label",
+     "id": 1933814486720
+    },
+    {
+     "type": "label",
+     "id": 1933814489152
+    },
+    {
+     "type": "label",
+     "id": 1933814490560
+    },
+    {
+     "type": "label",
+     "id": 1933814492480
+    },
+    {
+     "type": "label",
+     "id": 1933814371072
+    }
+   ],
+   "var:__obs_labels_size": 10,
+   "var:pts": [
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    },
+    {
+     "time": null,
+     "index": 9,
+     "price": 108
+    }
+   ],
+   "var:__obs_pts_size": 10
+  }
+ ],
+ "finalVarState": {
+  "entries": [
+   "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+   "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+   "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+   "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))",
+   "pine_fn.<locals>.Entry(price=Series(current=108, length=10), idx=Series(current=9, length=10))"
+  ],
+  "__obs_entries_size": 5,
+  "labels": [
+   {
+    "type": "label",
+    "id": 1933003146560
+   },
+   {
+    "type": "label",
+    "id": 1933814123264
+   },
+   {
+    "type": "label",
+    "id": 1933814283264
+   },
+   {
+    "type": "label",
+    "id": 1933814481856
+   },
+   {
+    "type": "label",
+    "id": 1933814483136
+   },
+   {
+    "type": "label",
+    "id": 1933814486720
+   },
+   {
+    "type": "label",
+    "id": 1933814489152
+   },
+   {
+    "type": "label",
+    "id": 1933814490560
+   },
+   {
+    "type": "label",
+    "id": 1933814492480
+   },
+   {
+    "type": "label",
+    "id": 1933814371072
+   }
+  ],
+  "__obs_labels_size": 10,
+  "pts": [
+   {
+    "time": null,
+    "index": 9,
+    "price": 108
+   },
+   {
+    "time": null,
+    "index": 9,
+    "price": 108
+   },
+   {
+    "time": null,
+    "index": 9,
+    "price": 108
+   },
+   {
+    "time": null,
+    "index": 9,
+    "price": 108
+   },
+   {
+    "time": null,
+    "index": 9,
+    "price": 108
+   },
+   {
+    "time": null,
+    "index": 9,
+    "price": 108
+   },
+   {
+    "time": null,
+    "index": 9,
+    "price": 108
+   },
+   {
+    "time": null,
+    "index": 9,
+    "price": 108
+   },
+   {
+    "time": null,
+    "index": 9,
+    "price": 108
+   },
+   {
+    "time": null,
+    "index": 9,
+    "price": 108
+   }
+  ],
+  "__obs_pts_size": 10
+ }
+}

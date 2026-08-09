@@ -1,0 +1,12 @@
+//@version=5
+indicator("Bug Algo")
+var bool following = false
+float obstacle = 105.0
+float tolerance = 1.5
+float dist = math.abs(close - obstacle)
+if dist < tolerance and not following
+    following := true
+if dist > tolerance * 2.0 and following
+    following := false
+float heading = following ? 90.0 : 0.0
+float speed = following ? 0.5 : 1.0

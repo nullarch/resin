@@ -1,0 +1,7 @@
+//@version=5
+indicator("alert log")
+alertcondition(close > open, "Bull Bar")
+alert("test", alert.freq_once_per_bar)
+log.info("close={0}", close)
+if false
+    runtime.error("never")

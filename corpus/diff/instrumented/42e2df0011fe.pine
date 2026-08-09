@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Pat Wt")
+body = math.abs(close - open)
+range_ = high - low
+ratio = range_ > 0 ? body / range_ : 0.0
+weight = ratio > 0.8 ? 3.0 : ratio > 0.5 ? 2.0 : ratio > 0.2 ? 1.0 : 0.5
+dirWeight = close > open ? weight : -weight
+var float __obs_plot0 = na
+__obs_plot0 := dirWeight
+plot(dirWeight, "DW")

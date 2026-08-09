@@ -1,0 +1,21 @@
+//@version=5
+indicator("udf_param_shadows_var")
+// C414: UDF 매개변수명이 top-level var와 같을 때(TV 스코프상 매개변수가 함수 본문 안에서 그
+// 이름의 바깥 var를 shadow) — wild 34건 실사용(e.g. `update_zigzag(..., int dir) => ... dir ...`가
+// top-level `var int dir`와 공존, 함수 본문 안의 dir은 인자로 넘어온 값만 가리킴). pine2py python
+// 함수 매개변수가 동일 이름으로 자연히 shadow함을 python 직접 실행으로 확인(오라클 대조 가능 축).
+// __obs_call: f(bar_index)*2가 나와야 함 — 만약 codegen이 매개변수 대신 바깥 var 슬롯을 잘못
+// 읽으면 (dir+1)*2(바깥 var 값)가 나와 즉시 달라진다.
+// __obs_var: 바깥 var dir 자신은 함수 호출과 완전히 무관하게 매 바 그대로 증가해야 한다.
+
+var int dir = 100
+dir := dir + 1
+
+f(int dir) =>
+    dir * 2
+
+var float __obs_call = na
+__obs_call := f(bar_index)
+
+var float __obs_var = na
+__obs_var := dir

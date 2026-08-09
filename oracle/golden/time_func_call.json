@@ -1,0 +1,116 @@
+{
+ "ok": true,
+ "data": "time_func_call.json",
+ "bars": [
+  {
+   "var:__obs_year_call": 2024,
+   "var:__obs_month_call": 1,
+   "var:__obs_dayofmonth_call": 1,
+   "var:__obs_dayofweek_call": 2,
+   "var:__obs_hour_call": 0,
+   "var:__obs_minute_call": 0,
+   "var:__obs_second_call": 0,
+   "var:__obs_hour_offset": 23
+  },
+  {
+   "var:__obs_year_call": 2024,
+   "var:__obs_month_call": 2,
+   "var:__obs_dayofmonth_call": 29,
+   "var:__obs_dayofweek_call": 5,
+   "var:__obs_hour_call": 13,
+   "var:__obs_minute_call": 45,
+   "var:__obs_second_call": 30,
+   "var:__obs_hour_offset": 12
+  },
+  {
+   "var:__obs_year_call": 2023,
+   "var:__obs_month_call": 12,
+   "var:__obs_dayofmonth_call": 31,
+   "var:__obs_dayofweek_call": 1,
+   "var:__obs_hour_call": 23,
+   "var:__obs_minute_call": 59,
+   "var:__obs_second_call": 59,
+   "var:__obs_hour_offset": 22
+  },
+  {
+   "var:__obs_year_call": 2024,
+   "var:__obs_month_call": 7,
+   "var:__obs_dayofmonth_call": 4,
+   "var:__obs_dayofweek_call": 5,
+   "var:__obs_hour_call": 8,
+   "var:__obs_minute_call": 20,
+   "var:__obs_second_call": 11,
+   "var:__obs_hour_offset": 7
+  },
+  {
+   "var:__obs_year_call": 2020,
+   "var:__obs_month_call": 1,
+   "var:__obs_dayofmonth_call": 1,
+   "var:__obs_dayofweek_call": 4,
+   "var:__obs_hour_call": 0,
+   "var:__obs_minute_call": 0,
+   "var:__obs_second_call": 1,
+   "var:__obs_hour_offset": 23
+  },
+  {
+   "var:__obs_year_call": 2024,
+   "var:__obs_month_call": 1,
+   "var:__obs_dayofmonth_call": 6,
+   "var:__obs_dayofweek_call": 7,
+   "var:__obs_hour_call": 0,
+   "var:__obs_minute_call": 0,
+   "var:__obs_second_call": 0,
+   "var:__obs_hour_offset": 23
+  },
+  {
+   "var:__obs_year_call": 2024,
+   "var:__obs_month_call": 1,
+   "var:__obs_dayofmonth_call": 10,
+   "var:__obs_dayofweek_call": 4,
+   "var:__obs_hour_call": 0,
+   "var:__obs_minute_call": 0,
+   "var:__obs_second_call": 0,
+   "var:__obs_hour_offset": 23
+  },
+  {
+   "var:__obs_year_call": 2024,
+   "var:__obs_month_call": 1,
+   "var:__obs_dayofmonth_call": 11,
+   "var:__obs_dayofweek_call": 5,
+   "var:__obs_hour_call": 0,
+   "var:__obs_minute_call": 0,
+   "var:__obs_second_call": 0,
+   "var:__obs_hour_offset": 23
+  },
+  {
+   "var:__obs_year_call": 2024,
+   "var:__obs_month_call": 1,
+   "var:__obs_dayofmonth_call": 12,
+   "var:__obs_dayofweek_call": 6,
+   "var:__obs_hour_call": 0,
+   "var:__obs_minute_call": 0,
+   "var:__obs_second_call": 0,
+   "var:__obs_hour_offset": 23
+  },
+  {
+   "var:__obs_year_call": 2024,
+   "var:__obs_month_call": 1,
+   "var:__obs_dayofmonth_call": 13,
+   "var:__obs_dayofweek_call": 7,
+   "var:__obs_hour_call": 0,
+   "var:__obs_minute_call": 0,
+   "var:__obs_second_call": 0,
+   "var:__obs_hour_offset": 23
+  }
+ ],
+ "finalVarState": {
+  "__obs_year_call": 2024,
+  "__obs_month_call": 1,
+  "__obs_dayofmonth_call": 13,
+  "__obs_dayofweek_call": 7,
+  "__obs_hour_call": 0,
+  "__obs_minute_call": 0,
+  "__obs_second_call": 0,
+  "__obs_hour_offset": 23
+ }
+}

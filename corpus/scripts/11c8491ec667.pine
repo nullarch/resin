@@ -1,0 +1,6 @@
+//@version=5
+indicator("BBSqueeze")
+[middle, upper, lower] = ta.bb(close, 5, 2)
+var float lastWidth = 0
+if not na(middle)
+    lastWidth := (upper - lower) / middle * 100

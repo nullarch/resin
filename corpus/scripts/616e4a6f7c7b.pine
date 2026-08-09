@@ -1,0 +1,11 @@
+//@version=5
+indicator("Map Iterate")
+var float result = 0.0
+map<string, float> m = map.new<string, float>()
+m.put("a", 1.0)
+m.put("b", 2.0)
+m.put("c", 3.0)
+float total = 0.0
+for [k, v] in m
+    total += v
+result := total

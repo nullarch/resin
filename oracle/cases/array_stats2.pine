@@ -1,0 +1,90 @@
+//@version=5
+indicator("array_stats2")
+
+// A: covariance — index-aligned valid-pair filtering. NaN lands at a *different* position in
+// each array (arrX index 3 via close[15], arrY index 2 via volume[16] — both guaranteed
+// out-of-range across sample10.json's 10 bars) so exactly 2 of the 4 index-aligned pairs
+// (i=0,1) are valid; i=2/3 are each dropped because one side is na.
+arrX = array.new_float(0)
+array.push(arrX, close)
+array.push(arrX, high)
+array.push(arrX, low)
+array.push(arrX, close[15])
+arrY = array.new_float(0)
+array.push(arrY, volume)
+array.push(arrY, open)
+array.push(arrY, volume[16])
+array.push(arrY, low)
+var float __obs_cov = na
+__obs_cov := array.covariance(arrX, arrY)
+
+// B: covariance with fewer than 2 valid pairs -> na.
+arrX1 = array.new_float(0)
+array.push(arrX1, close)
+arrY1 = array.new_float(0)
+array.push(arrY1, volume)
+var float __obs_cov_na = na
+__obs_cov_na := array.covariance(arrX1, arrY1)
+
+// C: percentile_nearest_rank/percentile_linear_interpolation/percentrank on a 4-valid + 1-na
+// mixed-order array (not pre-sorted — exercises the sort path shared with median/C81).
+arrZ = array.new_float(0)
+array.push(arrZ, high)
+array.push(arrZ, low)
+array.push(arrZ, close[15])
+array.push(arrZ, close)
+array.push(arrZ, open)
+var float __obs_pnr50 = na
+__obs_pnr50 := array.percentile_nearest_rank(arrZ, 50.0)
+var float __obs_pli50 = na
+__obs_pli50 := array.percentile_linear_interpolation(arrZ, 50.0)
+var float __obs_pli25 = na
+__obs_pli25 := array.percentile_linear_interpolation(arrZ, 25.0)
+var float __obs_pr = na
+__obs_pr := array.percentrank(arrZ, close)
+
+// D: percentile boundary 0%/100%.
+var float __obs_pnr0 = na
+__obs_pnr0 := array.percentile_nearest_rank(arrZ, 0.0)
+var float __obs_pnr100 = na
+__obs_pnr100 := array.percentile_nearest_rank(arrZ, 100.0)
+
+// E: standardize — normal (sd != 0), mirrored element-by-element via array.get() since
+// gen_oracle.py's enc() would otherwise serialize the array var itself (array_basic/residual/
+// stats' established practice — 'var:arr*' channels excluded from comparison, get() mirrors
+// carry the actual content check).
+sdArr = array.standardize(arrZ)
+var float __obs_sd0 = na
+__obs_sd0 := array.get(sdArr, 0)
+var float __obs_sd1 = na
+__obs_sd1 := array.get(sdArr, 1)
+var float __obs_sd2 = na
+__obs_sd2 := array.get(sdArr, 2)
+var float __obs_sd3 = na
+__obs_sd3 := array.get(sdArr, 3)
+var float __obs_sd4 = na
+__obs_sd4 := array.get(sdArr, 4)
+
+// F: standardize with sd==0 (all-equal literals) -> pine2py's own special-case branch: every
+// element becomes 1.0, and the result length is arr.length (3), not vals.length.
+arrConst = array.new_float(0)
+array.push(arrConst, 5.0)
+array.push(arrConst, 5.0)
+array.push(arrConst, 5.0)
+sdConst = array.standardize(arrConst)
+var float __obs_sdc0 = na
+__obs_sdc0 := array.get(sdConst, 0)
+var float __obs_sdc2 = na
+__obs_sdc2 := array.get(sdConst, 2)
+
+// G: standardize with fewer than 2 valid elements -> literal copy of the original array
+// (na preserved at its original position, not compacted).
+arrFew = array.new_float(0)
+array.push(arrFew, close)
+array.push(arrFew, close[15])
+array.push(arrFew, close[16])
+sdFew = array.standardize(arrFew)
+var float __obs_sdf0 = na
+__obs_sdf0 := array.get(sdFew, 0)
+var float __obs_sdf1 = na
+__obs_sdf1 := array.get(sdFew, 1)

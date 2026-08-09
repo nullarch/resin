@@ -1,0 +1,26 @@
+//@version=5
+indicator("tuple_discard_stmt")
+
+// C610: 문장 위치(값 폐기) bare 튜플 리터럴 — early-exit 가드 관용구(wild 유기적 최다 폼,
+// runtime.error 없이 가드 분기만 재현). if 분기 마지막 튜플은 평가 후 폐기되고 함수는 계속
+// 진행해 마지막 문장의 진짜 튜플을 반환한다. pine2py는 bare Python 리스트 식 문장으로 방출
+// (평가 후 폐기 동일 시맨틱)이라 오라클 대조 가능.
+f(x) =>
+    if x <= 0
+        [na, na]
+    a = x * 2.0
+    b = x + 1.0
+    [a, b]
+
+// close는 101~108로 104를 걸쳐 오르내림(sample10) — 가드 분기가 타는 바(x<=0)와 안 타는
+// 바가 섞여 폐기 경로/정상 경로 양쪽이 실제로 실행된다(C223: close-open은 상수 오프셋 함정).
+[p, q] = f(close - 104)
+
+// top-level 문장 위치 if 분기 말미 튜플 폐기(같은 축의 두 번째 위치)
+if close > open
+    [na, na]
+
+var float __obs_p = na
+__obs_p := p
+var float __obs_q = na
+__obs_q := q

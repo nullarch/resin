@@ -1,0 +1,7 @@
+//@version=5
+indicator("test")
+var string result = ""
+result := ""
+for i = 1 to 3
+    result := result + str.tostring(i) + ","
+plot(str.length(result))

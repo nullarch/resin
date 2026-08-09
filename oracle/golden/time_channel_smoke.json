@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "time_channel_smoke.json",
+ "bars": [
+  {
+   "var:acc": 101.0,
+   "var:__obs_sma3": "NaN"
+  },
+  {
+   "var:acc": 203.0,
+   "var:__obs_sma3": "NaN"
+  },
+  {
+   "var:acc": 306.0,
+   "var:__obs_sma3": 102.0
+  },
+  {
+   "var:acc": 408.0,
+   "var:__obs_sma3": 102.3333333333
+  },
+  {
+   "var:acc": 512.0,
+   "var:__obs_sma3": 103.0
+  },
+  {
+   "var:acc": 617.0,
+   "var:__obs_sma3": 103.6666666667
+  },
+  {
+   "var:acc": 723.0,
+   "var:__obs_sma3": 105.0
+  },
+  {
+   "var:acc": 828.0,
+   "var:__obs_sma3": 105.3333333333
+  },
+  {
+   "var:acc": 935.0,
+   "var:__obs_sma3": 106.0
+  },
+  {
+   "var:acc": 1043.0,
+   "var:__obs_sma3": 106.6666666667
+  }
+ ],
+ "finalVarState": {
+  "acc": 1043.0,
+  "__obs_sma3": 106.6666666667
+ }
+}

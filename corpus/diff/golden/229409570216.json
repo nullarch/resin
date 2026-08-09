@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:rp": {
+    "max_risk_pct": 2.0,
+    "max_positions": 3.0,
+    "stop_mult": 2.0
+   },
+   "var:__obs_plot0": 1.03
+  },
+  {
+   "var:rp": {
+    "max_risk_pct": 2.0,
+    "max_positions": 3.0,
+    "stop_mult": 2.0
+   },
+   "var:__obs_plot0": 1.04
+  },
+  {
+   "var:rp": {
+    "max_risk_pct": 2.0,
+    "max_positions": 3.0,
+    "stop_mult": 2.0
+   },
+   "var:__obs_plot0": 1.02
+  },
+  {
+   "var:rp": {
+    "max_risk_pct": 2.0,
+    "max_positions": 3.0,
+    "stop_mult": 2.0
+   },
+   "var:__obs_plot0": 0.18529411764596887
+  },
+  {
+   "var:rp": {
+    "max_risk_pct": 2.0,
+    "max_positions": 3.0,
+    "stop_mult": 2.0
+   },
+   "var:__obs_plot0": 0.18519230769159542
+  },
+  {
+   "var:rp": {
+    "max_risk_pct": 2.0,
+    "max_positions": 3.0,
+    "stop_mult": 2.0
+   },
+   "var:__obs_plot0": 0.1870588235283114
+  },
+  {
+   "var:rp": {
+    "max_risk_pct": 2.0,
+    "max_positions": 3.0,
+    "stop_mult": 2.0
+   },
+   "var:__obs_plot0": 0.18692307692235802
+  },
+  {
+   "var:rp": {
+    "max_risk_pct": 2.0,
+    "max_positions": 3.0,
+    "stop_mult": 2.0
+   },
+   "var:__obs_plot0": 0.18797468354275718
+  },
+  {
+   "var:rp": {
+    "max_risk_pct": 2.0,
+    "max_positions": 3.0,
+    "stop_mult": 2.0
+   },
+   "var:__obs_plot0": 0.18470711297074996
+  },
+  {
+   "var:rp": {
+    "max_risk_pct": 2.0,
+    "max_positions": 3.0,
+    "stop_mult": 2.0
+   },
+   "var:__obs_plot0": 0.18705270457700238
+  }
+ ],
+ "finalVarState": {
+  "rp": {
+   "max_risk_pct": 2.0,
+   "max_positions": 3.0,
+   "stop_mult": 2.0
+  },
+  "__obs_plot0": 0.18705270457700238
+ }
+}

@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("KAMA Style")
+fast = ta.ema(close, 2)
+slow = ta.ema(close, 30 > 10 ? 8 : 5)
+adaptive = ta.ema(close, 5)
+spread = fast - slow
+plot(adaptive, "Adaptive")
+plot(spread, "Spread")

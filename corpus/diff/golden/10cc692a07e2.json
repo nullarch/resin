@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:invested": 10000.0,
+   "var:cash": 0.0,
+   "var:isInvested": true,
+   "var:__obs_plot0": 10000.0
+  },
+  {
+   "var:invested": 10097.087378640777,
+   "var:cash": 0.0,
+   "var:isInvested": true,
+   "var:__obs_plot0": 10097.087378640777
+  },
+  {
+   "var:invested": 9902.912621359224,
+   "var:cash": 0.0,
+   "var:isInvested": true,
+   "var:__obs_plot0": 9902.912621359224
+  },
+  {
+   "var:invested": 10194.174757281553,
+   "var:cash": 0.0,
+   "var:isInvested": true,
+   "var:__obs_plot0": 10194.174757281553
+  },
+  {
+   "var:invested": 10388.349514563106,
+   "var:cash": 0.0,
+   "var:isInvested": true,
+   "var:__obs_plot0": 10388.349514563106
+  },
+  {
+   "var:invested": 10291.262135922329,
+   "var:cash": 0.0,
+   "var:isInvested": true,
+   "var:__obs_plot0": 10291.262135922329
+  },
+  {
+   "var:invested": 10485.436893203881,
+   "var:cash": 0.0,
+   "var:isInvested": true,
+   "var:__obs_plot0": 10485.436893203881
+  },
+  {
+   "var:invested": 10679.611650485436,
+   "var:cash": 0.0,
+   "var:isInvested": true,
+   "var:__obs_plot0": 10679.611650485436
+  },
+  {
+   "var:invested": 10582.52427184466,
+   "var:cash": 0.0,
+   "var:isInvested": true,
+   "var:__obs_plot0": 10582.52427184466
+  },
+  {
+   "var:invested": 10776.699029126214,
+   "var:cash": 0.0,
+   "var:isInvested": true,
+   "var:__obs_plot0": 10776.699029126214
+  }
+ ],
+ "finalVarState": {
+  "invested": 10776.699029126214,
+  "cash": 0.0,
+  "isInvested": true,
+  "__obs_plot0": 10776.699029126214
+ }
+}

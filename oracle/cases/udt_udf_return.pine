@@ -1,0 +1,39 @@
+//@version=5
+indicator("udt_udf_return")
+// UDF 반환값이 UDT 인스턴스일 때 그 반환값을 받는 '=' 로컬의 필드 접근 신규 지원(C253, corpus
+// "네임스페이스 접근은 호출식만 지원" 클러스터 -- `sig = calcSignal()` 후 `sig.value` 패턴).
+// 세 채널: (A) 마지막 문장이 직접 생성자 콜인 UDF, (B) 마지막 문장이 UDF 자신의 body 안 '=' 로컬
+// UDT 변수를 그대로 반환하는 UDF, (C) '=' 로컬 대입 자체가 삼항(양쪽 분기 모두 같은 UDT 생성자).
+
+type Signal
+    float value = 0.0
+    int direction = 0
+
+// 채널 A
+calcSignal(src) =>
+    Signal.new(src + 0.0, src > 0 ? 1 : -1)
+
+sigA = calcSignal(close - close[1])
+var float __obs_a_value = na
+__obs_a_value := sigA.value
+var int __obs_a_direction = na
+__obs_a_direction := sigA.direction
+
+// 채널 B
+getSignalB(src) =>
+    s = Signal.new(src + 0.0, 0)
+    s.direction := s.value > 0 ? 1 : -1
+    s
+
+sigB = getSignalB(close - open)
+var float __obs_b_value = na
+__obs_b_value := sigB.value
+var int __obs_b_direction = na
+__obs_b_direction := sigB.direction
+
+// 채널 C
+sigC = close > open ? Signal.new(close + 0.0, 1) : Signal.new(close + 0.0, -1)
+var float __obs_c_value = na
+__obs_c_value := sigC.value
+var int __obs_c_direction = na
+__obs_c_direction := sigC.direction

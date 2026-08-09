@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:weights": {
+    "asset1": 0.5,
+    "asset2": 0.3,
+    "asset3": 0.2
+   },
+   "var:__obs_plot0": 103.0
+  },
+  {
+   "var:weights": {
+    "asset1": 0.5,
+    "asset2": 0.3,
+    "asset3": 0.2
+   },
+   "var:__obs_plot0": 104.0
+  },
+  {
+   "var:weights": {
+    "asset1": 0.5,
+    "asset2": 0.3,
+    "asset3": 0.2
+   },
+   "var:__obs_plot0": 102.0
+  },
+  {
+   "var:weights": {
+    "asset1": 0.5,
+    "asset2": 0.3,
+    "asset3": 0.2
+   },
+   "var:__obs_plot0": 105.0
+  },
+  {
+   "var:weights": {
+    "asset1": 0.5,
+    "asset2": 0.3,
+    "asset3": 0.2
+   },
+   "var:__obs_plot0": 107.0
+  },
+  {
+   "var:weights": {
+    "asset1": 0.5,
+    "asset2": 0.3,
+    "asset3": 0.2
+   },
+   "var:__obs_plot0": 106.0
+  },
+  {
+   "var:weights": {
+    "asset1": 0.5,
+    "asset2": 0.3,
+    "asset3": 0.2
+   },
+   "var:__obs_plot0": 108.0
+  },
+  {
+   "var:weights": {
+    "asset1": 0.5,
+    "asset2": 0.3,
+    "asset3": 0.2
+   },
+   "var:__obs_plot0": 110.0
+  },
+  {
+   "var:weights": {
+    "asset1": 0.5,
+    "asset2": 0.3,
+    "asset3": 0.2
+   },
+   "var:__obs_plot0": 108.99999999999999
+  },
+  {
+   "var:weights": {
+    "asset1": 0.5,
+    "asset2": 0.3,
+    "asset3": 0.2
+   },
+   "var:__obs_plot0": 111.0
+  }
+ ],
+ "finalVarState": {
+  "weights": {
+   "asset1": 0.5,
+   "asset2": 0.3,
+   "asset3": 0.2
+  },
+  "__obs_plot0": 111.0
+ }
+}

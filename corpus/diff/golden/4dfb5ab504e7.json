@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:signalBar": 0,
+   "var:signalPrice": 0.0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:signalBar": 0,
+   "var:signalPrice": 0.0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:signalBar": 0,
+   "var:signalPrice": 0.0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:signalBar": 2,
+   "var:signalPrice": 105,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:signalBar": 3,
+   "var:signalPrice": 105,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:signalBar": 0,
+   "var:signalPrice": 105,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:signalBar": 2,
+   "var:signalPrice": 108,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:signalBar": 3,
+   "var:signalPrice": 108,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:signalBar": 0,
+   "var:signalPrice": 108,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:signalBar": 2,
+   "var:signalPrice": 111,
+   "var:__obs_plot0": 0
+  }
+ ],
+ "finalVarState": {
+  "signalBar": 2,
+  "signalPrice": 111,
+  "__obs_plot0": 0
+ }
+}

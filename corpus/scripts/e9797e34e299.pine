@@ -1,0 +1,7 @@
+//@version=5
+indicator("Multiline Arith")
+total = close +
+    open +
+    high +
+    low
+plot(total / 4)

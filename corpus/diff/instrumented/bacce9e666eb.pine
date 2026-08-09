@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("EMA Ribbon")
+e3 = ta.ema(close, 3)
+e5 = ta.ema(close, 5)
+e8 = ta.ema(close, 8)
+bullRibbon = e3 > e5 and e5 > e8
+bearRibbon = e3 < e5 and e5 < e8
+strength = bullRibbon ? 2 : bearRibbon ? -2 : 0
+var int bullStreak = 0
+if bullRibbon
+    bullStreak := bullStreak + 1
+else
+    bullStreak := 0
+var float __obs_plot0 = na
+__obs_plot0 := strength
+plot(strength, "Strength")

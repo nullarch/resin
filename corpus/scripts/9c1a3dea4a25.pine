@@ -1,0 +1,6 @@
+//@version=5
+indicator("shadow func")
+float x = 999.0
+myFunc(float x) =>
+    x * 2.0
+result = myFunc(5.0)

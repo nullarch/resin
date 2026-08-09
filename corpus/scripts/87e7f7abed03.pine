@@ -1,0 +1,4 @@
+//@version=5
+indicator("syminfo")
+var string sym = ""
+sym := syminfo.ticker

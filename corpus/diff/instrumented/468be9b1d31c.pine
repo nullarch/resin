@@ -1,0 +1,7 @@
+//@version=5
+indicator("Valuewhen")
+bullish = close > open
+lastBullClose = ta.valuewhen(bullish, close, 0)
+var float __obs_plot0 = na
+__obs_plot0 := lastBullClose
+plot(lastBullClose)

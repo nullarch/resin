@@ -1,0 +1,9 @@
+//@version=5
+indicator("UDTDefault")
+type Config
+    float threshold = 50.0
+    int length = 14
+    bool active = true
+var float result = 0
+cfg = Config.new()
+result := cfg.threshold + cfg.length

@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("EnumRegime")
+enum Regime
+    Trending = 1
+    MeanReverting = 2
+    Volatile = 3
+
+atr = nz(ta.atr(3), 1.0)
+smaVal = nz(ta.sma(close, 5), close)
+slope = math.abs(close - smaVal)
+reg = atr > 2.0 ? Regime.Volatile : slope > 1.0 ? Regime.Trending : Regime.MeanReverting
+val = reg == Regime.Trending ? 1.0 : reg == Regime.MeanReverting ? 2.0 : 3.0
+plot(val, "RV")

@@ -1,0 +1,6 @@
+//@version=5
+indicator("Dev")
+var float lastD = 0
+d = ta.dev(close, 5)
+if not na(d)
+    lastD := d

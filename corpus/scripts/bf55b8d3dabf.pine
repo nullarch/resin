@@ -1,0 +1,6 @@
+//@version=5
+indicator("DMI")
+var float lastADX = 0
+[diPlus, diMinus, adx] = ta.dmi(5, 5)
+if not na(adx)
+    lastADX := adx

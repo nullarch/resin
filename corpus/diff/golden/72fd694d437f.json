@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:t": "pine_fn.<locals>.MyType(value=Series(current=111, length=10), label='')",
+   "var:__obs_plot0": 103
+  },
+  {
+   "var:t": "pine_fn.<locals>.MyType(value=Series(current=111, length=10), label='')",
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:t": "pine_fn.<locals>.MyType(value=Series(current=111, length=10), label='')",
+   "var:__obs_plot0": 102
+  },
+  {
+   "var:t": "pine_fn.<locals>.MyType(value=Series(current=111, length=10), label='')",
+   "var:__obs_plot0": 105
+  },
+  {
+   "var:t": "pine_fn.<locals>.MyType(value=Series(current=111, length=10), label='')",
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:t": "pine_fn.<locals>.MyType(value=Series(current=111, length=10), label='')",
+   "var:__obs_plot0": 106
+  },
+  {
+   "var:t": "pine_fn.<locals>.MyType(value=Series(current=111, length=10), label='')",
+   "var:__obs_plot0": 108
+  },
+  {
+   "var:t": "pine_fn.<locals>.MyType(value=Series(current=111, length=10), label='')",
+   "var:__obs_plot0": 110
+  },
+  {
+   "var:t": "pine_fn.<locals>.MyType(value=Series(current=111, length=10), label='')",
+   "var:__obs_plot0": 109
+  },
+  {
+   "var:t": "pine_fn.<locals>.MyType(value=Series(current=111, length=10), label='')",
+   "var:__obs_plot0": 111
+  }
+ ],
+ "finalVarState": {
+  "t": "pine_fn.<locals>.MyType(value=Series(current=111, length=10), label='')",
+  "__obs_plot0": 111
+ }
+}

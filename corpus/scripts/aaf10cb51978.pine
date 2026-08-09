@@ -1,0 +1,8 @@
+//@version=5
+indicator("Fragmentation")
+float totalMem = 1024.0
+float allocated = close * 5.0
+float freeMem = totalMem - allocated
+float numFreeBlocks = math.floor(freeMem / 32.0)
+float largestBlock = freeMem / (numFreeBlocks > 0 ? numFreeBlocks : 1.0)
+float fragRatio = freeMem > 0.01 ? 1.0 - (largestBlock / freeMem) : 0.0

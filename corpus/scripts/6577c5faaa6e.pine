@@ -1,0 +1,10 @@
+//@version=5
+indicator("Map remove contains")
+var m = map.new<string, float>()
+map.put(m, "a", 1.0)
+map.put(m, "b", 2.0)
+map.put(m, "c", 3.0)
+hasA = map.contains(m, "a")
+map.remove(m, "b")
+hasB = map.contains(m, "b")
+sz = map.size(m)

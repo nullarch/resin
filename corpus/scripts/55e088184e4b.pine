@@ -1,0 +1,6 @@
+//@version=5
+indicator("Exponential Growth")
+growthRate = 0.05
+var float population = 100.0
+population := population * (1.0 + growthRate)
+plot(population, "Population")

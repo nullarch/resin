@@ -1,0 +1,4 @@
+//@version=5
+indicator("Session")
+inMarket = session.ismarket
+plot(inMarket ? 1 : 0)

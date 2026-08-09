@@ -1,0 +1,7 @@
+//@version=5
+indicator("ta_cum")
+// ta.cum 오라클 검증(ROADMAP P2 "ta.* 44종" — cum). 인자 1개(source)만 받는 단일 누적합.
+// sample10.json엔 na 입력이 없어 이 오라클로는 "NaN 입력을 0으로 치환"(raw-passthrough/poison
+// 두 기존 패턴과 다른 세 번째 NaN 처리 방식) 분기는 검증 불가 — hand-verified 테스트로 대체.
+var float __obs_cum = na
+__obs_cum := ta.cum(close)

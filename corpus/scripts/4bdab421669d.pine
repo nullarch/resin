@@ -1,0 +1,9 @@
+//@version=5
+indicator("RSA Modular Exp")
+modulus = 143.0
+exponent = 7.0
+message = math.floor(math.abs(close - 100.0))
+message := math.max(1.0, math.min(message, 10.0))
+result = math.pow(message, exponent)
+cipher = result - math.floor(result / modulus) * modulus
+plot(cipher)

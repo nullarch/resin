@@ -1,0 +1,7 @@
+//@version=5
+indicator("Wind Direction")
+var float windDir = 0.0
+getDir(src, prev) =>
+    src > prev ? 1.0 : src < prev ? -1.0 : 0.0
+prevClose = not na(close[1]) ? close[1] : close
+windDir := getDir(close, prevClose)

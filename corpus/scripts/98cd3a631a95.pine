@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Score Hist")
+var float[] scores = array.new_float(0)
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+score = (close > sma3 ? 1 : -1) + (rsi - 50) / 50
+array.push(scores, score)
+if array.size(scores) > 10
+    array.shift(scores)
+avgScore = array.size(scores) > 0 ? array.avg(scores) : 0.0
+trend = avgScore > 0.5 ? 1 : avgScore < -0.5 ? -1 : 0
+plot(trend, "T")

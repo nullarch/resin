@@ -1,0 +1,9 @@
+//@version=5
+indicator("ta_cross")
+// ta.cross 오라클 검증(ROADMAP P2 "ta.* 44종"). ta_crossover_crossunder.pine과 동일한 close vs
+// ta.sma(close,3), sample10.json 조합 재사용 — cross는 crossover OR crossunder라 같은 데이터가
+// C23이 이미 확인한 상향/하향 돌파(bar3/4/7/8)를 그대로 커버한다(bool은 var float 0.0/1.0 미러로
+// 관측 - MEMORY.md 패턴).
+b = ta.sma(close, 3)
+var float __obs_x = na
+__obs_x := ta.cross(close, b) ? 1.0 : 0.0

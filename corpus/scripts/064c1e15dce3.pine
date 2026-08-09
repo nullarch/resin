@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Circ Buf")
+var float[] buf = array.new_float(0)
+array.push(buf, close)
+if array.size(buf) > 8
+    array.shift(buf)
+newest = array.last(buf)
+oldest = array.first(buf)
+spread = newest - oldest
+plot(spread, "Spread")

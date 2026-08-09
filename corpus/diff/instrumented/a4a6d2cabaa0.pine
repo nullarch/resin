@@ -1,0 +1,12 @@
+//@version=5
+indicator("While Conv")
+float x = 100.0
+int iter = 0
+while x > 1.0
+    x := x / 2.0
+    iter := iter + 1
+var int result = 0
+result := iter
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

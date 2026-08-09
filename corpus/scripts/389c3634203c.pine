@@ -1,0 +1,20 @@
+
+//@version=5
+indicator("Vol Full")
+[mid, upper, lower] = ta.bb(close, 5, 2.0)
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 5)
+
+bbWidth = upper - lower
+atrRatio = avgATR > 0 ? atr / avgATR : 1.0
+
+var int squeezes = 0
+avgBBW = ta.sma(upper - lower, 3)
+isSqueeze = avgBBW > 0 and bbWidth / avgBBW < 0.8
+if isSqueeze
+    squeezes := squeezes + 1
+
+bandPos = bbWidth > 0 ? (close - lower) / bbWidth : 0.5
+
+plot(atrRatio, "AR")
+plot(bandPos, "BP")

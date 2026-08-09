@@ -1,0 +1,18 @@
+//@version=5
+indicator("Period Detection")
+var states = array.new_int(0)
+cell = close > open ? 1 : 0
+array.push(states, cell)
+sz = array.size(states)
+period = 0
+if sz >= 6
+    for tryP = 1 to 3
+        match = true
+        for j = 0 to tryP - 1
+            a = array.get(states, sz - 1 - j)
+            b = array.get(states, sz - 1 - j - tryP)
+            if a != b
+                match := false
+                break
+        if match and period == 0
+            period := tryP

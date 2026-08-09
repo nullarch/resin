@@ -1,0 +1,12 @@
+//@version=5
+indicator("enum switch")
+enum Direction
+    Up = 1
+    Down = 2
+    Flat = 0
+var Direction dir = Direction.Up
+dir := close > open ? Direction.Up : Direction.Down
+label = switch dir
+    Direction.Up => "BULL"
+    Direction.Down => "BEAR"
+    => "FLAT"

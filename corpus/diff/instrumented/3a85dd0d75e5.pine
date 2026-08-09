@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("EMA Dist")
+ema5 = ta.ema(close, 5)
+dist = close - ema5
+distPct = ema5 > 0 ? dist / ema5 * 100 : 0.0
+overextended = math.abs(distPct) > 2.0
+var float __obs_plot0 = na
+__obs_plot0 := distPct
+plot(distPct, "Dist%")
+var float __obs_plot1 = na
+__obs_plot1 := overextended ? 1 : 0
+plot(overextended ? 1 : 0, "OE")

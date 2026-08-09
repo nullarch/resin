@@ -1,0 +1,61 @@
+//@version=5
+indicator("color_basic")
+// color.* namespace (C78): 17 named constants + rgb/new/from_gradient. All channels use literal
+// args (no na) so pine2py won't crash — na-propagation for rgb's r/g/b (pine2py int(NaN) crashes,
+// no None-guard) is NOT covered here, hand-verified in runtime.test.ts instead (LIMITATIONS.md).
+// Bar-independent (math_const.pine/str_basic.pine pattern) — observed via "var string" mirror since
+// pine2js represents color as a plain hex string at runtime, same as pine2py's str representation.
+var string __obs_aqua = na
+__obs_aqua := color.aqua
+var string __obs_black = na
+__obs_black := color.black
+var string __obs_blue = na
+__obs_blue := color.blue
+var string __obs_fuchsia = na
+__obs_fuchsia := color.fuchsia
+var string __obs_gray = na
+__obs_gray := color.gray
+var string __obs_green = na
+__obs_green := color.green
+var string __obs_lime = na
+__obs_lime := color.lime
+var string __obs_maroon = na
+__obs_maroon := color.maroon
+var string __obs_navy = na
+__obs_navy := color.navy
+var string __obs_olive = na
+__obs_olive := color.olive
+var string __obs_orange = na
+__obs_orange := color.orange
+var string __obs_purple = na
+__obs_purple := color.purple
+var string __obs_red = na
+__obs_red := color.red
+var string __obs_silver = na
+__obs_silver := color.silver
+var string __obs_teal = na
+__obs_teal := color.teal
+var string __obs_white = na
+__obs_white := color.white
+var string __obs_yellow = na
+__obs_yellow := color.yellow
+var string __obs_rgb0 = na
+__obs_rgb0 := color.rgb(255, 0, 0)
+var string __obs_rgb1 = na
+__obs_rgb1 := color.rgb(0, 128, 255, 50)
+var string __obs_rgb2 = na
+__obs_rgb2 := color.rgb(300, -10, 128)
+var string __obs_new0 = na
+__obs_new0 := color.new(color.red, 50)
+var string __obs_new1 = na
+__obs_new1 := color.new(color.blue, 0)
+var string __obs_grad0 = na
+__obs_grad0 := color.from_gradient(50, 0, 100, color.red, color.blue)
+var string __obs_grad1 = na
+__obs_grad1 := color.from_gradient(0, 0, 100, color.red, color.blue)
+var string __obs_grad2 = na
+__obs_grad2 := color.from_gradient(100, 0, 100, color.red, color.blue)
+var string __obs_grad3 = na
+__obs_grad3 := color.from_gradient(150, 0, 100, color.red, color.blue)
+var string __obs_grad4 = na
+__obs_grad4 := color.from_gradient(-10, 0, 100, color.red, color.blue)

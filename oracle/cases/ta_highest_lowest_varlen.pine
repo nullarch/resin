@@ -1,0 +1,22 @@
+//@version=5
+indicator("ta_highest_lowest_varlen")
+// ta.highest/ta.lowest series(가변) length 오라클 검증(배치25 (4) 첫 착수 — wild 최다빈도
+// "length 인자는 series일 수 없음" 클러스터, runtime/ta.ts highestVarLen/lowestVarLen).
+// len1 = 5 - (bar_index % 5): sample10.json 10바에서 5,4,3,2,1,5,4,3,2,1 순환 — 바 0/1은
+// len1 > data_len(워밍업 NaN), 바 2~9는 정상 구간을 모두 커버. source는 top-level '=' 로컬(close
+// 그대로)로 관측.
+len1 = 5 - (bar_index % 5)
+var float __obs_hi1 = na
+var float __obs_lo1 = na
+__obs_hi1 := ta.highest(close, len1)
+__obs_lo1 := ta.lowest(close, len1)
+
+// len2 = bar_index % 3: 0,1,2 순환 — 0이 되는 바(0/3/6/9)에서 length<1 분기(pine2py highest.py
+// range(0) 빈 루프 실측 버그, highest=-inf/lowest=+inf)를 오라클로 직접 검증. source는 named
+// local이 아니라 인라인 표현식(high-low)이라 Series 백업 없이도 콜사이트 자체 히스토리 버퍼만으로
+// 동작함을 함께 확인.
+len2 = bar_index % 3
+var float __obs_hi2 = na
+var float __obs_lo2 = na
+__obs_hi2 := ta.highest(high - low, len2)
+__obs_lo2 := ta.lowest(high - low, len2)

@@ -1,0 +1,5 @@
+//@version=5
+indicator("Double Neg")
+x = close > 100
+y = not not x
+plot(y ? 1 : 0)

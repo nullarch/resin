@@ -1,0 +1,15 @@
+//@version=5
+indicator("math_avg")
+// a0: 4 valid args, no na — plain average of open/high/low/close every bar.
+var float __obs_a0 = na
+__obs_a0 := math.avg(open, high, low, close)
+// a1: 2 args, one na (close[15] — insufficient history, sample10.json only has 10 bars) —
+// avg skips the na argument and returns the single remaining valid value (close) unchanged.
+var float __obs_a1 = na
+__obs_a1 := math.avg(close, close[15])
+// a2: both args na — zero valid values, result is na.
+var float __obs_a2 = na
+__obs_a2 := math.avg(close[15], close[16])
+// a3: 3 args, 2 valid + 1 na — averages close/high and skips the na argument.
+var float __obs_a3 = na
+__obs_a3 := math.avg(close, high, close[15])

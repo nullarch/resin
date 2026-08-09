@@ -1,0 +1,35 @@
+//@version=5
+indicator("ta_stdev_sum_varlen")
+// ta.stdev/math.sum series(가변) length 오라클 검증(배치25 (4) 다섯 번째 묶음, C551 —
+// runtime/ta.ts stdevVarLen/sumVarLen). 둘 다 pine2py(stdev.py/math.__init__.sum)가 상태 없이
+// 매 호출 현재 length로 창을 재구축하는 무상태 재스캔이라(get_ta_state 미사용, python 직접 실행
+// 확인 2026-08-01) median/linreg(#181)와 동일하게 **length 값이 실제로 변하는 축을 골든으로 직접
+// 대조할 수 있다** — sma/wma(#179 고정 윈도우 latent 버그) 축과 다름에 주의.
+// lenA = 5 - (bar_index % 5): sample10.json 10바에서 5,4,3,2,1,... 순환 — 바 0/1은 워밍업 NaN,
+// 바 2~9는 정상 구간(stdev 2-인자 폼, biased 기본 true만 오라클 가능 — 3-인자 biased=false는
+// pine2py stdev.py에 아예 없는 파라미터라 hand-verified 전용, DIVERGENCES #110/#182).
+lenA = 5 - (bar_index % 5)
+var float __obs_stdev1 = na
+__obs_stdev1 := ta.stdev(close, lenA)
+// lenB: -1/2 교대 — length<0에서 pine2py stdev가 크래시 없이 0.0을 반환하는 실측 동작
+// (빈 창 → mean=variance=-0.0 → precision()이 +0.0으로 정규화, python 직접 확인)의 literal port를
+// 골든으로 직접 검증(length=0은 ZeroDivisionError 크래시라 여기 못 넣고 na 자체 결정,
+// tests/unit/runtime.test.ts로 커버).
+lenB = bar_index % 2 == 0 ? -1 : 2
+var float __obs_stdev2 = na
+__obs_stdev2 := ta.stdev(close, lenB)
+// math.sum: lenA를 재사용해 워밍업 구간(바 0/1)에서도 median/linreg/stdev와 달리 NaN 게이트가
+// 없음(있는 만큼만 합산)을 같은 바 나란히 대조. source는 bare series(high)여야만 한다 — pine2py
+// wa.math.sum은 (median.py/linreg.py/stdev.py와 달리) ensure_series/context 승격 자체가 없어
+// 계산된(스칼라) source를 넘기면 `builtins.sum(args)`(=source+length) 폴백으로 완전히 다른 값을
+// 내는 기존 latent 버그를 그대로 탄다(DIVERGENCES #15, oracle/cases/math_sum.pine과 동일 제약 —
+// 처음 `high+close`로 시도해 bar0 골든이 208(=203+5, source+length 폴백)로 나와 이 제약을
+// 실측 재확인함).
+var float __obs_sum1 = na
+__obs_sum1 := math.sum(high, lenA)
+// lenC = bar_index + 3: 관측 바 수보다 항상 큰 length — pine2py가 min(length, dataLen)로 있는
+// 만큼만 합산하고 na를 반환하지 않는 축(sma/median/linreg/stdev의 워밍업 NaN 게이트와 대비되는
+// math.sum 고유 시맨틱)을 전 바에 걸쳐 직접 검증.
+lenC = bar_index + 3
+var float __obs_sum2 = na
+__obs_sum2 := math.sum(close, lenC)

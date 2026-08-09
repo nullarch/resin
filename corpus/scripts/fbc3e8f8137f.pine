@@ -1,0 +1,10 @@
+//@version=5
+indicator("udt field mod")
+type Data
+    float val = 0.0
+    int count = 0
+var float result = 0.0
+d = Data.new(close, 1)
+d.val := d.val + 10.0
+d.count := d.count + 1
+result := d.val

@@ -1,0 +1,12 @@
+//@version=5
+indicator("UDT Field Modify")
+var float result = 0.0
+
+type Config
+    float fast = 3.0
+    float slow = 10.0
+
+cfg = Config.new()
+cfg.fast := 5.0
+cfg.slow := 20.0
+result := cfg.fast + cfg.slow

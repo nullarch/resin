@@ -1,0 +1,12 @@
+//@version=5
+indicator("Map Track")
+var m = map.new<string, float>()
+rsi_ = ta.rsi(close, 5)
+sma_ = ta.sma(close, 5)
+if not na(rsi_)
+    map.put(m, "rsi", rsi_)
+if not na(sma_)
+    map.put(m, "sma", sma_)
+var int sz = 0
+sz := map.size(m)
+plot(sz)

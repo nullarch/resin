@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("MomAlpha")
+var float maLine = 0.0
+mom = close - nz(close[1], close)
+absMom = math.abs(mom)
+maxMom = nz(ta.highest(high, 3), 1.0) - nz(ta.lowest(low, 3), 0.0)
+normMom = maxMom > 0 ? absMom / maxMom : 0.5
+alpha = math.max(0.05, math.min(0.95, normMom))
+maLine := maLine * (1.0 - alpha) + close * alpha
+plot(maLine, "MA")

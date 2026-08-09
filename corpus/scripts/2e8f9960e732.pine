@@ -1,0 +1,25 @@
+//@version=5
+indicator("comprehensive 107")
+type Sig
+    float price = 0.0
+    int dir = 0
+enum Level
+    High = 3
+    Low = 1
+myFunc(x, y=10) =>
+    x + y
+var float maxVal = 0.0
+var int count = 0
+s = ta.sma(close, 3)
+sig = Sig.new(s, 1)
+l = close > 108 ? Level.High : Level.Low
+arr = array.from(1.0, 2.0, 3.0)
+float total = 0.0
+for [i, v] in arr
+    total := total + v
+val = switch
+    close > 110 => myFunc(close)
+    => myFunc(close, 5)
+if s > maxVal
+    maxVal := s
+count := count + 1

@@ -1,0 +1,7 @@
+//@version=5
+indicator("test")
+day = "Mon"
+isWeekend = switch day
+    "Sat", "Sun" => true
+    => false
+plot(isWeekend ? 1 : 0)

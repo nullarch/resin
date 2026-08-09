@@ -1,0 +1,127 @@
+//@version=5
+indicator("matrix_transform")
+
+// C93: matrix.* 네 번째 슬라이스(copy/fill/concat/submatrix/reshape/reverse/sort/diff).
+// matrix_mutate.pine(C92)과 동일 설계 — 전 섹션 매 바 재생성(비-var) 행렬 + close 기반 초기값
+// (matrix.set의 latent Series 버그 우회를 위해 값 인자는 전부 `close + N.0`/`close * N.0`
+// 산술로 스칼라 강제 변환, matrix_basic.pine과 동일). 모든 인덱스/범위 인자는 컴파일타임 int
+// 리터럴만 사용 — 음수/범위밖/na 인덱스는 python 직접 실행으로 확인한 pine2py 크래시 지점이라
+// (matrix.ts 주석 참조) tests/unit/runtime.test.ts의 hand-verified로 대체.
+
+// A: matrix.copy — 깊은 복사 후 원본을 뮤테이션해도 복사본이 영향받지 않아야 함.
+ma = matrix.new<float>(1, 2, 0.0)
+matrix.set(ma, 0, 0, close + 0.0)
+matrix.set(ma, 0, 1, close + 1.0)
+ma_copy = matrix.copy(ma)
+matrix.set(ma, 0, 0, close + 99.0)
+var float __obs_a_copy_val = na
+__obs_a_copy_val := matrix.get(ma_copy, 0, 0)
+var float __obs_a_orig_val = na
+__obs_a_orig_val := matrix.get(ma, 0, 0)
+
+// B: matrix.fill — 2x2 행렬의 0행만 채우고 1행은 그대로 둠.
+mb = matrix.new<float>(2, 2, close + 0.0)
+matrix.fill(mb, close + 50.0, 0, 1, 0, 2)
+var float __obs_b_filled = na
+__obs_b_filled := matrix.get(mb, 0, 0)
+var float __obs_b_untouched = na
+__obs_b_untouched := matrix.get(mb, 1, 0)
+
+// C: matrix.concat(dimension="rows", 기본값) — 1x2 + 1x2 -> 2x2.
+mc1 = matrix.new<float>(1, 2, 0.0)
+matrix.set(mc1, 0, 0, close + 0.0)
+matrix.set(mc1, 0, 1, close + 1.0)
+mc2 = matrix.new<float>(1, 2, 0.0)
+matrix.set(mc2, 0, 0, close + 10.0)
+matrix.set(mc2, 0, 1, close + 11.0)
+mc = matrix.concat(mc1, mc2)
+var float __obs_c_rows = na
+__obs_c_rows := matrix.rows(mc)
+var float __obs_c_row1_col0 = na
+__obs_c_row1_col0 := matrix.get(mc, 1, 0)
+
+// D: matrix.concat(dimension="columns") — 2x1 + 2x1 -> 2x2.
+md1 = matrix.new<float>(2, 1, 0.0)
+matrix.set(md1, 0, 0, close + 0.0)
+matrix.set(md1, 1, 0, close + 1.0)
+md2 = matrix.new<float>(2, 1, 0.0)
+matrix.set(md2, 0, 0, close + 20.0)
+matrix.set(md2, 1, 0, close + 21.0)
+mdcat = matrix.concat(md1, md2, "columns")
+var float __obs_d_columns = na
+__obs_d_columns := matrix.columns(mdcat)
+var float __obs_d_row1_col1 = na
+__obs_d_row1_col1 := matrix.get(mdcat, 1, 1)
+
+// E: matrix.submatrix — 3x3 행렬(row-major close+0..close+8)에서 rows[1:3] x cols[0:2] 추출.
+me = matrix.new<float>(3, 3, 0.0)
+matrix.set(me, 0, 0, close + 0.0)
+matrix.set(me, 0, 1, close + 1.0)
+matrix.set(me, 0, 2, close + 2.0)
+matrix.set(me, 1, 0, close + 3.0)
+matrix.set(me, 1, 1, close + 4.0)
+matrix.set(me, 1, 2, close + 5.0)
+matrix.set(me, 2, 0, close + 6.0)
+matrix.set(me, 2, 1, close + 7.0)
+matrix.set(me, 2, 2, close + 8.0)
+msub = matrix.submatrix(me, 1, 3, 0, 2)
+var float __obs_e_00 = na
+__obs_e_00 := matrix.get(msub, 0, 0)
+var float __obs_e_11 = na
+__obs_e_11 := matrix.get(msub, 1, 1)
+
+// F: matrix.reshape — 2x3(row-major close+0..close+5) -> 3x2.
+mf = matrix.new<float>(2, 3, 0.0)
+matrix.set(mf, 0, 0, close + 0.0)
+matrix.set(mf, 0, 1, close + 1.0)
+matrix.set(mf, 0, 2, close + 2.0)
+matrix.set(mf, 1, 0, close + 3.0)
+matrix.set(mf, 1, 1, close + 4.0)
+matrix.set(mf, 1, 2, close + 5.0)
+mfreshape = matrix.reshape(mf, 3, 2)
+var float __obs_f_10 = na
+__obs_f_10 := matrix.get(mfreshape, 1, 0)
+var float __obs_f_21 = na
+__obs_f_21 := matrix.get(mfreshape, 2, 1)
+
+// G: matrix.reverse — 3x1 행렬의 행 순서 반전.
+mg = matrix.new<float>(3, 1, 0.0)
+matrix.set(mg, 0, 0, close + 0.0)
+matrix.set(mg, 1, 0, close + 1.0)
+matrix.set(mg, 2, 0, close + 2.0)
+matrix.reverse(mg)
+var float __obs_g_top = na
+__obs_g_top := matrix.get(mg, 0, 0)
+var float __obs_g_bottom = na
+__obs_g_bottom := matrix.get(mg, 2, 0)
+
+// H: matrix.sort — 0열 기준 오름/내림차순. 두 행렬 모두 동일한(정렬 안 된) 초기 배치.
+mh_asc = matrix.new<float>(3, 1, 0.0)
+matrix.set(mh_asc, 0, 0, close + 2.0)
+matrix.set(mh_asc, 1, 0, close + 0.0)
+matrix.set(mh_asc, 2, 0, close + 1.0)
+matrix.sort(mh_asc, 0, order.ascending)
+var float __obs_h_asc_top = na
+__obs_h_asc_top := matrix.get(mh_asc, 0, 0)
+
+mh_desc = matrix.new<float>(3, 1, 0.0)
+matrix.set(mh_desc, 0, 0, close + 2.0)
+matrix.set(mh_desc, 1, 0, close + 0.0)
+matrix.set(mh_desc, 2, 0, close + 1.0)
+matrix.sort(mh_desc, 0, order.descending)
+var float __obs_h_desc_top = na
+__obs_h_desc_top := matrix.get(mh_desc, 0, 0)
+
+// I: matrix.diff — 3x2 행렬(행마다 close 배수가 달라 diff 결과가 바마다 달라짐).
+mi = matrix.new<float>(3, 2, 0.0)
+matrix.set(mi, 0, 0, close * 1.0 + 0.0)
+matrix.set(mi, 0, 1, close * 1.0 + 1.0)
+matrix.set(mi, 1, 0, close * 2.0 + 0.0)
+matrix.set(mi, 1, 1, close * 2.0 + 2.0)
+matrix.set(mi, 2, 0, close * 3.0 + 0.0)
+matrix.set(mi, 2, 1, close * 3.0 + 3.0)
+midiff = matrix.diff(mi)
+var float __obs_i_diff0_0 = na
+__obs_i_diff0_0 := matrix.get(midiff, 0, 0)
+var float __obs_i_diff1_1 = na
+__obs_i_diff1_1 := matrix.get(midiff, 1, 1)

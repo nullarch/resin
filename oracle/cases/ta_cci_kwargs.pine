@@ -1,0 +1,13 @@
+//@version=5
+indicator("ta_cci_kwargs")
+// ta.cci(source=/length=) 키워드 인자 오라클 검증(C477, next_hint(C476) 지시대로 wild
+// 10c6fbc3696f.pine/257fa4fb6137.pine의 `ta.cci(cci_source, length=cci_length)` 혼합
+// 위치+키워드 폼 세분화 결과). pine2py wavealgo/ta/cci.py 첫 두 파라미터 이름이 정확히
+// "source"/"length"(TV 공식 이름과 일치)라 sma/ema/rsi(ta_kwargs.pine, C400)와 동일한 패턴으로
+// 진짜 오라클 대조가 가능하다. 완전 키워드 폼/혼합 폼/위치 폼 셋 다 같은 값을 내는지 확인한다.
+var float __obs_cci_kw = na
+var float __obs_cci_mixed = na
+var float __obs_cci_pos = na
+__obs_cci_kw := ta.cci(source=close, length=3)
+__obs_cci_mixed := ta.cci(close, length=3)
+__obs_cci_pos := ta.cci(close, 3)

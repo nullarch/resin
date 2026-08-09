@@ -1,0 +1,9 @@
+//@version=5
+indicator("tuple_underscore_placeholder")
+// '_' 플레이스홀더가 같은 튜플 디스트럭처링 문장 안에서 반복될 수 있음을 검증(corpus 실측:
+// `[_, signalLine, _] = ta.macd(...)`, C270 -- analyzer는 '_'의 문장 내 반복만 예외로 허용,
+// MEMORY.md/ROADMAP.md 참조). fast=2, slow=3, signal=2는 ta_macd.pine과 동일 파라미터라 signal
+// 채널이 그 골든과 바이트 단위로 일치해야 한다(첫/마지막 '_' 자리 값은 버려지므로 관측 불필요).
+[_, signalLine, _] = ta.macd(close, 2, 3, 2)
+var float __obs_signal = na
+__obs_signal := signalLine

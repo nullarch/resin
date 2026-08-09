@@ -1,0 +1,204 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:__obs_sum_bare_array": 60.0,
+   "var:__obs_weighted_array": 80.0,
+   "var:m": {
+    "a": 1.0,
+    "b": 2.0,
+    "c": 3.0
+   },
+   "var:__obs_sum_map": 6.0,
+   "var:__obs_key_count": 3.0,
+   "var:__obs_break": 10.0,
+   "var:__obs_continue": 40.0
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:__obs_sum_bare_array": 60.0,
+   "var:__obs_weighted_array": 80.0,
+   "var:m": {
+    "a": 1.0,
+    "b": 2.0,
+    "c": 3.0
+   },
+   "var:__obs_sum_map": 6.0,
+   "var:__obs_key_count": 3.0,
+   "var:__obs_break": 10.0,
+   "var:__obs_continue": 40.0
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:__obs_sum_bare_array": 60.0,
+   "var:__obs_weighted_array": 80.0,
+   "var:m": {
+    "a": 1.0,
+    "b": 2.0,
+    "c": 3.0
+   },
+   "var:__obs_sum_map": 6.0,
+   "var:__obs_key_count": 3.0,
+   "var:__obs_break": 10.0,
+   "var:__obs_continue": 40.0
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:__obs_sum_bare_array": 60.0,
+   "var:__obs_weighted_array": 80.0,
+   "var:m": {
+    "a": 1.0,
+    "b": 2.0,
+    "c": 3.0
+   },
+   "var:__obs_sum_map": 6.0,
+   "var:__obs_key_count": 3.0,
+   "var:__obs_break": 10.0,
+   "var:__obs_continue": 40.0
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:__obs_sum_bare_array": 60.0,
+   "var:__obs_weighted_array": 80.0,
+   "var:m": {
+    "a": 1.0,
+    "b": 2.0,
+    "c": 3.0
+   },
+   "var:__obs_sum_map": 6.0,
+   "var:__obs_key_count": 3.0,
+   "var:__obs_break": 10.0,
+   "var:__obs_continue": 40.0
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:__obs_sum_bare_array": 60.0,
+   "var:__obs_weighted_array": 80.0,
+   "var:m": {
+    "a": 1.0,
+    "b": 2.0,
+    "c": 3.0
+   },
+   "var:__obs_sum_map": 6.0,
+   "var:__obs_key_count": 3.0,
+   "var:__obs_break": 10.0,
+   "var:__obs_continue": 40.0
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:__obs_sum_bare_array": 60.0,
+   "var:__obs_weighted_array": 80.0,
+   "var:m": {
+    "a": 1.0,
+    "b": 2.0,
+    "c": 3.0
+   },
+   "var:__obs_sum_map": 6.0,
+   "var:__obs_key_count": 3.0,
+   "var:__obs_break": 10.0,
+   "var:__obs_continue": 40.0
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:__obs_sum_bare_array": 60.0,
+   "var:__obs_weighted_array": 80.0,
+   "var:m": {
+    "a": 1.0,
+    "b": 2.0,
+    "c": 3.0
+   },
+   "var:__obs_sum_map": 6.0,
+   "var:__obs_key_count": 3.0,
+   "var:__obs_break": 10.0,
+   "var:__obs_continue": 40.0
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:__obs_sum_bare_array": 60.0,
+   "var:__obs_weighted_array": 80.0,
+   "var:m": {
+    "a": 1.0,
+    "b": 2.0,
+    "c": 3.0
+   },
+   "var:__obs_sum_map": 6.0,
+   "var:__obs_key_count": 3.0,
+   "var:__obs_break": 10.0,
+   "var:__obs_continue": 40.0
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:__obs_sum_bare_array": 60.0,
+   "var:__obs_weighted_array": 80.0,
+   "var:m": {
+    "a": 1.0,
+    "b": 2.0,
+    "c": 3.0
+   },
+   "var:__obs_sum_map": 6.0,
+   "var:__obs_key_count": 3.0,
+   "var:__obs_break": 10.0,
+   "var:__obs_continue": 40.0
+  }
+ ],
+ "finalVarState": {
+  "a": [
+   10.0,
+   20.0,
+   30.0
+  ],
+  "__obs_sum_bare_array": 60.0,
+  "__obs_weighted_array": 80.0,
+  "m": {
+   "a": 1.0,
+   "b": 2.0,
+   "c": 3.0
+  },
+  "__obs_sum_map": 6.0,
+  "__obs_key_count": 3.0,
+  "__obs_break": 10.0,
+  "__obs_continue": 40.0
+ }
+}

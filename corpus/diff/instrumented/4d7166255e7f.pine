@@ -1,0 +1,9 @@
+//@version=5
+indicator("First-Order Absorption")
+var float absorbed = 0.0
+dose = (close - open) > 0 ? close - open : 0.0
+ka = 0.3
+absorbed := absorbed + dose * ka * math.exp(-ka * absorbed / 100.0)
+var float __obs_plot0 = na
+__obs_plot0 := absorbed
+plot(absorbed)

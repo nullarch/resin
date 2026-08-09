@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:params": {
+    "alpha": 0.3,
+    "beta": 0.1,
+    "level": 110.0
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:params": {
+    "alpha": 0.3,
+    "beta": 0.1,
+    "level": 110.0
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:params": {
+    "alpha": 0.3,
+    "beta": 0.1,
+    "level": 110.0
+   },
+   "var:__obs_plot0": 103.4
+  },
+  {
+   "var:params": {
+    "alpha": 0.3,
+    "beta": 0.1,
+    "level": 110.0
+   },
+   "var:__obs_plot0": 104.0666666667
+  },
+  {
+   "var:params": {
+    "alpha": 0.3,
+    "beta": 0.1,
+    "level": 110.0
+   },
+   "var:__obs_plot0": 105.0666666667
+  },
+  {
+   "var:params": {
+    "alpha": 0.3,
+    "beta": 0.1,
+    "level": 110.0
+   },
+   "var:__obs_plot0": 106.4
+  },
+  {
+   "var:params": {
+    "alpha": 0.3,
+    "beta": 0.1,
+    "level": 110.0
+   },
+   "var:__obs_plot0": 107.4
+  },
+  {
+   "var:params": {
+    "alpha": 0.3,
+    "beta": 0.1,
+    "level": 110.0
+   },
+   "var:__obs_plot0": 108.4
+  },
+  {
+   "var:params": {
+    "alpha": 0.3,
+    "beta": 0.1,
+    "level": 110.0
+   },
+   "var:__obs_plot0": 109.4
+  },
+  {
+   "var:params": {
+    "alpha": 0.3,
+    "beta": 0.1,
+    "level": 110.0
+   },
+   "var:__obs_plot0": 110.4
+  }
+ ],
+ "finalVarState": {
+  "params": {
+   "alpha": 0.3,
+   "beta": 0.1,
+   "level": 110.0
+  },
+  "__obs_plot0": 110.4
+ }
+}

@@ -1,0 +1,7 @@
+//@version=5
+indicator("NVI Complex")
+var float ta_nvi = 1.0
+prevNvi = nz(ta_nvi, 1.0)
+if nz(close, 0.0) != 0.0 and nz(close[1], 0.0) != 0.0
+    ta_nvi := volume < nz(volume[1], 0.0) ? prevNvi + ((close - close[1]) / close[1]) * prevNvi : prevNvi
+plot(ta_nvi)

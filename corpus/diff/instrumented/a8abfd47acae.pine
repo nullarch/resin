@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Dev BBW")
+devVal = ta.dev(close, 5)
+[mid, upper, lower] = ta.bb(close, 5, 2.0)
+bbw = (upper - lower) / mid
+var float __obs_plot0 = na
+__obs_plot0 := devVal
+plot(devVal, "Dev")
+var float __obs_plot1 = na
+__obs_plot1 := bbw
+plot(bbw, "BBW")

@@ -1,0 +1,40 @@
+//@version=5
+indicator("array_new_ctor_kwargs")
+
+// array.new_* 생성자 kwargs(C383, wild gate(220) 2순위 — 순증 상한 14건 first-error).
+// pine2py wavealgo/builtins/array.py new_float/new_int/new_bool/new_string 전부
+// def new_X(size: int = 0, initial_value: ... = ...)로 Pine 키워드 이름과 파라미터명이
+// 정확히 일치(python 소스 직접 확인) — 오라클 골든 대조 가능.
+
+// A: 전체 키워드 폼(size=, initial_value= 둘 다)
+arrA = array.new_float(size=2, initial_value=1.5)
+var float __obs_a_size = na
+__obs_a_size := array.size(arrA)
+var float __obs_a_v0 = na
+__obs_a_v0 := array.get(arrA, 0)
+var float __obs_a_v1 = na
+__obs_a_v1 := array.get(arrA, 1)
+
+// B: 위치 인자(size) + trailing kwarg(initial_value=) 혼합
+arrB = array.new_int(3, initial_value=7)
+var float __obs_b_size = na
+__obs_b_size := array.size(arrB)
+var float __obs_b_v2 = na
+__obs_b_v2 := array.get(arrB, 2)
+
+// C: kwarg 순서 뒤바뀜(initial_value=가 size=보다 먼저)
+arrC = array.new_int(initial_value=9, size=2)
+var float __obs_c_v0 = na
+__obs_c_v0 := array.get(arrC, 0)
+var float __obs_c_v1 = na
+__obs_c_v1 := array.get(arrC, 1)
+
+// D: size=만 있는 kwarg 폼(initial_value 생략 — 타입별 기본값)
+arrD = array.new_bool(size=2)
+var bool __obs_d_v0 = na
+__obs_d_v0 := array.get(arrD, 0)
+
+// E: 문자열 타입, 둘 다 kwarg
+arrE = array.new_string(size=2, initial_value="hi")
+var string __obs_e_v0 = na
+__obs_e_v0 := array.get(arrE, 0)

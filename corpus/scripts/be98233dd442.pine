@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Bar Type")
+enum BarType
+    Bullish = 1
+    Bearish = -1
+    Doji = 0
+
+body = math.abs(close - open)
+range_ = high - low
+bt = range_ > 0 and body / range_ < 0.1 ? BarType.Doji : close > open ? BarType.Bullish : BarType.Bearish
+plot(int(bt), "BT")

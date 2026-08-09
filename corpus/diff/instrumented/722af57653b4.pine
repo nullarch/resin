@@ -1,0 +1,7 @@
+//@version=5
+indicator("Varip Test")
+varip int tickCount = 0
+tickCount := tickCount + 1
+var float __obs_plot0 = na
+__obs_plot0 := tickCount
+plot(tickCount)

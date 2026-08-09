@@ -1,0 +1,28 @@
+
+//@version=5
+indicator("BT Result")
+type BTResult
+    int totalTrades = 0
+    int winTrades = 0
+    float totalPnl = 0.0
+    float maxDD = 0.0
+
+var BTResult bt = BTResult.new()
+var bool inPos = false
+var float entry = 0.0
+var float peak = 0.0
+sma3 = ta.sma(close, 3)
+if not inPos and close > sma3
+    inPos := true
+    entry := close
+if inPos and close < sma3
+    pnl = close - entry
+    bt.totalPnl := bt.totalPnl + pnl
+    bt.totalTrades := bt.totalTrades + 1
+    if pnl > 0
+        bt.winTrades := bt.winTrades + 1
+    inPos := false
+peak := math.max(peak, bt.totalPnl)
+dd = peak - bt.totalPnl
+bt.maxDD := math.max(bt.maxDD, dd)
+plot(bt.totalPnl, "PnL")

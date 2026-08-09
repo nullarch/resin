@@ -1,0 +1,46 @@
+
+//@version=5
+indicator("Order Engine")
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+rsi = ta.rsi(close, 3)
+atr = ta.atr(3)
+
+// Signal
+bullish = close > sma3 and rsi > 50
+bearish = close < sma3 and rsi < 50
+signal = bullish ? 1.0 : bearish ? -1.0 : 0.0
+
+// Position sizing
+riskBudget = 200.0
+posSize = atr > 0 ? math.max(1.0, riskBudget / atr) : 1.0
+
+// Stop/target
+stopDist = atr * 2
+targetDist = atr * 3
+rr = stopDist > 0 ? targetDist / stopDist : 0.0
+
+// State
+var float[] signals = array.new_float(0)
+array.push(signals, signal)
+if array.size(signals) > 8
+    array.shift(signals)
+avgSig = array.avg(signals)
+
+var m = map.new<string, float>()
+map.put(m, "signal", signal)
+map.put(m, "size", posSize)
+map.put(m, "rr", rr)
+
+var int bars = 0
+bars := bars + 1
+
+var float __obs_plot0 = na
+__obs_plot0 := signal
+plot(signal, "Signal")
+var float __obs_plot1 = na
+__obs_plot1 := posSize
+plot(posSize, "Size")
+var float __obs_plot2 = na
+__obs_plot2 := rr
+plot(rr, "RR")

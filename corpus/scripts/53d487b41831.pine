@@ -1,0 +1,30 @@
+
+//@version=5
+strategy("Stress12")
+enum Regime
+    TRENDING
+    RANGING
+    VOLATILE
+detectRegime(rsiVal, volVal) =>
+    rsiVal > 60 or rsiVal < 40 ? Regime.TRENDING : volVal > 3.0 ? Regime.VOLATILE : Regime.RANGING
+var int regimeCount = 0
+rsi = nz(ta.rsi(close, 3), 50.0)
+vol = nz(ta.stdev(close, 5), 1.0)
+regime = detectRegime(rsi, vol)
+regimeCount := regimeCount + 1
+weights = array.new_float(0)
+for i = 1 to 4
+    w = regime == Regime.TRENDING ? float(i) * 2.0 : float(i)
+    array.push(weights, w)
+stats = map.new<string, float>()
+map.put(stats, "avgW", array.avg(weights))
+map.put(stats, "rsi", rsi)
+map.put(stats, "bars", float(regimeCount))
+total = 0.0
+for [k, v] in stats
+    total := total + v
+if regime == Regime.TRENDING and rsi > 55
+    strategy.entry("Trend", strategy.long)
+if regime == Regime.VOLATILE
+    strategy.close("Trend")
+plot(nz(total, 0.0), "S12")

@@ -1,0 +1,8 @@
+//@version=5
+indicator("Str Contains")
+msg = "hello world"
+var bool has_world = false
+has_world := str.contains(msg, "world")
+var bool has_xyz = true
+has_xyz := str.contains(msg, "xyz")
+plot(close)

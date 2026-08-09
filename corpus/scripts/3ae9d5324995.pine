@@ -1,0 +1,5 @@
+//@version=5
+indicator("Key Derivation")
+master_key = ta.ema(close, 3)
+derived_key1 = not na(master_key) ? ta.ema(master_key, 3) : close
+derived_key2 = not na(derived_key1) ? (derived_key1 + close) / 2.0 : close

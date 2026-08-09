@@ -1,0 +1,6 @@
+//@version=5
+indicator("HighestBars")
+var int lastHB = 0
+hb = ta.highestbars(high, 5)
+if not na(hb)
+    lastHB := hb

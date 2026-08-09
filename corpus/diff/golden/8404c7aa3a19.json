@@ -1,0 +1,105 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:sumA": 1000.0,
+   "var:sumB": 0.0,
+   "var:sumAB": 0.0,
+   "var:sumA2": 1000000.0,
+   "var:sumB2": 0.0,
+   "var:cnt": 1,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:sumA": 2000.0,
+   "var:sumB": 1.0,
+   "var:sumAB": 1000.0,
+   "var:sumA2": 2000000.0,
+   "var:sumB2": 1.0,
+   "var:cnt": 2,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:sumA": 3200.0,
+   "var:sumB": -1.0,
+   "var:sumAB": -1400.0,
+   "var:sumA2": 3440000.0,
+   "var:sumB2": 5.0,
+   "var:cnt": 3,
+   "var:__obs_plot0": -0.9449111825230706
+  },
+  {
+   "var:sumA": 4000.0,
+   "var:sumB": 2.0,
+   "var:sumAB": 1000.0,
+   "var:sumA2": 4080000.0,
+   "var:sumB2": 14.0,
+   "var:cnt": 4,
+   "var:__obs_plot0": -0.9805806756909201
+  },
+  {
+   "var:sumA": 5500.0,
+   "var:sumB": 4.0,
+   "var:sumAB": 4000.0,
+   "var:sumA2": 6330000.0,
+   "var:sumB2": 18.0,
+   "var:cnt": 5,
+   "var:__obs_plot0": -0.19649437297296485
+  },
+  {
+   "var:sumA": 6800.0,
+   "var:sumB": 3.0,
+   "var:sumAB": 2700.0,
+   "var:sumA2": 8020000.0,
+   "var:sumB2": 19.0,
+   "var:cnt": 6,
+   "var:__obs_plot0": -0.29893427727120836
+  },
+  {
+   "var:sumA": 7700.0,
+   "var:sumB": 5.0,
+   "var:sumAB": 4500.0,
+   "var:sumA2": 8830000.0,
+   "var:sumB2": 23.0,
+   "var:cnt": 7,
+   "var:__obs_plot0": -0.37811883873876256
+  },
+  {
+   "var:sumA": 8800.0,
+   "var:sumB": 7.0,
+   "var:sumAB": 6700.0,
+   "var:sumA2": 10040000.0,
+   "var:sumB2": 27.0,
+   "var:cnt": 8,
+   "var:__obs_plot0": -0.36478377010972185
+  },
+  {
+   "var:sumA": 10200.0,
+   "var:sumB": 6.0,
+   "var:sumAB": 5300.0,
+   "var:sumA2": 12000000.0,
+   "var:sumB2": 28.0,
+   "var:cnt": 9,
+   "var:__obs_plot0": -0.46159309117249775
+  },
+  {
+   "var:sumA": 11200.0,
+   "var:sumB": 8.0,
+   "var:sumAB": 7300.0,
+   "var:sumA2": 13000000.0,
+   "var:sumB2": 32.0,
+   "var:cnt": 10,
+   "var:__obs_plot0": -0.48585388975800375
+  }
+ ],
+ "finalVarState": {
+  "sumA": 11200.0,
+  "sumB": 8.0,
+  "sumAB": 7300.0,
+  "sumA2": 13000000.0,
+  "sumB2": 32.0,
+  "cnt": 10,
+  "__obs_plot0": -0.48585388975800375
+ }
+}

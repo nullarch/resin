@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Regime Adapt")
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+volRatio = avgATR > 0 ? atr / avgATR : 1.0
+rsiPeriod = volRatio > 1.5 ? 5 : volRatio > 1.0 ? 3 : 2
+rsi = nz(ta.rsi(close, rsiPeriod), 50.0)
+plot(rsi, "RSI")
+plot(rsiPeriod, "Per")

@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Str Toolkit")
+base = str.tostring(close, "#.##")
+upper = str.upper(base)
+len = str.length(upper)
+has_dot = str.contains(upper, ".")
+starts = str.startswith(upper, "1")
+var float __obs_plot0 = na
+__obs_plot0 := len
+plot(len, "Len")

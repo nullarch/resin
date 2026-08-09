@@ -1,0 +1,10 @@
+//@version=5
+indicator("Drawing Noop")
+lbl = label.new(bar_index, close, "test")
+lbl.set_text("updated")
+lbl.set_color(color.red)
+lbl.delete()
+var float result = close
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

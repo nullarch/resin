@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("Cyc UDT")
+type CycleState
+    int barNum = 0
+    int phase = 0
+    float amplitude = 0.0
+
+var CycleState cs = CycleState.new()
+cs.barNum := cs.barNum + 1
+sma3 = ta.sma(close, 3)
+cs.phase := cs.barNum % 4
+hi = ta.highest(high, 5)
+lo = ta.lowest(low, 5)
+cs.amplitude := hi - lo
+var float __obs_plot0 = na
+__obs_plot0 := cs.amplitude
+plot(cs.amplitude, "Amp")

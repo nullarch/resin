@@ -1,0 +1,19 @@
+
+//@version=5
+indicator("Flow Type E")
+enum FlowType
+    StrongBuy = 2
+    Buy = 1
+    Neutral = 0
+    Sell = -1
+    StrongSell = -2
+
+totalRange = high - low
+netPress = totalRange > 0 ? (close - low) / totalRange - 0.5 : 0.0
+ft = switch
+    netPress > 0.3 => FlowType.StrongBuy
+    netPress > 0.1 => FlowType.Buy
+    netPress < -0.3 => FlowType.StrongSell
+    netPress < -0.1 => FlowType.Sell
+    => FlowType.Neutral
+plot(int(ft), "FT")

@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Risk Dash")
+type RiskDash
+    float volatility = 0.0
+    float momentum = 50.0
+    float riskScore = 0.0
+
+var RiskDash rd = RiskDash.new()
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+rd.volatility := avgATR > 0 ? atr / avgATR : 1.0
+rd.momentum := nz(ta.rsi(close, 3), 50.0)
+volRisk = rd.volatility > 1.5 ? 3.0 : rd.volatility > 1.0 ? 2.0 : 1.0
+momRisk = rd.momentum > 70 or rd.momentum < 30 ? 2.0 : 1.0
+rd.riskScore := volRisk * momRisk
+plot(rd.riskScore, "Risk")

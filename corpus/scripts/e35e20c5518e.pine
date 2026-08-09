@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Pos Track")
+type Position
+    float entry = 0.0
+    float pnl = 0.0
+    int bars_held = 0
+
+var Position pos = Position.new()
+sma3 = ta.sma(close, 3)
+if close > sma3 and pos.entry == 0.0
+    pos.entry := close
+if pos.entry > 0.0
+    pos.pnl := (close - pos.entry) / pos.entry * 100
+    pos.bars_held := pos.bars_held + 1
+plot(pos.pnl, "PnL%")

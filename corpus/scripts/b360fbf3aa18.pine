@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Stack")
+var float[] stack = array.new_float(0)
+array.push(stack, close)
+if array.size(stack) > 5
+    top = array.pop(stack)
+topVal = array.size(stack) > 0 ? array.last(stack) : close
+plot(topVal, "Top")
+plot(array.size(stack), "Size")

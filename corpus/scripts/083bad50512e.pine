@@ -1,0 +1,5 @@
+//@version=5
+indicator("qualifier const")
+var float result = 0.0
+x = 1.0 + 2.0
+result := x

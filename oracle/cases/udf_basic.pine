@@ -1,0 +1,27 @@
+//@version=5
+indicator("udf_basic")
+
+double(x) =>
+    x * 2
+
+avg(a, b) =>
+    (a + b) / 2
+
+clamp(x, lo = 0.0, hi = 1.0) =>
+    if x < lo
+        lo
+    else if x > hi
+        hi
+    else
+        x
+
+y = double(close)
+z = avg(open, close)
+w = clamp(close, 100.0, 105.0)
+
+var float __obs_y = na
+__obs_y := y
+var float __obs_z = na
+__obs_z := z
+var float __obs_w = na
+__obs_w := w

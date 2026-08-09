@@ -1,0 +1,11 @@
+//@version=5
+indicator("test")
+var m = map.new<string, float>()
+if barstate.isfirst
+    map.put(m, "x", 10.0)
+    map.put(m, "y", 20.0)
+var int keyCount = 0
+keyCount := 0
+for [k, v] in m
+    keyCount := keyCount + 1
+plot(keyCount)

@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Score Map")
+var sm = map.new<string, float>()
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+map.put(sm, "rsi", rsi > 55 ? 1.0 : rsi < 45 ? -1.0 : 0.0)
+map.put(sm, "ma", close > sma3 ? 1.0 : -1.0)
+map.put(sm, "price", close > close[1] ? 0.5 : -0.5)
+posCount = 0
+for [k, v] in sm
+    if v > 0
+        posCount := posCount + 1
+var float __obs_plot0 = na
+__obs_plot0 := posCount
+plot(posCount, "Pos")

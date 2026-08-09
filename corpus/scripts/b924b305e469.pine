@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Risk Act")
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+volR = avgATR > 0 ? atr / avgATR : 1.0
+riskAction = switch
+    volR > 2.0 => "halt"
+    volR > 1.5 and rsi > 70 => "reduce"
+    volR > 1.5 => "hedge"
+    volR > 1.0 => "normal"
+    => "increase"
+isNormal = riskAction == "normal" or riskAction == "increase"
+plot(isNormal ? 1 : 0, "Norm")

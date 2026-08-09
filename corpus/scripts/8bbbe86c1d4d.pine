@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Pos Action")
+rsi = ta.rsi(close, 3)
+sma3 = ta.sma(close, 3)
+trendUp = close > sma3
+rsiVal = nz(rsi, 50.0)
+action = switch
+    trendUp and rsiVal < 35 => "buy_dip"
+    trendUp and rsiVal > 70 => "take_profit"
+    not trendUp and rsiVal > 65 => "sell_rally"
+    not trendUp and rsiVal < 30 => "cover_short"
+    => "hold"
+isBuy = action == "buy_dip"
+plot(isBuy ? 1 : 0, "Buy")

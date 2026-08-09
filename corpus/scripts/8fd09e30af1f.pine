@@ -1,0 +1,6 @@
+//@version=5
+indicator("Barstate History")
+var int hist_count = 0
+if barstate.ishistory
+    hist_count := hist_count + 1
+plot(hist_count)

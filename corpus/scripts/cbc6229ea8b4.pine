@@ -1,0 +1,6 @@
+//@version=5
+indicator("Displacement Current")
+float efield = close - (not na(close[1]) ? close[1] : close)
+float prevE = not na(close[2]) and not na(close[1]) ? close[1] - close[2] : efield
+float dEdt = efield - prevE
+float dispCurrent = dEdt / math.max(nz(ta.atr(3), 1.0), 0.01)

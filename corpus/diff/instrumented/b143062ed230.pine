@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Fill Modify")
+arr = array.new_float(5, 0.0)
+array.fill(arr, 10.0)
+array.set(arr, 0, close)
+array.set(arr, 4, high)
+total = array.sum(arr)
+var float __obs_plot0 = na
+__obs_plot0 := total
+plot(total, "Sum")

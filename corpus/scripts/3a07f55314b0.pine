@@ -1,0 +1,14 @@
+//@version=5
+indicator("Forensics-Bayesian")
+// Statistics: Bayesian prior update
+var float priorGuilt = 0.5
+// Forensics: evidence strength from multiple sources
+evidenceDNA = nz(ta.rsi(close, 3), 50.0) / 100.0
+evidenceFingerprint = (close - low) / (high - low + 0.01)
+// Likelihood ratio
+likelihoodRatio = (evidenceDNA + evidenceFingerprint) / 2.0
+likelihoodRatio := math.max(0.01, math.min(0.99, likelihoodRatio))
+// Bayesian update
+odds = priorGuilt > 0 and priorGuilt < 1 ? priorGuilt / (1.0 - priorGuilt) : 1.0
+posteriorOdds = odds * (likelihoodRatio / (1.0 - likelihoodRatio + 0.01))
+priorGuilt := posteriorOdds / (1.0 + posteriorOdds)

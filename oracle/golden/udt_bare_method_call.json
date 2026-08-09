@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_bare": false,
+   "var:__obs_dot": false
+  },
+  {
+   "var:__obs_bare": false,
+   "var:__obs_dot": false
+  },
+  {
+   "var:__obs_bare": false,
+   "var:__obs_dot": false
+  },
+  {
+   "var:__obs_bare": false,
+   "var:__obs_dot": false
+  },
+  {
+   "var:__obs_bare": false,
+   "var:__obs_dot": false
+  },
+  {
+   "var:__obs_bare": true,
+   "var:__obs_dot": true
+  },
+  {
+   "var:__obs_bare": true,
+   "var:__obs_dot": true
+  },
+  {
+   "var:__obs_bare": true,
+   "var:__obs_dot": true
+  },
+  {
+   "var:__obs_bare": true,
+   "var:__obs_dot": true
+  },
+  {
+   "var:__obs_bare": true,
+   "var:__obs_dot": true
+  }
+ ],
+ "finalVarState": {
+  "__obs_bare": true,
+  "__obs_dot": true
+ }
+}

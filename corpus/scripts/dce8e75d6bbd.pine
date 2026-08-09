@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Stat Hist")
+var float[] zScores = array.new_float(0)
+sma5 = ta.sma(close, 5)
+stdev5 = ta.stdev(close, 5)
+z = stdev5 > 0 ? (close - sma5) / stdev5 : 0.0
+array.push(zScores, z)
+if array.size(zScores) > 10
+    array.shift(zScores)
+avgZ = array.size(zScores) > 0 ? array.avg(zScores) : 0.0
+trending = math.abs(avgZ) > 0.5
+plot(trending ? 1 : 0, "T")

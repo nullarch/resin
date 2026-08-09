@@ -1,0 +1,116 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:a": "pine_fn.<locals>.Acc(sum=1043.0, prod=1.1046221254112045, count=10)",
+   "var:__obs_sum": 101.0,
+   "var:__obs_prod": 1.01,
+   "var:__obs_count": 1,
+   "var:a2": "pine_fn.<locals>.Acc2(diff=-43.0, ratio=905.2869546929832, rem=6.0)",
+   "var:__obs_diff": 899.0,
+   "var:__obs_ratio": 990.09900990099,
+   "var:__obs_rem": 6.0
+  },
+  {
+   "var:a": "pine_fn.<locals>.Acc(sum=1043.0, prod=1.1046221254112045, count=10)",
+   "var:__obs_sum": 203.0,
+   "var:__obs_prod": 1.0201,
+   "var:__obs_count": 2,
+   "var:a2": "pine_fn.<locals>.Acc2(diff=-43.0, ratio=905.2869546929832, rem=6.0)",
+   "var:__obs_diff": 797.0,
+   "var:__obs_ratio": 980.2960494069208,
+   "var:__obs_rem": 6.0
+  },
+  {
+   "var:a": "pine_fn.<locals>.Acc(sum=1043.0, prod=1.1046221254112045, count=10)",
+   "var:__obs_sum": 306.0,
+   "var:__obs_prod": 1.030301,
+   "var:__obs_count": 3,
+   "var:a2": "pine_fn.<locals>.Acc2(diff=-43.0, ratio=905.2869546929832, rem=6.0)",
+   "var:__obs_diff": 694.0,
+   "var:__obs_ratio": 970.5901479276444,
+   "var:__obs_rem": 6.0
+  },
+  {
+   "var:a": "pine_fn.<locals>.Acc(sum=1043.0, prod=1.1046221254112045, count=10)",
+   "var:__obs_sum": 408.0,
+   "var:__obs_prod": 1.04060401,
+   "var:__obs_count": 4,
+   "var:a2": "pine_fn.<locals>.Acc2(diff=-43.0, ratio=905.2869546929832, rem=6.0)",
+   "var:__obs_diff": 592.0,
+   "var:__obs_ratio": 960.9803444828162,
+   "var:__obs_rem": 6.0
+  },
+  {
+   "var:a": "pine_fn.<locals>.Acc(sum=1043.0, prod=1.1046221254112045, count=10)",
+   "var:__obs_sum": 512.0,
+   "var:__obs_prod": 1.0510100501,
+   "var:__obs_count": 5,
+   "var:a2": "pine_fn.<locals>.Acc2(diff=-43.0, ratio=905.2869546929832, rem=6.0)",
+   "var:__obs_diff": 488.0,
+   "var:__obs_ratio": 951.4656876067487,
+   "var:__obs_rem": 6.0
+  },
+  {
+   "var:a": "pine_fn.<locals>.Acc(sum=1043.0, prod=1.1046221254112045, count=10)",
+   "var:__obs_sum": 617.0,
+   "var:__obs_prod": 1.061520150601,
+   "var:__obs_count": 6,
+   "var:a2": "pine_fn.<locals>.Acc2(diff=-43.0, ratio=905.2869546929832, rem=6.0)",
+   "var:__obs_diff": 383.0,
+   "var:__obs_ratio": 942.0452352542067,
+   "var:__obs_rem": 6.0
+  },
+  {
+   "var:a": "pine_fn.<locals>.Acc(sum=1043.0, prod=1.1046221254112045, count=10)",
+   "var:__obs_sum": 723.0,
+   "var:__obs_prod": 1.0721353521070098,
+   "var:__obs_count": 7,
+   "var:a2": "pine_fn.<locals>.Acc2(diff=-43.0, ratio=905.2869546929832, rem=6.0)",
+   "var:__obs_diff": 277.0,
+   "var:__obs_ratio": 932.7180547071353,
+   "var:__obs_rem": 6.0
+  },
+  {
+   "var:a": "pine_fn.<locals>.Acc(sum=1043.0, prod=1.1046221254112045, count=10)",
+   "var:__obs_sum": 828.0,
+   "var:__obs_prod": 1.08285670562808,
+   "var:__obs_count": 8,
+   "var:a2": "pine_fn.<locals>.Acc2(diff=-43.0, ratio=905.2869546929832, rem=6.0)",
+   "var:__obs_diff": 172.0,
+   "var:__obs_ratio": 923.4832224823122,
+   "var:__obs_rem": 6.0
+  },
+  {
+   "var:a": "pine_fn.<locals>.Acc(sum=1043.0, prod=1.1046221254112045, count=10)",
+   "var:__obs_sum": 935.0,
+   "var:__obs_prod": 1.0936852726843609,
+   "var:__obs_count": 9,
+   "var:a2": "pine_fn.<locals>.Acc2(diff=-43.0, ratio=905.2869546929832, rem=6.0)",
+   "var:__obs_diff": 65.0,
+   "var:__obs_ratio": 914.339824239913,
+   "var:__obs_rem": 6.0
+  },
+  {
+   "var:a": "pine_fn.<locals>.Acc(sum=1043.0, prod=1.1046221254112045, count=10)",
+   "var:__obs_sum": 1043.0,
+   "var:__obs_prod": 1.1046221254112045,
+   "var:__obs_count": 10,
+   "var:a2": "pine_fn.<locals>.Acc2(diff=-43.0, ratio=905.2869546929832, rem=6.0)",
+   "var:__obs_diff": -43.0,
+   "var:__obs_ratio": 905.2869546929832,
+   "var:__obs_rem": 6.0
+  }
+ ],
+ "finalVarState": {
+  "a": "pine_fn.<locals>.Acc(sum=1043.0, prod=1.1046221254112045, count=10)",
+  "__obs_sum": 1043.0,
+  "__obs_prod": 1.1046221254112045,
+  "__obs_count": 10,
+  "a2": "pine_fn.<locals>.Acc2(diff=-43.0, ratio=905.2869546929832, rem=6.0)",
+  "__obs_diff": -43.0,
+  "__obs_ratio": 905.2869546929832,
+  "__obs_rem": 6.0
+ }
+}

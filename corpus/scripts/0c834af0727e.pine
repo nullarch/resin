@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Trans Cnt")
+var int prevRegime = 0
+var int transitions = 0
+sma3 = ta.sma(close, 3)
+regime = close > sma3 ? 1 : -1
+if regime != prevRegime
+    transitions := transitions + 1
+prevRegime := regime
+plot(transitions, "Trans")

@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Run MinMax")
+var float[] window = array.new_float(0)
+array.push(window, close)
+if array.size(window) > 6
+    array.shift(window)
+mn = array.min(window)
+mx = array.max(window)
+midpoint = (mn + mx) / 2.0
+plot(midpoint, "Mid")
+plot(mx - mn, "Range")

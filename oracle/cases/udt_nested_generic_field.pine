@@ -1,0 +1,40 @@
+//@version=5
+indicator("udt_nested_generic_field")
+// 2단계 이상 중첩 제네릭 컨테이너 필드(array<map<K,V>>/map<K,array<V>>, C127) 오라클 검증 --
+// analyzer.ts parseGenericFieldType이 C126의 naive `.split(", ")`를 pine2py codegen.py
+// `_split_type_args`와 동일한 괄호 깊이 기반 split(splitGenericTypeArgs)으로 교체해 내부 콤마가
+// 바깥 타입 인자 분해를 오염시키지 않도록 수정된 결과. pine2py도 _pine_type_to_python이 이미
+// 재귀적으로 중첩 제네릭을 list[...]/dict[...]로 정확히 변환하고(_split_type_args가 원본), 필드
+// 타입 화이트리스트 자체가 없어(C126 udt_generic_field.pine 관례와 동일 근거) 이 서브셋을 그대로
+// 지원한다. 컨테이너에 저장하는 bar series는 map_basic.pine/udt_generic_field.pine 관례대로
+// `+ 0.0` 강제 스칼라 변환(_scalar() 가드 부재 latent 버그 회피, DIVERGENCES.md #29/#53 계열).
+
+type Basket
+    map<string, array<float>> groups
+    array<map<string, float>> entries
+
+var Basket b = Basket.new()
+
+var int barN = 0
+barN := barN + 1
+
+// 최초 바에만 내부 컨테이너를 생성(map.put으로 array 값을 채워넣고, array.push로 map 값을
+// 채워넣음) -- 이후 매 바 반대편 액세서(map.get/array.get)로 얻은 참조를 그대로 뮤테이션.
+if barN == 1
+    map.put(b.groups, "prices", array.new_float(0))
+    array.push(b.entries, map.new<string, float>())
+
+array.push(map.get(b.groups, "prices"), close + 0.0)
+map.put(array.get(b.entries, 0), "last", close + 0.0)
+
+// 채널 A: map<string, array<float>> -- map.get으로 얻은 array 참조에 누적된 값
+var float __obs_group_size = na
+__obs_group_size := array.size(map.get(b.groups, "prices"))
+var float __obs_group_sum = na
+__obs_group_sum := array.sum(map.get(b.groups, "prices"))
+
+// 채널 B: array<map<string, float>> -- array.get으로 얻은 map 참조에 저장된 값
+var float __obs_entry_tag = na
+__obs_entry_tag := map.get(array.get(b.entries, 0), "last")
+var float __obs_entries_size = na
+__obs_entries_size := array.size(b.entries)

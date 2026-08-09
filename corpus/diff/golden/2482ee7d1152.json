@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:sensitivity": 0.95,
+   "var:correctCount": 1,
+   "var:__obs_plot0": 0.95
+  },
+  {
+   "var:sensitivity": 1.045,
+   "var:correctCount": 1,
+   "var:__obs_plot0": 1.045
+  },
+  {
+   "var:sensitivity": 0.9927499999999999,
+   "var:correctCount": 2,
+   "var:__obs_plot0": 0.9927499999999999
+  },
+  {
+   "var:sensitivity": 0.9431124999999999,
+   "var:correctCount": 3,
+   "var:__obs_plot0": 0.9431124999999999
+  },
+  {
+   "var:sensitivity": 0.8959568749999999,
+   "var:correctCount": 4,
+   "var:__obs_plot0": 0.8959568749999999
+  },
+  {
+   "var:sensitivity": 0.9855525624999999,
+   "var:correctCount": 4,
+   "var:__obs_plot0": 0.9855525624999999
+  },
+  {
+   "var:sensitivity": 0.9362749343749999,
+   "var:correctCount": 5,
+   "var:__obs_plot0": 0.9362749343749999
+  },
+  {
+   "var:sensitivity": 0.8894611876562498,
+   "var:correctCount": 6,
+   "var:__obs_plot0": 0.8894611876562498
+  },
+  {
+   "var:sensitivity": 0.9784073064218749,
+   "var:correctCount": 6,
+   "var:__obs_plot0": 0.9784073064218749
+  },
+  {
+   "var:sensitivity": 0.9294869411007811,
+   "var:correctCount": 7,
+   "var:__obs_plot0": 0.9294869411007811
+  }
+ ],
+ "finalVarState": {
+  "sensitivity": 0.9294869411007811,
+  "correctCount": 7,
+  "__obs_plot0": 0.9294869411007811
+ }
+}

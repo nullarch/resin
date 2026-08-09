@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:ch": "pine_fn.<locals>.Channel(upper=113, lower=102, mid=107.5, width=11)",
+   "var:__obs_plot0": 0.5
+  },
+  {
+   "var:ch": "pine_fn.<locals>.Channel(upper=113, lower=102, mid=107.5, width=11)",
+   "var:__obs_plot0": 0.5
+  },
+  {
+   "var:ch": "pine_fn.<locals>.Channel(upper=113, lower=102, mid=107.5, width=11)",
+   "var:__obs_plot0": 0.5
+  },
+  {
+   "var:ch": "pine_fn.<locals>.Channel(upper=113, lower=102, mid=107.5, width=11)",
+   "var:__obs_plot0": 0.5
+  },
+  {
+   "var:ch": "pine_fn.<locals>.Channel(upper=113, lower=102, mid=107.5, width=11)",
+   "var:__obs_plot0": 0.8181818181818182
+  },
+  {
+   "var:ch": "pine_fn.<locals>.Channel(upper=113, lower=102, mid=107.5, width=11)",
+   "var:__obs_plot0": 0.7
+  },
+  {
+   "var:ch": "pine_fn.<locals>.Channel(upper=113, lower=102, mid=107.5, width=11)",
+   "var:__obs_plot0": 0.8181818181818182
+  },
+  {
+   "var:ch": "pine_fn.<locals>.Channel(upper=113, lower=102, mid=107.5, width=11)",
+   "var:__obs_plot0": 0.8181818181818182
+  },
+  {
+   "var:ch": "pine_fn.<locals>.Channel(upper=113, lower=102, mid=107.5, width=11)",
+   "var:__obs_plot0": 0.7
+  },
+  {
+   "var:ch": "pine_fn.<locals>.Channel(upper=113, lower=102, mid=107.5, width=11)",
+   "var:__obs_plot0": 0.8181818181818182
+  }
+ ],
+ "finalVarState": {
+  "ch": "pine_fn.<locals>.Channel(upper=113, lower=102, mid=107.5, width=11)",
+  "__obs_plot0": 0.8181818181818182
+ }
+}

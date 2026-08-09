@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("RSI Mom")
+rsi = nz(ta.rsi(close, 3), 50.0)
+rsiMA = ta.sma(rsi, 3)
+rsiMom = rsi - rsiMA
+plot(rsiMom, "RM")

@@ -1,0 +1,4 @@
+//@version=5
+indicator("table cell")
+var t = table.new(position.top_right, 2, 3)
+table.cell(t, 0, 0, "Hello")

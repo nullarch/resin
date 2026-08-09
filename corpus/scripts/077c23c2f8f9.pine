@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Osc State")
+rsi = nz(ta.rsi(close, 3), 50.0)
+k = ta.stoch(close, high, low, 5)
+bothOB = rsi > 70 and k > 80
+bothOS = rsi < 30 and k < 20
+state = switch
+    bothOB => "confirmed_ob"
+    bothOS => "confirmed_os"
+    rsi > 60 or k > 70 => "approaching_ob"
+    rsi < 40 or k < 30 => "approaching_os"
+    => "neutral"
+isConfirmed = str.contains(state, "confirmed")
+plot(isConfirmed ? 1 : 0, "Conf")

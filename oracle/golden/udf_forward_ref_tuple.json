@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_a": "NaN",
+   "var:__obs_b": "NaN",
+   "var:n": 1.0,
+   "var:__obs_c": 1.0,
+   "var:__obs_d": 2.0
+  },
+  {
+   "var:__obs_a": "NaN",
+   "var:__obs_b": "NaN",
+   "var:n": 2.0,
+   "var:__obs_c": 2.0,
+   "var:__obs_d": 4.0
+  },
+  {
+   "var:__obs_a": 102.0,
+   "var:__obs_b": "NaN",
+   "var:n": 3.0,
+   "var:__obs_c": 3.0,
+   "var:__obs_d": 6.0
+  },
+  {
+   "var:__obs_a": 102.3333333333,
+   "var:__obs_b": "NaN",
+   "var:n": 4.0,
+   "var:__obs_c": 4.0,
+   "var:__obs_d": 8.0
+  },
+  {
+   "var:__obs_a": 103.0,
+   "var:__obs_b": "NaN",
+   "var:n": 5.0,
+   "var:__obs_c": 5.0,
+   "var:__obs_d": 10.0
+  },
+  {
+   "var:__obs_a": 103.6666666667,
+   "var:__obs_b": 102.8333333333,
+   "var:n": 6.0,
+   "var:__obs_c": 6.0,
+   "var:__obs_d": 12.0
+  },
+  {
+   "var:__obs_a": 105.0,
+   "var:__obs_b": 103.7380952381,
+   "var:n": 7.0,
+   "var:__obs_c": 7.0,
+   "var:__obs_d": 14.0
+  },
+  {
+   "var:__obs_a": 105.3333333333,
+   "var:__obs_b": 104.0986394558,
+   "var:n": 8.0,
+   "var:__obs_c": 8.0,
+   "var:__obs_d": 16.0
+  },
+  {
+   "var:__obs_a": 106.0,
+   "var:__obs_b": 104.9275996113,
+   "var:n": 9.0,
+   "var:__obs_c": 9.0,
+   "var:__obs_d": 18.0
+  },
+  {
+   "var:__obs_a": 106.6666666667,
+   "var:__obs_b": 105.8054282938,
+   "var:n": 10.0,
+   "var:__obs_c": 10.0,
+   "var:__obs_d": 20.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_a": 106.6666666667,
+  "__obs_b": 105.8054282938,
+  "n": 10.0,
+  "__obs_c": 10.0,
+  "__obs_d": 20.0
+ }
+}

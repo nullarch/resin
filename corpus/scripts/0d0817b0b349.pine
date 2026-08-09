@@ -1,0 +1,5 @@
+//@version=5
+indicator("Color Hex")
+var float result = 0.0
+c = #FF0000
+result := close

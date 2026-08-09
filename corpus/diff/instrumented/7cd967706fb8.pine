@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Sharpe")
+var float[] rets = array.new_float(0)
+ret = close - close[1]
+if not na(ret)
+    array.push(rets, ret)
+if array.size(rets) > 8
+    array.shift(rets)
+avg = array.avg(rets)
+sd = array.stdev(rets)
+sharpe = sd > 0 ? avg / sd : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := sharpe
+plot(sharpe, "Sharpe")

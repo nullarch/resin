@@ -1,0 +1,29 @@
+//@version=5
+indicator("Keltner Channels")
+// TV 빌트인 "Keltner Channels" 인디케이터 E2E 재현(ROADMAP P2 "TV 빌트인 인디케이터 E2E" 여덟(마지막)
+// 슬라이스, KC 단독 -- OBV·ACCDIST(C154)와 동일 근거로 Keltner Channels/Keltner Channel Width를
+// 별개 TV 빌트인으로 분리해 이 스크립트는 KC만 담당). ta.kc 자체의 계산은 이미
+// oracle/cases/ta_kc_kcw.pine이 개별 검증했다 -- 단 ta.kc는 pine2py kc.py가 basis_val(ema)이 이미
+// 유효해도 range_src(atr)가 NaN이면 튜플 전체를 NaN으로 묶어 반환해, ta.atr의 워밍업 divergence
+// (DIVERGENCES.md #8)가 basis까지 전파되는 **의도적 divergence**(DIVERGENCES.md #9,
+// tests/oracle/ta_kc_kcw.test.ts 참조)라 이 케이스도 순수 compareToGolden을 못 쓰고 그 hand-verified
+// 패턴을 재사용한다. useTrueRange=true/length=3/mult=2.0은 ta_kc_kcw.pine의 첫 변형과 동일 파라미터를
+// 재사용(sample10.json에서 이미 워밍업/수렴 구간이 검증된 조합 그대로) -- false 변형(range=high-low
+// divergence)은 next_hint 권고대로 이번 슬라이스 범위 밖(plot 조합 복잡도 억제).
+lengthInput = input.int(3, "Length")
+multInput = input.float(2.0, "Multiplier")
+useTrueRangeInput = input.bool(true, "Use TrueRange (ATR)")
+src = input.source(close, "Source")
+
+[basis, upper, lower] = ta.kc(src, lengthInput, multInput, useTrueRangeInput)
+
+plot(basis, "Basis")
+plot(upper, "Upper")
+plot(lower, "Lower")
+
+var float __obs_basis = na
+var float __obs_upper = na
+var float __obs_lower = na
+__obs_basis := basis
+__obs_upper := upper
+__obs_lower := lower

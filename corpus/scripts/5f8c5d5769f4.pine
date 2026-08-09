@@ -1,0 +1,6 @@
+//@version=5
+indicator("ATR")
+var float lastATR = 0
+a = ta.atr(5)
+if not na(a)
+    lastATR := a

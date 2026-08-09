@@ -1,0 +1,4 @@
+//@version=5
+indicator("Test")
+x = 10
+x %= 3

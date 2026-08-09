@@ -1,0 +1,51 @@
+//@version=5
+indicator("udt_enum_field")
+// UDT 필드 타입이 enum인 경우(C273, corpus 258d40ea0360.pine — "UDT 필드 타입은 float/int/bool/
+// string/color..." 클러스터 유일 1건) 오라클 검증. pine2py는 필드 타입 화이트리스트가 아예 없어
+// (codegen._pine_type_to_python가 enum 타입명도 매핑 없이 그대로 통과) 이 조합을 검증 없이
+// 지원하지만, pine2js는 isUdtFieldTypeAllowed가 enum 타입명(prog.enumTypes)도 명시적으로 허용해야
+// 한다(EnumDecl prepass가 TypeDecl prepass보다 먼저 실행되도록 순서를 바꿔 필드 default 값의 enum
+// 멤버 DotAccess 분석도 함께 해결).
+//
+// **채널 A(t1)/채널 C(t3)는 오라클 비교에서 제외**(tests/oracle/udt_enum_field.test.ts OBS_KEYS
+// 참조) — pine2py의 진짜 실행 모델 버그를 발견했다: `class Direction(Enum): ...`가 pine_fn(ctx)
+// 함수 본문 "안"에 있어 매 바 호출마다 새로 재정의되고, Python Enum의 `==`는 기본적으로 identity
+// 비교라 바 0에서 캡처돼 var로 보존된 enum 인스턴스(t1.dir/t3.dir)는 바 1부터 "그 바에" 새로 만들어진
+// Direction.Flat/Direction.Down과 동일 멤버여도 다른 객체라 항상 False가 된다(python 직접 실행으로
+// 확인 — t1.dir의 object id는 전 바에 걸쳐 안정적이지만 비교 대상 리터럴의 id는 바마다 바뀜). TV의
+// enum 멤버는 바 사이에서 안정적인 값이어야 하므로(pine2js는 애초에 컴파일타임 문자열로 접어 이
+// 문제가 구조적으로 없음) 이는 GOAL.md "알려진 버그는 따르지 않는다"의 신규 사례
+// (MEMORY.md 참조) — 채널 B(t2, 매 바 재대입이라 같은 바 안에서 캡처와 비교가 항상 함께 일어나
+// 이 버그를 우연히 피함)만 오라클 비교에 안전하다. t1/t3의 정확성은 tests/unit/codegen.test.ts의
+// hand-verified e2e(다바 실행)가 대신 검증한다.
+
+enum Direction
+    Up
+    Down
+    Flat
+
+type TrendInfo
+    Direction dir = Direction.Flat
+    float strength = 0.0
+
+// 채널 A(오라클 비교 제외, 위 주석 참조): 명시적 enum 기본값으로 생성한 뒤 아무것도 갱신하지 않음.
+var TrendInfo t1 = TrendInfo.new()
+var bool __obs_t1_is_flat = na
+__obs_t1_is_flat := t1.dir == Direction.Flat
+
+// 채널 B(오라클 비교 대상): 매 바 조건부로 enum 필드를 갱신하는 동적 신호(코퍼스 실제 패턴) + 동시에
+// 스칼라 필드도 갱신 — 캡처와 비교가 항상 같은 바 안에서 일어나 위 pine2py 버그를 타지 않는다.
+var TrendInfo t2 = TrendInfo.new()
+t2.dir := close > open ? Direction.Up : Direction.Down
+t2.strength := math.abs(close - open)
+var bool __obs_t2_is_up = na
+__obs_t2_is_up := t2.dir == Direction.Up
+var bool __obs_t2_is_down = na
+__obs_t2_is_down := t2.dir == Direction.Down
+var float __obs_t2_strength = na
+__obs_t2_strength := t2.strength
+
+// 채널 C(오라클 비교 제외, 위 주석 참조): 생성자에 enum 값을 위치 인자로 직접 전달.
+var TrendInfo t3 = TrendInfo.new(Direction.Down, 5.0)
+var bool __obs_t3_is_down = na
+__obs_t3_is_down := t3.dir == Direction.Down

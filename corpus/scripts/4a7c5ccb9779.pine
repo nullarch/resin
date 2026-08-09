@@ -1,0 +1,7 @@
+//@version=5
+indicator("HMAC Proxy")
+var float cum_vwap = 0.0
+var float cum_vol = 0.0
+cum_vwap := cum_vwap + close * volume
+cum_vol := cum_vol + volume
+hmac_val = cum_vol > 0 ? cum_vwap / cum_vol : close

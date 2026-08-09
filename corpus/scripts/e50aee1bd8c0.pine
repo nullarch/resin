@@ -1,0 +1,6 @@
+//@version=5
+indicator("VWAP")
+vwapVal = ta.vwap(close)
+dev = close - nz(vwapVal)
+pctDev = nz(vwapVal) != 0 ? dev / nz(vwapVal) * 100 : 0.0
+plot(vwapVal, "VWAP")

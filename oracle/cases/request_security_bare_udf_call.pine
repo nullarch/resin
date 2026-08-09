@@ -1,0 +1,19 @@
+//@version=5
+indicator("request_security_bare_udf_call")
+// request.security bare UDF call expression(C432, wild 클러스터① 최대 하위축 269건) —
+// `[a,b] = request.security(sym, tf, myFunc(...))`에서 expression 인자가 브래킷 없이 그대로
+// 튜플 반환 UDF 호출인 폼. pine2py wavealgo/security.py._resolve_expression은 8종 bare OHLCV
+// 식별자만 실제 HTF 집계를 하고, 그 외(UDF 콜 포함)는 "미지원 값은 그대로 통과"로 떨어진다 —
+// UDF는 request_security() 진입 전 파이썬 인자 평가 시점에 이미 실행 완료된 현재(차트) 타임프레임
+// 값이 그대로 반환값이 된다(HTF 재계산 0, docs/transpiler/architecture.md에 의도된 설계로 문서화).
+// 이 케이스는 그 오라클 시맨틱이 실제로 매 바 재계산되는지(HTF 기간 동안 값이 고정되지 않는지)를
+// 골든으로 대조한다.
+myFunc(x, y) =>
+    a = x + 1
+    b = y + 2
+    [a, b]
+[hi, lo] = request.security(syminfo.tickerid, "D", myFunc(high, low))
+var float __obs_hi = na
+__obs_hi := hi
+var float __obs_lo = na
+__obs_lo := lo

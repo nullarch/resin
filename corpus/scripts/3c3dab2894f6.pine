@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("UDFdd")
+calcDD(equity, peak) =>
+    peak > 0.01 ? (peak - equity) / peak * 100.0 : 0.0
+
+var float eq = 100.0
+var float pk = 100.0
+pnl = close > open ? 1.0 : -0.5
+eq := eq + pnl
+pk := eq > pk ? eq : pk
+dd = calcDD(eq, pk)
+plot(dd, "DD")

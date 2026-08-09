@@ -1,0 +1,11 @@
+
+//@version=5
+strategy("Dual MA", overlay=true)
+fast = ta.sma(close, 3)
+slow = ta.sma(close, 5)
+if ta.crossover(fast, slow)
+    strategy.entry("Long", strategy.long)
+if ta.crossunder(fast, slow)
+    strategy.entry("Short", strategy.short)
+plot(fast, "Fast")
+plot(slow, "Slow")

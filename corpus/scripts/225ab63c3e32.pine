@@ -1,0 +1,40 @@
+
+//@version=5
+indicator("Market Scanner")
+// Core indicators
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rsi = ta.rsi(close, 3)
+atr = ta.atr(3)
+[macd, sig, hist] = ta.macd(close, 3, 5, 3)
+
+// Scan criteria
+trendUp = sma3 > sma5
+momentumBull = rsi > 50
+macdBull = hist > 0
+volExpand = atr > ta.sma(atr, 5)
+
+// Score
+score = (trendUp ? 1 : 0) + (momentumBull ? 1 : 0) + (macdBull ? 1 : 0) + (volExpand ? 1 : 0)
+
+// Tracking
+var float[] scoreHist = array.new_float(0)
+array.push(scoreHist, float(score))
+if array.size(scoreHist) > 8
+    array.shift(scoreHist)
+avgScore = array.avg(scoreHist)
+
+// State
+var scanState = map.new<string, float>()
+map.put(scanState, "score", float(score))
+map.put(scanState, "avg", avgScore)
+
+var int bars = 0
+bars := bars + 1
+
+var float maxScore = 0.0
+if float(score) > maxScore
+    maxScore := float(score)
+
+plot(score, "Score")
+plot(avgScore, "AvgScore")

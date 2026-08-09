@@ -1,0 +1,8 @@
+//@version=5
+indicator("Array Includes")
+var arr = array.from(10.0, 20.0, 30.0)
+var bool has_20 = array.includes(arr, 20.0)
+var bool has_50 = array.includes(arr, 50.0)
+var float result = 0.0
+result := (has_20 ? 1.0 : 0.0) + (has_50 ? 10.0 : 0.0)
+plot(result)

@@ -1,0 +1,19 @@
+
+//@version=5
+indicator("Classification")
+rsiVal = ta.rsi(close, 3)
+sma3 = ta.sma(close, 3)
+var int category = 0
+if rsiVal > 70 and close > sma3
+    category := 4
+else if rsiVal > 60 and close > sma3
+    category := 3
+else if rsiVal > 50
+    category := 2
+else if rsiVal > 40
+    category := 1
+else if rsiVal > 30
+    category := 0
+else
+    category := -1
+plot(category, "Cat")

@@ -1,0 +1,9 @@
+//@version=5
+indicator("test")
+var float[] stack = array.new_float(0)
+array.clear(stack)
+array.push(stack, close)
+for i = 1 to 3
+    prev = array.get(stack, array.size(stack) - 1)
+    array.push(stack, prev * 0.9)
+plot(array.sum(stack))

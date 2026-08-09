@@ -1,0 +1,3 @@
+//@version=5
+indicator("Kwargs")
+plot(close, title="Test Plot", color=color.red)

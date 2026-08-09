@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Ind Wts")
+var float[] weights = array.from(0.4, 0.35, 0.25)
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+rsiSig = rsi > 55 ? 1.0 : rsi < 45 ? -1.0 : 0.0
+maSig = close > sma3 ? 1.0 : -1.0
+volSig = volume > ta.sma(volume, 3) ? 1.0 : -1.0
+weighted = rsiSig * array.get(weights, 0) + maSig * array.get(weights, 1) + volSig * array.get(weights, 2)
+plot(weighted, "W")

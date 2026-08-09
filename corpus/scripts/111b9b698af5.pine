@@ -1,0 +1,5 @@
+
+//@version=5
+indicator("Inside")
+isInside = not na(high[1]) and high < high[1] and low > low[1]
+plot(isInside ? 1 : 0, "IB")

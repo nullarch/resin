@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Enum Cond")
+enum Mode
+    Aggressive = 1
+    Normal = 2
+    Conservative = 3
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+mode = atr > avgATR * 1.5 ? Mode.Conservative : rsi > 60 or rsi < 40 ? Mode.Aggressive : Mode.Normal
+threshold = mode == Mode.Aggressive ? 0.5 : mode == Mode.Normal ? 1.0 : 1.5
+plot(threshold, "Thresh")

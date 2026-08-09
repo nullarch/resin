@@ -1,0 +1,13 @@
+//@version=5
+indicator("SpectCent18")
+mags = array.new_float(0)
+for f = 1 to 4
+    mag = math.abs(math.sin(float(f) * 0.5) * close)
+    array.push(mags, mag)
+weightedSum = 0.0
+totalMag = 0.0
+for [idx, m] in mags
+    weightedSum := weightedSum + float(idx + 1) * m
+    totalMag := totalMag + m
+centroid = totalMag > 0.001 ? weightedSum / totalMag : 0.0
+plot(centroid, "sc")

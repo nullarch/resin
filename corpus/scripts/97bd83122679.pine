@@ -1,0 +1,12 @@
+//@version=5
+indicator("For In No Idx")
+arr = array.new<float>(0)
+array.push(arr, 5.0)
+array.push(arr, 15.0)
+array.push(arr, 25.0)
+float total = 0.0
+for val in arr
+    total := total + val
+var float result = 0.0
+result := total
+plot(result)

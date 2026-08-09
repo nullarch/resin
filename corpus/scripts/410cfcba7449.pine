@@ -1,0 +1,9 @@
+//@version=5
+indicator("FillRange")
+a = array.new<float>(5, 0.0)
+array.fill(a, 99.0, 1, 4)
+var float v0 = 0.0
+var float v2 = 0.0
+v0 := array.get(a, 0)
+v2 := array.get(a, 2)
+plot(v0 + v2)

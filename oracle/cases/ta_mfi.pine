@@ -1,0 +1,7 @@
+//@version=5
+indicator("ta_mfi")
+// ta.mfi 오라클 검증(ROADMAP P2 "ta.* 44종" — mfi). length=3으로 sample10.json 10바 안에서
+// 초기화 구간(NaN, 바 0~2)과 정상 구간(바 3~9)을 모두 커버. volume은 Pine 인자가 아니라 내장
+// bar series로 암묵 사용된다(analyzer.ts TA_REGISTRY.mfi 주석 참조).
+var float __obs_mfi = na
+__obs_mfi := ta.mfi(close, 3)

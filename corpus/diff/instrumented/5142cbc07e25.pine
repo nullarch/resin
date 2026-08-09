@@ -1,0 +1,12 @@
+//@version=5
+indicator("Array Search")
+a = array.from(10.0, 20.0, 30.0, 40.0, 50.0)
+var int idx = -1
+idx := array.indexof(a, 30.0)
+var bool has_20 = false
+has_20 := array.includes(a, 20.0)
+var bool has_99 = true
+has_99 := array.includes(a, 99.0)
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Market Class")
+rsi = ta.rsi(close, 3)
+sma3 = ta.sma(close, 3)
+atr = ta.atr(3)
+smaATR = ta.sma(atr, 5)
+volHigh = atr > smaATR
+trendUp = close > sma3
+label = volHigh ? (trendUp ? (rsi > 60 ? "volatile_bull" : "volatile_neutral") : (rsi < 40 ? "volatile_bear" : "volatile_neutral")) : (trendUp ? "quiet_bull" : "quiet_bear")
+isBull = label == "volatile_bull" or label == "quiet_bull"
+plot(isBull ? 1 : 0, "Bull")

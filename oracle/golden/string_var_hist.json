@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:s": "even",
+   "var:__obs_cur": "even",
+   "var:__obs_prev": "NaN",
+   "var:__obs_prev2": "NaN"
+  },
+  {
+   "var:s": "odd",
+   "var:__obs_cur": "odd",
+   "var:__obs_prev": "even",
+   "var:__obs_prev2": "NaN"
+  },
+  {
+   "var:s": "even",
+   "var:__obs_cur": "even",
+   "var:__obs_prev": "odd",
+   "var:__obs_prev2": "even"
+  },
+  {
+   "var:s": "odd",
+   "var:__obs_cur": "odd",
+   "var:__obs_prev": "even",
+   "var:__obs_prev2": "odd"
+  },
+  {
+   "var:s": "even",
+   "var:__obs_cur": "even",
+   "var:__obs_prev": "odd",
+   "var:__obs_prev2": "even"
+  },
+  {
+   "var:s": "odd",
+   "var:__obs_cur": "odd",
+   "var:__obs_prev": "even",
+   "var:__obs_prev2": "odd"
+  },
+  {
+   "var:s": "even",
+   "var:__obs_cur": "even",
+   "var:__obs_prev": "odd",
+   "var:__obs_prev2": "even"
+  },
+  {
+   "var:s": "odd",
+   "var:__obs_cur": "odd",
+   "var:__obs_prev": "even",
+   "var:__obs_prev2": "odd"
+  },
+  {
+   "var:s": "even",
+   "var:__obs_cur": "even",
+   "var:__obs_prev": "odd",
+   "var:__obs_prev2": "even"
+  },
+  {
+   "var:s": "odd",
+   "var:__obs_cur": "odd",
+   "var:__obs_prev": "even",
+   "var:__obs_prev2": "odd"
+  }
+ ],
+ "finalVarState": {
+  "s": "odd",
+  "__obs_cur": "odd",
+  "__obs_prev": "even",
+  "__obs_prev2": "odd"
+ }
+}

@@ -1,0 +1,5 @@
+//@version=5
+indicator("Ternary Nested")
+var float result = 0.0
+float x = close
+result := x > 110 ? 3.0 : x > 105 ? 2.0 : 1.0

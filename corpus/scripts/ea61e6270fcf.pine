@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Sig Combo")
+var signals = map.new<string, float>()
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+map.put(signals, "rsi", rsi > 55 ? 1.0 : rsi < 45 ? -1.0 : 0.0)
+map.put(signals, "trend", close > sma3 ? 1.0 : -1.0)
+map.put(signals, "ma_align", sma3 > ema5 ? 1.0 : -1.0)
+bullCount = 0.0
+for [k, v] in signals
+    if v > 0
+        bullCount := bullCount + 1
+plot(bullCount, "BC")

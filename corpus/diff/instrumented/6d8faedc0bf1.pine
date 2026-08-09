@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Pos Scale")
+maxPos = 5.0
+currentPos = 1.0
+rsi = nz(ta.rsi(close, 3), 50.0)
+iters = 0
+while currentPos < maxPos and rsi > 50 and iters < 10
+    currentPos := currentPos + 0.5
+    rsi := rsi - 5
+    iters := iters + 1
+var float __obs_plot0 = na
+__obs_plot0 := currentPos
+plot(currentPos, "Pos")

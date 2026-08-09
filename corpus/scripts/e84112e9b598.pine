@@ -1,0 +1,39 @@
+
+//@version=5
+indicator("FullAdapt")
+type AdaptState
+    float value = 0.0
+    float alpha = 0.5
+
+var AdaptState state = AdaptState.new()
+var float[] effHistory = array.new_float(0)
+var scores = map.new<string, float>()
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+atrVal = nz(ta.atr(3), 1.0)
+smaVal = nz(ta.sma(close, 3), close)
+
+direction = math.abs(close - nz(close[3], close))
+volatSum = 0.0
+for i = 0 to 2
+    volatSum := volatSum + math.abs(nz(close[i], close) - nz(close[i + 1], close))
+eff = volatSum > 0 ? direction / volatSum : 0.5
+
+array.push(effHistory, eff)
+if array.size(effHistory) > 5
+    array.shift(effHistory)
+
+avgEff = array.avg(effHistory)
+state.alpha := math.max(0.1, math.min(0.9, avgEff))
+state.value := state.value * (1.0 - state.alpha) + close * state.alpha
+
+distFromMA = smaVal > 0 ? (state.value - smaVal) / smaVal * 100 : 0.0
+map.put(scores, "eff", avgEff * 100)
+map.put(scores, "dist", distFromMA)
+map.put(scores, "rsi", rsi)
+
+totalScore = 0.0
+for [k, v] in scores
+    totalScore := totalScore + nz(v, 0.0)
+
+plot(totalScore, "TS")

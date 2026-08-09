@@ -1,0 +1,6 @@
+//@version=5
+indicator("Nested")
+var float result = 0.0
+a = array.from(10.0, 20.0, 30.0)
+result := array.get(a,
+    (2 - 1))

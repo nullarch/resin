@@ -1,0 +1,6 @@
+//@version=5
+indicator("series scalar")
+val = close + 10.0
+val2 = close * 2.0
+val3 = close - open
+val4 = high / low

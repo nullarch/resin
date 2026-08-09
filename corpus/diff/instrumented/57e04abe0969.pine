@@ -1,0 +1,53 @@
+
+//@version=5
+indicator("Production System")
+// Indicators
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+rsi = ta.rsi(close, 3)
+atr = ta.atr(3)
+[macd, sig, hist] = ta.macd(close, 3, 5, 3)
+
+// Signal composite
+tSig = close > sma3 and sma3 > ema5 ? 1.0 : -1.0
+mSig = rsi > 55 ? 1.0 : rsi < 45 ? -1.0 : 0.0
+hSig = hist > 0 ? 1.0 : -1.0
+composite = (tSig * 0.4 + mSig * 0.3 + hSig * 0.3)
+
+// Risk management
+var float equity = 10000.0
+var float maxEq = 10000.0
+var float maxDD = 0.0
+chg = ta.change(close, 1)
+equity := equity + nz(chg, 0.0) * 10
+if equity > maxEq
+    maxEq := equity
+dd = maxEq > 0 ? (maxEq - equity) / maxEq : 0.0
+if dd > maxDD
+    maxDD := dd
+
+// Signal tracking
+var float[] sigHist = array.new_float(0)
+array.push(sigHist, composite)
+if array.size(sigHist) > 8
+    array.shift(sigHist)
+avgSig = array.avg(sigHist)
+
+// State
+var state = map.new<string, float>()
+map.put(state, "signal", composite)
+map.put(state, "equity", equity)
+map.put(state, "maxDD", maxDD * 100)
+
+var int bars = 0
+bars := bars + 1
+
+var float __obs_plot0 = na
+__obs_plot0 := composite
+plot(composite, "Signal")
+var float __obs_plot1 = na
+__obs_plot1 := equity
+plot(equity, "Equity")
+var float __obs_plot2 = na
+__obs_plot2 := maxDD * 100
+plot(maxDD * 100, "DD%")

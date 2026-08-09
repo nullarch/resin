@@ -1,0 +1,87 @@
+//@version=5
+indicator("udf_param_container_typehint")
+// C415: UDF/method 매개변수(및 명시 typeHint를 가진 var/'=' 로컬)의 array<T>/map<K,V> 타입힌트를
+// 컨테이너 종류 판별 신호로 인정 -- for-in 이터러블(analyzeForInStmt/resolveContainerExprKind)이
+// 지금까지 top-level var(생성자 콜)/'=' 로컬(생성자 콜)만 인식하고 명시 typeHint 자체는 무시해
+// 매개변수(값 흐름 추적 불가, wild `array<Candle> candles`류)를 전부 거부해온 것을 이 typeHint
+// 신호로 메운다. pine2py는 값 흐름을 아예 추적하지 않는 duck-typing 런타임이라 이 조합은 오라클
+// 대조 가능(python 직접 실행으로 success 확인).
+
+type Candle
+    float h
+    float l
+
+// 채널 A: array<float> 매개변수 for-in 합산.
+sumArr(array<float> arr) =>
+    total = 0.0
+    for x in arr
+        total := total + x
+    total
+
+// 채널 B: method 수신자(this)가 array<float>로 타입힌트된 for-in (wild `method scale(array<float>
+// this, ...)` 패턴, C415 실측 9ab96c5972a2.pine/3ae95d44a98d.pine).
+method sumSelf(array<float> this) =>
+    total = 0.0
+    for x in this
+        total := total + x
+    total
+
+// 채널 C: array<UDT> 매개변수 for-in + UDT 필드 접근(elemUdtType 전파 확인, C415 실측
+// 777b6fb15342.pine CandleSetHigh/CandleSetLow).
+highestHigh(array<Candle> candles) =>
+    hh = -1e10
+    for c in candles
+        hh := math.max(hh, c.h)
+    hh
+
+// 채널 D: map<string, float> 매개변수 for-in.
+sumMap(map<string, float> m) =>
+    total = 0.0
+    for [k, v] in m
+        total := total + v
+    total
+
+var array<float> a = array.from(10.0, 20.0, 30.0)
+var float __obs_sum_param = na
+__obs_sum_param := sumArr(a)
+
+var float __obs_sum_method = na
+__obs_sum_method := a.sumSelf()
+
+var array<Candle> candles = array.new<Candle>()
+if bar_index == 0
+    array.push(candles, Candle.new(5.0, 1.0))
+    array.push(candles, Candle.new(9.0, 2.0))
+var float __obs_highest = na
+__obs_highest := highestHigh(candles)
+
+var m2 = map.new<string, float>()
+if bar_index == 0
+    map.put(m2, "a", 1.0)
+    map.put(m2, "b", 2.0)
+var float __obs_sum_map = na
+__obs_sum_map := sumMap(m2)
+
+// 채널 E: top-level var가 explicit array<T> typeHint + 생성자 콜이 아닌 초기값(na)을 갖고 조건부
+// ':='로 나중에 채워지는 패턴(wild `barData[] lowerData = na` 류) -- for-in이 typeHint만으로
+// 확정돼야 함.
+var array<float> b = na
+if bar_index == 0
+    b := array.from(100.0, 200.0)
+sumB = 0.0
+for x in b
+    sumB := sumB + x
+var float __obs_sum_typehint_var = na
+__obs_sum_typehint_var := sumB
+
+// 채널 F: '=' 로컬이 explicit array<T> typeHint + 생성자 콜이 아닌 값(UDF 호출 반환)을 받는 패턴
+// (wild `float[] goldenCrossesTimes = whenSince(...)` 류).
+makeArr() =>
+    array.from(7.0, 8.0)
+
+array<float> c = makeArr()
+sumC = 0.0
+for x in c
+    sumC := sumC + x
+var float __obs_sum_typehint_local = na
+__obs_sum_typehint_local := sumC

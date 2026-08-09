@@ -1,0 +1,5 @@
+//@version=5
+indicator("IntNa")
+var float result = -1
+x = na
+result := int(x)

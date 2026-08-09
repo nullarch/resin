@@ -1,0 +1,10 @@
+//@version=5
+indicator("TA Closure")
+calcSignal(int fastLen, int slowLen) =>
+    fast = ta.ema(close, fastLen)
+    slow = ta.ema(close, slowLen)
+    getStrength() =>
+        fast - slow
+    getStrength()
+signal = calcSignal(3, 5)
+plot(signal)

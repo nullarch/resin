@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:mkt": "pine_fn.<locals>.Market(score=1.1112318840579998, regime=1)",
+   "var:__obs_plot0": -0.5,
+   "var:__obs_plot1": -1.0
+  },
+  {
+   "var:mkt": "pine_fn.<locals>.Market(score=1.1112318840579998, regime=1)",
+   "var:__obs_plot0": -0.5,
+   "var:__obs_plot1": -1.0
+  },
+  {
+   "var:mkt": "pine_fn.<locals>.Market(score=1.1112318840579998, regime=1)",
+   "var:__obs_plot0": -0.8333333333340001,
+   "var:__obs_plot1": -1.0
+  },
+  {
+   "var:mkt": "pine_fn.<locals>.Market(score=1.1112318840579998, regime=1)",
+   "var:__obs_plot0": 0.9666666666660001,
+   "var:__obs_plot1": 1.0
+  },
+  {
+   "var:mkt": "pine_fn.<locals>.Market(score=1.1112318840579998, regime=1)",
+   "var:__obs_plot0": 1.166666666666,
+   "var:__obs_plot1": 1.0
+  },
+  {
+   "var:mkt": "pine_fn.<locals>.Market(score=1.1112318840579998, regime=1)",
+   "var:__obs_plot0": -0.19918699186999989,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:mkt": "pine_fn.<locals>.Market(score=1.1112318840579998, regime=1)",
+   "var:__obs_plot0": 1.0784313725499999,
+   "var:__obs_plot1": 1.0
+  },
+  {
+   "var:mkt": "pine_fn.<locals>.Market(score=1.1112318840579998, regime=1)",
+   "var:__obs_plot0": 1.23579109063,
+   "var:__obs_plot1": 1.0
+  },
+  {
+   "var:mkt": "pine_fn.<locals>.Market(score=1.1112318840579998, regime=1)",
+   "var:__obs_plot0": -0.14386438643800004,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:mkt": "pine_fn.<locals>.Market(score=1.1112318840579998, regime=1)",
+   "var:__obs_plot0": 1.1112318840579998,
+   "var:__obs_plot1": 1.0
+  }
+ ],
+ "finalVarState": {
+  "mkt": "pine_fn.<locals>.Market(score=1.1112318840579998, regime=1)",
+  "__obs_plot0": 1.1112318840579998,
+  "__obs_plot1": 1.0
+ }
+}

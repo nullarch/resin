@@ -1,0 +1,5 @@
+//@version=5
+indicator("Stemming Proxy")
+var float stemSum = 0.0
+stem = math.floor(close / 10.0) * 10.0
+stemSum := stemSum + stem

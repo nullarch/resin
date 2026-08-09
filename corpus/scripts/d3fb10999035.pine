@@ -1,0 +1,8 @@
+//@version=5
+indicator("Sentiment Score")
+var float sentiment = 0.0
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+if rsiVal > 60
+    sentiment := sentiment + 1.0
+else if rsiVal < 40
+    sentiment := sentiment - 1.0

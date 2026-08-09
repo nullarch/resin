@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:sq_na": true,
+   "var:lg_na": true,
+   "var:result": 13.718281828459045,
+   "var:__obs_plot0": 13.718281828459045
+  },
+  {
+   "var:sq_na": true,
+   "var:lg_na": true,
+   "var:result": 13.718281828459045,
+   "var:__obs_plot0": 13.718281828459045
+  },
+  {
+   "var:sq_na": true,
+   "var:lg_na": true,
+   "var:result": 13.718281828459045,
+   "var:__obs_plot0": 13.718281828459045
+  },
+  {
+   "var:sq_na": true,
+   "var:lg_na": true,
+   "var:result": 13.718281828459045,
+   "var:__obs_plot0": 13.718281828459045
+  },
+  {
+   "var:sq_na": true,
+   "var:lg_na": true,
+   "var:result": 13.718281828459045,
+   "var:__obs_plot0": 13.718281828459045
+  },
+  {
+   "var:sq_na": true,
+   "var:lg_na": true,
+   "var:result": 13.718281828459045,
+   "var:__obs_plot0": 13.718281828459045
+  },
+  {
+   "var:sq_na": true,
+   "var:lg_na": true,
+   "var:result": 13.718281828459045,
+   "var:__obs_plot0": 13.718281828459045
+  },
+  {
+   "var:sq_na": true,
+   "var:lg_na": true,
+   "var:result": 13.718281828459045,
+   "var:__obs_plot0": 13.718281828459045
+  },
+  {
+   "var:sq_na": true,
+   "var:lg_na": true,
+   "var:result": 13.718281828459045,
+   "var:__obs_plot0": 13.718281828459045
+  },
+  {
+   "var:sq_na": true,
+   "var:lg_na": true,
+   "var:result": 13.718281828459045,
+   "var:__obs_plot0": 13.718281828459045
+  }
+ ],
+ "finalVarState": {
+  "sq_na": true,
+  "lg_na": true,
+  "result": 13.718281828459045,
+  "__obs_plot0": 13.718281828459045
+ }
+}

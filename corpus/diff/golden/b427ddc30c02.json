@@ -1,0 +1,182 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:pc": {
+    "bull": 10.0
+   },
+   "var:bodyHist": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:bars": 1,
+   "var:__obs_plot0": 0.42857142857142855,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:pc": {
+    "bull": 10.0
+   },
+   "var:bodyHist": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:bars": 2,
+   "var:__obs_plot0": 0.3333333333333333,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:pc": {
+    "bull": 10.0
+   },
+   "var:bodyHist": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:bars": 3,
+   "var:__obs_plot0": 0.2,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:pc": {
+    "bull": 10.0
+   },
+   "var:bodyHist": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:bars": 4,
+   "var:__obs_plot0": 0.3333333333333333,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:pc": {
+    "bull": 10.0
+   },
+   "var:bodyHist": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:bars": 5,
+   "var:__obs_plot0": 0.3333333333333333,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:pc": {
+    "bull": 10.0
+   },
+   "var:bodyHist": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:bars": 6,
+   "var:__obs_plot0": 0.3333333333333333,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:pc": {
+    "bull": 10.0
+   },
+   "var:bodyHist": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:bars": 7,
+   "var:__obs_plot0": 0.3333333333333333,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:pc": {
+    "bull": 10.0
+   },
+   "var:bodyHist": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:bars": 8,
+   "var:__obs_plot0": 0.3333333333333333,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:pc": {
+    "bull": 10.0
+   },
+   "var:bodyHist": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:bars": 9,
+   "var:__obs_plot0": 0.3333333333333333,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:pc": {
+    "bull": 10.0
+   },
+   "var:bodyHist": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:bars": 10,
+   "var:__obs_plot0": 0.3333333333333333,
+   "var:__obs_plot1": 0
+  }
+ ],
+ "finalVarState": {
+  "pc": {
+   "bull": 10.0
+  },
+  "bodyHist": [
+   2,
+   2,
+   2,
+   2,
+   2,
+   2
+  ],
+  "bars": 10,
+  "__obs_plot0": 0.3333333333333333,
+  "__obs_plot1": 0
+ }
+}

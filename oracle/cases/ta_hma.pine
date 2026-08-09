@@ -1,0 +1,7 @@
+//@version=5
+indicator("ta_hma")
+// ta.hma 오라클 검증(ROADMAP P2 "ta.* 44종" — hma). length=4로 sample10.json 10바 안에서
+// half_len=2/sqrt_len=2 유도, half/full WMA 워밍업(바 0~2 NaN, 첫 유효 diff는 바3)과 outer WMA의
+// 2개 diff 누적 워밍업(첫 유효 hma는 바4)을 모두 커버.
+var float __obs_hma = na
+__obs_hma := ta.hma(close, 4)

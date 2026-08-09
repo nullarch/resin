@@ -1,0 +1,38 @@
+//@version=5
+indicator("Comprehensive Dispatch")
+type Metric
+    float val
+
+method doubled(Metric m) =>
+    m.val * 2.0
+
+// ARRAY
+arr = array.new<float>(0)
+arr.push(10.0)
+arr.push(20.0)
+float arr_total = arr.sum()
+
+// MAP
+m = map.new<string, float>()
+m.put("a", 100.0)
+float map_val = m.get("a")
+
+// MAP_ARRAY_SHARED
+float arr_size = float(array.size(arr))
+float map_size = float(map.size(m))
+
+// MATRIX
+mx = matrix.new<float>(1, 1, 5.0)
+float mx_val = matrix.get(mx, 0, 0)
+
+// DRAWING
+lbl = label.new(bar_index, close, "x")
+lbl.set_text("y")
+
+// USER METHOD
+met = Metric.new(50.0)
+float user_val = met.doubled()
+
+var float result = 0.0
+result := arr_total + map_val + arr_size + map_size + mx_val + user_val
+plot(result)

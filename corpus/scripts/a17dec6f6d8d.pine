@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Stress14")
+enum Color
+    RED
+    GREEN
+    BLUE
+pickColor(val) =>
+    val > 2.0 ? Color.GREEN : val < -2.0 ? Color.RED : Color.BLUE
+var float palette = 0.0
+diff = close - open
+picked = pickColor(diff)
+colorName = picked == Color.GREEN ? "GREEN" : picked == Color.RED ? "RED" : "BLUE"
+colorMap = map.new<string, float>()
+map.put(colorMap, colorName, diff)
+map.put(colorMap, "bar", float(bar_index))
+collected = array.new_float(0)
+for [k, v] in colorMap
+    array.push(collected, math.abs(v))
+palette := palette + array.sum(collected)
+plot(palette + float(str.length(colorName)), "S14")

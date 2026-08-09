@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("MFSpec")
+scales = array.new_float(0)
+array.push(scales, nz(ta.stdev(close, 3), 0.0))
+array.push(scales, nz(ta.stdev(close, 5), 0.0))
+minV = array.min(scales)
+maxV = array.max(scales)
+specWidth = nz(maxV, 0.0) - nz(minV, 0.0)
+plot(specWidth, "SW")

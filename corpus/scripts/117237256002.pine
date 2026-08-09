@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Thresh UDT")
+type ThreshState
+    float upper = 70.0
+    float lower = 30.0
+    int hitCount = 0
+
+var ThreshState ts = ThreshState.new()
+rsi = nz(ta.rsi(close, 3), 50.0)
+if rsi > ts.upper or rsi < ts.lower
+    ts.hitCount := ts.hitCount + 1
+    ts.upper := ts.upper + 1
+    ts.lower := ts.lower - 1
+plot(ts.hitCount, "Hits")

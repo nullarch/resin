@@ -1,0 +1,105 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_m1": "NaN",
+   "var:__obs_s2": "NaN",
+   "var:__obs_h1": "NaN",
+   "var:__obs_dc1": "NaN",
+   "var:__obs_ic2": "NaN",
+   "var:__obs_dyn": 200.0,
+   "var:__obs_io1": "NaN"
+  },
+  {
+   "var:__obs_m1": "NaN",
+   "var:__obs_s2": "NaN",
+   "var:__obs_h1": "NaN",
+   "var:__obs_dc1": 202.0,
+   "var:__obs_ic2": "NaN",
+   "var:__obs_dyn": 200.0,
+   "var:__obs_io1": 101.0
+  },
+  {
+   "var:__obs_m1": "NaN",
+   "var:__obs_s2": "NaN",
+   "var:__obs_h1": "NaN",
+   "var:__obs_dc1": 204.0,
+   "var:__obs_ic2": 102.0,
+   "var:__obs_dyn": 200.0,
+   "var:__obs_io1": 102.0
+  },
+  {
+   "var:__obs_m1": "NaN",
+   "var:__obs_s2": "NaN",
+   "var:__obs_h1": "NaN",
+   "var:__obs_dc1": 206.0,
+   "var:__obs_ic2": 103.0,
+   "var:__obs_dyn": 202.0,
+   "var:__obs_io1": 103.0
+  },
+  {
+   "var:__obs_m1": "NaN",
+   "var:__obs_s2": "NaN",
+   "var:__obs_h1": "NaN",
+   "var:__obs_dc1": 204.0,
+   "var:__obs_ic2": 104.0,
+   "var:__obs_dyn": 202.0,
+   "var:__obs_io1": 102.0
+  },
+  {
+   "var:__obs_m1": 0.6,
+   "var:__obs_s2": "NaN",
+   "var:__obs_h1": "NaN",
+   "var:__obs_dc1": 208.0,
+   "var:__obs_ic2": 103.0,
+   "var:__obs_dyn": 202.0,
+   "var:__obs_io1": 104.0
+  },
+  {
+   "var:__obs_m1": 0.7333333333,
+   "var:__obs_s2": "NaN",
+   "var:__obs_h1": 0.0666666667,
+   "var:__obs_dc1": 210.0,
+   "var:__obs_ic2": 105.0,
+   "var:__obs_dyn": 210.0,
+   "var:__obs_io1": 105.0
+  },
+  {
+   "var:__obs_m1": 0.8222222222,
+   "var:__obs_s2": 0.6666666666,
+   "var:__obs_h1": 0.0518518519,
+   "var:__obs_dc1": 212.0,
+   "var:__obs_ic2": 106.0,
+   "var:__obs_dyn": 210.0,
+   "var:__obs_io1": 106.0
+  },
+  {
+   "var:__obs_m1": 0.5481481481,
+   "var:__obs_s2": 0.7703703703,
+   "var:__obs_h1": -0.0740740741,
+   "var:__obs_dc1": 210.0,
+   "var:__obs_ic2": 107.0,
+   "var:__obs_dyn": 210.0,
+   "var:__obs_io1": 105.0
+  },
+  {
+   "var:__obs_m1": 0.6987654321,
+   "var:__obs_s2": 0.6222222222,
+   "var:__obs_h1": 0.0255144033,
+   "var:__obs_dc1": 214.0,
+   "var:__obs_ic2": 106.0,
+   "var:__obs_dyn": 214.0,
+   "var:__obs_io1": 107.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_m1": 0.6987654321,
+  "__obs_s2": 0.6222222222,
+  "__obs_h1": 0.0255144033,
+  "__obs_dc1": 214.0,
+  "__obs_ic2": 106.0,
+  "__obs_dyn": 214.0,
+  "__obs_io1": 107.0
+ }
+}

@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("While Array")
+var float[] vals = array.new_float(0)
+array.push(vals, close)
+if array.size(vals) > 10
+    array.shift(vals)
+target = close * 0.98
+idx = 0
+found = false
+while idx < array.size(vals) and not found
+    if array.get(vals, idx) < target
+        found := true
+    idx := idx + 1
+var float __obs_plot0 = na
+__obs_plot0 := found ? idx : 0
+plot(found ? idx : 0, "F")

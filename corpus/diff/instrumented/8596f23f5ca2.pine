@@ -1,0 +1,10 @@
+//@version=5
+indicator("Eigen Ratio")
+float v1 = ta.stdev(close, 3)
+float v2 = ta.stdev(close, 5)
+float maxV = math.max(nz(v1, 1.0), nz(v2, 1.0))
+float minV = math.min(nz(v1, 0.1), nz(v2, 0.1))
+float eigRatio = minV > 0 ? maxV / minV : 1.0
+var float __obs_plot0 = na
+__obs_plot0 := eigRatio
+plot(eigRatio, "EigRatio")

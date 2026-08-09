@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("EventDetect")
+threshold = 106.0
+var int crossAboveCount = 0
+prevBelow = nz(close[1], close) <= threshold
+nowAbove = close > threshold
+if prevBelow and nowAbove
+    crossAboveCount := crossAboveCount + 1
+plot(crossAboveCount, "XA")

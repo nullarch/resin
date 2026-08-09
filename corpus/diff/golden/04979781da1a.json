@@ -1,0 +1,116 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:cfg": {
+    "rsi_period": 3.0,
+    "sma_period": 5.0,
+    "risk_pct": 2.0,
+    "max_dd": 10.0
+   },
+   "var:__obs_plot0": 2.0,
+   "var:__obs_plot1": 10.0
+  },
+  {
+   "var:cfg": {
+    "rsi_period": 3.0,
+    "sma_period": 5.0,
+    "risk_pct": 2.0,
+    "max_dd": 10.0
+   },
+   "var:__obs_plot0": 2.0,
+   "var:__obs_plot1": 10.0
+  },
+  {
+   "var:cfg": {
+    "rsi_period": 3.0,
+    "sma_period": 5.0,
+    "risk_pct": 2.0,
+    "max_dd": 10.0
+   },
+   "var:__obs_plot0": 2.0,
+   "var:__obs_plot1": 10.0
+  },
+  {
+   "var:cfg": {
+    "rsi_period": 3.0,
+    "sma_period": 5.0,
+    "risk_pct": 2.0,
+    "max_dd": 10.0
+   },
+   "var:__obs_plot0": 2.0,
+   "var:__obs_plot1": 10.0
+  },
+  {
+   "var:cfg": {
+    "rsi_period": 3.0,
+    "sma_period": 5.0,
+    "risk_pct": 2.0,
+    "max_dd": 10.0
+   },
+   "var:__obs_plot0": 2.0,
+   "var:__obs_plot1": 10.0
+  },
+  {
+   "var:cfg": {
+    "rsi_period": 3.0,
+    "sma_period": 5.0,
+    "risk_pct": 2.0,
+    "max_dd": 10.0
+   },
+   "var:__obs_plot0": 2.0,
+   "var:__obs_plot1": 10.0
+  },
+  {
+   "var:cfg": {
+    "rsi_period": 3.0,
+    "sma_period": 5.0,
+    "risk_pct": 2.0,
+    "max_dd": 10.0
+   },
+   "var:__obs_plot0": 2.0,
+   "var:__obs_plot1": 10.0
+  },
+  {
+   "var:cfg": {
+    "rsi_period": 3.0,
+    "sma_period": 5.0,
+    "risk_pct": 2.0,
+    "max_dd": 10.0
+   },
+   "var:__obs_plot0": 2.0,
+   "var:__obs_plot1": 10.0
+  },
+  {
+   "var:cfg": {
+    "rsi_period": 3.0,
+    "sma_period": 5.0,
+    "risk_pct": 2.0,
+    "max_dd": 10.0
+   },
+   "var:__obs_plot0": 2.0,
+   "var:__obs_plot1": 10.0
+  },
+  {
+   "var:cfg": {
+    "rsi_period": 3.0,
+    "sma_period": 5.0,
+    "risk_pct": 2.0,
+    "max_dd": 10.0
+   },
+   "var:__obs_plot0": 2.0,
+   "var:__obs_plot1": 10.0
+  }
+ ],
+ "finalVarState": {
+  "cfg": {
+   "rsi_period": 3.0,
+   "sma_period": 5.0,
+   "risk_pct": 2.0,
+   "max_dd": 10.0
+  },
+  "__obs_plot0": 2.0,
+  "__obs_plot1": 10.0
+ }
+}

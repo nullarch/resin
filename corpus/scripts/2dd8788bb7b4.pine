@@ -1,0 +1,8 @@
+//@version=5
+indicator("UDT copy method")
+type Info
+    float val = 0.0
+var Info a = Info.new(42.0)
+var Info b = Info.copy(a)
+var float result = 0.0
+result := b.val

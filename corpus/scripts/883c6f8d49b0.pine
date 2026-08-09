@@ -1,0 +1,7 @@
+//@version=5
+indicator("Two Phase Commit")
+sma5 = ta.sma(close, 5)
+avg_vol = ta.sma(volume, 5)
+prepare_ok = not na(sma5) ? close > sma5 : false
+commit_ok = not na(avg_vol) ? volume > avg_vol : false
+committed = prepare_ok and commit_ok ? 1.0 : 0.0

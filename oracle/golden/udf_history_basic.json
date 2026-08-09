@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_p": "NaN",
+   "var:__obs_d": "NaN",
+   "var:__obs_v": "NaN",
+   "var:vacc": 101.0
+  },
+  {
+   "var:__obs_p": "NaN",
+   "var:__obs_d": 202,
+   "var:__obs_v": 101.0,
+   "var:vacc": 203.0
+  },
+  {
+   "var:__obs_p": 203,
+   "var:__obs_d": 204,
+   "var:__obs_v": 203.0,
+   "var:vacc": 306.0
+  },
+  {
+   "var:__obs_p": 205,
+   "var:__obs_d": 206,
+   "var:__obs_v": 306.0,
+   "var:vacc": 408.0
+  },
+  {
+   "var:__obs_p": 205,
+   "var:__obs_d": 204,
+   "var:__obs_v": 408.0,
+   "var:vacc": 512.0
+  },
+  {
+   "var:__obs_p": 206,
+   "var:__obs_d": 208,
+   "var:__obs_v": 512.0,
+   "var:vacc": 617.0
+  },
+  {
+   "var:__obs_p": 209,
+   "var:__obs_d": 210,
+   "var:__obs_v": 617.0,
+   "var:vacc": 723.0
+  },
+  {
+   "var:__obs_p": 211,
+   "var:__obs_d": 212,
+   "var:__obs_v": 723.0,
+   "var:vacc": 828.0
+  },
+  {
+   "var:__obs_p": 211,
+   "var:__obs_d": 210,
+   "var:__obs_v": 828.0,
+   "var:vacc": 935.0
+  },
+  {
+   "var:__obs_p": 212,
+   "var:__obs_d": 214,
+   "var:__obs_v": 935.0,
+   "var:vacc": 1043.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_p": 212,
+  "__obs_d": 214,
+  "__obs_v": 935.0,
+  "vacc": 1043.0
+ }
+}

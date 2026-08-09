@@ -1,0 +1,10 @@
+//@version=5
+indicator("GaussLikelihood")
+mu = nz(ta.sma(close, 5), close)
+sigma = math.max(high - low, 0.01)
+diff = close - mu
+exponent = -(diff * diff) / (2.0 * sigma * sigma)
+likelihood = math.exp(math.max(exponent, -20.0))
+var float __obs_plot0 = na
+__obs_plot0 := likelihood
+plot(likelihood, "Lhood")

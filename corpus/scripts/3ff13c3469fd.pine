@@ -1,0 +1,5 @@
+//@version=5
+indicator("Str ToNum")
+var float result = 0.0
+result := str.tonumber("123.45")
+plot(close)

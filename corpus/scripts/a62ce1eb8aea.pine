@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("UDT Defaults")
+type Settings
+    float rsiThreshold = 60.0
+    float atrMultiplier = 2.0
+    int lookback = 5
+    bool useFilter = true
+
+var Settings cfg = Settings.new()
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = ta.atr(3)
+signal = rsi > cfg.rsiThreshold and cfg.useFilter
+stopDist = atr * cfg.atrMultiplier
+plot(signal ? 1 : 0, "Sig")
+plot(stopDist, "Stop")

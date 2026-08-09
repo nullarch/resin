@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Vol Osc")
+shortVol = ta.sma(volume, 3)
+longVol = ta.sma(volume, 5)
+volOsc = longVol > 0 ? (shortVol - longVol) / longVol * 100 : 0.0
+plot(volOsc, "VO")

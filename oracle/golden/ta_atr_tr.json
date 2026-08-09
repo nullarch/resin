@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_tr": 3,
+   "var:__obs_atr": "NaN"
+  },
+  {
+   "var:__obs_tr": 3,
+   "var:__obs_atr": "NaN"
+  },
+  {
+   "var:__obs_tr": 3,
+   "var:__obs_atr": "NaN"
+  },
+  {
+   "var:__obs_tr": 3,
+   "var:__obs_atr": 3.0
+  },
+  {
+   "var:__obs_tr": 3,
+   "var:__obs_atr": 3.0
+  },
+  {
+   "var:__obs_tr": 3,
+   "var:__obs_atr": 3.0
+  },
+  {
+   "var:__obs_tr": 3,
+   "var:__obs_atr": 3.0
+  },
+  {
+   "var:__obs_tr": 3,
+   "var:__obs_atr": 3.0
+  },
+  {
+   "var:__obs_tr": 3,
+   "var:__obs_atr": 3.0
+  },
+  {
+   "var:__obs_tr": 3,
+   "var:__obs_atr": 3.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_tr": 3,
+  "__obs_atr": 3.0
+ }
+}

@@ -1,0 +1,9 @@
+//@version=5
+indicator("Spatial Correlation")
+var float corrSum = 0.0
+var int cnt = 0
+cellA = close > open ? 1.0 : -1.0
+cellB = high > nz(ta.ema(high, 3), high) ? 1.0 : -1.0
+corrSum := corrSum + cellA * cellB
+cnt := cnt + 1
+avgCorr = cnt > 0 ? corrSum / cnt : 0.0

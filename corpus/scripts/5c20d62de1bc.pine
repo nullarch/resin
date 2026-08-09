@@ -1,0 +1,3 @@
+//@version=5
+indicator("HB State")
+hb = ta.highestbars(high, 5)

@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:r1": 3,
+   "var:r2": 4,
+   "var:r3": -3,
+   "var:__obs_plot0": 103
+  },
+  {
+   "var:r1": 3,
+   "var:r2": 4,
+   "var:r3": -3,
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:r1": 3,
+   "var:r2": 4,
+   "var:r3": -3,
+   "var:__obs_plot0": 102
+  },
+  {
+   "var:r1": 3,
+   "var:r2": 4,
+   "var:r3": -3,
+   "var:__obs_plot0": 105
+  },
+  {
+   "var:r1": 3,
+   "var:r2": 4,
+   "var:r3": -3,
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:r1": 3,
+   "var:r2": 4,
+   "var:r3": -3,
+   "var:__obs_plot0": 106
+  },
+  {
+   "var:r1": 3,
+   "var:r2": 4,
+   "var:r3": -3,
+   "var:__obs_plot0": 108
+  },
+  {
+   "var:r1": 3,
+   "var:r2": 4,
+   "var:r3": -3,
+   "var:__obs_plot0": 110
+  },
+  {
+   "var:r1": 3,
+   "var:r2": 4,
+   "var:r3": -3,
+   "var:__obs_plot0": 109
+  },
+  {
+   "var:r1": 3,
+   "var:r2": 4,
+   "var:r3": -3,
+   "var:__obs_plot0": 111
+  }
+ ],
+ "finalVarState": {
+  "r1": 3,
+  "r2": 4,
+  "r3": -3,
+  "__obs_plot0": 111
+ }
+}

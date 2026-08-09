@@ -1,0 +1,9 @@
+//@version=5
+indicator("Betti0 Threshold")
+float thresh = 105.0
+float above = close > thresh ? 1.0 : 0.0
+var float betti0 = 0.0
+float prevAbove = not na(close[1]) ? (close[1] > thresh ? 1.0 : 0.0) : 0.0
+if above != prevAbove
+    betti0 := betti0 + 1.0
+plot(betti0, "Betti0")

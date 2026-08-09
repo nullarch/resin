@@ -1,0 +1,46 @@
+//@version=5
+indicator("matrix_method_call")
+
+// method-call 스타일 matrix 콜(C237, Pine v5 sugar `m.det()` == `matrix.det(m)`) — corpus
+// 재스캔(scratch/cluster_unsupported_call.mjs)이 실측한 `m.det()`/`m.transpose()`/`m.rank()`
+// (78263530ea1a.pine)와 `m.is_diagonal()`/`m.is_identity()`/`m.is_square()`(be01447d41ff.pine)
+// 두 파일 그대로 재현. array_map_method_call.pine과 동일 구조(top-level var 수신자 = matrixVars
+// 경로, '=' 로컬 수신자 = matrixKindHints 경로 둘 다).
+//
+// 주의: 행렬 자체를 채우는 matrix.set()은 여기서 일부러 static 네임스페이스 형태로 쓴다 —
+// pine2py _try_method_style_call의 MATRIX_METHODS 화이트리스트(codegen.py L1261-1269)가 set/get/
+// new/copy/sort 등을 포함하지 않아(제네릭 디스패치가 아니라 좁은 수동 목록, "add_row 종류 뮤테이션 +
+// 행렬대수 11종 + is_* 10종 + elements_count"만) `m.set(...)` 골든 자체를 생성할 수 없다(python
+// 직접 실행 확인 — RuntimeError, C125급 "호출 문법별 오라클 불가" 재발). pine2js는 GOAL.md
+// "pine2py의 알려진 버그는 따르지 않는다" 원칙대로 TV 공식 문법(전 네임스페이스 메서드에 sugar
+// 적용)을 그대로 구현했고, method-call 형태의 set/sort는 tests/unit/codegen.test.ts의
+// hand-verified E2E로 대체(LIMITATIONS.md 참조). 이 오라클 케이스는 pine2py가 실제로 골든을 낼 수
+// 있는 method-call 대상(MATRIX_METHODS 화이트리스트에 있는 det/rank/transpose/is_diagonal/
+// is_identity/is_square)만 sugar로 쓰고, 행렬 채우기는 static matrix.set()으로 한다.
+
+// A: method-call 스타일 matrix — top-level var 수신자(matrixVars 경로). det/rank/transpose를
+// 이미 matrix_det.pine/matrix_rank.pine/matrix_transpose.pine이 static 형태로 값 자체를 검증해뒀
+// 으므로 여기선 동일 바-파생 대각 행렬로 method-call 경로가 같은 값을 내는지만 재확인.
+var mA = matrix.new<float>(3, 3, 0.0)
+matrix.set(mA, 0, 0, open + 0.0)
+matrix.set(mA, 1, 1, high + 0.0)
+matrix.set(mA, 2, 2, low + 0.0)
+var float __obs_a_det = na
+__obs_a_det := mA.det()
+var float __obs_a_rank = na
+__obs_a_rank := mA.rank()
+tA = mA.transpose()
+var float __obs_a_t01 = na
+__obs_a_t01 := matrix.get(tA, 0, 1)
+
+// B: method-call 스타일 matrix — '=' 로컬 수신자(matrixKindHints 경로, top-level var 전용
+// matrixVars가 아니라 이쪽으로 판별됨). is_diagonal/is_identity/is_square predicate 3종.
+mB = matrix.new<float>(2, 2, 0.0)
+matrix.set(mB, 0, 0, 1.0)
+matrix.set(mB, 1, 1, 1.0)
+var float __obs_b_diag = na
+__obs_b_diag := mB.is_diagonal() ? 1.0 : 0.0
+var float __obs_b_ident = na
+__obs_b_ident := mB.is_identity() ? 1.0 : 0.0
+var float __obs_b_square = na
+__obs_b_square := mB.is_square() ? 1.0 : 0.0

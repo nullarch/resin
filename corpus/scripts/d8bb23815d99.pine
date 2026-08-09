@@ -1,0 +1,11 @@
+//@version=5
+strategy("Tunneling Breakout")
+float resistance = nz(ta.highest(high, 5), high)
+float barrier = math.max(resistance - close, 0.0)
+float energy = nz(ta.atr(3), 1.0)
+float safeE = math.max(energy, 0.01)
+float tunnelProb = math.exp(-2.0 * barrier / safeE)
+if tunnelProb > 0.6 and close > open
+    strategy.entry("Tunnel", strategy.long)
+if close < nz(ta.sma(close, 5), close)
+    strategy.close("Tunnel")

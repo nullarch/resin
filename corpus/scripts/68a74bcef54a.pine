@@ -1,0 +1,5 @@
+//@version=5
+indicator("tf change")
+newDay = timeframe.change("D")
+var int count = 0
+count := newDay ? count + 1 : count

@@ -1,0 +1,25 @@
+//@version=5
+indicator("map_get_default")
+
+// C241: map.get(m, key, default) 3-인자 폼 — corpus 161개 파일이 직접 쓰는 실사용 패턴
+// (`map.get(rp, "stop_mult", 2.0)`류) 전용 오라클. map_basic.pine(C89)은 2-인자 폼만 다뤄
+// 별도 케이스로 분리.
+var m = map.new<string, float>()
+map.put(m, "existing", 5.0)
+
+// A: 키가 이미 존재 — default는 무시되고 저장된 값이 그대로 나와야 한다
+var float __obs_present = na
+__obs_present := map.get(m, "existing", 99.0)
+
+// B: 키가 없음 — 3번째 인자(default)가 그대로 반환돼야 한다(pine2py get(m,key,default=nan) literal port)
+var float __obs_absent = na
+__obs_absent := map.get(m, "missing", 42.0)
+
+// C: 매 바 덮어써지는 값 — default가 있어도 최신 저장값이 우선함을 반복 확인
+map.put(m, "counter", bar_index * 1.0)
+var float __obs_counter = na
+__obs_counter := map.get(m, "counter", -1.0)
+
+// D: 2-인자 폼과의 회귀 비교 — 같은 부재 키를 default 없이 읽으면 na(NaN)
+var float __obs_absent_no_default = na
+__obs_absent_no_default := map.get(m, "missing")

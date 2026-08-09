@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Max DD")
+var float peak = 0.0
+var float maxDD = 0.0
+var float equity = 10000.0
+ret = close - close[1]
+equity := equity + nz(ret, 0.0) * 10
+peak := math.max(peak, equity)
+dd = peak > 0 ? (peak - equity) / peak * 100 : 0.0
+maxDD := math.max(maxDD, dd)
+var float __obs_plot0 = na
+__obs_plot0 := maxDD
+plot(maxDD, "MDD")

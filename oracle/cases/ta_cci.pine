@@ -1,0 +1,10 @@
+//@version=5
+indicator("ta_cci")
+// ta.cci 오라클 검증(ROADMAP P2 "ta.* 44종" — cci). length=3으로 sample10.json 10바 안에서
+// 워밍업(바 0~1, data_len<length라 NaN)과 정상 구간(바 2~9)을 모두 커버. pine2py wavealgo/ta/cci.py:
+// CCI = (source - SMA(source,length)) / (0.015 * MeanDeviation), sample10엔 na가 없어 순환 버퍼가
+// 국면1(윈도우 첫 완성)에서 바로 국면2(매 바 pop/push)로 넘어가는 표준 경로만 커버(NaN 관련 skip-
+// freeze/재시도 시맨틱은 runtime.test.ts hand-verified로 별도 검증 — scratch/verify_cci_fuzz.mjs로
+// pine2py 직접 실행 대비 300건 사전 확인).
+var float __obs_cci = na
+__obs_cci := ta.cci(close, 3)

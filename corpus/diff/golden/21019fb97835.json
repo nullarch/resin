@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:strongBars": 0,
+   "var:__obs_plot0": 2.0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:strongBars": 0,
+   "var:__obs_plot0": 2.0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:strongBars": 0,
+   "var:__obs_plot0": -1.1941747572875538,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:strongBars": 1,
+   "var:__obs_plot0": 6.4572347266755905,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:strongBars": 2,
+   "var:__obs_plot0": 10.580216878366706,
+   "var:__obs_plot1": 2
+  },
+  {
+   "var:strongBars": 3,
+   "var:__obs_plot0": 6.015944802656129,
+   "var:__obs_plot1": 3
+  },
+  {
+   "var:strongBars": 4,
+   "var:__obs_plot0": 8.209130164688585,
+   "var:__obs_plot1": 4
+  },
+  {
+   "var:strongBars": 5,
+   "var:__obs_plot0": 9.252453257280484,
+   "var:__obs_plot1": 5
+  },
+  {
+   "var:strongBars": 6,
+   "var:__obs_plot0": 5.5196408222025966,
+   "var:__obs_plot1": 6
+  },
+  {
+   "var:strongBars": 7,
+   "var:__obs_plot0": 8.050798368509524,
+   "var:__obs_plot1": 7
+  }
+ ],
+ "finalVarState": {
+  "strongBars": 7,
+  "__obs_plot0": 8.050798368509524,
+  "__obs_plot1": 7
+ }
+}

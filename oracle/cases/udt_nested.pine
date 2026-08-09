@@ -1,0 +1,45 @@
+//@version=5
+indicator("udt_nested")
+// 중첩 UDT 필드(analyzer UDT_SCALAR_FIELD_TYPES 확장, C123 -- 필드 타입이 다른 UDT 타입인 경우)
+// 오라클 검증. pine2py는 필드 타입 화이트리스트가 아예 없어(codegen._pine_type_to_python이 매핑에
+// 없는 이름을 그대로 통과시킴) 이 서브셋을 검증 없이 지원하지만, pine2js는 "이미 앞서 선언된 UDT
+// 타입만" 필드 타입으로 허용한다(forward-ref/자기참조는 미구현, ROADMAP 별도 항목) -- 그래서 Inner를
+// Outer보다 반드시 먼저 선언한다. 체이닝 read(outer.inner.x)/write(outer.inner.x := v) 양쪽을
+// 검증하고, 두 런타임 모두 DotAccess 좌결합 AST(pine2py parser.py _parse_postfix, pine2js
+// parser.ts parseAssignmentOrExpr)라 별도 파서 변경 없이 그대로 지원된다. na 중첩 필드 채널은
+// udt_basic.pine과 동일한 이유(pine2py가 na를 타입 무관 float('nan')으로 컴파일해 오라클 비교가
+// 구조적으로 불가능, C107/C110급)로 제외하고 tests/unit/codegen.test.ts의 hand-verified e2e로 대신
+// 검증한다.
+
+type Inner
+    float x = 1.0
+    float y = 2.0
+
+type Outer
+    Inner inner = Inner.new()
+    float label = 0.0
+
+// 채널 A: 인자 없는 생성자 체인 -- Outer.new()의 inner 필드가 Inner.new()로 즉시 채워짐(명시 기본값
+// factory 호출, JS는 함수 기본 파라미터라 매 콜사이트 독립 인스턴스, pine2py는 default_factory).
+var Outer o1 = Outer.new()
+var float __obs_o1_inner_x = na
+__obs_o1_inner_x := o1.inner.x
+var float __obs_o1_inner_y = na
+__obs_o1_inner_y := o1.inner.y
+
+// 채널 B: 위치 인자로 중첩 UDT 인스턴스를 직접 전달 -- Outer.new(Inner.new(...))
+var Outer o2 = Outer.new(Inner.new(10.0, 20.0))
+var float __obs_o2_inner_x = na
+__obs_o2_inner_x := o2.inner.x
+var float __obs_o2_inner_y = na
+__obs_o2_inner_y := o2.inner.y
+
+// 채널 C: 체이닝 필드 대입(':=')으로 매 바 갱신 -- close 누적합을 중첩 필드에 쌓는 러닝 합계(동적
+// 신호). var 게이팅과 무관하게 매 바 실행되는 top-level 문장이라 바마다 값이 바뀐다.
+var Outer acc = Outer.new()
+acc.inner.x := acc.inner.x + close
+acc.label := acc.label + 1
+var float __obs_acc_inner_x = na
+__obs_acc_inner_x := acc.inner.x
+var float __obs_acc_label = na
+__obs_acc_label := acc.label

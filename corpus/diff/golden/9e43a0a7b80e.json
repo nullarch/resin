@@ -1,0 +1,105 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:metrics": {
+    "cumReturn": 8.0,
+    "lastChange": 2.0,
+    "avgPrice": 108.8
+   },
+   "var:cumReturn": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:metrics": {
+    "cumReturn": 8.0,
+    "lastChange": 2.0,
+    "avgPrice": 108.8
+   },
+   "var:cumReturn": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:metrics": {
+    "cumReturn": 8.0,
+    "lastChange": 2.0,
+    "avgPrice": 108.8
+   },
+   "var:cumReturn": -1.0,
+   "var:__obs_plot0": -1.0
+  },
+  {
+   "var:metrics": {
+    "cumReturn": 8.0,
+    "lastChange": 2.0,
+    "avgPrice": 108.8
+   },
+   "var:cumReturn": 2.0,
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:metrics": {
+    "cumReturn": 8.0,
+    "lastChange": 2.0,
+    "avgPrice": 108.8
+   },
+   "var:cumReturn": 4.0,
+   "var:__obs_plot0": 4.0
+  },
+  {
+   "var:metrics": {
+    "cumReturn": 8.0,
+    "lastChange": 2.0,
+    "avgPrice": 108.8
+   },
+   "var:cumReturn": 3.0,
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:metrics": {
+    "cumReturn": 8.0,
+    "lastChange": 2.0,
+    "avgPrice": 108.8
+   },
+   "var:cumReturn": 5.0,
+   "var:__obs_plot0": 5.0
+  },
+  {
+   "var:metrics": {
+    "cumReturn": 8.0,
+    "lastChange": 2.0,
+    "avgPrice": 108.8
+   },
+   "var:cumReturn": 7.0,
+   "var:__obs_plot0": 7.0
+  },
+  {
+   "var:metrics": {
+    "cumReturn": 8.0,
+    "lastChange": 2.0,
+    "avgPrice": 108.8
+   },
+   "var:cumReturn": 6.0,
+   "var:__obs_plot0": 6.0
+  },
+  {
+   "var:metrics": {
+    "cumReturn": 8.0,
+    "lastChange": 2.0,
+    "avgPrice": 108.8
+   },
+   "var:cumReturn": 8.0,
+   "var:__obs_plot0": 8.0
+  }
+ ],
+ "finalVarState": {
+  "metrics": {
+   "cumReturn": 8.0,
+   "lastChange": 2.0,
+   "avgPrice": 108.8
+  },
+  "cumReturn": 8.0,
+  "__obs_plot0": 8.0
+ }
+}

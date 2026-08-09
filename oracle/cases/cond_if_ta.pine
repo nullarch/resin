@@ -1,0 +1,23 @@
+//@version=5
+indicator("cond_if_ta")
+// [hard] 조건부 stateful call (a)안(TV 정합: per-call 상태 전진) 1차 검증 — ROADMAP P2 항목.
+// pine2py는 if를 Python if로 그대로 내려(codegen.py _gen_if) 조건 false 바에는 ta 호출 자체가
+// 실행되지 않고, state_key는 codegen 시점 콜사이트 카운터(_taN)라 조건부 호출에도 키가 안정적
+// — 즉 pine2py 골든 자체가 "호출된 바에서만 상태 전진" 시맨틱의 수치 오라클이다.
+// (bare 타입 선언 `float s = na`는 pine2js 미지원이라 var + 매 바 na 리셋 패턴을 쓴다.)
+//
+// close>102는 sample10에서 T/F가 인터리브(바2 T, 바3 F, 바4~9 T): 바4 재개 시 창=[103,104] →
+// 103.5가 나와야 per-call 전진이 맞다(무조건 호출이었다면 (102+104)/2=103, 바3의 102가 창에
+// 들어갔을 것 — 스모킹 건). 단 바2(첫 호출)는 pine2py sma.py가 히스토리를 백필해 102.5 —
+// ema/rma(호출값 누적)와 자기모순인 pine2py 고유 동작으로 pine2js는 NaN(DIVERGENCES.md #11).
+var float __obs_s = na
+__obs_s := na
+if close > 102
+    __obs_s := ta.sma(close, 2)
+// if/else 양쪽 분기의 독립 콜사이트: ema는 바5~9에만, rma는 바0~4에만 호출된다(close>104는
+// 바5부터 T). 각자 자기 분기가 실행된 바에서만 워밍업/전진해야 한다.
+var float __obs_m = na
+if close > 104
+    __obs_m := ta.ema(close, 2)
+else
+    __obs_m := ta.rma(close, 2)

@@ -1,0 +1,7 @@
+//@version=5
+indicator("DotAccess Map")
+var float bi = 0.0
+bi := bar_index  // maps via IDENTIFIER_MAP
+var float vol = 0.0
+vol := volume
+plot(close)

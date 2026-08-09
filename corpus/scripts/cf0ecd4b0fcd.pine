@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Break Track")
+var int breakouts = 0
+var int failures = 0
+hi5 = ta.highest(high, 5)
+lo5 = ta.lowest(low, 5)
+isBreak = close > hi5[1] or close < lo5[1]
+if isBreak
+    breakouts := breakouts + 1
+avgRange = ta.sma(high - low, 5)
+barRange = high - low
+if barRange < avgRange * 0.5 and isBreak
+    failures := failures + 1
+plot(breakouts, "BO")

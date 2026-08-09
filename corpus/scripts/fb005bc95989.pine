@@ -1,0 +1,10 @@
+//@version=5
+indicator("Tornado Count")
+var int tornadoes = 0
+cnt = 0
+threshold = 3
+x = 1
+while x <= threshold
+    cnt := cnt + 1
+    x := x + 1
+tornadoes := cnt

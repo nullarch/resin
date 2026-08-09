@@ -1,0 +1,5 @@
+//@version=5
+indicator("String Coerce")
+var float result = 0.0
+s = "Price: " + str.tostring(close)
+result := str.length(s)

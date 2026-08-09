@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:tm": {
+    "trend_dir": 1.0,
+    "ma_spread": 1.1135802468999998,
+    "vol_norm": 5.346086827567568
+   },
+   "var:__obs_plot0": -1.0
+  },
+  {
+   "var:tm": {
+    "trend_dir": 1.0,
+    "ma_spread": 1.1135802468999998,
+    "vol_norm": 5.346086827567568
+   },
+   "var:__obs_plot0": -1.0
+  },
+  {
+   "var:tm": {
+    "trend_dir": 1.0,
+    "ma_spread": 1.1135802468999998,
+    "vol_norm": 5.346086827567568
+   },
+   "var:__obs_plot0": -1.0
+  },
+  {
+   "var:tm": {
+    "trend_dir": 1.0,
+    "ma_spread": 1.1135802468999998,
+    "vol_norm": 5.346086827567568
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:tm": {
+    "trend_dir": 1.0,
+    "ma_spread": 1.1135802468999998,
+    "vol_norm": 5.346086827567568
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:tm": {
+    "trend_dir": 1.0,
+    "ma_spread": 1.1135802468999998,
+    "vol_norm": 5.346086827567568
+   },
+   "var:__obs_plot0": -1.0
+  },
+  {
+   "var:tm": {
+    "trend_dir": 1.0,
+    "ma_spread": 1.1135802468999998,
+    "vol_norm": 5.346086827567568
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:tm": {
+    "trend_dir": 1.0,
+    "ma_spread": 1.1135802468999998,
+    "vol_norm": 5.346086827567568
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:tm": {
+    "trend_dir": 1.0,
+    "ma_spread": 1.1135802468999998,
+    "vol_norm": 5.346086827567568
+   },
+   "var:__obs_plot0": -1.0
+  },
+  {
+   "var:tm": {
+    "trend_dir": 1.0,
+    "ma_spread": 1.1135802468999998,
+    "vol_norm": 5.346086827567568
+   },
+   "var:__obs_plot0": 1.0
+  }
+ ],
+ "finalVarState": {
+  "tm": {
+   "trend_dir": 1.0,
+   "ma_spread": 1.1135802468999998,
+   "vol_norm": 5.346086827567568
+  },
+  "__obs_plot0": 1.0
+ }
+}

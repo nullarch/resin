@@ -1,0 +1,17 @@
+//@version=5
+indicator("udf_history_basic")
+fsum(psrc) =>
+    psrc[1] + psrc[2]
+gd() =>
+    dval = close * 2
+    dval[1]
+hacc() =>
+    var float vacc = 0.0
+    vacc := vacc + close
+    vacc[1]
+var float __obs_p = na
+__obs_p := fsum(close)
+var float __obs_d = na
+__obs_d := gd()
+var float __obs_v = na
+__obs_v := hacc()

@@ -1,0 +1,6 @@
+//@version=5
+indicator("DegRad")
+deg = math.todegrees(math.pi)
+var float result = 0.0
+result := deg
+plot(result)

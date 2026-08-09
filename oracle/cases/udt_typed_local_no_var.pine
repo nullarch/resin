@@ -1,0 +1,26 @@
+//@version=5
+indicator("udt_typed_local_no_var")
+// 명시 타입힌트가 붙은 non-var '=' 로컬(`Type x = expr`, var 키워드 없음) UDT 인스턴스 추적(C386)
+// 오라클 검증. C224(udt_local_var.pine)는 '=' 로컬이 UDT 생성자 콜을 직접 대입받는 경우만 다뤘는데,
+// 여기서는 RHS가 생성자 콜이 아니라(다른 UDT의 필드 접근) 명시 타입힌트만으로 확정되는 wild corpus
+// 관용구(`OrderBlockInfo info = ob.info`)를 재현한다. codegen은 타입힌트를 여전히 안 쓰므로(analyzer
+// 판별 전용, Assignment.typeHint 소비처는 analyzer뿐) 컴파일 출력은 udt_local_var.pine과 완전히
+// 동일한 플레인 필드 접근이라 pine2py 대조에 아무 영향이 없다.
+
+type Bar
+    float x = 1.0
+    int n = 2
+
+type Wrapper
+    Bar inner = Bar.new(0.0, 0)
+
+w = Wrapper.new(Bar.new(close, 5))
+
+// 채널 A: 생성자 콜이 아닌 RHS(다른 UDT 인스턴스의 필드 접근)에 명시 타입힌트만 붙인 non-var '='
+// 로컬 -- 매 바 재평가되는 문장이라 매 바 w.inner를 다시 읽은 뒤 그 자리에서 필드 대입/읽기.
+Bar p = w.inner
+p.x := p.x + 1.0
+var float __obs_p_x = na
+__obs_p_x := p.x
+var float __obs_p_n = na
+__obs_p_n := p.n

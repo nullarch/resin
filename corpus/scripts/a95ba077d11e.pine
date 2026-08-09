@@ -1,0 +1,8 @@
+//@version=5
+indicator("Fib")
+var a = 1
+var b = 1
+temp = a + b
+a := b
+b := temp
+plot(b)

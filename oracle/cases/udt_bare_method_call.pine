@@ -1,0 +1,27 @@
+//@version=5
+indicator("udt_bare_method_call")
+
+// method(receiver, ...)를 점 호출이 아니라 일반 함수 호출로 부르는 TV v5 문법(C267, corpus
+// 1624ff60e8a0.pine 실사용 패턴). pine2py는 method를 top-level 함수로 컴파일해 bare 호출과 점
+// 호출이 동일 코드를 가리킨다 -- 두 형태가 같은 값을 내는지 대조. 필드는 ta.sma/ta.ema가 아니라
+// close/상수로 직접 채운다 -- ta.* 워밍업 구간의 NaN>NaN 비교는 VERIFIED_SEMANTICS.md OPEN
+// "비교 연산자 na 시맨틱"(pine2js는 NaN 전파, pine2py 오라클은 Python 네이티브 False)이 이미
+// 별도로 추적 중인 미검증 분기라, 이 케이스(bare method 호출 라우팅)와 뒤섞으면 무관한 divergence가
+// 오라클을 오염시킨다(C266 ctrlflow_selfref_assign이 close>open 워밍업 없는 값으로 갈아탄 것과
+// 동일 원칙).
+type Indicator
+    float value = 0.0
+    float signal = 0.0
+
+method isPositive(Indicator ind) =>
+    ind.value > ind.signal
+
+ind = Indicator.new(close, 104.0)
+
+is_pos_bare = isPositive(ind)
+is_pos_dot = ind.isPositive()
+
+var bool __obs_bare = na
+__obs_bare := is_pos_bare
+var bool __obs_dot = na
+__obs_dot := is_pos_dot

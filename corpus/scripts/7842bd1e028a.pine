@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Map Full")
+var m = map.new<string, float>()
+map.put(m, "price", close)
+map.put(m, "volume", volume)
+has = map.contains(m, "price")
+sz = map.size(m)
+ks = map.keys(m)
+vs = map.values(m)
+avgVals = array.avg(vs)
+plot(avgVals, "Avg")

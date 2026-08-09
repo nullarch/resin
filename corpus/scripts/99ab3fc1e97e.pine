@@ -1,0 +1,5 @@
+
+//@version=5
+indicator("KC Precision")
+[middle, upper, lower] = ta.kc(close, 20, 1.5)
+plot(middle)

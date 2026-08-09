@@ -1,0 +1,3 @@
+//@version=5
+indicator("Test's Title")
+x = close

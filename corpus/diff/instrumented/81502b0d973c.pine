@@ -1,0 +1,8 @@
+//@version=5
+indicator("Bool Int")
+cond = close > 105
+var int result = 0
+result := cond ? 1 : 0
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

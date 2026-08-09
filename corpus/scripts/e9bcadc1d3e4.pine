@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("BT Stats")
+var int totalTrades = 0
+var int winTrades = 0
+var float totalPnl = 0.0
+var bool inPos = false
+var float entry = 0.0
+sma3 = ta.sma(close, 3)
+if not inPos and close > sma3
+    inPos := true
+    entry := close
+if inPos and close < sma3
+    pnl = close - entry
+    totalPnl := totalPnl + pnl
+    totalTrades := totalTrades + 1
+    if pnl > 0
+        winTrades := winTrades + 1
+    inPos := false
+winRate = totalTrades > 0 ? float(winTrades) / totalTrades * 100 : 0.0
+plot(winRate, "WR")

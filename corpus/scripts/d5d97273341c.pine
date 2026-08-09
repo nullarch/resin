@@ -1,0 +1,15 @@
+//@version=5
+indicator("test")
+getSignals(float src, int len) =>
+    fast = ta.ema(src, len)
+    slow = ta.sma(src, len * 2)
+    bull = ta.crossover(fast, slow)
+    bear = ta.crossunder(fast, slow)
+    [bull, bear]
+[isBull, isBear] = getSignals(close, 3)
+var int signals = 0
+if isBull
+    signals := signals + 1
+if isBear
+    signals := signals - 1
+plot(signals)

@@ -1,0 +1,15 @@
+//@version=5
+indicator("ForMRSum")
+s2 = nz(ta.sma(close, 2), close)
+s3 = nz(ta.sma(close, 3), close)
+s4 = nz(ta.sma(close, 4), close)
+s5 = nz(ta.sma(close, 5), close)
+energies = array.new_float(0)
+array.push(energies, math.pow(close - s2, 2))
+array.push(energies, math.pow(s2 - s3, 2))
+array.push(energies, math.pow(s3 - s4, 2))
+array.push(energies, math.pow(s4 - s5, 2))
+totalE = 0.0
+for i = 0 to array.size(energies) - 1
+    totalE := totalE + array.get(energies, i)
+plot(totalE, "TotalE")

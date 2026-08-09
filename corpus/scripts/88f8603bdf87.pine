@@ -1,0 +1,35 @@
+//@version=5
+indicator("Milestone 120", overlay=true)
+type Config
+    int fast = 3
+    int slow = 5
+    float atrMult = 1.5
+cfg = Config.new()
+fastMA = ta.sma(close, cfg.fast)
+slowMA = ta.ema(close, cfg.slow)
+rsiVal = ta.rsi(close, cfg.slow)
+atrVal = ta.atr(cfg.fast)
+[upper, mid, lower] = ta.bb(close, cfg.slow, 2.0)
+var arr = array.new_float(0)
+var m = map.new<string, float>()
+var float maxRSI = 0.0
+var int crossCount = 0
+if not na(fastMA)
+    array.push(arr, fastMA)
+    map.put(m, "fast", fastMA)
+if array.size(arr) > 10
+    array.shift(arr)
+if not na(rsiVal) and rsiVal > maxRSI
+    maxRSI := rsiVal
+if ta.crossover(fastMA, slowMA)
+    crossCount := crossCount + 1
+trend = switch
+    close > nz(upper) => "STRONG"
+    close > nz(mid) => "BULL"
+    close < nz(lower) => "WEAK"
+    => "NEUTRAL"
+clr = close > nz(fastMA) ? color.green : color.red
+plot(fastMA, "Fast", color=clr)
+plot(slowMA, "Slow")
+var int barCount = 0
+barCount := barCount + 1

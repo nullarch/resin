@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Trend Hist")
+var float[] trendSigs = array.new_float(0)
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+sig = sma3 > sma5 ? 1.0 : -1.0
+array.push(trendSigs, sig)
+if array.size(trendSigs) > 8
+    array.shift(trendSigs)
+avgSig = array.size(trendSigs) > 0 ? array.avg(trendSigs) : 0.0
+strongTrend = math.abs(avgSig) > 0.6
+plot(strongTrend ? avgSig : 0, "ST")

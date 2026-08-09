@@ -1,0 +1,10 @@
+//@version=5
+indicator("Seasonal Switch")
+var float seasonVal = 0.0
+quarter = 2
+seasonVal := switch quarter
+    1 => 0.25
+    2 => 0.5
+    3 => 0.75
+    4 => 1.0
+    => 0.0

@@ -1,0 +1,15 @@
+//@version=5
+indicator("Multi Method")
+type Stats
+    float total = 0.0
+    int count = 0
+method add(Stats this, float val) =>
+    this.total := this.total + val
+    this.count := this.count + 1
+method getAvg(Stats this) =>
+    this.count > 0 ? this.total / this.count : 0.0
+s = Stats.new()
+s.add(10.0)
+s.add(20.0)
+s.add(30.0)
+plot(s.getAvg())

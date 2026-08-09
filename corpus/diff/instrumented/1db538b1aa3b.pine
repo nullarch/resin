@@ -1,0 +1,12 @@
+//@version=5
+indicator("Life Table")
+var float nAtRisk = 100.0
+float deathRate = close > open ? 5.0 : 2.0
+float withdrawn = 1.0
+float effectiveN = nAtRisk - withdrawn / 2.0
+float qx = effectiveN > 0.0 ? deathRate / effectiveN : 0.0
+float px = 1.0 - qx
+nAtRisk := nAtRisk - deathRate - withdrawn
+var float __obs_plot0 = na
+__obs_plot0 := px
+plot(px, "Survival Interval")

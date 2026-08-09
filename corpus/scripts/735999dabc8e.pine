@@ -1,0 +1,8 @@
+//@version=5
+indicator("Stored Procedure")
+norm_range(hi, lo, price) =>
+    total_range = hi - lo
+    total_range > 0 ? (price - lo) / total_range : 0.5
+nr = norm_range(high, low, close)
+nr_open = norm_range(high, low, open)
+avg_nr = (nr + nr_open) / 2.0

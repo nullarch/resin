@@ -1,0 +1,20 @@
+//@version=5
+indicator("request_security_lower_tf_kwargs")
+// request.security_lower_tf kwargs(C381, next_hint(C380) 1순위 — wild gate(220) 클러스터 재분포
+// 1위) — wild 실사용 이름(symbol=/timeframe=/expression=/ignore_invalid_symbol=/
+// ignore_invalid_timeframe=/calc_bars_count=) 전량을 키워드 인자 폼으로 호출해 pine2py
+// wavealgo/__init__.py L104-113 request_security_lower_tf()가 이 값들을 전부 무시하고 expression만
+// 평가함(순수 스텁, 원소 1개짜리 배열)을 골든으로 검증한다. sub1/sub2는 위치 인자 뒤에 kwarg 1개를
+// 붙인 흔한 폼(025aa36173f0.pine/1b17dd6f8017.pine 패턴), sub3은 전체 키워드 폼(395803745923.pine
+// 패턴 — symbol=/timeframe=/expression= 포함).
+sub1 = request.security_lower_tf(syminfo.tickerid, "1", close, ignore_invalid_timeframe = true)
+var float __obs_v1 = na
+__obs_v1 := array.get(sub1, 0)
+
+sub2 = request.security_lower_tf(syminfo.tickerid, "1", close, calc_bars_count = 5)
+var float __obs_v2 = na
+__obs_v2 := array.get(sub2, 0)
+
+sub3 = request.security_lower_tf(symbol = syminfo.tickerid, timeframe = "1", expression = close, ignore_invalid_symbol = true, ignore_invalid_timeframe = true, calc_bars_count = 3)
+var float __obs_v3 = na
+__obs_v3 := array.get(sub3, 0)

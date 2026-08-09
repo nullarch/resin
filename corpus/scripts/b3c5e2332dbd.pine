@@ -1,0 +1,9 @@
+//@version=5
+indicator("Melody Contour")
+var int upSteps = 0
+var int downSteps = 0
+prevC = not na(close[1]) ? close[1] : close
+if close > prevC
+    upSteps := upSteps + 1
+if close < prevC
+    downSteps := downSteps + 1

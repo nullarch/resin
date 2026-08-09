@@ -1,0 +1,9 @@
+//@version=5
+indicator("KL Divergence")
+var float klSum = 0.0
+pVal = (close - low) / (high - low)
+qVal = 0.5
+safeP = pVal > 0.01 ? pVal : 0.01
+safeQ = qVal > 0.01 ? qVal : 0.01
+klTerm = safeP * math.log(safeP / safeQ)
+klSum := klSum + klTerm

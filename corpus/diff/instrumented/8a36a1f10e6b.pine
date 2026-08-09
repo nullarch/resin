@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Barssince")
+sma3 = ta.sma(close, 3)
+barsSinceCross = ta.barssince(ta.crossover(close, sma3))
+recent = not na(barsSinceCross) and barsSinceCross < 3
+var float __obs_plot0 = na
+__obs_plot0 := barsSinceCross
+plot(barsSinceCross, "Bars")

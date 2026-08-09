@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("LinReg")
+lr = ta.linreg(close, 5, 0)
+slope = lr - lr[1]
+rising = slope > 0
+var float __obs_plot0 = na
+__obs_plot0 := lr
+plot(lr, "LinReg")

@@ -1,0 +1,4 @@
+//@version=5
+indicator("CMO TSI")
+cmo5 = ta.cmo(close, 5)
+tsi_val = ta.tsi(close, 5, 3)

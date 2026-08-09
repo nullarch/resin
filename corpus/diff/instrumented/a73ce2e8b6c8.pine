@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("SD Bands")
+basis = ta.sma(close, 5)
+sd = ta.stdev(close, 5)
+upper1 = basis + sd
+lower1 = basis - sd
+upper2 = basis + 2 * sd
+lower2 = basis - 2 * sd
+inBand1 = close > lower1 and close < upper1
+var float __obs_plot0 = na
+__obs_plot0 := basis
+plot(basis, "Basis")
+var float __obs_plot1 = na
+__obs_plot1 := inBand1 ? 1 : 0
+plot(inBand1 ? 1 : 0, "InBand1")

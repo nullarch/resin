@@ -1,0 +1,9 @@
+//@version=5
+indicator("C300-03")
+var int sigCount = 0
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+if close > open
+    if volume > 1000
+        if rsiVal > 40
+            sigCount := sigCount + 1
+plot(sigCount)

@@ -1,0 +1,127 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_col": "#ff0000",
+   "var:__obs_sym": "AAPL",
+   "var:__obs_tf": "60",
+   "var:__obs_sess": "0930-1600",
+   "var:__obs_pr": 100.5,
+   "var:__obs_txt": "notes",
+   "var:__obs_t": 0,
+   "var:__obs_src": 101.0,
+   "var:__obs_any": 7
+  },
+  {
+   "var:__obs_col": "#ff0000",
+   "var:__obs_sym": "AAPL",
+   "var:__obs_tf": "60",
+   "var:__obs_sess": "0930-1600",
+   "var:__obs_pr": 100.5,
+   "var:__obs_txt": "notes",
+   "var:__obs_t": 0,
+   "var:__obs_src": 102.0,
+   "var:__obs_any": 7
+  },
+  {
+   "var:__obs_col": "#ff0000",
+   "var:__obs_sym": "AAPL",
+   "var:__obs_tf": "60",
+   "var:__obs_sess": "0930-1600",
+   "var:__obs_pr": 100.5,
+   "var:__obs_txt": "notes",
+   "var:__obs_t": 0,
+   "var:__obs_src": 103.0,
+   "var:__obs_any": 7
+  },
+  {
+   "var:__obs_col": "#ff0000",
+   "var:__obs_sym": "AAPL",
+   "var:__obs_tf": "60",
+   "var:__obs_sess": "0930-1600",
+   "var:__obs_pr": 100.5,
+   "var:__obs_txt": "notes",
+   "var:__obs_t": 0,
+   "var:__obs_src": 102.0,
+   "var:__obs_any": 7
+  },
+  {
+   "var:__obs_col": "#ff0000",
+   "var:__obs_sym": "AAPL",
+   "var:__obs_tf": "60",
+   "var:__obs_sess": "0930-1600",
+   "var:__obs_pr": 100.5,
+   "var:__obs_txt": "notes",
+   "var:__obs_t": 0,
+   "var:__obs_src": 104.0,
+   "var:__obs_any": 7
+  },
+  {
+   "var:__obs_col": "#ff0000",
+   "var:__obs_sym": "AAPL",
+   "var:__obs_tf": "60",
+   "var:__obs_sess": "0930-1600",
+   "var:__obs_pr": 100.5,
+   "var:__obs_txt": "notes",
+   "var:__obs_t": 0,
+   "var:__obs_src": 105.0,
+   "var:__obs_any": 7
+  },
+  {
+   "var:__obs_col": "#ff0000",
+   "var:__obs_sym": "AAPL",
+   "var:__obs_tf": "60",
+   "var:__obs_sess": "0930-1600",
+   "var:__obs_pr": 100.5,
+   "var:__obs_txt": "notes",
+   "var:__obs_t": 0,
+   "var:__obs_src": 106.0,
+   "var:__obs_any": 7
+  },
+  {
+   "var:__obs_col": "#ff0000",
+   "var:__obs_sym": "AAPL",
+   "var:__obs_tf": "60",
+   "var:__obs_sess": "0930-1600",
+   "var:__obs_pr": 100.5,
+   "var:__obs_txt": "notes",
+   "var:__obs_t": 0,
+   "var:__obs_src": 105.0,
+   "var:__obs_any": 7
+  },
+  {
+   "var:__obs_col": "#ff0000",
+   "var:__obs_sym": "AAPL",
+   "var:__obs_tf": "60",
+   "var:__obs_sess": "0930-1600",
+   "var:__obs_pr": 100.5,
+   "var:__obs_txt": "notes",
+   "var:__obs_t": 0,
+   "var:__obs_src": 107.0,
+   "var:__obs_any": 7
+  },
+  {
+   "var:__obs_col": "#ff0000",
+   "var:__obs_sym": "AAPL",
+   "var:__obs_tf": "60",
+   "var:__obs_sess": "0930-1600",
+   "var:__obs_pr": 100.5,
+   "var:__obs_txt": "notes",
+   "var:__obs_t": 0,
+   "var:__obs_src": 108.0,
+   "var:__obs_any": 7
+  }
+ ],
+ "finalVarState": {
+  "__obs_col": "#ff0000",
+  "__obs_sym": "AAPL",
+  "__obs_tf": "60",
+  "__obs_sess": "0930-1600",
+  "__obs_pr": 100.5,
+  "__obs_txt": "notes",
+  "__obs_t": 0,
+  "__obs_src": 108.0,
+  "__obs_any": 7
+ }
+}

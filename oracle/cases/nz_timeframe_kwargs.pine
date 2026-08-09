@@ -1,0 +1,19 @@
+//@version=5
+indicator("nz_timeframe_kwargs")
+// C405: nz(replacement=)/timeframe.in_seconds(timeframe=) kwargs 신규 지원(next_hint(C404) 1순위)
+// 오라클 채널. nz는 pine2py wavealgo core.nz의 실제 첫 파라미터명이 'value'인데 wild는 항상
+// 'source='을 씀(math.round precision= 사례(C404)와 동일한 부분 오라클 축) -- replacement=만
+// 이름이 일치해 오라클 가능(위치 value + 키워드 replacement=, wild 22fe43610207.pine 실사용 형태
+// 그대로 -- oracle/cases/nz_basic.pine의 close[20](10바 데이터셋에서 항상 na)/close(항상 non-na)
+// 분기 재사용). source=는 codegen 동치성 hand-verified로 대체(tests/codegen.test.ts 참조).
+// timeframe.in_seconds(timeframe=)는 pine2py wa.timeframe_in_seconds의 실제 파라미터명이 정확히
+// 'timeframe'이라(codegen.py L1709 매핑) 이름 불일치 없이 완전 키워드 폼도 오라클 가능
+// (oracle/cases/timeframe_basic.pine 위치 인자 폼과 동일 값 재사용).
+var float __obs_nz_replacement_kw = na
+__obs_nz_replacement_kw := nz(close[20], replacement=-1.0)
+var float __obs_nz_replacement_kw_passthrough = na
+__obs_nz_replacement_kw_passthrough := nz(close, replacement=-999.0)
+var float __obs_tf_in_seconds_kw_d = na
+__obs_tf_in_seconds_kw_d := timeframe.in_seconds(timeframe="D")
+var float __obs_tf_in_seconds_kw_empty = na
+__obs_tf_in_seconds_kw_empty := timeframe.in_seconds(timeframe="")

@@ -1,0 +1,14 @@
+//@version=5
+indicator("Complex Bool TA")
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+rsi14 = ta.rsi(close, 14)
+var int signal_count = 0
+bool buy = nz(sma3, 0) > nz(ema5, 0) and nz(rsi14, 50) < 70 and close > open
+if buy
+    signal_count := signal_count + 1
+var float result = 0.0
+result := signal_count
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

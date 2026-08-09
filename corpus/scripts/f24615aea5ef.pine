@@ -1,0 +1,9 @@
+//@version=5
+indicator("Array Push Pop")
+var arr = array.new_float(0)
+array.push(arr, 10.0)
+array.push(arr, 20.0)
+array.push(arr, 30.0)
+var float popped = array.pop(arr)
+var int sz = array.size(arr)
+plot(popped)

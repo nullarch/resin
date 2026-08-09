@@ -1,0 +1,26 @@
+//@version=5
+indicator("Torture 9")
+type Config
+    float weight = 1.0
+    float threshold = 0.5
+method apply(Config this, float val) =>
+    val * this.weight > this.threshold ? val * this.weight : 0.0
+baseConfig = Config.new(1.5, 1.0)
+adjusted = Config.copy(baseConfig)
+adjusted.weight := 2.0
+var float cumResult = 0.0
+float smaVal = nz(ta.sma(close, 3), close)
+float deviation = close - smaVal
+float baseResult = baseConfig.apply(deviation)
+float adjResult = adjusted.apply(deviation)
+float chosen = switch
+    baseResult > 2.0 => baseResult
+    adjResult > 2.0 => adjResult
+    => 0.0
+cumResult := cumResult + chosen
+results = array.new<float>(0)
+results.push(baseResult)
+results.push(adjResult)
+float sumR = 0.0
+for r in results
+    sumR := sumR + r

@@ -1,0 +1,7 @@
+//@version=5
+indicator("Multi SMA")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+var float lastDiff = 0
+if not na(sma3) and not na(sma5)
+    lastDiff := sma3 - sma5

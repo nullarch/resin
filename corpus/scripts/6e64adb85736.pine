@@ -1,0 +1,7 @@
+//@version=5
+indicator("switch cond")
+var float result = 0.0
+result := switch
+    close > 110 => 1.0
+    close > 100 => 2.0
+    => 3.0

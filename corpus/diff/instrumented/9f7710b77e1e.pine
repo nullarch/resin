@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Stoch Zones")
+k = ta.stoch(close, high, low, 5)
+d = ta.sma(k, 3)
+ob = k > 80 and d > 80
+os = k < 20 and d < 20
+var float __obs_plot0 = na
+__obs_plot0 := k
+plot(k, "K")
+var float __obs_plot1 = na
+__obs_plot1 := ob ? 1 : os ? -1 : 0
+plot(ob ? 1 : os ? -1 : 0, "Zone")

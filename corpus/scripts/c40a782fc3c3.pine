@@ -1,0 +1,11 @@
+//@version=5
+indicator("ArrStats")
+var a = array.from(10.0, 20.0, 30.0, 40.0)
+var float s = 0
+var float avg = 0
+var float mn = 0
+var float mx = 0
+s := array.sum(a)
+avg := array.avg(a)
+mn := array.min(a)
+mx := array.max(a)

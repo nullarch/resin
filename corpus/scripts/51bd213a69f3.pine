@@ -1,0 +1,7 @@
+//@version=5
+indicator("Spectral Energy")
+var float energy = 0.0
+float dc = ta.sma(close, 3)
+float ac = close - nz(dc, close)
+energy := energy + ac * ac
+plot(energy, "Energy")

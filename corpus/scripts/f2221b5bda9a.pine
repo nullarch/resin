@@ -1,0 +1,10 @@
+//@version=5
+indicator("Brownian Motion")
+float displacement = close - 103.0
+float sqDisp = displacement * displacement
+var float sumSqDisp = 0.0
+var int cnt = 0
+cnt := cnt + 1
+sumSqDisp := sumSqDisp + sqDisp
+float msd = cnt > 0 ? sumSqDisp / cnt : 0.0
+float diffCoeff = cnt > 1 ? msd / (2.0 * cnt) : 0.0

@@ -1,0 +1,66 @@
+//@version=5
+indicator("str_convert")
+// str.tostring/str.tonumber (C87) — bar-independent (literal args, math_const.pine/str_basic.pine
+// pattern). Unlike most other str.* functions, pine2py's tostring/tonumber both have explicit
+// None/exception guards (str_funcs.py L26-27, L56-58) so na inputs do NOT crash pine2py — na
+// coverage is included directly in this oracle case (no hand-verified fallback needed here).
+var float __na_num = na
+var string __na_str = na
+
+// tostring: default (no format_str) — Python str(float) style (".0" on whole numbers, exponential
+// switch at 1e16/1e-4 unlike JS's native 1e21/1e-6 — see runtime/str.ts pyFloatStr).
+var string __obs_ts0 = na
+__obs_ts0 := str.tostring(3.14)
+var string __obs_ts1 = na
+__obs_ts1 := str.tostring(100.0)
+var string __obs_ts2 = na
+__obs_ts2 := str.tostring(-3.5)
+var string __obs_ts3 = na
+__obs_ts3 := str.tostring(__na_num)
+var string __obs_ts4 = na
+__obs_ts4 := str.tostring(0.0001)
+var string __obs_ts5 = na
+__obs_ts5 := str.tostring(10000000000000000.0)
+var string __obs_ts6 = na
+__obs_ts6 := str.tostring(0.0)
+// tostring: format_str variants
+var string __obs_ts7 = na
+__obs_ts7 := str.tostring(3.7, "integer")
+var string __obs_ts8 = na
+__obs_ts8 := str.tostring(-3.7, "integer")
+var string __obs_ts9 = na
+__obs_ts9 := str.tostring(12.345, "percent")
+var string __obs_ts10 = na
+__obs_ts10 := str.tostring(1500000.0, "volume")
+var string __obs_ts11 = na
+__obs_ts11 := str.tostring(1230000000.0, "volume")
+var string __obs_ts12 = na
+__obs_ts12 := str.tostring(500.0, "volume")
+var string __obs_ts13 = na
+__obs_ts13 := str.tostring(1.23000000, "mintick")
+var string __obs_ts14 = na
+__obs_ts14 := str.tostring(3.14159, "#.##")
+var string __obs_ts15 = na
+__obs_ts15 := str.tostring(3.14159, "0.0000")
+
+// tonumber
+var float __obs_tn0 = na
+__obs_tn0 := str.tonumber("3.14")
+var float __obs_tn1 = na
+__obs_tn1 := str.tonumber("-42")
+var float __obs_tn2 = na
+__obs_tn2 := str.tonumber("abc")
+var float __obs_tn3 = na
+__obs_tn3 := str.tonumber(__na_str)
+var float __obs_tn4 = na
+__obs_tn4 := str.tonumber("   ")
+var float __obs_tn5 = na
+__obs_tn5 := str.tonumber("Infinity")
+var float __obs_tn6 = na
+__obs_tn6 := str.tonumber("-Infinity")
+var float __obs_tn7 = na
+__obs_tn7 := str.tonumber("0x1A")
+var float __obs_tn8 = na
+__obs_tn8 := str.tonumber("  3.14  ")
+var float __obs_tn9 = na
+__obs_tn9 := str.tonumber("1e10")

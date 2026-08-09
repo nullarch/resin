@@ -1,0 +1,8 @@
+//@version=5
+indicator("Totalistic Rule")
+var int state = 0
+a = close > open ? 1 : 0
+b = high > nz(ta.ema(high, 3), high) ? 1 : 0
+c = volume > 1100 ? 1 : 0
+total = a + b + c
+state := total == 0 ? 0 : total == 1 ? 1 : total == 2 ? 1 : 0

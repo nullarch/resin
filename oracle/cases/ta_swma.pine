@@ -1,0 +1,7 @@
+//@version=5
+indicator("ta_swma")
+// ta.swma 오라클 검증(ROADMAP P2 "ta.* 44종" — swma). length 인자가 없는 고정 4-tap
+// 가중평균이라 sample10.json 10바 안에서 초기화 구간(NaN, 바 0~2)과 정상 구간(바 3~9)을
+// 모두 커버한다.
+var float __obs_swma = na
+__obs_swma := ta.swma(close)

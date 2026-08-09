@@ -1,0 +1,36 @@
+//@version=5
+indicator("CausalDash")
+var float cumSum = 0.0
+var float meanEst = 0.0
+var float preMean = 0.0
+var float postMean = 0.0
+var float sumZX = 0.0
+var float sumZY = 0.0
+var int cnt = 0
+var int preCnt = 0
+var int postCnt = 0
+cnt := cnt + 1
+meanEst := meanEst + (close - meanEst) / float(cnt)
+cumSum := cumSum + (close - meanEst)
+cutoff = 5
+if bar_index < cutoff
+    preCnt := preCnt + 1
+    preMean := preMean + (close - preMean) / float(preCnt)
+else
+    postCnt := postCnt + 1
+    postMean := postMean + (close - postMean) / float(postCnt)
+did = postCnt > 0 ? postMean - preMean : 0.0
+z = volume - nz(ta.sma(volume, 3), volume)
+x = close - nz(close[1], close)
+sumZX := sumZX + z * x
+sumZY := sumZY + z * (high - low)
+ivBeta = math.abs(sumZX) > 0.01 ? sumZY / sumZX : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := cumSum
+plot(cumSum, "CUSUM")
+var float __obs_plot1 = na
+__obs_plot1 := did
+plot(did, "DiD")
+var float __obs_plot2 = na
+__obs_plot2 := ivBeta
+plot(ivBeta, "IV")

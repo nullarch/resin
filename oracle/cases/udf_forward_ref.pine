@@ -1,0 +1,37 @@
+//@version=5
+indicator("udf_forward_ref")
+// top-level FuncDecl forward-reference(C255, corpus "알 수 없는 함수 호출" 클러스터 최다빈도
+// 26건 실측 — 호출이 함수 선언보다 스크립트 앞쪽에 오는 패턴). pine2py도 codegen.py
+// _HOISTABLE_TYPES로 FuncDecl을 top-level 문장보다 먼저 hoist해 지원한다(python으로
+// pine2wave.transpiler.transpile()을 이 정확한 순서로 직접 실행해 errors=[] 확인 완료).
+// analyzer.ts가 단일 패스 전 top-level FuncDecl 시그니처(파라미터 개수/한정자)를 prepass로
+// 먼저 등록해 forward-ref 콜사이트의 인자 개수 검증을 가능케 하고, 슬롯 배정(localVarSlots/
+// localTaSlotCount는 본문 분석 후에만 확정)은 analyze() 메인 루프 종료 뒤 pendingFuncCallSlots로
+// 일괄 처리한다(call-expr.ts resolvePendingFuncCallSlots 참조) — codegen 자체는 무변경(genFuncDecl
+// 출력이 이미 top-level 문장보다 앞에 배치됨, tests/unit/codegen.test.ts 기존 회귀 테스트 참조).
+//
+// 이 케이스는 실제 corpus 패턴과 동일하게 함수당 콜사이트 1개만 쓴다 — 같은 forward-ref 함수를
+// 두 곳에서 부르면 pine2py의 ta state_key/UDF 내부 var가 이름(호출 AST 노드) 하나로 고정돼(codegen.py
+// _inject_stateful_kwargs의 call_id, MEMORY.md Pitfalls C9와 동일 축) 모든 콜사이트가 상태를
+// 공유하는 별개의 pine2py 버그가 트리거돼 오라클이 무효가 진다 — 그 콜사이트 독립성 검증은
+// tests/unit/codegen.test.ts의 exact-string 테스트가 담당한다(C9/C162 기존 패턴과 동일 원칙).
+
+// __obs_a: 함수 본문에 stateful ta.* 콜(ta.sma)이 있는 forward-ref 함수 — 호출이 선언보다 앞선
+// 위치(funcTaBases 지연 배정 검증).
+a = smaHelper(close, 3)
+var float __obs_a = na
+__obs_a := a
+
+smaHelper(src, len) =>
+    ta.sma(src, len)
+
+// __obs_c: 함수 본문에 var(fnVars slotBase, ta 없이)가 있는 forward-ref 함수 — 역시 호출이
+// 선언보다 앞선 위치(funcCallSlots 지연 배정 검증).
+c = counter()
+var float __obs_c = na
+__obs_c := c
+
+counter() =>
+    var float n = 0.0
+    n := n + 1.0
+    n

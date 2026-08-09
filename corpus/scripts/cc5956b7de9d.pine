@@ -1,0 +1,13 @@
+//@version=5
+indicator("ForInVarMathTern")
+var float cumScore = 0.0
+arr = array.new_float(0)
+array.push(arr, close)
+array.push(arr, open)
+array.push(arr, high)
+total = 0.0
+for [idx, val] in arr
+    total := total + math.abs(val - 100.0)
+score = total > 10.0 ? math.sqrt(total) : 0.0
+cumScore := cumScore + score
+plot(cumScore, "CS")

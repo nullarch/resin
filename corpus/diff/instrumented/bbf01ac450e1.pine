@@ -1,0 +1,6 @@
+//@version=5
+indicator("Color 6")
+c = #FF0000
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close, color=c)

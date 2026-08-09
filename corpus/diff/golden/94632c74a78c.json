@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:pt": "pine_fn.<locals>.PeriodTracker(alignedBars=8, maxSpread=1.4000000000000057, totalBars=10)",
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:pt": "pine_fn.<locals>.PeriodTracker(alignedBars=8, maxSpread=1.4000000000000057, totalBars=10)",
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:pt": "pine_fn.<locals>.PeriodTracker(alignedBars=8, maxSpread=1.4000000000000057, totalBars=10)",
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:pt": "pine_fn.<locals>.PeriodTracker(alignedBars=8, maxSpread=1.4000000000000057, totalBars=10)",
+   "var:__obs_plot0": 75.0
+  },
+  {
+   "var:pt": "pine_fn.<locals>.PeriodTracker(alignedBars=8, maxSpread=1.4000000000000057, totalBars=10)",
+   "var:__obs_plot0": 80.0
+  },
+  {
+   "var:pt": "pine_fn.<locals>.PeriodTracker(alignedBars=8, maxSpread=1.4000000000000057, totalBars=10)",
+   "var:__obs_plot0": 83.33333333333334
+  },
+  {
+   "var:pt": "pine_fn.<locals>.PeriodTracker(alignedBars=8, maxSpread=1.4000000000000057, totalBars=10)",
+   "var:__obs_plot0": 85.71428571428571
+  },
+  {
+   "var:pt": "pine_fn.<locals>.PeriodTracker(alignedBars=8, maxSpread=1.4000000000000057, totalBars=10)",
+   "var:__obs_plot0": 87.5
+  },
+  {
+   "var:pt": "pine_fn.<locals>.PeriodTracker(alignedBars=8, maxSpread=1.4000000000000057, totalBars=10)",
+   "var:__obs_plot0": 77.77777777777779
+  },
+  {
+   "var:pt": "pine_fn.<locals>.PeriodTracker(alignedBars=8, maxSpread=1.4000000000000057, totalBars=10)",
+   "var:__obs_plot0": 80.0
+  }
+ ],
+ "finalVarState": {
+  "pt": "pine_fn.<locals>.PeriodTracker(alignedBars=8, maxSpread=1.4000000000000057, totalBars=10)",
+  "__obs_plot0": 80.0
+ }
+}

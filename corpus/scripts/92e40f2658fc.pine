@@ -1,0 +1,39 @@
+
+//@version=5
+indicator("Cycle 200")
+ema3 = ta.ema(close, 3)
+sma5 = ta.sma(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = ta.atr(3)
+[m, s, h] = ta.macd(close, 3, 5, 3)
+k = ta.stoch(close, high, low, 5)
+[mid, upper, lower] = ta.bb(close, 5, 2.0)
+
+type State
+    float score = 0.0
+    int regime = 0
+
+var State st = State.new()
+var float[] hist = array.new_float(0)
+var dashboard = map.new<string, float>()
+
+trendPts = (close > ema3 ? 1.0 : 0.0) + (ema3 > sma5 ? 1.0 : 0.0)
+momPts = (rsi > 50 ? 1.0 : 0.0) + (h > 0 ? 1.0 : 0.0) + (k > 50 ? 1.0 : 0.0)
+volAdj = close > 0 ? 1.0 - math.min(atr / close * 50, 1.0) : 0.5
+
+st.score := (trendPts / 2 * 0.4 + momPts / 3 * 0.4 + volAdj * 0.2)
+st.regime := st.score > 0.6 ? 1 : st.score < 0.4 ? -1 : 0
+
+array.push(hist, st.score)
+if array.size(hist) > 8
+    array.shift(hist)
+
+map.put(dashboard, "score", st.score)
+map.put(dashboard, "regime", float(st.regime))
+map.put(dashboard, "avg_score", array.avg(hist))
+
+var int bars = 0
+bars := bars + 1
+
+plot(st.score, "Score")
+plot(float(st.regime), "Regime")

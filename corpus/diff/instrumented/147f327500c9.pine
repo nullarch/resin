@@ -1,0 +1,19 @@
+
+//@version=5
+indicator("Gaps")
+gapCount = 0
+totalGap = 0.0
+for i = 1 to 5
+    prevClose = close[i]
+    currOpen = open[i - 1]
+    if not na(prevClose) and not na(currOpen)
+        gap = math.abs(currOpen - prevClose)
+        if gap > 0.5
+            gapCount := gapCount + 1
+            totalGap := totalGap + gap
+var float __obs_plot0 = na
+__obs_plot0 := gapCount
+plot(gapCount, "Gaps")
+var float __obs_plot1 = na
+__obs_plot1 := totalGap
+plot(totalGap, "TotalGap")

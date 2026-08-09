@@ -1,0 +1,12 @@
+
+//@version=5
+strategy("Chan Break", overlay=true)
+hi5 = ta.highest(high, 5)
+lo5 = ta.lowest(low, 5)
+mid = (hi5 + lo5) / 2.0
+if close > hi5[1]
+    strategy.entry("Long", strategy.long)
+if close < mid
+    strategy.close("Long")
+plot(hi5, "Upper")
+plot(mid, "Mid")

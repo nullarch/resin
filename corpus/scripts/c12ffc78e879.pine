@@ -1,0 +1,7 @@
+//@version=5
+indicator("String format")
+price = str.tostring(close, "#.##")
+change = str.tostring(close - nz(close[1]), "#.####")
+pct = nz(close[1]) != 0 ? str.tostring((close - nz(close[1])) / nz(close[1]) * 100, "#.##") : "0"
+label_text = "P:" + price + " C:" + change + " %:" + pct
+len_text = str.length(label_text)

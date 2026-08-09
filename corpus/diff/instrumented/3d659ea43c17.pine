@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("MFI")
+mfi = ta.mfi(close, 5)
+overbought = mfi > 80
+oversold = mfi < 20
+var float __obs_plot0 = na
+__obs_plot0 := mfi
+plot(mfi, "MFI")
+var float __obs_plot1 = na
+__obs_plot1 := overbought ? 1 : oversold ? -1 : 0
+plot(overbought ? 1 : oversold ? -1 : 0, "Zone")

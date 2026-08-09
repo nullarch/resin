@@ -1,0 +1,12 @@
+//@version=5
+indicator("SwitchMulti")
+var int result = 0
+x = 2
+result := switch x
+    1 =>
+        a = 10
+        a + 5
+    2 =>
+        b = 20
+        b + 10
+    => 0

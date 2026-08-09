@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Multi Plot")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = nz(ta.atr(3), 1.0)
+spread = sma3 - sma5
+plot(spread, "Spread")
+plot(rsi, "RSI")
+plot(atr, "ATR")
+plot(close - sma3, "Dist")

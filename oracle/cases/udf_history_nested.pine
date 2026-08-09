@@ -1,0 +1,10 @@
+//@version=5
+indicator("udf_history_nested")
+gd() =>
+    if close > 103
+        dval = close * 2
+        dval[1]
+    else
+        na
+var float __obs_d = na
+__obs_d := gd()

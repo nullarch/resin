@@ -1,0 +1,23 @@
+
+//@version=5
+indicator("Vol Full")
+atr = ta.atr(3)
+sd = ta.stdev(close, 5)
+[mid, upper, lower] = ta.bb(close, 5, 2.0)
+rsi = nz(ta.rsi(close, 3), 50.0)
+
+bbWidth = mid > 0 ? (upper - lower) / mid * 100 : 0.0
+atrPct = close > 0 ? atr / close * 100 : 0.0
+hvol = close > 0 ? sd / close * 100 : 0.0
+
+var float peak = 0.0
+peak := math.max(peak, close)
+dd = peak > 0 ? (peak - close) / peak * 100 : 0.0
+
+volScore = (atrPct > 3 ? 1.0 : 0.0) + (bbWidth > 5 ? 1.0 : 0.0) + (dd > 2 ? 1.0 : 0.0)
+
+var int bars = 0
+bars := bars + 1
+
+plot(volScore, "VS")
+plot(dd, "DD")

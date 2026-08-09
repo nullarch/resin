@@ -1,0 +1,6 @@
+//@version=5
+indicator("RSI_SMA")
+var float result = 0
+smoothed = ta.sma(ta.rsi(close, 5), 3)
+if not na(smoothed)
+    result := smoothed

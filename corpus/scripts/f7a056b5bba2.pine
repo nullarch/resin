@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Dash Metrics")
+var dm = map.new<string, float>()
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+atr = nz(ta.atr(3), 1.0)
+map.put(dm, "rsi", rsi)
+map.put(dm, "trend", close > sma3 ? 1.0 : -1.0)
+map.put(dm, "volatility", atr)
+map.put(dm, "momentum", nz(close - close[1], 0.0))
+metricSum = 0.0
+for [k, v] in dm
+    metricSum := metricSum + v
+plot(metricSum, "MS")

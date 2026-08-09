@@ -1,0 +1,16 @@
+//@version=5
+strategy("GAOptStrat")
+var int state = 0
+rsiThresh = 45.0
+atrMult = 1.5
+rsi = nz(ta.rsi(close, 5), 50.0)
+atrVal = nz(ta.atr(3), 1.0)
+entryBand = nz(ta.sma(close, 3), close) - atrMult * atrVal
+exitBand = nz(ta.sma(close, 3), close) + atrMult * atrVal
+if state == 0 and rsi < rsiThresh and close < entryBand
+    strategy.entry("L", strategy.long)
+    state := 1
+else if state == 1 and close > exitBand
+    strategy.close("L")
+    state := 0
+plot(float(state), "S")

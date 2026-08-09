@@ -1,0 +1,303 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:m": [
+    [
+     108.0,
+     0.0
+    ],
+    [
+     0.0,
+     109.0
+    ]
+   ],
+   "var:__obs_a00": 101.0,
+   "var:__obs_a11": 102.0,
+   "var:__obs_a_count": 4,
+   "var:__obs_b_diag_sum": 302.0,
+   "var:__obs_b_offdiag": 0.0,
+   "var:__obs_b_rows": 3,
+   "var:__obs_b_columns": 3,
+   "var:__obs_c_untouched": 5.0,
+   "var:__obs_c_count": 6,
+   "var:__obs_d_rows": 0,
+   "var:__obs_d_columns": 0,
+   "var:__obs_d_count": 0,
+   "var:__obs_e_rows": 2,
+   "var:__obs_e_columns": 0,
+   "var:__obs_e_count": 0
+  },
+  {
+   "var:m": [
+    [
+     108.0,
+     0.0
+    ],
+    [
+     0.0,
+     109.0
+    ]
+   ],
+   "var:__obs_a00": 102.0,
+   "var:__obs_a11": 103.0,
+   "var:__obs_a_count": 4,
+   "var:__obs_b_diag_sum": 305.0,
+   "var:__obs_b_offdiag": 0.0,
+   "var:__obs_b_rows": 3,
+   "var:__obs_b_columns": 3,
+   "var:__obs_c_untouched": 5.0,
+   "var:__obs_c_count": 6,
+   "var:__obs_d_rows": 0,
+   "var:__obs_d_columns": 0,
+   "var:__obs_d_count": 0,
+   "var:__obs_e_rows": 2,
+   "var:__obs_e_columns": 0,
+   "var:__obs_e_count": 0
+  },
+  {
+   "var:m": [
+    [
+     108.0,
+     0.0
+    ],
+    [
+     0.0,
+     109.0
+    ]
+   ],
+   "var:__obs_a00": 103.0,
+   "var:__obs_a11": 104.0,
+   "var:__obs_a_count": 4,
+   "var:__obs_b_diag_sum": 308.0,
+   "var:__obs_b_offdiag": 0.0,
+   "var:__obs_b_rows": 3,
+   "var:__obs_b_columns": 3,
+   "var:__obs_c_untouched": 5.0,
+   "var:__obs_c_count": 6,
+   "var:__obs_d_rows": 0,
+   "var:__obs_d_columns": 0,
+   "var:__obs_d_count": 0,
+   "var:__obs_e_rows": 2,
+   "var:__obs_e_columns": 0,
+   "var:__obs_e_count": 0
+  },
+  {
+   "var:m": [
+    [
+     108.0,
+     0.0
+    ],
+    [
+     0.0,
+     109.0
+    ]
+   ],
+   "var:__obs_a00": 102.0,
+   "var:__obs_a11": 103.0,
+   "var:__obs_a_count": 4,
+   "var:__obs_b_diag_sum": 305.0,
+   "var:__obs_b_offdiag": 0.0,
+   "var:__obs_b_rows": 3,
+   "var:__obs_b_columns": 3,
+   "var:__obs_c_untouched": 5.0,
+   "var:__obs_c_count": 6,
+   "var:__obs_d_rows": 0,
+   "var:__obs_d_columns": 0,
+   "var:__obs_d_count": 0,
+   "var:__obs_e_rows": 2,
+   "var:__obs_e_columns": 0,
+   "var:__obs_e_count": 0
+  },
+  {
+   "var:m": [
+    [
+     108.0,
+     0.0
+    ],
+    [
+     0.0,
+     109.0
+    ]
+   ],
+   "var:__obs_a00": 104.0,
+   "var:__obs_a11": 105.0,
+   "var:__obs_a_count": 4,
+   "var:__obs_b_diag_sum": 311.0,
+   "var:__obs_b_offdiag": 0.0,
+   "var:__obs_b_rows": 3,
+   "var:__obs_b_columns": 3,
+   "var:__obs_c_untouched": 5.0,
+   "var:__obs_c_count": 6,
+   "var:__obs_d_rows": 0,
+   "var:__obs_d_columns": 0,
+   "var:__obs_d_count": 0,
+   "var:__obs_e_rows": 2,
+   "var:__obs_e_columns": 0,
+   "var:__obs_e_count": 0
+  },
+  {
+   "var:m": [
+    [
+     108.0,
+     0.0
+    ],
+    [
+     0.0,
+     109.0
+    ]
+   ],
+   "var:__obs_a00": 105.0,
+   "var:__obs_a11": 106.0,
+   "var:__obs_a_count": 4,
+   "var:__obs_b_diag_sum": 314.0,
+   "var:__obs_b_offdiag": 0.0,
+   "var:__obs_b_rows": 3,
+   "var:__obs_b_columns": 3,
+   "var:__obs_c_untouched": 5.0,
+   "var:__obs_c_count": 6,
+   "var:__obs_d_rows": 0,
+   "var:__obs_d_columns": 0,
+   "var:__obs_d_count": 0,
+   "var:__obs_e_rows": 2,
+   "var:__obs_e_columns": 0,
+   "var:__obs_e_count": 0
+  },
+  {
+   "var:m": [
+    [
+     108.0,
+     0.0
+    ],
+    [
+     0.0,
+     109.0
+    ]
+   ],
+   "var:__obs_a00": 106.0,
+   "var:__obs_a11": 107.0,
+   "var:__obs_a_count": 4,
+   "var:__obs_b_diag_sum": 317.0,
+   "var:__obs_b_offdiag": 0.0,
+   "var:__obs_b_rows": 3,
+   "var:__obs_b_columns": 3,
+   "var:__obs_c_untouched": 5.0,
+   "var:__obs_c_count": 6,
+   "var:__obs_d_rows": 0,
+   "var:__obs_d_columns": 0,
+   "var:__obs_d_count": 0,
+   "var:__obs_e_rows": 2,
+   "var:__obs_e_columns": 0,
+   "var:__obs_e_count": 0
+  },
+  {
+   "var:m": [
+    [
+     108.0,
+     0.0
+    ],
+    [
+     0.0,
+     109.0
+    ]
+   ],
+   "var:__obs_a00": 105.0,
+   "var:__obs_a11": 106.0,
+   "var:__obs_a_count": 4,
+   "var:__obs_b_diag_sum": 314.0,
+   "var:__obs_b_offdiag": 0.0,
+   "var:__obs_b_rows": 3,
+   "var:__obs_b_columns": 3,
+   "var:__obs_c_untouched": 5.0,
+   "var:__obs_c_count": 6,
+   "var:__obs_d_rows": 0,
+   "var:__obs_d_columns": 0,
+   "var:__obs_d_count": 0,
+   "var:__obs_e_rows": 2,
+   "var:__obs_e_columns": 0,
+   "var:__obs_e_count": 0
+  },
+  {
+   "var:m": [
+    [
+     108.0,
+     0.0
+    ],
+    [
+     0.0,
+     109.0
+    ]
+   ],
+   "var:__obs_a00": 107.0,
+   "var:__obs_a11": 108.0,
+   "var:__obs_a_count": 4,
+   "var:__obs_b_diag_sum": 320.0,
+   "var:__obs_b_offdiag": 0.0,
+   "var:__obs_b_rows": 3,
+   "var:__obs_b_columns": 3,
+   "var:__obs_c_untouched": 5.0,
+   "var:__obs_c_count": 6,
+   "var:__obs_d_rows": 0,
+   "var:__obs_d_columns": 0,
+   "var:__obs_d_count": 0,
+   "var:__obs_e_rows": 2,
+   "var:__obs_e_columns": 0,
+   "var:__obs_e_count": 0
+  },
+  {
+   "var:m": [
+    [
+     108.0,
+     0.0
+    ],
+    [
+     0.0,
+     109.0
+    ]
+   ],
+   "var:__obs_a00": 108.0,
+   "var:__obs_a11": 109.0,
+   "var:__obs_a_count": 4,
+   "var:__obs_b_diag_sum": 323.0,
+   "var:__obs_b_offdiag": 0.0,
+   "var:__obs_b_rows": 3,
+   "var:__obs_b_columns": 3,
+   "var:__obs_c_untouched": 5.0,
+   "var:__obs_c_count": 6,
+   "var:__obs_d_rows": 0,
+   "var:__obs_d_columns": 0,
+   "var:__obs_d_count": 0,
+   "var:__obs_e_rows": 2,
+   "var:__obs_e_columns": 0,
+   "var:__obs_e_count": 0
+  }
+ ],
+ "finalVarState": {
+  "m": [
+   [
+    108.0,
+    0.0
+   ],
+   [
+    0.0,
+    109.0
+   ]
+  ],
+  "__obs_a00": 108.0,
+  "__obs_a11": 109.0,
+  "__obs_a_count": 4,
+  "__obs_b_diag_sum": 323.0,
+  "__obs_b_offdiag": 0.0,
+  "__obs_b_rows": 3,
+  "__obs_b_columns": 3,
+  "__obs_c_untouched": 5.0,
+  "__obs_c_count": 6,
+  "__obs_d_rows": 0,
+  "__obs_d_columns": 0,
+  "__obs_d_count": 0,
+  "__obs_e_rows": 2,
+  "__obs_e_columns": 0,
+  "__obs_e_count": 0
+ }
+}

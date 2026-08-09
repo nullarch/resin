@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("String Builder")
+smaVal = ta.sma(close, 3)
+rsiVal = ta.rsi(close, 3)
+label_text = "SMA:" + str.tostring(smaVal, "#.##") + " RSI:" + str.tostring(rsiVal, "#.##")
+hasRSI = str.contains(label_text, "RSI")
+plot(hasRSI ? 1 : 0, "HasRSI")

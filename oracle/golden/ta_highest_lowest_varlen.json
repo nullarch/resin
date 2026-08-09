@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_hi1": "NaN",
+   "var:__obs_lo1": "NaN",
+   "var:__obs_hi2": "-Infinity",
+   "var:__obs_lo2": "Infinity"
+  },
+  {
+   "var:__obs_hi1": "NaN",
+   "var:__obs_lo1": "NaN",
+   "var:__obs_hi2": 3,
+   "var:__obs_lo2": 3
+  },
+  {
+   "var:__obs_hi1": 103,
+   "var:__obs_lo1": 101,
+   "var:__obs_hi2": 3,
+   "var:__obs_lo2": 3
+  },
+  {
+   "var:__obs_hi1": 103,
+   "var:__obs_lo1": 102,
+   "var:__obs_hi2": "-Infinity",
+   "var:__obs_lo2": "Infinity"
+  },
+  {
+   "var:__obs_hi1": 104,
+   "var:__obs_lo1": 104,
+   "var:__obs_hi2": 3,
+   "var:__obs_lo2": 3
+  },
+  {
+   "var:__obs_hi1": 105,
+   "var:__obs_lo1": 102,
+   "var:__obs_hi2": 3,
+   "var:__obs_lo2": 3
+  },
+  {
+   "var:__obs_hi1": 106,
+   "var:__obs_lo1": 102,
+   "var:__obs_hi2": "-Infinity",
+   "var:__obs_lo2": "Infinity"
+  },
+  {
+   "var:__obs_hi1": 106,
+   "var:__obs_lo1": 105,
+   "var:__obs_hi2": 3,
+   "var:__obs_lo2": 3
+  },
+  {
+   "var:__obs_hi1": 107,
+   "var:__obs_lo1": 105,
+   "var:__obs_hi2": 3,
+   "var:__obs_lo2": 3
+  },
+  {
+   "var:__obs_hi1": 108,
+   "var:__obs_lo1": 108,
+   "var:__obs_hi2": "-Infinity",
+   "var:__obs_lo2": "Infinity"
+  }
+ ],
+ "finalVarState": {
+  "__obs_hi1": 108,
+  "__obs_lo1": 108,
+  "__obs_hi2": "-Infinity",
+  "__obs_lo2": "Infinity"
+ }
+}

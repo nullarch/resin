@@ -1,0 +1,14 @@
+//@version=5
+indicator("udf_tuple_basic")
+
+f(x, y) =>
+    s = x + y
+    d = x - y
+    [s, d]
+
+[sumVal, diffVal] = f(close, open)
+
+var float __obs_sum = na
+__obs_sum := sumVal
+var float __obs_diff = na
+__obs_diff := diffVal

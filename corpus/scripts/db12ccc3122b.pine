@@ -1,0 +1,14 @@
+
+//@version=5
+strategy("Cycle Strat", overlay=true)
+var int barNum = 0
+barNum := barNum + 1
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+cyclePos = barNum % 5
+earlyPhase = cyclePos <= 2
+if close > sma3 and rsi > 50 and earlyPhase
+    strategy.entry("Long", strategy.long)
+if cyclePos >= 4 or close < sma3
+    strategy.close("Long")
+plot(sma3, "MA")

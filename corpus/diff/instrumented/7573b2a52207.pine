@@ -1,0 +1,17 @@
+//@version=5
+indicator("CrossEnt13")
+var float predUp = 0.6
+var float actUp = 0.0
+var float n = 0.0
+n := n + 1.0
+if close > open
+    actUp := actUp + 1.0
+pAct = n > 0 ? actUp / n : 0.5
+crossEnt = 0.0
+if pAct > 0.001 and predUp > 0.001
+    crossEnt := -pAct * math.log(predUp)
+if (1.0 - pAct) > 0.001 and (1.0 - predUp) > 0.001
+    crossEnt := crossEnt - (1.0 - pAct) * math.log(1.0 - predUp)
+var float __obs_plot0 = na
+__obs_plot0 := crossEnt
+plot(crossEnt, "ce")

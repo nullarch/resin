@@ -1,0 +1,11 @@
+//@version=5
+indicator("NS-07 Diffusion")
+var float temp = 0.0
+diffCoeff = 0.3
+if bar_index == 0
+    temp := close
+else
+    temp := temp + diffCoeff * (close - temp)
+var float __obs_plot0 = na
+__obs_plot0 := temp
+plot(temp)

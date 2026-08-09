@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Risk Map")
+var rm = map.new<string, float>()
+map.put(rm, "stop_pct", 2.0)
+map.put(rm, "target_pct", 4.0)
+map.put(rm, "max_risk", 5.0)
+totalRisk = 0.0
+for [k, v] in rm
+    totalRisk := totalRisk + v
+avgRisk = map.size(rm) > 0 ? totalRisk / map.size(rm) : 0.0
+plot(avgRisk, "AR")

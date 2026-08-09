@@ -1,0 +1,22 @@
+
+//@version=5
+indicator("Reg UDT")
+type RegimeState
+    int current = 0
+    int previous = 0
+    int duration = 0
+    int totalTransitions = 0
+
+var RegimeState rs = RegimeState.new()
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+newRegime = close > sma3 and rsi > 55 ? 1 : close < sma3 and rsi < 45 ? -1 : 0
+if newRegime != rs.current and newRegime != 0
+    rs.previous := rs.current
+    rs.current := newRegime
+    rs.duration := 0
+    rs.totalTransitions := rs.totalTransitions + 1
+rs.duration := rs.duration + 1
+var float __obs_plot0 = na
+__obs_plot0 := rs.duration
+plot(rs.duration, "Dur")

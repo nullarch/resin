@@ -1,0 +1,6 @@
+//@version=5
+indicator("ta_wma")
+// ta.wma 오라클 검증(ROADMAP P2 "ta.* 44종" — wma). length=3으로 sample10.json 10바 안에서
+// 초기화 구간(NaN, 바 0~1)과 정상 구간(바 2~9)을 모두 커버.
+var float __obs_wma = na
+__obs_wma := ta.wma(close, 3)

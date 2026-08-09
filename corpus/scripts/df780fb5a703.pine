@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Vol Pctile")
+var float[] volArr = array.new_float(0)
+array.push(volArr, volume)
+if array.size(volArr) > 8
+    array.shift(volArr)
+sorted = array.copy(volArr)
+array.sort(sorted)
+pctile = array.percentile_linear_interpolation(sorted, 75.0)
+isAbove75 = volume > pctile
+plot(isAbove75 ? 1 : 0, "A75")

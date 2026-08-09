@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Div Hist")
+var float[] divScores = array.new_float(0)
+rsi = nz(ta.rsi(close, 3), 50.0)
+priceChg = nz(close - close[1], 0.0)
+rsiChg = rsi - 50
+divScore = priceChg > 0 and rsiChg < 0 ? -1.0 : priceChg < 0 and rsiChg > 0 ? 1.0 : 0.0
+array.push(divScores, divScore)
+if array.size(divScores) > 6
+    array.shift(divScores)
+avgDiv = array.size(divScores) > 0 ? array.avg(divScores) : 0.0
+plot(avgDiv, "AD")

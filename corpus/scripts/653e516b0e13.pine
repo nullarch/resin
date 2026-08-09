@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Stat Store")
+var ss = map.new<string, float>()
+var int n = 0
+n := n + 1
+map.put(ss, "mean", ta.sma(close, 5))
+map.put(ss, "high", ta.highest(high, 5))
+map.put(ss, "low", ta.lowest(low, 5))
+map.put(ss, "count", float(n))
+spread = map.get(ss, "high", 0.0) - map.get(ss, "low", 0.0)
+plot(spread, "Sp")

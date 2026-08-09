@@ -1,0 +1,14 @@
+//@version=5
+indicator("input_enum")
+// input.enum (C134, ROADMAP 'input.*' 마지막 슬라이스) 오라클 검증. pine2py의 대응
+// enum_input(defval, title, options, **kwargs)도 options를 반환값에 전혀 쓰지 않는 순수
+// 스텁이라(python 직접 실행으로 확인) input_extra.pine(C133)과 동일하게 "오버라이드 없음"
+// 경로만 검증한다. defval은 실제 enum 멤버(`Direction.long`) 대신 평범한 문자열 리터럴을
+// 쓴다 — enum 멤버의 런타임 표현 자체가 pine2py(bare 이름)와 pine2js(qualified 이름)로 이미
+// 갈려 있어(DIVERGENCES.md #55) 여기 섞으면 input.enum과 무관한 잡음이 낀다.
+
+opts = array.from("A", "B", "C")
+e = input.enum("A", "Choice", opts)
+
+var string __obs_e = na
+__obs_e := e

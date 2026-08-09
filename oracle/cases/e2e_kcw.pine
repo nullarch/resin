@@ -1,0 +1,19 @@
+//@version=5
+indicator("Keltner Channels Width")
+// TV 빌트인 "Keltner Channels Width" 인디케이터 E2E 재현(ROADMAP P2 "TV 빌트인 인디케이터 E2E"
+// 여덟(마지막) 슬라이스, KCW 단독 -- e2e_kc.pine과 동일 근거로 분리된 별개 스크립트, bb/bbw(C51/C52)의
+// 선례와 동일하게 KC/KCW도 이미 서로 다른 ta.* 함수로 구현돼 있다). ta.kcw 자체의 계산은 이미
+// oracle/cases/ta_kc_kcw.pine이 개별 검증했다 -- ta.kcw는 내부적으로 ta.kc를 호출해 (upper-lower)/basis*100을
+// 계산하므로 ta.kc와 동일한 **의도적 divergence**(DIVERGENCES.md #9)를 그대로 물려받는다. e2e_kc.pine과
+// 동일하게 useTrueRange=true/length=3/mult=2.0(ta_kc_kcw.pine 첫 변형)만 사용.
+lengthInput = input.int(3, "Length")
+multInput = input.float(2.0, "Multiplier")
+useTrueRangeInput = input.bool(true, "Use TrueRange (ATR)")
+src = input.source(close, "Source")
+
+kcwValue = ta.kcw(src, lengthInput, multInput, useTrueRangeInput)
+
+plot(kcwValue, "KCW")
+
+var float __obs_kcw = na
+__obs_kcw := kcwValue

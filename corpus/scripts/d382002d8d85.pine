@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("LastIdx")
+var int[] signals = array.new_int(0)
+sig = close > ta.sma(close, 3) ? 1 : -1
+array.push(signals, sig)
+if array.size(signals) > 8
+    array.shift(signals)
+lastBuy = array.lastindexof(signals, 1)
+lastSell = array.lastindexof(signals, -1)
+plot(lastBuy, "LastBuy")

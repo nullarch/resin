@@ -1,0 +1,9 @@
+//@version=5
+indicator("na dual")
+var float result = 0.0
+x = na
+if na(x)
+    result := 1.0
+y = close
+if not na(y)
+    result := result + 1.0

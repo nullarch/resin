@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Collatz")
+n = int(close)
+steps = 0
+while n > 1 and steps < 200
+    if n % 2 == 0
+        n := int(n / 2)
+    else
+        n := n * 3 + 1
+    steps := steps + 1
+plot(steps, "Steps")

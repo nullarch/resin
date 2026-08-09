@@ -1,0 +1,8 @@
+//@version=5
+indicator("UDF Defaults")
+f_mul(a, b = 2.0, c = 3.0) =>
+    a * b * c
+
+var float result = 0.0
+result := f_mul(5.0) + f_mul(5.0, 10.0)
+plot(result)

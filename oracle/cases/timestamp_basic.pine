@@ -1,0 +1,10 @@
+//@version=5
+indicator("timestamp_basic")
+var float __obs_ymd = na
+var float __obs_ymdhms = na
+var float __obs_tz = na
+var float __obs_defaults = na
+__obs_ymd := timestamp(2024, 1, 15)
+__obs_ymdhms := timestamp(2024, 1, 15, 12, 30, 45)
+__obs_tz := timestamp("America/New_York", 2024, 1, 15, 12, 30, 45)
+__obs_defaults := timestamp(2024, 6, 1, 9)

@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Range Anal")
+totalRange = 0.0
+maxRange = 0.0
+for i = 0 to 4
+    if not na(high[i]) and not na(low[i])
+        r = high[i] - low[i]
+        totalRange := totalRange + r
+        maxRange := math.max(maxRange, r)
+avgRange = totalRange / 5
+plot(maxRange > 0 ? avgRange / maxRange : 0, "Ratio")

@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_e": "A"
+  },
+  {
+   "var:__obs_e": "A"
+  },
+  {
+   "var:__obs_e": "A"
+  },
+  {
+   "var:__obs_e": "A"
+  },
+  {
+   "var:__obs_e": "A"
+  },
+  {
+   "var:__obs_e": "A"
+  },
+  {
+   "var:__obs_e": "A"
+  },
+  {
+   "var:__obs_e": "A"
+  },
+  {
+   "var:__obs_e": "A"
+  },
+  {
+   "var:__obs_e": "A"
+  }
+ ],
+ "finalVarState": {
+  "__obs_e": "A"
+ }
+}

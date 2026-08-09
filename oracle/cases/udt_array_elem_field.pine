@@ -1,0 +1,51 @@
+//@version=5
+indicator("udt_array_elem_field")
+// array<UDT> 원소 접근(array.get/array.pop, C341) 뒤 '=' 로컬이 그 UDT 필드를 읽는 실전 패턴
+// 오라클 검증 -- wild "네임스페이스 접근은 호출식만 지원" 클러스터 장꼬리(`ob = array.get(activeOBs,
+// i)` 뒤 `ob.isBullish`류, 값 흐름 추적 없이 top-level var의 명시 `array<UDT>` typeHint만으로
+// 원소 타입을 정적 확정). pine2py는 값 흐름 추적을 아예 안 해(런타임 duck-typing) 원소 타입과
+// 무관하게 항상 성립하므로 이 서브셋이 오라클 대조 가능 -- 단 method-call sugar
+// `container.get(idx)`는 pine2py 자신의 latent 버그(probe 실측: UDT 원소 배열에서만 idx 정수를
+// 그대로 반환)로 오라클 불가라 이 케이스에서 제외했다(hand-verified 대체,
+// tests/unit/array_elem_udt_field.test.ts).
+
+type OrderBlock
+    float top
+    float bottom
+    bool isBullish
+
+type Basket
+    array<OrderBlock> items
+
+var array<OrderBlock> obs = array.new<OrderBlock>()
+var array<OrderBlock> popArr = array.new<OrderBlock>()
+var Basket basket = Basket.new()
+
+var int barN = 0
+barN := barN + 1
+
+if barN == 1
+    array.push(obs, OrderBlock.new(1.0, 0.5, true))
+    array.push(obs, OrderBlock.new(2.0, 1.5, false))
+    array.push(popArr, OrderBlock.new(9.0, 8.0, true))
+    array.push(popArr, OrderBlock.new(4.0, 3.0, false))
+    array.push(basket.items, OrderBlock.new(3.0, 2.5, true))
+
+// 채널 A: canonical `array.get(container, idx)` + 필드 읽기
+first = array.get(obs, 0)
+var float __obs_first_top = na
+__obs_first_top := first.top
+var bool __obs_first_bull = na
+__obs_first_bull := first.isBullish
+
+// 채널 C: `array.pop(container)`(원소 반환, C341 ARRAY_ELEM_RETURNING_METHODS) + 필드 읽기 --
+// 실제로 원소를 제거하므로 obs/basket.items와 별개인 popArr에서 barN==1 1회만 실행.
+var float __obs_popped_top = na
+if barN == 1
+    popped = array.pop(popArr)
+    __obs_popped_top := popped.top
+
+// 채널 D: UDT 필드가 array<UDT>일 때(중첩) 그 필드에서 꺼낸 원소의 UDT 필드 읽기
+item = array.get(basket.items, 0)
+var float __obs_item_top = na
+__obs_item_top := item.top

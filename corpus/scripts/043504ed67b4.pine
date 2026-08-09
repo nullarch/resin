@@ -1,0 +1,11 @@
+
+//@version=5
+strategy("Osc MR", overlay=true)
+rsi = nz(ta.rsi(close, 3), 50.0)
+k = ta.stoch(close, high, low, 5)
+combined = (rsi + k) / 2
+if combined < 25
+    strategy.entry("Long", strategy.long)
+if combined > 75
+    strategy.close("Long")
+plot(close, "C")

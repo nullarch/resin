@@ -1,0 +1,25 @@
+//@version=5
+indicator("math_misc")
+// floor/ceil: (close-104.5)/2.0 straddles both negative and positive fractional values across
+// sample10.json (close 101..108), covering the toward-negative-infinity rounding direction.
+var float __obs_floor = na
+__obs_floor := math.floor((close - 104.5) / 2.0)
+var float __obs_ceil = na
+__obs_ceil := math.ceil((close - 104.5) / 2.0)
+// sqrt/log/log10: close-105.0 ranges from -4 to 3 and hits exactly 0 (bar5/bar7) — exercises the
+// domain guard (negative/zero -> NaN) alongside the normal positive branch.
+var float __obs_sqrt = na
+__obs_sqrt := math.sqrt(close - 105.0)
+var float __obs_log = na
+__obs_log := math.log(close - 105.0)
+var float __obs_log10 = na
+__obs_log10 := math.log10(close - 105.0)
+// pow: squares the same signed offset (no domain restriction for an integer exponent).
+var float __obs_pow = na
+__obs_pow := math.pow(close - 105.0, 2)
+// exp: negative and positive exponents, no domain restriction.
+var float __obs_exp = na
+__obs_exp := math.exp((close - 105.0) / 10.0)
+// sign: same signed offset, hits negative/zero/positive branches.
+var float __obs_sign = na
+__obs_sign := math.sign(close - 105.0)

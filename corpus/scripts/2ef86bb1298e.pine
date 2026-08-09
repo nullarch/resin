@@ -1,0 +1,9 @@
+//@version=5
+indicator("Safe div mod")
+a = 10.0 / 0.0
+b = 0.0 / 0.0
+c = close / (high - high)
+d = 10.0 % 0.0
+e = close % (close - close)
+f = 100.0 / 3.0
+g = 10 % 3

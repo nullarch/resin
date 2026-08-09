@@ -1,0 +1,6 @@
+//@version=5
+indicator("stdev nonneg")
+sd = ta.stdev(close, 5)
+var bool allNonNeg = true
+if not na(sd) and sd < 0
+    allNonNeg := false

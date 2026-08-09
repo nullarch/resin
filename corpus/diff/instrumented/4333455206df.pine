@@ -1,0 +1,13 @@
+//@version=5
+indicator("Vietoris-Rips")
+float epsilon = 4.0
+float d1 = math.abs(close - open)
+float d2 = math.abs(high - low)
+float d3 = math.abs(close - low)
+int edgeCount = 0
+edgeCount := edgeCount + (d1 < epsilon ? 1 : 0)
+edgeCount := edgeCount + (d2 < epsilon ? 1 : 0)
+edgeCount := edgeCount + (d3 < epsilon ? 1 : 0)
+var float __obs_plot0 = na
+__obs_plot0 := edgeCount
+plot(edgeCount, "RipsEdges")

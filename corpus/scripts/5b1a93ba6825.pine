@@ -1,0 +1,6 @@
+//@version=5
+indicator("String Basic")
+var string s = "hello world"
+var int len_ = 0
+len_ := str.length(s)
+plot(close)

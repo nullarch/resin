@@ -1,0 +1,84 @@
+//@version=5
+indicator("e2e_regime_tracker")
+// 패턴: 제어흐름 조합 / var+loop 누적 / enum+switch / map·array CRUD (ROADMAP P3 HARDEN,
+// "패턴: 실전 지표 재현"의 후속 카테고리). 실전 "레짐 트래커"류 인디케이터(추세 방향 분류 +
+// streak 카운트 + 롤링 윈도우 스캔 + map 집계)에서 흔한 관용구를 하나의 스크립트로 결합한다 --
+// 개별 조각(enum+switch dispatch: enum_basic.pine, array push/shift: array_basic.pine/
+// array_residual.pine, map put/get/contains: map_basic.pine, switch-expr: ctrl_flow_expr.pine,
+// for 루프 var 누적: for_basic.pine)은 전부 개별 오라클로 이미 검증됨 -- 이 케이스는 "조합"이
+// bar-to-bar 상태 전이에서 golden과 갈리지 않는지가 목적(새 시맨틱 없음, 새로 설계하지 않음).
+
+enum Direction
+    up
+    down
+    flat
+
+// A: enum 분류 -- diff==na인 bar0는 두 비교 모두 falsy로 떨어져 else(flat)로 자연 낙하
+// (VERIFIED_SEMANTICS OPEN "비교 na 시맨틱"과 무관 -- na 전파든 plain false든 if 조건에서는
+// 둘 다 falsy라 제어흐름 결과가 갈리지 않는다, C188 교훈으로 이 지점의 landmine을 사전 회피).
+var Direction dir = Direction.flat
+diff = close - close[1]
+if diff > 0
+    dir := Direction.up
+else if diff < 0
+    dir := Direction.down
+else
+    dir := Direction.flat
+
+// B: enum+switch dispatch로 map 카운터 갱신 (map CRUD: contains/put/get)
+var counts = map.new<string, float>()
+if not map.contains(counts, "up")
+    map.put(counts, "up", 0.0)
+    map.put(counts, "down", 0.0)
+    map.put(counts, "flat", 0.0)
+switch dir
+    Direction.up =>
+        map.put(counts, "up", map.get(counts, "up") + 1.0)
+    Direction.down =>
+        map.put(counts, "down", map.get(counts, "down") + 1.0)
+    Direction.flat =>
+        map.put(counts, "flat", map.get(counts, "flat") + 1.0)
+var float __obs_count_up = na
+__obs_count_up := map.get(counts, "up")
+var float __obs_count_down = na
+__obs_count_down := map.get(counts, "down")
+var float __obs_count_flat = na
+__obs_count_flat := map.get(counts, "flat")
+
+// C: streak -- 별도 var 누적 축(직전 방향과 비교, 같으면 전진 아니면 리셋)
+var int streak = 0
+var Direction prevDir = Direction.flat
+if dir == prevDir
+    streak := streak + 1
+else
+    streak := 1
+prevDir := dir
+var float __obs_streak = na
+__obs_streak := streak
+
+// D: 롤링 윈도우 array -- switch-expr로 방향을 코드화(1/-1/0), push 후 용량(3) 초과 시 shift
+// (array CRUD: push/shift/size/get)
+var window = array.new_int()
+dirCode = switch dir
+    Direction.up => 1
+    Direction.down => -1
+    => 0
+array.push(window, dirCode)
+if array.size(window) > 3
+    array.shift(window)
+var float __obs_window_size = na
+__obs_window_size := array.size(window)
+var float __obs_window_last = na
+__obs_window_last := array.get(window, array.size(window) - 1)
+
+// E: for 루프로 윈도우 안 up(1) 개수 스캔 (var+loop 누적 + 제어흐름 조합의 핵심 -- 매 바 array
+// 내용이 바뀌는 채로 다시 스캔해도 golden과 일치하는지 검증)
+upInWindow = 0
+for i = 0 to array.size(window) - 1
+    if array.get(window, i) == 1
+        upInWindow := upInWindow + 1
+var float __obs_up_in_window = na
+__obs_up_in_window := upInWindow
+
+plot(streak, "Streak")
+plot(upInWindow, "UpInWindow")

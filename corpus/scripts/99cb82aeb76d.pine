@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Buy Press")
+bodyUp = close > open
+totalRange = high - low
+buyPress = totalRange > 0 ? (close - low) / totalRange * 100 : 50.0
+plot(buyPress, "BP")

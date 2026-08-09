@@ -1,0 +1,3 @@
+//@version=5
+indicator("TripleTA")
+r = ta.ema(ta.sma(ta.rsi(close, 5), 3), 3)

@@ -1,0 +1,42 @@
+
+//@version=5
+indicator("Quant Framework")
+// Indicators
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+rsi = ta.rsi(close, 3)
+atr = ta.atr(3)
+[macd, sig, hist] = ta.macd(close, 3, 5, 3)
+
+// Alpha signals
+alpha1 = close > sma3 ? 1.0 : -1.0
+alpha2 = rsi > 50 ? 1.0 : -1.0
+alpha3 = hist > 0 ? 1.0 : -1.0
+composite = (alpha1 + alpha2 + alpha3) / 3.0
+
+// Risk
+var float peak = 0.0
+var float maxDD = 0.0
+if close > peak
+    peak := close
+dd = peak > 0 ? (peak - close) / peak : 0.0
+if dd > maxDD
+    maxDD := dd
+
+// Tracking
+var int bars = 0
+bars := bars + 1
+var float[] alphas = array.new_float(0)
+array.push(alphas, composite)
+if array.size(alphas) > 10
+    array.shift(alphas)
+avgAlpha = array.avg(alphas)
+
+var m = map.new<string, float>()
+map.put(m, "alpha", composite)
+map.put(m, "dd", dd * 100)
+map.put(m, "avg", avgAlpha)
+
+plot(composite, "Alpha")
+plot(avgAlpha, "AvgAlpha")
+plot(maxDD * 100, "MaxDD%")

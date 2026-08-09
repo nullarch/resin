@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Multi Var")
+var float total = 0.0
+var float maxVal = 0.0
+var float minVal = 999999.0
+var int count = 0
+count := count + 1
+total := total + close
+if close > maxVal
+    maxVal := close
+if close < minVal
+    minVal := close
+avg = count > 0 ? total / count : close
+rng = maxVal - minVal
+plot(avg, "Avg")
+plot(rng, "Rng")

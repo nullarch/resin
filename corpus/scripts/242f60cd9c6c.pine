@@ -1,0 +1,49 @@
+//@version=5
+indicator("Cycle48 All")
+// Variable step for-loop (tests refactored f-string)
+float loop_sum = 0.0
+step = 2
+for i = 0 to 6 by step
+    loop_sum := loop_sum + i
+// 0+2+4+6 = 12
+var float saved_loop_sum = 0.0
+saved_loop_sum := loop_sum
+
+// For-in with index (tests refactored f-string)
+var arr = array.from(10.0, 20.0, 30.0)
+float arr_total = 0.0
+for [idx, val] in arr
+    arr_total := arr_total + val + idx
+var float saved_arr_total = 0.0
+saved_arr_total := arr_total
+
+// TA regression
+sma5 = ta.sma(close, 5)
+ema3 = ta.ema(close, 3)
+rsi5 = ta.rsi(close, 5)
+[m_line, sig, hist] = ta.macd(close, 3, 5, 3)
+
+// Math
+var float math_check = 0.0
+math_check := math.exp(0.0) + math.log(1.0) + math.abs(-1.0)
+// 1.0 + 0.0 + 1.0 = 2.0
+
+// Array stats
+var float med = 0.0
+med := array.median(arr)
+
+// Map
+var m = map.new<string, float>()
+m.put("sma", nz(sma5))
+m.put("ema", nz(ema3))
+var int m_size = 0
+m_size := m.size()
+
+// var counter
+var int bars = 0
+bars := bars + 1
+
+// Final result
+var float result = 0.0
+result := loop_sum + arr_total + math_check + nz(med) + m_size + bars
+plot(close)

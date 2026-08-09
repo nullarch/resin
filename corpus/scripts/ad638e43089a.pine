@@ -1,0 +1,9 @@
+//@version=5
+indicator("UDF patterns")
+myMA(src = close, len = 5) =>
+    ta.sma(src, len)
+myRSI(src = close, len = 5) =>
+    ta.rsi(src, len)
+sma_val = myMA()
+sma_custom = myMA(open, 3)
+rsi_val = myRSI()

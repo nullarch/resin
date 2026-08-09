@@ -1,0 +1,9 @@
+//@version=5
+indicator("Chord Type")
+var float chordVal = 0.0
+rng = high - low
+chordVal := switch
+    rng > 8 => 3.0
+    rng > 5 => 2.0
+    rng > 2 => 1.0
+    => 0.0

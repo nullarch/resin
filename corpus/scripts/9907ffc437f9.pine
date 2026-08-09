@@ -1,0 +1,8 @@
+//@version=5
+indicator("Switch TA")
+mode = 1
+result = switch mode
+    1 => ta.sma(close, 5)
+    2 => ta.ema(close, 5)
+    => close
+plot(result)

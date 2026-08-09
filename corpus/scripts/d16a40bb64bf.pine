@@ -1,0 +1,6 @@
+
+//@version=5
+indicator("Pct Rank")
+arr = array.from(10.0, 20.0, 30.0, 40.0, 50.0)
+rank = array.percentrank(arr, 35.0)
+plot(rank, "Rank")

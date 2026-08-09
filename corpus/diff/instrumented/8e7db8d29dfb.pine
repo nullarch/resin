@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Range Pct")
+var float[] ranges = array.new_float(0)
+rng = high - low
+array.push(ranges, rng)
+if array.size(ranges) > 8
+    array.shift(ranges)
+sorted = array.copy(ranges)
+array.sort(sorted)
+pctRank = array.percentrank(sorted, rng)
+var float __obs_plot0 = na
+__obs_plot0 := pctRank
+plot(pctRank, "PR")

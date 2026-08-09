@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Vol Prof")
+var float[] volBins = array.new_float(0)
+array.push(volBins, volume)
+if array.size(volBins) > 10
+    array.shift(volBins)
+avgVol = array.size(volBins) > 0 ? array.avg(volBins) : volume
+aboveAvgCount = 0
+for i = 0 to math.max(array.size(volBins) - 1, 0)
+    if i < array.size(volBins) and array.get(volBins, i) > avgVol
+        aboveAvgCount := aboveAvgCount + 1
+plot(aboveAvgCount, "AAC")

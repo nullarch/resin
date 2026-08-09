@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Micro Full")
+body = math.abs(close - open_)
+barRange = high - low
+eff = barRange > 0 ? body / barRange : 0.0
+upperW = high - math.max(close, open_)
+lowerW = math.min(close, open_) - low
+
+var int strongBull = 0
+var int strongBear = 0
+if close > open_ and eff > 0.6
+    strongBull := strongBull + 1
+if close < open_ and eff > 0.6
+    strongBear := strongBear + 1
+
+avgVol = ta.sma(volume, 5)
+volConf = avgVol > 0 ? volume / avgVol : 1.0
+
+plot(eff, "Eff")
+plot(strongBull - strongBear, "Net")

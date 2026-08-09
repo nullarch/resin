@@ -1,0 +1,11 @@
+//@version=5
+indicator("Censoring")
+var int censored = 0
+var int observed = 0
+bool eventOccurred = close > open and volume > 1000
+if eventOccurred
+    observed := observed + 1
+else
+    censored := censored + 1
+float censorRate = censored > 0 ? censored / (censored + observed) : 0.0
+plot(censorRate, "CensorRate")

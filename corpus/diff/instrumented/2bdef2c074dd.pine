@@ -1,0 +1,60 @@
+
+//@version=5
+indicator("Trading System")
+// Core indicators
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+rsi = ta.rsi(close, 3)
+atr = ta.atr(3)
+[macd, sig, hist] = ta.macd(close, 3, 5, 3)
+
+// Trend
+trendUp = close > sma3 and sma3 > ema5
+trendScore = trendUp ? 1.0 : -1.0
+
+// Momentum
+momScore = rsi > 60 ? 1.0 : rsi < 40 ? -1.0 : 0.0
+
+// Volume
+avgVol = ta.sma(volume, 5)
+volActive = volume > avgVol
+
+// Signal
+signal = (trendScore + momScore + (hist > 0 ? 1.0 : -1.0)) / 3.0
+
+// Risk management
+var float peak = 0.0
+var float maxDD = 0.0
+if close > peak
+    peak := close
+dd = peak > 0 ? (peak - close) / peak * 100 : 0.0
+if dd > maxDD
+    maxDD := dd
+
+// Position sizing
+riskPct = atr > 0 ? 1.0 / atr : 0.0
+var int totalBars = 0
+totalBars := totalBars + 1
+
+// Signal history
+var float[] sigHist = array.new_float(0)
+array.push(sigHist, signal)
+if array.size(sigHist) > 8
+    array.shift(sigHist)
+avgSig = array.avg(sigHist)
+
+// State
+var state = map.new<string, float>()
+map.put(state, "signal", signal)
+map.put(state, "dd", dd)
+map.put(state, "avg", avgSig)
+
+var float __obs_plot0 = na
+__obs_plot0 := signal
+plot(signal, "Signal")
+var float __obs_plot1 = na
+__obs_plot1 := maxDD
+plot(maxDD, "MaxDD")
+var float __obs_plot2 = na
+__obs_plot2 := avgSig
+plot(avgSig, "AvgSig")

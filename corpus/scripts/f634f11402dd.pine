@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("UDF Chain")
+trend(float price, float ma) =>
+    price > ma ? 1.0 : -1.0
+
+momentum(float rsi) =>
+    (rsi - 50.0) / 50.0
+
+combine(float t, float m, float wt, float wm) =>
+    t * wt + m * wm
+
+sma5 = ta.sma(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+t = trend(close, sma5)
+m = momentum(rsi)
+c = combine(t, m, 0.6, 0.4)
+plot(c, "C")

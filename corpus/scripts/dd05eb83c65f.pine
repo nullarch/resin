@@ -1,0 +1,6 @@
+//@version=5
+indicator("Drawing params")
+if barstate.islast
+    l = label.new(bar_index, close, "Test", color=color.blue, textcolor=color.white)
+    ln = line.new(bar_index - 5, close[5], bar_index, close, color=color.red)
+    b = box.new(bar_index - 3, high, bar_index, low, border_color=color.green)

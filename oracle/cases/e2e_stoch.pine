@@ -1,0 +1,19 @@
+//@version=5
+indicator("Stochastic")
+// TV 빌트인 "Stochastic" 인디케이터 E2E 재현(ROADMAP P2 "TV 빌트인 인디케이터 15종 E2E" 두 번째
+// 슬라이스, 3종 중 1: Stoch/CCI/ADX·DMI). ta.stoch 자체의 계산은 이미 oracle/cases/ta_stoch.pine
+// (순수 __obs 미러, close/high/low 직접 사용, length=4)으로 개별 검증됐다 -- 이 케이스는 그 위에
+// indicator()/input.int/plot()을 얹어 완성된 빌트인 스크립트 구조 전체를 검증한다. 실제 TV
+// Stochastic 빌트인은 %K/%D 스무딩(ta.sma 이중 래핑)까지 포함하지만 이번 템플릿의 스코프는
+// "indicator()+input.*+ta.*+plot() 조합"이지 지표 전체 재현이 아니므로(C151 next_hint 확정 범위)
+// 스무딩 없이 raw %K만 노출한다. Stochastic은 소스 선택이 없는 지표(close/high/low가 항상
+// 고정)라 MACD/RSI/BB와 달리 input.source는 쓰지 않는다. length=4는 ta_stoch.pine과 동일
+// 파라미터를 재사용(sample10.json 10바 안에서 워밍업/유효 구간을 이미 커버해둔 조합 그대로 재사용).
+lengthInput = input.int(4, "%K Length")
+
+kValue = ta.stoch(close, high, low, lengthInput)
+
+plot(kValue, "%K")
+
+var float __obs_k = na
+__obs_k := kValue

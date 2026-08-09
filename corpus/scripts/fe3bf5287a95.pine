@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("LiqScore")
+type LiquidityMetric
+    float spreadScore = 0.0
+    float volumeScore = 0.0
+    float composite = 0.0
+liq = LiquidityMetric.new()
+spread = high - low
+avgSpread = ta.sma(spread, 5)
+liq.spreadScore := avgSpread > 0 ? spread / nz(avgSpread, 1.0) : 1.0
+avgVol = ta.sma(volume, 5)
+liq.volumeScore := nz(avgVol, 1.0) > 0 ? volume / nz(avgVol, 1.0) : 1.0
+liq.composite := (liq.spreadScore + liq.volumeScore) / 2.0
+plot(liq.composite, "LQ")

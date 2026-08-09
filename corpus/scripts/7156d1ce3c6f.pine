@@ -1,0 +1,8 @@
+//@version=5
+indicator("Envelope")
+upper = ta.highest(high, 5)
+lower = ta.lowest(low, 5)
+amplitude = upper - lower
+midline = (upper + lower) / 2.0
+deviation = close - midline
+plot(amplitude)

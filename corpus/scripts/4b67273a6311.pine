@@ -1,0 +1,6 @@
+//@version=5
+indicator("Fisher-Rao Metric")
+var float metricVal = 0.0
+p = (close - low) / (high - low > 0.01 ? high - low : 0.01)
+safeP = p > 0.01 and p < 0.99 ? p : 0.5
+metricVal := 1.0 / (safeP * (1.0 - safeP))

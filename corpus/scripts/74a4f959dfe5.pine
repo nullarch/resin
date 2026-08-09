@@ -1,0 +1,8 @@
+//@version=5
+indicator("type hoist")
+var float result = 0.0
+p = Point.new(close, close * 2)
+result := p.x + p.y
+type Point
+    float x = 0.0
+    float y = 0.0

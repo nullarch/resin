@@ -1,0 +1,53 @@
+//@version=5
+indicator("array_new_generic")
+
+// C221: array.new<TYPE>(size, initial_value) 제네릭 타입 인자 호출 -- corpus 144건 실측
+// (137건이 float). 5종 전부 array.new_<type> non-generic 형태와 동일한 값이 나와야 한다
+// (parser가 attr을 'new_<type>'으로 재작성해 기존 ARRAY_REGISTRY suffix 라우팅을 재사용).
+
+// A: array.new<float> — default(size=0) vs custom(size, initial_value)
+arrF0 = array.new<float>()
+var float __obs_f0_size = na
+__obs_f0_size := array.size(arrF0)
+arrF = array.new<float>(3, 1.5)
+var float __obs_f_size = na
+__obs_f_size := array.size(arrF)
+var float __obs_f0v = na
+__obs_f0v := array.get(arrF, 0)
+var float __obs_f2v = na
+__obs_f2v := array.get(arrF, 2)
+
+// B: array.new<int> — default vs custom
+arrI0 = array.new<int>()
+var float __obs_i0_size = na
+__obs_i0_size := array.size(arrI0)
+arrI = array.new<int>(3, 7)
+var float __obs_i0v = na
+__obs_i0v := array.get(arrI, 0)
+
+// C: array.new<bool> — default vs custom
+arrB0 = array.new<bool>()
+var float __obs_b0_size = na
+__obs_b0_size := array.size(arrB0)
+arrB = array.new<bool>(2, true)
+var bool __obs_b_v0 = na
+__obs_b_v0 := array.get(arrB, 0)
+
+// D: array.new<string> — default vs custom
+arrS0 = array.new<string>()
+var float __obs_s0_size = na
+__obs_s0_size := array.size(arrS0)
+arrS = array.new<string>(2, "hi")
+var string __obs_s_v0 = na
+__obs_s_v0 := array.get(arrS, 0)
+
+// E: array.new<color> — custom value
+arrC = array.new<color>(2, color.red)
+var string __obs_c_v0 = na
+__obs_c_v0 := array.get(arrC, 0)
+
+// F: mutation still works after generic-call construction (push/get round trip)
+arrPush = array.new<float>(0)
+array.push(arrPush, 42.0)
+var float __obs_push0 = na
+__obs_push0 := array.get(arrPush, 0)

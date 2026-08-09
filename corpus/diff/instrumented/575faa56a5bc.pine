@@ -1,0 +1,32 @@
+
+//@version=5
+indicator("FC Full")
+var float level = 0.0
+var float trend = 0.0
+alpha = 0.3
+beta = 0.1
+prevLevel = level
+level := alpha * close + (1 - alpha) * (level + trend)
+trend := beta * (level - prevLevel) + (1 - beta) * trend
+forecast = level + trend * 2
+
+sma5 = ta.sma(close, 5)
+sd = ta.stdev(close, 5)
+zscore = sd > 0 ? (close - sma5) / sd : 0.0
+
+var float[] errors = array.new_float(0)
+err = math.abs(close - forecast)
+array.push(errors, err)
+if array.size(errors) > 8
+    array.shift(errors)
+mae = array.avg(errors)
+
+var int bars = 0
+bars := bars + 1
+
+var float __obs_plot0 = na
+__obs_plot0 := forecast
+plot(forecast, "FC")
+var float __obs_plot1 = na
+__obs_plot1 := mae
+plot(mae, "MAE")

@@ -1,0 +1,9 @@
+//@version=5
+indicator("RollSpread")
+prevClose = nz(close[1], close)
+prevClose2 = nz(close[2], close)
+ret1 = close - prevClose
+ret2 = prevClose - prevClose2
+covProxy = ret1 * ret2
+rollSpread = covProxy < 0 ? 2.0 * math.sqrt(math.abs(covProxy)) : 0.0
+plot(rollSpread, "Roll")

@@ -1,0 +1,8 @@
+//@version=5
+indicator("NaN Prop")
+rsi = ta.rsi(close, 14)
+x = rsi + 1
+y = rsi * 2
+z = rsi / 2
+allNa = na(rsi) ? (na(x) and na(y) and na(z) ? 1.0 : 0.0) : -1.0
+plot(allNa)

@@ -1,0 +1,6 @@
+//@version=5
+indicator("ta_sar")
+// ta.sar 오라클 검증(ROADMAP P2 "ta.* 44종"). start=0.02, inc=0.02, maxAf=0.2(Pine 기본값),
+// sample10.json 전 구간 관측. argCount:3(전부 명시 필요, 레지스트리는 기본 인자를 지원하지 않음).
+var float __obs_sar = na
+__obs_sar := ta.sar(0.02, 0.02, 0.2)

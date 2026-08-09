@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Pow Sqrt")
+atr = ta.atr(3)
+variance = math.pow(atr, 2)
+stdDev = math.sqrt(variance)
+ratio = atr > 0 ? stdDev / atr : 0.0
+plot(ratio, "Ratio")

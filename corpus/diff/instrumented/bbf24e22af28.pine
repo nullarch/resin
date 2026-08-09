@@ -1,0 +1,12 @@
+//@version=5
+indicator("Sort NaN")
+arr = array.from(3.0, 1.0, 2.0)
+arr.sort()
+first = arr.get(0)
+last = arr.get(arr.size() - 1)
+var float __obs_plot0 = na
+__obs_plot0 := first
+plot(first)
+var float __obs_plot1 = na
+__obs_plot1 := last
+plot(last)

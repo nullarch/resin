@@ -1,0 +1,20 @@
+
+//@version=5
+indicator("Risk Grade E")
+enum RiskGrade
+    Minimal = 0
+    Low = 1
+    Medium = 2
+    High = 3
+    Extreme = 4
+
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 5)
+ratio = avgATR > 0 ? atr / avgATR : 1.0
+rg = switch
+    ratio > 2.5 => RiskGrade.Extreme
+    ratio > 1.8 => RiskGrade.High
+    ratio > 1.2 => RiskGrade.Medium
+    ratio > 0.8 => RiskGrade.Low
+    => RiskGrade.Minimal
+plot(int(rg), "RG")

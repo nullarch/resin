@@ -1,0 +1,5 @@
+//@version=5
+indicator("Overlay Test", overlay=true)
+sma_ = ta.sma(close, 3)
+plot(sma_, "SMA")
+plotshape(close > sma_, style=shape.triangleup)

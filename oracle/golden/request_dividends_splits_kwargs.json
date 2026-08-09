@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_div_v1": 0.0,
+   "var:__obs_div_v2": 0.0,
+   "var:__obs_spl_v1": 0.0,
+   "var:__obs_spl_v2": 0.0
+  },
+  {
+   "var:__obs_div_v1": 0.0,
+   "var:__obs_div_v2": 0.0,
+   "var:__obs_spl_v1": 0.0,
+   "var:__obs_spl_v2": 0.0
+  },
+  {
+   "var:__obs_div_v1": 0.0,
+   "var:__obs_div_v2": 0.0,
+   "var:__obs_spl_v1": 0.0,
+   "var:__obs_spl_v2": 0.0
+  },
+  {
+   "var:__obs_div_v1": 0.0,
+   "var:__obs_div_v2": 0.0,
+   "var:__obs_spl_v1": 0.0,
+   "var:__obs_spl_v2": 0.0
+  },
+  {
+   "var:__obs_div_v1": 0.0,
+   "var:__obs_div_v2": 0.0,
+   "var:__obs_spl_v1": 0.0,
+   "var:__obs_spl_v2": 0.0
+  },
+  {
+   "var:__obs_div_v1": 0.0,
+   "var:__obs_div_v2": 0.0,
+   "var:__obs_spl_v1": 0.0,
+   "var:__obs_spl_v2": 0.0
+  },
+  {
+   "var:__obs_div_v1": 0.0,
+   "var:__obs_div_v2": 0.0,
+   "var:__obs_spl_v1": 0.0,
+   "var:__obs_spl_v2": 0.0
+  },
+  {
+   "var:__obs_div_v1": 0.0,
+   "var:__obs_div_v2": 0.0,
+   "var:__obs_spl_v1": 0.0,
+   "var:__obs_spl_v2": 0.0
+  },
+  {
+   "var:__obs_div_v1": 0.0,
+   "var:__obs_div_v2": 0.0,
+   "var:__obs_spl_v1": 0.0,
+   "var:__obs_spl_v2": 0.0
+  },
+  {
+   "var:__obs_div_v1": 0.0,
+   "var:__obs_div_v2": 0.0,
+   "var:__obs_spl_v1": 0.0,
+   "var:__obs_spl_v2": 0.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_div_v1": 0.0,
+  "__obs_div_v2": 0.0,
+  "__obs_spl_v1": 0.0,
+  "__obs_spl_v2": 0.0
+ }
+}

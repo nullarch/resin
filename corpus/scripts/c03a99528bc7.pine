@@ -1,0 +1,10 @@
+//@version=5
+indicator("Double Neg")
+x = -5.0
+var float result = 0.0
+result := -(-x)  // -(-(-5)) = -(5) = wait, -(-(-5.0)) = -5.0... no
+// x = -5.0, -x = 5.0, -(-x) = -5.0... no
+// x = -5.0, then -(-5.0) = 5.0 (double neg)
+// Actually: let me think. x = -5.0 is the value. -(x) = -(-5.0) = 5.0.
+result := -(x)
+plot(close)

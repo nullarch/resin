@@ -1,0 +1,9 @@
+//@version=5
+indicator("SwitchExpr")
+var string result = ""
+x = 2
+result := switch x
+    1 => "one"
+    2 => "two"
+    3 => "three"
+    => "other"

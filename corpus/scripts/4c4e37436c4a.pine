@@ -1,0 +1,4 @@
+//@version=5
+indicator("Timestamp")
+t = timestamp(2024, 1, 1, 0, 0, 0)
+plot(t > 0 ? 1 : 0)

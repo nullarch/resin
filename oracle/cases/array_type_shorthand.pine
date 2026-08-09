@@ -1,0 +1,37 @@
+//@version=5
+indicator("array_type_shorthand")
+// C213: `TYPE[] name = expr` 대괄호-접미 배열 타입 shorthand(`array<float>`의 대체 표기, 예:
+// `float[] arr = array.new_float(0)`) 파서 지원 신규. parser.ts parseVarDecl/parseAssignmentOrExpr
+// 둘 다 이 4-토큰 패턴(IDENTIFIER LBRACKET RBRACKET IDENTIFIER)을 몰라 "expected ASSIGN ... got
+// LBRACKET"로 거부하던 파서 갭 수정 -- pine2py parser.py _is_array_type_shorthand/
+// _consume_array_type_shorthand(L1003-1017) literal port. var/varip 경로는 typeHint를
+// `array<float>`로 정규화해 저장하지만 codegen이 typeHint를 참조하지 않아(genValueCode는
+// string/UDT/enum만 검사) 코드 방출은 무타입 선언과 완전히 동일 -- 이 오라클은 "새로 파싱 가능해진
+// 구문이 기존 array.* 배관과 정확히 같은 값을 낸다"를 bar-by-bar로 검증한다.
+var float[] accFloat = array.new_float(0)
+array.push(accFloat, close)
+var float __obs_acc_size = na
+__obs_acc_size := array.size(accFloat)
+var float __obs_acc_avg = na
+__obs_acc_avg := array.avg(accFloat)
+
+var int[] accInt = array.new_int(0)
+array.push(accInt, bar_index)
+var float __obs_int_last = na
+__obs_int_last := array.last(accInt)
+
+varip bool[] flagHist = array.new_bool(0)
+array.push(flagHist, close > open)
+var float __obs_flag_size = na
+__obs_flag_size := array.size(flagHist)
+
+// var 없는 신규 로컬(bare, non-var) -- 매 바 재생성되는 지역 배열
+float[] localArr = array.new_float(2, 5.0)
+var float __obs_local_sum = na
+__obs_local_sum := array.sum(localArr)
+
+// if 블록 안(들여쓰기 위치)에서도 var/varip 없는 신규 로컬이 지원되는지 확인
+var float __obs_if_local = na
+if bar_index > 2
+    float[] ifLocalArr = array.new_float(1, 9.0)
+    __obs_if_local := array.get(ifLocalArr, 0)

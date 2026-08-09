@@ -1,0 +1,6 @@
+//@version=5
+indicator("na prop")
+var float result = 0.0
+x = ta.sma(close, 20)
+y = nz(x, 0.0) + 1.0
+result := y

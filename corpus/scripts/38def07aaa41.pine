@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Vol Stop")
+atr = nz(ta.atr(3), 1.0)
+mult = 2.0
+volStop = close - atr * mult
+volTarget = close + atr * mult * 1.5
+plot(volStop, "VStop")
+plot(volTarget, "VTgt")

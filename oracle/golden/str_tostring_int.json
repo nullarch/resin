@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_lit_pos": "5",
+   "var:__obs_lit_neg": "-7",
+   "var:__obs_lit_float": "5.0",
+   "var:__obs_loop_direct": "2",
+   "var:__obs_loop_concat": "01234"
+  },
+  {
+   "var:__obs_lit_pos": "5",
+   "var:__obs_lit_neg": "-7",
+   "var:__obs_lit_float": "5.0",
+   "var:__obs_loop_direct": "2",
+   "var:__obs_loop_concat": "01234"
+  },
+  {
+   "var:__obs_lit_pos": "5",
+   "var:__obs_lit_neg": "-7",
+   "var:__obs_lit_float": "5.0",
+   "var:__obs_loop_direct": "2",
+   "var:__obs_loop_concat": "01234"
+  },
+  {
+   "var:__obs_lit_pos": "5",
+   "var:__obs_lit_neg": "-7",
+   "var:__obs_lit_float": "5.0",
+   "var:__obs_loop_direct": "2",
+   "var:__obs_loop_concat": "01234"
+  },
+  {
+   "var:__obs_lit_pos": "5",
+   "var:__obs_lit_neg": "-7",
+   "var:__obs_lit_float": "5.0",
+   "var:__obs_loop_direct": "2",
+   "var:__obs_loop_concat": "01234"
+  },
+  {
+   "var:__obs_lit_pos": "5",
+   "var:__obs_lit_neg": "-7",
+   "var:__obs_lit_float": "5.0",
+   "var:__obs_loop_direct": "2",
+   "var:__obs_loop_concat": "01234"
+  },
+  {
+   "var:__obs_lit_pos": "5",
+   "var:__obs_lit_neg": "-7",
+   "var:__obs_lit_float": "5.0",
+   "var:__obs_loop_direct": "2",
+   "var:__obs_loop_concat": "01234"
+  },
+  {
+   "var:__obs_lit_pos": "5",
+   "var:__obs_lit_neg": "-7",
+   "var:__obs_lit_float": "5.0",
+   "var:__obs_loop_direct": "2",
+   "var:__obs_loop_concat": "01234"
+  },
+  {
+   "var:__obs_lit_pos": "5",
+   "var:__obs_lit_neg": "-7",
+   "var:__obs_lit_float": "5.0",
+   "var:__obs_loop_direct": "2",
+   "var:__obs_loop_concat": "01234"
+  },
+  {
+   "var:__obs_lit_pos": "5",
+   "var:__obs_lit_neg": "-7",
+   "var:__obs_lit_float": "5.0",
+   "var:__obs_loop_direct": "2",
+   "var:__obs_loop_concat": "01234"
+  }
+ ],
+ "finalVarState": {
+  "__obs_lit_pos": "5",
+  "__obs_lit_neg": "-7",
+  "__obs_lit_float": "5.0",
+  "__obs_loop_direct": "2",
+  "__obs_loop_concat": "01234"
+ }
+}

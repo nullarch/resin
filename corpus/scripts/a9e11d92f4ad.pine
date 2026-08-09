@@ -1,0 +1,7 @@
+//@version=5
+indicator("Multiline Block")
+/* this is
+   a multiline
+   block comment */
+var float result = 0.0
+result := 42.0

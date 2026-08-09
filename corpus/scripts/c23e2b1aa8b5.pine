@@ -1,0 +1,6 @@
+
+//@version=5
+indicator("Tern Nest")
+rsi = nz(ta.rsi(close, 3), 50.0)
+val = rsi > 80 ? 5 : rsi > 70 ? 4 : rsi > 60 ? 3 : rsi > 50 ? 2 : rsi > 40 ? 1 : rsi > 30 ? 0 : rsi > 20 ? -1 : -2
+plot(val, "V")

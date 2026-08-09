@@ -1,0 +1,9 @@
+//@version=5
+indicator("UDFwithTA")
+var float result = 0
+getSmoothed(src, fastLen, slowLen) =>
+    fast = ta.sma(src, fastLen)
+    slow = ta.sma(src, slowLen)
+    nz(fast, 0) - nz(slow, 0)
+diff = getSmoothed(close, 3, 5)
+result := diff

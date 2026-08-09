@@ -1,0 +1,12 @@
+//@version=5
+indicator("For-in Dict")
+var m = map.new<string, float>()
+m.put("a", 1.0)
+m.put("b", 2.0)
+m.put("c", 3.0)
+float total = 0.0
+for [k, v] in m
+    total := total + v
+var float last_total = 0.0
+last_total := total
+plot(close)

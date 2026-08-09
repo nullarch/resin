@@ -1,0 +1,6 @@
+//@version=5
+indicator("UDF Default OHLCV")
+myMA(src=close, len=3) =>
+    ta.sma(src, len)
+result = myMA()
+result2 = myMA(high, 5)

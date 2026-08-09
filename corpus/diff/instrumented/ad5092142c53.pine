@@ -1,0 +1,13 @@
+//@version=5
+indicator("TA Array")
+arr = array.new<float>(0)
+arr.push(ta.sma(close, 3))
+arr.push(ta.ema(close, 3))
+arr.push(ta.rma(close, 3))
+arr.push(ta.wma(close, 3))
+maxMA = arr.max()
+minMA = arr.min()
+spread = maxMA - minMA
+var float __obs_plot0 = na
+__obs_plot0 := spread
+plot(spread)

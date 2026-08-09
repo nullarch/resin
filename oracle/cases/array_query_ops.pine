@@ -1,0 +1,139 @@
+//@version=5
+indicator("array_query_ops")
+
+// sample10.json invariant: low < open < close < high on every bar (strictly, no ties) — reused
+// from array_slice_ops.pine(C85) to build deterministic sorted/na-mixed arrays without literals.
+
+// A: array.abs — sign-mixed values (open-high always negative, high-low always positive per
+// invariant) + na-embedded element (close[15] out of range on sample10's 10 bars).
+arrAbs = array.new_float(0)
+array.push(arrAbs, open - high)
+array.push(arrAbs, high - low)
+array.push(arrAbs, close[15])
+absA = array.abs(arrAbs)
+var float __obs_abs0 = na
+__obs_abs0 := array.get(absA, 0)
+var float __obs_abs1 = na
+__obs_abs1 := array.get(absA, 1)
+var float __obs_abs2 = na
+__obs_abs2 := array.get(absA, 2)
+
+// B: array.every / array.some — all-truthy / with-zero / with-na / all-falsy.
+arrTruthy = array.new_float(0)
+array.push(arrTruthy, 1.0)
+array.push(arrTruthy, 2.0)
+var bool __obs_every_truthy = na
+__obs_every_truthy := array.every(arrTruthy)
+var bool __obs_some_truthy = na
+__obs_some_truthy := array.some(arrTruthy)
+
+arrWithZero = array.new_float(0)
+array.push(arrWithZero, 1.0)
+array.push(arrWithZero, 0.0)
+var bool __obs_every_zero = na
+__obs_every_zero := array.every(arrWithZero)
+var bool __obs_some_zero = na
+__obs_some_zero := array.some(arrWithZero)
+
+arrWithNa = array.new_float(0)
+array.push(arrWithNa, 1.0)
+array.push(arrWithNa, close[15])
+var bool __obs_every_na = na
+__obs_every_na := array.every(arrWithNa)
+var bool __obs_some_na = na
+__obs_some_na := array.some(arrWithNa)
+
+arrAllFalsy = array.new_float(0)
+array.push(arrAllFalsy, 0.0)
+array.push(arrAllFalsy, close[15])
+var bool __obs_every_allfalsy = na
+__obs_every_allfalsy := array.every(arrAllFalsy)
+var bool __obs_some_allfalsy = na
+__obs_some_allfalsy := array.some(arrAllFalsy)
+
+// C: array.range — valid spread with na-embedded, and all-na.
+arrRange = array.new_float(0)
+array.push(arrRange, high)
+array.push(arrRange, low)
+array.push(arrRange, close[15])
+var float __obs_range = na
+__obs_range := array.range(arrRange)
+
+arrRangeAllNa = array.new_float(0)
+array.push(arrRangeAllNa, close[15])
+array.push(arrRangeAllNa, close[16])
+var float __obs_range_allna = na
+__obs_range_allna := array.range(arrRangeAllNa)
+
+// D: array.binary_search / binary_search_leftmost / binary_search_rightmost — sorted quad from
+// the bar invariant (push order low<open<close<high matches ascending, precondition for
+// binary_search). Missing-value channel searches for a na value (close[15]).
+arrSorted = array.new_float(0)
+array.push(arrSorted, low)
+array.push(arrSorted, open)
+array.push(arrSorted, close)
+array.push(arrSorted, high)
+var float __obs_bsearch_found = na
+__obs_bsearch_found := array.binary_search(arrSorted, close)
+var float __obs_bsearch_missing = na
+__obs_bsearch_missing := array.binary_search(arrSorted, close[15])
+var float __obs_bsearch_left = na
+__obs_bsearch_left := array.binary_search_leftmost(arrSorted, close)
+var float __obs_bsearch_right = na
+__obs_bsearch_right := array.binary_search_rightmost(arrSorted, close)
+
+// E: duplicate literal values — binary_search family tie handling (leftmost vs rightmost vs
+// plain search) on a sorted array with a run of three equal elements.
+arrDup = array.new_float(0)
+array.push(arrDup, 1.0)
+array.push(arrDup, 3.0)
+array.push(arrDup, 3.0)
+array.push(arrDup, 3.0)
+array.push(arrDup, 7.0)
+var float __obs_dup_search = na
+__obs_dup_search := array.binary_search(arrDup, 3.0)
+var float __obs_dup_left = na
+__obs_dup_left := array.binary_search_leftmost(arrDup, 3.0)
+var float __obs_dup_right = na
+__obs_dup_right := array.binary_search_rightmost(arrDup, 3.0)
+
+// F: array.sort_indices — ascending default / explicit order.descending, na-embedded (bar
+// values, unsorted push order; na goes after the sorted valid indices).
+arrUnsorted = array.new_float(0)
+array.push(arrUnsorted, close)
+array.push(arrUnsorted, low)
+array.push(arrUnsorted, close[15])
+array.push(arrUnsorted, open)
+siAsc = array.sort_indices(arrUnsorted)
+var float __obs_si_asc0 = na
+__obs_si_asc0 := array.get(siAsc, 0)
+var float __obs_si_asc1 = na
+__obs_si_asc1 := array.get(siAsc, 1)
+var float __obs_si_asc2 = na
+__obs_si_asc2 := array.get(siAsc, 2)
+var float __obs_si_asc3 = na
+__obs_si_asc3 := array.get(siAsc, 3)
+siDesc = array.sort_indices(arrUnsorted, order.descending)
+var float __obs_si_desc0 = na
+__obs_si_desc0 := array.get(siDesc, 0)
+var float __obs_si_desc1 = na
+__obs_si_desc1 := array.get(siDesc, 1)
+
+// G: sort_indices tie-break — Python `list.sort(reverse=True)` keeps tied elements in their
+// original relative order (it is not a reversal of the tied run); a comparator-encoded JS
+// descending sort must reproduce that (2.0, 1.0, 1.0, 3.0 — indices 1 and 2 both value 1.0).
+arrTie = array.new_float(0)
+array.push(arrTie, 2.0)
+array.push(arrTie, 1.0)
+array.push(arrTie, 1.0)
+array.push(arrTie, 3.0)
+tieAsc = array.sort_indices(arrTie)
+var float __obs_tie_asc0 = na
+__obs_tie_asc0 := array.get(tieAsc, 0)
+var float __obs_tie_asc1 = na
+__obs_tie_asc1 := array.get(tieAsc, 1)
+tieDesc = array.sort_indices(arrTie, order.descending)
+var float __obs_tie_desc0 = na
+__obs_tie_desc0 := array.get(tieDesc, 0)
+var float __obs_tie_desc1 = na
+__obs_tie_desc1 := array.get(tieDesc, 1)

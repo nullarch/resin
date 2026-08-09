@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("RisingEdge")
+cond = close > 105
+var bool prevCond = false
+var int risingEdges = 0
+
+if cond and not prevCond
+    risingEdges := risingEdges + 1
+prevCond := cond
+plot(risingEdges, "RE")

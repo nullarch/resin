@@ -1,0 +1,10 @@
+//@version=5
+indicator("C300-08")
+var int divCount = 0
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+rsiSma = ta.sma(close, 3)
+priceSma = ta.sma(close, 5)
+if not na(rsiSma) and not na(priceSma)
+    if close > nz(priceSma, close) and rsiVal < 50
+        divCount := divCount + 1
+plot(divCount)

@@ -1,0 +1,34 @@
+//@version=5
+indicator("compound_assign_modulo")
+// C195 parser 감사 발견: PLUS_ASSIGN/MINUS_ASSIGN/STAR_ASSIGN/SLASH_ASSIGN/PERCENT_ASSIGN과
+// PERCENT(binop) 토큰은 렉서가 이미 방출했으나 파서가 소비하지 않아 `x += 1`/`a % b` 전부
+// ParseError였다(발견 즉시 수정 -- x OP= v를 x := x OP v로 데슈가링 + '%'를 */ 와 동일 우선순위
+// BinOp로 추가). 전부 양수 피연산자만 써서(sample10.json의 close/volume은 항상 양수) JS(truncated)/
+// Python(floored) modulo 차이(MEMORY.md 기존 pitfall)가 이 케이스에서는 발현하지 않도록 설계.
+var float total = 0.0
+total += close
+var int count = 0
+count += 1
+var float acc2 = 100.0
+acc2 -= close
+var float acc3 = 1.0
+acc3 *= 1.01
+var float acc4 = 1000.0
+acc4 /= 2.0
+var int modCounter = 0
+modCounter += 1
+modCounter %= 3
+var float __obs_total = na
+__obs_total := total
+var int __obs_count = na
+__obs_count := count
+var float __obs_acc2 = na
+__obs_acc2 := acc2
+var float __obs_acc3 = na
+__obs_acc3 := acc3
+var float __obs_acc4 = na
+__obs_acc4 := acc4
+var int __obs_modCounter = na
+__obs_modCounter := modCounter
+var float __obs_direct_mod = na
+__obs_direct_mod := close % 3.0

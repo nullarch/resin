@@ -1,0 +1,35 @@
+//@version=5
+indicator("str_match")
+// All channels are bar-independent (pure string-literal args, no OHLCV dependency — like
+// str_basic.pine). na-propagation behavior (source/pattern = na) is NOT covered here: pine2py's
+// str_funcs.match has no None-guard and crashes (AttributeError/TypeError) on na input, so
+// gen_oracle.py itself would fail to produce a golden for those channels — hand-verified in
+// runtime.test.ts instead (LIMITATIONS.md).
+var bool __obs_a = na
+__obs_a := str.match("price 123", "\d+")
+var bool __obs_b = na
+__obs_b := str.match("hello", "\d+")
+var bool __obs_c = na
+__obs_c := str.match("hello", "")
+var bool __obs_d = na
+__obs_d := str.match("", "")
+var bool __obs_e = na
+__obs_e := str.match("", "\d+")
+var bool __obs_f = na
+__obs_f := str.match("hello", "^he")
+var bool __obs_g = na
+__obs_g := str.match("hello", "^ell")
+var bool __obs_h = na
+__obs_h := str.match("hello", "lo$")
+var bool __obs_i = na
+__obs_i := str.match("Hello", "hello")
+var bool __obs_j = na
+__obs_j := str.match("abc123", "[a-z]+\d+")
+var bool __obs_k = na
+__obs_k := str.match("cat", "cat|dog")
+var bool __obs_l = na
+__obs_l := str.match("aaa", "a{2,3}")
+var bool __obs_m = na
+__obs_m := str.match("hello", "[")
+var bool __obs_n = na
+__obs_n := str.match("a.b", "a\.b")

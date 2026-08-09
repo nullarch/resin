@@ -1,0 +1,259 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:m": [
+    [
+     1.0,
+     2.0,
+     3.0
+    ],
+    [
+     4.0,
+     5.0,
+     6.0
+    ]
+   ],
+   "var:__obs_matrix_sum": 21.0,
+   "var:__obs_matrix_weighted": 4.0,
+   "var:b1": "pine_fn.<locals>.Basket(vals=[1.0, 2.0])",
+   "var:b2": "pine_fn.<locals>.Basket(vals=[3.0, 4.0, 5.0])",
+   "var:baskets": [
+    "pine_fn.<locals>.Basket(vals=[1.0, 2.0])",
+    "pine_fn.<locals>.Basket(vals=[3.0, 4.0, 5.0])"
+   ],
+   "var:__obs_alias_sum": 15.0
+  },
+  {
+   "var:m": [
+    [
+     1.0,
+     2.0,
+     3.0
+    ],
+    [
+     4.0,
+     5.0,
+     6.0
+    ]
+   ],
+   "var:__obs_matrix_sum": 21.0,
+   "var:__obs_matrix_weighted": 4.0,
+   "var:b1": "pine_fn.<locals>.Basket(vals=[1.0, 2.0])",
+   "var:b2": "pine_fn.<locals>.Basket(vals=[3.0, 4.0, 5.0])",
+   "var:baskets": [
+    "pine_fn.<locals>.Basket(vals=[1.0, 2.0])",
+    "pine_fn.<locals>.Basket(vals=[3.0, 4.0, 5.0])"
+   ],
+   "var:__obs_alias_sum": 15.0
+  },
+  {
+   "var:m": [
+    [
+     1.0,
+     2.0,
+     3.0
+    ],
+    [
+     4.0,
+     5.0,
+     6.0
+    ]
+   ],
+   "var:__obs_matrix_sum": 21.0,
+   "var:__obs_matrix_weighted": 4.0,
+   "var:b1": "pine_fn.<locals>.Basket(vals=[1.0, 2.0])",
+   "var:b2": "pine_fn.<locals>.Basket(vals=[3.0, 4.0, 5.0])",
+   "var:baskets": [
+    "pine_fn.<locals>.Basket(vals=[1.0, 2.0])",
+    "pine_fn.<locals>.Basket(vals=[3.0, 4.0, 5.0])"
+   ],
+   "var:__obs_alias_sum": 15.0
+  },
+  {
+   "var:m": [
+    [
+     1.0,
+     2.0,
+     3.0
+    ],
+    [
+     4.0,
+     5.0,
+     6.0
+    ]
+   ],
+   "var:__obs_matrix_sum": 21.0,
+   "var:__obs_matrix_weighted": 4.0,
+   "var:b1": "pine_fn.<locals>.Basket(vals=[1.0, 2.0])",
+   "var:b2": "pine_fn.<locals>.Basket(vals=[3.0, 4.0, 5.0])",
+   "var:baskets": [
+    "pine_fn.<locals>.Basket(vals=[1.0, 2.0])",
+    "pine_fn.<locals>.Basket(vals=[3.0, 4.0, 5.0])"
+   ],
+   "var:__obs_alias_sum": 15.0
+  },
+  {
+   "var:m": [
+    [
+     1.0,
+     2.0,
+     3.0
+    ],
+    [
+     4.0,
+     5.0,
+     6.0
+    ]
+   ],
+   "var:__obs_matrix_sum": 21.0,
+   "var:__obs_matrix_weighted": 4.0,
+   "var:b1": "pine_fn.<locals>.Basket(vals=[1.0, 2.0])",
+   "var:b2": "pine_fn.<locals>.Basket(vals=[3.0, 4.0, 5.0])",
+   "var:baskets": [
+    "pine_fn.<locals>.Basket(vals=[1.0, 2.0])",
+    "pine_fn.<locals>.Basket(vals=[3.0, 4.0, 5.0])"
+   ],
+   "var:__obs_alias_sum": 15.0
+  },
+  {
+   "var:m": [
+    [
+     1.0,
+     2.0,
+     3.0
+    ],
+    [
+     4.0,
+     5.0,
+     6.0
+    ]
+   ],
+   "var:__obs_matrix_sum": 21.0,
+   "var:__obs_matrix_weighted": 4.0,
+   "var:b1": "pine_fn.<locals>.Basket(vals=[1.0, 2.0])",
+   "var:b2": "pine_fn.<locals>.Basket(vals=[3.0, 4.0, 5.0])",
+   "var:baskets": [
+    "pine_fn.<locals>.Basket(vals=[1.0, 2.0])",
+    "pine_fn.<locals>.Basket(vals=[3.0, 4.0, 5.0])"
+   ],
+   "var:__obs_alias_sum": 15.0
+  },
+  {
+   "var:m": [
+    [
+     1.0,
+     2.0,
+     3.0
+    ],
+    [
+     4.0,
+     5.0,
+     6.0
+    ]
+   ],
+   "var:__obs_matrix_sum": 21.0,
+   "var:__obs_matrix_weighted": 4.0,
+   "var:b1": "pine_fn.<locals>.Basket(vals=[1.0, 2.0])",
+   "var:b2": "pine_fn.<locals>.Basket(vals=[3.0, 4.0, 5.0])",
+   "var:baskets": [
+    "pine_fn.<locals>.Basket(vals=[1.0, 2.0])",
+    "pine_fn.<locals>.Basket(vals=[3.0, 4.0, 5.0])"
+   ],
+   "var:__obs_alias_sum": 15.0
+  },
+  {
+   "var:m": [
+    [
+     1.0,
+     2.0,
+     3.0
+    ],
+    [
+     4.0,
+     5.0,
+     6.0
+    ]
+   ],
+   "var:__obs_matrix_sum": 21.0,
+   "var:__obs_matrix_weighted": 4.0,
+   "var:b1": "pine_fn.<locals>.Basket(vals=[1.0, 2.0])",
+   "var:b2": "pine_fn.<locals>.Basket(vals=[3.0, 4.0, 5.0])",
+   "var:baskets": [
+    "pine_fn.<locals>.Basket(vals=[1.0, 2.0])",
+    "pine_fn.<locals>.Basket(vals=[3.0, 4.0, 5.0])"
+   ],
+   "var:__obs_alias_sum": 15.0
+  },
+  {
+   "var:m": [
+    [
+     1.0,
+     2.0,
+     3.0
+    ],
+    [
+     4.0,
+     5.0,
+     6.0
+    ]
+   ],
+   "var:__obs_matrix_sum": 21.0,
+   "var:__obs_matrix_weighted": 4.0,
+   "var:b1": "pine_fn.<locals>.Basket(vals=[1.0, 2.0])",
+   "var:b2": "pine_fn.<locals>.Basket(vals=[3.0, 4.0, 5.0])",
+   "var:baskets": [
+    "pine_fn.<locals>.Basket(vals=[1.0, 2.0])",
+    "pine_fn.<locals>.Basket(vals=[3.0, 4.0, 5.0])"
+   ],
+   "var:__obs_alias_sum": 15.0
+  },
+  {
+   "var:m": [
+    [
+     1.0,
+     2.0,
+     3.0
+    ],
+    [
+     4.0,
+     5.0,
+     6.0
+    ]
+   ],
+   "var:__obs_matrix_sum": 21.0,
+   "var:__obs_matrix_weighted": 4.0,
+   "var:b1": "pine_fn.<locals>.Basket(vals=[1.0, 2.0])",
+   "var:b2": "pine_fn.<locals>.Basket(vals=[3.0, 4.0, 5.0])",
+   "var:baskets": [
+    "pine_fn.<locals>.Basket(vals=[1.0, 2.0])",
+    "pine_fn.<locals>.Basket(vals=[3.0, 4.0, 5.0])"
+   ],
+   "var:__obs_alias_sum": 15.0
+  }
+ ],
+ "finalVarState": {
+  "m": [
+   [
+    1.0,
+    2.0,
+    3.0
+   ],
+   [
+    4.0,
+    5.0,
+    6.0
+   ]
+  ],
+  "__obs_matrix_sum": 21.0,
+  "__obs_matrix_weighted": 4.0,
+  "b1": "pine_fn.<locals>.Basket(vals=[1.0, 2.0])",
+  "b2": "pine_fn.<locals>.Basket(vals=[3.0, 4.0, 5.0])",
+  "baskets": [
+   "pine_fn.<locals>.Basket(vals=[1.0, 2.0])",
+   "pine_fn.<locals>.Basket(vals=[3.0, 4.0, 5.0])"
+  ],
+  "__obs_alias_sum": 15.0
+ }
+}

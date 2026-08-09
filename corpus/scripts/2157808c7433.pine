@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Fix Frac")
+capital = 10000.0
+riskPct = 1.5
+atr = ta.atr(3)
+stopDist = atr * 2
+riskAmt = capital * riskPct / 100
+units = stopDist > 0 ? math.floor(riskAmt / stopDist) : 0
+plot(units, "Units")

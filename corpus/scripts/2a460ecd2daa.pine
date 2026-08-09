@@ -1,0 +1,9 @@
+//@version=5
+indicator("Entropy Bits")
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+p = rsiVal / 100.0
+p := math.max(0.01, math.min(0.99, p))
+logP = math.log(p) / math.log(2.0)
+logQ = math.log(1.0 - p) / math.log(2.0)
+entropyBits = -(p * logP + (1.0 - p) * logQ)
+plot(entropyBits)

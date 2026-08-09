@@ -1,0 +1,15 @@
+//@version=5
+indicator("UDTIndicator")
+type Level
+    float value = 0.0
+    bool active = false
+method check(Level this, float price) =>
+    if price > this.value
+        true
+    else
+        false
+var float result = 0
+lvl = Level.new(value=105.0, active=true)
+smaVal = ta.sma(close, 3)
+if not na(smaVal) and lvl.check(smaVal)
+    result := smaVal

@@ -1,0 +1,5 @@
+//@version=5
+indicator("Input Enum")
+mode = input.string("SMA", "MA Type")
+ma = mode == "SMA" ? ta.sma(close, 5) : ta.ema(close, 5)
+plot(ma)

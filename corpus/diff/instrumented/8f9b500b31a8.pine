@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("FC Qual")
+enum FQuality
+    Excellent = 3
+    Good = 2
+    Fair = 1
+    Poor = 0
+
+sma3 = ta.sma(close, 3)
+err = close > 0 ? math.abs(close - sma3) / close * 100 : 0.0
+quality = err < 0.5 ? FQuality.Excellent : err < 1.0 ? FQuality.Good : err < 2.0 ? FQuality.Fair : FQuality.Poor
+var float __obs_plot0 = na
+__obs_plot0 := int(quality)
+plot(int(quality), "Qual")

@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:ci": "pine_fn.<locals>.CandleInfo(body=2, range_=6, isBull=True, bodyPct=0.3333333333333333)",
+   "var:__obs_plot0": 0.42857142857142855
+  },
+  {
+   "var:ci": "pine_fn.<locals>.CandleInfo(body=2, range_=6, isBull=True, bodyPct=0.3333333333333333)",
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:ci": "pine_fn.<locals>.CandleInfo(body=2, range_=6, isBull=True, bodyPct=0.3333333333333333)",
+   "var:__obs_plot0": 0.2
+  },
+  {
+   "var:ci": "pine_fn.<locals>.CandleInfo(body=2, range_=6, isBull=True, bodyPct=0.3333333333333333)",
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:ci": "pine_fn.<locals>.CandleInfo(body=2, range_=6, isBull=True, bodyPct=0.3333333333333333)",
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:ci": "pine_fn.<locals>.CandleInfo(body=2, range_=6, isBull=True, bodyPct=0.3333333333333333)",
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:ci": "pine_fn.<locals>.CandleInfo(body=2, range_=6, isBull=True, bodyPct=0.3333333333333333)",
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:ci": "pine_fn.<locals>.CandleInfo(body=2, range_=6, isBull=True, bodyPct=0.3333333333333333)",
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:ci": "pine_fn.<locals>.CandleInfo(body=2, range_=6, isBull=True, bodyPct=0.3333333333333333)",
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:ci": "pine_fn.<locals>.CandleInfo(body=2, range_=6, isBull=True, bodyPct=0.3333333333333333)",
+   "var:__obs_plot0": 0.3333333333333333
+  }
+ ],
+ "finalVarState": {
+  "ci": "pine_fn.<locals>.CandleInfo(body=2, range_=6, isBull=True, bodyPct=0.3333333333333333)",
+  "__obs_plot0": 0.3333333333333333
+ }
+}

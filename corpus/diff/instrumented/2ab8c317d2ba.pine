@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Trade Type")
+enum TType
+    Momentum = 2
+    MeanRevert = 1
+    Breakout = 3
+    None_ = 0
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+hi5 = ta.highest(high, 5)
+ttype = close > hi5[1] and not na(hi5[1]) ? TType.Breakout : rsi < 30 ? TType.MeanRevert : rsi > 60 and close > sma3 ? TType.Momentum : TType.None_
+var float __obs_plot0 = na
+__obs_plot0 := int(ttype)
+plot(int(ttype), "TT")

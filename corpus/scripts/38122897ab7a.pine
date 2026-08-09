@@ -1,0 +1,3 @@
+//@version=5
+indicator("Test")
+plot(close, display=display.none)

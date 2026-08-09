@@ -1,0 +1,11 @@
+
+//@version=5
+strategy("RSI MR", overlay=true)
+rsiVal = ta.rsi(close, 3)
+var int trades = 0
+if rsiVal < 40
+    strategy.entry("Long", strategy.long)
+    trades := trades + 1
+if rsiVal > 60
+    strategy.close("Long")
+plot(rsiVal, "RSI")

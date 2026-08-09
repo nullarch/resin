@@ -1,0 +1,9 @@
+//@version=5
+indicator("UDF Switch Return")
+getMA(string maType, float src, int len) =>
+    switch maType
+        "EMA" => ta.ema(src, len)
+        "SMA" => ta.sma(src, len)
+        => ta.rma(src, len)
+val = getMA("EMA", close, 3)
+plot(val)

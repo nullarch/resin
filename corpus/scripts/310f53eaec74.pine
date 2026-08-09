@@ -1,0 +1,8 @@
+//@version=5
+indicator("SwitchNoExpr")
+var int result = 0
+result := switch
+    close > 110 => 3
+    close > 105 => 2
+    close > 100 => 1
+    => 0

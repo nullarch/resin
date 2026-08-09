@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Break Scan")
+breakCount = 0
+for i = 0 to 4
+    if not na(high[i]) and not na(high[i+1])
+        prevHi = ta.highest(high, 5)
+        if close[i] > prevHi
+            breakCount := breakCount + 1
+var float __obs_plot0 = na
+__obs_plot0 := breakCount
+plot(breakCount, "BC")

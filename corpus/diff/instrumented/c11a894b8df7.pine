@@ -1,0 +1,10 @@
+//@version=5
+indicator("Non Var Reset")
+float x = 0.0
+x := x + 1.0
+// x is always 1.0 because it resets to 0 each bar
+var float result = 0.0
+result := x
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

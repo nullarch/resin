@@ -1,0 +1,9 @@
+//@version=5
+indicator("ta_roc")
+// ta.roc 오라클 검증(ROADMAP P2 "ta.* 44종" — roc). pine2py wavealgo/ta/roc.py 소스 대조 결과
+// change와 동일한 NaN-프라임 순환 버퍼 상태(source.get(0)/source.get(length))를 쓰되 반환 산식만
+// 다름(100*(curr-prev)/prev). sample10.json 10바 안에서 워밍업(바 0~2, data_len<=3 -> NaN)과
+// 정상 구간(바 3~9)을 모두 커버. prev==0 가드는 이 표본 데이터에 0이 없어 여기선 검증 불가 —
+// hand-verified 테스트로 별도 커버.
+var float __obs_roc = na
+__obs_roc := ta.roc(close, 3)

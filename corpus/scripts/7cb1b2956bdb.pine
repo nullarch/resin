@@ -1,0 +1,9 @@
+//@version=5
+indicator("Ecological Succession")
+var int stage = 0
+var int barCount = 0
+barCount := barCount + 1
+if barCount >= 3 and stage < 3
+    stage := stage + 1
+    barCount := 0
+plot(stage, "Stage")

@@ -1,0 +1,9 @@
+//@version=5
+indicator("NS-08 Advection")
+var float scalar = 50.0
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+vel = 0.0
+if not na(close[1])
+    vel := (close - close[1]) / (nz(ta.atr(3), 1.0))
+scalar := scalar + vel * (rsiVal - scalar) * 0.1
+plot(scalar)

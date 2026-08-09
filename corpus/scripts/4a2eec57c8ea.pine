@@ -1,0 +1,4 @@
+//@version=5
+indicator("Test")
+b = box.new(bar_index, high, bar_index, low)
+b.set_lefttop(50, 200)

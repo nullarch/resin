@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Osc Report")
+rsi = nz(ta.rsi(close, 3), 50.0)
+k = ta.stoch(close, high, low, 5)
+rsiLabel = rsi > 70 ? "OB" : rsi < 30 ? "OS" : "OK"
+stochLabel = k > 80 ? "OB" : k < 20 ? "OS" : "OK"
+report = "RSI:" + rsiLabel + " STK:" + stochLabel
+allOK = rsiLabel == "OK" and stochLabel == "OK"
+plot(allOK ? 1 : 0, "OK")

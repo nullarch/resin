@@ -1,0 +1,8 @@
+//@version=5
+strategy("Pyramid", overlay=true, pyramiding=3)
+sma3 = ta.sma(close, 3)
+if close > nz(sma3) and not na(sma3)
+    strategy.entry("L", strategy.long)
+if ta.crossunder(close, sma3)
+    strategy.close_all()
+posSize = strategy.position_size

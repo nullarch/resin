@@ -1,0 +1,17 @@
+//@version=5
+indicator("WhilePeak17")
+magnitudes = array.new_float(0)
+for f = 1 to 4
+    rp = 0.0
+    for k = 0 to 3
+        rp := rp + (close + float(k)) * math.cos(2.0 * math.pi * float(f) * float(k) / 4.0)
+    array.push(magnitudes, math.abs(rp))
+maxVal = 0.0
+idx = 0
+sz = array.size(magnitudes)
+while idx < sz
+    val = nz(array.get(magnitudes, idx), 0.0)
+    if val > maxVal
+        maxVal := val
+    idx := idx + 1
+plot(maxVal, "mx")

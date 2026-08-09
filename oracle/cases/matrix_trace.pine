@@ -1,0 +1,98 @@
+//@version=5
+indicator("matrix_trace")
+
+// C99: matrix.* 열 번째 슬라이스 — trace(행렬 대수 11종의 네 번째 항목, 41/49 -> 42/49).
+// pine2py trace()는 `sum(m[i][i] for i in range(min(len(m), len(m[0]) if m else 0)))` —
+// min(rows,columns) 상한까지만 순회하는 단순 대각합이라 det의 Gaussian elimination과 완전히
+// 무관, 비정사각도 크래시 없음(python 직접 실행으로 확인). m===None만 `len(m)`이 삼항 가드보다
+// 먼저 평가돼 TypeError 크래시(C98 next_hint 정정 — matrix.ts rt.matrix.trace 주석 참조,
+// runtime.test.ts hand-verified로 대체).
+
+// A: n=0(0x0 빈 행렬) — range(min(0,0))=range(0), trace=0.
+maA = matrix.new<float>()
+var float __obs_a = na
+__obs_a := matrix.trace(maA)
+
+// B: n=1 bar-derived(all-valid) — trace=m[0][0] 그대로.
+mbB = matrix.new<float>(1, 1, 0.0)
+matrix.set(mbB, 0, 0, close + 0.0)
+var float __obs_b = na
+__obs_b := matrix.trace(mbB)
+
+// C: n=1 na(close[15] — sample10 10바 범위 밖) — trace=na.
+mcC = matrix.new<float>(1, 1, 0.0)
+matrix.set(mcC, 0, 0, close[15])
+var float __obs_c = na
+__obs_c := matrix.trace(mcC)
+
+// D: n=2 bar-derived(all-valid) — trace=open+close(대각), high/low(비대각)는 무영향.
+mdD = matrix.new<float>(2, 2, 0.0)
+matrix.set(mdD, 0, 0, open + 0.0)
+matrix.set(mdD, 0, 1, high + 0.0)
+matrix.set(mdD, 1, 0, low + 0.0)
+matrix.set(mdD, 1, 1, close + 0.0)
+var float __obs_d = na
+__obs_d := matrix.trace(mdD)
+
+// E: n=2 na가 대각 위치(1,1)=close[15] — trace=na(Python sum()이 NaN을 그대로 통과).
+meE = matrix.new<float>(2, 2, 0.0)
+matrix.set(meE, 0, 0, open + 0.0)
+matrix.set(meE, 0, 1, high + 0.0)
+matrix.set(meE, 1, 0, low + 0.0)
+matrix.set(meE, 1, 1, close[15])
+var float __obs_e = na
+__obs_e := matrix.trace(meE)
+
+// F: n=2 na가 비대각 위치(0,1)=close[15]뿐, 대각(open/close)은 전부 valid — trace=open+close
+// 그대로(비대각 na는 대각합 순회 대상이 아니라 결과에 전혀 영향 없음을 검증).
+mfF = matrix.new<float>(2, 2, 0.0)
+matrix.set(mfF, 0, 0, open + 0.0)
+matrix.set(mfF, 0, 1, close[15])
+matrix.set(mfF, 1, 0, low + 0.0)
+matrix.set(mfF, 1, 1, close + 0.0)
+var float __obs_f = na
+__obs_f := matrix.trace(mfF)
+
+// G: n=3 bar-derived 대각(open/high/close) + 리터럴 비대각 — trace=open+high+close.
+mgG = matrix.new<float>(3, 3, 0.0)
+matrix.set(mgG, 0, 0, open + 0.0)
+matrix.set(mgG, 0, 1, 1.0)
+matrix.set(mgG, 0, 2, 2.0)
+matrix.set(mgG, 1, 0, 3.0)
+matrix.set(mgG, 1, 1, high + 0.0)
+matrix.set(mgG, 1, 2, 4.0)
+matrix.set(mgG, 2, 0, 5.0)
+matrix.set(mgG, 2, 1, 6.0)
+matrix.set(mgG, 2, 2, close + 0.0)
+var float __obs_g = na
+__obs_g := matrix.trace(mgG)
+
+// H: 비정사각 rows<columns(2x3, 컴파일타임 리터럴) — min(2,3)=2까지만 순회, trace=m[0][0]+m[1][1]
+// =1.0+5.0=6.0(3번째 열은 안 건드림, python 실측 확인).
+mhH = matrix.new<float>(2, 3, 0.0)
+matrix.set(mhH, 0, 0, 1.0)
+matrix.set(mhH, 0, 1, 2.0)
+matrix.set(mhH, 0, 2, 3.0)
+matrix.set(mhH, 1, 0, 4.0)
+matrix.set(mhH, 1, 1, 5.0)
+matrix.set(mhH, 1, 2, 6.0)
+var float __obs_h = na
+__obs_h := matrix.trace(mhH)
+
+// I: 비정사각 rows>columns(3x2, 컴파일타임 리터럴) — min(3,2)=2까지만 순회, trace=m[0][0]+m[1][1]
+// =1.0+4.0=5.0(3번째 행은 안 건드림, python 실측 확인 — det(rows>columns)와 달리 크래시 없음).
+miI = matrix.new<float>(3, 2, 0.0)
+matrix.set(miI, 0, 0, 1.0)
+matrix.set(miI, 0, 1, 2.0)
+matrix.set(miI, 1, 0, 3.0)
+matrix.set(miI, 1, 1, 4.0)
+matrix.set(miI, 2, 0, 5.0)
+matrix.set(miI, 2, 1, 6.0)
+var float __obs_i = na
+__obs_i := matrix.trace(miI)
+
+// J: rows>0, columns=0(3x0) — nc=len(m[0])=0이라 min(3,0)=0, trace=0(크래시 없음, python 실측
+// 확인 — det의 m=[[]](1행0열) 크래시와 대조적).
+mjJ = matrix.new<float>(3, 0, 0.0)
+var float __obs_j = na
+__obs_j := matrix.trace(mjJ)

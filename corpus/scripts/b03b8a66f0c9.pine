@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("MP Period")
+enum PeriodType
+    NORMAL
+    TREND
+    NEUTRAL
+range_ = high - low
+prevRange = high[1] - low[1]
+pType = switch
+    not na(prevRange) and range_ > prevRange * 1.5 => PeriodType.TREND
+    not na(prevRange) and range_ < prevRange * 0.5 => PeriodType.NEUTRAL
+    => PeriodType.NORMAL
+code = pType == PeriodType.TREND ? 2.0 : pType == PeriodType.NEUTRAL ? 0.0 : 1.0
+plot(code, "Period")

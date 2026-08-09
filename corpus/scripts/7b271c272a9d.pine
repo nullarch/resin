@@ -1,0 +1,13 @@
+//@version=5
+indicator("QValue2Act")
+var float qBuy = 0.0
+var float qHold = 0.0
+alphaLR = 0.1
+reward = close > open ? 1.0 : -1.0
+prevAction = qBuy >= qHold ? 1 : 0
+if prevAction == 1
+    qBuy := qBuy + alphaLR * (reward - qBuy)
+else
+    qHold := qHold + alphaLR * (reward - qHold)
+bestQ = math.max(qBuy, qHold)
+plot(bestQ, "BestQ")

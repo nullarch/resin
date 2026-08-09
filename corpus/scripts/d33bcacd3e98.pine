@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Risk Label")
+atr = nz(ta.atr(3), 1.0)
+rsi = nz(ta.rsi(close, 3), 50.0)
+volLabel = atr > 2.0 ? "HV" : "LV"
+momLabel = rsi > 60 ? "HM" : rsi < 40 ? "LM" : "NM"
+riskLabel = volLabel + "_" + momLabel
+isHighRisk = riskLabel == "HV_HM" or riskLabel == "HV_LM"
+plot(isHighRisk ? 1 : 0, "HR")

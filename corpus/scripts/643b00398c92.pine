@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("UDF Chain")
+smooth(float src, int len) =>
+    ta.ema(src, len)
+
+normalize(float val, float hi, float lo) =>
+    rng = hi - lo
+    rng != 0 ? (val - lo) / rng : 0.5
+
+sm = smooth(close, 3)
+hi5 = ta.highest(sm, 5)
+lo5 = ta.lowest(sm, 5)
+norm = normalize(sm, hi5, lo5)
+plot(norm, "Norm")

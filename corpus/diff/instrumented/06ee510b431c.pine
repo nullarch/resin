@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Vol Cone")
+var float[] vols = array.new_float(0)
+array.clear(vols)
+for period = 3 to 5
+    sd = ta.stdev(close, period)
+    pct = close > 0 ? sd / close * 100 : 0.0
+    array.push(vols, pct)
+avgVol = array.avg(vols)
+maxVol = array.max(vols)
+var float __obs_plot0 = na
+__obs_plot0 := avgVol
+plot(avgVol, "AvgVol")
+var float __obs_plot1 = na
+__obs_plot1 := maxVol
+plot(maxVol, "MaxVol")

@@ -1,0 +1,12 @@
+//@version=5
+indicator("RSI", overlay=false)
+length = input.int(14, title="Length")
+src = input.source(close, title="Source")
+change_val = ta.change(src)
+gain = ta.rma(math.max(change_val, 0), length)
+loss = ta.rma(math.max(-change_val, 0), length)
+rs = gain / loss
+rsi_val = 100 - (100 / (1 + rs))
+plot(rsi_val, title="RSI", color=color.purple)
+hline(70, title="Overbought")
+hline(30, title="Oversold")

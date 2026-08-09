@@ -1,0 +1,11 @@
+//@version=5
+indicator("History Lookback")
+length = 5
+weightedSum = 0.0
+totalWeight = 0.0
+for i = 0 to length - 1
+    w = length - i
+    weightedSum := weightedSum + close[i] * w
+    totalWeight := totalWeight + w
+wma_manual = totalWeight > 0 ? weightedSum / totalWeight : close
+plot(wma_manual)

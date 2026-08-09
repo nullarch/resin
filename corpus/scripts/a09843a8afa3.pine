@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Str Ops")
+base = "Price: $100.50"
+cleaned = str.replace_all(base, "$", "")
+len = str.length(cleaned)
+starts = str.startswith(base, "Price")
+plot(len, "Len")
+plot(starts ? 1 : 0, "Starts")

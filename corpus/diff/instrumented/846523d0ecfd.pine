@@ -1,0 +1,9 @@
+//@version=5
+indicator("NaN Arith")
+x = float(na)
+var int isNan = 0
+y = x + 10.0
+isNan := na(y) ? 1 : 0
+var float __obs_plot0 = na
+__obs_plot0 := isNan
+plot(isNan)

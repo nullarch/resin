@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Factor Wt")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+trendConfirm = close > sma3
+weight = trendConfirm and rsi > 55 ? 2.0 : trendConfirm ? 1.0 : 0.5
+signal = (rsi - 50) / 50 * weight
+var float __obs_plot0 = na
+__obs_plot0 := signal
+plot(signal, "Sig")

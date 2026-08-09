@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:cumShaped": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:cumShaped": 2.0,
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:cumShaped": 3.0,
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:cumShaped": 3.7,
+   "var:__obs_plot0": 3.7
+  },
+  {
+   "var:cumShaped": 4.4,
+   "var:__obs_plot0": 4.4
+  },
+  {
+   "var:cumShaped": 5.4,
+   "var:__obs_plot0": 5.4
+  },
+  {
+   "var:cumShaped": 6.4,
+   "var:__obs_plot0": 6.4
+  },
+  {
+   "var:cumShaped": 7.4,
+   "var:__obs_plot0": 7.4
+  },
+  {
+   "var:cumShaped": 8.4,
+   "var:__obs_plot0": 8.4
+  },
+  {
+   "var:cumShaped": 9.4,
+   "var:__obs_plot0": 9.4
+  }
+ ],
+ "finalVarState": {
+  "cumShaped": 9.4,
+  "__obs_plot0": 9.4
+ }
+}

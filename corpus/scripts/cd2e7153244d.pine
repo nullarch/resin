@@ -1,0 +1,36 @@
+//@version=5
+indicator("Ultra 003")
+type Classifier
+    string label = ""
+    float threshold = 0.0
+
+method classify(Classifier this, float val) =>
+    val > this.threshold ? "above" : "below"
+
+method score(Classifier this, float val) =>
+    diff = val - this.threshold
+    math.abs(diff)
+
+var Classifier cls = Classifier.new("trend", 0.0)
+var float[] scores = array.new_float(0)
+var int aboveCount = 0
+
+smaVal = ta.sma(close, 3)
+cls.threshold := not na(smaVal) ? smaVal : close
+
+cat = cls.classify(close)
+sc = cls.score(close)
+array.push(scores, sc)
+if array.size(scores) > 5
+    array.shift(scores)
+
+if cat == "above"
+    aboveCount := aboveCount + 1
+
+total = 0.0
+for i = 0 to array.size(scores) - 1
+    total := total + array.get(scores, i)
+avg = array.size(scores) > 0 ? total / array.size(scores) : 0.0
+
+label = str.tostring(math.round(avg * 10) / 10)
+plot(avg)

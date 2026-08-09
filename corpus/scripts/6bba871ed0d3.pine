@@ -1,0 +1,19 @@
+//@version=5
+strategy("AllFeat 007", overlay=true)
+findFirst(arr, threshold) =>
+    result = -1
+    for i = 0 to array.size(arr) - 1
+        if array.get(arr, i) > threshold
+            result := i
+            break
+    result
+var hist = array.new_float(0)
+var counts = map.new<string, int>()
+map.put(counts, "entries", 0)
+array.push(hist, close)
+idx = findFirst(hist, 108.0)
+signal = idx >= 0 ? "found" : "none"
+if signal == "found"
+    prev = nz(map.get(counts, "entries"), 0)
+    map.put(counts, "entries", prev + 1)
+    strategy.entry("L", strategy.long)

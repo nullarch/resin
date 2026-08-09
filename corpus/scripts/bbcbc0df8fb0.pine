@@ -1,0 +1,8 @@
+//@version=5
+indicator("VarPersist")
+var int persistent = 0
+var int nonPersistentCheck = 0
+persistent := persistent + 1
+x = 0
+x := x + 1
+nonPersistentCheck := x

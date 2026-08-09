@@ -1,0 +1,22 @@
+//@version=5
+indicator("str_tostring_int")
+// C201: str.tostring()의 기본(format_str 없음) 포맷 int/float 갭 회귀 재현(LIMITATIONS.md, corpus
+// 스크립트 079ae781480a에서 실제 발견 -- `for i=0 to 4: s+=str.tostring(i)`가 pine2py "01234"
+// (len 5) 대비 pine2js "0.01.02.03.04.0"(len 15)을 냈다). isStaticIntExpr(analyzer.ts)가 정적으로
+// int로 확정하는 두 범위(정수 리터럴 + for 루프 카운터)만 재현 -- '=' 로컬 전파/UDF int 매개변수
+// 전파는 범위 밖(LIMITATIONS.md 잔여 스코프). bar-독립(close/open 미참조, str_convert.pine과 동일
+// 관례) -- 전 바에서 값이 동일해야 정상.
+var string __obs_lit_pos = na
+__obs_lit_pos := str.tostring(5)
+var string __obs_lit_neg = na
+__obs_lit_neg := str.tostring(-7)
+var string __obs_lit_float = na
+__obs_lit_float := str.tostring(5.0)
+var string __obs_loop_direct = na
+for k = 0 to 2
+    __obs_loop_direct := str.tostring(k)
+var string __obs_loop_concat = na
+s = ""
+for i = 0 to 4
+    s += str.tostring(i)
+__obs_loop_concat := s

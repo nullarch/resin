@@ -1,0 +1,9 @@
+
+//@version=5
+strategy("RSI Strategy", overlay=true)
+rsi_val = ta.rsi(close, 14)
+if rsi_val < 30
+    strategy.entry("Long", strategy.long)
+if rsi_val > 70
+    strategy.close("Long")
+plot(rsi_val)

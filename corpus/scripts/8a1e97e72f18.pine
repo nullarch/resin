@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("SwitchTernary")
+dir = close > open ? 1 : 0
+result = switch dir
+    1 => volume > 1000 ? 100.0 : 50.0
+    => volume > 1000 ? -100.0 : -50.0
+plot(result, "R")

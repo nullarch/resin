@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Cycle HL")
+var float cycleHi = 0.0
+var float cycleLo = 99999.0
+var int cycleBar = 0
+cycleBar := cycleBar + 1
+cycleHi := math.max(cycleHi, close)
+cycleLo := math.min(cycleLo, close)
+if cycleBar >= 5
+    cycleBar := 0
+    cycleHi := close
+    cycleLo := close
+cycleRange = cycleHi - cycleLo
+plot(cycleRange, "CR")

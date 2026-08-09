@@ -1,0 +1,6 @@
+
+//@version=5
+indicator("SimpleRet")
+prevClose = nz(close[1], close)
+ret = prevClose > 0 ? (close - prevClose) / prevClose * 100 : 0.0
+plot(ret, "R")

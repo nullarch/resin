@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("RiskWindow")
+var float[] returns = array.new_float(0)
+ret = close - open
+array.push(returns, ret)
+if array.size(returns) > 5
+    array.shift(returns)
+minRet = array.size(returns) > 0 ? array.min(returns) : 0.0
+maxRet = array.size(returns) > 0 ? array.max(returns) : 0.0
+rng = maxRet - minRet
+var float __obs_plot0 = na
+__obs_plot0 := rng
+plot(rng, "Rng")

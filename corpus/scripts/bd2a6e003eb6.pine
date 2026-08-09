@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Regime Dur")
+var int currentRegime = 0
+var int duration = 0
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+newRegime = sma3 > sma5 ? 1 : -1
+if newRegime != currentRegime
+    currentRegime := newRegime
+    duration := 1
+else
+    duration := duration + 1
+plot(duration, "Dur")
+plot(currentRegime, "Reg")

@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("DC")
+dcHigh = ta.highest(high, 5)
+dcLow = ta.lowest(low, 5)
+dcMid = (dcHigh + dcLow) / 2
+dcWidth = dcHigh - dcLow
+plot(dcMid, "Mid")
+plot(dcWidth, "W")

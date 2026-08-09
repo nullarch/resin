@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Diff Series")
+var float[] prices = array.new_float(0)
+var float[] diffs = array.new_float(0)
+array.push(prices, close)
+if array.size(prices) > 6
+    array.shift(prices)
+if array.size(prices) >= 2
+    d = array.last(prices) - array.get(prices, array.size(prices) - 2)
+    array.push(diffs, d)
+    if array.size(diffs) > 5
+        array.shift(diffs)
+avgDiff = array.size(diffs) > 0 ? array.avg(diffs) : 0.0
+plot(avgDiff, "AvgD")

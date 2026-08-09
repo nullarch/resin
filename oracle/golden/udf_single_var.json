@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:total": 101.0,
+   "var:__obs_s": 101.0
+  },
+  {
+   "var:total": 203.0,
+   "var:__obs_s": 203.0
+  },
+  {
+   "var:total": 306.0,
+   "var:__obs_s": 306.0
+  },
+  {
+   "var:total": 408.0,
+   "var:__obs_s": 408.0
+  },
+  {
+   "var:total": 512.0,
+   "var:__obs_s": 512.0
+  },
+  {
+   "var:total": 617.0,
+   "var:__obs_s": 617.0
+  },
+  {
+   "var:total": 723.0,
+   "var:__obs_s": 723.0
+  },
+  {
+   "var:total": 828.0,
+   "var:__obs_s": 828.0
+  },
+  {
+   "var:total": 935.0,
+   "var:__obs_s": 935.0
+  },
+  {
+   "var:total": 1043.0,
+   "var:__obs_s": 1043.0
+  }
+ ],
+ "finalVarState": {
+  "total": 1043.0,
+  "__obs_s": 1043.0
+ }
+}

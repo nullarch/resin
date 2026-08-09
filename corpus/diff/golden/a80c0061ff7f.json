@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:prevCond": false,
+   "var:fallingEdges": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:prevCond": false,
+   "var:fallingEdges": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:prevCond": false,
+   "var:fallingEdges": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:prevCond": false,
+   "var:fallingEdges": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:prevCond": true,
+   "var:fallingEdges": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:prevCond": false,
+   "var:fallingEdges": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:prevCond": true,
+   "var:fallingEdges": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:prevCond": true,
+   "var:fallingEdges": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:prevCond": true,
+   "var:fallingEdges": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:prevCond": true,
+   "var:fallingEdges": 1,
+   "var:__obs_plot0": 1
+  }
+ ],
+ "finalVarState": {
+  "prevCond": true,
+  "fallingEdges": 1,
+  "__obs_plot0": 1
+ }
+}

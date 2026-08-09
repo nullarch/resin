@@ -1,0 +1,3 @@
+//@version=5
+indicator("Test")
+o = ta.obv(close, volume)

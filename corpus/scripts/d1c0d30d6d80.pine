@@ -1,0 +1,20 @@
+
+//@version=5
+indicator("Action Pipeline")
+enum Action
+    AggressiveBuy = 3
+    Buy = 2
+    Hold = 1
+    Sell = 0
+    AggressiveSell = -1
+
+rsi = ta.rsi(close, 3)
+sma3 = ta.sma(close, 3)
+act = rsi < 25 and close < sma3 ? Action.AggressiveBuy : rsi < 40 ? Action.Buy : rsi > 75 and close > sma3 ? Action.AggressiveSell : rsi > 60 ? Action.Sell : Action.Hold
+posSize = switch act
+    Action.AggressiveBuy => 3.0
+    Action.Buy => 1.0
+    Action.AggressiveSell => -3.0
+    Action.Sell => -1.0
+    => 0.0
+plot(posSize, "PosSize")

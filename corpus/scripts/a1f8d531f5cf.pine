@@ -1,0 +1,10 @@
+//@version=5
+indicator("UDF Max Tracker")
+var float result = 0.0
+
+track_max(val) =>
+    var float mx = 0.0
+    mx := math.max(mx, val)
+    mx
+
+result := track_max(close)

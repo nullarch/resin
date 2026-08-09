@@ -1,0 +1,8 @@
+//@version=5
+indicator("Input types")
+i1 = input.int(14, "RSI Length")
+i2 = input.float(1.5, "Multiplier")
+i3 = input.bool(true, "Show")
+i4 = input.string("SMA", "MA Type")
+i5 = input.color(color.blue, "Color")
+i6 = input.source(close, "Source")

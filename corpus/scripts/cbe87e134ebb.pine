@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Custom MA")
+myMA(float src, int len) =>
+    ta.sma(src, len)
+
+ma3 = myMA(close, 3)
+ma5 = myMA(close, 5)
+spread = ma3 - ma5
+plot(spread, "Spread")

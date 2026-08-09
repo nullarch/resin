@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("BoxCount")
+enum FractalType
+    SMOOTH
+    ROUGH
+    CHAOTIC
+length = 5
+rangeHL = high - low
+avgRange = ta.sma(rangeHL, length)
+scaledRange = ta.sma(rangeHL, 3)
+ratio = avgRange > 0 ? scaledRange / avgRange : 1.0
+fType = ratio > 1.5 ? FractalType.CHAOTIC : ratio > 1.0 ? FractalType.ROUGH : FractalType.SMOOTH
+output = fType == FractalType.CHAOTIC ? 3.0 : fType == FractalType.ROUGH ? 2.0 : 1.0
+var float __obs_plot0 = na
+__obs_plot0 := output
+plot(output, "BC")

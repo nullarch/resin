@@ -1,0 +1,25 @@
+//@version=5
+indicator("AllFeat 014")
+enum Zone
+    Overbought
+    Oversold
+    Normal
+type Reading
+    float val
+    int zone
+var readings = array.new_float(0)
+var int breakCount = 0
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+array.push(readings, rsiVal)
+zone = switch
+    rsiVal > 70 => 2
+    rsiVal < 30 => 0
+    => 1
+found = false
+for i = 0 to array.size(readings) - 1
+    v = array.get(readings, i)
+    if v > 70
+        found := true
+        breakCount := breakCount + 1
+        break
+label = found ? "extreme" : "normal"

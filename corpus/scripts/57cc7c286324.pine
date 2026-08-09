@@ -1,0 +1,11 @@
+//@version=5
+indicator("Crop Rotation")
+var int season = 0
+var string cropName = "wheat"
+season := bar_index % 3
+if season == 0
+    cropName := "wheat"
+else if season == 1
+    cropName := "corn"
+else
+    cropName := "soybean"

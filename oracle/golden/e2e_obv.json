@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_obv": 0.0
+  },
+  {
+   "var:__obs_obv": 1100.0
+  },
+  {
+   "var:__obs_obv": 2300.0
+  },
+  {
+   "var:__obs_obv": 1150.0
+  },
+  {
+   "var:__obs_obv": 2450.0
+  },
+  {
+   "var:__obs_obv": 3700.0
+  },
+  {
+   "var:__obs_obv": 5100.0
+  },
+  {
+   "var:__obs_obv": 3750.0
+  },
+  {
+   "var:__obs_obv": 5250.0
+  },
+  {
+   "var:__obs_obv": 6700.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_obv": 6700.0
+ }
+}

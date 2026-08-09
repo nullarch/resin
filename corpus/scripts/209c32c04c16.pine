@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("HH HL")
+hh = high > high[1] and not na(high[1])
+hl = low > low[1] and not na(low[1])
+ll = low < low[1] and not na(low[1])
+lh = high < high[1] and not na(high[1])
+uptrend = hh and hl
+dntrend = ll and lh
+plot(uptrend ? 1 : dntrend ? -1 : 0, "Trend")

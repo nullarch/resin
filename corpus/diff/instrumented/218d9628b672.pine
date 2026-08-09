@@ -1,0 +1,10 @@
+//@version=5
+indicator("ScaleVol")
+prev1 = nz(close[1], close)
+prev2 = nz(close[2], close)
+vol1 = math.abs(close - prev1)
+vol2 = math.abs(close - prev2)
+scaleRatio = vol2 > 0.01 ? vol1 / vol2 : 1.0
+var float __obs_plot0 = na
+__obs_plot0 := scaleRatio
+plot(scaleRatio, "SVol")

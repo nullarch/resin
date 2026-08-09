@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:highest_close": 103,
+   "var:__obs_plot0": 103
+  },
+  {
+   "var:highest_close": 104,
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:highest_close": 104,
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:highest_close": 105,
+   "var:__obs_plot0": 105
+  },
+  {
+   "var:highest_close": 107,
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:highest_close": 107,
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:highest_close": 108,
+   "var:__obs_plot0": 108
+  },
+  {
+   "var:highest_close": 110,
+   "var:__obs_plot0": 110
+  },
+  {
+   "var:highest_close": 110,
+   "var:__obs_plot0": 110
+  },
+  {
+   "var:highest_close": 111,
+   "var:__obs_plot0": 111
+  }
+ ],
+ "finalVarState": {
+  "highest_close": 111,
+  "__obs_plot0": 111
+ }
+}

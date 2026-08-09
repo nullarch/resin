@@ -1,0 +1,11 @@
+//@version=5
+indicator("Quantum Walk")
+var float position = 0.0
+var float coinUp = 0.707
+var float coinDown = 0.707
+float step = close > open ? 1.0 : -1.0
+float newUp = 0.707 * (coinUp + coinDown * step)
+float newDown = 0.707 * (coinUp * step - coinDown)
+coinUp := math.max(-5.0, math.min(5.0, newUp))
+coinDown := math.max(-5.0, math.min(5.0, newDown))
+position := position + coinUp * coinUp - coinDown * coinDown

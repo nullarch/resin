@@ -1,0 +1,42 @@
+//@version=5
+strategy("Ultra 005", overlay=true)
+type Band
+    float upper = 0.0
+    float lower = 0.0
+    float mid = 0.0
+
+method width(Band this) =>
+    this.upper - this.lower
+
+var Band channel = Band.new(0.0, 0.0, 0.0)
+var float[] widths = array.new_float(0)
+var int tradeCount = 0
+
+hh = ta.highest(high, 5)
+ll = ta.lowest(low, 5)
+channel.upper := not na(hh) ? hh : high
+channel.lower := not na(ll) ? ll : low
+channel.mid := (channel.upper + channel.lower) / 2.0
+
+w = channel.width()
+array.push(widths, w)
+if array.size(widths) > 5
+    array.shift(widths)
+
+avgW = 0.0
+for i = 0 to array.size(widths) - 1
+    avgW := avgW + array.get(widths, i)
+avgW := array.size(widths) > 0 ? avgW / array.size(widths) : 0.0
+
+zone = switch
+    close > channel.mid + avgW * 0.3 => 2
+    close > channel.mid => 1
+    close > channel.mid - avgW * 0.3 => -1
+    => -2
+
+if zone == -2
+    strategy.entry("Long", strategy.long)
+    tradeCount := tradeCount + 1
+if zone == 2
+    strategy.close("Long")
+plot(math.round(avgW * 10) / 10)

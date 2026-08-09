@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Enum UDT")
+enum Direction
+    Up
+    Down
+    Flat
+
+type TrendInfo
+    Direction dir = Direction.Flat
+    float strength = 0.0
+
+info = TrendInfo.new()
+info.dir := close > open ? Direction.Up : Direction.Down
+info.strength := math.abs(close - open)
+plot(info.strength)

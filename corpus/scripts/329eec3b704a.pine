@@ -1,0 +1,4 @@
+//@version=5
+indicator("Pow")
+var float result = 0
+result := math.pow(2, 10)

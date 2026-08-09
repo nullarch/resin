@@ -1,0 +1,50 @@
+//@version=5
+indicator("array_map_constructor_chain")
+
+// A: 생성자 반환 콜의 method-call 스타일 체이닝(C223, C222 next_hint 1순위) — top-level var
+// 수신자(a)에서 `a.slice(0, 2)`로 만든 '=' 로컬(b)이 곧바로 array로 판별돼야 이어지는
+// `b.push(...)`/`b.get(...)`이 통과한다(수정 전: isArrayConstructorCall이 method-call 형태를
+// 인식 못 해 b가 containerKindHints에 등록되지 않고 '지원하지 않는 호출'로 거부됨,
+// corpus 실측 3b049a16e6a1.pine과 동일 패턴). push는 array.py의 _scalar() 가드가 있어 bare
+// close도 안전(array_basic.pine과 동일 근거).
+var a = array.new_float(0)
+a.push(1.0)
+a.push(2.0)
+a.push(3.0)
+b = a.slice(0, 2)
+b.push(close)
+var float __obs_b_size = na
+__obs_b_size := b.size()
+var float __obs_b_last = na
+__obs_b_last := b.get(b.size() - 1)
+
+// B: 다단계 체이닝 — b 자신이 method-call 폴백으로 array 판별된 '=' 로컬인데, 그 b에서 다시
+// slice해 만든 c도 동일 폴백으로 array 판별돼야 한다(재귀적으로 성립하는지 확인).
+c = b.slice(0, 1)
+c.push(9.0)
+var float __obs_c_size = na
+__obs_c_size := c.size()
+
+// C: copy() 체이닝 — corpus 실측 원본 패턴(9b6ba3753dfd.pine `sorted = prices.copy()` 후
+// `sorted.sort()`/`sorted.get(...)`)과 동일 형태.
+var d = array.from(3.0, 1.0, 2.0)
+sorted = d.copy()
+sorted.sort()
+var float __obs_sorted0 = na
+__obs_sorted0 := sorted.get(0)
+var float __obs_sorted_size = na
+__obs_sorted_size := sorted.size()
+
+// D: map copy() 체이닝 — array와 대칭인 isMapConstructorCall 폴백. m2가 m1의 독립된 얕은
+// 복사임을 m1_size로도 확인(m2에 추가한 키가 m1로 새지 않아야 함). put은 map.py가 bare series를
+// 그대로 저장하는 pine2py latent 버그(map_basic.pine과 동일 근거)라 `+ 0.0`으로 스칼라 강제.
+var m1 = map.new<string, float>()
+m1.put("x", close + 0.0)
+m2 = m1.copy()
+m2.put("y", 5.0)
+var float __obs_m2_x = na
+__obs_m2_x := m2.get("x")
+var float __obs_m2_y = na
+__obs_m2_y := m2.get("y")
+var float __obs_m1_size = na
+__obs_m1_size := m1.size()

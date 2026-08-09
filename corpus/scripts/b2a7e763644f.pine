@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Wt Sig")
+weights = array.from(0.35, 0.25, 0.20, 0.12, 0.08)
+totalSig = 0.0
+sma3 = ta.sma(close, 3)
+for i = 0 to 4
+    c = close[i]
+    w = array.get(weights, i)
+    if not na(c)
+        totalSig := totalSig + (c > sma3 ? w : -w)
+plot(totalSig, "Sig")

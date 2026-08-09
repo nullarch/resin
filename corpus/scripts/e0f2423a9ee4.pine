@@ -1,0 +1,7 @@
+//@version=5
+indicator("UDT Field")
+type Container
+    float value = 0.0
+    int count = 0
+c = Container.new(close, 1)
+plot(c.value)

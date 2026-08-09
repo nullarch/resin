@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:m": {
+    "momentum": 0.6,
+    "trend": 0.7
+   },
+   "var:__obs_plot0": 0.7
+  },
+  {
+   "var:m": {
+    "momentum": 0.6,
+    "trend": 0.7
+   },
+   "var:__obs_plot0": 0.7
+  },
+  {
+   "var:m": {
+    "momentum": 0.6,
+    "trend": 0.7
+   },
+   "var:__obs_plot0": 0.7
+  },
+  {
+   "var:m": {
+    "momentum": 0.6,
+    "trend": 0.7
+   },
+   "var:__obs_plot0": 1.2999999999999998
+  },
+  {
+   "var:m": {
+    "momentum": 0.6,
+    "trend": 0.7
+   },
+   "var:__obs_plot0": 1.2999999999999998
+  },
+  {
+   "var:m": {
+    "momentum": 0.6,
+    "trend": 0.7
+   },
+   "var:__obs_plot0": 0.8999999999999999
+  },
+  {
+   "var:m": {
+    "momentum": 0.6,
+    "trend": 0.7
+   },
+   "var:__obs_plot0": 1.2999999999999998
+  },
+  {
+   "var:m": {
+    "momentum": 0.6,
+    "trend": 0.7
+   },
+   "var:__obs_plot0": 1.2999999999999998
+  },
+  {
+   "var:m": {
+    "momentum": 0.6,
+    "trend": 0.7
+   },
+   "var:__obs_plot0": 0.8999999999999999
+  },
+  {
+   "var:m": {
+    "momentum": 0.6,
+    "trend": 0.7
+   },
+   "var:__obs_plot0": 1.2999999999999998
+  }
+ ],
+ "finalVarState": {
+  "m": {
+   "momentum": 0.6,
+   "trend": 0.7
+  },
+  "__obs_plot0": 1.2999999999999998
+ }
+}

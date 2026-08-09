@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("MACD Zero")
+[macd, sig, hist] = ta.macd(close, 3, 5, 3)
+zeroCrossUp = macd > 0 and macd[1] <= 0
+zeroCrossDown = macd < 0 and macd[1] >= 0
+plot(macd, "MACD")
+plot(zeroCrossUp ? 1 : zeroCrossDown ? -1 : 0, "ZeroCross")

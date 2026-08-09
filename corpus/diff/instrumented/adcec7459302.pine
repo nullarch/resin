@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Mom Cycle")
+rsi = nz(ta.rsi(close, 3), 50.0)
+var bool wasBull = false
+var int halfCycles = 0
+isBull = rsi > 55
+if isBull != wasBull
+    halfCycles := halfCycles + 1
+wasBull := isBull
+fullCycles = halfCycles / 2
+var float __obs_plot0 = na
+__obs_plot0 := fullCycles
+plot(fullCycles, "FC")

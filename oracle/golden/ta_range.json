@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_range": "NaN"
+  },
+  {
+   "var:__obs_range": "NaN"
+  },
+  {
+   "var:__obs_range": 2.0
+  },
+  {
+   "var:__obs_range": 1.0
+  },
+  {
+   "var:__obs_range": 2.0
+  },
+  {
+   "var:__obs_range": 3.0
+  },
+  {
+   "var:__obs_range": 2.0
+  },
+  {
+   "var:__obs_range": 1.0
+  },
+  {
+   "var:__obs_range": 2.0
+  },
+  {
+   "var:__obs_range": 3.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_range": 3.0
+ }
+}

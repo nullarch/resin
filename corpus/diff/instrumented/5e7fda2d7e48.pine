@@ -1,0 +1,11 @@
+//@version=5
+indicator("test")
+var int preCount = 0
+var int postCount = 0
+if session.ispremarket
+    preCount := preCount + 1
+if session.ispostmarket
+    postCount := postCount + 1
+var float __obs_plot0 = na
+__obs_plot0 := preCount + postCount
+plot(preCount + postCount)

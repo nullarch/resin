@@ -1,0 +1,7 @@
+//@version=5
+indicator("Diffusion Coefficient")
+flux = volume / 1000.0
+concGrad = math.abs(close - nz(close[1], close))
+diffCoeff = concGrad > 0.1 ? flux / concGrad : 0.0
+var float cumDiff = 0.0
+cumDiff := cumDiff + diffCoeff

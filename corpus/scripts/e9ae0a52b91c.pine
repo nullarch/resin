@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("TwoNeuron")
+inp = (close - 100.0) / 10.0
+n1 = math.max(0.5 * inp + 0.1, 0.0)
+n2 = math.max(-0.3 * inp + 0.2, 0.0)
+combined = n1 * 0.7 + n2 * 0.3
+plot(combined, "Layer")

@@ -1,0 +1,10 @@
+//@version=5
+indicator("Weir Overflow")
+var float crestLevel = 105.0
+headOverWeir = close - crestLevel
+headOverWeir := math.max(headOverWeir, 0.0)
+weirCoeff = 1.84
+weirLength = 1.0
+discharge = weirCoeff * weirLength * math.pow(headOverWeir, 1.5)
+crestLevel := crestLevel * 0.99 + close * 0.01
+plot(discharge)

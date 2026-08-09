@@ -1,0 +1,7 @@
+//@version=5
+indicator("TA Isolation")
+sma_a = ta.sma(close, 3)
+sma_b = ta.sma(close, 3)
+var float diff = 0.0
+diff := nz(sma_a, 0.0) - nz(sma_b, 0.0)
+plot(diff)

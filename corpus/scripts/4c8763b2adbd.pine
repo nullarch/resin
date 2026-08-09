@@ -1,0 +1,20 @@
+//@version=5
+indicator("Var Complex")
+var float maxDrawdown = 0.0
+var float peak = 0.0
+var float totalReturn = 0.0
+var int winCount = 0
+var int lossCount = 0
+ret = close / close[1] - 1
+if not na(ret)
+    totalReturn := totalReturn + ret
+    if ret > 0
+        winCount := winCount + 1
+    else
+        lossCount := lossCount + 1
+    peak := math.max(peak, totalReturn)
+    dd = peak - totalReturn
+    maxDrawdown := math.max(maxDrawdown, dd)
+winRate = (winCount + lossCount) > 0 ? winCount / (winCount + lossCount) * 100 : 0
+plot(winRate)
+plot(maxDrawdown * 100)

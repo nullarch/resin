@@ -1,0 +1,14 @@
+//@version=5
+indicator("Euler Char")
+var int peaks = 0
+var int troughs = 0
+float prevC = not na(close[1]) ? close[1] : close
+float prevC2 = not na(close[2]) ? close[2] : close
+if prevC > prevC2 and prevC > close
+    peaks := peaks + 1
+if prevC < prevC2 and prevC < close
+    troughs := troughs + 1
+float euler = peaks - troughs
+var float __obs_plot0 = na
+__obs_plot0 := euler
+plot(euler, "Euler")

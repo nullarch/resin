@@ -1,0 +1,6 @@
+//@version=5
+indicator("Empty If")
+if close > 1000
+    na
+var float result = close
+plot(result)

@@ -1,0 +1,56 @@
+//@version=5
+indicator("cond_elif_switch_while_direct_ta")
+// C260 조건부 stateful call — elif 조건/switch case 값(subject 없음)/while 조건 위치의 **직접
+// 호출**(and/or lazy 우변 밖) 신규 허용. codegen(genIfStmt의 elif 분기/genSwitchStmt/genWhileStmt)이
+// 이 세 위치를 전부 JS 네이티브 else-if/if-else-if/while로 그 자리에 그대로 인라인하므로(호이스팅
+// 없음 — hoistLazyStatefulCalls 호출부 자체가 없음), 그 안의 직접 호출은 JS 자체의 단락 평가가
+// pine2py의 네이티브 elif/switch-if/while 체인과 정확히 동형이다 — 이 골든이 그 동형성의 수치
+// 증거다. and/or **우변**(진짜 lazy 위치)에 놓인 호출은 여전히 거부(LIMITATIONS.md 참조, 오라클
+// 대상 아님).
+fast = ta.ema(close, 2)
+slow = ta.ema(close, 3)
+
+// 채널 1: elif 조건 전체가 직접 호출(crossunder) — close>102는 sample10에서 바0/1/3만 F(elif
+// 도달), 바2·4~9는 T(첫 분기가 매치해 elif 자체가 스킵) — cond_switch_ta.pine이 이미 확립한 T/F
+// 인터리브 갭 패턴을 재사용해 crossunder의 내부 이전값 추적이 스킵된 바를 건너뛰는지(호출된
+// 바에서만 전진) 검증한다.
+var int __obs_elif1 = 0
+if close > 102
+    __obs_elif1 := -1
+else if ta.crossunder(fast, slow)
+    __obs_elif1 := 1
+else
+    __obs_elif1 := 0
+
+// 채널 2: elif 조건이 "직접 호출 and 상수 가드"(호출이 and **좌변** — 우변만 lazy-expr이므로
+// 좌변은 여전히 직접 호출) — corpus 실측 패턴(db7459f54659/8a0d68e67967, `ta.crossover(...) and
+// position<=0` 형태) 재현.
+var int __obs_elif2 = 0
+if close > 102
+    __obs_elif2 := -1
+else if ta.crossover(fast, slow) and close > 0
+    __obs_elif2 := 2
+else
+    __obs_elif2 := 0
+
+// 채널 3: subject 없는 switch의 case 값 직접 호출(corpus c9785c190428 `ta.crossover(close, sma3)
+// => "medium"` 패턴 재현) — case 값도 elif 조건과 동일한 kind:"condition" 취급이라 같은 갭 패턴을
+// 재사용한다.
+var int __obs_switch = 0
+switch
+    close > 102 =>
+        __obs_switch := -1
+    ta.crossunder(fast, slow) =>
+        __obs_switch := 1
+    =>
+        __obs_switch := 0
+
+// 채널 4: while 조건 전체가 직접 호출 — 조건 위치의 콜은 loop-body(C161, cond_loop_ta.pine)와
+// 달리 "루프를 끝내는 마지막 false 테스트"에서도 한 번 더 평가된다(pine2py 네이티브 while도 동일
+// — 몸통 위치와 다른 새 갭 형태). j<3 가드(and 우변, 무상태 — 좌변만 직접 호출이면 되므로 우변은
+// 굳이 상태 없어도 무방)로 자연 종료를 보장해 pine2py 쪽 무한루프를 피한다.
+var int __obs_while = 0
+j = 0
+while ta.sma(close, 2) < close + 100 and j < 3
+    __obs_while := __obs_while + 1
+    j := j + 1

@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("CCI RSI")
+cci = ta.cci(close, 5)
+rsi = ta.rsi(close, 3)
+bothOB = cci > 100 and rsi > 70
+bothOS = cci < -100 and rsi < 30
+score = (cci > 0 ? 1.0 : -1.0) + (rsi > 50 ? 1.0 : -1.0)
+plot(score, "Score")

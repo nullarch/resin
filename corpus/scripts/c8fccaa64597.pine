@@ -1,0 +1,4 @@
+//@version=5
+indicator("MTF Basic")
+htfClose = request.security("", "D", close)
+plot(htfClose)

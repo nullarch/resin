@@ -1,0 +1,6 @@
+//@version=5
+indicator("S-Wave Arrival")
+pWave = close - open
+sWave = not na(close[2]) ? close - close[2] : 0.0
+separation = math.abs(pWave - sWave)
+plot(separation)

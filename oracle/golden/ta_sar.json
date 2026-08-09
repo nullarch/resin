@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_sar": "NaN"
+  },
+  {
+   "var:__obs_sar": 99.0
+  },
+  {
+   "var:__obs_sar": 99.0
+  },
+  {
+   "var:__obs_sar": 99.2
+  },
+  {
+   "var:__obs_sar": 99.392
+  },
+  {
+   "var:__obs_sar": 99.72848
+  },
+  {
+   "var:__obs_sar": 100.2302016
+  },
+  {
+   "var:__obs_sar": 100.90718144
+  },
+  {
+   "var:__obs_sar": 101.516463296
+  },
+  {
+   "var:__obs_sar": 102.2944877005
+  }
+ ],
+ "finalVarState": {
+  "__obs_sar": 102.2944877005
+ }
+}

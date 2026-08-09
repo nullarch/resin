@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("KC Squeeze")
+[bbM, bbU, bbL] = ta.bb(close, 5, 2.0)
+[kcM, kcU, kcL] = ta.kc(close, 5, 1.5)
+squeeze = bbU < kcU and bbL > kcL
+momentum = close - (bbM + kcM) / 2
+var float __obs_plot0 = na
+__obs_plot0 := squeeze ? 1 : 0
+plot(squeeze ? 1 : 0, "Sqz")
+var float __obs_plot1 = na
+__obs_plot1 := momentum
+plot(momentum, "Mom")

@@ -1,0 +1,12 @@
+//@version=5
+indicator("ta_macd")
+// ta.macd 오라클 검증(ROADMAP P2 "ta.* 44종" — macd, 첫 다중 반환 TA). fast=2, slow=3, signal=2로
+// sample10.json 10바 안에서 전부 NaN인 워밍업(바 0~1), macd만 유효한 구간(바 2 — slow 시드 직후,
+// signal 워밍업 중이라 signal/hist는 NaN), 3값 모두 유효한 구간(바 3~9)을 전부 커버.
+[macdLine, signalLine, histLine] = ta.macd(close, 2, 3, 2)
+var float __obs_macd = na
+var float __obs_signal = na
+var float __obs_hist = na
+__obs_macd := macdLine
+__obs_signal := signalLine
+__obs_hist := histLine

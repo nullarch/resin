@@ -1,0 +1,13 @@
+//@version=5
+indicator("Mental Accounting")
+ret = close - nz(close[1])
+var float safeGains = 0.0
+var float riskyGains = 0.0
+if ret > 0 and ret < 2.0
+    safeGains := safeGains + ret
+if ret >= 2.0
+    riskyGains := riskyGains + ret
+totalMental = safeGains + riskyGains
+var float __obs_plot0 = na
+__obs_plot0 := totalMental
+plot(totalMental)

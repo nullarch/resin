@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("DynAlert")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma5 = ta.sma(close, 5)
+
+alertType = switch
+    rsi > 70 => "OVERBOUGHT"
+    rsi < 30 => "OVERSOLD"
+    close > sma5 => "ABOVE_MA"
+    => "NEUTRAL"
+
+msg = "Alert [" + alertType + "] @ " + str.tostring(close)
+msgLen = str.length(msg)
+plot(msgLen, "ML")

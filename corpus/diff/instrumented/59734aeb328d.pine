@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("HB LB")
+hb = ta.highestbars(high, 5)
+lb = ta.lowestbars(low, 5)
+var float __obs_plot0 = na
+__obs_plot0 := hb
+plot(hb, "HighBars")
+var float __obs_plot1 = na
+__obs_plot1 := lb
+plot(lb, "LowBars")

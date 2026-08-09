@@ -1,0 +1,12 @@
+
+//@version=5
+strategy("Flow Strat", overlay=true)
+totalRange = high - low
+buyPress = totalRange > 0 ? (close - low) / totalRange : 0.5
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+if buyPress > 0.6 and close > sma3 and rsi > 50
+    strategy.entry("Long", strategy.long)
+if buyPress < 0.3 or close < sma3
+    strategy.close("Long")
+plot(sma3, "MA")

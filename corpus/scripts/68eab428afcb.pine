@@ -1,0 +1,7 @@
+//@version=5
+indicator("Line Cont And")
+var float result = 0.0
+bool cond = close > 100 and
+    close < 200
+result := cond ? 1.0 : 0.0
+plot(result)

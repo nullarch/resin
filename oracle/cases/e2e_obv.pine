@@ -1,0 +1,14 @@
+//@version=5
+indicator("On Balance Volume")
+// TV 빌트인 "On Balance Volume" 인디케이터 E2E 재현(ROADMAP P2 "TV 빌트인 인디케이터 15종 E2E" 네
+// 번째 슬라이스, 3종 중 1: OBV/ACCDIST/COG). ta.obv 자체의 계산은 이미
+// oracle/cases/ta_obv_accdist.pine(순수 __obs 미러, close/volume 암묵 사용)으로 개별 검증됐다 --
+// 이 케이스는 그 위에 indicator()/plot()을 얹어 완성된 빌트인 스크립트 구조 전체를 검증한다.
+// ta.obv()는 Pine 문법상 인자가 없어(close/volume이 bar series 암묵 사용) input.* 결선이 필요
+// 없는 유일한 슬라이스 -- barstate/session류와 유사하게 스크립트가 plot() 하나만 얹는다.
+obvValue = ta.obv()
+
+plot(obvValue, "OBV")
+
+var float __obs_obv = na
+__obs_obv := obvValue

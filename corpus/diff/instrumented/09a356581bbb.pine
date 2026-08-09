@@ -1,0 +1,15 @@
+//@version=5
+indicator("Euler Char")
+var int vertices = 0
+var int edges = 0
+var int faces = 0
+vertices := vertices + 1
+bool connected = math.abs(close - open) < 5.0
+if connected
+    edges := edges + 1
+if connected and volume > 1000
+    faces := faces + 1
+int chi = vertices - edges + faces
+var float __obs_plot0 = na
+__obs_plot0 := chi
+plot(chi, "Chi")

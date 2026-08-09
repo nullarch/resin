@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:level": 103,
+   "var:trend": 0.0,
+   "var:init": true,
+   "var:__obs_plot0": 103.0
+  },
+  {
+   "var:level": 103.4,
+   "var:trend": 0.1200000000000017,
+   "var:init": true,
+   "var:__obs_plot0": 103.52000000000001
+  },
+  {
+   "var:level": 102.912,
+   "var:trend": -0.06239999999999868,
+   "var:init": true,
+   "var:__obs_plot0": 102.84960000000001
+  },
+  {
+   "var:level": 103.70976,
+   "var:trend": 0.1956479999999999,
+   "var:init": true,
+   "var:__obs_plot0": 103.90540800000001
+  },
+  {
+   "var:level": 105.1432448,
+   "var:trend": 0.5669990400000006,
+   "var:init": true,
+   "var:__obs_plot0": 105.71024384
+  },
+  {
+   "var:level": 105.826146304,
+   "var:trend": 0.6017697792000004,
+   "var:init": true,
+   "var:__obs_plot0": 106.4279160832
+  },
+  {
+   "var:level": 107.05674964992,
+   "var:trend": 0.7904198492159967,
+   "var:init": true,
+   "var:__obs_plot0": 107.84716949913599
+  },
+  {
+   "var:level": 108.7083016994816,
+   "var:trend": 1.0487595093196782,
+   "var:init": true,
+   "var:__obs_plot0": 109.75706120880128
+  },
+  {
+   "var:level": 109.45423672528077,
+   "var:trend": 0.9579121642635257,
+   "var:init": true,
+   "var:__obs_plot0": 110.41214888954428
+  },
+  {
+   "var:level": 110.64728933372658,
+   "var:trend": 1.0284542975182112,
+   "var:init": true,
+   "var:__obs_plot0": 111.67574363124479
+  }
+ ],
+ "finalVarState": {
+  "level": 110.64728933372658,
+  "trend": 1.0284542975182112,
+  "init": true,
+  "__obs_plot0": 111.67574363124479
+ }
+}

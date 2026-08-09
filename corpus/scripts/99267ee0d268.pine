@@ -1,0 +1,5 @@
+//@version=5
+indicator("Dew Point")
+rng = high - low
+dewPoint = rng > 0 ? low + rng * 0.33 : low
+plot(dewPoint, title="dewpoint")

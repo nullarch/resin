@@ -1,0 +1,7 @@
+//@version=5
+indicator("Polyphony")
+voice1 = ta.ema(close, 2)
+voice2 = ta.ema(close, 3)
+voice3 = ta.ema(close, 5)
+spread = voice1 - voice3
+plot(spread, title="polyphony")

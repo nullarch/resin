@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("SharpeProxy")
+var float sumRet = 0.0
+var float sumRetSq = 0.0
+var int cnt = 0
+ret = close - open
+sumRet := sumRet + ret
+sumRetSq := sumRetSq + ret * ret
+cnt := cnt + 1
+mean = cnt > 0 ? sumRet / cnt : 0.0
+variance = cnt > 1 ? (sumRetSq / cnt - mean * mean) : 1.0
+stddev = math.sqrt(math.abs(variance))
+sharpe = stddev > 0.001 ? mean / stddev : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := sharpe
+plot(sharpe, "SR")

@@ -1,0 +1,26 @@
+//@version=5
+indicator("udt_tuple_destructure_return_inferred")
+// udt_tuple_destructure_return.pine(C387)의 형제 케이스 -- 그 오라클은 UDF 내부 var가 명시
+// typeHint(`var Swing top = ...`)를 갖는 형태만 검증했다. wild `[bull_fvg, bear_fvg, new_fvg] =
+// request.security(sym, tf, detect())`(PSPK Fair Value Gap 스크립트)는 typeHint 없이 생성자 콜
+// 하나로만 UDT가 추론되는 `var new_fvg = Fvg.new(...)` 형태라 별개 analyzer 갭이었다(C454,
+// resolveTupleElemUdtType의 role==="var" 분기가 param 분기와 달리 resolveUdtObjectType 폴백이
+// 없어 놓침). 이 케이스는 그 typeHint-없는 조합만 다르게 재현하고, 나머지는 C387과 동일 원칙
+// (UDT .new() 생성자 콜이 if-게이트 조건부로 재대입되면 pine2py 자체가 매 바 재실행하는 별개 버그
+// 영향을 받으므로 무조건 갱신으로 그 축을 피한다).
+
+type Fvg
+    float max = na
+    float min = na
+
+detect() =>
+    var new_fvg = Fvg.new(na, na)
+    new_fvg := Fvg.new(high, low)
+    [true, new_fvg]
+
+[flag, new_fvg] = detect()
+
+var float __obs_max = na
+__obs_max := new_fvg.max
+var float __obs_min = na
+__obs_min := new_fvg.min

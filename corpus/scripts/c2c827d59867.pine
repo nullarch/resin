@@ -1,0 +1,9 @@
+//@version=5
+indicator("Pivot NaN")
+ph = ta.pivothigh(high, 2, 2)
+var int nan_count = 0
+if na(ph)
+    nan_count := nan_count + 1
+var float result = 0.0
+result := nan_count
+plot(result)

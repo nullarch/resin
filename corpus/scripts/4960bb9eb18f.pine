@@ -1,0 +1,10 @@
+//@version=5
+indicator("MultiHarm12")
+var int barN = 0
+barN := barN + 1
+composite = 0.0
+for h = 1 to 3
+    freq = float(h) * 2.0 * math.pi / 5.0
+    amp = 1.0 / float(h)
+    composite := composite + amp * math.sin(freq * float(barN))
+plot(composite, "comp")

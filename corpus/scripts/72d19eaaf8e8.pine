@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Trend Duration")
+sma3 = ta.sma(close, 3)
+var int upDuration = 0
+var int downDuration = 0
+if close > sma3
+    upDuration := upDuration + 1
+    downDuration := 0
+else
+    downDuration := downDuration + 1
+    upDuration := 0
+longestUp = math.max(upDuration, upDuration[1])
+plot(upDuration, "UpDur")
+plot(downDuration, "DownDur")

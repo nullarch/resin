@@ -1,0 +1,16 @@
+//@version=5
+indicator("if_basic")
+var float acc = 0.0
+x = 0.0
+if close > open
+    x := 1.0
+    acc := acc + 1.0
+else if close < open
+    x := -1.0
+    acc := acc - 1.0
+else
+    x := 0.0
+var float __obs_x = na
+__obs_x := x
+var float __obs_acc = na
+__obs_acc := acc

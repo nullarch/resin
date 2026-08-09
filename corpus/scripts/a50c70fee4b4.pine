@@ -1,0 +1,38 @@
+
+//@version=5
+indicator("Backtest Engine")
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+rsi = ta.rsi(close, 3)
+atr = ta.atr(3)
+
+// Entry/exit
+var int pos = 0
+var float entryPx = 0.0
+var float totalPnl = 0.0
+var int trades = 0
+
+if pos == 0 and close > sma3 and rsi > 50
+    pos := 1
+    entryPx := close
+    trades := trades + 1
+if pos == 1 and (close < sma3 or rsi > 75)
+    totalPnl := totalPnl + (close - entryPx)
+    pos := 0
+
+// Tracking
+var float[] pnlHist = array.new_float(0)
+array.push(pnlHist, totalPnl)
+if array.size(pnlHist) > 8
+    array.shift(pnlHist)
+
+var m = map.new<string, float>()
+map.put(m, "pnl", totalPnl)
+map.put(m, "trades", float(trades))
+map.put(m, "position", float(pos))
+
+var int bars = 0
+bars := bars + 1
+
+plot(totalPnl, "PnL")
+plot(trades, "Trades")

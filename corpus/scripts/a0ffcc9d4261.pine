@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("TA Isolation")
+sma_fast = ta.sma(close, 3)
+sma_slow = ta.sma(close, 10)
+diff = sma_fast - sma_slow
+plot(diff)

@@ -1,0 +1,4 @@
+//@version=5
+indicator("StrReplace")
+var string result = ""
+result := str.replace("hello world", "world", "pine")

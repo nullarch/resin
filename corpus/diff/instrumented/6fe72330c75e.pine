@@ -1,0 +1,8 @@
+//@version=5
+indicator("Arr Fill")
+a = array.new<float>(5, 10.0)
+var float total = 0.0
+total := array.sum(a)
+var float __obs_plot0 = na
+__obs_plot0 := total
+plot(total)

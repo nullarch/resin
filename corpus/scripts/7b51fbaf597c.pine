@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("UDF Map")
+scoreFromMap(float rsiVal, float trendVal) =>
+    rsiScore = (rsiVal - 50) / 50
+    trendScore = trendVal > 0 ? 1.0 : -1.0
+    (rsiScore + trendScore) / 2
+
+var m = map.new<string, float>()
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+map.put(m, "rsi", rsi)
+map.put(m, "trend", close - sma3)
+score = scoreFromMap(map.get(m, "rsi", 50.0), map.get(m, "trend", 0.0))
+plot(score, "Score")

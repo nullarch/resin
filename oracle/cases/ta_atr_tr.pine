@@ -1,0 +1,7 @@
+//@version=5
+indicator("ta_atr_tr")
+// ta.tr/ta.atr 오라클 검증(ROADMAP P2 "ta.* 44종"). length=3으로 sample10.json 전 구간 관측.
+var float __obs_tr = na
+var float __obs_atr = na
+__obs_tr := ta.tr()
+__obs_atr := ta.atr(3)

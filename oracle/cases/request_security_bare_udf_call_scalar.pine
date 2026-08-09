@@ -1,0 +1,14 @@
+//@version=5
+indicator("request_security_bare_udf_call_scalar")
+// request.security 스칼라(비튜플) bare UDF call expression(C436, wild 신규 최대 서브클러스터
+// 214/483) — `x = request.security(sym, tf, myFunc(...))`에서 expression 인자가 브래킷/튜플
+// 디스트럭처 없이 단일 반환 UDF 호출인 폼. C432(튜플 자매 축)와 동일한 pine2py
+// wavealgo/security.py._resolve_expression 오라클 시맨틱(비 Series 값은 그대로 통과, HTF 재계산
+// 0)이 스칼라 반환에도 그대로 적용됨을 python 직접 실행으로 재검증(_resolve_expression의 마지막
+// "Scalar value — return as-is" 분기, Series 여부는 hasattr(expr,'get') and hasattr(expr,'_data')로만
+// 판별하므로 튜플/스칼라 구분이 애초에 없음).
+myFunc(x) =>
+    x + 1
+ma = request.security(syminfo.tickerid, "D", myFunc(close))
+var float __obs_ma = na
+__obs_ma := ma

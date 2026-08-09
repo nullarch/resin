@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Mode Det")
+var int[] discretized = array.new_int(0)
+rsi = ta.rsi(close, 3)
+bin = int(nz(rsi, 50.0) / 25.0)
+array.push(discretized, bin)
+if array.size(discretized) > 8
+    array.shift(discretized)
+modeVal = array.mode(discretized)
+plot(modeVal, "Mode")

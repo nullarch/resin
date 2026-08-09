@@ -1,0 +1,18 @@
+//@version=5
+indicator("method_receiver_reserved_word")
+// method 첫 매개변수(receiver) 이름이 JS 예약어 `this`인 corpus 실사용 패턴(C271, corpus_scan
+// `new Function` 미탐지 38건의 대표 형태 -- `method isInRange(Bin this, float val) =>`류).
+// codegen이 이 이름을 literal JS 파라미터로 방출하면 "Unexpected token 'this'" SyntaxError였다.
+
+type Box
+    float lo = 0.0
+    float hi = 0.0
+
+method isInRange(Box this, float val) =>
+    val >= this.lo and val <= this.hi
+
+b = Box.new(102.0, 105.0)
+result = b.isInRange(close)
+
+var bool __obs_result = na
+__obs_result := result

@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Gradient")
+rsi_val = ta.rsi(close, 14)
+col = color.from_gradient(rsi_val, 0, 100, color.red, color.green)
+var float __obs_plot0 = na
+__obs_plot0 := rsi_val
+plot(rsi_val, color=col)

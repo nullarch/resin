@@ -1,0 +1,6 @@
+//@version=5
+indicator("VWMA")
+var float lastV = 0
+v = ta.vwma(close, 3)
+if not na(v)
+    lastV := v

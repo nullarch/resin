@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Engulf")
+currBody = close - open
+prevBody = close[1] - open[1]
+bullEngulf = not na(prevBody) and currBody > 0 and prevBody < 0 and close > open[1] and open < close[1]
+bearEngulf = not na(prevBody) and currBody < 0 and prevBody > 0 and close < open[1] and open > close[1]
+var float __obs_plot0 = na
+__obs_plot0 := bullEngulf ? 1 : bearEngulf ? -1 : 0
+plot(bullEngulf ? 1 : bearEngulf ? -1 : 0, "Eng")

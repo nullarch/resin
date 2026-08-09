@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("EnumFilter")
+enum FilterMode
+    Fast = 1
+    Medium = 2
+    Slow = 3
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+mode = rsi > 65 ? FilterMode.Fast : rsi < 35 ? FilterMode.Slow : FilterMode.Medium
+alphaVal = int(mode) == 1 ? 0.8 : int(mode) == 3 ? 0.2 : 0.5
+var float sig = 0.0
+sig := sig * (1.0 - alphaVal) + close * alphaVal
+var float __obs_plot0 = na
+__obs_plot0 := sig
+plot(sig, "S")

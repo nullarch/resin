@@ -1,0 +1,8 @@
+//@version=5
+indicator("test")
+getMA(src, len) =>
+    ta.sma(src, len)
+ma1 = getMA(close, 3)
+ma2 = getMA(close, 5)
+ma3 = getMA(high, 3)
+plot(ma1 - ma2 + ma3)

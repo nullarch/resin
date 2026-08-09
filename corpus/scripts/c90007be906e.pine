@@ -1,0 +1,7 @@
+//@version=5
+indicator("Method Style Push")
+var float result = 0.0
+a = array.new_float(0)
+a.push(10.0)
+a.push(20.0)
+result := array.sum(a)

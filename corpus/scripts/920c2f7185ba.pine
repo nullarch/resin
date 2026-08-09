@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Trail State")
+var ts = map.new<string, float>()
+atr = ta.atr(3)
+currentStop = map.get(ts, "stop", close - atr * 2)
+if close > map.get(ts, "high", close)
+    map.put(ts, "high", close)
+    map.put(ts, "stop", close - atr * 2)
+else
+    map.put(ts, "stop", currentStop)
+stop = map.get(ts, "stop", 0.0)
+plot(stop, "Stop")

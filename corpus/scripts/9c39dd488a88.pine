@@ -1,0 +1,7 @@
+//@version=5
+indicator("Dynamic Len")
+len = close > 105 ? 3 : 5
+s = ta.sma(close, len)
+var float result = 0.0
+result := nz(s)
+plot(close)

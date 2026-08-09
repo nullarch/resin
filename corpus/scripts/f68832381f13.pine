@@ -1,0 +1,10 @@
+//@version=5
+indicator("InnovVar07")
+var float est = 100.0
+var float innovVar = 1.0
+alpha = 0.3
+innov = close - est
+est := est + alpha * innov
+innovVar := 0.9 * innovVar + 0.1 * innov * innov
+normInnov = innovVar > 0 ? innov / math.sqrt(innovVar) : 0.0
+plot(normInnov, "ni")

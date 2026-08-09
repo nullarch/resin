@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Cyc Map")
+var cm = map.new<string, float>()
+var int barNum = 0
+barNum := barNum + 1
+rsi = nz(ta.rsi(close, 3), 50.0)
+map.put(cm, "bar", float(barNum))
+map.put(cm, "rsi", rsi)
+map.put(cm, "cycle_pos", float(barNum % 5))
+total = 0.0
+for [k, v] in cm
+    total := total + v
+plot(total, "Tot")

@@ -1,0 +1,15 @@
+//@version=5
+indicator("SqzMom")
+length = 5
+mult = 2.0
+basis = ta.sma(close, length)
+dev_ = mult * ta.stdev(close, length)
+upperBB = nz(basis) + nz(dev_)
+lowerBB = nz(basis) - nz(dev_)
+upperKC = nz(basis) + 1.5 * nz(ta.atr(length))
+lowerKC = nz(basis) - 1.5 * nz(ta.atr(length))
+var bool sqzOn = false
+sqzOn := lowerBB > lowerKC and upperBB < upperKC
+var bool sqzOff = false
+sqzOff := lowerBB < lowerKC and upperBB > upperKC
+plot(close)

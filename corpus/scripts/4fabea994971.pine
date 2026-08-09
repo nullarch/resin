@@ -1,0 +1,8 @@
+//@version=5
+indicator("Phase Shift")
+float sma3 = nz(ta.sma(close, 3), close)
+float diff = close - sma3
+float prevDiff = not na(close[1]) ? close[1] - sma3 : 0.0
+bool phaseFlip = (diff > 0.0 and prevDiff < 0.0) or (diff < 0.0 and prevDiff > 0.0)
+var int flips = 0
+flips := phaseFlip ? flips + 1 : flips

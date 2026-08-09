@@ -1,0 +1,17 @@
+//@version=5
+indicator("request_security_lower_tf")
+// request.security_lower_tf(신규, C310) — pine2py wavealgo/__init__.py L103-113가 symbol/
+// timeframe/context를 전부 무시하고(codegen.py CONTEXT_FUNCS가 context=ctx를 얹어도 이 함수
+// 시그니처엔 그 파라미터가 없어 **kwargs로 흡수돼 버려짐) expression을 현재 바 값으로 평가해
+// 원소 1개짜리 배열로 감싸는 순수 스텁(request.security의 실제 HTF 캐시 집계와 무관). array.get/
+// array.size로 배열 내용을 관측해 그 원소 1개짜리 구성을 대조한다.
+sub = request.security_lower_tf(syminfo.tickerid, "1", close)
+var float __obs_val = na
+__obs_val := array.get(sub, 0)
+var float __obs_size = na
+__obs_size := array.size(sub)
+
+var float __obs_q = na
+__obs_q := request.quandl(syminfo.tickerid)
+var float __obs_q_bare = na
+__obs_q_bare := request.quandl()

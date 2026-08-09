@@ -1,0 +1,41 @@
+//@version=5
+indicator("bool_literal")
+
+// 지역 '=' 변수에 bool 리터럴 직접 대입, 데이터 의존 조건과 and/not으로 no-op 결합
+flag = true
+other = false
+combined = (close > open) and flag and not other
+var float __obs_a = na
+__obs_a := combined ? close : open
+
+// 삼항 조건에 bool 리터럴을 직접 사용(항상 같은 분기)
+b = true ? close : open
+var float __obs_b = na
+__obs_b := b
+
+// if 조건에 bool 리터럴을 직접 사용(항상 참 분기)
+x = 0.0
+if true
+    x := close
+else
+    x := open
+var float __obs_x = na
+__obs_x := x
+
+// if 조건에 bool 리터럴을 직접 사용(항상 거짓 분기)
+y = 0.0
+if false
+    y := close
+else
+    y := open
+var float __obs_y = na
+__obs_y := y
+
+// while 조건에 bool 리터럴을 데이터 의존 조건과 and로 결합(무한루프 방지, no-op 결합 검증)
+n = 0.0
+s = 0.0
+while true and n < 3.0
+    n := n + 1.0
+    s := s + close
+var float __obs_s = na
+__obs_s := s

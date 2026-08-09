@@ -1,0 +1,15 @@
+//@version=5
+indicator("FitSharpe")
+var float sumRet = 0.0
+var float sumRetSq = 0.0
+var int barCount = 0
+prevClose = nz(close[1], close)
+ret = prevClose > 0 ? (close - prevClose) / prevClose : 0.0
+sumRet := sumRet + ret
+sumRetSq := sumRetSq + ret * ret
+barCount := barCount + 1
+meanRet = barCount > 0 ? sumRet / float(barCount) : 0.0
+variance = barCount > 1 ? (sumRetSq / float(barCount)) - meanRet * meanRet : 0.001
+stdDev = math.sqrt(math.max(variance, 0.0001))
+sharpe = stdDev > 0.0001 ? meanRet / stdDev : 0.0
+plot(sharpe, "Sharpe")

@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Pattern")
+body = close - open
+upperWick = high - math.max(open, close)
+lowerWick = math.min(open, close) - low
+totalRange = high - low
+bodyRatio = totalRange > 0 ? math.abs(body) / totalRange : 0.0
+pattern = switch
+    bodyRatio > 0.7 and body > 0 => "bull_marubozu"
+    bodyRatio > 0.7 and body < 0 => "bear_marubozu"
+    bodyRatio < 0.2 => "doji"
+    => "normal"
+isDoji = pattern == "doji"
+plot(isDoji ? 1 : 0, "Doji")

@@ -1,0 +1,9 @@
+//@version=5
+indicator("Barcode Duration")
+float thresh = ta.sma(close, 5)
+var int duration = 0
+if close > thresh
+    duration := duration + 1
+else
+    duration := 0
+plot(duration, "Duration")

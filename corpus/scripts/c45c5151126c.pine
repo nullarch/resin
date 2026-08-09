@@ -1,0 +1,5 @@
+//@version=5
+indicator("lookback")
+var float result = 0.0
+diff = close - close[3]
+result := diff

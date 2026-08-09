@@ -1,0 +1,7 @@
+//@version=5
+indicator("Multiline Kwargs")
+var float result = 0.0
+result := close
+plot(result,
+    title="Test",
+    color=#00FF00)

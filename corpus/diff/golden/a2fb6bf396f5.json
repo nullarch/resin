@@ -1,0 +1,226 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:bullSignals": 0,
+   "var:bearSignals": 1,
+   "var:bestPrice": 0.0,
+   "var:signals": [
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0
+   ],
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0,
+   "var:__obs_plot2": 1
+  },
+  {
+   "var:bullSignals": 0,
+   "var:bearSignals": 2,
+   "var:bestPrice": 0.0,
+   "var:signals": [
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0
+   ],
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0,
+   "var:__obs_plot2": 2
+  },
+  {
+   "var:bullSignals": 0,
+   "var:bearSignals": 3,
+   "var:bestPrice": 0.0,
+   "var:signals": [
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0
+   ],
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0,
+   "var:__obs_plot2": 3
+  },
+  {
+   "var:bullSignals": 0,
+   "var:bearSignals": 3,
+   "var:bestPrice": 0.0,
+   "var:signals": [
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0
+   ],
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 0,
+   "var:__obs_plot2": 3
+  },
+  {
+   "var:bullSignals": 1,
+   "var:bearSignals": 3,
+   "var:bestPrice": 107,
+   "var:signals": [
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0
+   ],
+   "var:__obs_plot0": 2,
+   "var:__obs_plot1": 1,
+   "var:__obs_plot2": 3
+  },
+  {
+   "var:bullSignals": 2,
+   "var:bearSignals": 3,
+   "var:bestPrice": 107,
+   "var:signals": [
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0
+   ],
+   "var:__obs_plot0": 2,
+   "var:__obs_plot1": 2,
+   "var:__obs_plot2": 3
+  },
+  {
+   "var:bullSignals": 3,
+   "var:bearSignals": 3,
+   "var:bestPrice": 108,
+   "var:signals": [
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0
+   ],
+   "var:__obs_plot0": 2,
+   "var:__obs_plot1": 3,
+   "var:__obs_plot2": 3
+  },
+  {
+   "var:bullSignals": 4,
+   "var:bearSignals": 3,
+   "var:bestPrice": 110,
+   "var:signals": [
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0
+   ],
+   "var:__obs_plot0": 2,
+   "var:__obs_plot1": 4,
+   "var:__obs_plot2": 3
+  },
+  {
+   "var:bullSignals": 5,
+   "var:bearSignals": 3,
+   "var:bestPrice": 110,
+   "var:signals": [
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0
+   ],
+   "var:__obs_plot0": 2,
+   "var:__obs_plot1": 5,
+   "var:__obs_plot2": 3
+  },
+  {
+   "var:bullSignals": 6,
+   "var:bearSignals": 3,
+   "var:bestPrice": 111,
+   "var:signals": [
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0,
+    2.0
+   ],
+   "var:__obs_plot0": 2,
+   "var:__obs_plot1": 6,
+   "var:__obs_plot2": 3
+  }
+ ],
+ "finalVarState": {
+  "bullSignals": 6,
+  "bearSignals": 3,
+  "bestPrice": 111,
+  "signals": [
+   0.0,
+   0.0,
+   0.0,
+   1.0,
+   2.0,
+   2.0,
+   2.0,
+   2.0,
+   2.0,
+   2.0
+  ],
+  "__obs_plot0": 2,
+  "__obs_plot1": 6,
+  "__obs_plot2": 3
+ }
+}

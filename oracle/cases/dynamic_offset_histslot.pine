@@ -1,0 +1,42 @@
+//@version=5
+indicator("dynamic_offset_histslot")
+// C365(ROADMAP P4 🔴🔴 (c) 동적 오프셋 게이트 완화) -- histSlot 대상(top-level var / top-level '='
+// 로컬 / UDF param / UDF 내부 '=' 로컬 / UDF 내부 var)의 동적(런타임) 히스토리 오프셋 오라클 검증.
+// pine2py는 이 축을 Series.__getitem__(런타임 int) 인덱싱으로 자연 지원(범위밖/음수 -> nan,
+// wavealgo/series.py get() 가드)하므로 bar series 동적(C228)/bar_index 동적(C305) 선례 그대로 골든
+// 대조 가능. 동적 오프셋이 0으로 떨어지는 바(rt.histGet의 "0 -> 현재 값" 분기)와 음수로 떨어지는
+// 바(NaN 가드)를 모두 지나도록 오프셋을 bar_index % 3으로 순환시킨다. '=' 로컬/UDF 케이스는
+// C363/C364 오라클 유효 조건(단일 콜사이트/무조건 호출/유일 이름/읽기가 대입 이후) 준수.
+// ta.*(...)[동적]은 pine2py가 그 문법 자체에서 크래시(C340 오라클 구조적 불가 확정)라 이 케이스에서
+// 제외 -- e2e hand-verified로 대체.
+var float acc = 0.0
+acc := acc + close
+nmod = bar_index % 3
+var float __obs_var_dyn = na
+__obs_var_dyn := acc[nmod]
+
+tloc = close * 2
+var float __obs_loc_dyn = na
+__obs_loc_dyn := tloc[nmod]
+
+fdyn(psrc, pk) =>
+    psrc[pk]
+var float __obs_param_dyn = na
+__obs_param_dyn := fdyn(close, nmod)
+
+gdyn(pk) =>
+    lval = close + high
+    lval[pk]
+var float __obs_flocal_dyn = na
+__obs_flocal_dyn := gdyn(nmod)
+
+hdyn(pk) =>
+    var float vacc2 = 0.0
+    vacc2 := vacc2 + close
+    vacc2[pk]
+var float __obs_fvar_dyn = na
+__obs_fvar_dyn := hdyn(nmod)
+
+kneg = -1 - (bar_index % 2)
+var float __obs_neg_dyn = na
+__obs_neg_dyn := acc[kneg]

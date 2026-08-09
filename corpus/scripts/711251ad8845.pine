@@ -1,0 +1,15 @@
+//@version=5
+indicator("Automaton Entropy")
+var int ones = 0
+var int zeros = 0
+cell = close > open ? 1 : 0
+if cell == 1
+    ones := ones + 1
+else
+    zeros := zeros + 1
+total = ones + zeros
+p1 = total > 0 ? ones * 1.0 / total : 0.5
+p0 = 1.0 - p1
+safeP1 = p1 > 0.01 ? p1 : 0.01
+safeP0 = p0 > 0.01 ? p0 : 0.01
+entropy = -(safeP1 * math.log(safeP1) + safeP0 * math.log(safeP0))

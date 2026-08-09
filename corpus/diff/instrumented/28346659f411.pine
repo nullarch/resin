@@ -1,0 +1,8 @@
+//@version=5
+indicator("Marginals")
+float rowSum = close / (close + open)
+float colSum = open / (close + open)
+float marginalError = math.abs(rowSum + colSum - 1.0)
+var float __obs_plot0 = na
+__obs_plot0 := marginalError
+plot(marginalError, "MargErr")

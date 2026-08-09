@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Osc Wt")
+rsi = nz(ta.rsi(close, 3), 50.0)
+k = ta.stoch(close, high, low, 5)
+rsiWt = rsi > 70 or rsi < 30 ? 0.6 : 0.4
+kWt = 1.0 - rsiWt
+combined = rsi * rsiWt + k * kWt
+plot(combined, "Comb")

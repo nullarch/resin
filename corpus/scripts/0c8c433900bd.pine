@@ -1,0 +1,6 @@
+//@version=5
+indicator("Var Max Track")
+var float max_vol = 0.0
+if volume > max_vol
+    max_vol := volume
+plot(max_vol)

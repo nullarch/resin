@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:levels": {
+    "resistance": 113,
+    "support": 102,
+    "pivot": 108.66666666666667
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:levels": {
+    "resistance": 113,
+    "support": 102,
+    "pivot": 108.66666666666667
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:levels": {
+    "resistance": 113,
+    "support": 102,
+    "pivot": 108.66666666666667
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:levels": {
+    "resistance": 113,
+    "support": 102,
+    "pivot": 108.66666666666667
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:levels": {
+    "resistance": 113,
+    "support": 102,
+    "pivot": 108.66666666666667
+   },
+   "var:__obs_plot0": 104.66666666666667
+  },
+  {
+   "var:levels": {
+    "resistance": 113,
+    "support": 102,
+    "pivot": 108.66666666666667
+   },
+   "var:__obs_plot0": 104.66666666666667
+  },
+  {
+   "var:levels": {
+    "resistance": 113,
+    "support": 102,
+    "pivot": 108.66666666666667
+   },
+   "var:__obs_plot0": 105.66666666666667
+  },
+  {
+   "var:levels": {
+    "resistance": 113,
+    "support": 102,
+    "pivot": 108.66666666666667
+   },
+   "var:__obs_plot0": 107.66666666666667
+  },
+  {
+   "var:levels": {
+    "resistance": 113,
+    "support": 102,
+    "pivot": 108.66666666666667
+   },
+   "var:__obs_plot0": 107.66666666666667
+  },
+  {
+   "var:levels": {
+    "resistance": 113,
+    "support": 102,
+    "pivot": 108.66666666666667
+   },
+   "var:__obs_plot0": 108.66666666666667
+  }
+ ],
+ "finalVarState": {
+  "levels": {
+   "resistance": 113,
+   "support": 102,
+   "pivot": 108.66666666666667
+  },
+  "__obs_plot0": 108.66666666666667
+ }
+}

@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("All Arr")
+var float[] arr = array.new_float(0)
+array.push(arr, close)
+if array.size(arr) > 8
+    array.shift(arr)
+avg = array.avg(arr)
+sd = array.stdev(arr)
+min_ = array.min(arr)
+max_ = array.max(arr)
+sum_ = array.sum(arr)
+sorted = array.copy(arr)
+array.sort(sorted)
+med = array.percentile_linear_interpolation(sorted, 50.0)
+idx = array.indexof(arr, close)
+plot(med, "Med")

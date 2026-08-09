@@ -1,0 +1,7 @@
+//@version=5
+indicator("TA Chain")
+ema3 = ta.ema(close, 3)
+sma_of_ema = ta.sma(ema3, 3)
+var float result = 0.0
+result := nz(sma_of_ema, 0.0)
+plot(result)

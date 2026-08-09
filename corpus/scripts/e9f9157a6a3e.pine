@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Ret Series")
+var float[] rets = array.new_float(0)
+ret = close[1] > 0 ? (close - close[1]) / close[1] * 100 : 0.0
+array.push(rets, nz(ret, 0.0))
+if array.size(rets) > 10
+    array.shift(rets)
+avgRet = array.size(rets) > 0 ? array.avg(rets) : 0.0
+maxRet = array.size(rets) > 0 ? array.max(rets) : 0.0
+minRet = array.size(rets) > 0 ? array.min(rets) : 0.0
+plot(avgRet, "AR")

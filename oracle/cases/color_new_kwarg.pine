@@ -1,0 +1,10 @@
+//@version=5
+indicator("color_new_kwarg")
+// color.new(colorVal, transp=N) keyword-argument form (C371) — must match the positional form
+// bar-for-bar. Bar-independent (color_basic.pine pattern).
+var string __obs_kwarg = na
+__obs_kwarg := color.new(color.red, transp=50)
+var string __obs_pos = na
+__obs_pos := color.new(color.red, 50)
+var string __obs_kwarg_zero = na
+__obs_kwarg_zero := color.new(color.blue, transp=0)

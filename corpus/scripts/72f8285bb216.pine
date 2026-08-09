@@ -1,0 +1,5 @@
+//@version=5
+indicator("Vector Clock")
+var float cum_vol = 0.0
+cum_vol := cum_vol + volume
+normalized = cum_vol > 0 ? volume / cum_vol : 0.0

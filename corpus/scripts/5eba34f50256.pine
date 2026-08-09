@@ -1,0 +1,5 @@
+//@version=5
+indicator("Str Combined")
+var s = str.lower(str.trim("  HELLO WORLD  "))
+var int p = str.pos(s, "world")
+plot(p)

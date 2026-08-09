@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:swingHigh": 105,
+   "var:swingLow": 98,
+   "var:barsSinceHigh": 0,
+   "var:barsSinceLow": 0,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:swingHigh": 106,
+   "var:swingLow": 98,
+   "var:barsSinceHigh": 0,
+   "var:barsSinceLow": 1,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:swingHigh": 106,
+   "var:swingLow": 98,
+   "var:barsSinceHigh": 1,
+   "var:barsSinceLow": 2,
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 2
+  },
+  {
+   "var:swingHigh": 107,
+   "var:swingLow": 98,
+   "var:barsSinceHigh": 0,
+   "var:barsSinceLow": 3,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 3
+  },
+  {
+   "var:swingHigh": 109,
+   "var:swingLow": 98,
+   "var:barsSinceHigh": 0,
+   "var:barsSinceLow": 4,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 4
+  },
+  {
+   "var:swingHigh": 109,
+   "var:swingLow": 98,
+   "var:barsSinceHigh": 1,
+   "var:barsSinceLow": 5,
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 5
+  },
+  {
+   "var:swingHigh": 110,
+   "var:swingLow": 98,
+   "var:barsSinceHigh": 0,
+   "var:barsSinceLow": 6,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 6
+  },
+  {
+   "var:swingHigh": 112,
+   "var:swingLow": 98,
+   "var:barsSinceHigh": 0,
+   "var:barsSinceLow": 7,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 7
+  },
+  {
+   "var:swingHigh": 112,
+   "var:swingLow": 98,
+   "var:barsSinceHigh": 1,
+   "var:barsSinceLow": 8,
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 8
+  },
+  {
+   "var:swingHigh": 113,
+   "var:swingLow": 98,
+   "var:barsSinceHigh": 0,
+   "var:barsSinceLow": 9,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 9
+  }
+ ],
+ "finalVarState": {
+  "swingHigh": 113,
+  "swingLow": 98,
+  "barsSinceHigh": 0,
+  "barsSinceLow": 9,
+  "__obs_plot0": 0,
+  "__obs_plot1": 9
+ }
+}

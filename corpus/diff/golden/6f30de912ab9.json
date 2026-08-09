@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:labels": {
+    "trend": "UP",
+    "momentum": "BULL"
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:labels": {
+    "trend": "UP",
+    "momentum": "BULL"
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:labels": {
+    "trend": "UP",
+    "momentum": "BULL"
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:labels": {
+    "trend": "UP",
+    "momentum": "BULL"
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:labels": {
+    "trend": "UP",
+    "momentum": "BULL"
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:labels": {
+    "trend": "UP",
+    "momentum": "BULL"
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:labels": {
+    "trend": "UP",
+    "momentum": "BULL"
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:labels": {
+    "trend": "UP",
+    "momentum": "BULL"
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:labels": {
+    "trend": "UP",
+    "momentum": "BULL"
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:labels": {
+    "trend": "UP",
+    "momentum": "BULL"
+   },
+   "var:__obs_plot0": 1
+  }
+ ],
+ "finalVarState": {
+  "labels": {
+   "trend": "UP",
+   "momentum": "BULL"
+  },
+  "__obs_plot0": 1
+ }
+}

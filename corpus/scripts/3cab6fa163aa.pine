@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Candle Pat")
+body = math.abs(close - open)
+range_ = high - low
+upperWick = high - math.max(close, open)
+lowerWick = math.min(close, open) - low
+pattern = switch
+    range_ > 0 and body < range_ * 0.1 => "doji"
+    range_ > 0 and lowerWick > range_ * 0.6 => "hammer"
+    range_ > 0 and upperWick > range_ * 0.6 => "shooting_star"
+    close > open => "bullish"
+    => "bearish"
+isBullish = pattern == "bullish" or pattern == "hammer"
+plot(isBullish ? 1 : 0, "Bull")

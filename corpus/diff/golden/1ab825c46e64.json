@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:peakAmplitude": 5.95,
+   "var:__obs_plot0": 1.1764705882352942
+  },
+  {
+   "var:peakAmplitude": 5.1,
+   "var:__obs_plot0": 1.1764705882352942
+  },
+  {
+   "var:peakAmplitude": 4.335,
+   "var:__obs_plot0": 1.1534025374855825
+  },
+  {
+   "var:peakAmplitude": 5.1,
+   "var:__obs_plot0": 1.1764705882352942
+  },
+  {
+   "var:peakAmplitude": 5.1,
+   "var:__obs_plot0": 1.1764705882352942
+  },
+  {
+   "var:peakAmplitude": 5.1,
+   "var:__obs_plot0": 1.1764705882352942
+  },
+  {
+   "var:peakAmplitude": 5.1,
+   "var:__obs_plot0": 1.1764705882352942
+  },
+  {
+   "var:peakAmplitude": 5.1,
+   "var:__obs_plot0": 1.1764705882352942
+  },
+  {
+   "var:peakAmplitude": 5.1,
+   "var:__obs_plot0": 1.1764705882352942
+  },
+  {
+   "var:peakAmplitude": 5.1,
+   "var:__obs_plot0": 1.1764705882352942
+  }
+ ],
+ "finalVarState": {
+  "peakAmplitude": 5.1,
+  "__obs_plot0": 1.1764705882352942
+ }
+}

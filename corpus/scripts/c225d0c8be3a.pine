@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Event Wt")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+crossEvent = ta.crossover(close, sma3) or ta.crossunder(close, sma3)
+weight = crossEvent ? 2.0 : rsi > 65 or rsi < 35 ? 1.5 : 1.0
+signal = (rsi - 50) / 50 * weight
+plot(signal, "Sig")

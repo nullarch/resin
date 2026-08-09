@@ -1,0 +1,8 @@
+//@version=5
+indicator("Safe Div")
+var float result = 0.0
+float a = 10.0
+float b = 0.0
+float div_result = a / b
+float mod_result = a % b
+result := nz(div_result, -1.0) + nz(mod_result, -2.0)

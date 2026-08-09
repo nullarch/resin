@@ -1,0 +1,14 @@
+//@version=5
+indicator("Sine01")
+var int barIdx = 0
+barIdx := barIdx + 1
+period = 5.0
+phase = 2.0 * math.pi * float(barIdx) / period
+sineVal = math.sin(phase)
+cosVal = math.cos(phase)
+var float __obs_plot0 = na
+__obs_plot0 := sineVal
+plot(sineVal, "sin")
+var float __obs_plot1 = na
+__obs_plot1 := cosVal
+plot(cosVal, "cos")

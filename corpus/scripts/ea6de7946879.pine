@@ -1,0 +1,22 @@
+
+//@version=5
+strategy("Stress02")
+calcScore(src, len) =>
+    smaVal = ta.sma(src, len)
+    src - nz(smaVal, src)
+var float cumScore = 0.0
+score = calcScore(close, 5)
+cumScore := cumScore + score
+count = 0
+temp = math.abs(cumScore)
+while temp > 10.0 and count < 5
+    temp := temp / 2.0
+    count := count + 1
+label = cumScore > 0 ? "POSITIVE" : "NEGATIVE"
+msg = "Score: " + str.tostring(cumScore, "#.##") + " " + label
+msgLen = str.length(msg)
+if cumScore > 5
+    strategy.entry("L", strategy.long)
+if cumScore < -5
+    strategy.close("L")
+plot(float(msgLen) + float(count), "S02")

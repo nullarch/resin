@@ -1,0 +1,8 @@
+//@version=5
+indicator("Coulomb Force")
+float sma3 = nz(ta.sma(close, 3), close)
+float sma5 = nz(ta.sma(close, 5), close)
+float dist = math.abs(sma3 - sma5)
+float force = dist > 0.1 ? 1.0 / (dist * dist) : 100.0
+float direction = sma3 > sma5 ? 1.0 : -1.0
+float signedForce = force * direction

@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("StochRSI")
+rsi = ta.rsi(close, 3)
+rsiHi = ta.highest(rsi, 5)
+rsiLo = ta.lowest(rsi, 5)
+stochRsi = rsiHi != rsiLo ? (rsi - rsiLo) / (rsiHi - rsiLo) * 100 : 50.0
+smoothK = ta.sma(stochRsi, 3)
+plot(smoothK, "K")

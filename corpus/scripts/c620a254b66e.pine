@@ -1,0 +1,9 @@
+//@version=5
+indicator("ForIn Cond")
+prices = array.from(100.0, 95.0, 110.0, 88.0, 105.0)
+var float minAbove = 999.0
+minAbove := 999.0
+for [idx, val] in prices
+    if val > 100.0 and val < minAbove
+        minAbove := val
+plot(minAbove)

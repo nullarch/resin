@@ -1,0 +1,12 @@
+
+//@version=5
+strategy("BB Squeeze", overlay=true)
+[mid, upper, lower] = ta.bb(close, 5, 2.0)
+bbWidth = mid > 0 ? (upper - lower) / mid : 0.0
+avgWidth = ta.sma(bbWidth, 5)
+squeeze = bbWidth < avgWidth * 0.8
+if squeeze and close > mid
+    strategy.entry("Long", strategy.long)
+if close < mid
+    strategy.close("Long")
+plot(mid, "Mid")

@@ -1,0 +1,12 @@
+//@version=5
+indicator("TA State")
+sma3 = ta.sma(close, 3)
+var float bar2_sma = 0.0
+var float bar9_sma = 0.0
+if bar_index == 2
+    bar2_sma := nz(sma3, 0.0)
+if bar_index == 9
+    bar9_sma := nz(sma3, 0.0)
+var float __obs_plot0 = na
+__obs_plot0 := sma3
+plot(sma3)

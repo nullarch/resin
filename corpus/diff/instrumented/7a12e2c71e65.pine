@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Fcst Label")
+ema3 = ta.ema(close, 3)
+sma5 = ta.sma(close, 5)
+trend = ema3 - sma5
+strength = math.abs(trend)
+avgATR = ta.sma(ta.atr(3), 5)
+dir = trend > 0 ? "UP" : "DN"
+mag = strength > avgATR ? "STRONG" : "WEAK"
+label = dir + "_" + mag
+isStrongUp = label == "UP_STRONG"
+var float __obs_plot0 = na
+__obs_plot0 := isStrongUp ? 1 : 0
+plot(isStrongUp ? 1 : 0, "SU")

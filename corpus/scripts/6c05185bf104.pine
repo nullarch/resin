@@ -1,0 +1,6 @@
+//@version=5
+indicator("Energy Flow")
+producers = close
+primaryConsumers = producers * 0.1
+secondaryConsumers = primaryConsumers * 0.1
+plot(secondaryConsumers, "Energy")

@@ -1,0 +1,8 @@
+//@version=5
+indicator("NaN Chain Div")
+var float result = 0.0
+float a = 100.0
+float b = 0.0
+float c = 5.0
+float x = a / b / c
+result := nz(x, -99.0)

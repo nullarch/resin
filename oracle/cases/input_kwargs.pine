@@ -1,0 +1,23 @@
+//@version=5
+indicator("input_kwargs")
+// input.int/float/bool/string 키워드 인자(title=/minval=/maxval=/step=, C132) 오라클 검증 --
+// pine2py wavealgo/builtins/input_funcs.py의 대응 함수는 전부 **kwargs를 받아(Python 네이티브
+// 키워드 인자 매칭) 키워드 호출도 그대로 통과하며 defval을 반환한다(python으로 직접 transpile해
+// 확인 -- _parse_args_kwargs가 위치/키워드 순서를 가리지 않고, all-keyword/혼합 호출 둘 다 정상
+// 컴파일됨). 이 골든은 "키워드 인자로 호출해도 이름<->위치 매핑이 pine2py와 동일하게 defval을
+// 그대로 통과시키는가"를 검증한다. 오버라이드 dict 우선 조회는 여전히 pine2py에 대응이 없어
+// (input_basic.pine과 동일 이유) 오라클 비교 불가 -- hand-verified 대체(codegen.test.ts).
+
+len = input.int(title="Length", defval=14)
+mult = input.float(2.5, step=0.5, maxval=10.0, minval=0.0)
+useFilter = input.bool(defval=true, title="Use Filter")
+label = input.string("hello", title="Label")
+
+var int __obs_len = na
+__obs_len := len
+var float __obs_mult = na
+__obs_mult := mult
+var bool __obs_useFilter = na
+__obs_useFilter := useFilter
+var string __obs_label = na
+__obs_label := label

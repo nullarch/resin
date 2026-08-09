@@ -1,0 +1,25 @@
+//@version=5
+indicator("ta_wma_varlen")
+// ta.wma series length 오라클 검증(배치25 (4) 묶음, C550 — runtime/ta.ts wmaVarLen).
+// **주의: 같은 묶음의 median/linreg(무상태 재스캔)와 달리 length 값이 실제로 변하는 케이스는
+// 오라클 불가** — pine2py wavealgo/ta/wma.py는 첫 성공 호출의 length로 state["window"] 크기를
+// 영구 고정하는 인크리멘탈 + last_idx 미검사 같은-바 다중 전진 latent 버그(sma.py #179와 완전
+// 동일 패턴, 소스 직접 확인 2026-08-01)라 length가 변하면 골든 자체가 오염된다. 여기서는
+// "series 한정자이지만 값은 상수로 고정"인 퇴화 케이스만 골든 대조해 버퍼/워밍업/NaN 오염
+// 메커니즘을 검증하고, 값이 실제로 변하는 축은 hand-verified(tests/unit/runtime.test.ts
+// wmaVarLen + 오라클 테스트 파일의 파이프라인 hand-verified)로 검증한다(DIVERGENCES #181).
+// len1: bar_index(시리즈) 조건 삼항이라 series로 추론되지만 양쪽 분기가 같은 3 — pine2py
+// 윈도우도 3으로 고정돼 골든 유효. 바 0/1은 워밍업 NaN, 바 2~9는 정상 WMA(3).
+len1 = bar_index >= 0 ? 3 : 3
+var float __obs_w1 = na
+__obs_w1 := ta.wma(close, len1)
+
+// len2 = 4 고정(series 추론) + source가 바 3에서 na — NaN이 창(4바)에 머무는 바 3~6은 NaN,
+// 바 7부터 회복하는 오염 시맨틱이 pine2py 인크리멘탈과 일치함을 대조. base2 = close + 0.0은
+// 삼항 분기가 bare `close`일 때 pine2py 스칼라/Series 핑퐁으로 골든이 오염되는 함정 회피
+// (ta_sma_varlen.pine C548과 동일 트릭, C18).
+len2 = close > 0 ? 4 : 4
+base2 = close + 0.0
+src2 = bar_index == 3 ? na : base2
+var float __obs_w2 = na
+__obs_w2 := ta.wma(src2, len2)

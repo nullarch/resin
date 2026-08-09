@@ -1,0 +1,7 @@
+//@version=5
+indicator("Math log exp")
+a = math.log(close)
+b = math.exp(1.0)
+c = math.pow(2.0, 10.0)
+d = math.log10(100.0)
+e = math.sqrt(close)

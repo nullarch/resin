@@ -1,0 +1,34 @@
+//@version=5
+indicator("array_basic")
+
+// A: var 배열 — 바마다 push로 성장
+var arr = array.new_float(0)
+array.push(arr, close)
+var float __obs_size = na
+__obs_size := array.size(arr)
+var float __obs_first = na
+__obs_first := array.get(arr, 0)
+var float __obs_last = na
+__obs_last := array.get(arr, array.size(arr) - 1)
+
+// B: 매 바 새 배열 — fill + set/get/pop
+scaled = close * 2.0
+arr2 = array.new_float(3, scaled)
+array.set(arr2, 1, close + 1.0)
+var float __obs_b0 = na
+__obs_b0 := array.get(arr2, 0)
+var float __obs_b1 = na
+__obs_b1 := array.get(arr2, 1)
+var float __obs_pop = na
+__obs_pop := array.pop(arr2)
+var float __obs_size2 = na
+__obs_size2 := array.size(arr2)
+
+// C: 경계 — 범위 밖 get, 빈 배열 pop/size
+arr3 = array.new_float(0)
+var float __obs_oob = na
+__obs_oob := array.get(arr2, 9)
+var float __obs_emptypop = na
+__obs_emptypop := array.pop(arr3)
+var float __obs_emptysize = na
+__obs_emptysize := array.size(arr3)

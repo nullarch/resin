@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("VolProfile")
+buckets = map.new<string, float>()
+bucket = str.tostring(math.round(close / 5.0) * 5)
+existing = nz(map.get(buckets, bucket), 0.0)
+map.put(buckets, bucket, existing + volume)
+totalKeys = map.size(buckets)
+var float __obs_plot0 = na
+__obs_plot0 := float(totalKeys)
+plot(float(totalKeys), "Buckets")

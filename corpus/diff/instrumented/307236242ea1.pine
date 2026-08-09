@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Thresh Alerts")
+var thresholds = map.new<string, float>()
+map.put(thresholds, "rsi_high", 70.0)
+map.put(thresholds, "rsi_low", 30.0)
+map.put(thresholds, "atr_mult", 1.5)
+rsi = ta.rsi(close, 3)
+rsiHigh = map.get(thresholds, "rsi_high", 70.0)
+rsiLow = map.get(thresholds, "rsi_low", 30.0)
+alert = rsi > rsiHigh or rsi < rsiLow
+var float __obs_plot0 = na
+__obs_plot0 := alert ? 1 : 0
+plot(alert ? 1 : 0, "Alert")

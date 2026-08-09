@@ -1,0 +1,19 @@
+//@version=5
+indicator("Average True Range")
+// TV 빌트인 "Average True Range" 인디케이터 E2E 재현(ROADMAP P2 "TV 빌트인 인디케이터 E2E" 여섯
+// 번째 슬라이스, ATR 단독 -- divergence 있는 나머지 2종(SuperTrend/KC·KCW) 중 가장 먼저 착수).
+// ta.atr 자체의 계산은 이미 oracle/cases/ta_atr_tr.pine(length=3)이 개별 검증했다 -- 단 ta.atr는
+// pine2py wavealgo/ta/atr.py의 재스캔 구현이 워밍업을 실제보다 한 바 늦게(golden bar3부터, pine2js는
+// bar2부터) 내는 **의도적 divergence**(DIVERGENCES.md, tests/oracle/ta_atr_tr.test.ts 참조)라 이
+// 케이스도 순수 compareToGolden을 못 쓰고 그 hand-verified 패턴을 그대로 재사용한다. ta.tr()와 달리
+// ta.atr는 length 인자가 필요해(argCount:1) input.int만 결선(source는 없음 -- high/low/close를
+// bar series로 암묵 사용, ta.wpr/ta.dmi와 동일 이유). length=3은 ta_atr_tr.pine과 동일 파라미터를
+// 재사용(sample10.json에서 이미 워밍업/수렴 구간이 검증된 조합 그대로).
+lengthInput = input.int(3, "Length")
+
+atrValue = ta.atr(lengthInput)
+
+plot(atrValue, "ATR")
+
+var float __obs_atr = na
+__obs_atr := atrValue

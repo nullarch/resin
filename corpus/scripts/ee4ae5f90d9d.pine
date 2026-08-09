@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Risk State")
+var float maxDD = 0.0
+var float peak = 0.0
+var int riskEvents = 0
+peak := math.max(peak, close)
+dd = peak > 0 ? (peak - close) / peak * 100 : 0.0
+maxDD := math.max(maxDD, dd)
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 5)
+if avgATR > 0 and atr > avgATR * 1.5
+    riskEvents := riskEvents + 1
+plot(riskEvents, "RE")

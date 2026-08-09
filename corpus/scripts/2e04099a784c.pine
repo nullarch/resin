@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Bin Search UDF")
+findLevel(float price, float hi, float lo, int depth) =>
+    mid = (hi + lo) / 2
+    dist = math.abs(price - mid)
+    dist < 0.5 or depth > 5 ? mid : price > mid ? (hi + mid) / 2 : (lo + mid) / 2
+
+hi5 = ta.highest(high, 5)
+lo5 = ta.lowest(low, 5)
+level = findLevel(close, hi5, lo5, 3)
+plot(close - level, "Diff")

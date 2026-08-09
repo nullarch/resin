@@ -1,0 +1,8 @@
+//@version=5
+indicator("Momentum")
+var float avgMomentum = 0
+rsiVal = ta.rsi(close, 5)
+k = ta.stoch(close, high, low, 5)
+cciVal = ta.cci(close, 5)
+if not na(rsiVal) and not na(k) and not na(cciVal)
+    avgMomentum := (rsiVal + k) / 2

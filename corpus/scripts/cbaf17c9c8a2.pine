@@ -1,0 +1,6 @@
+//@version=5
+indicator("MTF Analysis")
+sma5 = ta.sma(close, 5)
+htfSma = request.security(syminfo.tickerid, "D", ta.sma(close, 5))
+trend = close > sma5 and close > htfSma ? 1 : close < sma5 and close < htfSma ? -1 : 0
+plot(trend)

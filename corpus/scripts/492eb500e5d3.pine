@@ -1,0 +1,7 @@
+//@version=5
+indicator("multiline ternary")
+var float result = 0.0
+x = close > 105 ?
+    1.0 :
+    2.0
+result := x

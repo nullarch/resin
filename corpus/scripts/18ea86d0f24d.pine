@@ -1,0 +1,14 @@
+//@version=5
+indicator("Specific Heat Anomaly")
+float chg = not na(close[1]) ? close - close[1] : 0.0
+var float sumChg = 0.0
+var float sumSq = 0.0
+var int cnt = 0
+cnt := cnt + 1
+sumChg := sumChg + chg
+sumSq := sumSq + chg * chg
+float meanVal = cnt > 0 ? sumChg / cnt : 0.0
+float varVal = cnt > 0 ? sumSq / cnt - meanVal * meanVal : 0.0
+float specHeat = math.abs(varVal)
+var float peakHeat = 0.0
+peakHeat := math.max(peakHeat, specHeat)

@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_mod": 0,
+   "var:__obs_var": "NaN",
+   "var:__obs_neg": "NaN"
+  },
+  {
+   "var:__obs_mod": 0,
+   "var:__obs_var": "NaN",
+   "var:__obs_neg": "NaN"
+  },
+  {
+   "var:__obs_mod": 0,
+   "var:__obs_var": "NaN",
+   "var:__obs_neg": "NaN"
+  },
+  {
+   "var:__obs_mod": 0,
+   "var:__obs_var": "NaN",
+   "var:__obs_neg": "NaN"
+  },
+  {
+   "var:__obs_mod": 4,
+   "var:__obs_var": "NaN",
+   "var:__obs_neg": "NaN"
+  },
+  {
+   "var:__obs_mod": 4,
+   "var:__obs_var": 0,
+   "var:__obs_neg": "NaN"
+  },
+  {
+   "var:__obs_mod": 4,
+   "var:__obs_var": 1,
+   "var:__obs_neg": "NaN"
+  },
+  {
+   "var:__obs_mod": 4,
+   "var:__obs_var": 2,
+   "var:__obs_neg": "NaN"
+  },
+  {
+   "var:__obs_mod": 8,
+   "var:__obs_var": 3,
+   "var:__obs_neg": "NaN"
+  },
+  {
+   "var:__obs_mod": 8,
+   "var:__obs_var": 4,
+   "var:__obs_neg": "NaN"
+  }
+ ],
+ "finalVarState": {
+  "__obs_mod": 8,
+  "__obs_var": 4,
+  "__obs_neg": "NaN"
+ }
+}

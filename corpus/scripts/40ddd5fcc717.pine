@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Opt Stop")
+atr = ta.atr(3)
+bestStop = close
+bestScore = 0.0
+for mult = 1 to 5
+    stopLevel = close - atr * mult
+    risk = close - stopLevel
+    reward = atr * mult * 2
+    rr = risk > 0 ? reward / risk : 0.0
+    if rr > bestScore
+        bestScore := rr
+        bestStop := stopLevel
+plot(bestStop, "Stop")

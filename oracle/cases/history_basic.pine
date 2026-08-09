@@ -1,0 +1,10 @@
+//@version=5
+indicator("history_basic")
+var float acc = 0.0
+acc := acc + close
+var float __obs_close_prev = na
+__obs_close_prev := close[1]
+var float __obs_acc_prev = na
+__obs_acc_prev := acc[1]
+var float __obs_acc_prev2 = na
+__obs_acc_prev2 := acc[2]

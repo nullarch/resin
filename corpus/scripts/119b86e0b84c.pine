@@ -1,0 +1,8 @@
+//@version=5
+indicator("Var Cond Accum")
+var float up_sum = 0.0
+var float down_sum = 0.0
+if close > open
+    up_sum := up_sum + close
+else
+    down_sum := down_sum + close

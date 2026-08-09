@@ -1,0 +1,5 @@
+//@version=5
+indicator("Cast Str")
+var string s = str.tostring(42)
+var int len_ = str.length(s)
+plot(len_)

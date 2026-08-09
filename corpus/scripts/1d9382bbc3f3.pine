@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Adapt Bands")
+var float[] deviations = array.new_float(0)
+sma5 = ta.sma(close, 5)
+dev = math.abs(close - sma5)
+array.push(deviations, dev)
+if array.size(deviations) > 8
+    array.shift(deviations)
+avgDev = array.size(deviations) > 0 ? array.avg(deviations) : 1.0
+upper = sma5 + avgDev * 2
+lower = sma5 - avgDev * 2
+plot(upper, "Up")
+plot(lower, "Lo")

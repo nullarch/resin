@@ -1,0 +1,12 @@
+//@version=5
+indicator("request_financial_kwargs")
+// request.financial kwargs(C385, next_hint(C384) 1순위 — wild gate(220) 클러스터 재분포 2위) —
+// wild 실사용 이름(symbol=/financial_id=/period=/gaps=/lookahead=/ignore_invalid_symbol=) 전량을
+// 키워드 인자 폼으로 호출해 pine2py wavealgo/__init__.py L118-120 request_financial()이 이 값들을
+// 전부 무시하고 항상 float('nan')만 반환함(순수 상수 스텁, **kwargs가 있어 ignore_invalid_symbol=
+// 같은 시그니처 밖 이름도 흡수)을 골든으로 검증한다. sub1은 corpus 최다빈도 폼(위치 3개 + trailing
+// ignore_invalid_symbol=), sub2는 전체 키워드 폼.
+var float __obs_v1 = na
+__obs_v1 := request.financial(syminfo.tickerid, "TOTAL_REVENUE", "FQ", ignore_invalid_symbol = true)
+var float __obs_v2 = na
+__obs_v2 := request.financial(symbol = syminfo.tickerid, financial_id = "TOTAL_SHARES_OUTSTANDING", period = "FQ", gaps = false, lookahead = false, ignore_invalid_symbol = true)

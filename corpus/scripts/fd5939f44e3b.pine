@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("SMA Cross")
+fast = ta.sma(close, 3)
+slow = ta.sma(close, 5)
+bullCross = ta.crossover(fast, slow)
+bearCross = ta.crossunder(fast, slow)
+rsi = ta.rsi(close, 3)
+confirmed = bullCross and rsi > 50
+plot(confirmed ? 1 : bearCross ? -1 : 0, "Signal")

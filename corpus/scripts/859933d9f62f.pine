@@ -1,0 +1,5 @@
+//@version=5
+indicator("StrNa")
+var string result = ""
+x = na
+result := str(x)

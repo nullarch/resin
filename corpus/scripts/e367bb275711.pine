@@ -1,0 +1,5 @@
+
+//@version=5
+indicator("Log Info")
+log.info("Price: {0}", close)
+plot(close)

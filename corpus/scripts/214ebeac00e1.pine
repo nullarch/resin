@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("NA Prop")
+val1 = close[9]
+val2 = close[0]
+hasNA = na(val1)
+safeVal = nz(val1, val2)
+diff = safeVal - val2
+plot(diff, "Diff")
+plot(hasNA ? 1 : 0, "HasNA")

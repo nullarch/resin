@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Confirm")
+var int confirmCount = 0
+sma3 = ta.sma(close, 3)
+bullish = close > sma3
+if bullish
+    confirmCount := confirmCount + 1
+else
+    confirmCount := 0
+confirmed = confirmCount >= 2
+var float __obs_plot0 = na
+__obs_plot0 := confirmed ? 1 : 0
+plot(confirmed ? 1 : 0, "C")

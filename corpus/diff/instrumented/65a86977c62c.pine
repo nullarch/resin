@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Risk Parity")
+atr = ta.atr(3)
+invVol = atr > 0 ? 1.0 / atr : 1.0
+rsi = nz(ta.rsi(close, 3), 50.0)
+momAdj = rsi > 70 ? 0.5 : rsi < 30 ? 0.5 : 1.0
+adjWeight = invVol * momAdj
+var float __obs_plot0 = na
+__obs_plot0 := adjWeight
+plot(adjWeight, "Wt")

@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_isNa": true,
+   "var:__obs_notNa": false,
+   "var:__obs_literal": true
+  },
+  {
+   "var:__obs_isNa": true,
+   "var:__obs_notNa": false,
+   "var:__obs_literal": true
+  },
+  {
+   "var:__obs_isNa": true,
+   "var:__obs_notNa": false,
+   "var:__obs_literal": true
+  },
+  {
+   "var:__obs_isNa": true,
+   "var:__obs_notNa": false,
+   "var:__obs_literal": true
+  },
+  {
+   "var:__obs_isNa": true,
+   "var:__obs_notNa": false,
+   "var:__obs_literal": true
+  },
+  {
+   "var:__obs_isNa": true,
+   "var:__obs_notNa": false,
+   "var:__obs_literal": true
+  },
+  {
+   "var:__obs_isNa": true,
+   "var:__obs_notNa": false,
+   "var:__obs_literal": true
+  },
+  {
+   "var:__obs_isNa": true,
+   "var:__obs_notNa": false,
+   "var:__obs_literal": true
+  },
+  {
+   "var:__obs_isNa": true,
+   "var:__obs_notNa": false,
+   "var:__obs_literal": true
+  },
+  {
+   "var:__obs_isNa": true,
+   "var:__obs_notNa": false,
+   "var:__obs_literal": true
+  }
+ ],
+ "finalVarState": {
+  "__obs_isNa": true,
+  "__obs_notNa": false,
+  "__obs_literal": true
+ }
+}

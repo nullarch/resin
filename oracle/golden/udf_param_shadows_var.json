@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:dir": 101,
+   "var:__obs_call": 0,
+   "var:__obs_var": 101
+  },
+  {
+   "var:dir": 102,
+   "var:__obs_call": 2,
+   "var:__obs_var": 102
+  },
+  {
+   "var:dir": 103,
+   "var:__obs_call": 4,
+   "var:__obs_var": 103
+  },
+  {
+   "var:dir": 104,
+   "var:__obs_call": 6,
+   "var:__obs_var": 104
+  },
+  {
+   "var:dir": 105,
+   "var:__obs_call": 8,
+   "var:__obs_var": 105
+  },
+  {
+   "var:dir": 106,
+   "var:__obs_call": 10,
+   "var:__obs_var": 106
+  },
+  {
+   "var:dir": 107,
+   "var:__obs_call": 12,
+   "var:__obs_var": 107
+  },
+  {
+   "var:dir": 108,
+   "var:__obs_call": 14,
+   "var:__obs_var": 108
+  },
+  {
+   "var:dir": 109,
+   "var:__obs_call": 16,
+   "var:__obs_var": 109
+  },
+  {
+   "var:dir": 110,
+   "var:__obs_call": 18,
+   "var:__obs_var": 110
+  }
+ ],
+ "finalVarState": {
+  "dir": 110,
+  "__obs_call": 18,
+  "__obs_var": 110
+ }
+}

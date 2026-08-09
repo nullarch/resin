@@ -1,0 +1,11 @@
+//@version=5
+indicator("Dead Code Else")
+float threshold = 0.0
+float val = close
+if val > threshold
+    val := val * 1.01
+else
+    val := val * 0.99
+float used = val
+float sma3 = nz(ta.sma(close, 3), close)
+float result = used + sma3

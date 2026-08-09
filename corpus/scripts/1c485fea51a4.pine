@@ -1,0 +1,11 @@
+//@version=5
+indicator("Time Components")
+var int h = 0
+h := hour
+var int d = 0
+d := dayofmonth
+var int m = 0
+m := month
+var int y = 0
+y := year
+plot(close)

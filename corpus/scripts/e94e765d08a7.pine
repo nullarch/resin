@@ -1,0 +1,5 @@
+
+//@version=5
+indicator("Mod")
+result = bar_index % 3
+plot(result)

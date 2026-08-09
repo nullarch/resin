@@ -1,0 +1,40 @@
+//@version=5
+indicator("Ichimoku Cloud")
+// 패턴: 실전 지표 재현(ROADMAP P3, TV 내장 Ichimoku Cloud 스크립트 이식). conversionPeriods/
+// basePeriods/laggingSpan2Periods를 sample10.json 10바 안에서 tenkanSen/kijunSen/leadLine1/
+// leadLine2 전부 워밍업 이후 유효 구간을 확보하도록 축소(원본 9/26/52는 10바로는 전부 warmup만
+// 나옴). 원본 TV 스크립트의 donchian(len) => math.avg(ta.lowest(len), ta.highest(len)) 1-인자
+// 축약형(source 생략, 암묵 high/low)은 pine2js TA_REGISTRY.argCount 고정 제약(highest/lowest는
+// 2-인자 전용, LIMITATIONS.md)으로 미지원 -- 이 오라클은 명시적 2-인자 형태(ta.lowest(low,len)/
+// ta.highest(high,len))로 재작성해 동일 시맨틱을 유지한다. leadLine1/leadLine2/chikouSpan의
+// displacement(26바) plot offset은 렌더링 전용 no-op(계산 로직 무영향)이므로 __obs 채널은 offset
+// 없는 원시 값을 관측한다.
+conversionPeriods = input.int(2, "Conversion Line Length")
+basePeriods = input.int(3, "Base Line Length")
+laggingSpan2Periods = input.int(5, "Leading Span B Length")
+displacement = 26
+
+donchian(len) => math.avg(ta.lowest(low, len), ta.highest(high, len))
+
+tenkanSen = donchian(conversionPeriods)
+kijunSen = donchian(basePeriods)
+leadLine1 = math.avg(tenkanSen, kijunSen)
+leadLine2 = donchian(laggingSpan2Periods)
+chikouSpan = close
+
+plot(tenkanSen, "Conversion Line")
+plot(kijunSen, "Base Line")
+plot(chikouSpan, "Lagging Span", offset=-displacement + 1)
+plot(leadLine1, "Leading Span A", offset=displacement - 1)
+plot(leadLine2, "Leading Span B", offset=displacement - 1)
+
+var float __obs_tenkanSen = na
+var float __obs_kijunSen = na
+var float __obs_leadLine1 = na
+var float __obs_leadLine2 = na
+var float __obs_chikouSpan = na
+__obs_tenkanSen := tenkanSen
+__obs_kijunSen := kijunSen
+__obs_leadLine1 := leadLine1
+__obs_leadLine2 := leadLine2
+__obs_chikouSpan := chikouSpan

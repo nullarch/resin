@@ -1,0 +1,7 @@
+//@version=5
+indicator("UDF Div")
+normalize(float val, float minVal, float maxVal) =>
+    range_ = maxVal - minVal
+    range_ != 0 ? (val - minVal) / range_ : 0.5
+result = normalize(close, ta.lowest(close, 5), ta.highest(close, 5))
+plot(result)

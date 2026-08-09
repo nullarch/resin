@@ -1,0 +1,6 @@
+//@version=5
+indicator("CMO_EMA")
+var float result = 0
+cmoVal = ta.cmo(ta.ema(close, 3), 5)
+if not na(cmoVal)
+    result := cmoVal

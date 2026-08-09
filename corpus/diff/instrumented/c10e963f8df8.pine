@@ -1,0 +1,14 @@
+//@version=5
+indicator("Drawing Noop")
+var lbl = label.new(bar_index, close, "test")
+label.set_text(lbl, "updated")
+label.set_x(lbl, bar_index)
+label.set_y(lbl, high)
+label.delete(lbl)
+var ln = line.new(bar_index, low, bar_index, high)
+line.delete(ln)
+var bx = box.new(bar_index, high, bar_index, low)
+box.delete(bx)
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

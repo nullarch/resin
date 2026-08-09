@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("ADX Filter")
+[diPlus, diMinus, adx] = ta.dmi(3, 3)
+strongTrend = adx > 20
+trendDir = diPlus > diMinus ? 1 : -1
+filteredSignal = strongTrend ? trendDir : 0
+var float __obs_plot0 = na
+__obs_plot0 := adx
+plot(adx, "ADX")
+var float __obs_plot1 = na
+__obs_plot1 := filteredSignal
+plot(filteredSignal, "Filtered")

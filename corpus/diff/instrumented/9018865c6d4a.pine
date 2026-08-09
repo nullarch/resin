@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("MTF Sim")
+var m = map.new<string, float>()
+map.put(m, "fast_ma", ta.sma(close, 3))
+map.put(m, "medium_ma", ta.sma(close, 5))
+map.put(m, "slow_ma", ta.ema(close, 8))
+aligned = map.get(m, "fast_ma", 0.0) > map.get(m, "medium_ma", 0.0) and map.get(m, "medium_ma", 0.0) > map.get(m, "slow_ma", 0.0)
+var float __obs_plot0 = na
+__obs_plot0 := aligned ? 1 : 0
+plot(aligned ? 1 : 0, "Aligned")

@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:manualEMA": 34.33333333333333,
+   "var:__obs_plot0": 34.33333333333333,
+   "var:__obs_plot1": "NaN"
+  },
+  {
+   "var:manualEMA": 57.55555555555556,
+   "var:__obs_plot0": 57.55555555555556,
+   "var:__obs_plot1": "NaN"
+  },
+  {
+   "var:manualEMA": 72.37037037037038,
+   "var:__obs_plot0": 72.37037037037038,
+   "var:__obs_plot1": "NaN"
+  },
+  {
+   "var:manualEMA": 83.24691358024693,
+   "var:__obs_plot0": 83.24691358024693,
+   "var:__obs_plot1": "NaN"
+  },
+  {
+   "var:manualEMA": 91.16460905349795,
+   "var:__obs_plot0": 91.16460905349795,
+   "var:__obs_plot1": 13.035390946502048
+  },
+  {
+   "var:manualEMA": 96.10973936899865,
+   "var:__obs_plot0": 96.10973936899865,
+   "var:__obs_plot1": 8.690260631001351
+  },
+  {
+   "var:manualEMA": 100.07315957933244,
+   "var:__obs_plot0": 100.07315957933244,
+   "var:__obs_plot1": 5.7935070873675585
+  },
+  {
+   "var:manualEMA": 103.38210638622164,
+   "var:__obs_plot0": 103.38210638622164,
+   "var:__obs_plot1": 3.862338058278368
+  },
+  {
+   "var:manualEMA": 105.25473759081443,
+   "var:__obs_plot0": 105.25473759081443,
+   "var:__obs_plot1": 2.574892038885565
+  },
+  {
+   "var:manualEMA": 107.16982506054296,
+   "var:__obs_plot0": 107.16982506054296,
+   "var:__obs_plot1": 1.7165946925570381
+  }
+ ],
+ "finalVarState": {
+  "manualEMA": 107.16982506054296,
+  "__obs_plot0": 107.16982506054296,
+  "__obs_plot1": 1.7165946925570381
+ }
+}

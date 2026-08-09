@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Vol State")
+var float maxVol = 0.0
+var float minVol = 99999.0
+var int highVolBars = 0
+atr = nz(ta.atr(3), 1.0)
+maxVol := math.max(maxVol, atr)
+minVol := math.min(minVol, atr)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 5)
+if avgATR > 0 and atr > avgATR * 1.3
+    highVolBars := highVolBars + 1
+var float __obs_plot0 = na
+__obs_plot0 := highVolBars
+plot(highVolBars, "HVB")

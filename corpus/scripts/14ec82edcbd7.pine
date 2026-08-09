@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("All Feat")
+type Data
+    float val = 0.0
+enum Level
+    High = 2
+    Mid = 1
+    Low = 0
+
+var Data d = Data.new()
+var float[] hist = array.new_float(0)
+var meta = map.new<string, float>()
+rsi = nz(ta.rsi(close, 3), 50.0)
+d.val := rsi
+lvl = rsi > 65 ? Level.High : rsi > 35 ? Level.Mid : Level.Low
+array.push(hist, rsi)
+if array.size(hist) > 6
+    array.shift(hist)
+map.put(meta, "avg", array.avg(hist))
+plot(int(lvl), "Lvl")

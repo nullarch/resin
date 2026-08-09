@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Zero Div")
+denom = close - close
+safeDivResult = denom != 0 ? close / denom : 0.0
+pineDiv = close / denom
+var float __obs_plot0 = na
+__obs_plot0 := safeDivResult + nz(pineDiv, 0.0)
+plot(safeDivResult + nz(pineDiv, 0.0), "R")

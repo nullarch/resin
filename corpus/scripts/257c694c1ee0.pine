@@ -1,0 +1,4 @@
+//@version=5
+indicator("Test")
+varip float y = 10
+y := y + close

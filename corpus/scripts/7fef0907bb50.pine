@@ -1,0 +1,10 @@
+
+//@version=5
+strategy("MA Cross Strat", overlay=true)
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+if ta.crossover(sma3, sma5)
+    strategy.entry("Long", strategy.long)
+if ta.crossunder(sma3, sma5)
+    strategy.close("Long")
+plot(sma3, "Fast")

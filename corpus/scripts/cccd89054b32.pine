@@ -1,0 +1,20 @@
+
+//@version=5
+indicator("MA Full")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+ema3 = ta.ema(close, 3)
+
+spread = sma3 - sma5
+bullStack = ema3 > sma3 and sma3 > sma5
+rsi = nz(ta.rsi(close, 3), 50.0)
+
+weight = bullStack ? 1.5 : spread > 0 ? 1.0 : 0.5
+signal = (rsi - 50) / 50 * weight
+
+var int bullBars = 0
+if signal > 0.3
+    bullBars := bullBars + 1
+
+plot(signal, "Sig")
+plot(bullBars, "BB")

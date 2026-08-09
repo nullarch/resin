@@ -1,0 +1,9 @@
+//@version=5
+indicator("Multi UDF")
+f_a(x) => x + 1.0
+f_b(x) => x * 2.0
+f_c(x) => f_a(f_b(x))
+
+var float result = 0.0
+result := f_c(5.0)
+plot(result)

@@ -1,0 +1,4 @@
+//@version=5
+indicator("fixnan test")
+var float val = 0.0
+val := fixnan(close)

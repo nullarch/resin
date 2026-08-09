@@ -1,0 +1,4 @@
+//@version=5
+indicator("Test")
+m = map.new<string, int>()
+has = m.contains("key")

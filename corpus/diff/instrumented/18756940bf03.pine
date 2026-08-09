@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Piv Levels")
+var float[] pivotHist = array.new_float(0)
+pivot = (high + low + close) / 3
+array.push(pivotHist, pivot)
+if array.size(pivotHist) > 10
+    array.shift(pivotHist)
+sorted = array.copy(pivotHist)
+array.sort(sorted)
+sz = array.size(sorted)
+medianPivot = sz > 0 ? array.get(sorted, int(sz / 2)) : pivot
+var float __obs_plot0 = na
+__obs_plot0 := medianPivot
+plot(medianPivot, "MP")

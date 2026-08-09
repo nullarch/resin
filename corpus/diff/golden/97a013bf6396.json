@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:cumLhood": 0.0,
+   "var:maxLhood": 0.0,
+   "var:cpBar": 1,
+   "var:barN": 1,
+   "var:__obs_plot0": 1.0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:cumLhood": 0.0,
+   "var:maxLhood": 0.0,
+   "var:cpBar": 1,
+   "var:barN": 2,
+   "var:__obs_plot0": 1.0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:cumLhood": -0.02,
+   "var:maxLhood": 0.0,
+   "var:cpBar": 1,
+   "var:barN": 3,
+   "var:__obs_plot0": 1.0,
+   "var:__obs_plot1": -0.02
+  },
+  {
+   "var:cumLhood": -0.044691358023456945,
+   "var:maxLhood": 0.0,
+   "var:cpBar": 1,
+   "var:barN": 4,
+   "var:__obs_plot0": 1.0,
+   "var:__obs_plot1": -0.044691358023456945
+  },
+  {
+   "var:cumLhood": -0.12030864197191402,
+   "var:maxLhood": 0.0,
+   "var:cpBar": 1,
+   "var:barN": 5,
+   "var:__obs_plot0": 1.0,
+   "var:__obs_plot1": -0.12030864197191402
+  },
+  {
+   "var:cumLhood": -0.12030864197191402,
+   "var:maxLhood": 0.0,
+   "var:cpBar": 1,
+   "var:barN": 6,
+   "var:__obs_plot0": 1.0,
+   "var:__obs_plot1": -0.12030864197191402
+  },
+  {
+   "var:cumLhood": -0.1341975308608029,
+   "var:maxLhood": 0.0,
+   "var:cpBar": 1,
+   "var:barN": 7,
+   "var:__obs_plot0": 1.0,
+   "var:__obs_plot1": -0.1341975308608029
+  },
+  {
+   "var:cumLhood": -0.18975308641635846,
+   "var:maxLhood": 0.0,
+   "var:cpBar": 1,
+   "var:barN": 8,
+   "var:__obs_plot0": 1.0,
+   "var:__obs_plot1": -0.18975308641635846
+  },
+  {
+   "var:cumLhood": -0.18975308641635846,
+   "var:maxLhood": 0.0,
+   "var:cpBar": 1,
+   "var:barN": 9,
+   "var:__obs_plot0": 1.0,
+   "var:__obs_plot1": -0.18975308641635846
+  },
+  {
+   "var:cumLhood": -0.20364197530524736,
+   "var:maxLhood": 0.0,
+   "var:cpBar": 1,
+   "var:barN": 10,
+   "var:__obs_plot0": 1.0,
+   "var:__obs_plot1": -0.20364197530524736
+  }
+ ],
+ "finalVarState": {
+  "cumLhood": -0.20364197530524736,
+  "maxLhood": 0.0,
+  "cpBar": 1,
+  "barN": 10,
+  "__obs_plot0": 1.0,
+  "__obs_plot1": -0.20364197530524736
+ }
+}

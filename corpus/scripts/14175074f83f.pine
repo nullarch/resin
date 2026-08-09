@@ -1,0 +1,10 @@
+//@version=5
+indicator("VolProfile")
+var float lastObv = 0
+var float lastAd = 0
+obvVal = ta.obv(close, volume)
+adVal = ta.accdist(close, high, low, volume)
+if not na(obvVal)
+    lastObv := obvVal
+if not na(adVal)
+    lastAd := adVal

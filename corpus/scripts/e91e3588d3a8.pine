@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Lacunarity")
+var float gapSum = 0.0
+var float gapSqSum = 0.0
+var int gapCnt = 0
+diff = math.abs(close - open)
+gapSum := gapSum + diff
+gapSqSum := gapSqSum + diff * diff
+gapCnt := gapCnt + 1
+mean = gapCnt > 0 ? gapSum / gapCnt : 1.0
+meanSq = gapCnt > 0 ? gapSqSum / gapCnt : 1.0
+lacunarity = mean > 0 ? meanSq / (mean * mean) : 1.0
+plot(lacunarity, "Lac")

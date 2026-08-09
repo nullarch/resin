@@ -1,0 +1,38 @@
+//@version=5
+indicator("udf_forward_ref_tuple")
+// C412: forward-reference UDF 튜플 디스트럭처(`[a,b]=f()`가 `f()=>...`보다 앞섬, wild
+// 1f4336ca1266.pine 실측) — analyzeTupleDestructure가 registerFuncSignature prepass 시점엔
+// 아직 null인 FuncInfo.tupleArity를 forward-ref 콜사이트에서 즉시 읽어 항상 "튜플 디스트럭처링의
+// 값은 튜플을 반환하는 UDF 호출이어야 함"으로 잘못 거부하던 gap. pine2py도 codegen이 top-level
+// FuncDecl을 hoist해 지원한다(python으로 pine2wave.transpiler.transpile() 이 정확한 순서로 직접
+// 실행, success=True 확인 완료) — analyzer.ts pendingTupleDestructures(analyzeFuncDecl이
+// bodyAnalyzed=true 직후 즉시 재개, C255 pendingFuncCallSlots와 동형이나 이쪽은 메인 루프 종료까지
+// 기다리지 않고 해당 함수의 본문 분석 직후 곧바로 재개)로 pine2js도 동일하게 지원한다.
+//
+// udf_forward_ref.pine과 동일 원칙(MEMORY C9/C162 — 같은 forward-ref 함수를 두 곳에서 부르면
+// pine2py 자신의 콜사이트 상태 공유 버그가 트리거돼 오라클이 무효가 짐) — forward-ref 함수당
+// 콜사이트 1개만 쓴다.
+
+// __obs_a/__obs_b: 함수 본문 마지막이 stateful ta.* 콜 2개를 담은 튜플 리터럴인 forward-ref 함수
+// (funcTaBases + tupleArity 둘 다 지연 배정 검증).
+[a, b] = maPair(close, 3, 6)
+var float __obs_a = na
+var float __obs_b = na
+__obs_a := a
+__obs_b := b
+
+maPair(src, len1, len2) =>
+    [ta.sma(src, len1), ta.ema(src, len2)]
+
+// __obs_c/__obs_d: 함수 본문에 var(fnVars slotBase, ta 없이)가 있고 마지막이 튜플 리터럴인
+// forward-ref 함수(funcCallSlots + tupleArity 둘 다 지연 배정 검증).
+[c, d] = counterPair()
+var float __obs_c = na
+var float __obs_d = na
+__obs_c := c
+__obs_d := d
+
+counterPair() =>
+    var float n = 0.0
+    n := n + 1.0
+    [n, n * 2.0]

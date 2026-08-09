@@ -1,0 +1,6 @@
+//@version=5
+indicator("TradeIntensity")
+priceRange = high - low
+intensity = priceRange > 0.01 ? float(volume) / priceRange : 0.0
+smoothed = nz(ta.sma(intensity, 3), intensity)
+plot(smoothed, "TI")

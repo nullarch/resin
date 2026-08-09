@@ -1,0 +1,4 @@
+//@version=5
+indicator("history")
+var float prev = 0.0
+prev := close[1]

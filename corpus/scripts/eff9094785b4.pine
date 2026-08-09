@@ -1,0 +1,9 @@
+//@version=5
+indicator("Boundary Op")
+float vertex0 = open
+float vertex1 = close
+float boundary = vertex1 - vertex0
+float boundaryNorm = math.abs(boundary)
+var float cumBoundary = 0.0
+cumBoundary := cumBoundary + boundaryNorm
+plot(cumBoundary, "BoundaryNorm")

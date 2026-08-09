@@ -1,0 +1,8 @@
+//@version=5
+indicator("MultiReturn")
+var float sumResult = 0
+calcAvg(src, len) =>
+    ta.sma(src, len)
+myAvg = calcAvg(close, 3)
+if not na(myAvg)
+    sumResult := myAvg

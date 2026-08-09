@@ -1,0 +1,10 @@
+//@version=5
+indicator("Switch Tuple")
+var int day = 0
+day := dayofweek
+var string label_ = "other"
+label_ := switch day
+    1, 7 => "weekend"
+    2, 6 => "near_weekend"
+    => "weekday"
+plot(close)

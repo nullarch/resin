@@ -1,0 +1,6 @@
+//@version=5
+indicator("ChainTA2")
+var float result = 0
+nested = ta.ema(ta.sma(close, 3), 3)
+if not na(nested)
+    result := nested

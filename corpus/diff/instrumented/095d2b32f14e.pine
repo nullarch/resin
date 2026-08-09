@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Keltner")
+ema5 = ta.ema(close, 5)
+atr = nz(ta.atr(3), 1.0)
+kUpper = ema5 + atr * 1.5
+kLower = ema5 - atr * 1.5
+aboveK = close > kUpper
+belowK = close < kLower
+var float __obs_plot0 = na
+__obs_plot0 := aboveK ? 1 : belowK ? -1 : 0
+plot(aboveK ? 1 : belowK ? -1 : 0, "KC")

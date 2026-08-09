@@ -1,0 +1,6 @@
+//@version=5
+indicator("Test")
+m = matrix.new<float>(3, 3, 0)
+d = m.det()
+t = m.transpose()
+r = m.rank()

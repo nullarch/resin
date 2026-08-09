@@ -1,0 +1,13 @@
+//@version=5
+indicator("If Expr")
+var float result = 0.0
+x = 50.0
+result := if x > 100
+    1.0
+else if x > 75
+    2.0
+else if x > 25
+    3.0
+else
+    4.0
+plot(close)

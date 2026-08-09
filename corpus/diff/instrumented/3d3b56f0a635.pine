@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Multi Strat")
+var strats = map.new<string, float>()
+sma3 = ta.sma(close, 3)
+rsi = ta.rsi(close, 3)
+map.put(strats, "trend_signal", close > sma3 ? 1.0 : -1.0)
+map.put(strats, "mean_rev_signal", rsi < 30 ? 1.0 : rsi > 70 ? -1.0 : 0.0)
+trendSig = map.get(strats, "trend_signal", 0.0)
+mrSig = map.get(strats, "mean_rev_signal", 0.0)
+combined = (trendSig + mrSig) / 2.0
+var float __obs_plot0 = na
+__obs_plot0 := combined
+plot(combined, "Combined")

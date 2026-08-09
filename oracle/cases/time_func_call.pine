@@ -1,0 +1,18 @@
+//@version=5
+indicator("time_func_call")
+var float __obs_year_call = na
+var float __obs_month_call = na
+var float __obs_dayofmonth_call = na
+var float __obs_dayofweek_call = na
+var float __obs_hour_call = na
+var float __obs_minute_call = na
+var float __obs_second_call = na
+var float __obs_hour_offset = na
+__obs_year_call := year(time)
+__obs_month_call := month(time)
+__obs_dayofmonth_call := dayofmonth(time)
+__obs_dayofweek_call := dayofweek(time)
+__obs_hour_call := hour(time)
+__obs_minute_call := minute(time)
+__obs_second_call := second(time)
+__obs_hour_offset := hour(time - 3600000)

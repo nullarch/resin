@@ -1,0 +1,13 @@
+//@version=5
+indicator("Enum Switch")
+enum Mode
+    Trend = 1
+    Range = 2
+
+Mode current = Mode.Trend
+var float result = 0.0
+result := switch current
+    Mode.Trend => 100.0
+    Mode.Range => 200.0
+    => 0.0
+plot(result)

@@ -1,0 +1,8 @@
+//@version=5
+indicator("For Array Accum")
+var float result = 0.0
+float[] prices = array.from(10.0, 20.0, 30.0, 40.0, 50.0)
+float total = 0.0
+for i = 0 to array.size(prices) - 1
+    total += array.get(prices, i)
+result := total

@@ -1,0 +1,15 @@
+//@version=5
+indicator("UdtMethodVar")
+type Tracker
+    float maxVal = 0.0
+    int hitCount = 0
+update(Tracker t, float val) =>
+    t.maxVal := math.max(t.maxVal, val)
+    t.hitCount := t.hitCount + 1
+    t
+var Tracker tr = Tracker.new()
+spread = high - low
+tr := update(tr, spread)
+label = tr.hitCount > 5 ? "MANY" : "FEW"
+code = label == "MANY" ? 2.0 : 1.0
+plot(tr.maxVal + code, "V")

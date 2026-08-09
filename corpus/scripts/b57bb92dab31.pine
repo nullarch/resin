@@ -1,0 +1,7 @@
+//@version=5
+indicator("Reassign")
+var float x = 0.0
+x := x + close
+var float result = 0.0
+result := x
+plot(result)

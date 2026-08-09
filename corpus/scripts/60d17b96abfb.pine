@@ -1,0 +1,29 @@
+//@version=5
+indicator("Comprehensive 54")
+
+// String ops
+var s = str.trim(str.lower("  PINE SCRIPT  "))
+var int spos = str.pos(s, "script")
+
+// Array every/some
+var arr = array.from(1.0, 2.0, 3.0, 4.0, 5.0)
+var bool all_pos = array.every(arr)
+var bool has_val = array.some(arr)
+
+// TA
+sma3 = ta.sma(close, 3)
+ema3 = ta.ema(close, 3)
+
+// Table noop
+var t = table.new(position.top_right, 2, 2)
+table.cell(t, 0, 0, "Test")
+table.merge_cells(t, 0, 0, 0, 1)
+
+// var counter
+var float cnt = 0.0
+cnt := cnt + 1.0
+
+// Result
+var float result = 0.0
+result := cnt + spos + (all_pos ? 10.0 : 0.0) + nz(sma3, 0.0)
+plot(close)

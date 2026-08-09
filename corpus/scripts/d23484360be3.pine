@@ -1,0 +1,7 @@
+//@version=5
+indicator("switch str")
+x = close > 110 ? 1 : close > 105 ? 2 : 3
+label = switch x
+    1 => "high"
+    2 => "mid"
+    => "low"

@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("HMA Style")
+halfLen = 3
+fullLen = 5
+sqrtLen = 2
+wma1 = ta.wma(close, halfLen)
+wma2 = ta.wma(close, fullLen)
+diff = 2 * wma1 - wma2
+hma = ta.wma(diff, sqrtLen)
+slope = hma - hma[1]
+var float __obs_plot0 = na
+__obs_plot0 := hma
+plot(hma, "HMA")
+var float __obs_plot1 = na
+__obs_plot1 := slope
+plot(slope, "Slope")

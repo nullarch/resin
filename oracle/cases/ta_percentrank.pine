@@ -1,0 +1,9 @@
+//@version=5
+indicator("ta_percentrank")
+// ta.percentrank 오라클 검증(ROADMAP P2 "ta.* 44종" 마지막 잔여 항목 — alma/cci/median/mode에
+// 이은 다섯 번째이자 마지막 GOAL.md O(1)/bar 명시적 예외). length=3, sample10.json 10바 안에서
+// 워밍업(바 0~2, 창이 현재 제외 1~length바 전이라 median/mode보다 한 바 늦게 끝남 — length+1바째인
+// 바3부터 정상)과 정상 구간(바 3~9, tie 포함)을 모두 커버. pine2py wavealgo/ta/percentrank.py:
+// 최근 1~length바 전(현재 제외) 값 중 현재값 이하 비율(%).
+var float __obs_percentrank = na
+__obs_percentrank := ta.percentrank(close, 3)

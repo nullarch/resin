@@ -1,0 +1,8 @@
+//@version=5
+strategy("Bracket", overlay=true)
+sma5 = ta.sma(close, 5)
+if ta.crossover(close, sma5)
+    strategy.entry("Long", strategy.long)
+    strategy.exit("TP/SL", "Long", profit=50, loss=20)
+if ta.crossunder(close, sma5)
+    strategy.close("Long")

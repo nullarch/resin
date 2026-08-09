@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Trend Str")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+diff = sma3 - sma5
+atr = ta.atr(3)
+ratio = atr > 0 ? math.abs(diff) / atr : 0.0
+strength = switch
+    ratio > 2.0 => 3
+    ratio > 1.0 => 2
+    ratio > 0.5 => 1
+    => 0
+plot(strength, "Strength")

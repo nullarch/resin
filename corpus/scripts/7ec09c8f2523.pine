@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("VolProfile")
+buckets = map.new<string, float>()
+bucket = str.tostring(math.round(close / 5.0) * 5)
+existing = nz(map.get(buckets, bucket), 0.0)
+map.put(buckets, bucket, existing + volume)
+totalKeys = map.size(buckets)
+plot(float(totalKeys), "Buckets")

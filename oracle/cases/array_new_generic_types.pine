@@ -1,0 +1,33 @@
+//@version=5
+indicator("array_new_generic_types")
+
+// C230: array.new<T>(...)의 T가 5종 원시 타입(float/int/bool/string/color) 밖인 경우 -- 사용자
+// UDT 타입명(Entry, corpus 871ab3edddcd.pine 실측 그대로)과 label 같은 built-in 특수 타입
+// (corpus 2f2ab2c0c700.pine 실측), chart.point(corpus bdc04434519f.pine 실측)까지 3종 검증한다.
+// 원소가 UDT/label/chart.point 핸들이라 array.get() 결과의 필드 접근은 analyzer가 컨테이너의
+// "원소 타입"까지는 추적하지 않아(컨테이너 자체가 array라는 것만 추적, C230 범위 밖) 오라클
+// 관측 대상이 아니다 -- array.size()만 관측(push 자체가 크래시 없이 바마다 누적되는지는 이것으로
+// 충분히 검증 가능, corpus 871ab3edddcd.pine과 동일한 관측 채널 `count := array.size(entries)`).
+
+type Entry
+    float price
+    int idx
+
+var entries = array.new<Entry>()
+if bar_index % 2 == 0
+    e = Entry.new(close, bar_index)
+    array.push(entries, e)
+var float __obs_entries_size = na
+__obs_entries_size := array.size(entries)
+
+var labels = array.new<label>(0)
+if close > open
+    lbl = label.new(bar_index, high, "up")
+    array.push(labels, lbl)
+var float __obs_labels_size = na
+__obs_labels_size := array.size(labels)
+
+var pts = array.new<chart.point>(0)
+array.push(pts, chart.point.from_index(bar_index, close))
+var float __obs_pts_size = na
+__obs_pts_size := array.size(pts)

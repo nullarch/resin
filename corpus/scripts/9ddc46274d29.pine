@@ -1,0 +1,6 @@
+//@version=5
+indicator("Series Div")
+ratio = 100.0 / close
+invRatio = close / 100.0
+plot(ratio)
+plot(invRatio)

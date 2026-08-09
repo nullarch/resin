@@ -1,0 +1,20 @@
+//@version=5
+indicator("AllFeat 011")
+normalize(v, lo, hi) =>
+    hi > lo ? (v - lo) / (hi - lo) : 0.5
+var data = array.new_float(0)
+var stats = map.new<string, float>()
+array.push(data, close)
+map.put(stats, "min", low)
+map.put(stats, "max", high)
+var float normSum = 0.0
+idx = 0
+while idx < array.size(data)
+    v = array.get(data, idx)
+    nv = normalize(v, 98.0, 113.0)
+    normSum := normSum + nv
+    idx := idx + 1
+tagTotal = 0.0
+for [key, val] in stats
+    tagTotal := tagTotal + val
+result = normSum > 0 ? normSum : 0.0

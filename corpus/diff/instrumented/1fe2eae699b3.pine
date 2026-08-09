@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("StateEnc")
+rsi = nz(ta.rsi(close, 3), 50.0)
+dir = close > open ? "1" : "0"
+regime = rsi > 60 ? "H" : rsi < 40 ? "L" : "M"
+encoded = dir + "|" + regime + "|" + str.tostring(close)
+segments = str.length(encoded)
+var float __obs_plot0 = na
+__obs_plot0 := segments
+plot(segments, "SG")

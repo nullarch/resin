@@ -1,0 +1,10 @@
+//@version=5
+indicator("Combined Field")
+float goalDist = math.abs(110.0 - close)
+float obsDist = math.abs(close - 104.0)
+float kAtt = 0.5
+float kRep = 50.0
+float attForce = kAtt * goalDist
+float repForce = obsDist > 0.5 ? kRep / (obsDist * obsDist) : kRep * 4.0
+float netForce = attForce - repForce
+float direction = netForce > 0.0 ? 1.0 : -1.0

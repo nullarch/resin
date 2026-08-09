@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Trig")
+angle = nz(ta.rsi(close, 3), 50.0) / 100 * math.pi
+sinVal = math.sin(angle)
+cosVal = math.cos(angle)
+tanVal = math.tan(math.min(angle, 1.5))
+plot(sinVal, "Sin")
+plot(cosVal, "Cos")

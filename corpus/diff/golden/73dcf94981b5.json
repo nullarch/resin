@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:meanK": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:meanK": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:meanK": -1.8,
+   "var:__obs_plot0": -1.8
+  },
+  {
+   "var:meanK": 3.05,
+   "var:__obs_plot0": 3.05
+  },
+  {
+   "var:meanK": -0.95,
+   "var:__obs_plot0": -0.95
+  },
+  {
+   "var:meanK": -1.6,
+   "var:__obs_plot0": -1.6
+  },
+  {
+   "var:meanK": 1.8,
+   "var:__obs_plot0": 1.8
+  },
+  {
+   "var:meanK": 0.05,
+   "var:__obs_plot0": 0.05
+  },
+  {
+   "var:meanK": -1.85,
+   "var:__obs_plot0": -1.85
+  },
+  {
+   "var:meanK": 2.0,
+   "var:__obs_plot0": 2.0
+  }
+ ],
+ "finalVarState": {
+  "meanK": 2.0,
+  "__obs_plot0": 2.0
+ }
+}

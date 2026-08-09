@@ -1,0 +1,5 @@
+//@version=5
+indicator("Input Int")
+var float result = 0.0
+int length = input.int(14, "Length")
+result := length

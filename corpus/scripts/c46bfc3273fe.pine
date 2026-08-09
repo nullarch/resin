@@ -1,0 +1,45 @@
+//@version=5
+strategy("Torture 20 Ultimate")
+enum Mode
+    Aggressive = 1
+    Conservative = 2
+    Neutral = 3
+type Portfolio
+    float equity = 10000.0
+    float maxDrawdown = 0.0
+method drawdownPct(Portfolio this) =>
+    this.equity > 0 ? this.maxDrawdown / this.equity * 100.0 : 0.0
+var float peakEquity = 10000.0
+varip int barsSinceEntry = 0
+barsSinceEntry := barsSinceEntry + 1
+float rsiVal = nz(ta.rsi(close, 5), 50.0)
+float atrVal = nz(ta.atr(3), 1.0)
+float sma3 = nz(ta.sma(close, 3), close)
+float ema5 = nz(ta.ema(close, 5), close)
+float wma3 = nz(ta.wma(close, 3), close)
+indicators = array.new<float>(0)
+indicators.push(sma3)
+indicators.push(ema5)
+indicators.push(wma3)
+float bullCount = 0.0
+for ind in indicators
+    if close > ind
+        bullCount := bullCount + 1.0
+float mode = switch
+    bullCount >= 3.0 and rsiVal > 55 => 1.0
+    bullCount <= 1.0 and rsiVal < 45 => 2.0
+    => 3.0
+float posSize = mode == 1.0 ? 2.0 :
+    mode == 2.0 ? 0.5 :
+    1.0
+port = Portfolio.new(10000.0, 0.0)
+float ddPct = port.drawdownPct()
+float risk = atrVal > 0 ? close * 0.02 / atrVal : 1.0
+float clampedRisk = math.min(math.max(risk, 0.1), 5.0)
+float finalQty = posSize * clampedRisk
+if mode == 1.0 and close > sma3
+    strategy.entry("Ult", strategy.long, qty=finalQty)
+    barsSinceEntry := 0
+if mode == 2.0 or barsSinceEntry > 5
+    strategy.close("Ult")
+peakEquity := math.max(peakEquity, port.equity)

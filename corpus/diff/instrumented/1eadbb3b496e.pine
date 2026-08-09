@@ -1,0 +1,15 @@
+//@version=5
+indicator("Sediment Transport")
+var layers = array.new<float>(0)
+sediment = volume * 0.001 * math.abs(close - open)
+array.push(layers, sediment)
+if array.size(layers) > 5
+    array.shift(layers)
+totalSediment = 0.0
+sz = array.size(layers)
+for i = 0 to sz - 1
+    totalSediment := totalSediment + array.get(layers, i)
+avgSediment = sz > 0 ? totalSediment / sz : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := avgSediment
+plot(avgSediment)

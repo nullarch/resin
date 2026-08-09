@@ -1,0 +1,8 @@
+//@version=5
+indicator("Str Contains")
+var string s = "hello world"
+var bool has_world = str.contains(s, "world")
+var bool starts_h = str.startswith(s, "hello")
+var float result = 0.0
+result := (has_world ? 1.0 : 0.0) + (starts_h ? 2.0 : 0.0)
+plot(result)

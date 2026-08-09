@@ -1,0 +1,6 @@
+//@version=5
+indicator("qualifier merge")
+var float result = 0.0
+x = 10.0
+y = close * x
+result := y

@@ -1,0 +1,10 @@
+//@version=5
+indicator("ta_crossover_crossunder")
+// ta.crossover/ta.crossunder 오라클 검증(ROADMAP P2 "ta.* 44종"). close vs ta.sma(close,3)이
+// sample10.json 10바 안에서 close가 자신의 SMA를 상향/하향 두 방향 모두 여러 차례 돌파하도록 만들어
+// 양쪽 함수의 true/false 분기를 모두 커버(bool은 var float 0.0/1.0 미러로 관측 - MEMORY.md 패턴).
+b = ta.sma(close, 3)
+var float __obs_co = na
+var float __obs_cu = na
+__obs_co := ta.crossover(close, b) ? 1.0 : 0.0
+__obs_cu := ta.crossunder(close, b) ? 1.0 : 0.0

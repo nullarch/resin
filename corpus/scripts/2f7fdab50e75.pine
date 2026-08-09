@@ -1,0 +1,4 @@
+//@version=5
+indicator("Modulo")
+var int result = 0
+result := 17 % 5

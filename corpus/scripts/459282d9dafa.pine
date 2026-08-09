@@ -1,0 +1,3 @@
+//@version=5
+indicator("Color")
+bgcolor(color.new(color.red, 80))

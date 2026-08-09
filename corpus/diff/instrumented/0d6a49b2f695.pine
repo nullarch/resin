@@ -1,0 +1,11 @@
+//@version=5
+indicator("Levy Flight")
+move = math.abs(close - nz(close[1]))
+avgMove = ta.sma(move, 5)
+isLevy = avgMove > 0 ? move / avgMove > 2.0 : false
+var int levyCount = 0
+if isLevy
+    levyCount := levyCount + 1
+var float __obs_plot0 = na
+__obs_plot0 := levyCount
+plot(levyCount)

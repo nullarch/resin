@@ -1,0 +1,3 @@
+//@version=5
+indicator("str replace all")
+s = str.replace_all("aaa-bbb-ccc", "-", "_")

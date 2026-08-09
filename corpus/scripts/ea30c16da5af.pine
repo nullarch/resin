@@ -1,0 +1,9 @@
+//@version=5
+indicator("switch assign")
+x = 2
+var float result = 0.0
+result := switch x
+    1 => 10.0
+    2 => 20.0
+    3 => 30.0
+    => 0.0

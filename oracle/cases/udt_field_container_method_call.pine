@@ -1,0 +1,32 @@
+//@version=5
+indicator("udt_field_container_method_call")
+// UDT 필드가 array<T>/map<K,V>일 때 method-call 스타일 sugar(C222)가 그 필드 자체(단일 레벨
+// DotAccess, `obj.field.method(...)`)를 수신자로도 성립하는지 검증(C323, wild 실측
+// `id.d.unshift(x)`/`currentColumns.lastPrices.sort_indices(...)`류). udt_generic_field.pine은
+// 리터럴 네임스페이스 폼(`array.push(b.prices, ...)`)만 검증했고 이 sugar 폼은 여기서 처음
+// 오라클 대조된다. pine2py _try_method_style_call(codegen.py)은 raw dotted name 문자열을
+// 마지막 '.' 기준으로만 분리해 obj 부분을 그대로 Python 코드로 방출하므로(런타임 타입 판별
+// 아님) `b.prices.push(x)`도 이미 지원 — array_map_method_call.pine과 동일한 근거로 오라클
+// 성립.
+
+type Basket
+    array<float> prices
+    map<string, float> tags
+
+var Basket b = Basket.new()
+
+var int barN = 0
+barN := barN + 1
+
+if barN > 2
+    b.prices.push(close + 0.0)
+    b.tags.put("last", close + 0.0)
+
+var float __obs_size = na
+__obs_size := b.prices.size()
+var float __obs_last = na
+__obs_last := b.prices.get(b.prices.size() - 1)
+var float __obs_tag = na
+__obs_tag := b.tags.get("last")
+var bool __obs_contains = na
+__obs_contains := b.tags.contains("last")

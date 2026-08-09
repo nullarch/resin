@@ -1,0 +1,25 @@
+//@version=5
+indicator("dynamic_history_offset")
+// 동적(런타임) 히스토리 오프셋 검증(C228, ROADMAP P3 next_hint 1순위 -- corpus 클러스터링이 찾아낸
+// 최다빈도 갭 174건 중 170건이 이 형태). 채널 A: `close[i]`(i가 for 루프 카운터, 0부터 3까지)를
+// 매 반복 누적 -- corpus 실측 패턴(`for i = 0 to n \n sum := sum + close[i]`)과 동일 형태. 채널 B:
+// `high[i + 1]`(리터럴이 아닌 산술식 오프셋, i가 0부터 2까지)로 offset===0이 동적으로 발생하지
+// 않는 경로도 함께 검증. 채널 C: 파생 가격(hl2)의 동적 오프셋(j는 top-level '=' 로컬, 매 바 1로
+// 재대입돼 컴파일타임엔 알 수 없는 런타임 값).
+var float sumClose = 0.0
+sumClose := 0.0
+for i = 0 to 3
+    sumClose := sumClose + close[i]
+var float __obs_sum_close = na
+__obs_sum_close := sumClose
+
+var float sumHighOffset = 0.0
+sumHighOffset := 0.0
+for i = 0 to 2
+    sumHighOffset := sumHighOffset + high[i + 1]
+var float __obs_sum_high_offset = na
+__obs_sum_high_offset := sumHighOffset
+
+j = 1
+var float __obs_hl2_dyn = na
+__obs_hl2_dyn := hl2[j]

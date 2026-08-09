@@ -1,0 +1,10 @@
+//@version=5
+indicator("Bezier Curve")
+float p0 = 100.0
+float p1 = 115.0
+float p2 = 110.0
+float tParam = (close - 100.0) / 15.0
+float tClamped = math.max(0.0, math.min(1.0, tParam))
+float oneMinusT = 1.0 - tClamped
+float bezierPt = oneMinusT * oneMinusT * p0 + 2.0 * oneMinusT * tClamped * p1 + tClamped * tClamped * p2
+float tangent = 2.0 * oneMinusT * (p1 - p0) + 2.0 * tClamped * (p2 - p1)

@@ -1,0 +1,6 @@
+
+//@version=5
+indicator("KCW")
+[kcMid, kcUp, kcLo] = ta.kc(close, 5, 2.0)
+kcWidth = (kcUp - kcLo) / kcMid * 100
+plot(kcWidth, "KCW%")

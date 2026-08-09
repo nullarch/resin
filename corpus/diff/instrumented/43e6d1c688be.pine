@@ -1,0 +1,14 @@
+//@version=5
+indicator("MaxFlow")
+capAB = high - close
+capBC = close - low
+capAC = high - low
+pathABC = math.min(capAB, capBC)
+pathDirect = capAC
+maxFlow = math.max(pathABC, pathDirect)
+var float __obs_plot0 = na
+__obs_plot0 := maxFlow
+plot(maxFlow, "MaxFlow")
+var float __obs_plot1 = na
+__obs_plot1 := pathABC
+plot(pathABC, "PathABC")

@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("FeatMap")
+var features = map.new<string, float>()
+map.put(features, "rsi", nz(ta.rsi(close, 3), 50.0))
+map.put(features, "spread", high - low)
+map.put(features, "body", close - open)
+map.put(features, "volume_rel", volume > 1000 ? 1.0 : 0.0)
+
+total = 0.0
+for [k, v] in features
+    total := total + v
+avgFeat = map.size(features) > 0 ? total / map.size(features) : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := avgFeat
+plot(avgFeat, "AF")

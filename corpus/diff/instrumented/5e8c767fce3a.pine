@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Complex For")
+maxGain = 0.0
+maxLoss = 0.0
+sma3 = ta.sma(close, 3)
+for i = 0 to 4
+    c = close[i]
+    o = open[i]
+    if not na(c) and not na(o)
+        change = c - o
+        if change > 0 and c > sma3
+            if change > maxGain
+                maxGain := change
+        else if change < 0
+            if math.abs(change) > maxLoss
+                maxLoss := math.abs(change)
+ratio = maxLoss > 0 ? maxGain / maxLoss : 1.0
+var float __obs_plot0 = na
+__obs_plot0 := ratio
+plot(ratio, "Ratio")

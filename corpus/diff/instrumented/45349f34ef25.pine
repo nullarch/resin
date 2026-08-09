@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Mkt Health")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+atr = nz(ta.atr(3), 1.0)
+trendPt = close > sma3 ? 1 : -1
+alignPt = sma3 > sma5 ? 1 : -1
+momPt = rsi > 55 ? 1 : rsi < 45 ? -1 : 0
+health = trendPt + alignPt + momPt
+var float __obs_plot0 = na
+__obs_plot0 := health
+plot(health, "H")

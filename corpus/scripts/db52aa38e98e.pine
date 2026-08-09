@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Fmt Signal")
+rsi = ta.rsi(close, 3)
+sma3 = ta.sma(close, 3)
+dir = close > sma3 ? "LONG" : "SHORT"
+strength = rsi > 60 or rsi < 40 ? "STRONG" : "WEAK"
+signal = dir + "_" + strength
+isStrongLong = signal == "LONG_STRONG"
+plot(isStrongLong ? 1 : 0, "StrongLong")

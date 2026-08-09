@@ -1,0 +1,18 @@
+//@version=5
+indicator("State Machine")
+enum State
+    Idle = 0
+    Long = 1
+    Short = 2
+var state = State.Idle
+sma5 = ta.sma(close, 5)
+if not na(sma5)
+    if state == State.Idle
+        if close > nz(sma5)
+            state := State.Long
+        else
+            state := State.Short
+    else if state == State.Long and close < nz(sma5)
+        state := State.Short
+    else if state == State.Short and close > nz(sma5)
+        state := State.Long

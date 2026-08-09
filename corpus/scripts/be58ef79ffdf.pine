@@ -1,0 +1,6 @@
+//@version=5
+indicator("shorthand var")
+float[] prices = array.new<float>(0)
+array.push(prices, close)
+var int sz = 0
+sz := array.size(prices)

@@ -1,0 +1,6 @@
+//@version=5
+indicator("Nz Default")
+x = close[100]  // NaN
+var float result = 0.0
+result := nz(x, -999.0)
+plot(close)

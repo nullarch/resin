@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("UDT Defaults")
+type Config
+    int period = 14
+    float multiplier = 2.0
+    string mode = "sma"
+    bool enabled = true
+
+cfg = Config.new()
+smaVal = ta.sma(close, cfg.period > 10 ? 5 : 3)
+var float __obs_plot0 = na
+__obs_plot0 := smaVal
+plot(smaVal, "SMA")

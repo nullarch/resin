@@ -1,0 +1,9 @@
+//@version=5
+indicator("ta_range")
+// ta.range 오라클 검증(C256, "지원하지 않는 호출" 클러스터 조사 중 발견된 실제 누락 TA 함수 —
+// pine2py wavealgo/ta/range_func.py + wavealgo/ta/__init__.py L76 TA 함수 세트에 등록됨).
+// length=3으로 sample10.json 10바 안에서 워밍업(바 0~1, data_len<length라 NaN)과 정상 구간
+// (바 2~9)을 모두 커버. Range = highest(source,length) - lowest(source,length)(현재 포함
+// 최근 length바, sma와 동일 창 — poison window: 창 안 na 하나라도 있으면 전체 NaN).
+var float __obs_range = na
+__obs_range := ta.range(close, 3)

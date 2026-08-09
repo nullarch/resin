@@ -1,0 +1,9 @@
+
+//@version=5
+strategy("MACD Cross", overlay=true)
+[m, s, h] = ta.macd(close, 3, 5, 3)
+if h > 0 and h[1] <= 0 and not na(h[1])
+    strategy.entry("Long", strategy.long)
+if h < 0 and h[1] >= 0 and not na(h[1])
+    strategy.close("Long")
+plot(close, "C")

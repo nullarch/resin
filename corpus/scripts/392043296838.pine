@@ -1,0 +1,7 @@
+//@version=5
+indicator("history multi")
+var float result = 0.0
+if bar_index >= 3
+    diff = close - close[1]
+    diff2 = close[1] - close[2]
+    result := diff + diff2

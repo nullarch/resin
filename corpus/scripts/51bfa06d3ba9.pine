@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Forecast")
+sma3 = ta.sma(close, 3)
+slope = sma3 - sma3[1]
+forecast = sma3 + nz(slope, 0.0) * 3
+plot(forecast, "FC")

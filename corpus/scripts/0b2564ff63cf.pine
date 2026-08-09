@@ -1,0 +1,6 @@
+//@version=5
+indicator("HMA")
+var float lastH = 0
+h = ta.hma(close, 4)
+if not na(h)
+    lastH := h

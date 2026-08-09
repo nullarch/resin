@@ -1,0 +1,7 @@
+//@version=5
+indicator("UDT na field")
+type Signal
+    float price = na
+    bool triggered = false
+s = Signal.new()
+isNa = na(s.price)

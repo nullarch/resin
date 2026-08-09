@@ -1,0 +1,7 @@
+//@version=5
+indicator("NA Propagation")
+sma3 = ta.sma(close, 3)
+result = sma3 + 10
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

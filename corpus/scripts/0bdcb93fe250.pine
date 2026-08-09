@@ -1,0 +1,6 @@
+//@version=5
+indicator("EnumSignal")
+var string result = "none"
+rsiVal = ta.rsi(close, 5)
+if not na(rsiVal)
+    result := rsiVal > 60 ? "buy" : rsiVal < 40 ? "sell" : "hold"

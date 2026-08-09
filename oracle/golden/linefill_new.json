@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_close": 101,
+   "var:__obs_close_after_delete": 101
+  },
+  {
+   "var:__obs_close": 102,
+   "var:__obs_close_after_delete": 102
+  },
+  {
+   "var:__obs_close": 103,
+   "var:__obs_close_after_delete": 103
+  },
+  {
+   "var:__obs_close": 102,
+   "var:__obs_close_after_delete": 102
+  },
+  {
+   "var:__obs_close": 104,
+   "var:__obs_close_after_delete": 104
+  },
+  {
+   "var:__obs_close": 105,
+   "var:__obs_close_after_delete": 105
+  },
+  {
+   "var:__obs_close": 106,
+   "var:__obs_close_after_delete": 106
+  },
+  {
+   "var:__obs_close": 105,
+   "var:__obs_close_after_delete": 105
+  },
+  {
+   "var:__obs_close": 107,
+   "var:__obs_close_after_delete": 107
+  },
+  {
+   "var:__obs_close": 108,
+   "var:__obs_close_after_delete": 108
+  }
+ ],
+ "finalVarState": {
+  "__obs_close": 108,
+  "__obs_close_after_delete": 108
+ }
+}

@@ -1,0 +1,8 @@
+//@version=5
+indicator("Linefill", overlay=true)
+ln1 = line.new(bar_index - 1, high, bar_index, high)
+ln2 = line.new(bar_index - 1, low, bar_index, low)
+lf = linefill.new(ln1, ln2, color.new(color.blue, 80))
+if bar_index > 5
+    linefill.delete(lf)
+plot(close)

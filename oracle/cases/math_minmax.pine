@@ -1,0 +1,18 @@
+//@version=5
+indicator("math_minmax")
+// v: volume 기준선(1250) 대비 편차 — 부호가 바마다 갈려 max/min 양쪽 피연산자가 번갈아 이기는
+// 분기 커버리지 확보(히스토리 미사용, na 발생 여지 전혀 없음 — math.max/min의 na 전파는 pine2py의
+// Python max()/min() 순서-의존 버그와 갈리는 지점이라 오라클이 아닌 runtime.test.ts에서
+// hand-verified로 검증한다, MEMORY.md Pitfalls 참조)
+var float __obs_abs = na
+__obs_abs := math.abs(volume - 1250.0)
+
+var float __obs_max2 = na
+__obs_max2 := math.max(open - 100.0, volume - 1250.0)
+
+var float __obs_min2 = na
+__obs_min2 := math.min(open - 100.0, volume - 1250.0)
+
+// 3-인자 가변 math.max — variadic 지원 확인(open/high/low 중 항상 high가 최댓값)
+var float __obs_max3 = na
+__obs_max3 := math.max(open, high, low)

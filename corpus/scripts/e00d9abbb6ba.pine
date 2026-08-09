@@ -1,0 +1,7 @@
+//@version=5
+indicator("Str Complex")
+price = str.tostring(close, "#.##")
+vol = str.tostring(volume, "#")
+label_text = "Price: " + price + " Vol: " + vol
+hasPrice = str.contains(label_text, "Price")
+plot(hasPrice ? 1.0 : 0.0)

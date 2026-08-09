@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("PV Confirm")
+priceUp = close > close[1]
+volUp = volume > volume[1]
+confirmed = (priceUp and volUp) or (not priceUp and not volUp)
+var float __obs_plot0 = na
+__obs_plot0 := confirmed ? 1 : 0
+plot(confirmed ? 1 : 0, "Con")

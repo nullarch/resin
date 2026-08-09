@@ -1,0 +1,12 @@
+//@version=5
+strategy("Multi Cond Strategy")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rsi = ta.rsi(close, 5)
+longCond = ta.crossover(sma3, sma5) and rsi < 70
+shortCond = ta.crossunder(sma3, sma5) and rsi > 30
+if longCond
+    strategy.entry("Long", strategy.long)
+if shortCond
+    strategy.entry("Short", strategy.short)
+strategy.close_all(ta.crossover(sma5, sma3) and rsi > 80 ? "Exit" : na)

@@ -1,0 +1,10 @@
+//@version=5
+indicator("WaveCross")
+var float prevFine = 0.0
+var float prevCoarse = 0.0
+fine = close - nz(ta.sma(close, 2), close)
+coarse = close - nz(ta.sma(close, 5), close)
+crossUp = prevFine <= prevCoarse and fine > coarse ? 1.0 : 0.0
+prevFine := fine
+prevCoarse := coarse
+plot(crossUp, "WXUp")

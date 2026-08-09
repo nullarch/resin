@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Mom Decay")
+rsi = nz(ta.rsi(close, 3), 50.0)
+mom = math.abs(rsi - 50)
+decayed = mom
+iters = 0
+while decayed > 1.0 and iters < 50
+    decayed := decayed * 0.85
+    iters := iters + 1
+plot(iters, "Its")

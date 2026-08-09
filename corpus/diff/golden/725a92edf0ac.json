@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:bullCrosses": 0,
+   "var:bearCrosses": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bullCrosses": 0,
+   "var:bearCrosses": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bullCrosses": 0,
+   "var:bearCrosses": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bullCrosses": 0,
+   "var:bearCrosses": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bullCrosses": 0,
+   "var:bearCrosses": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bullCrosses": 0,
+   "var:bearCrosses": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bullCrosses": 0,
+   "var:bearCrosses": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bullCrosses": 0,
+   "var:bearCrosses": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bullCrosses": 0,
+   "var:bearCrosses": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bullCrosses": 0,
+   "var:bearCrosses": 0,
+   "var:__obs_plot0": 0
+  }
+ ],
+ "finalVarState": {
+  "bullCrosses": 0,
+  "bearCrosses": 0,
+  "__obs_plot0": 0
+ }
+}

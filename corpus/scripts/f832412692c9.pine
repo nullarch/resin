@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Exec Mode")
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+mode = switch
+    atr > avgATR * 2 => "pause"
+    rsi > 80 or rsi < 20 => "reduce"
+    atr < avgATR * 0.5 => "aggressive"
+    => "normal"
+isNormal = mode == "normal"
+plot(isNormal ? 1 : 0, "Normal")

@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Color Trans")
+rsiVal = ta.rsi(close, 3)
+transp = rsiVal > 50 ? 20 : 80
+clr = color.new(color.blue, transp)
+plot(rsiVal, "RSI", color=clr)
+bgcolor(color.new(color.green, 90))

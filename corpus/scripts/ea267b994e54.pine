@@ -1,0 +1,14 @@
+//@version=5
+indicator("Spectral Entropy")
+float e1 = nz(ta.ema(close, 2), close)
+float e2 = nz(ta.ema(close, 3), close)
+float e3 = nz(ta.ema(close, 5), close)
+float p1 = (close - e1) * (close - e1) + 0.001
+float p2 = (close - e2) * (close - e2) + 0.001
+float p3 = (close - e3) * (close - e3) + 0.001
+float total = p1 + p2 + p3
+float n1 = p1 / total
+float n2 = p2 / total
+float n3 = p3 / total
+float entropy = -(n1 * math.log(n1) + n2 * math.log(n2) + n3 * math.log(n3))
+plot(entropy, "SpEntropy")

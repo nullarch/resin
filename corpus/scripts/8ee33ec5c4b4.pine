@@ -1,0 +1,7 @@
+//@version=5
+indicator("EMA Cross")
+ema3 = ta.ema(close, 3)
+ema5 = ta.ema(close, 5)
+var int crossCount = 0
+if ta.crossover(ema3, ema5)
+    crossCount := crossCount + 1

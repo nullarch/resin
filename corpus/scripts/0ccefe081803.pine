@@ -1,0 +1,11 @@
+//@version=5
+indicator("StrConcatIfForArr")
+arr = array.new_float(0)
+prefix = close > open ? "UP" : "DN"
+full = prefix + "_signal"
+for i = 0 to 2
+    if full == "UP_signal"
+        array.push(arr, float(i) + 1.0)
+    else
+        array.push(arr, float(i) * 0.5)
+plot(array.sum(arr), "S")

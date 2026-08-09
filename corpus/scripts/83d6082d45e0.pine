@@ -1,0 +1,6 @@
+//@version=5
+indicator("CallPutIntrinsic")
+strike = 105.0
+callIntrinsic = math.max(close - strike, 0.0)
+putIntrinsic = math.max(strike - close, 0.0)
+plot(callIntrinsic - putIntrinsic, "Spread")

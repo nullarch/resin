@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Bool Int")
+sma3 = ta.sma(close, 3)
+above = close > sma3
+rising = close > close[1]
+score = (above ? 1 : 0) + (rising ? 1 : 0)
+plot(score, "Score")

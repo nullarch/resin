@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Equilibrium")
+mid = (high + low) / 2
+estimate = close
+iters = 0
+while math.abs(estimate - mid) > 0.01 and iters < 30
+    estimate := estimate + (mid - estimate) * 0.4
+    iters := iters + 1
+plot(iters, "Its")

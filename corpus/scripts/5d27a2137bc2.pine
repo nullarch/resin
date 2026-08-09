@@ -1,0 +1,10 @@
+//@version=5
+strategy("Survival Stop Strategy")
+float hazard = 0.06
+var float survProb = 1.0
+survProb := close > open ? 1.0 : survProb * (1.0 - hazard)
+if survProb > 0.8
+    strategy.entry("Long", strategy.long)
+if survProb < 0.5
+    strategy.close("Long")
+    survProb := 1.0

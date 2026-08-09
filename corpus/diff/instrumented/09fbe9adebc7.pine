@@ -1,0 +1,15 @@
+//@version=5
+indicator("Goertzel14")
+targetFreq = 2.0
+numSamples = 5.0
+coeff = 2.0 * math.cos(2.0 * math.pi * targetFreq / numSamples)
+var float s0 = 0.0
+var float s1 = 0.0
+var float s2 = 0.0
+s2 := s1
+s1 := s0
+s0 := close + coeff * s1 - s2
+power = s0 * s0 + s1 * s1 - coeff * s0 * s1
+var float __obs_plot0 = na
+__obs_plot0 := math.abs(power)
+plot(math.abs(power), "pw")

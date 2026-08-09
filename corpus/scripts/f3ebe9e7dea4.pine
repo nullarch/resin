@@ -1,0 +1,10 @@
+
+//@version=5
+strategy("RSI Rev", overlay=true)
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma5 = ta.sma(close, 5)
+if rsi < 35 and close > sma5
+    strategy.entry("Long", strategy.long)
+if rsi > 65
+    strategy.close("Long")
+plot(sma5, "MA")

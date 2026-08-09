@@ -1,0 +1,19 @@
+//@version=5
+indicator("Combo06")
+score(x) =>
+    math.pow(x, 2) / 100.0
+var float totalScore = 0.0
+bucket = map.new<string, float>()
+map.put(bucket, "close", close)
+map.put(bucket, "open", open)
+map.put(bucket, "hl2", (high + low) / 2.0)
+for [key, val] in bucket
+    s = score(val)
+    totalScore := totalScore + s
+category = switch
+    totalScore > 1000.0 => "hot"
+    totalScore > 500.0 => "warm"
+    => "cold"
+isHot = category == "hot" ? 1.0 : 0.0
+plot(totalScore, "TotScore")
+plot(isHot, "IsHot")

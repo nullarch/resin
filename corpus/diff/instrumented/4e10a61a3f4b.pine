@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Hi Since")
+hi5 = ta.highest(high, 5)
+lo5 = ta.lowest(low, 5)
+midLine = (hi5 + lo5) / 2.0
+distFromHi = hi5 - close
+distPct = hi5 > 0 ? distFromHi / hi5 * 100 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := distPct
+plot(distPct, "DistPct")

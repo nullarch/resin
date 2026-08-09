@@ -1,0 +1,6 @@
+
+//@version=5
+indicator("Strip Generic")
+a = array.new<float>(5, 0.0)
+array.set(a, 0, close)
+plot(array.get(a, 0))

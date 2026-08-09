@@ -1,0 +1,7 @@
+//@version=5
+indicator("B-Field Curl")
+float momentum = close - (not na(close[1]) ? close[1] : close)
+float volNorm = volume / math.max(nz(ta.sma(volume, 3), volume), 1.0)
+float bCurl = momentum * volNorm
+var float cumCurl = 0.0
+cumCurl := cumCurl + bCurl

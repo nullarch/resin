@@ -1,0 +1,6 @@
+//@version=5
+indicator("Donchian")
+length = 5
+upper = ta.highest(high, length)
+lower = ta.lowest(low, length)
+mid = (nz(upper) + nz(lower)) / 2.0

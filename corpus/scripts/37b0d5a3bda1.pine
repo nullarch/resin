@@ -1,0 +1,10 @@
+//@version=5
+indicator("DoseResponse")
+rsiDose = nz(ta.rsi(close, 5), 50.0) / 100.0
+response = close - nz(close[1], close)
+lowDose = rsiDose < 0.33 ? response : 0.0
+midDose = rsiDose >= 0.33 and rsiDose < 0.66 ? response : 0.0
+highDose = rsiDose >= 0.66 ? response : 0.0
+plot(lowDose, "LowD")
+plot(midDose, "MidD")
+plot(highDose, "HighD")

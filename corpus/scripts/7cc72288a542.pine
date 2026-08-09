@@ -1,0 +1,15 @@
+//@version=5
+indicator("If elif chain")
+sma5 = ta.sma(close, 5)
+rsi5 = ta.rsi(close, 5)
+var string zone = "neutral"
+if not na(rsi5) and nz(rsi5) > 70
+    zone := "overbought"
+else if not na(rsi5) and nz(rsi5) > 60
+    zone := "bullish"
+else if not na(rsi5) and nz(rsi5) > 40
+    zone := "neutral"
+else if not na(rsi5) and nz(rsi5) > 30
+    zone := "bearish"
+else
+    zone := "oversold"

@@ -1,0 +1,119 @@
+//@version=5
+indicator("matrix_det")
+
+// C98: matrix.* 아홉 번째 슬라이스 — det(행렬 대수 11종의 세 번째 항목, 40/49 -> 41/49).
+// pine2py det()의 n=0(0.0)/n=1(m[0][0])/n=2(공식)/n>=3(Gaussian elimination) 4분기를 python
+// 직접 실행으로 검증: singular(피벗 열 전체 0)는 크래시가 아니라 0.0(G그룹), NaN 원소는 pivot
+// 탐색의 `!= 0`(python)/`!== 0`(JS) 비교가 둘 다 NaN에서 "같지 않음"=true라 NaN을 유효 피벗으로
+// 오인해도 언어 간 divergence 없이 결과가 동일하게 na로 수렴(H/I그룹, 첫 피벗 위치/비-첫 위치
+// 양쪽 확인). 비정사각 rows<columns(2x3)는 여분 열을 안 건드려 왼쪽 nxn 부분행렬 det를 그대로
+// 반환(J그룹, python/JS 둘 다 -3.0 일치 실측). rows>columns(예 3x2)와 m===null/m=[[]](1행0열)는
+// pine2py가 크래시하는 미정의 지점이라 오라클로 트리거 불가(matrix.ts rt.matrix.det 주석 참조,
+// runtime.test.ts hand-verified로 대체).
+
+// A: n=0(0x0 빈 행렬) — pivot 탐색 자체가 없는 조기 반환, det=0.0.
+maA = matrix.new<float>()
+var float __obs_a = na
+__obs_a := matrix.det(maA)
+
+// B: n=1 bar-derived(all-valid) — det=m[0][0] 그대로.
+mbB = matrix.new<float>(1, 1, 0.0)
+matrix.set(mbB, 0, 0, close + 0.0)
+var float __obs_b = na
+__obs_b := matrix.det(mbB)
+
+// C: n=1 na(close[15] — sample10 10바 범위 밖) — det=na.
+mcC = matrix.new<float>(1, 1, 0.0)
+matrix.set(mcC, 0, 0, close[15])
+var float __obs_c = na
+__obs_c := matrix.det(mcC)
+
+// D: n=2 bar-derived(all-valid) — det=open*close - high*low(공식 직접 분기).
+mdD = matrix.new<float>(2, 2, 0.0)
+matrix.set(mdD, 0, 0, open + 0.0)
+matrix.set(mdD, 0, 1, high + 0.0)
+matrix.set(mdD, 1, 0, low + 0.0)
+matrix.set(mdD, 1, 1, close + 0.0)
+var float __obs_d = na
+__obs_d := matrix.det(mdD)
+
+// E: n=2 na-embedded(close[15]) — det=na.
+meE = matrix.new<float>(2, 2, 0.0)
+matrix.set(meE, 0, 0, open + 0.0)
+matrix.set(meE, 0, 1, close[15])
+matrix.set(meE, 1, 0, low + 0.0)
+matrix.set(meE, 1, 1, close + 0.0)
+var float __obs_e = na
+__obs_e := matrix.det(meE)
+
+// F: n=3 bar-derived 대각(open/high/low) + 리터럴 비대각 — Gaussian elimination 표준 경로,
+// 매 바 값이 달라도 특이(singular)로 퇴화하지 않는 값(사전 계산 확인, node scratch).
+mfF = matrix.new<float>(3, 3, 0.0)
+matrix.set(mfF, 0, 0, open + 0.0)
+matrix.set(mfF, 0, 1, 1.0)
+matrix.set(mfF, 0, 2, 2.0)
+matrix.set(mfF, 1, 0, 3.0)
+matrix.set(mfF, 1, 1, high + 0.0)
+matrix.set(mfF, 1, 2, 1.0)
+matrix.set(mfF, 2, 0, 2.0)
+matrix.set(mfF, 2, 1, 1.0)
+matrix.set(mfF, 2, 2, low + 0.0)
+var float __obs_f = na
+__obs_f := matrix.det(mfF)
+
+// G: n=3 singular(컴파일타임 리터럴, row1=2*row0 선형종속) — pivot을 못 찾는 열에서 즉시 0.0.
+mgG = matrix.new<float>(3, 3, 0.0)
+matrix.set(mgG, 0, 0, 1.0)
+matrix.set(mgG, 0, 1, 2.0)
+matrix.set(mgG, 0, 2, 3.0)
+matrix.set(mgG, 1, 0, 2.0)
+matrix.set(mgG, 1, 1, 4.0)
+matrix.set(mgG, 1, 2, 6.0)
+matrix.set(mgG, 2, 0, 7.0)
+matrix.set(mgG, 2, 1, 8.0)
+matrix.set(mgG, 2, 2, 9.0)
+var float __obs_g = na
+__obs_g := matrix.det(mgG)
+
+// H: n=3 na가 첫 피벗이 아닌 위치(row1,col0=close[15]) — col=0의 피벗은 row0(open, 유효)에서
+// 바로 찾아지고, 이후 elimination 단계에서 row1의 factor 계산(na/open)이 na를 전파(det=na).
+mhH = matrix.new<float>(3, 3, 0.0)
+matrix.set(mhH, 0, 0, open + 0.0)
+matrix.set(mhH, 0, 1, 1.0)
+matrix.set(mhH, 0, 2, 2.0)
+matrix.set(mhH, 1, 0, close[15])
+matrix.set(mhH, 1, 1, 4.0)
+matrix.set(mhH, 1, 2, 5.0)
+matrix.set(mhH, 2, 0, 7.0)
+matrix.set(mhH, 2, 1, 8.0)
+matrix.set(mhH, 2, 2, 9.0)
+var float __obs_h = na
+__obs_h := matrix.det(mhH)
+
+// I: n=3 na가 첫 피벗 위치 자체(row0,col0=close[15]) — pivot 탐색이 na를 "같지 않음=true"로
+// 즉시 유효 피벗으로 오인(python/JS 동일), swap 없이 그대로 elimination에 사용돼 전체가 na로
+// 수렴(det=na) — next_hint (b)가 지시한 "NaN이 pivot으로 오인되는지" 케이스의 직접 검증.
+miI = matrix.new<float>(3, 3, 0.0)
+matrix.set(miI, 0, 0, close[15])
+matrix.set(miI, 0, 1, 1.0)
+matrix.set(miI, 0, 2, 2.0)
+matrix.set(miI, 1, 0, open + 0.0)
+matrix.set(miI, 1, 1, 4.0)
+matrix.set(miI, 1, 2, 5.0)
+matrix.set(miI, 2, 0, 7.0)
+matrix.set(miI, 2, 1, 8.0)
+matrix.set(miI, 2, 2, 9.0)
+var float __obs_i = na
+__obs_i := matrix.det(miI)
+
+// J: 비정사각 rows<columns(2x3, 컴파일타임 리터럴) — n=rows=2까지만 순회해 3번째 열은 안 건드림,
+// 왼쪽 2x2 부분행렬([[1,2],[4,5]])의 행렬식(-3.0)을 그대로 반환(python/JS 둘 다 확인, 크래시 없음).
+mjJ = matrix.new<float>(2, 3, 0.0)
+matrix.set(mjJ, 0, 0, 1.0)
+matrix.set(mjJ, 0, 1, 2.0)
+matrix.set(mjJ, 0, 2, 3.0)
+matrix.set(mjJ, 1, 0, 4.0)
+matrix.set(mjJ, 1, 1, 5.0)
+matrix.set(mjJ, 1, 2, 6.0)
+var float __obs_j = na
+__obs_j := matrix.det(mjJ)

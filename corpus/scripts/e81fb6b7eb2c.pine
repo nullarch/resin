@@ -1,0 +1,7 @@
+//@version=5
+indicator("Color Cond")
+rsi_val = ta.rsi(close, 5)
+c = nz(rsi_val) > 50 ? color.green : color.red
+var float rsi_last = 0.0
+rsi_last := nz(rsi_val, 50.0)
+plot(close)

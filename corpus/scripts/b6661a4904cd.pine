@@ -1,0 +1,7 @@
+//@version=5
+indicator("Solar Flux EMA")
+flux = volume / (high - low > 0 ? high - low : 1.0)
+smoothFlux = ta.ema(close, 3)
+var float peakFlux = 0.0
+if flux > peakFlux
+    peakFlux := flux

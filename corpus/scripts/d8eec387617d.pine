@@ -1,0 +1,6 @@
+//@version=5
+indicator("MTF TA")
+dailyRsi = request.security(syminfo.tickerid, "D", ta.rsi(close, 14))
+weeklyMa = request.security(syminfo.tickerid, "W", ta.sma(close, 5))
+plot(dailyRsi)
+plot(weeklyMa)

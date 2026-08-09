@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Mom Win")
+var float[] momArr = array.new_float(0)
+rsi = nz(ta.rsi(close, 3), 50.0)
+array.push(momArr, rsi)
+if array.size(momArr) > 6
+    array.shift(momArr)
+avgMom = array.avg(momArr)
+maxMom = array.max(momArr)
+minMom = array.min(momArr)
+range_ = maxMom - minMom
+var float __obs_plot0 = na
+__obs_plot0 := range_
+plot(range_, "Rng")

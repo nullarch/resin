@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("DFA")
+calcDFA(src, len) =>
+    avg = ta.sma(src, len)
+    diff = src - avg
+    diff * diff
+
+dfa5 = calcDFA(close, 5)
+dfa3 = calcDFA(close, 3)
+ratio = dfa3 > 0.0001 ? dfa5 / dfa3 : 1.0
+plot(ratio, "DFA")

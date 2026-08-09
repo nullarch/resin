@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Flow Score UDF")
+flowScore(float buyP, float sellP, float volRatio) =>
+    netPress = buyP - sellP
+    volAdj = volRatio > 1.5 ? 1.5 : 1.0
+    netPress * volAdj * 100
+
+totalRange = high - low
+bp = totalRange > 0 ? (close - low) / totalRange : 0.5
+sp = totalRange > 0 ? (high - close) / totalRange : 0.5
+avgVol = ta.sma(volume, 5)
+vr = avgVol > 0 ? volume / avgVol : 1.0
+score = flowScore(bp, sp, vr)
+plot(score, "FS")

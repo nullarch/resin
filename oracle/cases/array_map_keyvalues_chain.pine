@@ -1,0 +1,34 @@
+//@version=5
+indicator("array_map_keyvalues_chain")
+
+// map.keys()/map.values()의 method-call 스타일 체이닝(C455, wild acc6a643ba18.pine
+// `foot_bar.foot_max_price_vol.values().size()`/`.values().last()`류) — isArrayConstructorCall이
+// 리터럴 `map.values(m)` 형태만 array로 인정하고, 수신자가 정적으로 map으로 확정된 '=' 로컬/
+// top-level var/UDT 필드에 sugar 체이닝된 `m.values()`/`m.keys()` 형태는 array로 인정 못 해
+// 뒤이은 `.size()`/`.sum()`/`.last()` method-call이 '지원하지 않는 호출: ?.X'로 거부되던 비대칭
+// 수정 확인.
+
+var m1 = map.new<string, float>()
+m1.put("a", 1.0)
+m1.put("b", 2.0)
+m1.put("c", 3.0)
+
+var float __obs_values_size = na
+__obs_values_size := m1.values().size()
+var float __obs_values_sum = na
+__obs_values_sum := m1.values().sum()
+var float __obs_keys_size = na
+__obs_keys_size := m1.keys().size()
+
+// UDT 필드 map(wild 실제 패턴, foot_bar.foot_max_price_vol처럼 obj가 DotAccess) 수신자도 동일하게
+// 판별돼야 한다.
+type Box
+    map<string, float> vals
+
+var Box bx = Box.new(map.new<string, float>())
+bx.vals.put("p", 10.0 + close * 0.0)
+bx.vals.put("q", 20.0 + close * 0.0)
+var float __obs_field_values_sum = na
+__obs_field_values_sum := bx.vals.values().sum()
+var float __obs_field_keys_size = na
+__obs_field_keys_size := bx.vals.keys().size()

@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Weighted Close")
+typical = (high + low + close) / 3
+weighted = (high + low + close + close) / 4
+diff = typical - weighted
+plot(diff, "Diff")

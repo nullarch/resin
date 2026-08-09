@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("WtTrend")
+blendTrend(fast, slow, w) =>
+    nz(fast, close) * w + nz(slow, close) * (1.0 - w)
+
+smaT = ta.sma(close, 3)
+emaT = ta.ema(close, 5)
+blended = blendTrend(smaT, emaT, 0.6)
+plot(blended, "BT")

@@ -1,0 +1,5 @@
+//@version=5
+indicator("test")
+val = 1 + na
+result = na(val) ? 0 : 1
+plot(result)

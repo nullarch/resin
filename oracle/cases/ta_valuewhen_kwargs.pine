@@ -1,0 +1,13 @@
+//@version=5
+indicator("ta_valuewhen_kwargs")
+// ta.valuewhen(condition=, source=, occurrence=) 키워드 인자 오라클 검증(C557, next_hint(C556)
+// 지시로 재조사한 argcount 클러스터 재스캔 결과 발견한 신규 kwargParamNames 후보). wild 3파일
+// (6bbaeabd79ae.pine/bed3f38ecd0f.pine/fab0b2ffba07.pine)이 전부 이 완전 키워드 폼을 쓴다.
+// ta_valuewhen.pine과 동일한 조건/데이터(close > 105, sample10.json) — 완전 키워드 폼/혼합 폼/
+// 위치 폼 셋 다 같은 값을 내는지 확인한다.
+var float __obs_kw = na
+var float __obs_mixed = na
+var float __obs_pos = na
+__obs_kw := ta.valuewhen(condition=close > 105, source=close, occurrence=0)
+__obs_mixed := ta.valuewhen(close > 105, source=close, occurrence=0)
+__obs_pos := ta.valuewhen(close > 105, close, 0)

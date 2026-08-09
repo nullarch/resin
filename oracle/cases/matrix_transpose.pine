@@ -1,0 +1,73 @@
+//@version=5
+indicator("matrix_transpose")
+
+// C96: matrix.* 일곱 번째 슬라이스 — transpose(행렬 대수 11종의 첫 항목, 38/49 -> 39/49).
+// python 직접 실행으로 transpose(None)==transpose([])==[] 확인(pine2py `if not m: return []`가
+// None과 0행을 파이썬 falsy로 함께 처리 — 크래시가 아닌 잘 정의된 동작이라 literal port).
+// rows>0,columns=0(`[[],[],[]]`)도 `not m`엔 안 걸리지만 nc=columns(m)=0이라 결과 루프 0회로
+// 동일하게 []에 수렴함을 확인(D/E 그룹이 두 경로 모두 검증).
+
+// A: 2x3 non-square all-valid — 전치 후 3x2, 6칸 전부 위치 이동 확인(bar-derived는 matrix.set의
+// latent Series 버그 우회를 위해 +0.0 강제, IndexAccess인 close[1]/close[2]는 이미 스칼라라 강제
+// 불필요 — matrix_stats.pine/array_stats.pine과 동일 관례).
+maA = matrix.new<float>(2, 3, 0.0)
+matrix.set(maA, 0, 0, open + 0.0)
+matrix.set(maA, 0, 1, high + 0.0)
+matrix.set(maA, 0, 2, low + 0.0)
+matrix.set(maA, 1, 0, close + 0.0)
+matrix.set(maA, 1, 1, close[1])
+matrix.set(maA, 1, 2, close[2])
+taA = matrix.transpose(maA)
+var float __obs_a00 = na
+__obs_a00 := matrix.get(taA, 0, 0)
+var float __obs_a01 = na
+__obs_a01 := matrix.get(taA, 0, 1)
+var float __obs_a10 = na
+__obs_a10 := matrix.get(taA, 1, 0)
+var float __obs_a11 = na
+__obs_a11 := matrix.get(taA, 1, 1)
+var float __obs_a20 = na
+__obs_a20 := matrix.get(taA, 2, 0)
+var float __obs_a21 = na
+__obs_a21 := matrix.get(taA, 2, 1)
+
+// B: na-embedded 2x2(close[15] — sample10 10바 범위 밖) — 전치가 na 위치를 정확히 옮기는지 확인
+// (원본 [0][1]의 na가 전치 후 [1][0]으로 이동해야 함).
+mbB = matrix.new<float>(2, 2, 0.0)
+matrix.set(mbB, 0, 0, open + 0.0)
+matrix.set(mbB, 0, 1, close[15])
+matrix.set(mbB, 1, 0, high + 0.0)
+matrix.set(mbB, 1, 1, low + 0.0)
+tbB = matrix.transpose(mbB)
+var float __obs_b00 = na
+__obs_b00 := matrix.get(tbB, 0, 0)
+var float __obs_b01 = na
+__obs_b01 := matrix.get(tbB, 0, 1)
+var float __obs_b10 = na
+__obs_b10 := matrix.get(tbB, 1, 0)
+var float __obs_b11 = na
+__obs_b11 := matrix.get(tbB, 1, 1)
+
+// C: 1x1 trivial — 전치해도 동일 값.
+mcC = matrix.new<float>(1, 1, 0.0)
+matrix.set(mcC, 0, 0, close + 0.0)
+tcC = matrix.transpose(mcC)
+var float __obs_c00 = na
+__obs_c00 := matrix.get(tcC, 0, 0)
+
+// D: 0x0 빈 행렬 — transpose(None과 동일한 falsy 경로)는 []이라 rows/columns 둘 다 0.
+mdD = matrix.new<float>()
+tdD = matrix.transpose(mdD)
+var float __obs_d_rows = na
+__obs_d_rows := matrix.rows(tdD)
+var float __obs_d_columns = na
+__obs_d_columns := matrix.columns(tdD)
+
+// E: rows=3, columns=0(`[[],[],[]]`) — `not m`엔 안 걸리지만 nc=0이라 결과 루프 0회로 D와
+// 동일하게 []에 수렴(다른 코드 경로로 같은 결과 도달 확인).
+meE = matrix.new<float>(3, 0, 1.0)
+teE = matrix.transpose(meE)
+var float __obs_e_rows = na
+__obs_e_rows := matrix.rows(teE)
+var float __obs_e_columns = na
+__obs_e_columns := matrix.columns(teE)

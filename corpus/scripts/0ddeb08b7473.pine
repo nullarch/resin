@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("AEMA")
+var float aema = 0.0
+fastAlpha = 0.6667
+slowAlpha = 0.0645
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+efficiency = math.abs(rsiVal - 50.0) / 50.0
+sc = math.pow(efficiency * (fastAlpha - slowAlpha) + slowAlpha, 2)
+aema := nz(aema[1], close) + sc * (close - nz(aema[1], close))
+plot(aema, "AEMA")

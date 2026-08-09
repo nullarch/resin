@@ -1,0 +1,9 @@
+//@version=5
+indicator("Slice")
+a = array.from(10.0, 20.0, 30.0, 40.0, 50.0)
+b = array.slice(a, 1, 4)
+var int sz = 0
+sz := array.size(b)
+var float __obs_plot0 = na
+__obs_plot0 := sz
+plot(sz)

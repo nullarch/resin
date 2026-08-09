@@ -1,0 +1,18 @@
+//@version=5
+indicator("Multi Indicator")
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+rsi5 = ta.rsi(close, 5)
+atr3 = ta.atr(3)
+[bbU, bbM, bbL] = ta.bb(close, 5, 2.0)
+stoch = ta.stoch(close, high, low, 5)
+var int bullSignals = 0
+bullSignals := 0
+if not na(sma3) and close > nz(sma3)
+    bullSignals := bullSignals + 1
+if not na(ema5) and close > nz(ema5)
+    bullSignals := bullSignals + 1
+if not na(rsi5) and nz(rsi5) > 50
+    bullSignals := bullSignals + 1
+if not na(bbU) and close > nz(bbM)
+    bullSignals := bullSignals + 1

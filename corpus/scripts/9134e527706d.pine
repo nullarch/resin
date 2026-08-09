@@ -1,0 +1,5 @@
+//@version=5
+indicator("line noop")
+var float result = 0.0
+l = line.new(0, 100, 1, 200)
+result := close

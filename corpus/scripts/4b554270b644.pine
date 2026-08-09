@@ -1,0 +1,10 @@
+//@version=5
+indicator("NS-14 Kolmogorov")
+dev3 = nz(ta.stdev(close, 3), 0.0)
+dev5 = nz(ta.stdev(close, 5), 0.0)
+dev7 = nz(ta.stdev(close, 7), 0.0)
+energy3 = dev3 * dev3
+energy5 = dev5 * dev5
+energy7 = dev7 * dev7
+cascade = energy3 + energy5 + energy7
+plot(cascade)

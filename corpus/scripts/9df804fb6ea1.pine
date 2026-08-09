@@ -1,0 +1,5 @@
+//@version=5
+library("MyLib")
+export type MyType
+    float value
+    int count

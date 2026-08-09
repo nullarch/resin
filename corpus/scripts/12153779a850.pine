@@ -1,0 +1,6 @@
+//@version=5
+indicator("UV Index")
+rng = high - low
+uvRaw = math.sqrt(math.abs(rng))
+uvIndex = math.min(uvRaw, 11.0)
+plot(uvIndex, title="uv")

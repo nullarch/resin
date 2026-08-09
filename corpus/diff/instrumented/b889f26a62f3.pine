@@ -1,0 +1,9 @@
+//@version=5
+indicator("Args Kwargs Mixed")
+float s = ta.sma(close, 5)
+var float result = 0.0
+if not na(s)
+    result := s
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result, title="Test", color=#FF0000)

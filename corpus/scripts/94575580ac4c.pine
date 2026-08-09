@@ -1,0 +1,12 @@
+//@version=5
+indicator("ChromEncode")
+encode(val, lo, hi) =>
+    hi > lo ? (val - lo) / (hi - lo) : 0.5
+decode(norm, lo, hi) =>
+    lo + norm * (hi - lo)
+rawGene = close
+encoded = encode(rawGene, 90.0, 120.0)
+decoded = decode(encoded, 90.0, 120.0)
+err = math.abs(decoded - rawGene)
+plot(encoded, "Enc")
+plot(err, "Err")

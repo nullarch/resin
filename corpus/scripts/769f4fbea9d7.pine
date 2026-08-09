@@ -1,0 +1,10 @@
+//@version=5
+indicator("Contact Tracing")
+var float[] dailyContacts = array.new_float(0)
+float contacts = volume / 100.0
+array.push(dailyContacts, contacts)
+float totalContacts = 0.0
+for i = 0 to array.size(dailyContacts) - 1
+    totalContacts := totalContacts + array.get(dailyContacts, i)
+avgContacts = array.size(dailyContacts) > 0 ? totalContacts / array.size(dailyContacts) : 0.0
+tracingScore = avgContacts > 10 ? 0.8 : avgContacts > 5 ? 0.6 : 0.4

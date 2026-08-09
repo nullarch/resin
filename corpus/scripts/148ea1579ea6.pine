@@ -1,0 +1,4 @@
+//@version=5
+indicator("Pivot Low")
+pl = ta.pivotlow(low, 2, 2)
+plot(na(pl) ? close : pl)

@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Entry Type")
+rsi = ta.rsi(close, 3)
+sma3 = ta.sma(close, 3)
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+rsiVal = nz(rsi, 50.0)
+entryType = switch
+    rsiVal < 30 and close > sma3 => "reversal_long"
+    rsiVal > 70 and close < sma3 => "reversal_short"
+    close > sma3 and atr < avgATR => "breakout_long"
+    => "wait"
+isEntry = entryType != "wait"
+plot(isEntry ? 1 : 0, "Entry")

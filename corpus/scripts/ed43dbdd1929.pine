@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("RSI Thresh")
+rsi = nz(ta.rsi(close, 3), 50.0)
+threshold = 80.0
+steps = 0
+while threshold > rsi and steps < 15
+    threshold := threshold - 5
+    steps := steps + 1
+plot(steps, "St")

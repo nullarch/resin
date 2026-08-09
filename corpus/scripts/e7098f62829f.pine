@@ -1,0 +1,5 @@
+//@version=5
+indicator("Math sum")
+sumClose5 = math.sum(close, 5)
+manualSMA = sumClose5 / 5.0
+sma5 = ta.sma(close, 5)

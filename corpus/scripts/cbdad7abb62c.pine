@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Multi Enum")
+enum Strength
+    VeryStrong = 4
+    Strong = 3
+    Normal = 2
+    Weak = 1
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+diff = math.abs(rsi - 50)
+momStr = diff > 30 ? Strength.VeryStrong : diff > 20 ? Strength.Strong : diff > 10 ? Strength.Normal : Strength.Weak
+isActionable = momStr == Strength.VeryStrong or momStr == Strength.Strong
+plot(float(momStr), "Str")
+plot(isActionable ? 1 : 0, "Act")

@@ -1,0 +1,281 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:mA": [
+    [
+     107.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     109.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     106.0
+    ]
+   ],
+   "var:__obs_a_det": 1009800.0,
+   "var:__obs_a_rank": 3,
+   "var:__obs_a_t01": 0.0,
+   "var:__obs_b_diag": 1.0,
+   "var:__obs_b_ident": 1.0,
+   "var:__obs_b_square": 1.0
+  },
+  {
+   "var:mA": [
+    [
+     107.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     109.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     106.0
+    ]
+   ],
+   "var:__obs_a_det": 1040300.0,
+   "var:__obs_a_rank": 3,
+   "var:__obs_a_t01": 0.0,
+   "var:__obs_b_diag": 1.0,
+   "var:__obs_b_ident": 1.0,
+   "var:__obs_b_square": 1.0
+  },
+  {
+   "var:mA": [
+    [
+     107.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     109.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     106.0
+    ]
+   ],
+   "var:__obs_a_det": 1071408.0,
+   "var:__obs_a_rank": 3,
+   "var:__obs_a_t01": 0.0,
+   "var:__obs_b_diag": 1.0,
+   "var:__obs_b_ident": 1.0,
+   "var:__obs_b_square": 1.0
+  },
+  {
+   "var:mA": [
+    [
+     107.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     109.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     106.0
+    ]
+   ],
+   "var:__obs_a_det": 1040300.0,
+   "var:__obs_a_rank": 3,
+   "var:__obs_a_t01": 0.0,
+   "var:__obs_b_diag": 1.0,
+   "var:__obs_b_ident": 1.0,
+   "var:__obs_b_square": 1.0
+  },
+  {
+   "var:mA": [
+    [
+     107.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     109.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     106.0
+    ]
+   ],
+   "var:__obs_a_det": 1103130.0,
+   "var:__obs_a_rank": 3,
+   "var:__obs_a_t01": 0.0,
+   "var:__obs_b_diag": 1.0,
+   "var:__obs_b_ident": 1.0,
+   "var:__obs_b_square": 1.0
+  },
+  {
+   "var:mA": [
+    [
+     107.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     109.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     106.0
+    ]
+   ],
+   "var:__obs_a_det": 1135472.0,
+   "var:__obs_a_rank": 3,
+   "var:__obs_a_t01": 0.0,
+   "var:__obs_b_diag": 1.0,
+   "var:__obs_b_ident": 1.0,
+   "var:__obs_b_square": 1.0
+  },
+  {
+   "var:mA": [
+    [
+     107.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     109.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     106.0
+    ]
+   ],
+   "var:__obs_a_det": 1168440.0,
+   "var:__obs_a_rank": 3,
+   "var:__obs_a_t01": 0.0,
+   "var:__obs_b_diag": 1.0,
+   "var:__obs_b_ident": 1.0,
+   "var:__obs_b_square": 1.0
+  },
+  {
+   "var:mA": [
+    [
+     107.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     109.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     106.0
+    ]
+   ],
+   "var:__obs_a_det": 1135472.0,
+   "var:__obs_a_rank": 3,
+   "var:__obs_a_t01": 0.0,
+   "var:__obs_b_diag": 1.0,
+   "var:__obs_b_ident": 1.0,
+   "var:__obs_b_square": 1.0
+  },
+  {
+   "var:mA": [
+    [
+     107.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     109.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     106.0
+    ]
+   ],
+   "var:__obs_a_det": 1202040.0,
+   "var:__obs_a_rank": 3,
+   "var:__obs_a_t01": 0.0,
+   "var:__obs_b_diag": 1.0,
+   "var:__obs_b_ident": 1.0,
+   "var:__obs_b_square": 1.0
+  },
+  {
+   "var:mA": [
+    [
+     107.0,
+     0.0,
+     0.0
+    ],
+    [
+     0.0,
+     109.0,
+     0.0
+    ],
+    [
+     0.0,
+     0.0,
+     106.0
+    ]
+   ],
+   "var:__obs_a_det": 1236278.0,
+   "var:__obs_a_rank": 3,
+   "var:__obs_a_t01": 0.0,
+   "var:__obs_b_diag": 1.0,
+   "var:__obs_b_ident": 1.0,
+   "var:__obs_b_square": 1.0
+  }
+ ],
+ "finalVarState": {
+  "mA": [
+   [
+    107.0,
+    0.0,
+    0.0
+   ],
+   [
+    0.0,
+    109.0,
+    0.0
+   ],
+   [
+    0.0,
+    0.0,
+    106.0
+   ]
+  ],
+  "__obs_a_det": 1236278.0,
+  "__obs_a_rank": 3,
+  "__obs_a_t01": 0.0,
+  "__obs_b_diag": 1.0,
+  "__obs_b_ident": 1.0,
+  "__obs_b_square": 1.0
+ }
+}

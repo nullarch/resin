@@ -1,0 +1,58 @@
+//@version=5
+indicator("array_new_typed")
+
+// A: array.new_int — default(size=0) vs custom(size, initial_value)
+arrI0 = array.new_int()
+var float __obs_i0_size = na
+__obs_i0_size := array.size(arrI0)
+arrI = array.new_int(3, 7)
+var float __obs_i_size = na
+__obs_i_size := array.size(arrI)
+var float __obs_i0v = na
+__obs_i0v := array.get(arrI, 0)
+var float __obs_i2v = na
+__obs_i2v := array.get(arrI, 2)
+
+// B: array.new_bool — default(size=0) vs custom(size, initial_value)
+arrB0 = array.new_bool()
+var float __obs_b0_size = na
+__obs_b0_size := array.size(arrB0)
+arrB = array.new_bool(2, true)
+var bool __obs_b_v0 = na
+__obs_b_v0 := array.get(arrB, 0)
+var bool __obs_b_v1 = na
+__obs_b_v1 := array.get(arrB, 1)
+
+// C: array.new_string — default(size=0) vs custom(size, initial_value)
+arrS0 = array.new_string()
+var float __obs_s0_size = na
+__obs_s0_size := array.size(arrS0)
+arrS = array.new_string(2, "hi")
+var string __obs_s_v0 = na
+__obs_s_v0 := array.get(arrS, 0)
+
+// D: array.new_color — default value applied to a color constant argument
+arrC = array.new_color(2, color.red)
+var string __obs_c_v0 = na
+__obs_c_v0 := array.get(arrC, 0)
+
+// E: array.from — variadic constructor across float/string/bool element types
+arrFromNum = array.from(1.0, 2.0, 3.0)
+var float __obs_fn_size = na
+__obs_fn_size := array.size(arrFromNum)
+var float __obs_fn1 = na
+__obs_fn1 := array.get(arrFromNum, 1)
+
+arrFromStr = array.from("a", "b")
+var string __obs_fs0 = na
+__obs_fs0 := array.get(arrFromStr, 0)
+var string __obs_fs1 = na
+__obs_fs1 := array.get(arrFromStr, 1)
+
+arrFromBool = array.from(true, false, true)
+var bool __obs_fb0 = na
+__obs_fb0 := array.get(arrFromBool, 0)
+var bool __obs_fb1 = na
+__obs_fb1 := array.get(arrFromBool, 1)
+var bool __obs_fb2 = na
+__obs_fb2 := array.get(arrFromBool, 2)

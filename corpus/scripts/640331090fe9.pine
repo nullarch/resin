@@ -1,0 +1,7 @@
+//@version=5
+indicator("Parallax Distance")
+barRange = high - low
+angle = barRange > 0 ? barRange / 100.0 : 0.01
+dist = 1.0 / angle
+var float cumDist = 0.0
+cumDist := cumDist + dist

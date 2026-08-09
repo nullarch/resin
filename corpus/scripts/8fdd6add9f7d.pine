@@ -1,0 +1,10 @@
+//@version=5
+indicator("EmpCDF")
+var float countBelow = 0.0
+var float totalObs = 0.0
+totalObs := totalObs + 1.0
+smaC = nz(ta.sma(close, 5), close)
+if close <= smaC
+    countBelow := countBelow + 1.0
+ecdf = totalObs > 0 ? countBelow / totalObs : 0.5
+plot(ecdf, "ECDF")

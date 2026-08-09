@@ -1,0 +1,7 @@
+//@version=5
+indicator("Bragg Diffraction")
+dSpacing = (high - low) / 2.0
+theta = math.asin(0.5)
+wavelength = 2.0 * dSpacing * math.sin(theta)
+var float cumWavelength = 0.0
+cumWavelength := cumWavelength + wavelength

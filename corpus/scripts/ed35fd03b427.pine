@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("EMATrend")
+trend = ta.ema(close, 5)
+residual = close - nz(trend, close)
+absDev = math.abs(residual)
+plot(absDev, "AbsDev")

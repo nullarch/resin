@@ -1,0 +1,11 @@
+//@version=5
+indicator("UDT TA Field")
+type Trade
+    float entry = 0.0
+    float stop = 0.0
+    bool active = false
+t = Trade.new(close, low, close > open)
+avgEntry = ta.sma(t.entry, 3)
+var float __obs_plot0 = na
+__obs_plot0 := avgEntry
+plot(avgEntry)

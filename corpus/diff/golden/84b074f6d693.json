@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:s": "hello world",
+   "var:sub1": "hello",
+   "var:len1": 5,
+   "var:sub2": "world",
+   "var:len2": 5,
+   "var:__obs_plot0": 103
+  },
+  {
+   "var:s": "hello world",
+   "var:sub1": "hello",
+   "var:len1": 5,
+   "var:sub2": "world",
+   "var:len2": 5,
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:s": "hello world",
+   "var:sub1": "hello",
+   "var:len1": 5,
+   "var:sub2": "world",
+   "var:len2": 5,
+   "var:__obs_plot0": 102
+  },
+  {
+   "var:s": "hello world",
+   "var:sub1": "hello",
+   "var:len1": 5,
+   "var:sub2": "world",
+   "var:len2": 5,
+   "var:__obs_plot0": 105
+  },
+  {
+   "var:s": "hello world",
+   "var:sub1": "hello",
+   "var:len1": 5,
+   "var:sub2": "world",
+   "var:len2": 5,
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:s": "hello world",
+   "var:sub1": "hello",
+   "var:len1": 5,
+   "var:sub2": "world",
+   "var:len2": 5,
+   "var:__obs_plot0": 106
+  },
+  {
+   "var:s": "hello world",
+   "var:sub1": "hello",
+   "var:len1": 5,
+   "var:sub2": "world",
+   "var:len2": 5,
+   "var:__obs_plot0": 108
+  },
+  {
+   "var:s": "hello world",
+   "var:sub1": "hello",
+   "var:len1": 5,
+   "var:sub2": "world",
+   "var:len2": 5,
+   "var:__obs_plot0": 110
+  },
+  {
+   "var:s": "hello world",
+   "var:sub1": "hello",
+   "var:len1": 5,
+   "var:sub2": "world",
+   "var:len2": 5,
+   "var:__obs_plot0": 109
+  },
+  {
+   "var:s": "hello world",
+   "var:sub1": "hello",
+   "var:len1": 5,
+   "var:sub2": "world",
+   "var:len2": 5,
+   "var:__obs_plot0": 111
+  }
+ ],
+ "finalVarState": {
+  "s": "hello world",
+  "sub1": "hello",
+  "len1": 5,
+  "sub2": "world",
+  "len2": 5,
+  "__obs_plot0": 111
+ }
+}

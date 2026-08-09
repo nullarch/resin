@@ -1,0 +1,14 @@
+//@version=5
+indicator("Cov03")
+var float pCov = 1.0
+var float estimate = 0.0
+processNoise = 0.05
+measNoise = 1.0
+predCov = pCov + processNoise
+gain = predCov > 0 ? predCov / (predCov + measNoise) : 0.0
+innovation = close - estimate
+estimate := estimate + gain * innovation
+pCov := (1.0 - gain) * predCov
+var float __obs_plot0 = na
+__obs_plot0 := pCov
+plot(pCov, "cov")

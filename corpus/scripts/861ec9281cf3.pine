@@ -1,0 +1,6 @@
+//@version=5
+indicator("Tuple Destruct")
+[macd_line, signal_line, histogram] = ta.macd(close, 3, 5, 3)
+var float result = 0.0
+result := nz(macd_line, 0.0) + nz(signal_line, 0.0)
+plot(result)

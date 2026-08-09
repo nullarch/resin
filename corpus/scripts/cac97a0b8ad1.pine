@@ -1,0 +1,11 @@
+//@version=5
+indicator("Neural Oscillation")
+var float osc1 = 1.0
+var float osc2 = 0.0
+coupling = 0.3
+temp1 = osc1 + coupling * (osc2 - osc1) + (close - open) * 0.01
+temp2 = osc2 + coupling * (osc1 - osc2) - (close - open) * 0.01
+osc1 := math.max(-5.0, math.min(5.0, temp1))
+osc2 := math.max(-5.0, math.min(5.0, temp2))
+coherence = 1.0 - math.abs(osc1 - osc2) / 10.0
+plot(coherence)

@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Softmax")
+s1 = close - open
+s2 = high - low
+s3 = nz(ta.rsi(close, 3), 50.0) - 50.0
+
+e1 = math.exp(math.min(s1, 5.0))
+e2 = math.exp(math.min(s2, 5.0))
+e3 = math.exp(math.min(s3, 5.0))
+total = e1 + e2 + e3
+p1 = total > 0 ? e1 / total : 0.33
+plot(p1, "P1")

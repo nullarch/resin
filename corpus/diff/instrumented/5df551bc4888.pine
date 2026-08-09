@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Wt Signal")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rsiSig = (rsi - 50) / 50
+trendSig = sma5 > 0 ? (sma3 - sma5) / sma5 * 100 : 0.0
+priceSig = sma3 > 0 ? (close - sma3) / sma3 * 100 : 0.0
+combined = rsiSig * 0.4 + trendSig * 0.35 + priceSig * 0.25
+var float __obs_plot0 = na
+__obs_plot0 := combined
+plot(combined, "CS")

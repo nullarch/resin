@@ -1,0 +1,4 @@
+//@version=5
+indicator("lowestbars")
+var int lb = 0
+lb := ta.lowestbars(low, 5)

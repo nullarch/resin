@@ -1,0 +1,105 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_sma_kw": "NaN",
+   "var:__obs_ema_mixed": "NaN",
+   "var:__obs_rsi_kw": "NaN",
+   "var:__obs_highest_kw": "NaN",
+   "var:__obs_lowest_kw": "NaN",
+   "var:__obs_change_kw": "NaN",
+   "var:__obs_cum_kw": 101.0
+  },
+  {
+   "var:__obs_sma_kw": "NaN",
+   "var:__obs_ema_mixed": "NaN",
+   "var:__obs_rsi_kw": "NaN",
+   "var:__obs_highest_kw": "NaN",
+   "var:__obs_lowest_kw": 99,
+   "var:__obs_change_kw": 1.0,
+   "var:__obs_cum_kw": 203.0
+  },
+  {
+   "var:__obs_sma_kw": 102.0,
+   "var:__obs_ema_mixed": "NaN",
+   "var:__obs_rsi_kw": "NaN",
+   "var:__obs_highest_kw": "NaN",
+   "var:__obs_lowest_kw": 100,
+   "var:__obs_change_kw": 1.0,
+   "var:__obs_cum_kw": 306.0
+  },
+  {
+   "var:__obs_sma_kw": 102.3333333333,
+   "var:__obs_ema_mixed": "NaN",
+   "var:__obs_rsi_kw": "NaN",
+   "var:__obs_highest_kw": "NaN",
+   "var:__obs_lowest_kw": 100,
+   "var:__obs_change_kw": -1.0,
+   "var:__obs_cum_kw": 408.0
+  },
+  {
+   "var:__obs_sma_kw": 103.0,
+   "var:__obs_ema_mixed": "NaN",
+   "var:__obs_rsi_kw": "NaN",
+   "var:__obs_highest_kw": "NaN",
+   "var:__obs_lowest_kw": 100,
+   "var:__obs_change_kw": 2.0,
+   "var:__obs_cum_kw": 512.0
+  },
+  {
+   "var:__obs_sma_kw": 103.6666666667,
+   "var:__obs_ema_mixed": "NaN",
+   "var:__obs_rsi_kw": "NaN",
+   "var:__obs_highest_kw": "NaN",
+   "var:__obs_lowest_kw": 102,
+   "var:__obs_change_kw": 1.0,
+   "var:__obs_cum_kw": 617.0
+  },
+  {
+   "var:__obs_sma_kw": 105.0,
+   "var:__obs_ema_mixed": "NaN",
+   "var:__obs_rsi_kw": "NaN",
+   "var:__obs_highest_kw": "NaN",
+   "var:__obs_lowest_kw": 103,
+   "var:__obs_change_kw": 1.0,
+   "var:__obs_cum_kw": 723.0
+  },
+  {
+   "var:__obs_sma_kw": 105.3333333333,
+   "var:__obs_ema_mixed": "NaN",
+   "var:__obs_rsi_kw": "NaN",
+   "var:__obs_highest_kw": 106,
+   "var:__obs_lowest_kw": 103,
+   "var:__obs_change_kw": -1.0,
+   "var:__obs_cum_kw": 828.0
+  },
+  {
+   "var:__obs_sma_kw": 106.0,
+   "var:__obs_ema_mixed": 103.8888888889,
+   "var:__obs_rsi_kw": "NaN",
+   "var:__obs_highest_kw": 107,
+   "var:__obs_lowest_kw": 103,
+   "var:__obs_change_kw": 2.0,
+   "var:__obs_cum_kw": 935.0
+  },
+  {
+   "var:__obs_sma_kw": 106.6666666667,
+   "var:__obs_ema_mixed": 104.7111111111,
+   "var:__obs_rsi_kw": "NaN",
+   "var:__obs_highest_kw": 108,
+   "var:__obs_lowest_kw": 105,
+   "var:__obs_change_kw": 1.0,
+   "var:__obs_cum_kw": 1043.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_sma_kw": 106.6666666667,
+  "__obs_ema_mixed": 104.7111111111,
+  "__obs_rsi_kw": "NaN",
+  "__obs_highest_kw": 108,
+  "__obs_lowest_kw": 105,
+  "__obs_change_kw": 1.0,
+  "__obs_cum_kw": 1043.0
+ }
+}

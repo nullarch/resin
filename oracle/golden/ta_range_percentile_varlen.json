@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_range1": "NaN",
+   "var:__obs_range2": "-Infinity",
+   "var:__obs_pnr1": "NaN",
+   "var:__obs_pnr2": "NaN",
+   "var:__obs_pli1": "NaN",
+   "var:__obs_pli2": "NaN"
+  },
+  {
+   "var:__obs_range1": "NaN",
+   "var:__obs_range2": "-Infinity",
+   "var:__obs_pnr1": "NaN",
+   "var:__obs_pnr2": "NaN",
+   "var:__obs_pli1": "NaN",
+   "var:__obs_pli2": "NaN"
+  },
+  {
+   "var:__obs_range1": 2.0,
+   "var:__obs_range2": 1.0,
+   "var:__obs_pnr1": 102.0,
+   "var:__obs_pnr2": 101.0,
+   "var:__obs_pli1": 102.0,
+   "var:__obs_pli2": 101.6
+  },
+  {
+   "var:__obs_range1": 1.0,
+   "var:__obs_range2": "-Infinity",
+   "var:__obs_pnr1": 102.0,
+   "var:__obs_pnr2": 102.0,
+   "var:__obs_pli1": 102.5,
+   "var:__obs_pli2": 102.3
+  },
+  {
+   "var:__obs_range1": 0.0,
+   "var:__obs_range2": "-Infinity",
+   "var:__obs_pnr1": 104.0,
+   "var:__obs_pnr2": 104.0,
+   "var:__obs_pli1": 104.0,
+   "var:__obs_pli2": 104.0
+  },
+  {
+   "var:__obs_range1": 3.0,
+   "var:__obs_range2": 1.0,
+   "var:__obs_pnr1": 103.0,
+   "var:__obs_pnr2": 102.0,
+   "var:__obs_pli1": 103.0,
+   "var:__obs_pli2": 102.2
+  },
+  {
+   "var:__obs_range1": 4.0,
+   "var:__obs_range2": "-Infinity",
+   "var:__obs_pnr1": 104.0,
+   "var:__obs_pnr2": 104.0,
+   "var:__obs_pli1": 104.5,
+   "var:__obs_pli2": 103.8
+  },
+  {
+   "var:__obs_range1": 1.0,
+   "var:__obs_range2": "-Infinity",
+   "var:__obs_pnr1": 105.0,
+   "var:__obs_pnr2": 105.0,
+   "var:__obs_pli1": 105.0,
+   "var:__obs_pli2": 105.0
+  },
+  {
+   "var:__obs_range1": 2.0,
+   "var:__obs_range2": 2.0,
+   "var:__obs_pnr1": 105.0,
+   "var:__obs_pnr2": 105.0,
+   "var:__obs_pli1": 106.0,
+   "var:__obs_pli2": 105.6
+  },
+  {
+   "var:__obs_range1": 0.0,
+   "var:__obs_range2": "-Infinity",
+   "var:__obs_pnr1": 108.0,
+   "var:__obs_pnr2": 108.0,
+   "var:__obs_pli1": 108.0,
+   "var:__obs_pli2": 108.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_range1": 0.0,
+  "__obs_range2": "-Infinity",
+  "__obs_pnr1": 108.0,
+  "__obs_pnr2": 108.0,
+  "__obs_pli1": 108.0,
+  "__obs_pli2": 108.0
+ }
+}

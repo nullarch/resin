@@ -1,0 +1,4 @@
+//@version=5
+indicator("RoundPrec")
+var float r = 0
+r := math.round(3.145, 2)

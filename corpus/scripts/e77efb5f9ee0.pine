@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("UDF Arr")
+computeMA(float[] data) =>
+    array.size(data) > 0 ? array.avg(data) : 0.0
+
+var float[] window = array.new_float(0)
+array.push(window, close)
+if array.size(window) > 5
+    array.shift(window)
+customMA = computeMA(window)
+diff = close - customMA
+plot(diff, "Diff")

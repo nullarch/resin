@@ -1,0 +1,10 @@
+//@version=5
+indicator("Schwarzschild Radius")
+G = 6.674
+cSq = 9.0
+mass = volume / 100.0
+rs = cSq > 0 ? 2.0 * G * mass / cSq : 0.0
+var float avgRs = 0.0
+var int cnt = 0
+cnt := cnt + 1
+avgRs := avgRs + (rs - avgRs) / cnt

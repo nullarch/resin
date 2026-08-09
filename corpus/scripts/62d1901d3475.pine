@@ -1,0 +1,8 @@
+//@version=5
+indicator("Multi Dedent")
+var float result = 0.0
+if close > 100
+    if close > 105
+        if close > 110
+            result := 3.0
+result := result + 1.0

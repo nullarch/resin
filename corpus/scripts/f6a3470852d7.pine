@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Math Full")
+a = math.abs(close - open)
+b = math.sign(close - open)
+c = math.max(high, high[1])
+d = math.min(low, low[1])
+e = math.avg(a, b, float(c), float(d))
+plot(e, "Avg")

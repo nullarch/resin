@@ -1,0 +1,7 @@
+//@version=5
+indicator("str shorthand")
+string[] names = array.new<string>(0)
+array.push(names, "hello")
+array.push(names, "world")
+var int sz = 0
+sz := array.size(names)

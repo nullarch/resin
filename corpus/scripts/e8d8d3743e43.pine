@@ -1,0 +1,18 @@
+//@version=5
+indicator("Ichimoku Cloud", overlay=true)
+tenkan_len = input.int(9, title="Tenkan-sen")
+kijun_len = input.int(26, title="Kijun-sen")
+senkou_span_b_len = input.int(52, title="Senkou Span B")
+displacement = input.int(26, title="Displacement")
+donchian(len) =>
+    math.avg(ta.lowest(low, len), ta.highest(high, len))
+tenkan = donchian(tenkan_len)
+kijun = donchian(kijun_len)
+senkou_a = math.avg(tenkan, kijun)
+senkou_b = donchian(senkou_span_b_len)
+plot(tenkan, title="Tenkan-sen", color=color.blue)
+plot(kijun, title="Kijun-sen", color=color.red)
+plot(close, title="Chikou Span", offset=-displacement, color=color.green)
+p1 = plot(senkou_a, title="Senkou Span A", offset=displacement, color=color.green)
+p2 = plot(senkou_b, title="Senkou Span B", offset=displacement, color=color.red)
+fill(p1, p2, color=senkou_a > senkou_b ? color.new(color.green, 90) : color.new(color.red, 90))

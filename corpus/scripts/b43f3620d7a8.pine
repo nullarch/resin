@@ -1,0 +1,4 @@
+//@version=5
+indicator("Test")
+t = table.new(position.top_right, 3, 3)
+t.merge_cells(0, 0, 1, 1)

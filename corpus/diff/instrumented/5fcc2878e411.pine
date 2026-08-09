@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Body Size")
+body = math.abs(close - open)
+totalRange = high - low
+bodyRatio = totalRange > 0 ? body / totalRange * 100 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := bodyRatio
+plot(bodyRatio, "BR")

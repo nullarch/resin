@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:cumScore": {
+    "rsi": 4.0,
+    "trend": 0.0
+   },
+   "var:__obs_plot0": -2.0
+  },
+  {
+   "var:cumScore": {
+    "rsi": 4.0,
+    "trend": 0.0
+   },
+   "var:__obs_plot0": -4.0
+  },
+  {
+   "var:cumScore": {
+    "rsi": 4.0,
+    "trend": 0.0
+   },
+   "var:__obs_plot0": -6.0
+  },
+  {
+   "var:cumScore": {
+    "rsi": 4.0,
+    "trend": 0.0
+   },
+   "var:__obs_plot0": -4.0
+  },
+  {
+   "var:cumScore": {
+    "rsi": 4.0,
+    "trend": 0.0
+   },
+   "var:__obs_plot0": -2.0
+  },
+  {
+   "var:cumScore": {
+    "rsi": 4.0,
+    "trend": 0.0
+   },
+   "var:__obs_plot0": -2.0
+  },
+  {
+   "var:cumScore": {
+    "rsi": 4.0,
+    "trend": 0.0
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:cumScore": {
+    "rsi": 4.0,
+    "trend": 0.0
+   },
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:cumScore": {
+    "rsi": 4.0,
+    "trend": 0.0
+   },
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:cumScore": {
+    "rsi": 4.0,
+    "trend": 0.0
+   },
+   "var:__obs_plot0": 4.0
+  }
+ ],
+ "finalVarState": {
+  "cumScore": {
+   "rsi": 4.0,
+   "trend": 0.0
+  },
+  "__obs_plot0": 4.0
+ }
+}

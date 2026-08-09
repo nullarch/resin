@@ -1,0 +1,22 @@
+//@version=5
+indicator("udt_forward_ref")
+// top-level TypeDecl forward-reference(C233, PROGRESS.md C232 next_hint 이행) — `Point.new(...)`가
+// `type Point` 선언보다 스크립트 앞쪽에서 쓰이는 패턴. TV/pine2py 둘 다 type 선언 순서 무관(hoisting)
+// 이 정상 동작이다(python으로 pine2py `pine2wave.transpiler.transpile()`을 이 정확한 순서로 직접
+// 실행해 errors=[] 확인 완료, PROGRESS.md C232 next_hint 참조) — analyzer.ts가 단일 패스 시작 전
+// top-level TypeDecl 전부를 prepass로 먼저 처리해 prog.udtTypes를 채우도록 고쳤다(analyze() 참조).
+
+var Point p1 = Point.new(3.0, 4.0)
+var float __obs_p1_x = na
+__obs_p1_x := p1.x
+var float __obs_p1_y = na
+__obs_p1_y := p1.y
+
+// 필드 대입(':=')도 forward-ref 타입에서 정상 동작하는지(매 바 러닝 합계로 동적 신호 확인).
+p1.x := p1.x + close
+var float __obs_p1_x_acc = na
+__obs_p1_x_acc := p1.x
+
+type Point
+    float x = 0.0
+    float y = 0.0

@@ -1,0 +1,10 @@
+//@version=5
+strategy("Prospect Strategy")
+ret = close - nz(close[1])
+prospectVal = ret >= 0 ? ret : ret * 2.25
+var float cumProspect = 0.0
+cumProspect := cumProspect + prospectVal
+if cumProspect > 5.0
+    strategy.entry("Long", strategy.long)
+if cumProspect < -5.0
+    strategy.close("Long")

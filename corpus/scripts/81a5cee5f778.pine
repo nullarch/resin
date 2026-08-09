@@ -1,0 +1,18 @@
+//@version=5
+indicator("BayesSlope")
+var float sumXY = 0.0
+var float sumX = 0.0
+var float sumY = 0.0
+var float sumX2 = 0.0
+var int nObs = 0
+nObs := nObs + 1
+x = float(nObs)
+y = close
+sumXY := sumXY + x * y
+sumX := sumX + x
+sumY := sumY + y
+sumX2 := sumX2 + x * x
+n = float(nObs)
+denom = n * sumX2 - sumX * sumX
+slope = math.abs(denom) > 0.001 ? (n * sumXY - sumX * sumY) / denom : 0.0
+plot(slope, "Slope")

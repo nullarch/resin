@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Trade Count")
+var int longSignals = 0
+var int shortSignals = 0
+var float totalReturn = 0.0
+sma3 = ta.sma(close, 3)
+if ta.crossover(close, sma3)
+    longSignals := longSignals + 1
+    totalReturn := totalReturn + 1.0
+if ta.crossunder(close, sma3)
+    shortSignals := shortSignals + 1
+    totalReturn := totalReturn - 0.5
+plot(longSignals + shortSignals, "Total")
+plot(totalReturn, "Return")

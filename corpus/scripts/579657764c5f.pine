@@ -1,0 +1,6 @@
+//@version=5
+indicator("TA Isolation")
+var float result = 0.0
+s3 = ta.sma(close, 3)
+s5 = ta.sma(close, 5)
+result := s3 - s5

@@ -1,0 +1,8 @@
+//@version=5
+indicator("ta_stoch")
+// ta.stoch 오라클 검증(ROADMAP P2 "ta.* 44종" — stoch). length=4로 sample10.json 10바 안에서
+// hh(=ta.highest(high,4))/ll(=ta.lowest(low,4))이 아직 안 찬 워밍업 구간(NaN)과 정상 구간을
+// 모두 커버. pine2py wavealgo/ta/stoch.py: %K = 100*(close-ll)/(hh-ll), hh/ll 중 하나라도 NaN이면
+// 즉시 NaN, diff(hh-ll)==0이면 (close NaN 여부와 무관하게) 50.0 고정 반환.
+var float __obs_k = na
+__obs_k := ta.stoch(close, high, low, 4)

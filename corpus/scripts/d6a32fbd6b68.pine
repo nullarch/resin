@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Map Int")
+var m = map.new<string, int>()
+body = close - open
+key = body > 0 ? "bullish" : body < 0 ? "bearish" : "doji"
+prev = map.get(m, key, 0)
+map.put(m, key, prev + 1)
+plot(map.get(m, "bullish", 0), "Bull")

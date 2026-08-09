@@ -1,0 +1,5 @@
+//@version=5
+indicator("Box BG")
+if barstate.islast
+    box.new(bar_index - 5, high, bar_index, low, bgcolor=color.new(color.blue, 80), border_color=color.blue)
+plot(close)

@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("DEMA TEMA")
+e1 = ta.ema(close, 5)
+e2 = ta.ema(e1, 5)
+e3 = ta.ema(e2, 5)
+dema = 2 * e1 - e2
+tema = 3 * (e1 - e2) + e3
+spread = dema - tema
+plot(dema, "DEMA")
+plot(tema, "TEMA")

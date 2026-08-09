@@ -1,0 +1,4 @@
+//@version=5
+indicator("tf from sec day")
+tfD = timeframe.from_seconds(86400)
+tfW = timeframe.from_seconds(604800)

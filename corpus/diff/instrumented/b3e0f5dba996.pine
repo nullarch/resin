@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("TernaryRegime")
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = nz(ta.atr(3), 1.0)
+label = rsi > 70 ? "StrongBull" : rsi > 55 ? "Bull" : rsi < 30 ? "StrongBear" : rsi < 45 ? "Bear" : "Neutral"
+labelLen = str.length(label)
+code = atr > 2.0 ? 10.0 : atr > 1.0 ? 5.0 : 1.0
+var float __obs_plot0 = na
+__obs_plot0 := labelLen + code
+plot(labelLen + code, "Combo")

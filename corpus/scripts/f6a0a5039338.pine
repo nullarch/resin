@@ -1,0 +1,14 @@
+//@version=5
+indicator("DepHeatmap")
+heatRow = array.new_float(0)
+baseRank = nz(ta.rsi(close, 3), 50.0) / 100.0
+r1 = nz(ta.rsi(high, 3), 50.0) / 100.0
+r2 = nz(ta.rsi(low, 3), 50.0) / 100.0
+r3 = nz(ta.rsi(volume, 3), 50.0) / 100.0
+array.push(heatRow, math.abs(baseRank - r1))
+array.push(heatRow, math.abs(baseRank - r2))
+array.push(heatRow, math.abs(baseRank - r3))
+maxDep = array.max(heatRow)
+minDep = array.min(heatRow)
+plot(maxDep, "MaxDep")
+plot(minDep, "MinDep")

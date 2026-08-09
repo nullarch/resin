@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Div Check")
+checkDiv(float price, float prevPrice, float ind, float prevInd) =>
+    priceUp = price > prevPrice
+    indUp = ind > prevInd
+    priceUp and not indUp ? -1.0 : not priceUp and indUp ? 1.0 : 0.0
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+prevRsi = nz(ta.rsi(close, 3), 50.0)
+div = checkDiv(close, nz(close[3], close), rsi, 50.0)
+plot(div, "D")

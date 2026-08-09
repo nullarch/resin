@@ -1,0 +1,7 @@
+//@version=5
+indicator("Map Conditional")
+var m = map.new<string, float>()
+if close > open
+    map.put(m, "bull", nz(map.get(m, "bull"), 0.0) + 1)
+else
+    map.put(m, "bear", nz(map.get(m, "bear"), 0.0) + 1)

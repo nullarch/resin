@@ -1,0 +1,6 @@
+//@version=5
+indicator("test")
+var int combo = 0
+if session.ismarket and barstate.isnew
+    combo := combo + 1
+plot(combo)

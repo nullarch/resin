@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("UDF Pipeline")
+normalize(float val, float minV, float maxV) =>
+    rng = maxV - minV
+    rng > 0 ? (val - minV) / rng : 0.5
+
+score(float normRSI, float normTrend, float normVol) =>
+    normRSI * 0.4 + normTrend * 0.35 + normVol * 0.25
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma5 = ta.sma(close, 5)
+atr = nz(ta.atr(3), 1.0)
+nRSI = normalize(rsi, 0, 100)
+nTrend = normalize(close - sma5, -10, 10)
+nVol = normalize(atr, 0, 5)
+result = score(nRSI, nTrend, nVol)
+plot(result, "S")

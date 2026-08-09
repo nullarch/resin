@@ -1,0 +1,33 @@
+//@version=5
+indicator("cond_if_condition_ta")
+// C246 조건부 stateful call — if 문의 "최초 조건"(elif 아님) 위치에서의 stateful 콜 허용
+// (ROADMAP P2 조건부 stateful call 항목의 남은 축, corpus 클러스터 92건 중 86건이 이 패턴).
+// 최초 if 조건은 elif/switch case/while 조건과 달리 형제 분기 매치 여부에 좌우되지 않고 무조건
+// 1회 평가되므로 pine2py의 `if {cond}:`(codegen.py _gen_if, 그대로 인라인)와 완전히 동형이다 —
+// **직접 호출(and/or 밖)은 갭이 없어 오라클 전체가 유효**하다.
+// and/or 우변에 stateful 콜이 있으면 TV(양쪽 항상 평가, C24)와 pine2py Python 네이티브 lazy
+// or/and가 갈릴 수 있으므로(DIVERGENCES.md #97, #12와 동일 축) 이 케이스는 좌변을 상수로 고정해
+// (close>0/close<0) pine2py의 lazy가 우연히 eager와 동치가 되는 구간만 골든 검증한다 — 조건이
+// 실제로 갈리는 갭 시나리오(crossover or crossunder)는 tests/oracle/cond_if_condition_ta.test.ts의
+// hand-verified 트레이스가 별도로 검증한다.
+
+// 채널 1: 직접 호출(and/or 밖) — close vs ta.sma(close,2) 비교가 if의 유일한 조건. 갭 없음, 전
+// 구간 오라클 유효.
+b2 = ta.sma(close, 2)
+var float __obs_direct = na
+__obs_direct := na
+if b2 > 102
+    __obs_direct := 1.0
+
+// 채널 2: and 우변(좌변 항상 T: close>0) — crossover(close, sma3)가 우변. pine2py도 좌변이 항상
+// True라 우변을 매 바 평가(우연한 eager 동치).
+b3 = ta.sma(close, 3)
+var int __obs_and = 0
+if close > 0 and ta.crossover(close, b3)
+    __obs_and := __obs_and + 1
+
+// 채널 3: or 우변(좌변 항상 F: close<0) — crossunder(close, sma3)가 우변. pine2py도 좌변이 항상
+// False라 우변을 매 바 평가(우연한 eager 동치).
+var int __obs_or = 0
+if close < 0 or ta.crossunder(close, b3)
+    __obs_or := __obs_or + 1

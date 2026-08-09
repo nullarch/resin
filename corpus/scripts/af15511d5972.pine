@@ -1,0 +1,3 @@
+//@version=5
+indicator("ticker new")
+t = ticker.new("BINANCE", "BTCUSDT")

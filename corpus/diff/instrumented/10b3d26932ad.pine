@@ -1,0 +1,9 @@
+//@version=5
+indicator("DG-12 Metric Tensor")
+devVal = nz(ta.stdev(close, 5), 1.0)
+g11 = 1.0
+g22 = devVal * devVal
+detG = g11 * g22
+var float __obs_plot0 = na
+__obs_plot0 := math.sqrt(detG)
+plot(math.sqrt(detG))

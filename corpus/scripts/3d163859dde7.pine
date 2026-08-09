@@ -1,0 +1,8 @@
+//@version=5
+indicator("Ice Sheet Melt")
+tempAnomaly = (high + low) / 2 - 100.0
+meltRate = tempAnomaly > 0 ? tempAnomaly * 2.5 : 0.0
+var float totalMelt = 0.0
+totalMelt := totalMelt + meltRate
+var float iceRemaining = 1000.0
+iceRemaining := math.max(0.0, iceRemaining - meltRate)

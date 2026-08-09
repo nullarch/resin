@@ -1,0 +1,10 @@
+//@version=5
+indicator("Switch Tuple")
+var int x = 3
+float val = switch x
+    1, 2 => 10.0
+    3, 4 => 20.0
+    => 0.0
+var float result = 0.0
+result := val
+plot(result)

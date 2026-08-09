@@ -1,0 +1,4 @@
+//@version=5
+indicator("Ticker HA")
+ha = ticker.heikinashi(syminfo.tickerid)
+plot(close)

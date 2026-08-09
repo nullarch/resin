@@ -1,0 +1,8 @@
+//@version=5
+indicator("Math Comprehensive")
+var float result = 0.0
+float a = math.abs(-5.0)
+float b = math.max(3.0, 7.0)
+float c = math.min(3.0, 7.0)
+float d = math.sqrt(16.0)
+result := a + b + c + d

@@ -1,0 +1,12 @@
+//@version=5
+indicator("VolClock")
+var float cumVol = 0.0
+var int buckets = 0
+bucketSize = 2000.0
+cumVol := cumVol + float(volume)
+if cumVol >= bucketSize
+    buckets := buckets + 1
+    cumVol := cumVol - bucketSize
+var float __obs_plot0 = na
+__obs_plot0 := float(buckets)
+plot(float(buckets), "Buckets")

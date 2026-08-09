@@ -1,0 +1,18 @@
+//@version=5
+indicator("Parabolic SAR")
+// TV 빌트인 "Parabolic SAR" 인디케이터 E2E 재현(ROADMAP P2 "TV 빌트인 인디케이터 E2E" 다섯 번째
+// 슬라이스, SAR 단독). ta.sar 자체의 계산은 이미 oracle/cases/ta_sar.pine(순수 __obs 미러,
+// start=0.02/increment=0.02/maximum=0.2, divergence 없이 순수 compareToGolden로 바이트 단위
+// 일치 확인됨)이 개별 검증했다 -- 이 케이스는 그 위에 indicator()/input.float x3/plot()을 얹어
+// 완성된 빌트인 스크립트 구조 전체를 검증한다. ta.sar는 Pine 문법상 high/low를 bar series로
+// 암묵 사용해(ta_dmi/ta_wpr와 동일 이유) input.source는 쓰지 않는다.
+startInput = input.float(0.02, "Start")
+incrementInput = input.float(0.02, "Increment")
+maximumInput = input.float(0.2, "Maximum")
+
+sarValue = ta.sar(startInput, incrementInput, maximumInput)
+
+plot(sarValue, "SAR")
+
+var float __obs_sar = na
+__obs_sar := sarValue

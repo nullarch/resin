@@ -1,0 +1,8 @@
+//@version=5
+indicator("Natural Transformation SMA->EMA")
+float smaVal = nz(ta.sma(close, 5), close)
+float emaVal = nz(ta.ema(close, 5), close)
+float transform = emaVal - smaVal
+float absTransform = math.abs(transform)
+var float maxDivergence = 0.0
+maxDivergence := absTransform > maxDivergence ? absTransform : maxDivergence

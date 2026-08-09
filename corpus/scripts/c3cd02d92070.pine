@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Map Contains")
+var m = map.new<string, float>()
+map.put(m, "price", close)
+exists = map.contains(m, "price")
+missing = map.contains(m, "nonexist")
+val = exists ? map.get(m, "price", 0.0) : -1.0
+plot(val, "Val")

@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Pct Rank")
+prank = ta.percentrank(close, 5)
+high_ = prank > 80
+low_ = prank < 20
+var float __obs_plot0 = na
+__obs_plot0 := prank
+plot(prank, "PctRank")

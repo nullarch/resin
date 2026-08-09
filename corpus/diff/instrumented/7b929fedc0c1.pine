@@ -1,0 +1,19 @@
+//@version=5
+indicator("SaddlePt")
+a11 = close - open
+a12 = -(high - close)
+a21 = -(close - low)
+a22 = high - low
+minR1 = math.min(a11, a12)
+minR2 = math.min(a21, a22)
+maximin = math.max(minR1, minR2)
+maxC1 = math.max(a11, a21)
+maxC2 = math.max(a12, a22)
+minimax = math.min(maxC1, maxC2)
+hasSaddle = math.abs(maximin - minimax) < 0.01 ? 1.0 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := hasSaddle
+plot(hasSaddle, "Saddle")
+var float __obs_plot1 = na
+__obs_plot1 := maximin
+plot(maximin, "Value")

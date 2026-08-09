@@ -1,0 +1,6 @@
+//@version=5
+indicator("Input Symbol")
+sym = input.symbol("BTCUSDT", "Symbol")
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

@@ -1,0 +1,11 @@
+//@version=5
+indicator("Comprehensive C93")
+type Score
+    float val = 0.0
+var Score s = Score.new(3.14)
+var a = array.from(5.0, 2.0, 8.0, 1.0)
+array.sort(a)
+var float smallest = 0.0
+smallest := array.get(a, 0)
+var int rounded = 0
+rounded := int(s.val)

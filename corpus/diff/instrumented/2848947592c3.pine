@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("Regime Dur")
+var int regime = 0
+var int duration = 0
+sma3 = ta.sma(close, 3)
+newRegime = close > sma3 ? 1 : -1
+if newRegime == regime
+    duration := duration + 1
+else
+    regime := newRegime
+    duration := 1
+var float __obs_plot0 = na
+__obs_plot0 := duration
+plot(duration, "Duration")
+var float __obs_plot1 = na
+__obs_plot1 := regime
+plot(regime, "Regime")

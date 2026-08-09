@@ -1,0 +1,41 @@
+//@version=5
+indicator("udt_field_compound_assign")
+// UDT 필드 복합 대입(`obj.field += value` 등, C261 신규) -- 파서가 `obj.field := obj.field op
+// value`로 데슈가링한다(WALRUS DotAccess FieldAssignment 분기와 동일 노드, value만 BinOp).
+// pine2py parser.py _COMPOUND_OPS는 target이 Attribute(UDT 필드)여도 동일 로직(target=expr)이라
+// 이 채널도 udt_basic.pine 채널 C(`acc.x := acc.x + close`)와 동일하게 오라클 비교 가능.
+
+type Acc
+    float sum = 0.0
+    float prod = 1.0
+    int count = 0
+
+var Acc a = Acc.new()
+a.sum += close
+a.prod *= 1.01
+a.count += 1
+
+var float __obs_sum = na
+__obs_sum := a.sum
+var float __obs_prod = na
+__obs_prod := a.prod
+var float __obs_count = na
+__obs_count := a.count
+
+// -=/=//%= 채널: 넉넉한 초기값으로 나눗셈/나머지 정의역을 안전하게 유지.
+type Acc2
+    float diff = 1000.0
+    float ratio = 1000.0
+    float rem = 1000.0
+
+var Acc2 a2 = Acc2.new()
+a2.diff -= close
+a2.ratio /= 1.01
+a2.rem %= 7.0
+
+var float __obs_diff = na
+__obs_diff := a2.diff
+var float __obs_ratio = na
+__obs_ratio := a2.ratio
+var float __obs_rem = na
+__obs_rem := a2.rem

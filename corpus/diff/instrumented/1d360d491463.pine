@@ -1,0 +1,13 @@
+//@version=5
+indicator("C300-13")
+arr = array.new_float(8, 0.0)
+array.set(arr, 0, 1.0)
+array.set(arr, 1, 1.0)
+for i = 2 to 7
+    prev1 = array.get(arr, i - 1)
+    prev2 = array.get(arr, i - 2)
+    array.set(arr, i, prev1 + prev2)
+ratio = array.get(arr, 7) / (array.get(arr, 6) > 0 ? array.get(arr, 6) : 1.0)
+var float __obs_plot0 = na
+__obs_plot0 := ratio
+plot(ratio)

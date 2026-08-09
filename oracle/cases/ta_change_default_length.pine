@@ -1,0 +1,10 @@
+//@version=5
+indicator("ta_change_default_length")
+// ta.change(source) 1-인자 관용구 오라클 검증(C227, ROADMAP P3 next_hint 1순위 — TA_REGISTRY.change에
+// minArgCount:1 신설, corpus 10건 실측 `ta.change(close)`). pine2py wavealgo/ta/change.py의
+// length 기본값(1)과 정확히 동치인지 확인하기 위해 생략형과 명시형(length=1) 두 콜사이트를 함께
+// 관측 — 둘이 바이트 단위로 동일해야 default 배선이 옳다는 증거가 된다.
+var float __obs_change_default = na
+var float __obs_change_explicit1 = na
+__obs_change_default := ta.change(close)
+__obs_change_explicit1 := ta.change(close, 1)

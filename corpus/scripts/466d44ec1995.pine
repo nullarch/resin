@@ -1,0 +1,4 @@
+//@version=5
+indicator("Leading Dot")
+var float result = 0.0
+result := .5 + .25

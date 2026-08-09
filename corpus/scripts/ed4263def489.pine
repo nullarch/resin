@@ -1,0 +1,8 @@
+//@version=5
+indicator("DG-08 Gaussian Curvature")
+var float gaussK = 0.0
+if not na(close[2]) and not na(volume[2])
+    kPrice = (close - close[1]) - (close[1] - close[2])
+    kVol = (volume - volume[1]) - (volume[1] - volume[2])
+    gaussK := kPrice * kVol / 1000000.0
+plot(gaussK)

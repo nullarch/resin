@@ -1,0 +1,6 @@
+//@version=5
+indicator("Pop Momentum")
+var float pop = 100.0
+growthRate = nz(ta.rsi(close, 3), 50.0) / 1000.0
+pop := pop * (1.0 + growthRate)
+plot(pop, "Pop")

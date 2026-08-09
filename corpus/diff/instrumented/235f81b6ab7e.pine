@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Fix Stop")
+riskPct = 1.5
+stopDist = close * riskPct / 100
+stopPrice = close - stopDist
+targetPrice = close + stopDist * 2
+rr = 2.0
+var float __obs_plot0 = na
+__obs_plot0 := stopPrice
+plot(stopPrice, "Stop")
+var float __obs_plot1 = na
+__obs_plot1 := targetPrice
+plot(targetPrice, "Target")

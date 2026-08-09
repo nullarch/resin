@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("WMA RSI")
+rsi = ta.rsi(close, 3)
+wmaRSI = ta.wma(rsi, 3)
+risingMom = wmaRSI > 50 and wmaRSI > wmaRSI[1]
+var float __obs_plot0 = na
+__obs_plot0 := wmaRSI
+plot(wmaRSI, "WMARSI")
+var float __obs_plot1 = na
+__obs_plot1 := risingMom ? 1 : 0
+plot(risingMom ? 1 : 0, "Rising")

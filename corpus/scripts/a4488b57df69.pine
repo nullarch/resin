@@ -1,0 +1,3 @@
+//@version=5
+indicator("Test")
+sd = ta.stdev(close, 20)

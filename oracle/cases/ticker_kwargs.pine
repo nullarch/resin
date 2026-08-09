@@ -1,0 +1,18 @@
+//@version=5
+indicator("ticker_kwargs")
+// ticker.new/modify/renko kwargs(C385, next_hint(C384) 1순위 — wild gate(220) 클러스터 재분포
+// 2/3/6위) — wild 실사용 이름 그대로 키워드 인자 폼으로 호출해 pine2py wavealgo/__init__.py
+// L228-251 ticker_new/modify/renko 시맨틱과 golden 대조로 일치함을 검증한다(반환값에 실제로
+// 쓰이는 첫 슬롯이 kwarg 폼에서도 정확한 위치로 낮춰지는지가 핵심 — 나머지 인자는 discard).
+// modify의 backadjustment=(TV 실제 futures 파라미터, pine2py 시그니처엔 **kwargs가 없어
+// 오라클 불가)는 이 케이스 범위 밖 — hand-verified 유닛 테스트로 대체(analyzer/codegen exact-string).
+var string __obs_new_full = na
+__obs_new_full := ticker.new(prefix = "BINANCE", ticker = "BTCUSDT")
+var string __obs_new_mixed = na
+__obs_new_mixed := ticker.new("BINANCE", "BTCUSDT", session = "extended")
+var string __obs_new_ticker_only = na
+__obs_new_ticker_only := ticker.new(ticker = "BTCUSDT")
+var string __obs_mod = na
+__obs_mod := ticker.modify(tickerid = "BINANCE:BTCUSDT", session = "regular", adjustment = "dividends")
+var string __obs_renko_full = na
+__obs_renko_full := ticker.renko(symbol = "BINANCE:BTCUSDT", style = "ATR", param = 14, source = "close", request_wicks = true)

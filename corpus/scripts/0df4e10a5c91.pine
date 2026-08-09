@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Vol State")
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+ratio = avgATR > 0 ? atr / avgATR : 1.0
+state = switch
+    ratio > 2.0 => "extreme"
+    ratio > 1.5 => "high"
+    ratio > 1.0 => "elevated"
+    ratio > 0.5 => "normal"
+    => "low"
+isExtreme = state == "extreme" or state == "high"
+plot(isExtreme ? 1 : 0, "Ext")

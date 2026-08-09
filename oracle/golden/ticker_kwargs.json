@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_new_full": "BINANCE:BTCUSDT",
+   "var:__obs_new_mixed": "BINANCE:BTCUSDT",
+   "var:__obs_new_ticker_only": "BTCUSDT",
+   "var:__obs_mod": "BINANCE:BTCUSDT",
+   "var:__obs_renko_full": "BINANCE:BTCUSDT"
+  },
+  {
+   "var:__obs_new_full": "BINANCE:BTCUSDT",
+   "var:__obs_new_mixed": "BINANCE:BTCUSDT",
+   "var:__obs_new_ticker_only": "BTCUSDT",
+   "var:__obs_mod": "BINANCE:BTCUSDT",
+   "var:__obs_renko_full": "BINANCE:BTCUSDT"
+  },
+  {
+   "var:__obs_new_full": "BINANCE:BTCUSDT",
+   "var:__obs_new_mixed": "BINANCE:BTCUSDT",
+   "var:__obs_new_ticker_only": "BTCUSDT",
+   "var:__obs_mod": "BINANCE:BTCUSDT",
+   "var:__obs_renko_full": "BINANCE:BTCUSDT"
+  },
+  {
+   "var:__obs_new_full": "BINANCE:BTCUSDT",
+   "var:__obs_new_mixed": "BINANCE:BTCUSDT",
+   "var:__obs_new_ticker_only": "BTCUSDT",
+   "var:__obs_mod": "BINANCE:BTCUSDT",
+   "var:__obs_renko_full": "BINANCE:BTCUSDT"
+  },
+  {
+   "var:__obs_new_full": "BINANCE:BTCUSDT",
+   "var:__obs_new_mixed": "BINANCE:BTCUSDT",
+   "var:__obs_new_ticker_only": "BTCUSDT",
+   "var:__obs_mod": "BINANCE:BTCUSDT",
+   "var:__obs_renko_full": "BINANCE:BTCUSDT"
+  },
+  {
+   "var:__obs_new_full": "BINANCE:BTCUSDT",
+   "var:__obs_new_mixed": "BINANCE:BTCUSDT",
+   "var:__obs_new_ticker_only": "BTCUSDT",
+   "var:__obs_mod": "BINANCE:BTCUSDT",
+   "var:__obs_renko_full": "BINANCE:BTCUSDT"
+  },
+  {
+   "var:__obs_new_full": "BINANCE:BTCUSDT",
+   "var:__obs_new_mixed": "BINANCE:BTCUSDT",
+   "var:__obs_new_ticker_only": "BTCUSDT",
+   "var:__obs_mod": "BINANCE:BTCUSDT",
+   "var:__obs_renko_full": "BINANCE:BTCUSDT"
+  },
+  {
+   "var:__obs_new_full": "BINANCE:BTCUSDT",
+   "var:__obs_new_mixed": "BINANCE:BTCUSDT",
+   "var:__obs_new_ticker_only": "BTCUSDT",
+   "var:__obs_mod": "BINANCE:BTCUSDT",
+   "var:__obs_renko_full": "BINANCE:BTCUSDT"
+  },
+  {
+   "var:__obs_new_full": "BINANCE:BTCUSDT",
+   "var:__obs_new_mixed": "BINANCE:BTCUSDT",
+   "var:__obs_new_ticker_only": "BTCUSDT",
+   "var:__obs_mod": "BINANCE:BTCUSDT",
+   "var:__obs_renko_full": "BINANCE:BTCUSDT"
+  },
+  {
+   "var:__obs_new_full": "BINANCE:BTCUSDT",
+   "var:__obs_new_mixed": "BINANCE:BTCUSDT",
+   "var:__obs_new_ticker_only": "BTCUSDT",
+   "var:__obs_mod": "BINANCE:BTCUSDT",
+   "var:__obs_renko_full": "BINANCE:BTCUSDT"
+  }
+ ],
+ "finalVarState": {
+  "__obs_new_full": "BINANCE:BTCUSDT",
+  "__obs_new_mixed": "BINANCE:BTCUSDT",
+  "__obs_new_ticker_only": "BTCUSDT",
+  "__obs_mod": "BINANCE:BTCUSDT",
+  "__obs_renko_full": "BINANCE:BTCUSDT"
+ }
+}

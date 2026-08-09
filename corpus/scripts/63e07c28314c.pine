@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("RegimeEnum")
+enum Regime
+    Bull = 1
+    Bear = 2
+    Sideways = 3
+
+sma5 = ta.sma(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+
+regime = close > sma5 and rsi > 55 ? Regime.Bull : close < sma5 and rsi < 45 ? Regime.Bear : Regime.Sideways
+regimeVal = int(regime)
+plot(regimeVal, "R")

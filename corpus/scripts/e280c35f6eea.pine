@@ -1,0 +1,5 @@
+//@version=5
+indicator("Ternary NA")
+prev = close[1]
+x = na(prev) ? 0.0 : prev
+plot(x)

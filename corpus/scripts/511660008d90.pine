@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Bar Desc")
+body = math.abs(close - open_)
+barRange = high - low
+eff = barRange > 0 ? body / barRange : 0.0
+dir = close > open_ ? "BULL" : "BEAR"
+size = eff > 0.7 ? "STRONG" : eff < 0.3 ? "WEAK" : "MED"
+desc = dir + "_" + size
+isStrongBull = desc == "BULL_STRONG"
+plot(isStrongBull ? 1 : 0, "SB")

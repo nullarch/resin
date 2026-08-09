@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Tanh")
+rsi = ta.rsi(close, 3)
+x = (nz(rsi, 50.0) - 50.0) / 25.0
+expPos = math.exp(x)
+expNeg = math.exp(-x)
+tanh = (expPos - expNeg) / (expPos + expNeg)
+var float __obs_plot0 = na
+__obs_plot0 := tanh
+plot(tanh, "Tanh")

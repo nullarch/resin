@@ -1,0 +1,6 @@
+
+//@version=5
+indicator("Median Osc")
+med = ta.median(close, 5)
+osc = close - med
+plot(osc, "Oscillator")

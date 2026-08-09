@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("New Initial")
+arr = array.new_float(5, 10.0)
+array.set(arr, 0, close)
+array.set(arr, 1, open)
+total = array.sum(arr)
+plot(total, "Sum")

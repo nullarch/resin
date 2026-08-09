@@ -1,0 +1,9 @@
+//@version=5
+indicator("ta_correlation")
+// ta.correlation 오라클 검증(ROADMAP P2 "ta.* 44종" — correlation). length=3으로 sample10.json 10바
+// 안에서 워밍업 구간(NaN, 바 0~1)과 정상 구간(바 2~9)을 모두 커버. close vs open/high/low는
+// sample10.json에서 서로 상수 오프셋(open=close-1 등)이라 상관계수가 항상 정확히 1.0인 퇴화
+// 케이스가 되므로, close vs volume(독립된 두 시리즈)을 써서 numerator/denominator 산식이
+// 실제로 변동하는 값을 바이트 단위로 검증한다.
+var float __obs_correlation = na
+__obs_correlation := ta.correlation(close, volume, 3)

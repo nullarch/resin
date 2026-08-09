@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Bars Since")
+var int barsSince = 0
+sma3 = ta.sma(close, 3)
+crossed = ta.crossover(close, sma3)
+if crossed
+    barsSince := 0
+else
+    barsSince := barsSince + 1
+var float __obs_plot0 = na
+__obs_plot0 := barsSince
+plot(barsSince, "BS")

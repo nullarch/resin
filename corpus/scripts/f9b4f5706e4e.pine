@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Sig Queue")
+var float[] signals = array.new_float(0)
+rsi = nz(ta.rsi(close, 3), 50.0)
+sig = rsi > 55 ? 1.0 : rsi < 45 ? -1.0 : 0.0
+array.push(signals, sig)
+if array.size(signals) > 5
+    array.shift(signals)
+posSignals = 0
+for v in signals
+    if v > 0
+        posSignals := posSignals + 1
+confirmation = posSignals >= 3
+plot(confirmation ? 1 : 0, "Conf")

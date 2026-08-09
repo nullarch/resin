@@ -1,0 +1,8 @@
+//@version=5
+indicator("multiline bool")
+var float result = 0.0
+cond = close > 100 and
+    close < 200 and
+    high > low and
+    volume > 500
+result := cond ? 1.0 : 0.0

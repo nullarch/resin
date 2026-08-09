@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Sigmoid")
+rsi = nz(ta.rsi(close, 3), 50.0)
+x = (rsi - 50) / 10
+sigmoid = 1.0 / (1.0 + math.exp(-x))
+var float __obs_plot0 = na
+__obs_plot0 := sigmoid
+plot(sigmoid, "Sig")

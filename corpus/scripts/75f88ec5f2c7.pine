@@ -1,0 +1,11 @@
+//@version=5
+indicator("MR_SR")
+coarse = nz(ta.sma(close, 5), close)
+var float support = 0.0
+var float resist = 0.0
+if close > coarse
+    resist := math.max(resist, high)
+else
+    support := support == 0.0 ? low : math.min(support, low)
+band = resist - support
+plot(band > 0 ? band : 0.0, "SRBand")

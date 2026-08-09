@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Pow2")
+target = close
+pow2 = 1.0
+while pow2 < target
+    pow2 := pow2 * 2
+plot(pow2, "NextPow2")

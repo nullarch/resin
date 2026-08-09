@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("EqWeight")
+var float[] returns = array.new_float(0)
+array.clear(returns)
+prevC = nz(close[1], close)
+r1 = prevC > 0 ? (close - prevC) / prevC : 0.0
+r2 = prevC > 0 ? (high - nz(high[1], high)) / nz(high[1], high) : 0.0
+r3 = prevC > 0 ? (low - nz(low[1], low)) / nz(low[1], low) : 0.0
+array.push(returns, r1)
+array.push(returns, r2)
+array.push(returns, r3)
+eqRet = array.avg(returns)
+var float __obs_plot0 = na
+__obs_plot0 := eqRet * 100
+plot(eqRet * 100, "ER")

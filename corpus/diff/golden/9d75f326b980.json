@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:sumPV": 103000.0,
+   "var:sumV": 1000.0,
+   "var:__obs_plot0": 103.0
+  },
+  {
+   "var:sumPV": 227800.0,
+   "var:sumV": 2200.0,
+   "var:__obs_plot0": 103.54545454545455
+  },
+  {
+   "var:sumPV": 309400.0,
+   "var:sumV": 3000.0,
+   "var:__obs_plot0": 103.13333333333334
+  },
+  {
+   "var:sumPV": 466900.0,
+   "var:sumV": 4500.0,
+   "var:__obs_plot0": 103.75555555555556
+  },
+  {
+   "var:sumPV": 606000.0,
+   "var:sumV": 5800.0,
+   "var:__obs_plot0": 104.48275862068965
+  },
+  {
+   "var:sumPV": 701400.0,
+   "var:sumV": 6700.0,
+   "var:__obs_plot0": 104.68656716417911
+  },
+  {
+   "var:sumPV": 820200.0,
+   "var:sumV": 7800.0,
+   "var:__obs_plot0": 105.15384615384616
+  },
+  {
+   "var:sumPV": 974200.0,
+   "var:sumV": 9200.0,
+   "var:__obs_plot0": 105.8913043478261
+  },
+  {
+   "var:sumPV": 1083200.0,
+   "var:sumV": 10200.0,
+   "var:__obs_plot0": 106.19607843137256
+  },
+  {
+   "var:sumPV": 1260800.0,
+   "var:sumV": 11800.0,
+   "var:__obs_plot0": 106.84745762711864
+  }
+ ],
+ "finalVarState": {
+  "sumPV": 1260800.0,
+  "sumV": 11800.0,
+  "__obs_plot0": 106.84745762711864
+ }
+}

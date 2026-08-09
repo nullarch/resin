@@ -1,0 +1,6 @@
+//@version=5
+indicator("MultiLine")
+sma_val = ta.sma(
+    close,
+    3
+    )

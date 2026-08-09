@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:matchCount": 0,
+   "var:consecutive": 1,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:matchCount": 1,
+   "var:consecutive": 2,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:matchCount": 2,
+   "var:consecutive": 3,
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:matchCount": 3,
+   "var:consecutive": 4,
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:matchCount": 4,
+   "var:consecutive": 5,
+   "var:__obs_plot0": 4
+  },
+  {
+   "var:matchCount": 5,
+   "var:consecutive": 6,
+   "var:__obs_plot0": 5
+  },
+  {
+   "var:matchCount": 6,
+   "var:consecutive": 7,
+   "var:__obs_plot0": 6
+  },
+  {
+   "var:matchCount": 7,
+   "var:consecutive": 8,
+   "var:__obs_plot0": 7
+  },
+  {
+   "var:matchCount": 8,
+   "var:consecutive": 9,
+   "var:__obs_plot0": 8
+  },
+  {
+   "var:matchCount": 9,
+   "var:consecutive": 10,
+   "var:__obs_plot0": 9
+  }
+ ],
+ "finalVarState": {
+  "matchCount": 9,
+  "consecutive": 10,
+  "__obs_plot0": 9
+ }
+}

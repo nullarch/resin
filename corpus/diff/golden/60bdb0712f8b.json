@@ -1,0 +1,204 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:prices": [
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:m": {
+    "sma": 110.0,
+    "rsi": 77.0749744316,
+    "atr": 5.9341563786
+   },
+   "var:barCount": 1,
+   "var:maxRSI": 0.0,
+   "var:__obs_plot0": "NaN",
+   "var:__obs_plot1": "NaN"
+  },
+  {
+   "var:prices": [
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:m": {
+    "sma": 110.0,
+    "rsi": 77.0749744316,
+    "atr": 5.9341563786
+   },
+   "var:barCount": 2,
+   "var:maxRSI": 0.0,
+   "var:__obs_plot0": "NaN",
+   "var:__obs_plot1": "NaN"
+  },
+  {
+   "var:prices": [
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:m": {
+    "sma": 110.0,
+    "rsi": 77.0749744316,
+    "atr": 5.9341563786
+   },
+   "var:barCount": 3,
+   "var:maxRSI": 0.0,
+   "var:__obs_plot0": 103.0,
+   "var:__obs_plot1": "NaN"
+  },
+  {
+   "var:prices": [
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:m": {
+    "sma": 110.0,
+    "rsi": 77.0749744316,
+    "atr": 5.9341563786
+   },
+   "var:barCount": 4,
+   "var:maxRSI": 0.0,
+   "var:__obs_plot0": 103.6666666667,
+   "var:__obs_plot1": "NaN"
+  },
+  {
+   "var:prices": [
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:m": {
+    "sma": 110.0,
+    "rsi": 77.0749744316,
+    "atr": 5.9341563786
+   },
+   "var:barCount": 5,
+   "var:maxRSI": 75.0,
+   "var:__obs_plot0": 104.6666666667,
+   "var:__obs_plot1": 104.2
+  },
+  {
+   "var:prices": [
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:m": {
+    "sma": 110.0,
+    "rsi": 77.0749744316,
+    "atr": 5.9341563786
+   },
+   "var:barCount": 6,
+   "var:maxRSI": 75.0,
+   "var:__obs_plot0": 106.0,
+   "var:__obs_plot1": 104.8
+  },
+  {
+   "var:prices": [
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:m": {
+    "sma": 110.0,
+    "rsi": 77.0749744316,
+    "atr": 5.9341563786
+   },
+   "var:barCount": 7,
+   "var:maxRSI": 75.0,
+   "var:__obs_plot0": 107.0,
+   "var:__obs_plot1": 105.6
+  },
+  {
+   "var:prices": [
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:m": {
+    "sma": 110.0,
+    "rsi": 77.0749744316,
+    "atr": 5.9341563786
+   },
+   "var:barCount": 8,
+   "var:maxRSI": 80.0383877159,
+   "var:__obs_plot0": 108.0,
+   "var:__obs_plot1": 107.2
+  },
+  {
+   "var:prices": [
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:m": {
+    "sma": 110.0,
+    "rsi": 77.0749744316,
+    "atr": 5.9341563786
+   },
+   "var:barCount": 9,
+   "var:maxRSI": 80.0383877159,
+   "var:__obs_plot0": 109.0,
+   "var:__obs_plot1": 108.0
+  },
+  {
+   "var:prices": [
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:m": {
+    "sma": 110.0,
+    "rsi": 77.0749744316,
+    "atr": 5.9341563786
+   },
+   "var:barCount": 10,
+   "var:maxRSI": 80.0383877159,
+   "var:__obs_plot0": 110.0,
+   "var:__obs_plot1": 108.8
+  }
+ ],
+ "finalVarState": {
+  "prices": [
+   106,
+   108,
+   110,
+   109,
+   111
+  ],
+  "m": {
+   "sma": 110.0,
+   "rsi": 77.0749744316,
+   "atr": 5.9341563786
+  },
+  "barCount": 10,
+  "maxRSI": 80.0383877159,
+  "__obs_plot0": 110.0,
+  "__obs_plot1": 108.8
+ }
+}

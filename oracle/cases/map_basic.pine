@@ -1,0 +1,85 @@
+//@version=5
+indicator("map_basic")
+
+// A: var 맵 — 바마다 put으로 같은 키("close")를 덮어쓴다. put 반환값(직전 바의 값)과 get(같은
+// 바에서 put 다음에 읽음 — 방금 넣은 값)을 관측. __obs_size_single은 "close" put 직후 시점의
+// 크기라 바0엔 1이지만, m이 var로 바를 넘어 지속되고 아래 B가 매 바 "open"/"high"를 같은 맵에
+// 추가하므로 바1부터는 B가 바0에 남긴 두 키가 이미 들어있어 3으로 관측된다(버그 아님 — 지속
+// 맵의 자연스러운 누적, 이름은 "이 채널을 읽는 코드 위치"만 가리킴). `close + 0.0`으로 산술 연산을 거쳐
+// 스칼라로 강제 변환 후 저장한다 — bare `close`를 그대로 넘기면 pine2py map_funcs.py의 put()이
+// array.py push/set/insert/unshift와 달리 `_scalar()` 가드가 없어 Series 참조를 그대로 dict에
+// 저장하는 latent 버그를 건드린다(DIVERGENCES.md 신규 — 나중에 map.get으로 읽으면 저장 시점이
+// 아니라 "지금 이 바"의 close 값이 나옴, 즉 매 바 prev==get==이번 바 close가 되는 오염 재현
+// 완료). pine2js는 GOAL.md 아키텍처 불변 원칙상 codegen이 함수 인자 위치에서도 항상 명시적
+// `.get(0)`을 방출해(Series를 bare 참조로 넘기는 경로 자체가 없음) 이 버그를 구조적으로 재현할
+// 수 없다 — `+ 0.0`은 pine2py 쪽에서만 그 gap을 우회하기 위한 오라클 설계이고, pine2js
+// 트랜스파일 결과에는 아무 영향이 없다(산술식이 어차피 스칼라를 낳는 건 항상 참).
+var m = map.new<string, float>()
+prevClose = map.put(m, "close", close + 0.0)
+var float __obs_put_prev = na
+__obs_put_prev := prevClose
+var float __obs_get_close = na
+__obs_get_close := map.get(m, "close")
+var float __obs_size_single = na
+__obs_size_single := map.size(m)
+
+// B: 서로 다른 키 추가 — 크기가 여러 키로 성장
+map.put(m, "open", open)
+map.put(m, "high", high)
+var float __obs_size_multi = na
+__obs_size_multi := map.size(m)
+
+// C: remove — "x"를 넣었다 매 바 다시 제거(반환값은 매 바 동일), contains로 존재 여부 확인
+var m2 = map.new<string, float>()
+map.put(m2, "y", 2.0)
+map.put(m2, "x", 1.0)
+removed = map.remove(m2, "x")
+var float __obs_removed = na
+__obs_removed := removed
+var float __obs_size_after_remove = na
+__obs_size_after_remove := map.size(m2)
+var bool __obs_contains_x = na
+__obs_contains_x := map.contains(m2, "x")
+var bool __obs_contains_y = na
+__obs_contains_y := map.contains(m2, "y")
+
+// D: keys/values — m2엔 "y"만 남아있음
+ks = map.keys(m2)
+var float __obs_keys_size = na
+__obs_keys_size := array.size(ks)
+var string __obs_keys_first = na
+__obs_keys_first := array.get(ks, 0)
+vs = map.values(m2)
+var float __obs_values_first = na
+__obs_values_first := array.get(vs, 0)
+
+// E: copy — 독립적인 복사본
+m3 = map.copy(m2)
+map.put(m3, "y", 999.0)
+var float __obs_copy_independent = na
+__obs_copy_independent := map.get(m2, "y")
+var float __obs_copy_value = na
+__obs_copy_value := map.get(m3, "y")
+
+// F: clear
+var m4 = map.new<string, float>()
+map.put(m4, "z", 5.0)
+map.clear(m4)
+var float __obs_clear_size = na
+__obs_clear_size := map.size(m4)
+
+// G: put_all
+var m5 = map.new<string, float>()
+map.put(m5, "a", 1.0)
+var m6 = map.new<string, float>()
+map.put(m6, "b", 2.0)
+map.put_all(m5, m6)
+var float __obs_putall_size = na
+__obs_putall_size := map.size(m5)
+var float __obs_putall_b = na
+__obs_putall_b := map.get(m5, "b")
+
+// H: get — 존재하지 않는 키
+var m7 = map.new<string, float>()
+var float __obs_get_missing = na
+__obs_get_missing := map.get(m7, "missing")

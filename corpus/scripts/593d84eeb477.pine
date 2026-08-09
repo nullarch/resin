@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Power")
+rsi = nz(ta.rsi(close, 3), 50.0)
+normalized = rsi / 100.0
+squared = math.pow(normalized, 2.0)
+sqrtVal = math.sqrt(normalized)
+plot(squared, "Sq")
+plot(sqrtVal, "Sqrt")

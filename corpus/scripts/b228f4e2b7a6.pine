@@ -1,0 +1,29 @@
+//@version=5
+indicator("Comprehensive UDF")
+type Signal
+    float value
+
+method amplify(Signal s, factor = 2.0) =>
+    s.value * factor
+
+f_trend(src, len) =>
+    s = ta.sma(src, len)
+    if src > s
+        1.0
+    else
+        -1.0
+
+f_score(a, b, c) =>
+    switch
+        a > 0 and b > 0 and c > 0 => 100.0
+        a > 0 or b > 0 => 50.0
+        => 0.0
+
+sig = Signal.new(25.0)
+float amp = sig.amplify(3.0)
+float trend = f_trend(close, 5)
+float score = f_score(trend, amp, 1.0)
+
+var float result = 0.0
+result := amp + score
+plot(result)

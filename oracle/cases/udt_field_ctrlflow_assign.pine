@@ -1,0 +1,37 @@
+//@version=5
+indicator("udt_field_ctrlflow_assign")
+// UDT 필드 제어문-식 대입(`obj.field := if/switch ...`, C265 신규) -- corpus 실측 3건
+// (45af7b496e92/817475176ed1/a73fd5c6a334.pine)의 `p.state := switch \n cond => "X" \n => "Y"`
+// 패턴. analyzeFieldAssignment이 stmt.value를 analyzeControlFlowOrExpr로 위임하도록 확장해
+// VarDecl/Assignment의 값 위치와 동일하게 if/switch를 허용, genFieldAssignment은 genStmt의
+// Assignment 분기(genControlFlowAssignment)와 동일한 "target=NaN 선대입 + genControlFlowBranches"
+// 모양을 target="objCode.field" 문자열로 재사용한다(codegen 새 분기, 값 재코드젠 로직은 무변경).
+// if 양쪽 분기 + switch 3분기(HOT/COLD/NEUTRAL)를 데이터로 전부 실측 커버.
+//
+// acc는 누적을 일반 BinOp 재대입(':=' + 삼항, 제어문-식 아님)으로 담당 -- p.energy/p.state 제어문-식
+// 값 위치는 acc만 읽고 자기 자신(p.energy/p.state)은 절대 읽지 않는다. genControlFlowAssignment/
+// genFieldAssignment 둘 다 "target = NaN 선대입 후 분기로 덮어쓰기" 방식이라, 분기 값 표현식이
+// 대입 대상 자신을 읽으면(예: `x := if ... x + 1 ...`) 그 읽기 시점에 이미 NaN으로 덮인 뒤라 결과가
+// 항상 NaN이 되는 기존 잠재 버그가 있다(C265 조사 중 발견, plain '=' 로컬에서도 재현 -- scope 밖,
+// ROADMAP next_hint 참조). 이 오라클은 그 버그를 우회하도록 설계됐을 뿐 그 버그 자체를 검증하지 않는다.
+type Particle
+    float energy = 0.0
+    string state = "NEUTRAL"
+
+var Particle p = Particle.new()
+var float acc = 0.0
+acc := acc + (close > open ? 1.0 : -1.0)
+
+p.energy := if acc >= 0.0
+    acc
+else
+    -acc
+p.state := switch
+    acc > 3.0 => "HOT"
+    acc < -3.0 => "COLD"
+    => "NEUTRAL"
+
+var float __obs_energy = na
+__obs_energy := p.energy
+var string __obs_state = na
+__obs_state := p.state

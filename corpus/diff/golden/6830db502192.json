@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:bestReturn": 0.0,
+   "var:worstReturn": 0.0,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:bestReturn": 0.0,
+   "var:worstReturn": 0.0,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:bestReturn": 0.0,
+   "var:worstReturn": 0.0,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:bestReturn": 1.9047619047619049,
+   "var:worstReturn": 0.0,
+   "var:__obs_plot0": 1.9047619047619049,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:bestReturn": 1.9047619047619049,
+   "var:worstReturn": 0.0,
+   "var:__obs_plot0": 1.9047619047619049,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:bestReturn": 1.9047619047619049,
+   "var:worstReturn": 0.0,
+   "var:__obs_plot0": 1.9047619047619049,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:bestReturn": 1.9047619047619049,
+   "var:worstReturn": 0.0,
+   "var:__obs_plot0": 1.9047619047619049,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:bestReturn": 1.9047619047619049,
+   "var:worstReturn": 0.0,
+   "var:__obs_plot0": 1.9047619047619049,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:bestReturn": 1.9047619047619049,
+   "var:worstReturn": 0.0,
+   "var:__obs_plot0": 1.9047619047619049,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:bestReturn": 1.9047619047619049,
+   "var:worstReturn": 0.0,
+   "var:__obs_plot0": 1.9047619047619049,
+   "var:__obs_plot1": 0.0
+  }
+ ],
+ "finalVarState": {
+  "bestReturn": 1.9047619047619049,
+  "worstReturn": 0.0,
+  "__obs_plot0": 1.9047619047619049,
+  "__obs_plot1": 0.0
+ }
+}

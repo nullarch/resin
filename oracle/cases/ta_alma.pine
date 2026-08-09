@@ -1,0 +1,8 @@
+//@version=5
+indicator("ta_alma")
+// ta.alma 오라클 검증(ROADMAP P2 "ta.* 44종" — alma). length=3으로 sample10.json 10바 안에서
+// 워밍업 구간(NaN, 바 0~1)과 정상 구간(바 2~9)을 모두 커버. offset/sigma는 TV 기본값(0.85/6.0)을
+// 그대로 사용 — GOAL.md "incremental O(1)/bar" 원칙의 명시적 예외(runtime/ta.ts alma() 주석,
+// PROGRESS C113 참조)로 매 바 O(length) 가중합 재계산이 정확히 이식됐는지 바이트 단위로 검증.
+var float __obs_alma = na
+__obs_alma := ta.alma(close, 3, 0.85, 6.0)

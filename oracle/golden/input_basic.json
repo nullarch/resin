@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_len": 14,
+   "var:__obs_mult": 2.5,
+   "var:__obs_useFilter": true,
+   "var:__obs_label": "hello"
+  },
+  {
+   "var:__obs_len": 14,
+   "var:__obs_mult": 2.5,
+   "var:__obs_useFilter": true,
+   "var:__obs_label": "hello"
+  },
+  {
+   "var:__obs_len": 14,
+   "var:__obs_mult": 2.5,
+   "var:__obs_useFilter": true,
+   "var:__obs_label": "hello"
+  },
+  {
+   "var:__obs_len": 14,
+   "var:__obs_mult": 2.5,
+   "var:__obs_useFilter": true,
+   "var:__obs_label": "hello"
+  },
+  {
+   "var:__obs_len": 14,
+   "var:__obs_mult": 2.5,
+   "var:__obs_useFilter": true,
+   "var:__obs_label": "hello"
+  },
+  {
+   "var:__obs_len": 14,
+   "var:__obs_mult": 2.5,
+   "var:__obs_useFilter": true,
+   "var:__obs_label": "hello"
+  },
+  {
+   "var:__obs_len": 14,
+   "var:__obs_mult": 2.5,
+   "var:__obs_useFilter": true,
+   "var:__obs_label": "hello"
+  },
+  {
+   "var:__obs_len": 14,
+   "var:__obs_mult": 2.5,
+   "var:__obs_useFilter": true,
+   "var:__obs_label": "hello"
+  },
+  {
+   "var:__obs_len": 14,
+   "var:__obs_mult": 2.5,
+   "var:__obs_useFilter": true,
+   "var:__obs_label": "hello"
+  },
+  {
+   "var:__obs_len": 14,
+   "var:__obs_mult": 2.5,
+   "var:__obs_useFilter": true,
+   "var:__obs_label": "hello"
+  }
+ ],
+ "finalVarState": {
+  "__obs_len": 14,
+  "__obs_mult": 2.5,
+  "__obs_useFilter": true,
+  "__obs_label": "hello"
+ }
+}

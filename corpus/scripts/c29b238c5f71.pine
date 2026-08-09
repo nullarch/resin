@@ -1,0 +1,7 @@
+//@version=5
+indicator("Allee Effect")
+var float pop = 30.0
+alleeThreshold = 20.0
+r = pop > alleeThreshold ? 0.05 : -0.03
+pop := math.max(pop + r * pop, 0.0)
+plot(pop, "Pop")

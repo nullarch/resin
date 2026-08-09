@@ -1,0 +1,8 @@
+//@version=5
+indicator("nested UDT")
+type Inner
+    float value = 0.0
+type Outer
+    Inner data = Inner.new()
+    float extra = 1.0
+o = Outer.new()

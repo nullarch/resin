@@ -1,0 +1,105 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:maxDrawdown": 0.0,
+   "var:peak": 0.0,
+   "var:totalReturn": 0.0,
+   "var:winCount": 0,
+   "var:lossCount": 0,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:maxDrawdown": 0.0,
+   "var:peak": 0.009708737864077666,
+   "var:totalReturn": 0.009708737864077666,
+   "var:winCount": 1,
+   "var:lossCount": 0,
+   "var:__obs_plot0": 100.0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:maxDrawdown": 0.019230769230769273,
+   "var:peak": 0.009708737864077666,
+   "var:totalReturn": -0.009522031366691608,
+   "var:winCount": 1,
+   "var:lossCount": 1,
+   "var:__obs_plot0": 50.0,
+   "var:__obs_plot1": 1.9230769230769273
+  },
+  {
+   "var:maxDrawdown": 0.019230769230769273,
+   "var:peak": 0.01988973333919064,
+   "var:totalReturn": 0.01988973333919064,
+   "var:winCount": 2,
+   "var:lossCount": 1,
+   "var:__obs_plot0": 66.66666666666666,
+   "var:__obs_plot1": 1.9230769230769273
+  },
+  {
+   "var:maxDrawdown": 0.019230769230769273,
+   "var:peak": 0.03893735238680962,
+   "var:totalReturn": 0.03893735238680962,
+   "var:winCount": 3,
+   "var:lossCount": 1,
+   "var:__obs_plot0": 75.0,
+   "var:__obs_plot1": 1.9230769230769273
+  },
+  {
+   "var:maxDrawdown": 0.019230769230769273,
+   "var:peak": 0.03893735238680962,
+   "var:totalReturn": 0.029591557994286255,
+   "var:winCount": 3,
+   "var:lossCount": 2,
+   "var:__obs_plot0": 60.0,
+   "var:__obs_plot1": 1.9230769230769273
+  },
+  {
+   "var:maxDrawdown": 0.019230769230769273,
+   "var:peak": 0.04845948252258814,
+   "var:totalReturn": 0.04845948252258814,
+   "var:winCount": 4,
+   "var:lossCount": 2,
+   "var:__obs_plot0": 66.66666666666666,
+   "var:__obs_plot1": 1.9230769230769273
+  },
+  {
+   "var:maxDrawdown": 0.019230769230769273,
+   "var:peak": 0.06697800104110674,
+   "var:totalReturn": 0.06697800104110674,
+   "var:winCount": 5,
+   "var:lossCount": 2,
+   "var:__obs_plot0": 71.42857142857143,
+   "var:__obs_plot1": 1.9230769230769273
+  },
+  {
+   "var:maxDrawdown": 0.019230769230769273,
+   "var:peak": 0.06697800104110674,
+   "var:totalReturn": 0.0578870919501977,
+   "var:winCount": 5,
+   "var:lossCount": 3,
+   "var:__obs_plot0": 62.5,
+   "var:__obs_plot1": 1.9230769230769273
+  },
+  {
+   "var:maxDrawdown": 0.019230769230769273,
+   "var:peak": 0.0762357158034086,
+   "var:totalReturn": 0.0762357158034086,
+   "var:winCount": 6,
+   "var:lossCount": 3,
+   "var:__obs_plot0": 66.66666666666666,
+   "var:__obs_plot1": 1.9230769230769273
+  }
+ ],
+ "finalVarState": {
+  "maxDrawdown": 0.019230769230769273,
+  "peak": 0.0762357158034086,
+  "totalReturn": 0.0762357158034086,
+  "winCount": 6,
+  "lossCount": 3,
+  "__obs_plot0": 66.66666666666666,
+  "__obs_plot1": 1.9230769230769273
+ }
+}

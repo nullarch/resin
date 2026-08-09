@@ -1,0 +1,13 @@
+//@version=5
+indicator("na_basic")
+// close[20]은 10바 데이터셋에서 항상 범위 밖(na) -- na(x)가 true를 내는 분기를 매 바 동일하게
+// 커버. close(항상 non-na)로 false 분기도 함께 커버. 리터럴 na도 별도 관측(standalone 분기,
+// 파서의 na(x) 콜 lookahead와 충돌 없이 여전히 NaLiteral로 파싱됨을 오라클로도 확인).
+var bool __obs_isNa = na
+__obs_isNa := na(close[20])
+
+var bool __obs_notNa = na
+__obs_notNa := na(close)
+
+var bool __obs_literal = na
+__obs_literal := na(na)

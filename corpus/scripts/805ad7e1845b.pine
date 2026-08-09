@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("ATR Bands")
+sma5 = ta.sma(close, 5)
+atr = nz(ta.atr(3), 1.0)
+upper = sma5 + atr * 1.5
+lower = sma5 - atr * 1.5
+plot(close > upper ? 1 : close < lower ? -1 : 0, "Band")

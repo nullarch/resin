@@ -1,0 +1,102 @@
+{
+ "ok": true,
+ "data": "udt_field_ctrlflow_assign.json",
+ "bars": [
+  {
+   "var:p": "pine_fn.<locals>.Particle(energy=5.0, state='COLD')",
+   "var:acc": 1.0,
+   "var:__obs_energy": 1.0,
+   "var:__obs_state": "NEUTRAL"
+  },
+  {
+   "var:p": "pine_fn.<locals>.Particle(energy=5.0, state='COLD')",
+   "var:acc": 2.0,
+   "var:__obs_energy": 2.0,
+   "var:__obs_state": "NEUTRAL"
+  },
+  {
+   "var:p": "pine_fn.<locals>.Particle(energy=5.0, state='COLD')",
+   "var:acc": 3.0,
+   "var:__obs_energy": 3.0,
+   "var:__obs_state": "NEUTRAL"
+  },
+  {
+   "var:p": "pine_fn.<locals>.Particle(energy=5.0, state='COLD')",
+   "var:acc": 4.0,
+   "var:__obs_energy": 4.0,
+   "var:__obs_state": "HOT"
+  },
+  {
+   "var:p": "pine_fn.<locals>.Particle(energy=5.0, state='COLD')",
+   "var:acc": 5.0,
+   "var:__obs_energy": 5.0,
+   "var:__obs_state": "HOT"
+  },
+  {
+   "var:p": "pine_fn.<locals>.Particle(energy=5.0, state='COLD')",
+   "var:acc": 4.0,
+   "var:__obs_energy": 4.0,
+   "var:__obs_state": "HOT"
+  },
+  {
+   "var:p": "pine_fn.<locals>.Particle(energy=5.0, state='COLD')",
+   "var:acc": 3.0,
+   "var:__obs_energy": 3.0,
+   "var:__obs_state": "NEUTRAL"
+  },
+  {
+   "var:p": "pine_fn.<locals>.Particle(energy=5.0, state='COLD')",
+   "var:acc": 2.0,
+   "var:__obs_energy": 2.0,
+   "var:__obs_state": "NEUTRAL"
+  },
+  {
+   "var:p": "pine_fn.<locals>.Particle(energy=5.0, state='COLD')",
+   "var:acc": 1.0,
+   "var:__obs_energy": 1.0,
+   "var:__obs_state": "NEUTRAL"
+  },
+  {
+   "var:p": "pine_fn.<locals>.Particle(energy=5.0, state='COLD')",
+   "var:acc": 0.0,
+   "var:__obs_energy": 0.0,
+   "var:__obs_state": "NEUTRAL"
+  },
+  {
+   "var:p": "pine_fn.<locals>.Particle(energy=5.0, state='COLD')",
+   "var:acc": -1.0,
+   "var:__obs_energy": 1.0,
+   "var:__obs_state": "NEUTRAL"
+  },
+  {
+   "var:p": "pine_fn.<locals>.Particle(energy=5.0, state='COLD')",
+   "var:acc": -2.0,
+   "var:__obs_energy": 2.0,
+   "var:__obs_state": "NEUTRAL"
+  },
+  {
+   "var:p": "pine_fn.<locals>.Particle(energy=5.0, state='COLD')",
+   "var:acc": -3.0,
+   "var:__obs_energy": 3.0,
+   "var:__obs_state": "NEUTRAL"
+  },
+  {
+   "var:p": "pine_fn.<locals>.Particle(energy=5.0, state='COLD')",
+   "var:acc": -4.0,
+   "var:__obs_energy": 4.0,
+   "var:__obs_state": "COLD"
+  },
+  {
+   "var:p": "pine_fn.<locals>.Particle(energy=5.0, state='COLD')",
+   "var:acc": -5.0,
+   "var:__obs_energy": 5.0,
+   "var:__obs_state": "COLD"
+  }
+ ],
+ "finalVarState": {
+  "p": "pine_fn.<locals>.Particle(energy=5.0, state='COLD')",
+  "acc": -5.0,
+  "__obs_energy": 5.0,
+  "__obs_state": "COLD"
+ }
+}

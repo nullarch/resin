@@ -1,0 +1,8 @@
+//@version=5
+indicator("TernGain16")
+var float est = 100.0
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+gain = rsiVal > 70.0 ? 0.1 : rsiVal < 30.0 ? 0.5 : 0.3
+est := est + gain * (close - est)
+label = gain > 0.4 ? "FAST" : gain < 0.2 ? "SLOW" : "NORM"
+plot(est, "e")

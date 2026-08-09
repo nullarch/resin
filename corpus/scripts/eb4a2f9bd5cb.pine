@@ -1,0 +1,8 @@
+//@version=5
+indicator("Optimal Coupling")
+float normPrice = close / 113.0
+float normVol = volume / 1600.0
+float coupling = math.abs(normPrice - normVol)
+var float bestCoupling = 999.0
+bestCoupling := math.min(bestCoupling, coupling)
+plot(bestCoupling, "BestCoupling")

@@ -1,0 +1,8 @@
+//@version=5
+indicator("Enum")
+enum Direction
+    Up = 1
+    Down = -1
+    Flat = 0
+dir = close > open ? Direction.Up : close < open ? Direction.Down : Direction.Flat
+plot(dir == Direction.Up ? 1 : dir == Direction.Down ? -1 : 0)

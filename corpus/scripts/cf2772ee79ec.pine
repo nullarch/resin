@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Kelly")
+var int wins = 0
+var int losses = 0
+var int totalTrades = 0
+priceUp = close > close[1]
+totalTrades := totalTrades + 1
+if priceUp
+    wins := wins + 1
+else
+    losses := losses + 1
+winRate = totalTrades > 0 ? float(wins) / totalTrades : 0.5
+rrRatio = 2.0
+kelly = winRate - (1 - winRate) / rrRatio
+plot(kelly * 100, "K")

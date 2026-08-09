@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Mom Track")
+type MomTracker
+    float rsi = 50.0
+    float stochK = 50.0
+    float composite = 50.0
+
+var MomTracker mt = MomTracker.new()
+mt.rsi := nz(ta.rsi(close, 3), 50.0)
+mt.stochK := ta.stoch(close, high, low, 5)
+mt.composite := (mt.rsi + mt.stochK) / 2.0
+isOB = mt.composite > 70
+isOS = mt.composite < 30
+plot(mt.composite, "Comp")

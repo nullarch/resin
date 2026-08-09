@@ -1,0 +1,9 @@
+//@version=5
+indicator("Leaf Area Index")
+calcLAI(biomass, coeff) =>
+    biomass * coeff / 100.0
+
+biomassProxy = ta.ema(close, 3)
+lai = not na(biomassProxy) ? calcLAI(biomassProxy, 0.65) : 0.0
+var float maxLAI = 0.0
+maxLAI := math.max(maxLAI, lai)

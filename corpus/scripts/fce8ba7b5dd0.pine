@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Adapt Win")
+var float[] prices = array.new_float(0)
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+maxSize = avgATR > 0 and atr / avgATR > 1.5 ? 4 : 8
+array.push(prices, close)
+while array.size(prices) > maxSize
+    array.shift(prices)
+avg = array.avg(prices)
+plot(avg, "Avg")
+plot(array.size(prices), "Size")

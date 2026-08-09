@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:risk": "pine_fn.<locals>.RiskMetrics(volatility=5.9341563786, drawdown=-2.0220588235294144, sharpe=0.3707350901526178)",
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:risk": "pine_fn.<locals>.RiskMetrics(volatility=5.9341563786, drawdown=-2.0220588235294144, sharpe=0.3707350901526178)",
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:risk": "pine_fn.<locals>.RiskMetrics(volatility=5.9341563786, drawdown=-2.0220588235294144, sharpe=0.3707350901526178)",
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:risk": "pine_fn.<locals>.RiskMetrics(volatility=5.9341563786, drawdown=-2.0220588235294144, sharpe=0.3707350901526178)",
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:risk": "pine_fn.<locals>.RiskMetrics(volatility=5.9341563786, drawdown=-2.0220588235294144, sharpe=0.3707350901526178)",
+   "var:__obs_plot0": 0.4846153846135202
+  },
+  {
+   "var:risk": "pine_fn.<locals>.RiskMetrics(volatility=5.9341563786, drawdown=-2.0220588235294144, sharpe=0.3707350901526178)",
+   "var:__obs_plot0": 0.21176470588110777
+  },
+  {
+   "var:risk": "pine_fn.<locals>.RiskMetrics(volatility=5.9341563786, drawdown=-2.0220588235294144, sharpe=0.3707350901526178)",
+   "var:__obs_plot0": 0.41538461538301874
+  },
+  {
+   "var:risk": "pine_fn.<locals>.RiskMetrics(volatility=5.9341563786, drawdown=-2.0220588235294144, sharpe=0.3707350901526178)",
+   "var:__obs_plot0": 0.4784810126542905
+  },
+  {
+   "var:risk": "pine_fn.<locals>.RiskMetrics(volatility=5.9341563786, drawdown=-2.0220588235294144, sharpe=0.3707350901526178)",
+   "var:__obs_plot0": 0.16945606694564216
+  },
+  {
+   "var:risk": "pine_fn.<locals>.RiskMetrics(volatility=5.9341563786, drawdown=-2.0220588235294144, sharpe=0.3707350901526178)",
+   "var:__obs_plot0": 0.3707350901526178
+  }
+ ],
+ "finalVarState": {
+  "risk": "pine_fn.<locals>.RiskMetrics(volatility=5.9341563786, drawdown=-2.0220588235294144, sharpe=0.3707350901526178)",
+  "__obs_plot0": 0.3707350901526178
+ }
+}

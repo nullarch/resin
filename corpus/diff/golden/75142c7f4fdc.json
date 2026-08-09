@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:bestFitness": 0.5,
+   "var:bestGene": 103,
+   "var:__obs_plot0": 103,
+   "var:__obs_plot1": 0.5
+  },
+  {
+   "var:bestFitness": 1.0,
+   "var:bestGene": 104,
+   "var:__obs_plot0": 104,
+   "var:__obs_plot1": 1.0
+  },
+  {
+   "var:bestFitness": 1.0,
+   "var:bestGene": 104,
+   "var:__obs_plot0": 104,
+   "var:__obs_plot1": 1.0
+  },
+  {
+   "var:bestFitness": 100.0,
+   "var:bestGene": 105,
+   "var:__obs_plot0": 105,
+   "var:__obs_plot1": 100.0
+  },
+  {
+   "var:bestFitness": 100.0,
+   "var:bestGene": 105,
+   "var:__obs_plot0": 105,
+   "var:__obs_plot1": 100.0
+  },
+  {
+   "var:bestFitness": 100.0,
+   "var:bestGene": 105,
+   "var:__obs_plot0": 105,
+   "var:__obs_plot1": 100.0
+  },
+  {
+   "var:bestFitness": 100.0,
+   "var:bestGene": 105,
+   "var:__obs_plot0": 105,
+   "var:__obs_plot1": 100.0
+  },
+  {
+   "var:bestFitness": 100.0,
+   "var:bestGene": 105,
+   "var:__obs_plot0": 105,
+   "var:__obs_plot1": 100.0
+  },
+  {
+   "var:bestFitness": 100.0,
+   "var:bestGene": 105,
+   "var:__obs_plot0": 105,
+   "var:__obs_plot1": 100.0
+  },
+  {
+   "var:bestFitness": 100.0,
+   "var:bestGene": 105,
+   "var:__obs_plot0": 105,
+   "var:__obs_plot1": 100.0
+  }
+ ],
+ "finalVarState": {
+  "bestFitness": 100.0,
+  "bestGene": 105,
+  "__obs_plot0": 105,
+  "__obs_plot1": 100.0
+ }
+}

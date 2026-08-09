@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("TF Sigs")
+var sigs = map.new<string, float>()
+ema2 = ta.ema(close, 2)
+ema3 = ta.ema(close, 3)
+sma5 = ta.sma(close, 5)
+map.put(sigs, "fast", close > ema2 ? 1.0 : -1.0)
+map.put(sigs, "medium", close > ema3 ? 1.0 : -1.0)
+map.put(sigs, "slow", close > sma5 ? 1.0 : -1.0)
+total = 0.0
+for [k, v] in sigs
+    total := total + v
+allAligned = math.abs(total) == 3
+plot(allAligned ? total : 0, "Align")

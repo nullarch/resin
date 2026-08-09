@@ -1,0 +1,9 @@
+//@version=5
+indicator("switch disc return")
+var float result = 0.0
+f(x) =>
+    switch x
+        1 => 10.0
+        2 => 20.0
+        => 30.0
+result := f(2)

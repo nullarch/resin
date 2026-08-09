@@ -1,0 +1,9 @@
+//@version=5
+indicator("Var counter")
+var int bullBars = 0
+var int bearBars = 0
+if close > open
+    bullBars := bullBars + 1
+else
+    bearBars := bearBars + 1
+totalBars = bullBars + bearBars

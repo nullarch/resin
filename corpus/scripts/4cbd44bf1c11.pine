@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Sig Lbl")
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+direction = close > sma3 ? "LONG" : "SHORT"
+confidence = rsi > 60 or rsi < 40 ? "HIGH" : "LOW"
+label = direction + "_" + confidence
+isLongHigh = label == "LONG_HIGH"
+plot(isLongHigh ? 1 : 0, "LH")

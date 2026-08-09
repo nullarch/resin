@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Precision 10")
+sma_val = ta.sma(close, 5)
+ema_val = ta.ema(close, 10)
+rsi_val = ta.rsi(close, 14)
+result = sma_val + ema_val + rsi_val
+plot(result)

@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:faultA": 5.1,
+   "var:faultB": 12.1,
+   "var:__obs_plot0": -1.08
+  },
+  {
+   "var:faultA": 0.8999999999999995,
+   "var:faultB": 13.899999999999999,
+   "var:__obs_plot0": -5.340000000000001
+  },
+  {
+   "var:faultA": 0.8999999999999995,
+   "var:faultB": 13.899999999999999,
+   "var:__obs_plot0": -5.220000000000001
+  },
+  {
+   "var:faultA": -3.3000000000000007,
+   "var:faultB": 15.7,
+   "var:__obs_plot0": -9.600000000000001
+  },
+  {
+   "var:faultA": -7.500000000000001,
+   "var:faultB": 17.5,
+   "var:__obs_plot0": -13.920000000000002
+  },
+  {
+   "var:faultA": -11.7,
+   "var:faultB": 19.3,
+   "var:__obs_plot0": -18.06
+  },
+  {
+   "var:faultA": -15.899999999999999,
+   "var:faultB": 21.1,
+   "var:__obs_plot0": -22.38
+  },
+  {
+   "var:faultA": -20.099999999999998,
+   "var:faultB": 22.900000000000002,
+   "var:__obs_plot0": -26.7
+  },
+  {
+   "var:faultA": -24.299999999999997,
+   "var:faultB": 24.700000000000003,
+   "var:__obs_plot0": -30.839999999999996
+  },
+  {
+   "var:faultA": -28.499999999999996,
+   "var:faultB": 26.500000000000004,
+   "var:__obs_plot0": -35.16
+  }
+ ],
+ "finalVarState": {
+  "faultA": -28.499999999999996,
+  "faultB": 26.500000000000004,
+  "__obs_plot0": -35.16
+ }
+}

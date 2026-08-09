@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Sys Dash")
+var dash = map.new<string, float>()
+sma3 = ta.sma(close, 3)
+rsi = ta.rsi(close, 3)
+atr = ta.atr(3)
+map.put(dash, "trend", close > sma3 ? 1.0 : -1.0)
+map.put(dash, "mom", rsi > 50 ? 1.0 : -1.0)
+map.put(dash, "vol", atr)
+map.put(dash, "price", close)
+map.put(dash, "ma", sma3)
+totalSignals = map.get(dash, "trend", 0.0) + map.get(dash, "mom", 0.0)
+var float __obs_plot0 = na
+__obs_plot0 := totalSignals
+plot(totalSignals, "Total")

@@ -1,0 +1,10 @@
+//@version=5
+indicator("For-In Enumerate")
+var float[] data = array.new_float(0)
+array.push(data, close)
+array.push(data, open)
+array.push(data, high)
+float maxVal = 0.0
+for [idx, val] in data
+    if val > maxVal
+        maxVal := val

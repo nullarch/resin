@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_r": "NaN",
+   "var:__obs_m": "NaN"
+  },
+  {
+   "var:__obs_r": "NaN",
+   "var:__obs_m": 101.5
+  },
+  {
+   "var:__obs_r": "NaN",
+   "var:__obs_m": 102.25
+  },
+  {
+   "var:__obs_r": "NaN",
+   "var:__obs_m": 102.125
+  },
+  {
+   "var:__obs_r": 103.5,
+   "var:__obs_m": 103.0625
+  },
+  {
+   "var:__obs_r": 104.5,
+   "var:__obs_m": "NaN"
+  },
+  {
+   "var:__obs_r": 105.5,
+   "var:__obs_m": 105.5
+  },
+  {
+   "var:__obs_r": 105.1666666667,
+   "var:__obs_m": 105.1666666667
+  },
+  {
+   "var:__obs_r": 106.3888888889,
+   "var:__obs_m": 106.3888888889
+  },
+  {
+   "var:__obs_r": 107.462962963,
+   "var:__obs_m": 107.462962963
+  }
+ ],
+ "finalVarState": {
+  "__obs_r": 107.462962963,
+  "__obs_m": 107.462962963
+ }
+}

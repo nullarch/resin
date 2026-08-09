@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_rsi": "NaN"
+  },
+  {
+   "var:__obs_rsi": "NaN"
+  },
+  {
+   "var:__obs_rsi": 100.0
+  },
+  {
+   "var:__obs_rsi": 57.1428571429
+  },
+  {
+   "var:__obs_rsi": 81.25
+  },
+  {
+   "var:__obs_rsi": 86.8131868132
+  },
+  {
+   "var:__obs_rsi": 90.8745247148
+  },
+  {
+   "var:__obs_rsi": 62.1586475943
+  },
+  {
+   "var:__obs_rsi": 80.5740987984
+  },
+  {
+   "var:__obs_rsi": 85.7684313486
+  }
+ ],
+ "finalVarState": {
+  "__obs_rsi": 85.7684313486
+ }
+}

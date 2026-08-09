@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Osc Conv")
+rsi = nz(ta.rsi(close, 3), 50.0)
+k = ta.stoch(close, high, low, 5)
+gap = math.abs(rsi - k)
+smoothGap = gap
+iters = 0
+while smoothGap > 5 and iters < 10
+    smoothGap := smoothGap * 0.7
+    iters := iters + 1
+var float __obs_plot0 = na
+__obs_plot0 := gap
+plot(gap, "Gap")
+var float __obs_plot1 = na
+__obs_plot1 := iters
+plot(iters, "Its")

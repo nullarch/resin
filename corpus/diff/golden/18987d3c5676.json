@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:msg": "Price: 103.0",
+   "var:len_": 12,
+   "var:starts": true,
+   "var:__obs_plot0": 103
+  },
+  {
+   "var:msg": "Price: 104.0",
+   "var:len_": 12,
+   "var:starts": true,
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:msg": "Price: 102.0",
+   "var:len_": 12,
+   "var:starts": true,
+   "var:__obs_plot0": 102
+  },
+  {
+   "var:msg": "Price: 105.0",
+   "var:len_": 12,
+   "var:starts": true,
+   "var:__obs_plot0": 105
+  },
+  {
+   "var:msg": "Price: 107.0",
+   "var:len_": 12,
+   "var:starts": true,
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:msg": "Price: 106.0",
+   "var:len_": 12,
+   "var:starts": true,
+   "var:__obs_plot0": 106
+  },
+  {
+   "var:msg": "Price: 108.0",
+   "var:len_": 12,
+   "var:starts": true,
+   "var:__obs_plot0": 108
+  },
+  {
+   "var:msg": "Price: 110.0",
+   "var:len_": 12,
+   "var:starts": true,
+   "var:__obs_plot0": 110
+  },
+  {
+   "var:msg": "Price: 109.0",
+   "var:len_": 12,
+   "var:starts": true,
+   "var:__obs_plot0": 109
+  },
+  {
+   "var:msg": "Price: 111.0",
+   "var:len_": 12,
+   "var:starts": true,
+   "var:__obs_plot0": 111
+  }
+ ],
+ "finalVarState": {
+  "msg": "Price: 111.0",
+  "len_": 12,
+  "starts": true,
+  "__obs_plot0": 111
+ }
+}

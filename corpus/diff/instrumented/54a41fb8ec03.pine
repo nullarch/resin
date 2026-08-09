@@ -1,0 +1,22 @@
+//@version=5
+indicator("SQZMOM Full")
+length = 20
+mult = 2.0
+lengthKC = 20
+multKC = 1.5
+source = close
+basis = ta.sma(source, length)
+dev = mult * ta.stdev(source, length)
+upperBB = basis + dev
+lowerBB = basis - dev
+ma = ta.sma(source, lengthKC)
+rangema = ta.sma(ta.tr, lengthKC)
+upperKC = ma + rangema * multKC
+lowerKC = ma - rangema * multKC
+sqzOn = lowerBB > lowerKC and upperBB < upperKC
+sqzOff = lowerBB < lowerKC and upperBB > upperKC
+noSqz = not sqzOn and not sqzOff
+val = ta.linreg(source - math.avg(math.avg(ta.highest(high, lengthKC), ta.lowest(low, lengthKC)), ta.sma(close, lengthKC)), lengthKC, 0)
+var float __obs_plot0 = na
+__obs_plot0 := val
+plot(val)

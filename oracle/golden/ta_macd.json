@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_macd": "NaN",
+   "var:__obs_signal": "NaN",
+   "var:__obs_hist": "NaN"
+  },
+  {
+   "var:__obs_macd": "NaN",
+   "var:__obs_signal": "NaN",
+   "var:__obs_hist": "NaN"
+  },
+  {
+   "var:__obs_macd": 0.5,
+   "var:__obs_signal": "NaN",
+   "var:__obs_hist": "NaN"
+  },
+  {
+   "var:__obs_macd": 0.1666666667,
+   "var:__obs_signal": 0.3333333333,
+   "var:__obs_hist": -0.1666666667
+  },
+  {
+   "var:__obs_macd": 0.3888888889,
+   "var:__obs_signal": 0.3703703704,
+   "var:__obs_hist": 0.0185185185
+  },
+  {
+   "var:__obs_macd": 0.462962963,
+   "var:__obs_signal": 0.4320987655,
+   "var:__obs_hist": 0.0308641975
+  },
+  {
+   "var:__obs_macd": 0.487654321,
+   "var:__obs_signal": 0.4691358025,
+   "var:__obs_hist": 0.0185185185
+  },
+  {
+   "var:__obs_macd": 0.1625514403,
+   "var:__obs_signal": 0.2647462277,
+   "var:__obs_hist": -0.1021947874
+  },
+  {
+   "var:__obs_macd": 0.3875171468,
+   "var:__obs_signal": 0.3465935071,
+   "var:__obs_hist": 0.0409236397
+  },
+  {
+   "var:__obs_macd": 0.4625057156,
+   "var:__obs_signal": 0.4238683128,
+   "var:__obs_hist": 0.0386374028
+  }
+ ],
+ "finalVarState": {
+  "__obs_macd": 0.4625057156,
+  "__obs_signal": 0.4238683128,
+  "__obs_hist": 0.0386374028
+ }
+}

@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Rolling Avg")
+var float[] window = array.new_float(0)
+array.push(window, close)
+if array.size(window) > 5
+    array.shift(window)
+avg = array.avg(window)
+plot(avg, "Avg")

@@ -1,0 +1,40 @@
+//@version=5
+indicator("Cycle44 Comprehensive")
+// TA with unique state keys
+sma_ = ta.sma(close, 3)
+ema_ = ta.ema(close, 5)
+rsi_ = ta.rsi(close, 5)
+
+// Math operations
+sq = math.sqrt(nz(sma_))
+
+// Array operations (method dispatch)
+var arr = array.new_float(0)
+array.push(arr, nz(sma_))
+var int arr_size = 0
+arr_size := array.size(arr)
+
+// Map operations
+var m = map.new<string, float>()
+m.put("sma", nz(sma_))
+m.put("ema", nz(ema_))
+var int map_size = 0
+map_size := m.size()
+
+// Switch
+signal = switch
+    nz(rsi_) > 70 => "sell"
+    nz(rsi_) < 30 => "buy"
+    => "hold"
+
+// Var state
+var int trade_count = 0
+if nz(rsi_) > 60 and nz(rsi_[1]) <= 60
+    trade_count := trade_count + 1
+
+// String
+info = "SMA=" + str.tostring(math.round(nz(sma_)))
+
+var float result = 0.0
+result := nz(sma_) + nz(ema_) + sq + arr_size + map_size
+plot(close)

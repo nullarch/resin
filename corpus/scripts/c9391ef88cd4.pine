@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Cndl Info")
+type CandleInfo
+    float bodySize = 0.0
+    float wickRatio = 0.0
+    bool isBull = false
+
+var CandleInfo ci = CandleInfo.new()
+ci.bodySize := math.abs(close - open_)
+fullRange = high - low
+ci.wickRatio := fullRange > 0 ? (fullRange - ci.bodySize) / fullRange : 0.0
+ci.isBull := close > open_
+plot(ci.wickRatio, "WR")

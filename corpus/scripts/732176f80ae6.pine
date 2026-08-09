@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Str Toolkit")
+base = str.tostring(close, "#.##")
+upper = str.upper(base)
+len = str.length(upper)
+has_dot = str.contains(upper, ".")
+starts = str.startswith(upper, "1")
+plot(len, "Len")

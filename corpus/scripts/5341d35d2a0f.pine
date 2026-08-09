@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("RiskParity")
+atrVal = nz(ta.atr(3), 1.0)
+invVol = atrVal > 0 ? 1.0 / atrVal : 1.0
+rsi = nz(ta.rsi(close, 3), 50.0)
+invRsiVol = rsi > 0 ? 1.0 / math.max(math.abs(rsi - 50.0), 1.0) : 1.0
+totalInvVol = invVol + invRsiVol
+w1 = totalInvVol > 0 ? invVol / totalInvVol : 0.5
+w2 = 1.0 - w1
+plot(w1, "W1")

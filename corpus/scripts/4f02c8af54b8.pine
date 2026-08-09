@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Ind Cache")
+var cache = map.new<string, float>()
+map.put(cache, "sma3", ta.sma(close, 3))
+map.put(cache, "ema5", ta.ema(close, 5))
+map.put(cache, "rsi3", ta.rsi(close, 3))
+sma = map.get(cache, "sma3", close)
+ema = map.get(cache, "ema5", close)
+crossAbove = sma > ema
+plot(crossAbove ? 1 : 0, "Cross")

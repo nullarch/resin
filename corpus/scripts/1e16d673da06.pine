@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Port Pos")
+type PortPos
+    float value = 0.0
+    float weight = 0.0
+    int rebalanceCount = 0
+
+var PortPos pos = PortPos.new()
+pos.value := close * 100
+targetWeight = 0.6
+currentWeight = pos.value > 0 ? pos.value / (pos.value + 5000) : 0.0
+if math.abs(currentWeight - targetWeight) > 0.1
+    pos.rebalanceCount := pos.rebalanceCount + 1
+pos.weight := currentWeight
+plot(pos.weight, "Weight")

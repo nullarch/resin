@@ -1,0 +1,7 @@
+//@version=5
+indicator("Varip")
+var int var_count = 0
+varip int varip_count = 0
+var_count := var_count + 1
+varip_count := varip_count + 1
+plot(close)

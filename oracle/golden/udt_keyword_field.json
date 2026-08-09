@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:sig": "pine_fn.<locals>.Signal(var=1, type='bull', switch=10.0)",
+   "var:__obs_var": 1,
+   "var:__obs_switch": 1.0,
+   "var:__obs_type": "bull"
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(var=1, type='bull', switch=10.0)",
+   "var:__obs_var": 1,
+   "var:__obs_switch": 2.0,
+   "var:__obs_type": "bull"
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(var=1, type='bull', switch=10.0)",
+   "var:__obs_var": 1,
+   "var:__obs_switch": 3.0,
+   "var:__obs_type": "bull"
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(var=1, type='bull', switch=10.0)",
+   "var:__obs_var": 1,
+   "var:__obs_switch": 4.0,
+   "var:__obs_type": "bull"
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(var=1, type='bull', switch=10.0)",
+   "var:__obs_var": 1,
+   "var:__obs_switch": 5.0,
+   "var:__obs_type": "bull"
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(var=1, type='bull', switch=10.0)",
+   "var:__obs_var": 1,
+   "var:__obs_switch": 6.0,
+   "var:__obs_type": "bull"
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(var=1, type='bull', switch=10.0)",
+   "var:__obs_var": 1,
+   "var:__obs_switch": 7.0,
+   "var:__obs_type": "bull"
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(var=1, type='bull', switch=10.0)",
+   "var:__obs_var": 1,
+   "var:__obs_switch": 8.0,
+   "var:__obs_type": "bull"
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(var=1, type='bull', switch=10.0)",
+   "var:__obs_var": 1,
+   "var:__obs_switch": 9.0,
+   "var:__obs_type": "bull"
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(var=1, type='bull', switch=10.0)",
+   "var:__obs_var": 1,
+   "var:__obs_switch": 10.0,
+   "var:__obs_type": "bull"
+  }
+ ],
+ "finalVarState": {
+  "sig": "pine_fn.<locals>.Signal(var=1, type='bull', switch=10.0)",
+  "__obs_var": 1,
+  "__obs_switch": 10.0,
+  "__obs_type": "bull"
+ }
+}

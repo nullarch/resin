@@ -1,0 +1,11 @@
+//@version=5
+indicator("Full Indicator", overlay=true)
+sma20 = ta.sma(close, 5)
+ema9 = ta.ema(close, 3)
+rsiVal = ta.rsi(close, 5)
+atrVal = ta.atr(3)
+[upper, mid, lower] = ta.bb(close, 5, 2.0)
+[macdLine, sig, hist] = ta.macd(close, 12, 26, 9)
+stochK = ta.stoch(close, high, low, 5)
+plot(sma20, "SMA")
+plot(ema9, "EMA")

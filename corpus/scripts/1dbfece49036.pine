@@ -1,0 +1,8 @@
+//@version=5
+indicator("Hist History")
+fast = ta.ema(close, 3)
+slow = ta.ema(close, 5)
+histogram = fast - slow
+rising = histogram > histogram[1]
+plot(histogram)
+plot(rising ? 1.0 : 0.0)

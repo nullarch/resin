@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Period Map")
+var pd = map.new<string, float>()
+map.put(pd, "sma3", ta.sma(close, 3))
+map.put(pd, "sma5", ta.sma(close, 5))
+map.put(pd, "rsi3", nz(ta.rsi(close, 3), 50.0))
+total = 0.0
+for [k, v] in pd
+    total := total + v
+plot(total / 3, "Avg")

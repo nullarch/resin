@@ -1,0 +1,18 @@
+//@version=5
+indicator("request_dividends_splits")
+// request.dividends/request.splits(신규, C239 next_hint 1순위) — bar-independent(순수 상수 스텁,
+// wavealgo/__init__.py L122-128 request_splits/request_dividends가 인자 전부 무시하고 항상 0.0을
+// 반환). corpus 실사용 패턴(syminfo.tickerid + dividends.gross/splits.denominator) 그대로 재현 +
+// 형제 필드 상수(dividends.net/splits.numerator) + 0-인자 호출까지 전 갈래 관측.
+var float __obs_div = na
+__obs_div := request.dividends(syminfo.tickerid, dividends.gross)
+var float __obs_div_net = na
+__obs_div_net := request.dividends(syminfo.tickerid, dividends.net)
+var float __obs_spl = na
+__obs_spl := request.splits(syminfo.tickerid, splits.denominator)
+var float __obs_spl_num = na
+__obs_spl_num := request.splits(syminfo.tickerid, splits.numerator)
+var float __obs_div_bare = na
+__obs_div_bare := request.dividends()
+var float __obs_spl_bare = na
+__obs_spl_bare := request.splits()

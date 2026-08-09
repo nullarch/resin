@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "time_weekofyear.json",
+ "bars": [
+  {
+   "var:__obs_weekofyear": 1,
+   "var:__obs_weekofyear_call": 1
+  },
+  {
+   "var:__obs_weekofyear": 9,
+   "var:__obs_weekofyear_call": 9
+  },
+  {
+   "var:__obs_weekofyear": 52,
+   "var:__obs_weekofyear_call": 52
+  },
+  {
+   "var:__obs_weekofyear": 27,
+   "var:__obs_weekofyear_call": 27
+  },
+  {
+   "var:__obs_weekofyear": 1,
+   "var:__obs_weekofyear_call": 1
+  },
+  {
+   "var:__obs_weekofyear": 1,
+   "var:__obs_weekofyear_call": 1
+  },
+  {
+   "var:__obs_weekofyear": 2,
+   "var:__obs_weekofyear_call": 2
+  },
+  {
+   "var:__obs_weekofyear": 2,
+   "var:__obs_weekofyear_call": 2
+  },
+  {
+   "var:__obs_weekofyear": 2,
+   "var:__obs_weekofyear_call": 2
+  },
+  {
+   "var:__obs_weekofyear": 2,
+   "var:__obs_weekofyear_call": 2
+  }
+ ],
+ "finalVarState": {
+  "__obs_weekofyear": 2,
+  "__obs_weekofyear_call": 2
+ }
+}

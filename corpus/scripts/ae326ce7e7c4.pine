@@ -1,0 +1,10 @@
+//@version=5
+indicator("Payoff2x2")
+row1 = array.new_float(0)
+row2 = array.new_float(0)
+array.push(row1, close - open)
+array.push(row1, high - close)
+array.push(row2, close - low)
+array.push(row2, high - low)
+maxPayoff = math.max(array.max(row1), array.max(row2))
+plot(maxPayoff, "MaxPay")

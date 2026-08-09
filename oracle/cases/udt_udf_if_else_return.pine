@@ -1,0 +1,22 @@
+//@version=5
+indicator("udt_udf_if_else_return")
+// UDF 마지막 문장이 if/else 제어문-식(암묵 반환)이고 각 분기가 모두 같은 UDT 생성자일 때 그
+// 반환값을 받는 '=' 로컬의 필드 접근 신규 지원(C264, corpus 540460278459.pine
+// `if src > sma \n Signal.new(...) \n else \n Signal.new(...)` 패턴, ROADMAP P4 next_hint).
+
+type Signal
+    float value = 0.0
+    int direction = 0
+
+getSignal(src, len) =>
+    sma = ta.sma(src, len)
+    if src > sma
+        Signal.new(src - sma, 1)
+    else
+        Signal.new(sma - src, -1)
+
+sig = getSignal(close, 5)
+var float __obs_value = na
+__obs_value := sig.value
+var int __obs_direction = na
+__obs_direction := sig.direction

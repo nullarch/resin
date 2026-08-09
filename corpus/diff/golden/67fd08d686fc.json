@@ -1,0 +1,105 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:bd": {
+    "resistance": 113,
+    "support": 102,
+    "atr": 5.9341563786,
+    "range_pct": 9.734513274336283
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:bd": {
+    "resistance": 113,
+    "support": 102,
+    "atr": 5.9341563786,
+    "range_pct": 9.734513274336283
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:bd": {
+    "resistance": 113,
+    "support": 102,
+    "atr": 5.9341563786,
+    "range_pct": 9.734513274336283
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:bd": {
+    "resistance": 113,
+    "support": 102,
+    "atr": 5.9341563786,
+    "range_pct": 9.734513274336283
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:bd": {
+    "resistance": 113,
+    "support": 102,
+    "atr": 5.9341563786,
+    "range_pct": 9.734513274336283
+   },
+   "var:__obs_plot0": 10.091743119266056
+  },
+  {
+   "var:bd": {
+    "resistance": 113,
+    "support": 102,
+    "atr": 5.9341563786,
+    "range_pct": 9.734513274336283
+   },
+   "var:__obs_plot0": 9.174311926605505
+  },
+  {
+   "var:bd": {
+    "resistance": 113,
+    "support": 102,
+    "atr": 5.9341563786,
+    "range_pct": 9.734513274336283
+   },
+   "var:__obs_plot0": 10.0
+  },
+  {
+   "var:bd": {
+    "resistance": 113,
+    "support": 102,
+    "atr": 5.9341563786,
+    "range_pct": 9.734513274336283
+   },
+   "var:__obs_plot0": 9.821428571428571
+  },
+  {
+   "var:bd": {
+    "resistance": 113,
+    "support": 102,
+    "atr": 5.9341563786,
+    "range_pct": 9.734513274336283
+   },
+   "var:__obs_plot0": 8.928571428571429
+  },
+  {
+   "var:bd": {
+    "resistance": 113,
+    "support": 102,
+    "atr": 5.9341563786,
+    "range_pct": 9.734513274336283
+   },
+   "var:__obs_plot0": 9.734513274336283
+  }
+ ],
+ "finalVarState": {
+  "bd": {
+   "resistance": 113,
+   "support": 102,
+   "atr": 5.9341563786,
+   "range_pct": 9.734513274336283
+  },
+  "__obs_plot0": 9.734513274336283
+ }
+}

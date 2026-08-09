@@ -1,0 +1,9 @@
+//@version=5
+indicator("ta_wvad_iii")
+// ta.wvad/ta.iii 오라클 검증(ROADMAP P2 "ta.* 44종"). 둘 다 인자 없음(open/high/low/close/volume
+// 암묵 사용) — sample10.json 전 구간 관측. obv/pvt/wad/nvi/pvi(C55~57)와 달리 완전히
+// stateless(runtime/ta.ts wvad()/iii() 주석 참조) — TA_IMPLICIT_CALL bare 그룹의 마지막 두 종.
+var float __obs_wvad = na
+var float __obs_iii = na
+__obs_wvad := ta.wvad()
+__obs_iii := ta.iii()

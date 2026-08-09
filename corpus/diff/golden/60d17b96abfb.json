@@ -1,0 +1,226 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:s": "pine script",
+   "var:spos": 5,
+   "var:arr": [
+    1.0,
+    2.0,
+    3.0,
+    4.0,
+    5.0
+   ],
+   "var:all_pos": true,
+   "var:has_val": true,
+   "var:t": {
+    "type": "table",
+    "id": 2059566164992
+   },
+   "var:cnt": 1.0,
+   "var:result": 16.0,
+   "var:__obs_plot0": 103
+  },
+  {
+   "var:s": "pine script",
+   "var:spos": 5,
+   "var:arr": [
+    1.0,
+    2.0,
+    3.0,
+    4.0,
+    5.0
+   ],
+   "var:all_pos": true,
+   "var:has_val": true,
+   "var:t": {
+    "type": "table",
+    "id": 2059566164992
+   },
+   "var:cnt": 2.0,
+   "var:result": 17.0,
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:s": "pine script",
+   "var:spos": 5,
+   "var:arr": [
+    1.0,
+    2.0,
+    3.0,
+    4.0,
+    5.0
+   ],
+   "var:all_pos": true,
+   "var:has_val": true,
+   "var:t": {
+    "type": "table",
+    "id": 2059566164992
+   },
+   "var:cnt": 3.0,
+   "var:result": 121.0,
+   "var:__obs_plot0": 102
+  },
+  {
+   "var:s": "pine script",
+   "var:spos": 5,
+   "var:arr": [
+    1.0,
+    2.0,
+    3.0,
+    4.0,
+    5.0
+   ],
+   "var:all_pos": true,
+   "var:has_val": true,
+   "var:t": {
+    "type": "table",
+    "id": 2059566164992
+   },
+   "var:cnt": 4.0,
+   "var:result": 122.6666666667,
+   "var:__obs_plot0": 105
+  },
+  {
+   "var:s": "pine script",
+   "var:spos": 5,
+   "var:arr": [
+    1.0,
+    2.0,
+    3.0,
+    4.0,
+    5.0
+   ],
+   "var:all_pos": true,
+   "var:has_val": true,
+   "var:t": {
+    "type": "table",
+    "id": 2059566164992
+   },
+   "var:cnt": 5.0,
+   "var:result": 124.6666666667,
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:s": "pine script",
+   "var:spos": 5,
+   "var:arr": [
+    1.0,
+    2.0,
+    3.0,
+    4.0,
+    5.0
+   ],
+   "var:all_pos": true,
+   "var:has_val": true,
+   "var:t": {
+    "type": "table",
+    "id": 2059566164992
+   },
+   "var:cnt": 6.0,
+   "var:result": 127.0,
+   "var:__obs_plot0": 106
+  },
+  {
+   "var:s": "pine script",
+   "var:spos": 5,
+   "var:arr": [
+    1.0,
+    2.0,
+    3.0,
+    4.0,
+    5.0
+   ],
+   "var:all_pos": true,
+   "var:has_val": true,
+   "var:t": {
+    "type": "table",
+    "id": 2059566164992
+   },
+   "var:cnt": 7.0,
+   "var:result": 129.0,
+   "var:__obs_plot0": 108
+  },
+  {
+   "var:s": "pine script",
+   "var:spos": 5,
+   "var:arr": [
+    1.0,
+    2.0,
+    3.0,
+    4.0,
+    5.0
+   ],
+   "var:all_pos": true,
+   "var:has_val": true,
+   "var:t": {
+    "type": "table",
+    "id": 2059566164992
+   },
+   "var:cnt": 8.0,
+   "var:result": 131.0,
+   "var:__obs_plot0": 110
+  },
+  {
+   "var:s": "pine script",
+   "var:spos": 5,
+   "var:arr": [
+    1.0,
+    2.0,
+    3.0,
+    4.0,
+    5.0
+   ],
+   "var:all_pos": true,
+   "var:has_val": true,
+   "var:t": {
+    "type": "table",
+    "id": 2059566164992
+   },
+   "var:cnt": 9.0,
+   "var:result": 133.0,
+   "var:__obs_plot0": 109
+  },
+  {
+   "var:s": "pine script",
+   "var:spos": 5,
+   "var:arr": [
+    1.0,
+    2.0,
+    3.0,
+    4.0,
+    5.0
+   ],
+   "var:all_pos": true,
+   "var:has_val": true,
+   "var:t": {
+    "type": "table",
+    "id": 2059566164992
+   },
+   "var:cnt": 10.0,
+   "var:result": 135.0,
+   "var:__obs_plot0": 111
+  }
+ ],
+ "finalVarState": {
+  "s": "pine script",
+  "spos": 5,
+  "arr": [
+   1.0,
+   2.0,
+   3.0,
+   4.0,
+   5.0
+  ],
+  "all_pos": true,
+  "has_val": true,
+  "t": {
+   "type": "table",
+   "id": 2059566164992
+  },
+  "cnt": 10.0,
+  "result": 135.0,
+  "__obs_plot0": 111
+ }
+}

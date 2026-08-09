@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("RollVar")
+var float[] obs = array.new_float(0)
+array.push(obs, close)
+if array.size(obs) > 5
+    array.shift(obs)
+mean = array.avg(obs)
+sumSqDiff = 0.0
+for [i, v] in obs
+    sumSqDiff := sumSqDiff + math.pow(v - mean, 2)
+sz = array.size(obs)
+variance = sz > 1 ? sumSqDiff / float(sz - 1) : 0.0
+plot(variance, "V")

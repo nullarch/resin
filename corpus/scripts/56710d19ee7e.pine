@@ -1,0 +1,7 @@
+//@version=5
+indicator("Irrigation Trigger")
+dryness = (high - close) / (high - low + 0.01) * 100
+threshold = 60.0
+var int irrigationCount = 0
+if dryness > threshold
+    irrigationCount := irrigationCount + 1

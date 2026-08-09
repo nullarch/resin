@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:sessHi": 105,
+   "var:sessLo": 98,
+   "var:sessBar": 1,
+   "var:__obs_plot0": 7
+  },
+  {
+   "var:sessHi": 106,
+   "var:sessLo": 98,
+   "var:sessBar": 2,
+   "var:__obs_plot0": 8
+  },
+  {
+   "var:sessHi": 106,
+   "var:sessLo": 98,
+   "var:sessBar": 3,
+   "var:__obs_plot0": 8
+  },
+  {
+   "var:sessHi": 107,
+   "var:sessLo": 98,
+   "var:sessBar": 4,
+   "var:__obs_plot0": 9
+  },
+  {
+   "var:sessHi": 109,
+   "var:sessLo": 103,
+   "var:sessBar": 0,
+   "var:__obs_plot0": 6
+  },
+  {
+   "var:sessHi": 109,
+   "var:sessLo": 102,
+   "var:sessBar": 1,
+   "var:__obs_plot0": 7
+  },
+  {
+   "var:sessHi": 110,
+   "var:sessLo": 102,
+   "var:sessBar": 2,
+   "var:__obs_plot0": 8
+  },
+  {
+   "var:sessHi": 112,
+   "var:sessLo": 102,
+   "var:sessBar": 3,
+   "var:__obs_plot0": 10
+  },
+  {
+   "var:sessHi": 112,
+   "var:sessLo": 102,
+   "var:sessBar": 4,
+   "var:__obs_plot0": 10
+  },
+  {
+   "var:sessHi": 113,
+   "var:sessLo": 107,
+   "var:sessBar": 0,
+   "var:__obs_plot0": 6
+  }
+ ],
+ "finalVarState": {
+  "sessHi": 113,
+  "sessLo": 107,
+  "sessBar": 0,
+  "__obs_plot0": 6
+ }
+}

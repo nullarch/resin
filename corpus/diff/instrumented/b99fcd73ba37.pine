@@ -1,0 +1,9 @@
+//@version=5
+indicator("test")
+[macdLine, signalLine, histLine] = ta.macd(close, 3, 5, 3)
+var float __obs_plot0 = na
+__obs_plot0 := macdLine
+plot(macdLine)
+var float __obs_plot1 = na
+__obs_plot1 := histLine
+plot(histLine)

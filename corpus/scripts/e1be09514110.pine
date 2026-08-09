@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Switch Def")
+rsi = nz(ta.rsi(close, 3), 50.0)
+result = switch
+    => rsi
+plot(result, "R")

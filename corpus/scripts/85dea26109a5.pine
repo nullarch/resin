@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Vol Dist")
+var float[] vols = array.new_float(0)
+array.push(vols, volume)
+if array.size(vols) > 10
+    array.shift(vols)
+avgVol = array.size(vols) > 0 ? array.avg(vols) : volume
+maxVol = array.size(vols) > 0 ? array.max(vols) : volume
+volSpread = maxVol - (array.size(vols) > 0 ? array.min(vols) : volume)
+plot(volSpread, "VS")

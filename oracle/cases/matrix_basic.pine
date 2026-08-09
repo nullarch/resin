@@ -1,0 +1,57 @@
+//@version=5
+indicator("matrix_basic")
+
+// A: var 행렬 — 바마다 set으로 대각선 두 칸을 덮어쓴다. pine2py matrix.py의 set()도 map_funcs.py의
+// put()과 마찬가지로 `_scalar()` 가드가 없어(array.py set()에는 있음) bare Series를 그대로 넘기면
+// Series 참조가 그대로 저장되는 latent 버그가 있다(DIVERGENCES.md 신규 예정) — `+ 0.0`으로 산술
+// 연산을 거쳐 스칼라로 강제 변환해 pine2py 쪽에서만 그 gap을 우회한다(pine2js는 GOAL.md 아키텍처
+// 불변 원칙상 이 버그를 구조적으로 재현할 수 없어 트랜스파일 결과에는 영향이 없다).
+var m = matrix.new<float>(2, 2, 0.0)
+matrix.set(m, 0, 0, close + 0.0)
+matrix.set(m, 1, 1, high + 0.0)
+var float __obs_a00 = na
+__obs_a00 := matrix.get(m, 0, 0)
+var float __obs_a11 = na
+__obs_a11 := matrix.get(m, 1, 1)
+var float __obs_a_count = na
+__obs_a_count := matrix.elements_count(m)
+
+// B: 매 바 새로 만드는 3x3 행렬(비-var) — 대각선에 값을 채우고 나머지는 초기값 0.0 그대로 유지.
+mb = matrix.new<float>(3, 3, 0.0)
+matrix.set(mb, 0, 0, close + 0.0)
+matrix.set(mb, 1, 1, high + 0.0)
+matrix.set(mb, 2, 2, low + 0.0)
+var float __obs_b_diag_sum = na
+__obs_b_diag_sum := matrix.get(mb, 0, 0) + matrix.get(mb, 1, 1) + matrix.get(mb, 2, 2)
+var float __obs_b_offdiag = na
+__obs_b_offdiag := matrix.get(mb, 0, 1)
+var float __obs_b_rows = na
+__obs_b_rows := matrix.rows(mb)
+var float __obs_b_columns = na
+__obs_b_columns := matrix.columns(mb)
+
+// C: 초기값이 0이 아닌 직사각(2x3) 행렬 — 아무것도 set하지 않은 칸도 초기값을 유지하는지 확인.
+mc = matrix.new<float>(2, 3, 5.0)
+var float __obs_c_untouched = na
+__obs_c_untouched := matrix.get(mc, 1, 2)
+var float __obs_c_count = na
+__obs_c_count := matrix.elements_count(mc)
+
+// D: 0x0 빈 행렬(전부 기본 인자) — rows/columns/elements_count만 관측(get/set은 범위밖이라 호출
+// 안 함 — pine2py matrix.py의 get/set은 array.py와 달리 범위 가드가 없어 호출 시 크래시함).
+md = matrix.new<float>()
+var float __obs_d_rows = na
+__obs_d_rows := matrix.rows(md)
+var float __obs_d_columns = na
+__obs_d_columns := matrix.columns(md)
+var float __obs_d_count = na
+__obs_d_count := matrix.elements_count(md)
+
+// E: rows>0, columns<=0 — 행은 있지만 열이 없는 행렬(Python `[v]*0`==[] 시맨틱).
+me = matrix.new<float>(2, 0, 1.0)
+var float __obs_e_rows = na
+__obs_e_rows := matrix.rows(me)
+var float __obs_e_columns = na
+__obs_e_columns := matrix.columns(me)
+var float __obs_e_count = na
+__obs_e_count := matrix.elements_count(me)

@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Mom Osc")
+mom1 = close - close[1]
+mom3 = close - close[3]
+weighted = mom1 * 0.6 + nz(mom3, 0.0) * 0.4
+normalized = ta.stdev(close, 5) > 0 ? weighted / ta.stdev(close, 5) : 0.0
+clamped = math.max(-3.0, math.min(3.0, normalized))
+var float __obs_plot0 = na
+__obs_plot0 := clamped
+plot(clamped, "Osc")

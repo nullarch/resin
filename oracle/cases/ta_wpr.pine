@@ -1,0 +1,11 @@
+//@version=5
+indicator("ta_wpr")
+// ta.wpr 오라클 검증(ROADMAP P2 "ta.* 44종" — wpr). length=4로 sample10.json에서 워밍업(바0~2 NaN)과
+// 정상 구간을 모두 커버. **의도적 divergence**: pine2js는 pine2py wpr.py 자체의 skip-NaN window
+// (현재 바 high/low/close만 NaN 체크하고, NaN이면 과거 window(list append) 자체를 건드리지 않고
+// 통과시키는 로직)가 아니라 TV 실제 Williams %R 내장 스크립트(ta.highest(length)/ta.lowest(length)
+// 합성)와 동일한 rt.ta.highest/rt.ta.lowest(창 안 하나라도 NaN이면 즉시 NaN인 poison window)를
+// 재사용한다. sample10.json엔 na가 없어 두 방식이 이 케이스에서는 동일한 값을 내므로 오라클 검증엔
+// 문제 없음(divergence 자체는 hand-verified NaN 갭 테스트로 별도 검증, DIVERGENCES.md 참조).
+var float __obs_r = na
+__obs_r := ta.wpr(4)

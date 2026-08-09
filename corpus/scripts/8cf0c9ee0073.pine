@@ -1,0 +1,6 @@
+//@version=5
+indicator("Split")
+parts = str.split("a,b,c", ",")
+var int sz = 0
+sz := array.size(parts)
+plot(sz)

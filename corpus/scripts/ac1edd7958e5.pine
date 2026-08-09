@@ -1,0 +1,9 @@
+//@version=5
+strategy("Thermal Breakout")
+float temperature = nz(ta.atr(3), 1.0)
+float avgTemp = nz(ta.sma(close, 5), close)
+float tempRatio = avgTemp > 0 ? temperature / avgTemp : 0.0
+if tempRatio > 0.05 and close > open
+    strategy.entry("HotLong", strategy.long)
+if tempRatio < 0.02
+    strategy.close("HotLong")

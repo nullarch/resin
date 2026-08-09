@@ -1,0 +1,6 @@
+//@version=5
+indicator("macd tuple")
+var float result = 0.0
+[macd, signal, hist] = ta.macd(close, 3, 6, 3)
+if not na(macd) and not na(signal) and not na(hist)
+    result := hist

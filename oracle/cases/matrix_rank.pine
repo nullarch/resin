@@ -1,0 +1,137 @@
+//@version=5
+indicator("matrix_rank")
+
+// C101: matrix.* 열두 번째 슬라이스 — rank(행렬 대수 11종의 여섯 번째 항목, 43/49 -> 44/49).
+// pine2py rank()(matrix.py L265-290)는 inv와 같은 Gauss-Jordan 골격이지만 세 가지가 근본적으로
+// 다름을 python 직접 실행 + node fuzz 3,000샘플(scratch/probe_rank.mjs)로 확인:
+// (a) `if not m: return 0`가 m===None도 Python truthy 규칙으로 걸러 크래시 없이 0을 반환
+//     (det/trace/inv와 정반대 — 저 셋은 m===null이 pine2py 자체의 크래시 지점이라 na로 채웠지만,
+//     rank는 pine2py가 이미 well-defined 0을 반환해 literal port). m===null은 Pine 소스로
+//     구성하기 어려워 runtime.test.ts hand-verified로 대체.
+// (b) pivot 판정이 `abs(v)>1e-10`(양성 임계값)라 NaN이 있는 열은 "비유효 pivot"으로 건너뛰어
+//     (continue) rank가 오히려 낮아짐(det/inv의 "NaN이 유효 피벗으로 오인돼 전체 오염"과 반대
+//     방향) — F그룹이 이 경계를 직접 검증.
+// (c) 정사각을 전제하지 않아 비정사각도 크래시 없이 오라클로 그대로 트리거 가능(inv와 달리
+//     isSquareMatrix 가드 불필요) — K/L그룹.
+
+// A: n=0(0x0 빈 행렬) — `not m`이 즉시 걸러 rank=0.
+maA = matrix.new<float>()
+var float __obs_a = na
+__obs_a := matrix.rank(maA)
+
+// B: n=1 bar-derived(all-valid, close!=0) — 유효 pivot 1개, rank=1.
+mbB = matrix.new<float>(1, 1, 0.0)
+matrix.set(mbB, 0, 0, close + 0.0)
+var float __obs_b = na
+__obs_b := matrix.rank(mbB)
+
+// C: n=1 리터럴 0.0(컴파일타임) — abs(0)>1e-10이 false라 pivot 없음, rank=0.
+mcC = matrix.new<float>(1, 1, 0.0)
+var float __obs_c = na
+__obs_c := matrix.rank(mcC)
+
+// D: n=1 na(close[15] — sample10 10바 범위 밖) — abs(na)>1e-10이 항상 false라 pivot 없음, rank=0
+// (det/inv의 "na가 유효 피벗으로 오인"과 정반대 방향).
+mdD = matrix.new<float>(1, 1, 0.0)
+matrix.set(mdD, 0, 0, close[15])
+var float __obs_d = na
+__obs_d := matrix.rank(mdD)
+
+// E: n=2 bar-derived(all-valid, det(C98)/inv(C100) group D와 동일 구성 — det=open*close-high*low
+// 매 바 확인된 non-zero) — 두 pivot 모두 유효, rank=2.
+meE = matrix.new<float>(2, 2, 0.0)
+matrix.set(meE, 0, 0, open + 0.0)
+matrix.set(meE, 0, 1, high + 0.0)
+matrix.set(meE, 1, 0, low + 0.0)
+matrix.set(meE, 1, 1, close + 0.0)
+var float __obs_e = na
+__obs_e := matrix.rank(meE)
+
+// F: n=2 na-embedded(리터럴 1/3/4 + close[15]) — python 직접 실행으로 확인한 next_hint 예시
+// [[1,na],[3,4]] 그대로: col0의 pivot은 row0(=1, 유효)에서 찾아지지만, elimination 후 col1의
+// row1이 na 오염(factor=na/1=na)돼 col1에서 pivot을 못 찾아(abs(na)>1e-10=false) 건너뜀 —
+// rank=1(na 열이 스킵돼도 col0의 유효 pivot 1개는 그대로 유지).
+mfF = matrix.new<float>(2, 2, 0.0)
+matrix.set(mfF, 0, 0, 1.0)
+matrix.set(mfF, 0, 1, close[15])
+matrix.set(mfF, 1, 0, 3.0)
+matrix.set(mfF, 1, 1, 4.0)
+var float __obs_f = na
+__obs_f := matrix.rank(mfF)
+
+// G: n=2 all-zero(컴파일타임 리터럴) — 두 열 다 pivot 없음, rank=0.
+mgG = matrix.new<float>(2, 2, 0.0)
+var float __obs_g = na
+__obs_g := matrix.rank(mgG)
+
+// H: n=2 rank-deficient(컴파일타임 리터럴, row1=1.5*row0 — [[2,4],[3,6]]) — col0에서 pivot(row0)
+// 찾은 뒤 elimination으로 row1이 [0,0]으로 완전히 소거돼 col1에서 pivot 없음, rank=1.
+mhH = matrix.new<float>(2, 2, 0.0)
+matrix.set(mhH, 0, 0, 2.0)
+matrix.set(mhH, 0, 1, 4.0)
+matrix.set(mhH, 1, 0, 3.0)
+matrix.set(mhH, 1, 1, 6.0)
+var float __obs_h = na
+__obs_h := matrix.rank(mhH)
+
+// I: n=3 bar-derived 대각(open/high/low) + 리터럴 비대각(det(C98)/inv(C100) group F와 동일 구성 —
+// 이미 non-singular 사전검증됨, det!=0 범위 1009003~1235425) — 3개 pivot 모두 유효, rank=3.
+miI = matrix.new<float>(3, 3, 0.0)
+matrix.set(miI, 0, 0, open + 0.0)
+matrix.set(miI, 0, 1, 1.0)
+matrix.set(miI, 0, 2, 2.0)
+matrix.set(miI, 1, 0, 3.0)
+matrix.set(miI, 1, 1, high + 0.0)
+matrix.set(miI, 1, 2, 1.0)
+matrix.set(miI, 2, 0, 2.0)
+matrix.set(miI, 2, 1, 1.0)
+matrix.set(miI, 2, 2, low + 0.0)
+var float __obs_i = na
+__obs_i := matrix.rank(miI)
+
+// J: n=3 rank-deficient(컴파일타임 리터럴, row2=row0+row1 — [[1,2,3],[2,4,6],[7,8,10]], python
+// 직접 실행으로 rank=2 확인) — col0/col1에서 pivot 2개 찾은 뒤 row2가 완전히 소거돼 col2에서
+// pivot 없음, rank=2.
+mjJ = matrix.new<float>(3, 3, 0.0)
+matrix.set(mjJ, 0, 0, 1.0)
+matrix.set(mjJ, 0, 1, 2.0)
+matrix.set(mjJ, 0, 2, 3.0)
+matrix.set(mjJ, 1, 0, 2.0)
+matrix.set(mjJ, 1, 1, 4.0)
+matrix.set(mjJ, 1, 2, 6.0)
+matrix.set(mjJ, 2, 0, 7.0)
+matrix.set(mjJ, 2, 1, 8.0)
+matrix.set(mjJ, 2, 2, 10.0)
+var float __obs_j = na
+__obs_j := matrix.rank(mjJ)
+
+// K: 비정사각 rows<columns(2x3, 컴파일타임 리터럴 [[1,2,3],[4,5,7]]) — det/inv와 달리 isSquareMatrix
+// 가드가 없어 크래시 없이 그대로 진행, 두 행이 선형독립이라 rank=min(2,3)=2(python 직접 실행 확인).
+mkK = matrix.new<float>(2, 3, 0.0)
+matrix.set(mkK, 0, 0, 1.0)
+matrix.set(mkK, 0, 1, 2.0)
+matrix.set(mkK, 0, 2, 3.0)
+matrix.set(mkK, 1, 0, 4.0)
+matrix.set(mkK, 1, 1, 5.0)
+matrix.set(mkK, 1, 2, 7.0)
+var float __obs_k = na
+__obs_k := matrix.rank(mkK)
+
+// L: 비정사각 rows>columns(3x2, 컴파일타임 리터럴 [[1,4],[2,5],[3,7]]) — 세 행 중 두 열이
+// 선형독립이라 rank=min(3,2)=2(python 직접 실행 확인, rows>columns가 inv처럼 크래시하지 않음을
+// 재확인 — pivot 탐색이 열 단위라 행 개수와 무관).
+mlL = matrix.new<float>(3, 2, 0.0)
+matrix.set(mlL, 0, 0, 1.0)
+matrix.set(mlL, 0, 1, 4.0)
+matrix.set(mlL, 1, 0, 2.0)
+matrix.set(mlL, 1, 1, 5.0)
+matrix.set(mlL, 2, 0, 3.0)
+matrix.set(mlL, 2, 1, 7.0)
+var float __obs_l = na
+__obs_l := matrix.rank(mlL)
+
+// M: rows>0, columns=0(3x0) — nc=0이라 col 루프 자체가 0회, rank=0(크래시 없음, python 직접
+// 실행 확인 — trace(C99) group J와 동일한 0열 경계).
+mmM = matrix.new<float>(3, 0, 0.0)
+var float __obs_m = na
+__obs_m := matrix.rank(mmM)

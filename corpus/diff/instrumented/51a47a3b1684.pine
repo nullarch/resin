@@ -1,0 +1,9 @@
+//@version=5
+indicator("EEG Alpha Wave")
+fast = ta.sma(close, 2)
+slow = ta.sma(close, 5)
+alphaWave = not na(fast) and not na(slow) ? fast - slow : 0.0
+amplitude = math.abs(alphaWave)
+var float __obs_plot0 = na
+__obs_plot0 := amplitude
+plot(amplitude)

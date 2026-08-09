@@ -1,0 +1,41 @@
+
+//@version=5
+indicator("State Fusion")
+// Indicators
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+atr = ta.atr(3)
+[m, s, h] = ta.macd(close, 3, 5, 3)
+
+// Fusion score
+trendPts = close > sma3 ? 1.0 : -1.0
+momPts = rsi > 55 ? 1.0 : rsi < 45 ? -1.0 : 0.0
+macdPts = h > 0 ? 1.0 : -1.0
+composite = (trendPts + momPts + macdPts) / 3.0
+
+// State machine
+var int regime = 0
+var int regimeBars = 0
+if composite > 0.3 and regime != 1
+    regime := 1
+    regimeBars := 0
+else if composite < -0.3 and regime != -1
+    regime := -1
+    regimeBars := 0
+regimeBars := regimeBars + 1
+
+// Track in array
+var float[] scores = array.new_float(0)
+array.push(scores, composite)
+if array.size(scores) > 8
+    array.shift(scores)
+
+var float __obs_plot0 = na
+__obs_plot0 := composite
+plot(composite, "Comp")
+var float __obs_plot1 = na
+__obs_plot1 := regime
+plot(regime, "Regime")
+var float __obs_plot2 = na
+__obs_plot2 := regimeBars
+plot(regimeBars, "Bars")

@@ -1,0 +1,8 @@
+//@version=5
+indicator("Bracket Suppress")
+float[] arr = array.from(
+    1.0,
+    2.0,
+    3.0)
+var float result = 0.0
+result := array.sum(arr)

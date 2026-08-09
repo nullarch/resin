@@ -1,0 +1,27 @@
+//@version=5
+indicator("ChowTest")
+var float ssePre = 0.0
+var float ssePost = 0.0
+var float preMean = 0.0
+var float postMean = 0.0
+var int preCnt = 0
+var int postCnt = 0
+cutoff = 5
+if bar_index < cutoff
+    preCnt := preCnt + 1
+    preMean := preMean + (close - preMean) / float(preCnt)
+    ssePre := ssePre + math.pow(close - preMean, 2)
+else
+    postCnt := postCnt + 1
+    postMean := postMean + (close - postMean) / float(postCnt)
+    ssePost := ssePost + math.pow(close - postMean, 2)
+totalSSE = ssePre + ssePost
+var float __obs_plot0 = na
+__obs_plot0 := totalSSE
+plot(totalSSE, "SSE")
+var float __obs_plot1 = na
+__obs_plot1 := preMean
+plot(preMean, "PreMu")
+var float __obs_plot2 = na
+__obs_plot2 := postMean
+plot(postMean, "PostMu")

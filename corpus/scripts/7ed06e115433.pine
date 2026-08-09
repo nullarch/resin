@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Param Search")
+atr = ta.atr(3)
+target = close * 0.02
+mult = 0.5
+iters = 0
+while atr * mult < target and iters < 30
+    mult := mult + 0.1
+    iters := iters + 1
+plot(mult, "Mult")

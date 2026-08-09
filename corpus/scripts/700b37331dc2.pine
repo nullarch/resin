@@ -1,0 +1,4 @@
+//@version=5
+indicator("nz test")
+var float result = 0.0
+result := nz(na, 42.0)

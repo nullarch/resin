@@ -1,0 +1,11 @@
+//@version=5
+indicator("ta_bb")
+// ta.bb 오라클 검증(ROADMAP P2 "ta.* 44종" — bb, 두 번째 다중 반환 TA). length=3, mult=2로
+// sample10.json 10바 안에서 전부 NaN인 워밍업(바 0~1)과 3값 모두 유효한 구간(바 2~9)을 커버.
+[middleBb, upperBb, lowerBb] = ta.bb(close, 3, 2)
+var float __obs_middle = na
+var float __obs_upper = na
+var float __obs_lower = na
+__obs_middle := middleBb
+__obs_upper := upperBb
+__obs_lower := lowerBb

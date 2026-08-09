@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_x": 202,
+   "var:__obs_x_prev": "NaN",
+   "var:__obs_x_prev2": "NaN"
+  },
+  {
+   "var:__obs_x": 204,
+   "var:__obs_x_prev": 202,
+   "var:__obs_x_prev2": "NaN"
+  },
+  {
+   "var:__obs_x": 206,
+   "var:__obs_x_prev": 204,
+   "var:__obs_x_prev2": 202
+  },
+  {
+   "var:__obs_x": 204,
+   "var:__obs_x_prev": 206,
+   "var:__obs_x_prev2": 204
+  },
+  {
+   "var:__obs_x": 208,
+   "var:__obs_x_prev": 204,
+   "var:__obs_x_prev2": 206
+  },
+  {
+   "var:__obs_x": 210,
+   "var:__obs_x_prev": 208,
+   "var:__obs_x_prev2": 204
+  },
+  {
+   "var:__obs_x": 212,
+   "var:__obs_x_prev": 210,
+   "var:__obs_x_prev2": 208
+  },
+  {
+   "var:__obs_x": 210,
+   "var:__obs_x_prev": 212,
+   "var:__obs_x_prev2": 210
+  },
+  {
+   "var:__obs_x": 214,
+   "var:__obs_x_prev": 210,
+   "var:__obs_x_prev2": 212
+  },
+  {
+   "var:__obs_x": 216,
+   "var:__obs_x_prev": 214,
+   "var:__obs_x_prev2": 210
+  }
+ ],
+ "finalVarState": {
+  "__obs_x": 216,
+  "__obs_x_prev": 214,
+  "__obs_x_prev2": 210
+ }
+}

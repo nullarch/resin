@@ -1,0 +1,5 @@
+//@version=5
+indicator("Test")
+ln = line.new(bar_index, high, bar_index, low)
+p = chart.point.new(time, bar_index, close)
+ln.set_first_point(p)

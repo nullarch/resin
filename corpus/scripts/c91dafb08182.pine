@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("ForInEvt")
+var events = map.new<string, float>()
+map.put(events, "bull", close > open ? 1.0 : 0.0)
+map.put(events, "vol", volume > 1000 ? 1.0 : 0.0)
+map.put(events, "rng", (high - low) > 5 ? 1.0 : 0.0)
+
+activeCount = 0.0
+for [name, val] in events
+    activeCount := activeCount + val
+plot(activeCount, "AC")

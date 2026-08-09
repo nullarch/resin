@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Flow State")
+var float cumBuyVol = 0.0
+var float cumSellVol = 0.0
+var int flowBars = 0
+buyVol = close > open ? volume : volume * 0.4
+sellVol = close < open ? volume : volume * 0.4
+cumBuyVol := cumBuyVol + buyVol
+cumSellVol := cumSellVol + sellVol
+if cumBuyVol > cumSellVol * 1.2
+    flowBars := flowBars + 1
+ratio = cumSellVol > 0 ? cumBuyVol / cumSellVol : 1.0
+var float __obs_plot0 = na
+__obs_plot0 := ratio
+plot(ratio, "R")

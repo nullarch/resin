@@ -1,0 +1,5 @@
+//@version=5
+indicator("Syminfo")
+var float idx = 0.0
+idx := bar_index
+plot(idx)

@@ -1,0 +1,8 @@
+//@version=5
+indicator("MultiFn")
+var float result = 0
+add(a, b) =>
+    a + b
+mul(a, b) =>
+    a * b
+result := add(mul(close, 2), 10)

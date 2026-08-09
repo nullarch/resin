@@ -1,0 +1,30 @@
+//@version=5
+indicator("ta_kc_kcw_optional_truerange")
+// ta.kc/ta.kcw useTrueRange(4번째 인자) 생략형 오라클 검증(C227, ROADMAP P3 next_hint 1순위 —
+// TA_REGISTRY.kc/kcw에 minArgCount:3 신설, corpus 20+건 실측 `ta.kc(source, length, mult)`). TV/
+// pine2py 둘 다 useTrueRange 기본값 true라, 3-인자 생략형과 4-인자 명시형(true)이 완전히 동일한
+// 콜사이트별 상태로 독립 추적돼도 바이트 단위로 일치해야 default 배선이 옳다는 증거가 된다.
+// length=3/mult=2.0은 oracle/cases/ta_kc_kcw.pine의 "T" 변형과 동일 파라미터 — 이미
+// tests/oracle/ta_kc_kcw.test.ts가 hand-verified로 확정해둔 값을 그대로 재사용할 수 있다
+// (DIVERGENCES.md #9: useTrueRange=true는 atr 워밍업 off-by-one이 basis까지 새어나가는 의도된
+// 발산이라 golden 직접 비교 대신 hand-verified 배열로 검증 — 이 케이스도 동일).
+[basisExplicit, upperExplicit, lowerExplicit] = ta.kc(close, 3, 2.0, true)
+[basisDefault, upperDefault, lowerDefault] = ta.kc(close, 3, 2.0)
+kcwExplicit = ta.kcw(close, 3, 2.0, true)
+kcwDefault = ta.kcw(close, 3, 2.0)
+var float __obs_basis_explicit = na
+var float __obs_upper_explicit = na
+var float __obs_lower_explicit = na
+var float __obs_kcw_explicit = na
+var float __obs_basis_default = na
+var float __obs_upper_default = na
+var float __obs_lower_default = na
+var float __obs_kcw_default = na
+__obs_basis_explicit := basisExplicit
+__obs_upper_explicit := upperExplicit
+__obs_lower_explicit := lowerExplicit
+__obs_kcw_explicit := kcwExplicit
+__obs_basis_default := basisDefault
+__obs_upper_default := upperDefault
+__obs_lower_default := lowerDefault
+__obs_kcw_default := kcwDefault

@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Osc Vote")
+var oscs = map.new<string, float>()
+rsi = nz(ta.rsi(close, 3), 50.0)
+k = ta.stoch(close, high, low, 5)
+cci = nz(ta.cci(close, 5), 0.0)
+map.put(oscs, "rsi", rsi > 50 ? 1.0 : -1.0)
+map.put(oscs, "stoch", k > 50 ? 1.0 : -1.0)
+map.put(oscs, "cci", cci > 0 ? 1.0 : -1.0)
+bullVotes = 0.0
+for [name, vote] in oscs
+    if vote > 0
+        bullVotes := bullVotes + 1
+consensus = bullVotes / 3.0
+plot(consensus, "Con")

@@ -1,0 +1,11 @@
+//@version=5
+indicator("While Expr")
+float x = 100.0
+int iters = 0
+float result_expr = while x > 1.0
+    x := x / 2.0
+    iters := iters + 1
+    iters
+var float result = 0.0
+result := result_expr
+plot(result)

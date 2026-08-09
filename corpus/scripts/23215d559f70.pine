@@ -1,0 +1,7 @@
+//@version=5
+indicator("Multi Plot KW")
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+plot(sma3, title="SMA 3", color=color.blue, linewidth=2)
+plot(ema5, title="EMA 5", color=color.red, linewidth=1)
+plot(close, title="Close")

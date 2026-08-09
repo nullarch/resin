@@ -1,0 +1,19 @@
+//@version=5
+indicator("color_literal")
+// #RRGGBB/#RRGGBBAA 리터럴(C226) -- lexer는 이미 COLOR 토큰을 만들지만 parser가 소비하지 않아
+// 지금까지 전부 ParseError였다(corpus 22건 실측, transpile_ok 5841->5864). pine2py도 이 리터럴을
+// 순수 hex string으로 codegen(ColorLiteral -> f'"{value}"')하므로 color_basic.pine과 동일하게
+// var string 미러로 관측한다. 삼항 분기(바 데이터 의존)와 UDF 인자 전달 위치도 함께 검증.
+
+var string __obs_hex6 = na
+__obs_hex6 := #FF0000
+
+var string __obs_hex8 = na
+__obs_hex8 := #00FF0080
+
+f(c) => c
+var string __obs_arg = na
+__obs_arg := f(#123ABC)
+
+var string __obs_ternary = na
+__obs_ternary := close > 104 ? #00FF00 : #FF0000

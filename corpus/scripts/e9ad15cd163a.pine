@@ -1,0 +1,27 @@
+
+//@version=5
+indicator("Full Profile")
+type Profile
+    float poc = 0.0
+    float vaHigh = 0.0
+    float vaLow = 0.0
+    int rotation = 0
+var int rot = 0
+prevC = close[1]
+if not na(prevC)
+    rot := close > prevC ? rot + 1 : rot - 1
+p = Profile.new()
+p.poc := (high + low + close) / 3.0
+p.vaHigh := high
+p.vaLow := low
+p.rotation := rot
+vaSpread = p.vaHigh - p.vaLow
+composite = p.poc + vaSpread + float(p.rotation)
+tags = map.new<string, float>()
+map.put(tags, "poc", p.poc)
+map.put(tags, "spread", vaSpread)
+map.put(tags, "rot", float(p.rotation))
+total = 0.0
+for [k, v] in tags
+    total := total + v
+plot(total, "FullProfile")

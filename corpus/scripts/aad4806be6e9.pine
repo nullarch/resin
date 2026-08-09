@@ -1,0 +1,9 @@
+//@version=5
+indicator("ternary chain")
+rsi3 = ta.rsi(close, 3)
+label = na(rsi3) ? "NA" :
+    rsi3 > 80 ? "OVERBOUGHT" :
+    rsi3 > 60 ? "BULLISH" :
+    rsi3 < 20 ? "OVERSOLD" :
+    rsi3 < 40 ? "BEARISH" :
+    "NEUTRAL"

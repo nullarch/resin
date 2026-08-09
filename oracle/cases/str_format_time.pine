@@ -1,0 +1,39 @@
+//@version=5
+indicator("str_format_time")
+// str.format_time(time_ms, format_str="yyyy-MM-dd'T'HH:mm:ssZ", timezone="") — pine2py
+// str_funcs.py L194-215: time_ms/1000를 datetime.fromtimestamp(tz=UTC)로 변환 후 Pine 포맷
+// 토큰(yyyy/yy/MMMM/MMM/MM/dd/HH/hh/mm/ss/'T'/Z)을 순차 .replace() 체인으로 치환. All channels are
+// bar-independent (pure literal args, like str_format_number.pine). Three combinations are NOT
+// covered here because pine2py itself crashes (gen_oracle.py would crash generating the golden) —
+// hand-verified in runtime.test.ts instead (LIMITATIONS.md): (1) time_ms=+/-Infinity (uncaught
+// OverflowError in datetime.fromtimestamp, confirmed via direct python execution), (2) a negative
+// time_ms before ~2 hours prior to epoch (OSError on this Windows/Python 3.11 env's
+// datetime.fromtimestamp — a platform time_t artifact, not a Python/TV semantic; pine2js
+// deliberately diverges and computes the date via JS Date instead, DIVERGENCES.md), (3)
+// format_str=na when time_ms is not NaN (uncaught AttributeError: 'NoneType' object has no
+// attribute 'replace'). time_ms=NaN alone IS safe to include (pine2py's isnan/None guard catches
+// it and returns "NaN" before ever touching format_str).
+var string __obs_a = na
+__obs_a := str.format_time(1705276800000.0, "yyyy-MM-dd")
+var string __obs_b = na
+__obs_b := str.format_time(1705329045000.0, "yyyy-MM-dd HH:mm:ss")
+var string __obs_c = na
+__obs_c := str.format_time(1705276800000.0)
+var string __obs_d = na
+__obs_d := str.format_time(1705276800000.0, "MMMM MMM")
+var string __obs_e = na
+__obs_e := str.format_time(1706745600000.0, "MMMM MMM")
+var string __obs_f = na
+__obs_f := str.format_time(1705276800000.0, "yy vs yyyy")
+var string __obs_g = na
+__obs_g := str.format_time(1705276800000.0, "hh:mm:ss HH")
+var string __obs_h = na
+__obs_h := str.format_time(1705320000000.0, "hh:mm:ss HH")
+var string __obs_i = na
+__obs_i := str.format_time(1705329045000.0, "hh:mm:ss")
+var string __obs_j = na
+__obs_j := str.format_time(1705276800000.0, "yyyy-MM-dd", "America/New_York")
+var string __obs_k = na
+__obs_k := str.format_time(na, "yyyy-MM-dd")
+var string __obs_l = na
+__obs_l := str.format_time(na)

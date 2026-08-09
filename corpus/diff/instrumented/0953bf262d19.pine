@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Sp Pattern")
+wideCount = 0
+narrowCount = 0
+avgSpread = ta.sma(high - low, 5)
+for i = 0 to 4
+    sp = high[i] - low[i]
+    if not na(sp)
+        if sp > avgSpread
+            wideCount := wideCount + 1
+        else
+            narrowCount := narrowCount + 1
+spreadTrend = wideCount - narrowCount
+var float __obs_plot0 = na
+__obs_plot0 := spreadTrend
+plot(spreadTrend, "ST")

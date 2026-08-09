@@ -1,0 +1,6 @@
+//@version=5
+indicator("Timestamp compare")
+ts1 = timestamp(2024, 1, 1, 0, 0, 0)
+ts2 = timestamp(2024, 6, 15, 12, 0, 0)
+isBefore = ts1 < ts2
+diff = ts2 - ts1

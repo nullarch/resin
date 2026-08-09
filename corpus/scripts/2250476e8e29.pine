@@ -1,0 +1,11 @@
+//@version=5
+indicator("Digital Signature")
+privateKey = 13.0
+publicKey = 7.0
+modulus = 33.0
+messageHash = close - math.floor(close / modulus) * modulus
+signature = math.pow(messageHash, privateKey)
+signature := signature - math.floor(signature / modulus) * modulus
+verification = math.pow(signature, publicKey)
+verification := verification - math.floor(verification / modulus) * modulus
+plot(signature)

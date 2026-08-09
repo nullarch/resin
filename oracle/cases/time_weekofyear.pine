@@ -1,0 +1,6 @@
+//@version=5
+indicator("time_weekofyear")
+var float __obs_weekofyear = na
+var float __obs_weekofyear_call = na
+__obs_weekofyear := weekofyear
+__obs_weekofyear_call := weekofyear(time)

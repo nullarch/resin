@@ -1,0 +1,149 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:m1": {
+    "a": 1.0,
+    "b": 2.0,
+    "c": 3.0
+   },
+   "var:__obs_values_size": 3,
+   "var:__obs_values_sum": 6.0,
+   "var:__obs_keys_size": 3,
+   "var:bx": "pine_fn.<locals>.Box(vals={'p': 10.0, 'q': 20.0})",
+   "var:__obs_field_values_sum": 30.0,
+   "var:__obs_field_keys_size": 2
+  },
+  {
+   "var:m1": {
+    "a": 1.0,
+    "b": 2.0,
+    "c": 3.0
+   },
+   "var:__obs_values_size": 3,
+   "var:__obs_values_sum": 6.0,
+   "var:__obs_keys_size": 3,
+   "var:bx": "pine_fn.<locals>.Box(vals={'p': 10.0, 'q': 20.0})",
+   "var:__obs_field_values_sum": 30.0,
+   "var:__obs_field_keys_size": 2
+  },
+  {
+   "var:m1": {
+    "a": 1.0,
+    "b": 2.0,
+    "c": 3.0
+   },
+   "var:__obs_values_size": 3,
+   "var:__obs_values_sum": 6.0,
+   "var:__obs_keys_size": 3,
+   "var:bx": "pine_fn.<locals>.Box(vals={'p': 10.0, 'q': 20.0})",
+   "var:__obs_field_values_sum": 30.0,
+   "var:__obs_field_keys_size": 2
+  },
+  {
+   "var:m1": {
+    "a": 1.0,
+    "b": 2.0,
+    "c": 3.0
+   },
+   "var:__obs_values_size": 3,
+   "var:__obs_values_sum": 6.0,
+   "var:__obs_keys_size": 3,
+   "var:bx": "pine_fn.<locals>.Box(vals={'p': 10.0, 'q': 20.0})",
+   "var:__obs_field_values_sum": 30.0,
+   "var:__obs_field_keys_size": 2
+  },
+  {
+   "var:m1": {
+    "a": 1.0,
+    "b": 2.0,
+    "c": 3.0
+   },
+   "var:__obs_values_size": 3,
+   "var:__obs_values_sum": 6.0,
+   "var:__obs_keys_size": 3,
+   "var:bx": "pine_fn.<locals>.Box(vals={'p': 10.0, 'q': 20.0})",
+   "var:__obs_field_values_sum": 30.0,
+   "var:__obs_field_keys_size": 2
+  },
+  {
+   "var:m1": {
+    "a": 1.0,
+    "b": 2.0,
+    "c": 3.0
+   },
+   "var:__obs_values_size": 3,
+   "var:__obs_values_sum": 6.0,
+   "var:__obs_keys_size": 3,
+   "var:bx": "pine_fn.<locals>.Box(vals={'p': 10.0, 'q': 20.0})",
+   "var:__obs_field_values_sum": 30.0,
+   "var:__obs_field_keys_size": 2
+  },
+  {
+   "var:m1": {
+    "a": 1.0,
+    "b": 2.0,
+    "c": 3.0
+   },
+   "var:__obs_values_size": 3,
+   "var:__obs_values_sum": 6.0,
+   "var:__obs_keys_size": 3,
+   "var:bx": "pine_fn.<locals>.Box(vals={'p': 10.0, 'q': 20.0})",
+   "var:__obs_field_values_sum": 30.0,
+   "var:__obs_field_keys_size": 2
+  },
+  {
+   "var:m1": {
+    "a": 1.0,
+    "b": 2.0,
+    "c": 3.0
+   },
+   "var:__obs_values_size": 3,
+   "var:__obs_values_sum": 6.0,
+   "var:__obs_keys_size": 3,
+   "var:bx": "pine_fn.<locals>.Box(vals={'p': 10.0, 'q': 20.0})",
+   "var:__obs_field_values_sum": 30.0,
+   "var:__obs_field_keys_size": 2
+  },
+  {
+   "var:m1": {
+    "a": 1.0,
+    "b": 2.0,
+    "c": 3.0
+   },
+   "var:__obs_values_size": 3,
+   "var:__obs_values_sum": 6.0,
+   "var:__obs_keys_size": 3,
+   "var:bx": "pine_fn.<locals>.Box(vals={'p': 10.0, 'q': 20.0})",
+   "var:__obs_field_values_sum": 30.0,
+   "var:__obs_field_keys_size": 2
+  },
+  {
+   "var:m1": {
+    "a": 1.0,
+    "b": 2.0,
+    "c": 3.0
+   },
+   "var:__obs_values_size": 3,
+   "var:__obs_values_sum": 6.0,
+   "var:__obs_keys_size": 3,
+   "var:bx": "pine_fn.<locals>.Box(vals={'p': 10.0, 'q': 20.0})",
+   "var:__obs_field_values_sum": 30.0,
+   "var:__obs_field_keys_size": 2
+  }
+ ],
+ "finalVarState": {
+  "m1": {
+   "a": 1.0,
+   "b": 2.0,
+   "c": 3.0
+  },
+  "__obs_values_size": 3,
+  "__obs_values_sum": 6.0,
+  "__obs_keys_size": 3,
+  "bx": "pine_fn.<locals>.Box(vals={'p': 10.0, 'q': 20.0})",
+  "__obs_field_values_sum": 30.0,
+  "__obs_field_keys_size": 2
+ }
+}

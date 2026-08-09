@@ -1,0 +1,11 @@
+//@version=5
+indicator("Barstate")
+var bool first_seen = false
+var bool last_seen = false
+if barstate.isfirst
+    first_seen := true
+if barstate.islast
+    last_seen := true
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

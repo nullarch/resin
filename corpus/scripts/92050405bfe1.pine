@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Spread Track")
+var float maxSpread = 0.0
+var float cumSpread = 0.0
+var int bars = 0
+spread = high - low
+bars := bars + 1
+maxSpread := math.max(maxSpread, spread)
+cumSpread := cumSpread + spread
+avgSpread = bars > 0 ? cumSpread / bars : spread
+plot(avgSpread, "AS")

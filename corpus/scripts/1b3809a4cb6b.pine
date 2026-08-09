@@ -1,0 +1,5 @@
+//@version=5
+indicator("Chart Point")
+var float result = 0.0
+p = chart.point.new(bar_index, close, 0)
+result := close

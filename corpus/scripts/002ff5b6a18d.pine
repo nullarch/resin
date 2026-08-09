@@ -1,0 +1,5 @@
+//@version=5
+indicator("Generic Array")
+var float result = 0.0
+array<float> a = array.new<float>(3, 5.0)
+result := array.sum(a)

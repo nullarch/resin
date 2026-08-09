@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:p1": "pine_fn.<locals>.Point(x=1046.0, y=4.0)",
+   "var:__obs_p1_x": 3.0,
+   "var:__obs_p1_y": 4.0,
+   "var:__obs_p1_x_acc": 104.0
+  },
+  {
+   "var:p1": "pine_fn.<locals>.Point(x=1046.0, y=4.0)",
+   "var:__obs_p1_x": 104.0,
+   "var:__obs_p1_y": 4.0,
+   "var:__obs_p1_x_acc": 206.0
+  },
+  {
+   "var:p1": "pine_fn.<locals>.Point(x=1046.0, y=4.0)",
+   "var:__obs_p1_x": 206.0,
+   "var:__obs_p1_y": 4.0,
+   "var:__obs_p1_x_acc": 309.0
+  },
+  {
+   "var:p1": "pine_fn.<locals>.Point(x=1046.0, y=4.0)",
+   "var:__obs_p1_x": 309.0,
+   "var:__obs_p1_y": 4.0,
+   "var:__obs_p1_x_acc": 411.0
+  },
+  {
+   "var:p1": "pine_fn.<locals>.Point(x=1046.0, y=4.0)",
+   "var:__obs_p1_x": 411.0,
+   "var:__obs_p1_y": 4.0,
+   "var:__obs_p1_x_acc": 515.0
+  },
+  {
+   "var:p1": "pine_fn.<locals>.Point(x=1046.0, y=4.0)",
+   "var:__obs_p1_x": 515.0,
+   "var:__obs_p1_y": 4.0,
+   "var:__obs_p1_x_acc": 620.0
+  },
+  {
+   "var:p1": "pine_fn.<locals>.Point(x=1046.0, y=4.0)",
+   "var:__obs_p1_x": 620.0,
+   "var:__obs_p1_y": 4.0,
+   "var:__obs_p1_x_acc": 726.0
+  },
+  {
+   "var:p1": "pine_fn.<locals>.Point(x=1046.0, y=4.0)",
+   "var:__obs_p1_x": 726.0,
+   "var:__obs_p1_y": 4.0,
+   "var:__obs_p1_x_acc": 831.0
+  },
+  {
+   "var:p1": "pine_fn.<locals>.Point(x=1046.0, y=4.0)",
+   "var:__obs_p1_x": 831.0,
+   "var:__obs_p1_y": 4.0,
+   "var:__obs_p1_x_acc": 938.0
+  },
+  {
+   "var:p1": "pine_fn.<locals>.Point(x=1046.0, y=4.0)",
+   "var:__obs_p1_x": 938.0,
+   "var:__obs_p1_y": 4.0,
+   "var:__obs_p1_x_acc": 1046.0
+  }
+ ],
+ "finalVarState": {
+  "p1": "pine_fn.<locals>.Point(x=1046.0, y=4.0)",
+  "__obs_p1_x": 938.0,
+  "__obs_p1_y": 4.0,
+  "__obs_p1_x_acc": 1046.0
+ }
+}

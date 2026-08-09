@@ -1,0 +1,600 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:labels": [
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    }
+   ],
+   "var:lines": [],
+   "var:boxes": [],
+   "var:tables": [],
+   "var:fills": [],
+   "var:__obs_labels_size0": 0,
+   "var:__obs_lines_size0": 0,
+   "var:__obs_boxes_size0": 0,
+   "var:__obs_tables_size0": 0,
+   "var:__obs_fills_size0": 0,
+   "var:__obs_labels_size_after": 1
+  },
+  {
+   "var:labels": [
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    }
+   ],
+   "var:lines": [],
+   "var:boxes": [],
+   "var:tables": [],
+   "var:fills": [],
+   "var:__obs_labels_size0": 1,
+   "var:__obs_lines_size0": 0,
+   "var:__obs_boxes_size0": 0,
+   "var:__obs_tables_size0": 0,
+   "var:__obs_fills_size0": 0,
+   "var:__obs_labels_size_after": 2
+  },
+  {
+   "var:labels": [
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    }
+   ],
+   "var:lines": [],
+   "var:boxes": [],
+   "var:tables": [],
+   "var:fills": [],
+   "var:__obs_labels_size0": 2,
+   "var:__obs_lines_size0": 0,
+   "var:__obs_boxes_size0": 0,
+   "var:__obs_tables_size0": 0,
+   "var:__obs_fills_size0": 0,
+   "var:__obs_labels_size_after": 3
+  },
+  {
+   "var:labels": [
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    }
+   ],
+   "var:lines": [],
+   "var:boxes": [],
+   "var:tables": [],
+   "var:fills": [],
+   "var:__obs_labels_size0": 3,
+   "var:__obs_lines_size0": 0,
+   "var:__obs_boxes_size0": 0,
+   "var:__obs_tables_size0": 0,
+   "var:__obs_fills_size0": 0,
+   "var:__obs_labels_size_after": 4
+  },
+  {
+   "var:labels": [
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    }
+   ],
+   "var:lines": [],
+   "var:boxes": [],
+   "var:tables": [],
+   "var:fills": [],
+   "var:__obs_labels_size0": 4,
+   "var:__obs_lines_size0": 0,
+   "var:__obs_boxes_size0": 0,
+   "var:__obs_tables_size0": 0,
+   "var:__obs_fills_size0": 0,
+   "var:__obs_labels_size_after": 5
+  },
+  {
+   "var:labels": [
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    }
+   ],
+   "var:lines": [],
+   "var:boxes": [],
+   "var:tables": [],
+   "var:fills": [],
+   "var:__obs_labels_size0": 5,
+   "var:__obs_lines_size0": 0,
+   "var:__obs_boxes_size0": 0,
+   "var:__obs_tables_size0": 0,
+   "var:__obs_fills_size0": 0,
+   "var:__obs_labels_size_after": 6
+  },
+  {
+   "var:labels": [
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    }
+   ],
+   "var:lines": [],
+   "var:boxes": [],
+   "var:tables": [],
+   "var:fills": [],
+   "var:__obs_labels_size0": 6,
+   "var:__obs_lines_size0": 0,
+   "var:__obs_boxes_size0": 0,
+   "var:__obs_tables_size0": 0,
+   "var:__obs_fills_size0": 0,
+   "var:__obs_labels_size_after": 7
+  },
+  {
+   "var:labels": [
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    }
+   ],
+   "var:lines": [],
+   "var:boxes": [],
+   "var:tables": [],
+   "var:fills": [],
+   "var:__obs_labels_size0": 7,
+   "var:__obs_lines_size0": 0,
+   "var:__obs_boxes_size0": 0,
+   "var:__obs_tables_size0": 0,
+   "var:__obs_fills_size0": 0,
+   "var:__obs_labels_size_after": 8
+  },
+  {
+   "var:labels": [
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    }
+   ],
+   "var:lines": [],
+   "var:boxes": [],
+   "var:tables": [],
+   "var:fills": [],
+   "var:__obs_labels_size0": 8,
+   "var:__obs_lines_size0": 0,
+   "var:__obs_boxes_size0": 0,
+   "var:__obs_tables_size0": 0,
+   "var:__obs_fills_size0": 0,
+   "var:__obs_labels_size_after": 9
+  },
+  {
+   "var:labels": [
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    },
+    {
+     "type": "label",
+     "id": 2237283910336
+    }
+   ],
+   "var:lines": [],
+   "var:boxes": [],
+   "var:tables": [],
+   "var:fills": [],
+   "var:__obs_labels_size0": 9,
+   "var:__obs_lines_size0": 0,
+   "var:__obs_boxes_size0": 0,
+   "var:__obs_tables_size0": 0,
+   "var:__obs_fills_size0": 0,
+   "var:__obs_labels_size_after": 10
+  }
+ ],
+ "finalVarState": {
+  "labels": [
+   {
+    "type": "label",
+    "id": 2237283910336
+   },
+   {
+    "type": "label",
+    "id": 2237283910336
+   },
+   {
+    "type": "label",
+    "id": 2237283910336
+   },
+   {
+    "type": "label",
+    "id": 2237283910336
+   },
+   {
+    "type": "label",
+    "id": 2237283910336
+   },
+   {
+    "type": "label",
+    "id": 2237283910336
+   },
+   {
+    "type": "label",
+    "id": 2237283910336
+   },
+   {
+    "type": "label",
+    "id": 2237283910336
+   },
+   {
+    "type": "label",
+    "id": 2237283910336
+   },
+   {
+    "type": "label",
+    "id": 2237283910336
+   }
+  ],
+  "lines": [],
+  "boxes": [],
+  "tables": [],
+  "fills": [],
+  "__obs_labels_size0": 9,
+  "__obs_lines_size0": 0,
+  "__obs_boxes_size0": 0,
+  "__obs_tables_size0": 0,
+  "__obs_fills_size0": 0,
+  "__obs_labels_size_after": 10
+ }
+}

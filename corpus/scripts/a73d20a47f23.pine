@@ -1,0 +1,6 @@
+//@version=5
+indicator("Zigzag Delta")
+float rawDelta = not na(close[1]) ? close - close[1] : 0.0
+float absDelta = math.abs(rawDelta)
+var float totalAbsDelta = 0.0
+totalAbsDelta := totalAbsDelta + absDelta

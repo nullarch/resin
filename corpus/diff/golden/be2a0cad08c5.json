@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:lastBrick": 0.0,
+   "var:brickCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:lastBrick": 0.0,
+   "var:brickCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:lastBrick": 0.0,
+   "var:brickCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:lastBrick": 0.0,
+   "var:brickCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:lastBrick": 0.0,
+   "var:brickCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:lastBrick": 106,
+   "var:brickCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:lastBrick": 106,
+   "var:brickCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:lastBrick": 106,
+   "var:brickCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:lastBrick": 106,
+   "var:brickCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:lastBrick": 106,
+   "var:brickCount": 0,
+   "var:__obs_plot0": 0
+  }
+ ],
+ "finalVarState": {
+  "lastBrick": 106,
+  "brickCount": 0,
+  "__obs_plot0": 0
+ }
+}

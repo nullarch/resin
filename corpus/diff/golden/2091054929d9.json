@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:cumRegretA": 0.0,
+   "var:cumRegretB": 0.0,
+   "var:__obs_plot0": -2,
+   "var:__obs_plot1": 1.0,
+   "var:__obs_plot2": 0.5
+  },
+  {
+   "var:cumRegretA": 0.0,
+   "var:cumRegretB": 0.0,
+   "var:__obs_plot0": -2,
+   "var:__obs_plot1": 1.0,
+   "var:__obs_plot2": 0.5
+  },
+  {
+   "var:cumRegretA": 0.0,
+   "var:cumRegretB": 1.0,
+   "var:__obs_plot0": -2,
+   "var:__obs_plot1": 1.0,
+   "var:__obs_plot2": 0.0
+  },
+  {
+   "var:cumRegretA": 0.0,
+   "var:cumRegretB": 1.0,
+   "var:__obs_plot0": -2,
+   "var:__obs_plot1": 1.0,
+   "var:__obs_plot2": 0.0
+  },
+  {
+   "var:cumRegretA": 0.0,
+   "var:cumRegretB": 1.0,
+   "var:__obs_plot0": -2,
+   "var:__obs_plot1": 1.0,
+   "var:__obs_plot2": 0.0
+  },
+  {
+   "var:cumRegretA": 0.0,
+   "var:cumRegretB": 1.0,
+   "var:__obs_plot0": -2,
+   "var:__obs_plot1": 1.0,
+   "var:__obs_plot2": 0.0
+  },
+  {
+   "var:cumRegretA": 0.0,
+   "var:cumRegretB": 1.0,
+   "var:__obs_plot0": -2,
+   "var:__obs_plot1": 1.0,
+   "var:__obs_plot2": 0.0
+  },
+  {
+   "var:cumRegretA": 0.0,
+   "var:cumRegretB": 1.0,
+   "var:__obs_plot0": -2,
+   "var:__obs_plot1": 1.0,
+   "var:__obs_plot2": 0.0
+  },
+  {
+   "var:cumRegretA": 0.0,
+   "var:cumRegretB": 1.0,
+   "var:__obs_plot0": -2,
+   "var:__obs_plot1": 1.0,
+   "var:__obs_plot2": 0.0
+  },
+  {
+   "var:cumRegretA": 0.0,
+   "var:cumRegretB": 1.0,
+   "var:__obs_plot0": -2,
+   "var:__obs_plot1": 1.0,
+   "var:__obs_plot2": 0.0
+  }
+ ],
+ "finalVarState": {
+  "cumRegretA": 0.0,
+  "cumRegretB": 1.0,
+  "__obs_plot0": -2,
+  "__obs_plot1": 1.0,
+  "__obs_plot2": 0.0
+ }
+}

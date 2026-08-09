@@ -1,0 +1,8 @@
+//@version=5
+indicator("Ichimoku")
+conversionPeriod = 3
+basePeriod = 5
+tenkan = (ta.highest(high, conversionPeriod) + ta.lowest(low, conversionPeriod)) / 2
+kijun = (ta.highest(high, basePeriod) + ta.lowest(low, basePeriod)) / 2
+senkouA = (nz(tenkan) + nz(kijun)) / 2
+senkouB = (ta.highest(high, 5) + ta.lowest(low, 5)) / 2

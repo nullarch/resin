@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Sig Type")
+enum SigType
+    Entry = 2
+    Exit = -2
+    ScaleIn = 1
+    ScaleOut = -1
+    None_ = 0
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+crossUp = ta.crossover(close, sma3)
+crossDown = ta.crossunder(close, sma3)
+sigType = crossUp ? SigType.Entry : crossDown ? SigType.Exit : rsi > 70 ? SigType.ScaleOut : rsi < 30 ? SigType.ScaleIn : SigType.None_
+plot(int(sigType), "ST")

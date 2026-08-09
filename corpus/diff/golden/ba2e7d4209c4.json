@@ -1,0 +1,138 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:window": [
+    107,
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:__obs_plot0": 103.0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:window": [
+    107,
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:__obs_plot0": 103.5,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:window": [
+    107,
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:__obs_plot0": 103.0,
+   "var:__obs_plot1": 2
+  },
+  {
+   "var:window": [
+    107,
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:__obs_plot0": 103.5,
+   "var:__obs_plot1": 3
+  },
+  {
+   "var:window": [
+    107,
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:__obs_plot0": 104.5,
+   "var:__obs_plot1": 5
+  },
+  {
+   "var:window": [
+    107,
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:__obs_plot0": 104.5,
+   "var:__obs_plot1": 5
+  },
+  {
+   "var:window": [
+    107,
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:__obs_plot0": 105.0,
+   "var:__obs_plot1": 6
+  },
+  {
+   "var:window": [
+    107,
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:__obs_plot0": 106.0,
+   "var:__obs_plot1": 8
+  },
+  {
+   "var:window": [
+    107,
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:__obs_plot0": 107.5,
+   "var:__obs_plot1": 5
+  },
+  {
+   "var:window": [
+    107,
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:__obs_plot0": 108.5,
+   "var:__obs_plot1": 5
+  }
+ ],
+ "finalVarState": {
+  "window": [
+   107,
+   106,
+   108,
+   110,
+   109,
+   111
+  ],
+  "__obs_plot0": 108.5,
+  "__obs_plot1": 5
+ }
+}

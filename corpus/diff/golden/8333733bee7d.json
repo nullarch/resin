@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:inTrade": 0,
+   "var:currentDur": 0,
+   "var:totalDur": 0.0,
+   "var:tradeCount": 0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:inTrade": 0,
+   "var:currentDur": 0,
+   "var:totalDur": 0.0,
+   "var:tradeCount": 0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:inTrade": 0,
+   "var:currentDur": 0,
+   "var:totalDur": 0.0,
+   "var:tradeCount": 0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:inTrade": 1,
+   "var:currentDur": 1,
+   "var:totalDur": 0.0,
+   "var:tradeCount": 0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:inTrade": 1,
+   "var:currentDur": 2,
+   "var:totalDur": 0.0,
+   "var:tradeCount": 0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:inTrade": 1,
+   "var:currentDur": 3,
+   "var:totalDur": 0.0,
+   "var:tradeCount": 0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:inTrade": 1,
+   "var:currentDur": 4,
+   "var:totalDur": 0.0,
+   "var:tradeCount": 0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:inTrade": 1,
+   "var:currentDur": 5,
+   "var:totalDur": 0.0,
+   "var:tradeCount": 0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:inTrade": 1,
+   "var:currentDur": 6,
+   "var:totalDur": 0.0,
+   "var:tradeCount": 0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:inTrade": 1,
+   "var:currentDur": 7,
+   "var:totalDur": 0.0,
+   "var:tradeCount": 0,
+   "var:__obs_plot0": 0.0
+  }
+ ],
+ "finalVarState": {
+  "inTrade": 1,
+  "currentDur": 7,
+  "totalDur": 0.0,
+  "tradeCount": 0,
+  "__obs_plot0": 0.0
+ }
+}

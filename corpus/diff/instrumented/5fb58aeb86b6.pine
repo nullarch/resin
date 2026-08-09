@@ -1,0 +1,27 @@
+
+//@version=5
+indicator("Filter Full")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+avgVol = ta.sma(volume, 5)
+
+maFilter = close > sma3 and sma3 > sma5
+rsiFilter = rsi > 50
+volFilter = volume > avgVol
+
+var int confirmBars = 0
+if maFilter and rsiFilter
+    confirmBars := confirmBars + 1
+else
+    confirmBars := 0
+
+confirmed = confirmBars >= 2 and volFilter
+quality = (maFilter ? 1 : 0) + (rsiFilter ? 1 : 0) + (volFilter ? 1 : 0)
+
+var float __obs_plot0 = na
+__obs_plot0 := quality
+plot(quality, "Q")
+var float __obs_plot1 = na
+__obs_plot1 := confirmed ? 1 : 0
+plot(confirmed ? 1 : 0, "C")

@@ -1,0 +1,7 @@
+//@version=5
+indicator("Apparent Magnitude")
+brightness = volume / 1000.0
+mag = brightness > 0.01 ? -2.5 * math.log10(brightness) : 10.0
+var float minMag = 10.0
+if mag < minMag
+    minMag := mag

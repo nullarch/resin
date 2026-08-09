@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:threshold": 50.0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:threshold": 50.0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:threshold": 50.0,
+   "var:__obs_plot0": -1
+  },
+  {
+   "var:threshold": 50.0,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:threshold": 50.0,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:threshold": 50.0,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:threshold": 50.0,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:threshold": 50.0,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:threshold": 50.0,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:threshold": 50.0,
+   "var:__obs_plot0": 1
+  }
+ ],
+ "finalVarState": {
+  "threshold": 50.0,
+  "__obs_plot0": 1
+ }
+}

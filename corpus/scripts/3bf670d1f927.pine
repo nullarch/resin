@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Vol Trend")
+vol3 = ta.sma(volume, 3)
+vol5 = ta.sma(volume, 5)
+volTrend = vol5 > 0 ? vol3 / vol5 : 1.0
+expanding = volTrend > 1.1
+plot(expanding ? 1 : 0, "E")

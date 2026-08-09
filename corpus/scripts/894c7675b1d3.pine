@@ -1,0 +1,22 @@
+
+//@version=5
+indicator("Multi Full")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+atr = ta.atr(3)
+
+var int streak = 0
+bullish = close > sma3 and rsi > 50
+if bullish
+    streak := math.max(streak + 1, 0)
+else
+    streak := math.min(streak - 1, 0)
+
+maAlign = sma3 > sma5
+volConfirm = volume > ta.sma(volume, 3)
+fullConfirm = bullish and maAlign and volConfirm
+score = (bullish ? 1 : -1) + (maAlign ? 1 : -1) + (volConfirm ? 1 : 0)
+
+plot(score, "Score")
+plot(streak, "Streak")

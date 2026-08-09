@@ -1,0 +1,23 @@
+//@version=5
+indicator("linefill_new")
+
+// C238: linefill.new/delete(corpus 실측 b7dde3c9d51e.pine, ROADMAP P3 next_hint 1순위) --
+// pine2py FUNC_MAP(codegen.py L1650-1655)이 5종 전부(new 포함 -- label/line/box/table과 달리
+// 진짜 핸들 생성자가 없고 polyline과 동일하게 drawing_noop 하나로 묶임) 전부 no-op이라 관측
+// 가능한 값이 없다(GOAL.md "drawing 객체는 no-op"). line.new()로 만든 실제 핸들 두 개를
+// linefill.new에 넘기고 조건부로 linefill.delete까지 부르는 실제 corpus 관용구를 그대로
+// 재현해 "크래시 없이 통과 + 이웃 값(close)이 그대로 관측되는가"만 검증한다
+// (array_new_named_drawing.pine과 동일한 "핸들 참조형은 값 검증 대상 아님" 원칙).
+
+ln1 = line.new(bar_index - 1, high, bar_index, high)
+ln2 = line.new(bar_index - 1, low, bar_index, low)
+lf = linefill.new(ln1, ln2, color.new(color.blue, 80))
+
+var float __obs_close = na
+__obs_close := close
+
+if bar_index > 5
+    linefill.delete(lf)
+
+var float __obs_close_after_delete = na
+__obs_close_after_delete := close

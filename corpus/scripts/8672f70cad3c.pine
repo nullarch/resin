@@ -1,0 +1,6 @@
+//@version=5
+indicator("Index Scan")
+idx_high = ta.highest(high, 5)
+idx_low = ta.lowest(low, 5)
+in_range = not na(idx_high) and not na(idx_low) ? close >= idx_low and close <= idx_high : true
+range_width = not na(idx_high) and not na(idx_low) ? idx_high - idx_low : 0.0

@@ -1,0 +1,10 @@
+//@version=5
+indicator("KC")
+var float lastBasis = 0
+var float lastUpper = 0
+var float lastLower = 0
+[basis, upper, lower] = ta.kc(close, 5, 1.5)
+if not na(basis)
+    lastBasis := basis
+    lastUpper := upper
+    lastLower := lower

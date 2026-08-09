@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Metric Map")
+var mm = map.new<string, float>()
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+map.put(mm, "rsi_score", (rsi - 50) / 50)
+map.put(mm, "trend_score", close > sma3 ? 1.0 : -1.0)
+map.put(mm, "vol_score", volume > ta.sma(volume, 5) ? 1.0 : 0.0)
+totalScore = 0.0
+for [k, v] in mm
+    totalScore := totalScore + v
+var float __obs_plot0 = na
+__obs_plot0 := totalScore
+plot(totalScore, "TS")

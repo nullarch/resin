@@ -1,0 +1,30 @@
+//@version=5
+indicator("switch_basic")
+
+// subject 있음: cat(1/-1/0)을 case 값으로 매칭, 다중값 case(-1.0, 0.0) + default
+cat = close > open ? 1.0 : close < open ? -1.0 : 0.0
+tag = 0.0
+switch cat
+    1.0 =>
+        tag := 10.0
+    -1.0, 0.0 =>
+        tag := 20.0
+var float __obs_tag = na
+__obs_tag := tag
+
+// subject 없음: 각 case가 그 자체로 boolean 조건 + default, case 본문에 여러 문장
+label = 0.0
+acc = 0.0
+switch
+    close > open =>
+        label := 1.0
+        acc := acc + 1.0
+    close < open =>
+        label := -1.0
+        acc := acc - 1.0
+    =>
+        label := 0.0
+var float __obs_label = na
+__obs_label := label
+var float __obs_acc = na
+__obs_acc := acc

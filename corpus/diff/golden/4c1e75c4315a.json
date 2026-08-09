@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:bestBid": "pine_fn.<locals>.Level(price=108.0329218107, size=640.0)",
+   "var:bestAsk": "pine_fn.<locals>.Level(price=113.9670781893, size=960.0)",
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:bestBid": "pine_fn.<locals>.Level(price=108.0329218107, size=640.0)",
+   "var:bestAsk": "pine_fn.<locals>.Level(price=113.9670781893, size=960.0)",
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:bestBid": "pine_fn.<locals>.Level(price=108.0329218107, size=640.0)",
+   "var:bestAsk": "pine_fn.<locals>.Level(price=113.9670781893, size=960.0)",
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:bestBid": "pine_fn.<locals>.Level(price=108.0329218107, size=640.0)",
+   "var:bestAsk": "pine_fn.<locals>.Level(price=113.9670781893, size=960.0)",
+   "var:__obs_plot0": 5.666666666699996
+  },
+  {
+   "var:bestBid": "pine_fn.<locals>.Level(price=108.0329218107, size=640.0)",
+   "var:bestAsk": "pine_fn.<locals>.Level(price=113.9670781893, size=960.0)",
+   "var:__obs_plot0": 5.777777777799997
+  },
+  {
+   "var:bestBid": "pine_fn.<locals>.Level(price=108.0329218107, size=640.0)",
+   "var:bestAsk": "pine_fn.<locals>.Level(price=113.9670781893, size=960.0)",
+   "var:__obs_plot0": 5.666666666699996
+  },
+  {
+   "var:bestBid": "pine_fn.<locals>.Level(price=108.0329218107, size=640.0)",
+   "var:bestAsk": "pine_fn.<locals>.Level(price=113.9670781893, size=960.0)",
+   "var:__obs_plot0": 5.777777777799997
+  },
+  {
+   "var:bestBid": "pine_fn.<locals>.Level(price=108.0329218107, size=640.0)",
+   "var:bestAsk": "pine_fn.<locals>.Level(price=113.9670781893, size=960.0)",
+   "var:__obs_plot0": 5.851851851899994
+  },
+  {
+   "var:bestBid": "pine_fn.<locals>.Level(price=108.0329218107, size=640.0)",
+   "var:bestAsk": "pine_fn.<locals>.Level(price=113.9670781893, size=960.0)",
+   "var:__obs_plot0": 5.901234567899991
+  },
+  {
+   "var:bestBid": "pine_fn.<locals>.Level(price=108.0329218107, size=640.0)",
+   "var:bestAsk": "pine_fn.<locals>.Level(price=113.9670781893, size=960.0)",
+   "var:__obs_plot0": 5.934156378599994
+  }
+ ],
+ "finalVarState": {
+  "bestBid": "pine_fn.<locals>.Level(price=108.0329218107, size=640.0)",
+  "bestAsk": "pine_fn.<locals>.Level(price=113.9670781893, size=960.0)",
+  "__obs_plot0": 5.934156378599994
+ }
+}

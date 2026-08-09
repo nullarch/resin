@@ -1,0 +1,11 @@
+//@version=5
+indicator("Map For-In")
+m = map.new<string, float>()
+m.put("a", 1.0)
+m.put("b", 2.0)
+m.put("c", 3.0)
+var float total = 0.0
+total := 0.0
+for [k, v] in m
+    total := total + v
+plot(total)

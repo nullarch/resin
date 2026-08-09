@@ -1,0 +1,4 @@
+//@version=5
+indicator("SMA_EMA")
+s = ta.sma(close, 3)
+e = ta.ema(close, 3)

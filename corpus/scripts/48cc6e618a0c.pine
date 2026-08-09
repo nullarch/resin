@@ -1,0 +1,4 @@
+//@version=5
+indicator("test")
+x = close > 110 ? 5 : close > 108 ? 4 : close > 106 ? 3 : close > 104 ? 2 : close > 102 ? 1 : 0
+plot(x)

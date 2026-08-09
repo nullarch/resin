@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Vol Level")
+enum VolLevel
+    Extreme = 3
+    High = 2
+    Normal = 1
+    Low = 0
+
+avgVol = ta.sma(volume, 5)
+ratio = avgVol > 0 ? volume / avgVol : 1.0
+level = ratio > 3 ? VolLevel.Extreme : ratio > 1.5 ? VolLevel.High : ratio > 0.5 ? VolLevel.Normal : VolLevel.Low
+plot(int(level), "Lvl")

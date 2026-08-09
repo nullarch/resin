@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("CorrDim")
+dists = array.new_float(0)
+c0 = close
+c1 = not na(close[1]) ? close[1] : close
+c2 = not na(close[2]) ? close[2] : close
+array.push(dists, math.abs(c0 - c1))
+array.push(dists, math.abs(c0 - c2))
+array.push(dists, math.abs(c1 - c2))
+threshold = ta.sma(close, 5)
+countBelow = 0.0
+for i = 0 to array.size(dists) - 1
+    d = array.get(dists, i)
+    if d < nz(threshold, 999.0)
+        countBelow := countBelow + 1.0
+ratio = countBelow / math.max(float(array.size(dists)), 1.0)
+plot(ratio, "CD")

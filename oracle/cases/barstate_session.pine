@@ -1,0 +1,35 @@
+//@version=5
+indicator("barstate_session")
+// barstate.*(7종)/session.*(7종) 오라클 검증 (ROADMAP P2 "barstate/session/syminfo/timeframe" 첫
+// 슬라이스). 둘 다 ctx.idx/ctx.length(=barCount) 기반 순수 읽기 전용 속성이라 sample10.json 10바
+// 전 구간(idx 0~9)에서 첫 바(0)/중간 바(1~8)/마지막 바(9) 분기를 전부 커버 (bool은 var float
+// 0.0/1.0 미러로 관측 - MEMORY.md ta.crossover 패턴 재사용).
+var float __obs_bs_isfirst = na
+var float __obs_bs_islast = na
+var float __obs_bs_ishistory = na
+var float __obs_bs_isrealtime = na
+var float __obs_bs_isnew = na
+var float __obs_bs_isconfirmed = na
+var float __obs_bs_islastconfirmedhistory = na
+var float __obs_sess_ismarket = na
+var float __obs_sess_ispremarket = na
+var float __obs_sess_ispostmarket = na
+var float __obs_sess_isfirstbar = na
+var float __obs_sess_isfirstbar_regular = na
+var float __obs_sess_islastbar = na
+var float __obs_sess_islastbar_regular = na
+
+__obs_bs_isfirst := barstate.isfirst ? 1.0 : 0.0
+__obs_bs_islast := barstate.islast ? 1.0 : 0.0
+__obs_bs_ishistory := barstate.ishistory ? 1.0 : 0.0
+__obs_bs_isrealtime := barstate.isrealtime ? 1.0 : 0.0
+__obs_bs_isnew := barstate.isnew ? 1.0 : 0.0
+__obs_bs_isconfirmed := barstate.isconfirmed ? 1.0 : 0.0
+__obs_bs_islastconfirmedhistory := barstate.islastconfirmedhistory ? 1.0 : 0.0
+__obs_sess_ismarket := session.ismarket ? 1.0 : 0.0
+__obs_sess_ispremarket := session.ispremarket ? 1.0 : 0.0
+__obs_sess_ispostmarket := session.ispostmarket ? 1.0 : 0.0
+__obs_sess_isfirstbar := session.isfirstbar ? 1.0 : 0.0
+__obs_sess_isfirstbar_regular := session.isfirstbar_regular ? 1.0 : 0.0
+__obs_sess_islastbar := session.islastbar ? 1.0 : 0.0
+__obs_sess_islastbar_regular := session.islastbar_regular ? 1.0 : 0.0

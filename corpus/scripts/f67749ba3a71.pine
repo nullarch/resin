@@ -1,0 +1,6 @@
+//@version=5
+indicator("Deep History")
+float deep = nz(close[5], 0.0)
+var float result = 0.0
+result := deep
+plot(result)

@@ -1,0 +1,5 @@
+//@version=5
+indicator("My Indicator", overlay=true)
+var int bars = 0
+bars := bars + 1
+plot(close)

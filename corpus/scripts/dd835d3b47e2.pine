@@ -1,0 +1,10 @@
+//@version=5
+indicator("Langton Lambda")
+var int aliveCount = 0
+var int totalCount = 0
+cell = close > open ? 1 : 0
+totalCount := totalCount + 1
+if cell == 1
+    aliveCount := aliveCount + 1
+lambdaVal = totalCount > 0 ? aliveCount * 1.0 / totalCount : 0.0
+edgeOfChaos = lambdaVal > 0.3 and lambdaVal < 0.7 ? true : false

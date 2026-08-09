@@ -1,0 +1,39 @@
+//@version=5
+indicator("str_format")
+// str.format(template, *args) — {idx} simple substitution + {idx,number,pattern} decimal
+// formatting. All channels are bar-independent (pure literal args, like str_transform.pine/
+// str_basic.pine) — numeric args deliberately use float literals (5.0, not 5) to avoid the
+// int/float string-representation ambiguity documented in DIVERGENCES.md #28a (pine2py's plain
+// `str(val)` shows no decimal point for a value that happens to be a Python int literal; JS
+// Number has no such distinction so pine2js always uses pyFloatStr — this channel set only
+// exercises the byte-exact-verifiable subset). A null-string-arg channel is NOT covered here:
+// pine2py structurally cannot produce a real None arg for this function (even `var string x = na`
+// compiles to float('nan'), not None) — hand-verified in runtime.test.ts instead (LIMITATIONS.md).
+var string __obs_a = na
+__obs_a := str.format("{0} {1}", "hello", 5.0)
+var string __obs_b = na
+__obs_b := str.format("{0,number,#.##}", 3.14159)
+var string __obs_c = na
+__obs_c := str.format("{0,number,#}", 3.6)
+var string __obs_d = na
+__obs_d := str.format("{0,number,0.000}", 3.14159)
+var string __obs_e = na
+__obs_e := str.format("{5}", 1.0, 2.0)
+var string __obs_f = na
+__obs_f := str.format("no placeholder", 1.0, 2.0)
+var string __obs_g = na
+__obs_g := str.format("{0} {0}", "x")
+var string __obs_h = na
+__obs_h := str.format("{0,number,#.##}", "abc")
+var string __obs_i = na
+__obs_i := str.format("{0,number,#.##}", "3.14159")
+var string __obs_j = na
+__obs_j := str.format("{0}", true)
+var string __obs_k = na
+__obs_k := str.format("{0}", false)
+var string __obs_l = na
+__obs_l := str.format("{0}", na)
+var string __obs_m = na
+__obs_m := str.format("{0,number,#.##}", na)
+var string __obs_n = na
+__obs_n := str.format("{0}", str.tonumber("Infinity"))

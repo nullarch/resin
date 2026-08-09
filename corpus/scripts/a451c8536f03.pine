@@ -1,0 +1,36 @@
+
+//@version=5
+indicator("Cycle 88 Full")
+
+// Condition-based switch
+rsi_val = ta.rsi(close, 14)
+signal = switch
+    rsi_val > 70 => -1.0
+    rsi_val < 30 => 1.0
+    => 0.0
+
+// Generic types
+var array<float> signals = array.new<float>(0)
+array.push(signals, signal)
+if array.size(signals) > 10
+    array.shift(signals)
+
+// Arithmetic chain
+spread = high - low
+mid = (high + low) / 2.0
+ratio = spread * 100.0 / (mid + 0.001)
+
+// Color
+col = color.new(signal > 0 ? color.green : signal < 0 ? color.red : color.gray, 50)
+
+// Hoisted function
+norm_rsi = normalize_val(rsi_val, 0.0, 100.0)
+
+normalize_val(v, lo, hi) =>
+    (v - lo) / (hi - lo + 0.001)
+
+// Log noop
+log.info("RSI: {0}, Signal: {1}", rsi_val, signal)
+
+result = norm_rsi + ratio
+plot(result, color=col)

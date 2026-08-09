@@ -1,0 +1,16 @@
+//@version=5
+indicator("Enterohepatic Recycling")
+var float blood = 50.0
+var float bile = 10.0
+excretionRate = 0.1
+reabsorbRate = 0.4
+newDose = close > open ? 5.0 : 0.0
+excreted = blood * excretionRate
+reabsorbed = bile * reabsorbRate
+blood := blood + newDose - excreted + reabsorbed
+bile := bile + excreted - reabsorbed - bile * 0.05
+if blood < 0
+    blood := 0.0
+if bile < 0
+    bile := 0.0
+plot(blood)

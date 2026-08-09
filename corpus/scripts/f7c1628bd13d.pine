@@ -1,0 +1,10 @@
+//@version=5
+indicator("While Conv")
+var float approx = 0.0
+target = close
+approx := target * 0.5
+iter = 0
+while math.abs(approx * approx - target) > 0.01 and iter < 50
+    approx := (approx + target / approx) / 2
+    iter := iter + 1
+plot(approx)

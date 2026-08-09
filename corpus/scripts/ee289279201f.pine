@@ -1,0 +1,9 @@
+//@version=5
+indicator("Entropy Production")
+float barRange = high - low
+float prevRange = not na(high[1]) ? high[1] - low[1] : barRange
+float sNow = math.log(math.max(barRange, 0.01))
+float sPrev = math.log(math.max(prevRange, 0.01))
+float dSdt = sNow - sPrev
+var float cumProd = 0.0
+cumProd := cumProd + math.abs(dSdt)

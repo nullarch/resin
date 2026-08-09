@@ -1,0 +1,20 @@
+//@version=5
+indicator("Comprehensive 118")
+myCalc(src, len) =>
+    ta.sma(src, len)
+var float maxVal = 0.0
+var int barCount = 0
+smaVal = myCalc(close, 3)
+emaVal = ta.ema(close, 5)
+float total = 0.0
+for i = 1 to 5
+    total := total + float(i)
+mode = switch
+    close > 110 => "HIGH"
+    close > 105 => "MID"
+    => "LOW"
+safeDiv = close / nz(smaVal, 1.0)
+s = "SMA: " + str.tostring(nz(smaVal, 0.0))
+if not na(smaVal) and smaVal > maxVal
+    maxVal := smaVal
+barCount := barCount + 1

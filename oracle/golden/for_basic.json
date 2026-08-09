@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_sum": 15,
+   "var:__obs_prod": 120,
+   "var:__obs_countdown": 15,
+   "var:__obs_total": 12,
+   "var:__obs_skipsum": 24
+  },
+  {
+   "var:__obs_sum": 15,
+   "var:__obs_prod": 120,
+   "var:__obs_countdown": 15,
+   "var:__obs_total": 12,
+   "var:__obs_skipsum": 24
+  },
+  {
+   "var:__obs_sum": 15,
+   "var:__obs_prod": 120,
+   "var:__obs_countdown": 15,
+   "var:__obs_total": 12,
+   "var:__obs_skipsum": 24
+  },
+  {
+   "var:__obs_sum": 15,
+   "var:__obs_prod": 120,
+   "var:__obs_countdown": 15,
+   "var:__obs_total": 12,
+   "var:__obs_skipsum": 24
+  },
+  {
+   "var:__obs_sum": 15,
+   "var:__obs_prod": 120,
+   "var:__obs_countdown": 15,
+   "var:__obs_total": 12,
+   "var:__obs_skipsum": 24
+  },
+  {
+   "var:__obs_sum": 15,
+   "var:__obs_prod": 120,
+   "var:__obs_countdown": 15,
+   "var:__obs_total": 12,
+   "var:__obs_skipsum": 24
+  },
+  {
+   "var:__obs_sum": 15,
+   "var:__obs_prod": 120,
+   "var:__obs_countdown": 15,
+   "var:__obs_total": 12,
+   "var:__obs_skipsum": 24
+  },
+  {
+   "var:__obs_sum": 15,
+   "var:__obs_prod": 120,
+   "var:__obs_countdown": 15,
+   "var:__obs_total": 12,
+   "var:__obs_skipsum": 24
+  },
+  {
+   "var:__obs_sum": 15,
+   "var:__obs_prod": 120,
+   "var:__obs_countdown": 15,
+   "var:__obs_total": 12,
+   "var:__obs_skipsum": 24
+  },
+  {
+   "var:__obs_sum": 15,
+   "var:__obs_prod": 120,
+   "var:__obs_countdown": 15,
+   "var:__obs_total": 12,
+   "var:__obs_skipsum": 24
+  }
+ ],
+ "finalVarState": {
+  "__obs_sum": 15,
+  "__obs_prod": 120,
+  "__obs_countdown": 15,
+  "__obs_total": 12,
+  "__obs_skipsum": 24
+ }
+}

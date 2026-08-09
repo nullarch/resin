@@ -1,0 +1,10 @@
+//@version=5
+indicator("Max Drawdown")
+var float peak = 0.0
+if close > peak
+    peak := close
+float dd = peak > 0 ? (peak - close) / peak : 0.0
+var float maxDD = 0.0
+if dd > maxDD
+    maxDD := dd
+plot(maxDD, "MaxDD")

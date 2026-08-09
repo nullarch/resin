@@ -1,0 +1,5 @@
+
+//@version=5
+indicator("Dev Precision")
+d = ta.stdev(close, 20)
+plot(d)

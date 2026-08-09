@@ -1,0 +1,5 @@
+//@version=5
+indicator("HistRef")
+var int upBars = 0
+if bar_index > 0 and close > close[1]
+    upBars := upBars + 1

@@ -1,0 +1,7 @@
+//@version=5
+indicator("safe div chain")
+var float result = 0.0
+a = 100.0
+b = close
+c = 2.0
+result := a / b / c

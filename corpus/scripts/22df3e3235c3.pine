@@ -1,0 +1,9 @@
+//@version=5
+indicator("Array Push Pop")
+var float result = 0.0
+a = array.new_float(0)
+a.push(10.0)
+a.push(20.0)
+a.push(30.0)
+float popped = a.pop()
+result := popped + a.size()

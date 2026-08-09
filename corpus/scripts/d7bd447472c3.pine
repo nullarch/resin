@@ -1,0 +1,13 @@
+//@version=5
+strategy("Vote System")
+float rsiVal = nz(ta.rsi(close, 3), 50.0)
+float smaVal = ta.sma(close, 5)
+float ema2 = nz(ta.ema(close, 2), close)
+int votes = 0
+votes := rsiVal > 50.0 ? votes + 1 : votes
+votes := close > nz(smaVal, close) ? votes + 1 : votes
+votes := close > ema2 ? votes + 1 : votes
+if votes >= 2
+    strategy.entry("BullVote", strategy.long)
+if votes == 0
+    strategy.close("BullVote")

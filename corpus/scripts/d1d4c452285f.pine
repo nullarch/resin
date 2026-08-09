@@ -1,0 +1,12 @@
+//@version=5
+indicator("Enum Calc")
+enum Direction
+    Long = 1
+    Short = -1
+    Neutral = 0
+dir = close > open ? Direction.Long : close < open ? Direction.Short : Direction.Neutral
+multiplier = switch dir
+    Direction.Long => 1.0
+    Direction.Short => -1.0
+    => 0.0
+result = close * multiplier

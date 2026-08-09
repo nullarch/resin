@@ -1,0 +1,14 @@
+//@version=5
+indicator("ta_percentile")
+// ta.percentile_nearest_rank/ta.percentile_linear_interpolation 오라클 검증(C233 next_hint —
+// corpus 3건 실측 ta.percentile_nearest_rank(close, len, pct) 시그니처). 창 수집은 ta.median과
+// 완전히 동일(현재 바 포함 length개, 정렬, 하나라도 NaN이면 즉시 NaN) — length=5로 sample10.json
+// 10바 안에서 워밍업(바 0~3, data_len<length라 NaN)과 정상 구간(바 4~9)을 모두 커버. percentage는
+// pine2py 기본값 50.0을 갖는 선택 인자(minArgCount:2, C227 change/kc와 동일 패턴)라 __obs_pnr_default
+// 채널로 3-인자/2-인자(생략) 두 콜사이트를 병렬 관측.
+var float __obs_pnr = na
+__obs_pnr := ta.percentile_nearest_rank(close, 5, 75)
+var float __obs_pnr_default = na
+__obs_pnr_default := ta.percentile_nearest_rank(close, 5)
+var float __obs_pli = na
+__obs_pli := ta.percentile_linear_interpolation(close, 5, 25)

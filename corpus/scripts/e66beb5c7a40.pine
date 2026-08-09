@@ -1,0 +1,5 @@
+//@version=5
+indicator("Detrended")
+float dc = ta.sma(close, 5)
+float detrended = close - nz(dc, close)
+plot(detrended, "Detrended")

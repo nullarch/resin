@@ -1,0 +1,105 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:__obs_plot0": "NaN",
+   "var:__obs_plot1": "NaN",
+   "var:__obs_plot2": "NaN",
+   "var:__obs_plot3": "NaN",
+   "var:__obs_plot4": "NaN",
+   "var:__obs_plot5": "NaN",
+   "var:__obs_plot6": "NaN"
+  },
+  {
+   "var:__obs_plot0": "NaN",
+   "var:__obs_plot1": "NaN",
+   "var:__obs_plot2": "NaN",
+   "var:__obs_plot3": "NaN",
+   "var:__obs_plot4": "NaN",
+   "var:__obs_plot5": "NaN",
+   "var:__obs_plot6": "NaN"
+  },
+  {
+   "var:__obs_plot0": "NaN",
+   "var:__obs_plot1": "NaN",
+   "var:__obs_plot2": "NaN",
+   "var:__obs_plot3": "NaN",
+   "var:__obs_plot4": "NaN",
+   "var:__obs_plot5": "NaN",
+   "var:__obs_plot6": "NaN"
+  },
+  {
+   "var:__obs_plot0": "NaN",
+   "var:__obs_plot1": "NaN",
+   "var:__obs_plot2": "NaN",
+   "var:__obs_plot3": "NaN",
+   "var:__obs_plot4": "NaN",
+   "var:__obs_plot5": "NaN",
+   "var:__obs_plot6": "NaN"
+  },
+  {
+   "var:__obs_plot0": "NaN",
+   "var:__obs_plot1": "NaN",
+   "var:__obs_plot2": "NaN",
+   "var:__obs_plot3": "NaN",
+   "var:__obs_plot4": "NaN",
+   "var:__obs_plot5": "NaN",
+   "var:__obs_plot6": "NaN"
+  },
+  {
+   "var:__obs_plot0": "NaN",
+   "var:__obs_plot1": "NaN",
+   "var:__obs_plot2": "NaN",
+   "var:__obs_plot3": "NaN",
+   "var:__obs_plot4": "NaN",
+   "var:__obs_plot5": "NaN",
+   "var:__obs_plot6": "NaN"
+  },
+  {
+   "var:__obs_plot0": "NaN",
+   "var:__obs_plot1": "NaN",
+   "var:__obs_plot2": "NaN",
+   "var:__obs_plot3": "NaN",
+   "var:__obs_plot4": "NaN",
+   "var:__obs_plot5": "NaN",
+   "var:__obs_plot6": "NaN"
+  },
+  {
+   "var:__obs_plot0": "NaN",
+   "var:__obs_plot1": "NaN",
+   "var:__obs_plot2": "NaN",
+   "var:__obs_plot3": "NaN",
+   "var:__obs_plot4": "NaN",
+   "var:__obs_plot5": "NaN",
+   "var:__obs_plot6": "NaN"
+  },
+  {
+   "var:__obs_plot0": "NaN",
+   "var:__obs_plot1": "NaN",
+   "var:__obs_plot2": "NaN",
+   "var:__obs_plot3": "NaN",
+   "var:__obs_plot4": "NaN",
+   "var:__obs_plot5": "NaN",
+   "var:__obs_plot6": "NaN"
+  },
+  {
+   "var:__obs_plot0": "NaN",
+   "var:__obs_plot1": "NaN",
+   "var:__obs_plot2": "NaN",
+   "var:__obs_plot3": "NaN",
+   "var:__obs_plot4": "NaN",
+   "var:__obs_plot5": "NaN",
+   "var:__obs_plot6": "NaN"
+  }
+ ],
+ "finalVarState": {
+  "__obs_plot0": "NaN",
+  "__obs_plot1": "NaN",
+  "__obs_plot2": "NaN",
+  "__obs_plot3": "NaN",
+  "__obs_plot4": "NaN",
+  "__obs_plot5": "NaN",
+  "__obs_plot6": "NaN"
+ }
+}

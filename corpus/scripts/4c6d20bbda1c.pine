@@ -1,0 +1,10 @@
+//@version=5
+strategy("Exit patterns", overlay=true)
+sma5 = ta.sma(close, 5)
+atr3 = ta.atr(3)
+if ta.crossover(close, sma5)
+    strategy.entry("L", strategy.long)
+if not na(atr3)
+    strategy.exit("TP/SL", "L", profit=100, loss=50)
+if ta.crossunder(close, sma5)
+    strategy.close("L")

@@ -1,0 +1,9 @@
+//@version=5
+indicator("Derived")
+var float h2 = 0.0
+var float h3 = 0.0
+var float o4 = 0.0
+h2 := hl2
+h3 := hlc3
+o4 := ohlc4
+plot(h2)

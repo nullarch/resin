@@ -1,0 +1,9 @@
+//@version=5
+indicator("MutBounded")
+clampVal(val, lo, hi) =>
+    math.max(lo, math.min(hi, val))
+gene = close * 0.5
+perturbation = (high - low) * 0.3
+mutated = gene + perturbation
+bounded = clampVal(mutated, 40.0, 60.0)
+plot(bounded, "Bounded")

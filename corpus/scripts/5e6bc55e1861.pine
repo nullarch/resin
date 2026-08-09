@@ -1,0 +1,4 @@
+//@version=5
+indicator("Test")
+x = 1
+y = 2

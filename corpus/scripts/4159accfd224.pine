@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Sess HL")
+var float sessHi = 0.0
+var float sessLo = 99999.0
+var int sessBar = 0
+sessBar := sessBar + 1
+sessHi := math.max(sessHi, high)
+sessLo := math.min(sessLo, low)
+if sessBar >= 5
+    sessBar := 0
+    sessHi := high
+    sessLo := low
+plot(sessHi - sessLo, "SR")

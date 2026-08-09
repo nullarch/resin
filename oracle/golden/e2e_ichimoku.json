@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_tenkanSen": "NaN",
+   "var:__obs_kijunSen": "NaN",
+   "var:__obs_leadLine1": "NaN",
+   "var:__obs_leadLine2": "NaN",
+   "var:__obs_chikouSpan": 101
+  },
+  {
+   "var:__obs_tenkanSen": 101.0,
+   "var:__obs_kijunSen": "NaN",
+   "var:__obs_leadLine1": 101.0,
+   "var:__obs_leadLine2": "NaN",
+   "var:__obs_chikouSpan": 102
+  },
+  {
+   "var:__obs_tenkanSen": 102.0,
+   "var:__obs_kijunSen": 101.5,
+   "var:__obs_leadLine1": 101.75,
+   "var:__obs_leadLine2": "NaN",
+   "var:__obs_chikouSpan": 103
+  },
+  {
+   "var:__obs_tenkanSen": 102.0,
+   "var:__obs_kijunSen": 102.0,
+   "var:__obs_leadLine1": 102.0,
+   "var:__obs_leadLine2": "NaN",
+   "var:__obs_chikouSpan": 102
+  },
+  {
+   "var:__obs_tenkanSen": 102.5,
+   "var:__obs_kijunSen": 102.5,
+   "var:__obs_leadLine1": 102.5,
+   "var:__obs_leadLine2": 102.0,
+   "var:__obs_chikouSpan": 104
+  },
+  {
+   "var:__obs_tenkanSen": 104.0,
+   "var:__obs_kijunSen": 103.0,
+   "var:__obs_leadLine1": 103.5,
+   "var:__obs_leadLine2": 103.0,
+   "var:__obs_chikouSpan": 105
+  },
+  {
+   "var:__obs_tenkanSen": 105.0,
+   "var:__obs_kijunSen": 104.5,
+   "var:__obs_leadLine1": 104.75,
+   "var:__obs_leadLine2": 103.5,
+   "var:__obs_chikouSpan": 106
+  },
+  {
+   "var:__obs_tenkanSen": 105.0,
+   "var:__obs_kijunSen": 105.0,
+   "var:__obs_leadLine1": 105.0,
+   "var:__obs_leadLine2": 103.5,
+   "var:__obs_chikouSpan": 105
+  },
+  {
+   "var:__obs_tenkanSen": 105.5,
+   "var:__obs_kijunSen": 105.5,
+   "var:__obs_leadLine1": 105.5,
+   "var:__obs_leadLine2": 105.0,
+   "var:__obs_chikouSpan": 107
+  },
+  {
+   "var:__obs_tenkanSen": 107.0,
+   "var:__obs_kijunSen": 106.0,
+   "var:__obs_leadLine1": 106.5,
+   "var:__obs_leadLine2": 106.0,
+   "var:__obs_chikouSpan": 108
+  }
+ ],
+ "finalVarState": {
+  "__obs_tenkanSen": 107.0,
+  "__obs_kijunSen": 106.0,
+  "__obs_leadLine1": 106.5,
+  "__obs_leadLine2": 106.0,
+  "__obs_chikouSpan": 108
+ }
+}

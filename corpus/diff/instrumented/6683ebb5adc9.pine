@@ -1,0 +1,8 @@
+//@version=5
+indicator("SMA 2arg")
+sma5 = ta.sma(close, 5)
+var float result = 0.0
+result := nz(sma5, 0.0)
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

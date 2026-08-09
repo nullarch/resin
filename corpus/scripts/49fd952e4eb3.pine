@@ -1,0 +1,9 @@
+//@version=5
+indicator("Dashboard")
+sma5 = ta.sma(close, 5)
+rsi5 = ta.rsi(close, 5)
+trend = close > nz(sma5) ? "BULL" : "BEAR"
+rsiStr = str.tostring(nz(rsi5), "#.##")
+priceStr = str.tostring(close, "#.##")
+dashboard = trend + " | RSI: " + rsiStr + " | Price: " + priceStr
+dashLen = str.length(dashboard)

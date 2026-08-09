@@ -1,0 +1,3 @@
+//@version=5
+indicator("str format")
+s = str.format("{0} / {1}", "hello", "world")

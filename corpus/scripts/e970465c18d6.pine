@@ -1,0 +1,12 @@
+//@version=5
+indicator("Predictability")
+float forecast = nz(ta.ema(close, 3), close)
+float err = math.abs(close - forecast)
+float threshold = 3.0
+var int horizonSum = 0
+var int horizonCnt = 0
+if err < threshold
+    horizonCnt := horizonCnt + 1
+else
+    horizonSum := horizonSum + horizonCnt
+    horizonCnt := 0

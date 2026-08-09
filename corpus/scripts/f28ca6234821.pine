@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Event Freq")
+var float[] eventBars = array.new_float(0)
+var int barNum = 0
+barNum := barNum + 1
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+isEvent = ta.crossover(close, sma3) or rsi > 70 or rsi < 30
+if isEvent
+    array.push(eventBars, float(barNum))
+if array.size(eventBars) > 5
+    array.shift(eventBars)
+freq = array.size(eventBars) > 1 ? float(barNum) / array.size(eventBars) : 0.0
+plot(array.size(eventBars), "EC")

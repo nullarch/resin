@@ -1,0 +1,6 @@
+//@version=5
+indicator("Change")
+var float totalChange = 0
+c = ta.change(close)
+if not na(c)
+    totalChange := totalChange + c

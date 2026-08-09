@@ -1,0 +1,6 @@
+//@version=5
+indicator("3lvl TA")
+inner = ta.rsi(close, 5)
+mid = ta.sma(inner, 3)
+outer = ta.ema(mid, 3)
+plot(outer)

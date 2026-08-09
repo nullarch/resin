@@ -1,0 +1,20 @@
+
+//@version=5
+indicator("Vol Level")
+enum VolLevel
+    VeryLow = 0
+    Low = 1
+    Normal = 2
+    High = 3
+    VeryHigh = 4
+
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 5)
+ratio = avgATR > 0 ? atr / avgATR : 1.0
+level = switch
+    ratio > 1.5 => VolLevel.VeryHigh
+    ratio > 1.2 => VolLevel.High
+    ratio < 0.7 => VolLevel.VeryLow
+    ratio < 0.9 => VolLevel.Low
+    => VolLevel.Normal
+plot(int(level), "Lv")

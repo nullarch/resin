@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("UDF Chain")
+calcMom(float price, float ma) =>
+    ma > 0 ? (price - ma) / ma * 100 : 0.0
+
+calcScore(float mom, float rsi) =>
+    momScore = mom > 0 ? 1.0 : -1.0
+    rsiScore = (rsi - 50) / 50
+    momScore * 0.5 + rsiScore * 0.5
+
+sma5 = ta.sma(close, 5)
+mom = calcMom(close, sma5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+score = calcScore(mom, rsi)
+plot(score, "S")

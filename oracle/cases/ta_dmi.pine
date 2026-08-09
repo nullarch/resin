@@ -1,0 +1,15 @@
+//@version=5
+indicator("ta_dmi")
+// ta.dmi 오라클 검증(ROADMAP P2 "ta.* 44종"). diLength=3, adxSmoothing=2 — 기본값(14,14)은
+// data_len<diLength+1 게이트가 sample10.json(10바) 전체를 NaN으로 막아 아무것도 검증 못 한다
+// (scratch/probe_dmi.mjs로 직접 확인, C63 next_hint 재검증 — 정적 조건이 아니라 진짜 per-bar
+// 워밍업 배리어). diLength=3이면 게이트가 바3에서 열리고(bar_index>=diLength), 바3은 smoothTr
+// 단일값 시드만 하고 NaN 반환, 바4부터 plusDi/minusDi 유효, adxSmoothing=2라 dx 2개(바4,바5)가
+// 모이는 바5부터 adx까지 전 채널 유효 — 10바 안에서 게이트/시드/DI-only/DI+ADX 네 구간을 전부 커버.
+[plusDi, minusDi, adx] = ta.dmi(3, 2)
+var float __obs_plus_di = na
+var float __obs_minus_di = na
+var float __obs_adx = na
+__obs_plus_di := plusDi
+__obs_minus_di := minusDi
+__obs_adx := adx

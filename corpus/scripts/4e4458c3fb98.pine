@@ -1,0 +1,35 @@
+
+//@version=5
+indicator("Multi System")
+// Trend
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+trend = sma3 > sma5 ? 1 : -1
+
+// Momentum
+rsiVal = ta.rsi(close, 3)
+momentum = rsiVal > 50 ? 1 : -1
+
+// Volatility
+atrVal = ta.atr(3)
+var float avgATR = 0.0
+avgATR := na(avgATR) or avgATR == 0.0 ? atrVal : avgATR * 0.9 + atrVal * 0.1
+volRegime = atrVal > avgATR ? 1 : 0
+
+// Combined
+score = trend + momentum + volRegime
+var int bullBars = 0
+var int bearBars = 0
+if score >= 2
+    bullBars := bullBars + 1
+else if score <= -1
+    bearBars := bearBars + 1
+
+// Array tracking
+var float[] scores = array.new_float(0)
+array.push(scores, float(score))
+
+plot(score, "Score")
+plot(bullBars, "Bull Bars")
+plot(bearBars, "Bear Bars")
+plot(array.size(scores), "Total")

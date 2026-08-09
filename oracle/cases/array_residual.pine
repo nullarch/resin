@@ -1,0 +1,67 @@
+//@version=5
+indicator("array_residual")
+
+// A: var 배열 — 매 바 unshift로 성장(맨 앞에 추가, push의 거울상). first는 항상 최신값(close),
+// last는 항상 최초 바의 close.
+var arrA = array.new_float(0)
+array.unshift(arrA, close)
+var float __obs_size_a = na
+__obs_size_a := array.size(arrA)
+var float __obs_first_a = na
+__obs_first_a := array.first(arrA)
+var float __obs_last_a = na
+__obs_last_a := array.last(arrA)
+
+// B: 매 바 새 배열 — shift 제거 관측
+arrB = array.new_float(3, 0.0)
+array.set(arrB, 0, open)
+array.set(arrB, 1, high)
+array.set(arrB, 2, low)
+var float __obs_shift = na
+__obs_shift := array.shift(arrB)
+var float __obs_shift_size = na
+__obs_shift_size := array.size(arrB)
+
+// C: 매 바 새 배열 — insert/remove 관측
+arrC = array.new_float(3, 0.0)
+array.set(arrC, 0, open)
+array.set(arrC, 1, high)
+array.set(arrC, 2, low)
+array.insert(arrC, 1, close)
+var float __obs_insert = na
+__obs_insert := array.get(arrC, 1)
+var float __obs_insert_size = na
+__obs_insert_size := array.size(arrC)
+var float __obs_remove = na
+__obs_remove := array.remove(arrC, 0)
+var float __obs_remove_size = na
+__obs_remove_size := array.size(arrC)
+
+// D: 경계 — remove 범위 밖(정의된 동작: nan, 뮤테이션 없음), first/last 빈 배열
+var float __obs_remove_oob = na
+__obs_remove_oob := array.remove(arrC, 99)
+arrD = array.new_float(0)
+var float __obs_first_empty = na
+__obs_first_empty := array.first(arrD)
+var float __obs_last_empty = na
+__obs_last_empty := array.last(arrD)
+
+// E: clear
+array.clear(arrC)
+var float __obs_clear_size = na
+__obs_clear_size := array.size(arrC)
+
+// F: fill — 범위 지정 + 디폴트(전체 범위)
+arrF = array.new_float(4, 0.0)
+array.fill(arrF, close, 1, 3)
+var float __obs_fill1 = na
+__obs_fill1 := array.get(arrF, 1)
+var float __obs_fill2 = na
+__obs_fill2 := array.get(arrF, 2)
+var float __obs_fill3 = na
+__obs_fill3 := array.get(arrF, 3)
+
+arrF2 = array.new_float(3, 0.0)
+array.fill(arrF2, high)
+var float __obs_fillall = na
+__obs_fillall := array.get(arrF2, 2)

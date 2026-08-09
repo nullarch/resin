@@ -1,0 +1,24 @@
+//@version=5
+indicator("Bollinger Bands")
+// TV 빌트인 "Bollinger Bands" 인디케이터 E2E 재현(ROADMAP P2 "TV 빌트인 인디케이터 15종 E2E"
+// 첫 슬라이스, 3종 중 3). ta.bb 자체의 계산은 이미 oracle/cases/ta_bb.pine(순수 __obs 미러,
+// close 직접 사용, length=3/mult=2)으로 개별 검증됐다 -- 이 케이스는 그 위에 indicator()/
+// input.int/input.float/input.source/plot()을 얹어 완성된 빌트인 스크립트 구조 전체(다중 반환
+// 튜플 + 3-plot 슬롯 배정)를 검증한다. length=3/mult=2는 ta_bb.pine과 동일 파라미터를 재사용
+// (sample10.json 10바 안에서 워밍업(바0~1)/전부 유효(바2~9)를 이미 커버해둔 조합 그대로 재사용).
+lengthInput = input.int(3, "Length")
+multInput = input.float(2.0, "StdDev")
+src = input.source(close, "Source")
+
+[middleBb, upperBb, lowerBb] = ta.bb(src, lengthInput, multInput)
+
+plot(middleBb, "Basis")
+plot(upperBb, "Upper")
+plot(lowerBb, "Lower")
+
+var float __obs_middle = na
+var float __obs_upper = na
+var float __obs_lower = na
+__obs_middle := middleBb
+__obs_upper := upperBb
+__obs_lower := lowerBb

@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:pt": "pine_fn.<locals>.Point(x=13.430000000000003, y=9.0)",
+   "var:__obs_x": 4.01,
+   "var:__obs_y": 4.5,
+   "var:__obs_mag": 6.027445561761633
+  },
+  {
+   "var:pt": "pine_fn.<locals>.Point(x=13.430000000000003, y=9.0)",
+   "var:__obs_x": 5.029999999999999,
+   "var:__obs_y": 5.0,
+   "var:__obs_mag": 7.092312739861377
+  },
+  {
+   "var:pt": "pine_fn.<locals>.Point(x=13.430000000000003, y=9.0)",
+   "var:__obs_x": 6.06,
+   "var:__obs_y": 5.5,
+   "var:__obs_mag": 8.183739976318895
+  },
+  {
+   "var:pt": "pine_fn.<locals>.Point(x=13.430000000000003, y=9.0)",
+   "var:__obs_x": 7.08,
+   "var:__obs_y": 6.0,
+   "var:__obs_mag": 9.280431024472948
+  },
+  {
+   "var:pt": "pine_fn.<locals>.Point(x=13.430000000000003, y=9.0)",
+   "var:__obs_x": 8.120000000000001,
+   "var:__obs_y": 6.5,
+   "var:__obs_mag": 10.40117301077143
+  },
+  {
+   "var:pt": "pine_fn.<locals>.Point(x=13.430000000000003, y=9.0)",
+   "var:__obs_x": 9.170000000000002,
+   "var:__obs_y": 7.0,
+   "var:__obs_mag": 11.536416254626046
+  },
+  {
+   "var:pt": "pine_fn.<locals>.Point(x=13.430000000000003, y=9.0)",
+   "var:__obs_x": 10.230000000000002,
+   "var:__obs_y": 7.5,
+   "var:__obs_mag": 12.684750687341081
+  },
+  {
+   "var:pt": "pine_fn.<locals>.Point(x=13.430000000000003, y=9.0)",
+   "var:__obs_x": 11.280000000000003,
+   "var:__obs_y": 8.0,
+   "var:__obs_mag": 13.828897280694513
+  },
+  {
+   "var:pt": "pine_fn.<locals>.Point(x=13.430000000000003, y=9.0)",
+   "var:__obs_x": 12.350000000000003,
+   "var:__obs_y": 8.5,
+   "var:__obs_mag": 14.99241474879881
+  },
+  {
+   "var:pt": "pine_fn.<locals>.Point(x=13.430000000000003, y=9.0)",
+   "var:__obs_x": 13.430000000000003,
+   "var:__obs_y": 9.0,
+   "var:__obs_mag": 16.166783848372567
+  }
+ ],
+ "finalVarState": {
+  "pt": "pine_fn.<locals>.Point(x=13.430000000000003, y=9.0)",
+  "__obs_x": 13.430000000000003,
+  "__obs_y": 9.0,
+  "__obs_mag": 16.166783848372567
+ }
+}

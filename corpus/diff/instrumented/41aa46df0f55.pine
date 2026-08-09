@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("LRD")
+var float cumRet = 0.0
+var float cumRetSq = 0.0
+var int n = 0
+ret = close - close[1]
+if not na(ret)
+    cumRet := cumRet + ret
+    cumRetSq := cumRetSq + ret * ret
+    n := n + 1
+meanRet = n > 0 ? cumRet / n : 0.0
+varRet = n > 1 ? (cumRetSq / n) - meanRet * meanRet : 0.0
+lrd = n > 2 ? math.sqrt(math.max(varRet, 0.0)) * math.sqrt(float(n)) : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := lrd
+plot(lrd, "LRD")

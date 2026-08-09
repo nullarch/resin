@@ -1,0 +1,9 @@
+//@version=5
+indicator("Var Arr Limit")
+var a = array.new<float>(0)
+if array.size(a) >= 5
+    array.shift(a)
+array.push(a, close)
+var int sz = 0
+sz := array.size(a)
+plot(sz)

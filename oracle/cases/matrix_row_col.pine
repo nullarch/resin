@@ -1,0 +1,60 @@
+//@version=5
+indicator("matrix_row_col")
+
+// A: var 행렬 — 바마다 set으로 값이 갱신되는 지속 행렬(2x3). row(0)/row(1)/col(0)/col(2) 관측을
+// array.get 미러로 매 바 확인(set이 map.put(C89)/matrix.set(C90)과 동일 latent-Series 버그를
+// 갖고 있어 `+ 0.0`으로 스칼라 강제 변환 — matrix_basic.pine과 동일 우회).
+var m = matrix.new<float>(2, 3, 0.0)
+matrix.set(m, 0, 0, close + 0.0)
+matrix.set(m, 0, 1, close + 1.0)
+matrix.set(m, 0, 2, close + 2.0)
+matrix.set(m, 1, 0, high + 0.0)
+matrix.set(m, 1, 1, high + 1.0)
+matrix.set(m, 1, 2, high + 2.0)
+r0 = matrix.row(m, 0)
+r1 = matrix.row(m, 1)
+c0 = matrix.col(m, 0)
+c2 = matrix.col(m, 2)
+var float __obs_a_r0_0 = na
+__obs_a_r0_0 := array.get(r0, 0)
+var float __obs_a_r0_2 = na
+__obs_a_r0_2 := array.get(r0, 2)
+var float __obs_a_r1_1 = na
+__obs_a_r1_1 := array.get(r1, 1)
+var float __obs_a_c0_size = na
+__obs_a_c0_size := array.size(c0)
+var float __obs_a_c0_0 = na
+__obs_a_c0_0 := array.get(c0, 0)
+var float __obs_a_c0_1 = na
+__obs_a_c0_1 := array.get(c0, 1)
+var float __obs_a_c2_1 = na
+__obs_a_c2_1 := array.get(c2, 1)
+
+// B: 매 바 재생성되는 초기값 5.0의 2x2 행렬(비-var) — row/col이 항상 초기값으로 채워지는지 확인.
+mb = matrix.new<float>(2, 2, 5.0)
+rb = matrix.row(mb, 1)
+cb = matrix.col(mb, 0)
+var float __obs_b_row1_0 = na
+__obs_b_row1_0 := array.get(rb, 0)
+var float __obs_b_col0_1 = na
+__obs_b_col0_1 := array.get(cb, 1)
+
+// C: rows>0, columns=0인 행렬(2x0) — row는 빈 배열(size 0, pine2py `list([])`==[] 정의된 동작,
+// 크래시 아님이라 오라클 비교 가능).
+mc = matrix.new<float>(2, 0, 1.0)
+rc = matrix.row(mc, 0)
+var float __obs_c_row_size = na
+__obs_c_row_size := array.size(rc)
+
+// D: 0x0 빈 행렬 — col(index)은 index와 무관하게 항상 빈 배열(pine2py 리스트 컴프리헨션이 0회
+// 순회, 크래시 없이 정의된 동작 — literal port, 음수/범위밖 인덱스도 포함해 오라클 비교 가능).
+md = matrix.new<float>()
+cd0 = matrix.col(md, 0)
+cd5 = matrix.col(md, 5)
+cdneg = matrix.col(md, -5)
+var float __obs_d_col0_size = na
+__obs_d_col0_size := array.size(cd0)
+var float __obs_d_col5_size = na
+__obs_d_col5_size := array.size(cd5)
+var float __obs_d_colneg_size = na
+__obs_d_colneg_size := array.size(cdneg)

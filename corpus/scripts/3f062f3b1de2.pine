@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Trend Filt")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+ema3 = ta.ema(close, 3)
+bullFilter = close > sma3 and sma3 > sma5 and ema3 > sma3
+bearFilter = close < sma3 and sma3 < sma5 and ema3 < sma3
+plot(bullFilter ? 1 : bearFilter ? -1 : 0, "Filt")

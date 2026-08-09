@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Vol Search")
+avgVol = ta.sma(volume, 5)
+threshold = avgVol * 0.5
+target = avgVol * 2
+iters = 0
+while threshold < target and iters < 30
+    threshold := threshold * 1.1
+    iters := iters + 1
+var float __obs_plot0 = na
+__obs_plot0 := iters
+plot(iters, "Its")

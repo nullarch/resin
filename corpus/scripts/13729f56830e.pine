@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Trend State")
+var int trendBars = 0
+var int direction = 0
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+currDir = sma3 > sma5 ? 1 : -1
+if currDir == direction
+    trendBars := trendBars + 1
+else
+    direction := currDir
+    trendBars := 1
+plot(trendBars * direction, "TB")

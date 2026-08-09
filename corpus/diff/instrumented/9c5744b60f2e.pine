@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("EMA Cross RSI")
+e3 = ta.ema(close, 3)
+e5 = ta.ema(close, 5)
+rsi = ta.rsi(close, 3)
+bullCross = ta.crossover(e3, e5) and rsi > 45
+bearCross = ta.crossunder(e3, e5) and rsi < 55
+var float __obs_plot0 = na
+__obs_plot0 := bullCross ? 1 : bearCross ? -1 : 0
+plot(bullCross ? 1 : bearCross ? -1 : 0, "Signal")

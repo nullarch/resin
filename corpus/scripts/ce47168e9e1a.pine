@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Level Hist")
+var float[] highs = array.new_float(0)
+var float[] lows = array.new_float(0)
+array.push(highs, high)
+array.push(lows, low)
+if array.size(highs) > 8
+    array.shift(highs)
+    array.shift(lows)
+maxHigh = array.size(highs) > 0 ? array.max(highs) : high
+minLow = array.size(lows) > 0 ? array.min(lows) : low
+channelWidth = maxHigh - minLow
+plot(channelWidth, "CW")

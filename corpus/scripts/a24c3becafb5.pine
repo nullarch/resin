@@ -1,0 +1,6 @@
+//@version=5
+indicator("Pauli-X Gate")
+float bullSignal = close > open ? 1.0 : 0.0
+float flipped = 1.0 - bullSignal
+float sma3 = nz(ta.sma(close, 3), close)
+float contrarian = flipped > 0.5 ? sma3 : close

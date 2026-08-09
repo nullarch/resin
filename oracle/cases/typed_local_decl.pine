@@ -1,0 +1,43 @@
+//@version=5
+indicator("typed_local_decl")
+// C212: pine2js 파서가 var/varip 없는 'TYPE name = expr' 신규 로컬 선언(예: `float x = 1.0`)을
+// 지원하지 않아 TYPE 토큰이 별개 미해결 ExprStmt(Identifier)로 떨어져 나가는 파서 갭을 수정
+// (parser.ts parseAssignmentOrExpr). pine2py parser.py _parse_identifier_statement(L324-332)의
+// "타입 힌트 + 변수 선언" 분기 literal port -- codegen._gen_var_decl(L436)이 var_type=None이면
+// type_hint를 전혀 참조하지 않고 `name = value`만 방출함을 소스 대조로 확인(순수 장식), 그래서
+// 파서가 타입 토큰을 소비만 하고 버려도 오라클과 100% 동일 시맨틱.
+float scalarFloat = 1.5
+int scalarInt = 3
+bool scalarBool = true
+string scalarStr = "hi"
+
+var float __obs_float = na
+__obs_float := scalarFloat
+var float __obs_int = na
+__obs_int := scalarInt
+var bool __obs_bool = na
+__obs_bool := scalarBool
+var string __obs_str = na
+__obs_str := scalarStr
+
+// 다른 로컬을 참조하는 체이닝
+float chained = scalarFloat + scalarInt
+var float __obs_chained = na
+__obs_chained := chained
+
+// close 참조(바마다 값이 달라짐 -- 파서가 매 바 정상적으로 재평가하는지 확인)
+float closeLocal = close + 1.0
+var float __obs_close_local = na
+__obs_close_local := closeLocal
+
+// if 블록 안(들여쓰기 위치)에서도 지원되는지 확인
+var float __obs_if_local = na
+if bar_index > 2
+    float ifLocal = high - low
+    __obs_if_local := ifLocal
+
+// for 루프 안에서도 지원되는지
+var float __obs_loop_local = na
+for i = 0 to 2
+    float loopLocal = i * 2.0
+    __obs_loop_local := loopLocal

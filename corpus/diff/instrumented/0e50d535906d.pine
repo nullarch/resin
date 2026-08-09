@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Reg Hist")
+var float[] regimes = array.new_float(0)
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+regime = close > sma3 and rsi > 55 ? 1.0 : close < sma3 and rsi < 45 ? -1.0 : 0.0
+array.push(regimes, regime)
+if array.size(regimes) > 8
+    array.shift(regimes)
+avgRegime = array.avg(regimes)
+stability = 1.0 - array.stdev(regimes)
+var float __obs_plot0 = na
+__obs_plot0 := stability
+plot(stability, "Stab")

@@ -1,0 +1,10 @@
+//@version=5
+indicator("Morse Critical")
+var int criticalCount = 0
+bool isLocalMax = not na(close[1]) and not na(close[2]) ? (close[1] > close and close[1] > close[2]) : false
+bool isLocalMin = not na(close[1]) and not na(close[2]) ? (close[1] < close and close[1] < close[2]) : false
+if isLocalMax or isLocalMin
+    criticalCount := criticalCount + 1
+var float __obs_plot0 = na
+__obs_plot0 := criticalCount
+plot(criticalCount, "MorseCrit")

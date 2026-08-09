@@ -1,0 +1,10 @@
+//@version=5
+indicator("Dominant Freq")
+var int crossCount = 0
+float dc = ta.sma(close, 5)
+float ac = close - nz(dc, close)
+float prevClose = not na(close[1]) ? close[1] : close
+float prevAc = prevClose - nz(dc, close)
+if (ac > 0 and prevAc <= 0) or (ac < 0 and prevAc >= 0)
+    crossCount := crossCount + 1
+plot(crossCount, "ZeroCross")

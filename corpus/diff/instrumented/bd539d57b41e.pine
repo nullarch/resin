@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Osc Scale")
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 5)
+volHigh = avgATR > 0 and atr / avgATR > 1.3
+scale = volHigh ? 0.5 : rsi > 65 or rsi < 35 ? 1.5 : 1.0
+osc = (rsi - 50) * scale
+var float __obs_plot0 = na
+__obs_plot0 := osc
+plot(osc, "O")

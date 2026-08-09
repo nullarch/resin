@@ -1,0 +1,6 @@
+//@version=5
+indicator("syminfo")
+ticker = syminfo.ticker
+currency = syminfo.currency
+pointvalue = syminfo.pointvalue
+mintick = syminfo.mintick

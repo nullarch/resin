@@ -1,0 +1,26 @@
+//@version=5
+indicator("ta_sma_varlen")
+// ta.sma series length 오라클 검증(배치25 (4) 두 번째, C548 — runtime/ta.ts smaVarLen).
+// **주의: highest/lowest(C547)와 달리 length 값이 실제로 변하는 케이스는 오라클 불가** —
+// pine2py wavealgo/ta/sma.py는 첫 성공 호출의 length로 윈도우 크기를 영구 고정한 채 현재
+// length로 나누는 인크리멘탈이라 length가 변하면 골든 자체가 오염된다(직접 실행 실측
+// 2026-08-01, DIVERGENCES #179). 여기서는 "series 한정자이지만 값은 상수로 고정"인 퇴화
+// 케이스만 골든 대조해 버퍼/워밍업/NaN 오염 메커니즘을 검증하고, 값이 실제로 변하는 축은
+// hand-verified(tests/unit/runtime.test.ts smaVarLen + 파이프라인 E2E)로 검증한다.
+// len1: bar_index(시리즈) 조건 삼항이라 series로 추론되지만 양쪽 분기가 같은 3 — pine2py
+// 윈도우도 3으로 고정돼 골든 유효. 바 0/1은 워밍업 NaN, 바 2~9는 정상 SMA(3).
+len1 = bar_index >= 0 ? 3 : 3
+var float __obs_s1 = na
+__obs_s1 := ta.sma(close, len1)
+
+// len2 = 4 고정(series 추론) + source가 바 3에서 na — NaN이 창(4바)에 머무는 바 3~6은 NaN,
+// 바 7부터 회복하는 오염 시맨틱이 pine2py 인크리멘탈(오염 시 전체 재계산)과 일치함을 대조.
+// base2 = close + 0.0: pine2py에서 삼항 분기가 bare `close`면 스칼라(na)/Series(close)가 바마다
+// 핑퐁하며 ctx.param 승격 series의 data_len 게이트가 na 바를 통째로 삼켜(직접 트레이스 실측
+// 2026-08-01) 골든이 "오염 없음"으로 오염된다 — 산술을 한 겹 거치면 pine2py도 항상 스칼라라
+// 콜사이트 param series가 pine2js의 콜사이트 버퍼와 동형이 된다(C18 스칼라/Series 갈림 회피).
+len2 = close > 0 ? 4 : 4
+base2 = close + 0.0
+src2 = bar_index == 3 ? na : base2
+var float __obs_s2 = na
+__obs_s2 := ta.sma(src2, len2)

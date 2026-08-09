@@ -1,0 +1,20 @@
+
+//@version=5
+strategy("Full System", overlay=true)
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 5)
+avgVol = ta.sma(volume, 5)
+
+trendOK = sma3 > sma5
+momOK = rsi > 50 and rsi < 80
+volOK = avgATR > 0 and atr / avgATR < 1.5
+volConfirm = volume > avgVol
+
+if trendOK and momOK and volOK
+    strategy.entry("Long", strategy.long)
+if not trendOK or rsi < 40 or (avgATR > 0 and atr > avgATR * 2)
+    strategy.close("Long")
+plot(sma3, "Fast")

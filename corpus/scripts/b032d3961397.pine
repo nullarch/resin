@@ -1,0 +1,7 @@
+//@version=5
+indicator("If Expr Inline")
+var float result = 0.0
+result := if close > 110
+    1.0
+else
+    0.0

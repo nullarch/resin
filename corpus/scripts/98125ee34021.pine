@@ -1,0 +1,14 @@
+//@version=5
+indicator("Switch TA Multi")
+trend = ta.sma(close, 3) > ta.sma(close, 5) ? 1 : -1
+result = switch trend
+    1 =>
+        fast = ta.ema(close, 3)
+        atr = ta.atr(3)
+        fast + atr
+    -1 =>
+        slow = ta.sma(close, 5)
+        atr = ta.atr(5)
+        slow - atr
+    => close
+plot(result)

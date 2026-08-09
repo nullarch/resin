@@ -1,0 +1,6 @@
+//@version=5
+indicator("Leader Election")
+var float leader_price = 0.0
+hh = ta.highest(high, 5)
+if not na(hh)
+    leader_price := hh

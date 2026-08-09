@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("RiskLevel")
+var float equity = 100.0
+var float peak = 100.0
+pnl = close > open ? 1.0 : -0.5
+equity := equity + pnl
+peak := equity > peak ? equity : peak
+ddPct = peak > 0 ? (peak - equity) / peak * 100.0 : 0.0
+level = switch
+    ddPct > 10.0 => 3.0
+    ddPct > 5.0 => 2.0
+    ddPct > 2.0 => 1.0
+    => 0.0
+plot(level, "RL")

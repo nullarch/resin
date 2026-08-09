@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Triple Fusion")
+rsi = nz(ta.rsi(close, 3), 50.0)
+[macdL, sigL, histL] = ta.macd(close, 3, 5, 3)
+basis = ta.sma(close, 5)
+dev = ta.stdev(close, 5)
+bbPos = dev > 0 ? (close - basis) / (dev * 2) * 100 : 0.0
+fusion = (rsi - 50) / 50 * 0.4 + (histL > 0 ? 1 : -1) * 0.3 + bbPos / 100 * 0.3
+plot(fusion, "F")

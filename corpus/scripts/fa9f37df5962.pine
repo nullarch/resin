@@ -1,0 +1,11 @@
+//@version=5
+indicator("Unbalanced OT")
+float massSource = close / 100.0
+float massTarget = open / 100.0
+float massDiff = massSource - massTarget
+float penalty = 5.0
+float transportCost = math.abs(close - open) / 10.0
+float unbalancedCost = transportCost + penalty * math.abs(massDiff)
+var float cumUOT = 0.0
+cumUOT := cumUOT + unbalancedCost
+plot(cumUOT, "UOT")

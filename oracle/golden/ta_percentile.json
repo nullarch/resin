@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_pnr": "NaN",
+   "var:__obs_pnr_default": "NaN",
+   "var:__obs_pli": "NaN"
+  },
+  {
+   "var:__obs_pnr": "NaN",
+   "var:__obs_pnr_default": "NaN",
+   "var:__obs_pli": "NaN"
+  },
+  {
+   "var:__obs_pnr": "NaN",
+   "var:__obs_pnr_default": "NaN",
+   "var:__obs_pli": "NaN"
+  },
+  {
+   "var:__obs_pnr": "NaN",
+   "var:__obs_pnr_default": "NaN",
+   "var:__obs_pli": "NaN"
+  },
+  {
+   "var:__obs_pnr": 103.0,
+   "var:__obs_pnr_default": 102.0,
+   "var:__obs_pli": 102.0
+  },
+  {
+   "var:__obs_pnr": 104.0,
+   "var:__obs_pnr_default": 103.0,
+   "var:__obs_pli": 102.0
+  },
+  {
+   "var:__obs_pnr": 105.0,
+   "var:__obs_pnr_default": 104.0,
+   "var:__obs_pli": 103.0
+  },
+  {
+   "var:__obs_pnr": 105.0,
+   "var:__obs_pnr_default": 105.0,
+   "var:__obs_pli": 104.0
+  },
+  {
+   "var:__obs_pnr": 106.0,
+   "var:__obs_pnr_default": 105.0,
+   "var:__obs_pli": 105.0
+  },
+  {
+   "var:__obs_pnr": 107.0,
+   "var:__obs_pnr_default": 106.0,
+   "var:__obs_pli": 105.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_pnr": 107.0,
+  "__obs_pnr_default": 106.0,
+  "__obs_pli": 105.0
+ }
+}

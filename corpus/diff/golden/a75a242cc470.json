@@ -1,0 +1,105 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:stats": {
+    "body": 2,
+    "range": 6,
+    "upper_wick": 2,
+    "lower_wick": 2
+   },
+   "var:__obs_plot0": 0.42857142857142855
+  },
+  {
+   "var:stats": {
+    "body": 2,
+    "range": 6,
+    "upper_wick": 2,
+    "lower_wick": 2
+   },
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:stats": {
+    "body": 2,
+    "range": 6,
+    "upper_wick": 2,
+    "lower_wick": 2
+   },
+   "var:__obs_plot0": 0.2
+  },
+  {
+   "var:stats": {
+    "body": 2,
+    "range": 6,
+    "upper_wick": 2,
+    "lower_wick": 2
+   },
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:stats": {
+    "body": 2,
+    "range": 6,
+    "upper_wick": 2,
+    "lower_wick": 2
+   },
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:stats": {
+    "body": 2,
+    "range": 6,
+    "upper_wick": 2,
+    "lower_wick": 2
+   },
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:stats": {
+    "body": 2,
+    "range": 6,
+    "upper_wick": 2,
+    "lower_wick": 2
+   },
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:stats": {
+    "body": 2,
+    "range": 6,
+    "upper_wick": 2,
+    "lower_wick": 2
+   },
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:stats": {
+    "body": 2,
+    "range": 6,
+    "upper_wick": 2,
+    "lower_wick": 2
+   },
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:stats": {
+    "body": 2,
+    "range": 6,
+    "upper_wick": 2,
+    "lower_wick": 2
+   },
+   "var:__obs_plot0": 0.3333333333333333
+  }
+ ],
+ "finalVarState": {
+  "stats": {
+   "body": 2,
+   "range": 6,
+   "upper_wick": 2,
+   "lower_wick": 2
+  },
+  "__obs_plot0": 0.3333333333333333
+ }
+}

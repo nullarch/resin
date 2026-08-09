@@ -1,0 +1,26 @@
+
+//@version=5
+indicator("All DS")
+type Info
+    float val = 0.0
+    int count = 0
+
+var Info info = Info.new()
+var data = map.new<string, float>()
+var float[] hist = array.new_float(0)
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+map.put(data, "rsi", rsi)
+map.put(data, "close", close)
+array.push(hist, rsi)
+if array.size(hist) > 5
+    array.shift(hist)
+
+total = 0.0
+for [k, v] in data
+    total := total + v
+
+info.val := total
+info.count := info.count + 1
+avgHist = array.size(hist) > 0 ? array.avg(hist) : 50.0
+plot(avgHist, "AH")

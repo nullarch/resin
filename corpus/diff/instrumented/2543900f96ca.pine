@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Nested Loops")
+sma3 = ta.sma(close, 3)
+total = 0.0
+if close > sma3
+    for i = 0 to 3
+        c = close[i]
+        if not na(c)
+            total := total + c
+else
+    total := close * 4
+avg = total / 4
+adjustment = avg
+iters = 0
+while math.abs(adjustment - sma3) > 0.1 and iters < 10
+    adjustment := (adjustment + sma3) / 2
+    iters := iters + 1
+var float __obs_plot0 = na
+__obs_plot0 := adjustment
+plot(adjustment, "Adj")

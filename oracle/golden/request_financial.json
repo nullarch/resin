@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_fin": "NaN",
+   "var:__obs_fin_bare": "NaN"
+  },
+  {
+   "var:__obs_fin": "NaN",
+   "var:__obs_fin_bare": "NaN"
+  },
+  {
+   "var:__obs_fin": "NaN",
+   "var:__obs_fin_bare": "NaN"
+  },
+  {
+   "var:__obs_fin": "NaN",
+   "var:__obs_fin_bare": "NaN"
+  },
+  {
+   "var:__obs_fin": "NaN",
+   "var:__obs_fin_bare": "NaN"
+  },
+  {
+   "var:__obs_fin": "NaN",
+   "var:__obs_fin_bare": "NaN"
+  },
+  {
+   "var:__obs_fin": "NaN",
+   "var:__obs_fin_bare": "NaN"
+  },
+  {
+   "var:__obs_fin": "NaN",
+   "var:__obs_fin_bare": "NaN"
+  },
+  {
+   "var:__obs_fin": "NaN",
+   "var:__obs_fin_bare": "NaN"
+  },
+  {
+   "var:__obs_fin": "NaN",
+   "var:__obs_fin_bare": "NaN"
+  }
+ ],
+ "finalVarState": {
+  "__obs_fin": "NaN",
+  "__obs_fin_bare": "NaN"
+ }
+}

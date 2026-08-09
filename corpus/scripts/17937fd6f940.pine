@@ -1,0 +1,13 @@
+//@version=5
+indicator("Nutrition-Biochemistry")
+// Nutrition: caloric intake proxy
+caloricIntake = volume * 0.5
+// Biochemistry: Michaelis-Menten enzyme kinetics
+vmax = 100.0
+km = 500.0
+metabolicRate = caloricIntake > 0 ? vmax * caloricIntake / (km + caloricIntake) : 0.0
+// Energy balance
+basalMetabolicRate = 70.0
+netEnergy = caloricIntake - basalMetabolicRate - metabolicRate
+var float energyStore = 500.0
+energyStore := math.max(0.0, energyStore + netEnergy)

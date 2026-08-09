@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Fix Stop")
+riskPct = 1.5
+stopDist = close * riskPct / 100
+stopPrice = close - stopDist
+targetPrice = close + stopDist * 2
+rr = 2.0
+plot(stopPrice, "Stop")
+plot(targetPrice, "Target")

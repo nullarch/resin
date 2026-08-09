@@ -1,0 +1,10 @@
+//@version=5
+indicator("Interval Censoring")
+var float lowerBound = 1.0
+var float upperBound = 1.0
+float hazLow = 0.03
+float hazHigh = 0.08
+lowerBound := lowerBound * (1.0 - hazHigh)
+upperBound := upperBound * (1.0 - hazLow)
+float midEstimate = (lowerBound + upperBound) / 2.0
+plot(midEstimate, "MidSurv")

@@ -1,0 +1,5 @@
+//@version=5
+indicator("ATR Check")
+var float result = 0.0
+a = ta.atr(3)
+result := a

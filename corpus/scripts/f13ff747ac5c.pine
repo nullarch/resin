@@ -1,0 +1,5 @@
+//@version=5
+indicator("history ref")
+prev = close[1]
+prev2 = close[2]
+diff = close - close[1]

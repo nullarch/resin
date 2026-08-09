@@ -1,0 +1,15 @@
+//@version=5
+indicator("UDF Array")
+f_total(arr) =>
+    float s = 0.0
+    for val in arr
+        s := s + val
+    s
+
+a = array.new<float>(0)
+array.push(a, 10.0)
+array.push(a, 20.0)
+array.push(a, 30.0)
+var float result = 0.0
+result := f_total(a)
+plot(result)

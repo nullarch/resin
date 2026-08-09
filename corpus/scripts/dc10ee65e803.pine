@@ -1,0 +1,5 @@
+//@version=5
+indicator("multiline call")
+var float result = 0.0
+result := ta.sma(close,
+    5)

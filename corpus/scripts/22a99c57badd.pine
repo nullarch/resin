@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Flow Regime")
+totalRange = high - low
+netPress = totalRange > 0 ? (close - low) / totalRange - 0.5 : 0.0
+avgVol = ta.sma(volume, 5)
+highVol = avgVol > 0 and volume > avgVol * 1.5
+regime = switch
+    netPress > 0.3 and highVol => "strong_buy"
+    netPress > 0.1 => "buy"
+    netPress < -0.3 and highVol => "strong_sell"
+    netPress < -0.1 => "sell"
+    => "neutral"
+isStrongBuy = regime == "strong_buy"
+plot(isStrongBuy ? 1 : 0, "SB")

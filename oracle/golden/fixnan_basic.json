@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_fixnan": 101
+  },
+  {
+   "var:__obs_fixnan": 102
+  },
+  {
+   "var:__obs_fixnan": 103
+  },
+  {
+   "var:__obs_fixnan": 102
+  },
+  {
+   "var:__obs_fixnan": 104
+  },
+  {
+   "var:__obs_fixnan": 105
+  },
+  {
+   "var:__obs_fixnan": 106
+  },
+  {
+   "var:__obs_fixnan": 105
+  },
+  {
+   "var:__obs_fixnan": 107
+  },
+  {
+   "var:__obs_fixnan": 108
+  }
+ ],
+ "finalVarState": {
+  "__obs_fixnan": 108
+ }
+}

@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Init Cond")
+var float firstClose = 0.0
+var bool initialized = false
+if not initialized
+    firstClose := close
+    initialized := true
+change = close - firstClose
+changePct = firstClose > 0 ? change / firstClose * 100 : 0.0
+plot(changePct, "ChgPct")

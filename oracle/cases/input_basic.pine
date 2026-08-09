@@ -1,0 +1,23 @@
+//@version=5
+indicator("input_basic")
+// input.int/float/bool/string (첫 슬라이스, C131) 오라클 검증 -- pine2py wavealgo/builtins/
+// input_funcs.py의 대응 함수(int_input/float_input/bool_input/string_input)는 Context.inputs
+// 필드가 선언은 돼 있으나 어디서도 read/write 안 되는 죽은 스텁이라 항상 defval만 그대로
+// 반환한다(오버라이드 경로 자체가 없음, python 직접 실행 + 소스 대조로 확인) -- 즉 이 골든은
+// "오버라이드 없음" 경로만 검증한다. pine2js가 새로 설계한 외부 오버라이드 dict 우선 조회
+// 경로(rt.input.*의 첫 인자 $.inputs)는 pine2py에 대응이 없어 오라클 비교 불가
+// (DIVERGENCES.md 신규) -- hand-verified로 대체.
+
+len = input.int(14, "Length")
+mult = input.float(2.5, "Multiplier")
+useFilter = input.bool(true, "Use Filter")
+label = input.string("hello", "Label")
+
+var int __obs_len = na
+__obs_len := len
+var float __obs_mult = na
+__obs_mult := mult
+var bool __obs_useFilter = na
+__obs_useFilter := useFilter
+var string __obs_label = na
+__obs_label := label

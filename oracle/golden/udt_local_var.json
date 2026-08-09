@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_p_x": 102.0,
+   "var:__obs_p_n": 10,
+   "var:acc": 102.0,
+   "var:__obs_acc": 102.0
+  },
+  {
+   "var:__obs_p_x": 103.0,
+   "var:__obs_p_n": 10,
+   "var:acc": 205.0,
+   "var:__obs_acc": 205.0
+  },
+  {
+   "var:__obs_p_x": 104.0,
+   "var:__obs_p_n": 10,
+   "var:acc": 309.0,
+   "var:__obs_acc": 309.0
+  },
+  {
+   "var:__obs_p_x": 103.0,
+   "var:__obs_p_n": 10,
+   "var:acc": 412.0,
+   "var:__obs_acc": 412.0
+  },
+  {
+   "var:__obs_p_x": 105.0,
+   "var:__obs_p_n": 10,
+   "var:acc": 517.0,
+   "var:__obs_acc": 517.0
+  },
+  {
+   "var:__obs_p_x": 106.0,
+   "var:__obs_p_n": 10,
+   "var:acc": 623.0,
+   "var:__obs_acc": 623.0
+  },
+  {
+   "var:__obs_p_x": 107.0,
+   "var:__obs_p_n": 10,
+   "var:acc": 730.0,
+   "var:__obs_acc": 730.0
+  },
+  {
+   "var:__obs_p_x": 106.0,
+   "var:__obs_p_n": 10,
+   "var:acc": 836.0,
+   "var:__obs_acc": 836.0
+  },
+  {
+   "var:__obs_p_x": 108.0,
+   "var:__obs_p_n": 10,
+   "var:acc": 944.0,
+   "var:__obs_acc": 944.0
+  },
+  {
+   "var:__obs_p_x": 109.0,
+   "var:__obs_p_n": 10,
+   "var:acc": 1053.0,
+   "var:__obs_acc": 1053.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_p_x": 109.0,
+  "__obs_p_n": 10,
+  "acc": 1053.0,
+  "__obs_acc": 1053.0
+ }
+}

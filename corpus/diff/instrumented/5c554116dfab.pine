@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("Bool Logic")
+rsi = ta.rsi(close, 3)
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+atr = ta.atr(3)
+cond1 = close > sma3 and sma3 > ema5
+cond2 = rsi > 40 and rsi < 80
+cond3 = atr > 0
+allTrue = cond1 and cond2 and cond3
+anyTrue = cond1 or cond2 or cond3
+var float __obs_plot0 = na
+__obs_plot0 := allTrue ? 1 : 0
+plot(allTrue ? 1 : 0, "All")
+var float __obs_plot1 = na
+__obs_plot1 := anyTrue ? 1 : 0
+plot(anyTrue ? 1 : 0, "Any")

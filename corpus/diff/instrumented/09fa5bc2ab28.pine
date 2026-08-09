@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Arr Helper")
+var float[] data = array.new_float(0)
+array.push(data, close)
+if array.size(data) > 5
+    array.shift(data)
+avg = array.avg(data)
+sd = array.stdev(data)
+zscore = sd > 0 ? (close - avg) / sd : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := zscore
+plot(zscore, "Z")

@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:featureStart": 0.0,
+   "var:featureLen": 0,
+   "var:maxBarcode": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:featureStart": 0.0,
+   "var:featureLen": 0,
+   "var:maxBarcode": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:featureStart": 0.0,
+   "var:featureLen": 0,
+   "var:maxBarcode": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:featureStart": 0.0,
+   "var:featureLen": 0,
+   "var:maxBarcode": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:featureStart": 107,
+   "var:featureLen": 1,
+   "var:maxBarcode": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:featureStart": 107,
+   "var:featureLen": 2,
+   "var:maxBarcode": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:featureStart": 107,
+   "var:featureLen": 3,
+   "var:maxBarcode": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:featureStart": 107,
+   "var:featureLen": 4,
+   "var:maxBarcode": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:featureStart": 107,
+   "var:featureLen": 5,
+   "var:maxBarcode": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:featureStart": 107,
+   "var:featureLen": 6,
+   "var:maxBarcode": 0,
+   "var:__obs_plot0": 0
+  }
+ ],
+ "finalVarState": {
+  "featureStart": 107,
+  "featureLen": 6,
+  "maxBarcode": 0,
+  "__obs_plot0": 0
+ }
+}

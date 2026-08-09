@@ -1,0 +1,20 @@
+
+//@version=5
+indicator("Trend Type E")
+enum TrendType
+    StrongUp = 2
+    Up = 1
+    Flat = 0
+    Down = -1
+    StrongDown = -2
+
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+tt = switch
+    sma3 > sma5 and rsi > 60 => TrendType.StrongUp
+    sma3 > sma5 => TrendType.Up
+    sma3 < sma5 and rsi < 40 => TrendType.StrongDown
+    sma3 < sma5 => TrendType.Down
+    => TrendType.Flat
+plot(int(tt), "TT")

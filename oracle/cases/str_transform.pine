@@ -1,0 +1,35 @@
+//@version=5
+indicator("str_transform")
+// str.lower/upper/trim/replace_all/substring/repeat — all channels use string-literal args (no na)
+// so pine2py won't crash (these five have no None-guard, same as str_basic.pine's contains/
+// startswith/endswith/pos) and results are bar-independent (math_const.pine/str_basic.pine pattern).
+// na-propagation (source/target/begin_pos/count = na) is NOT covered here — hand-verified in
+// runtime.test.ts instead (LIMITATIONS.md, DIVERGENCES.md #17).
+var string __obs_lower0 = na
+__obs_lower0 := str.lower("HeLLo World")
+var string __obs_upper0 = na
+__obs_upper0 := str.upper("HeLLo World")
+var string __obs_trim0 = na
+__obs_trim0 := str.trim("  hi there  ")
+var string __obs_replall0 = na
+__obs_replall0 := str.replace_all("aaa", "a", "bb")
+var string __obs_replall1 = na
+__obs_replall1 := str.replace_all("abc", "", "X")
+var string __obs_sub0 = na
+__obs_sub0 := str.substring("hello", 1, 3)
+var string __obs_sub1 = na
+__obs_sub1 := str.substring("hello", -3, -1)
+var string __obs_sub2 = na
+__obs_sub2 := str.substring("hello", 0, 100)
+var string __obs_sub3 = na
+__obs_sub3 := str.substring("hello", 3, 1)
+var string __obs_sub4 = na
+__obs_sub4 := str.substring("hello", 2)
+var string __obs_rep0 = na
+__obs_rep0 := str.repeat("ab", 3, "-")
+var string __obs_rep1 = na
+__obs_rep1 := str.repeat("ab", 0, "-")
+var string __obs_rep2 = na
+__obs_rep2 := str.repeat("ab", -1, "-")
+var string __obs_rep3 = na
+__obs_rep3 := str.repeat("ab", 3)

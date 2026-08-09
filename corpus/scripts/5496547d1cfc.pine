@@ -1,0 +1,20 @@
+//@version=5
+indicator("Mega 9")
+weight(int row, int col) =>
+    1.0 / (math.abs(row - col) + 1.0)
+var float maxKernel = 0.0
+float rsiVal = nz(ta.rsi(close, 5), 50.0)
+float sma3 = nz(ta.sma(close, 3), close)
+kernel = array.new<float>(0)
+for r = 0 to 2
+    float rowSum = 0.0
+    for c = 0 to 2
+        float w = weight(r, c)
+        rowSum := rowSum + w
+    kernel.push(rowSum)
+float kernelSum = 0.0
+for k in kernel
+    kernelSum := kernelSum + k
+float normalized = kernelSum > 0.01 ? rsiVal / kernelSum : rsiVal
+maxKernel := math.max(maxKernel, kernelSum)
+float output = close > sma3 ? normalized * 1.1 : normalized * 0.9

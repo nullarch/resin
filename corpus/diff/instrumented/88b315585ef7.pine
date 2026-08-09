@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Body Anal")
+body = math.abs(close - open)
+totalRange = high - low
+bodyRatio = totalRange > 0 ? body / totalRange : 0.0
+isBullish = close > open
+isStrong = bodyRatio > 0.6
+var float __obs_plot0 = na
+__obs_plot0 := isStrong and isBullish ? 1 : isStrong and not isBullish ? -1 : 0
+plot(isStrong and isBullish ? 1 : isStrong and not isBullish ? -1 : 0, "Candle")

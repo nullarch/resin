@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Score Thresh")
+rsi = nz(ta.rsi(close, 3), 50.0)
+score = (rsi - 50) / 50
+threshold = 1.0
+steps = 0
+while threshold > math.abs(score) and steps < 15
+    threshold := threshold * 0.7
+    steps := steps + 1
+var float __obs_plot0 = na
+__obs_plot0 := steps
+plot(steps, "St")

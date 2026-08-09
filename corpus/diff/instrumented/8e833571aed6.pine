@@ -1,0 +1,11 @@
+//@version=5
+indicator("test")
+var string[] labels = array.new_string(0)
+if barstate.isfirst
+    array.push(labels, "A")
+    array.push(labels, "B")
+    array.push(labels, "C")
+joined = array.join(labels, "-")
+var float __obs_plot0 = na
+__obs_plot0 := str.length(joined)
+plot(str.length(joined))

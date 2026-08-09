@@ -1,0 +1,5 @@
+//@version=5
+indicator("ATR Check")
+atr = ta.atr(5)
+nonNeg = na(atr) or atr >= 0
+plot(nonNeg ? 1.0 : 0.0)

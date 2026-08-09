@@ -1,0 +1,24 @@
+//@version=5
+indicator("Combo15")
+enum Phase
+    Accumulate = 1
+    Distribute = 2
+    Neutral = 3
+var float phaseScore = 0.0
+rsiVal = nz(ta.rsi(close, 5), 50.0)
+atrVal = nz(ta.atr(3), 1.0)
+prevClose = nz(close[1], close)
+trend = close - prevClose
+phase = switch
+    rsiVal < 35.0 and trend > 0 => Phase.Accumulate
+    rsiVal > 65.0 and trend < 0 => Phase.Distribute
+    => Phase.Neutral
+bonus = phase == Phase.Accumulate ? 2.0 : phase == Phase.Distribute ? -2.0 : 0.0
+phaseScore := phaseScore + bonus
+history = array.new_float(0)
+for i = 0 to 3
+    array.push(history, nz(close[i], close))
+spread = array.max(history) - array.min(history)
+normalized = spread > 0.01 ? phaseScore / (spread / atrVal) : 0.0
+plot(normalized, "PNorm")
+plot(math.abs(phaseScore), "AbsPS")

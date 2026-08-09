@@ -1,0 +1,13 @@
+
+//@version=5
+strategy("Momentum", overlay=true)
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+[macd, sig, hist] = ta.macd(close, 3, 5, 3)
+bullMom = rsi > 55 and sma3 > sma5 and hist > 0
+if bullMom
+    strategy.entry("Long", strategy.long)
+if rsi < 45 or hist < 0
+    strategy.close("Long")
+plot(sma3, "MA")

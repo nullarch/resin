@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("VWSpread")
+calcVWSpread(h, l, c, vol, len) =>
+    spread = h - l
+    vwSpread = ta.sma(spread * vol, len) / (ta.sma(vol, len) + 0.001)
+    nz(vwSpread, 0.0)
+vws = calcVWSpread(high, low, close, volume, 5)
+plot(vws, "VWS")

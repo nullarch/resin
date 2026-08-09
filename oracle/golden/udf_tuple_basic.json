@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_sum": 201,
+   "var:__obs_diff": 1
+  },
+  {
+   "var:__obs_sum": 203,
+   "var:__obs_diff": 1
+  },
+  {
+   "var:__obs_sum": 205,
+   "var:__obs_diff": 1
+  },
+  {
+   "var:__obs_sum": 203,
+   "var:__obs_diff": 1
+  },
+  {
+   "var:__obs_sum": 207,
+   "var:__obs_diff": 1
+  },
+  {
+   "var:__obs_sum": 209,
+   "var:__obs_diff": 1
+  },
+  {
+   "var:__obs_sum": 211,
+   "var:__obs_diff": 1
+  },
+  {
+   "var:__obs_sum": 209,
+   "var:__obs_diff": 1
+  },
+  {
+   "var:__obs_sum": 213,
+   "var:__obs_diff": 1
+  },
+  {
+   "var:__obs_sum": 215,
+   "var:__obs_diff": 1
+  }
+ ],
+ "finalVarState": {
+  "__obs_sum": 215,
+  "__obs_diff": 1
+ }
+}

@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("MA Align")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+alignment = switch
+    close > sma3 and sma3 > sma5 => "full_bull"
+    close > sma3 => "above_fast"
+    close < sma3 and sma3 < sma5 => "full_bear"
+    close < sma3 => "below_fast"
+    => "mixed"
+isFull = alignment == "full_bull" or alignment == "full_bear"
+plot(isFull ? 1 : 0, "F")

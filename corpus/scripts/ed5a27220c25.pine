@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("UDT Arr")
+type Buffer
+    float latest = 0.0
+    int maxSize = 5
+    float avg = 0.0
+
+var Buffer buf = Buffer.new()
+var float[] bufData = array.new_float(0)
+buf.latest := close
+array.push(bufData, close)
+if array.size(bufData) > buf.maxSize
+    array.shift(bufData)
+buf.avg := array.avg(bufData)
+plot(buf.avg, "Avg")

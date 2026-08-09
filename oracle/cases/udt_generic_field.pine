@@ -1,0 +1,35 @@
+//@version=5
+indicator("udt_generic_field")
+// 제네릭 컨테이너 필드(array<T>/map<K,V>, C126) 오라클 검증 -- UDT_GENERIC_FIELD_BASES(analyzer.ts)
+// + parseFieldTypeHint(parser.ts)로 필드 타입 문자열 "array<float>"/"map<string, float>"을 그대로
+// 조립, 암시 기본값은 pine2py _type_default의 list/dict -> field(default_factory=list/dict)와
+// 동치인 빈 컨테이너([]/new Map()). pine2py도 필드 타입 화이트리스트가 없어(_pine_type_to_python이
+// "<" 포함 타입을 list[...]/dict[...]로 그대로 매핑) 이 서브셋을 검증 없이 지원한다(C123
+// udt_nested.pine 관례와 동일 근거). 컨테이너에 저장하는 bar series는 map_basic.pine 관례대로
+// `+ 0.0`으로 강제 스칼라 변환(_scalar() 가드 부재 latent 버그 회피, DIVERGENCES.md #29/#53 계열).
+
+type Basket
+    array<float> prices
+    map<string, float> tags
+
+var Basket b = Basket.new()
+
+// bar_index 대응 수동 카운터(pine2js가 아직 bar_index 빌트인을 지원하지 않음, ROADMAP barstate 항목).
+var int barN = 0
+barN := barN + 1
+
+// 채널 A: 암시 기본값(빈 컨테이너) -- 처음 두 바(barN<=2)엔 아직 아무것도 push/put하지 않아
+// default_factory 산출물 그대로 관측(크기 0, sum(빈 배열)=0 -- array.*의 "유효값 0개도 0" 관례,
+// get(없는 키)=na)
+if barN > 2
+    array.push(b.prices, close + 0.0)
+    map.put(b.tags, "last", close + 0.0)
+
+var float __obs_size = na
+__obs_size := array.size(b.prices)
+var float __obs_sum = na
+__obs_sum := array.sum(b.prices)
+var float __obs_tag = na
+__obs_tag := map.get(b.tags, "last")
+var bool __obs_contains = na
+__obs_contains := map.contains(b.tags, "last")

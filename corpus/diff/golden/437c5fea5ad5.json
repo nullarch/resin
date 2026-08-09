@@ -1,0 +1,105 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:ld": {
+    "resistance": 113,
+    "support": 102,
+    "pivot": 110.33333333333333,
+    "range": 11
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:ld": {
+    "resistance": 113,
+    "support": 102,
+    "pivot": 110.33333333333333,
+    "range": 11
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:ld": {
+    "resistance": 113,
+    "support": 102,
+    "pivot": 110.33333333333333,
+    "range": 11
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:ld": {
+    "resistance": 113,
+    "support": 102,
+    "pivot": 110.33333333333333,
+    "range": 11
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:ld": {
+    "resistance": 113,
+    "support": 102,
+    "pivot": 110.33333333333333,
+    "range": 11
+   },
+   "var:__obs_plot0": 11
+  },
+  {
+   "var:ld": {
+    "resistance": 113,
+    "support": 102,
+    "pivot": 110.33333333333333,
+    "range": 11
+   },
+   "var:__obs_plot0": 10
+  },
+  {
+   "var:ld": {
+    "resistance": 113,
+    "support": 102,
+    "pivot": 110.33333333333333,
+    "range": 11
+   },
+   "var:__obs_plot0": 11
+  },
+  {
+   "var:ld": {
+    "resistance": 113,
+    "support": 102,
+    "pivot": 110.33333333333333,
+    "range": 11
+   },
+   "var:__obs_plot0": 11
+  },
+  {
+   "var:ld": {
+    "resistance": 113,
+    "support": 102,
+    "pivot": 110.33333333333333,
+    "range": 11
+   },
+   "var:__obs_plot0": 10
+  },
+  {
+   "var:ld": {
+    "resistance": 113,
+    "support": 102,
+    "pivot": 110.33333333333333,
+    "range": 11
+   },
+   "var:__obs_plot0": 11
+  }
+ ],
+ "finalVarState": {
+  "ld": {
+   "resistance": 113,
+   "support": 102,
+   "pivot": 110.33333333333333,
+   "range": 11
+  },
+  "__obs_plot0": 11
+ }
+}

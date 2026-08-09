@@ -1,0 +1,8 @@
+//@version=5
+indicator("MutGauss")
+gene = nz(ta.sma(close, 5), close)
+noise = math.sin(close * 3.14159) * (high - low) * 0.1
+mutated = gene + noise
+mutRate = 0.1
+result = math.abs(math.sin(close)) < mutRate ? mutated : gene
+plot(result, "Mutated")

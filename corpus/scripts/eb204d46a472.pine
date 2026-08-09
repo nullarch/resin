@@ -1,0 +1,10 @@
+//@version=5
+indicator("Donchian")
+length = 5
+upper = ta.highest(high, length)
+lower = ta.lowest(low, length)
+mid_line = (nz(upper) + nz(lower)) / 2.0
+width = nz(upper) - nz(lower)
+plot(upper, "Upper")
+plot(lower, "Lower")
+plot(mid_line, "Mid")

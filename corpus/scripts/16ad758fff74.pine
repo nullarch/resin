@@ -1,0 +1,8 @@
+//@version=5
+indicator("Func Decl")
+var float result = 0.0
+
+add(a, b) =>
+    a + b
+
+result := add(3.0, 7.0)

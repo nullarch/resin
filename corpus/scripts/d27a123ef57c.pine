@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Acceptance")
+var float vaH = 0.0
+var float vaL = 99999.0
+smaVal = nz(ta.sma(close, 5), close)
+vaH := math.max(vaH, smaVal + 2.0)
+vaL := math.min(vaL, smaVal - 2.0)
+accepted = close <= vaH and close >= vaL ? 1.0 : 0.0
+plot(accepted, "Accept")

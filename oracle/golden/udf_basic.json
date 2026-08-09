@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_y": 202,
+   "var:__obs_z": 100.5,
+   "var:__obs_w": 101
+  },
+  {
+   "var:__obs_y": 204,
+   "var:__obs_z": 101.5,
+   "var:__obs_w": 102
+  },
+  {
+   "var:__obs_y": 206,
+   "var:__obs_z": 102.5,
+   "var:__obs_w": 103
+  },
+  {
+   "var:__obs_y": 204,
+   "var:__obs_z": 101.5,
+   "var:__obs_w": 102
+  },
+  {
+   "var:__obs_y": 208,
+   "var:__obs_z": 103.5,
+   "var:__obs_w": 104
+  },
+  {
+   "var:__obs_y": 210,
+   "var:__obs_z": 104.5,
+   "var:__obs_w": 105
+  },
+  {
+   "var:__obs_y": 212,
+   "var:__obs_z": 105.5,
+   "var:__obs_w": 105.0
+  },
+  {
+   "var:__obs_y": 210,
+   "var:__obs_z": 104.5,
+   "var:__obs_w": 105
+  },
+  {
+   "var:__obs_y": 214,
+   "var:__obs_z": 106.5,
+   "var:__obs_w": 105.0
+  },
+  {
+   "var:__obs_y": 216,
+   "var:__obs_z": 107.5,
+   "var:__obs_w": 105.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_y": 216,
+  "__obs_z": 107.5,
+  "__obs_w": 105.0
+ }
+}

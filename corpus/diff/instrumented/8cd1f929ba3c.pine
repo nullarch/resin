@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Adapt Thresh")
+var float threshold = 50.0
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+if atr > avgATR * 1.5
+    threshold := 55.0
+else if atr < avgATR * 0.5
+    threshold := 45.0
+else
+    threshold := 50.0
+signal = rsi > threshold ? 1 : rsi < (100 - threshold) ? -1 : 0
+var float __obs_plot0 = na
+__obs_plot0 := signal
+plot(signal, "Sig")

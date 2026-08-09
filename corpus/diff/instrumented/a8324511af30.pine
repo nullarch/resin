@@ -1,0 +1,14 @@
+//@version=5
+indicator("C300-04")
+var float estimate = 1.0
+target = close
+iterations = 0
+temp = estimate
+while iterations < 5
+    nextVal = (temp + target / (temp > 0 ? temp : 1.0)) / 2.0
+    temp := nextVal
+    iterations := iterations + 1
+estimate := temp
+var float __obs_plot0 = na
+__obs_plot0 := estimate
+plot(estimate)

@@ -1,0 +1,9 @@
+//@version=5
+indicator("GCD Euclidean")
+a = math.floor(close)
+b = math.floor(high)
+tempA = math.max(a, b)
+tempB = math.min(a, b)
+r = tempB > 0.0 ? tempA - math.floor(tempA / tempB) * tempB : tempA
+gcdVal = tempB > 0.0 ? tempB : tempA
+plot(gcdVal, "GCD")

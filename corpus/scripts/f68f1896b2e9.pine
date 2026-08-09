@@ -1,0 +1,10 @@
+//@version=5
+indicator("Float Enum")
+enum Level
+    High = 3
+    Mid = 2
+    Low = 1
+
+var float result = 0.0
+result := float(Level.High)
+plot(result)

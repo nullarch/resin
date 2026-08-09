@@ -1,0 +1,8 @@
+//@version=5
+indicator("Heiken")
+ha_ticker = ticker.heikinashi(syminfo.tickerid)
+var bool valid = false
+valid := not na(ha_ticker)
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

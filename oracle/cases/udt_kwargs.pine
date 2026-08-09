@@ -1,0 +1,53 @@
+//@version=5
+indicator("udt_kwargs")
+// UDT 생성자 키워드 인자(`field=value`, C129) 오라클 검증 -- 전 필드 키워드(선언 순서), 역순 +
+// 부분 채움, 위치+키워드 혼합 세 조합을 커버한다. pine2py의 `_parse_args_kwargs`(parser.py)는
+// 위치/키워드 뒤섞기를 문법 레벨에서 전혀 제약하지 않고 생성된 Python 코드의
+// `TypeName(pos..., kw=val, ...)` 호출을 dataclass `__init__`의 이름 기반 매칭에 그대로 위임한다
+// (python 직접 실행으로 세 채널 모두 확인) -- pine2js는 동일한 필드-이름 매칭 결과를 codegen에서
+// 재현하되(analyzer가 미리 필드명/중복 검증), pine2py 자신은 그 검증을 전혀 하지 않는다는 점만
+// 다르다(정적 검증 없음은 GOAL.md "알려진 버그는 따르지 않는다" 대상 -- 이 케이스는 유효한
+// 입력만 다뤄 그 차이가 드러나지 않는다).
+
+type Bar
+    float x = 1.0
+    int n = 2
+    bool flag = true
+    string label = "hi"
+    float y
+
+// 채널 A: 전 필드를 선언 순서 그대로 키워드로 지정(위치 인자 0개)
+var Bar a = Bar.new(x=5.0, n=7, flag=false, label="a", y=9.0)
+var float __obs_a_x = na
+__obs_a_x := a.x
+var float __obs_a_n = na
+__obs_a_n := a.n
+var bool __obs_a_flag = na
+__obs_a_flag := a.flag
+var string __obs_a_label = na
+__obs_a_label := a.label
+var float __obs_a_y = na
+__obs_a_y := a.y
+
+// 채널 B: 역순(y가 x보다 먼저) + 부분 채움(n/flag/label은 명시 기본값 그대로) -- 키워드 순서가
+// 필드 선언 순서와 달라도 이름으로 정확히 매칭되는지 검증
+var Bar b = Bar.new(y=3.0, x=2.0)
+var float __obs_b_x = na
+__obs_b_x := b.x
+var float __obs_b_n = na
+__obs_b_n := b.n
+var float __obs_b_y = na
+__obs_b_y := b.y
+
+// 채널 C: 위치 인자(x, n) + 키워드 인자(label) 혼합 -- flag/y는 암시/명시 기본값 그대로
+var Bar c = Bar.new(10.0, 20, label="mixed")
+var float __obs_c_x = na
+__obs_c_x := c.x
+var float __obs_c_n = na
+__obs_c_n := c.n
+var bool __obs_c_flag = na
+__obs_c_flag := c.flag
+var string __obs_c_label = na
+__obs_c_label := c.label
+var float __obs_c_y = na
+__obs_c_y := c.y

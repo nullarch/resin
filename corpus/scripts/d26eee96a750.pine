@@ -1,0 +1,28 @@
+//@version=5
+indicator("Mega 3")
+normalize(float val, float lo, float hi) =>
+    hi > lo + 0.01 ? (val - lo) / (hi - lo) : 0.5
+var float cumScore = 0.0
+float sma3 = nz(ta.sma(close, 3), close)
+float rsiVal = nz(ta.rsi(close, 5), 50.0)
+float atrVal = nz(ta.atr(3), 1.0)
+float normRsi = normalize(rsiVal, 0.0, 100.0)
+float normAtr = normalize(atrVal, 0.0, 20.0)
+weights = array.new<float>(0)
+weights.push(0.4)
+weights.push(0.3)
+weights.push(0.3)
+vals = array.new<float>(0)
+vals.push(normRsi)
+vals.push(normAtr)
+vals.push(close > sma3 ? 1.0 : 0.0)
+float weighted = 0.0
+for i = 0 to 2
+    float w = weights.get(i)
+    float v = vals.get(i)
+    if v > 0.5
+        weighted := weighted + w * v * 1.2
+    else
+        weighted := weighted + w * v * 0.8
+cumScore := cumScore + weighted
+float decayed = cumScore * 0.95

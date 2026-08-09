@@ -1,0 +1,8 @@
+//@version=5
+indicator("while return")
+var float result = 0.0
+float x = 10.0
+val = while x > 1.0
+    x := x / 2
+    x
+result := val

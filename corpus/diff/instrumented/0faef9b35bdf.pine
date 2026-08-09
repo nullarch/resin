@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Exp Wt")
+weightedSum = 0.0
+totalWeight = 0.0
+alpha = 0.7
+for i = 0 to 4
+    w = math.pow(alpha, i)
+    val = close[i]
+    if not na(val)
+        weightedSum := weightedSum + val * w
+        totalWeight := totalWeight + w
+ewma = totalWeight > 0 ? weightedSum / totalWeight : close
+var float __obs_plot0 = na
+__obs_plot0 := ewma
+plot(ewma, "EWMA")

@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Filt Mode")
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 5)
+ratio = avgATR > 0 ? atr / avgATR : 1.0
+mode = switch
+    ratio > 1.5 => "strict"
+    ratio > 1.2 => "moderate"
+    ratio < 0.7 => "relaxed"
+    => "normal"
+threshold = mode == "strict" ? 3.0 : mode == "moderate" ? 2.0 : mode == "relaxed" ? 1.0 : 1.5
+plot(threshold, "Th")

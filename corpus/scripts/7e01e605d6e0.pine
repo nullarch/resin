@@ -1,0 +1,11 @@
+//@version=5
+indicator("Diffie-Hellman Proxy")
+prime = 23.0
+generator = 5.0
+aliceSecret = math.floor(close) - 100.0
+aliceSecret := math.max(1.0, math.abs(aliceSecret))
+bobSecret = math.floor(open) - 99.0
+bobSecret := math.max(1.0, math.abs(bobSecret))
+alicePub = math.pow(generator, math.min(aliceSecret, 4.0))
+alicePub := alicePub - math.floor(alicePub / prime) * prime
+plot(alicePub)

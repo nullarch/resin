@@ -1,0 +1,15 @@
+//@version=5
+indicator("InterventionEff")
+var float preMean = 0.0
+var float postMean = 0.0
+var int preCnt = 0
+var int postCnt = 0
+interventionBar = 5
+if bar_index < interventionBar
+    preCnt := preCnt + 1
+    preMean := preMean + (close - preMean) / float(preCnt)
+else
+    postCnt := postCnt + 1
+    postMean := postMean + (close - postMean) / float(postCnt)
+effect = postCnt > 0 ? postMean - preMean : 0.0
+plot(effect, "Effect")

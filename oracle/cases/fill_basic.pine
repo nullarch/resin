@@ -1,0 +1,23 @@
+//@version=5
+indicator("fill_basic")
+// C209: fill() 신규 구현 + plot()/hline()의 대입-RHS 지원(`p1 = plot(...)`, `h1 = hline(...)`) --
+// corpus 최다빈도 패턴(BB류 밴드 fill, 12건 실측: corpus/scripts grep 결과 전부 이 형태). pine2py
+// wavealgo/builtins/plot.py의 fill()도 plot1/plot2/color를 그대로 dict에 담아 반환하는 순수
+// metadata no-op(python 직접 실행으로 확인, 어떤 필드도 실제로 소비 안 함)이라 fill()/plot()/hline()의
+// 반환 핸들 자체는 오라클 관측 불가(ctx.plots 죽은 채널, MEMORY.md C200 참조) -- 대신 fill()에 넘기는
+// series(upper/lower)를 별도 var로 미러링해, 이 문장들이 끼어들어도 정상 계산이 안 깨지는지를
+// 검증한다.
+upper = ta.sma(close, 3) + ta.stdev(close, 3)
+lower = ta.sma(close, 3) - ta.stdev(close, 3)
+p1 = plot(upper, "Upper", color=color.blue)
+p2 = plot(lower, "Lower", color=color.red)
+fill(p1, p2, color=color.new(color.blue, 90))
+
+h1 = hline(70, "Overbought")
+h2 = hline(30, "Oversold")
+fill(h1, h2, color=color.new(color.green, 90))
+
+var float __obs_upper = na
+__obs_upper := upper
+var float __obs_lower = na
+__obs_lower := lower

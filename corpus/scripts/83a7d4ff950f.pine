@@ -1,0 +1,5 @@
+//@version=5
+indicator("CastExpr")
+var float result = 0
+x = 3.7
+result := int(x) + 1.5

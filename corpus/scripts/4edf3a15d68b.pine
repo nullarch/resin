@@ -1,0 +1,6 @@
+//@version=5
+indicator("Block If")
+var float result = 0.0
+if close > open
+    float bonus = 5.0
+    result := close + bonus

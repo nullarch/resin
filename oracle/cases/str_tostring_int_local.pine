@@ -1,0 +1,23 @@
+//@version=5
+indicator("str_tostring_int_local")
+// C201 잔여 스코프 (4): '=' 로컬로의 int 타입 힌트 전파(LIMITATIONS.md "str.tostring 잔여 스코프"
+// 항목). isStaticIntExpr(analyzer.ts)가 이번에 새로 인식하는 두 경로: (a) 정수 리터럴을 직접 대입한
+// '=' 로컬(__obs_lit_local), (b) for 루프 카운터를 경유한 '=' 로컬(__obs_loop_local, 다단계 체이닝은
+// __obs_chain_local). __obs_float_local_control은 float 리터럴이 여전히 float 포맷을 유지함을 확인하는
+// 대조군(오탐 없음 확인). bar-독립(close/open 미참조, str_tostring_int.pine과 동일 관례) -- 전 바에서
+// 값이 동일해야 정상.
+var string __obs_lit_local = na
+p = 5
+__obs_lit_local := str.tostring(p)
+var string __obs_loop_local = na
+for k = 0 to 2
+    n = k
+    __obs_loop_local := str.tostring(n)
+var string __obs_chain_local = na
+for j = 0 to 2
+    n2 = j
+    m2 = n2
+    __obs_chain_local := str.tostring(m2)
+var string __obs_float_local_control = na
+q = 5.0
+__obs_float_local_control := str.tostring(q)

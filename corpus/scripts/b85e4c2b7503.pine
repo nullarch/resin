@@ -1,0 +1,4 @@
+//@version=5
+indicator("MathAbs")
+var float totalAbs = 0
+totalAbs := totalAbs + math.abs(close - open)

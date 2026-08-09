@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("3Layer")
+inp = (close - 100.0) / 10.0
+h1 = math.max(0.6 * inp + 0.1, 0.0)
+h2 = math.max(-0.4 * inp + 0.2, 0.0)
+h3 = math.max(0.3 * inp - 0.1, 0.0)
+outW1 = 0.5
+outW2 = 0.3
+outW3 = 0.2
+output = outW1 * h1 + outW2 * h2 + outW3 * h3
+plot(output, "3L")

@@ -1,0 +1,19 @@
+//@version=5
+indicator("MAPEst")
+var float sumX = 0.0
+var float sumX2 = 0.0
+var int nObs = 0
+nObs := nObs + 1
+sumX := sumX + close
+sumX2 := sumX2 + close * close
+n = float(nObs)
+meanEst = n > 0 ? sumX / n : close
+varEst = n > 1 ? (sumX2 / n - meanEst * meanEst) : 1.0
+safeVar = math.max(varEst, 0.01)
+mapEst = meanEst
+var float __obs_plot0 = na
+__obs_plot0 := mapEst
+plot(mapEst, "MAP")
+var float __obs_plot1 = na
+__obs_plot1 := safeVar
+plot(safeVar, "Var")

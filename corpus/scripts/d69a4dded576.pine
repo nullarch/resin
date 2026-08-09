@@ -1,0 +1,5 @@
+//@version=5
+indicator("Fixnan")
+rsi = ta.rsi(close, 3)
+safeRsi = fixnan(rsi)
+plot(safeRsi)

@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Reservoir")
+var float[] reservoir = array.new_float(0)
+array.push(reservoir, close)
+if array.size(reservoir) > 10
+    array.shift(reservoir)
+sz = array.size(reservoir)
+sample1 = sz > 0 ? array.get(reservoir, 0) : close
+sample2 = sz > 2 ? array.get(reservoir, math.floor(sz / 2)) : close
+sample3 = sz > 0 ? array.get(reservoir, sz - 1) : close
+avgSample = (sample1 + sample2 + sample3) / 3
+plot(close - avgSample, "Diff")

@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Trend Scan")
+sma3 = ta.sma(close, 3)
+trendBars = 0
+for i = 0 to 4
+    if not na(close[i])
+        aboveMA = close[i] > sma3
+        if aboveMA
+            trendBars := trendBars + 1
+trendPct = trendBars / 5.0 * 100
+var float __obs_plot0 = na
+__obs_plot0 := trendPct
+plot(trendPct, "TP")

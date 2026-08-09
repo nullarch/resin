@@ -1,0 +1,41 @@
+{
+ "ok": true,
+ "data": "if_basic.json",
+ "bars": [
+  {
+   "var:acc": 1.0,
+   "var:__obs_x": 1.0,
+   "var:__obs_acc": 1.0
+  },
+  {
+   "var:acc": 0.0,
+   "var:__obs_x": -1.0,
+   "var:__obs_acc": 0.0
+  },
+  {
+   "var:acc": 0.0,
+   "var:__obs_x": 0.0,
+   "var:__obs_acc": 0.0
+  },
+  {
+   "var:acc": 1.0,
+   "var:__obs_x": 1.0,
+   "var:__obs_acc": 1.0
+  },
+  {
+   "var:acc": 0.0,
+   "var:__obs_x": -1.0,
+   "var:__obs_acc": 0.0
+  },
+  {
+   "var:acc": 0.0,
+   "var:__obs_x": 0.0,
+   "var:__obs_acc": 0.0
+  }
+ ],
+ "finalVarState": {
+  "acc": 0.0,
+  "__obs_x": 0.0,
+  "__obs_acc": 0.0
+ }
+}

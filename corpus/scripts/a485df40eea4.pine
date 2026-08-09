@@ -1,0 +1,9 @@
+//@version=5
+indicator("Moneyness")
+strike = 105.0
+diff = close - strike
+moneyCode = switch
+    diff > 2.0 => 2.0
+    diff > -2.0 => 0.0
+    => -2.0
+plot(moneyCode, "MC")

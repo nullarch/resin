@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:ts": "pine_fn.<locals>.TrendState(direction=1, bars=1, startPrice=Series(current=111, length=10))",
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:ts": "pine_fn.<locals>.TrendState(direction=1, bars=1, startPrice=Series(current=111, length=10))",
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:ts": "pine_fn.<locals>.TrendState(direction=1, bars=1, startPrice=Series(current=111, length=10))",
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:ts": "pine_fn.<locals>.TrendState(direction=1, bars=1, startPrice=Series(current=111, length=10))",
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:ts": "pine_fn.<locals>.TrendState(direction=1, bars=1, startPrice=Series(current=111, length=10))",
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:ts": "pine_fn.<locals>.TrendState(direction=1, bars=1, startPrice=Series(current=111, length=10))",
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:ts": "pine_fn.<locals>.TrendState(direction=1, bars=1, startPrice=Series(current=111, length=10))",
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:ts": "pine_fn.<locals>.TrendState(direction=1, bars=1, startPrice=Series(current=111, length=10))",
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:ts": "pine_fn.<locals>.TrendState(direction=1, bars=1, startPrice=Series(current=111, length=10))",
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:ts": "pine_fn.<locals>.TrendState(direction=1, bars=1, startPrice=Series(current=111, length=10))",
+   "var:__obs_plot0": 0.0
+  }
+ ],
+ "finalVarState": {
+  "ts": "pine_fn.<locals>.TrendState(direction=1, bars=1, startPrice=Series(current=111, length=10))",
+  "__obs_plot0": 0.0
+ }
+}

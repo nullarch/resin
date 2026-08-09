@@ -1,0 +1,11 @@
+//@version=5
+indicator("ta_stdev_variance")
+// ta.stdev/ta.variance 오라클 검증(ROADMAP P2 "ta.* 44종" — stdev/variance). pine2py
+// wavealgo/ta/stdev.py 소스 대조 결과 두 함수 모두 population variance/stdev로 완전히 동일한
+// mean/제곱편차합 로직(가중치 없는 단순 윈도우, Bessel 보정 없음)이고 stdev만 sqrt를 추가로
+// 적용함을 확인. sample10.json 10바 안에서 워밍업(바 0~1, data_len<3 -> NaN)과 정상 구간(바 2~9)을
+// 모두 커버.
+var float __obs_stdev = na
+var float __obs_variance = na
+__obs_stdev := ta.stdev(close, 3)
+__obs_variance := ta.variance(close, 3)

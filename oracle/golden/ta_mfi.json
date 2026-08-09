@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_mfi": "NaN"
+  },
+  {
+   "var:__obs_mfi": "NaN"
+  },
+  {
+   "var:__obs_mfi": "NaN"
+  },
+  {
+   "var:__obs_mfi": 66.7799490229
+  },
+  {
+   "var:__obs_mfi": 68.8114863068
+  },
+  {
+   "var:__obs_mfi": 69.4332247557
+  },
+  {
+   "var:__obs_mfi": 100.0
+  },
+  {
+   "var:__obs_mfi": 66.3621262458
+  },
+  {
+   "var:__obs_mfi": 68.5454343726
+  },
+  {
+   "var:__obs_mfi": 69.1075514874
+  }
+ ],
+ "finalVarState": {
+  "__obs_mfi": 69.1075514874
+ }
+}

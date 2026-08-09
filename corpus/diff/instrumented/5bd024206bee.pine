@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Sig Buf")
+var float[] buffer = array.new_float(0)
+rsi = nz(ta.rsi(close, 3), 50.0)
+sig = rsi > 55 ? 1.0 : rsi < 45 ? -1.0 : 0.0
+array.push(buffer, sig)
+if array.size(buffer) > 5
+    array.shift(buffer)
+allBull = true
+for i = 0 to math.max(array.size(buffer) - 1, 0)
+    if i < array.size(buffer) and array.get(buffer, i) <= 0
+        allBull := false
+var float __obs_plot0 = na
+__obs_plot0 := allBull ? 1 : 0
+plot(allBull ? 1 : 0, "AB")

@@ -1,0 +1,13 @@
+//@version=5
+indicator("UDT TA Fields")
+type Signals
+    float rsi = 0.0
+    float sma = 0.0
+    bool bullish = false
+sig = Signals.new()
+rsiVal = ta.rsi(close, 5)
+smaVal = ta.sma(close, 5)
+sig.rsi := nz(rsiVal)
+sig.sma := nz(smaVal)
+sig.bullish := sig.rsi < 30 and close > sig.sma
+plot(sig.rsi)

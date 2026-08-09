@@ -1,0 +1,159 @@
+//@version=5
+indicator("matrix_pow")
+
+// C102: matrix.* 열세 번째 슬라이스 — pow(행렬 대수 11종의 일곱 번째 항목, 44/49 -> 45/49).
+// pine2py pow()는 identity 시드 + square-and-multiply(반복제곱) + exponent<0이면 맨 마지막에
+// 한 번만 inv() 적용 — 이미 구현된 rt.matrix.mult(C97)/rt.matrix.inv(C100) 재호출로 조립(새
+// 알고리즘 유도 없음). python 직접 실행 + node fuzz 5,000샘플(scratch/gen_pow_cases.mjs+
+// compare_pow_fuzz.mjs, 정사각 2x2/3x3 + 정수 지수 -4..4 + 10% NaN 임베딩)로 착수 전 검증.
+// **새 isSquareMatrix 가드(inv(C100)와 동일 결정, DIVERGENCES.md #37 확장)**: pine2py pow()는
+// n=len(m)(rows 수)만으로 identity 크기를 정해 정사각을 검증하지 않아 비정사각 입력에서 crash
+// 여부가 exponent 값에 따라 불규칙하게 갈리고(rows<columns/rows>columns 둘 다, e값별로 다름),
+// JS는 undefined 산술의 관대함 때문에 또 다르게 갈려 이중으로 예측 불가능함을 실측 확인 —
+// 비정사각은 크래시 여부와 무관하게 일괄 na(null) 통일, 오라클 트리거 대상에서 제외
+// (runtime.test.ts hand-verified로 대체). singular+음수 지수(ValueError 크래시)/m===null도
+// 동일하게 제외.
+
+// A: n=0(0x0 빈 행렬) + exponent=0 — 루프가 0회 실행돼 identity(0x0)=[] 그대로, rows=0
+// (크래시 없음 — n=0 && exponent!=0은 pine2py가 내부 mult([],[])에서 IndexError 크래시하는
+// 지점이라 오라클 제외, runtime.test.ts hand-verified로 대체).
+maA = matrix.new<float>()
+paA = matrix.pow(maA, 0)
+var float __obs_a_rows = na
+__obs_a_rows := matrix.rows(paA)
+
+// B: n=1 bar-derived(all-valid, close+0.0) + exponent=3(홀수, 반복제곱 경로) — close^3.
+mbB = matrix.new<float>(1, 1, 0.0)
+matrix.set(mbB, 0, 0, close + 0.0)
+pbB = matrix.pow(mbB, 3)
+var float __obs_b = na
+__obs_b := matrix.get(pbB, 0, 0)
+
+// C: n=1 bar-derived(all-valid) + exponent=-1(음수, 맨 마지막에만 inv 적용) — 1/close.
+mcC = matrix.new<float>(1, 1, 0.0)
+matrix.set(mcC, 0, 0, close + 0.0)
+pcC = matrix.pow(mcC, -1)
+var float __obs_c = na
+__obs_c := matrix.get(pcC, 0, 0)
+
+// D: n=1 na(close[15] — sample10 10바 범위 밖) + exponent=2 — na*na=na, 크래시 없이 전체 na.
+mdD = matrix.new<float>(1, 1, 0.0)
+matrix.set(mdD, 0, 0, close[15])
+pdD = matrix.pow(mdD, 2)
+var float __obs_d = na
+__obs_d := matrix.get(pdD, 0, 0)
+
+// E: n=1 na(close[15]) + exponent=-1 — inv([[na]])의 pivot 탐색이 na를 `!=0`으로 유효 피벗
+// 오인해도 크래시 없이 na/na=na로 수렴(python 직접 실행 확인).
+meE = matrix.new<float>(1, 1, 0.0)
+matrix.set(meE, 0, 0, close[15])
+peE = matrix.pow(meE, -1)
+var float __obs_e = na
+__obs_e := matrix.get(peE, 0, 0)
+
+// F: n=1 na(close[15]) + exponent=0 — 루프 0회라 m의 값과 완전히 무관하게 항상 identity=1.0
+// (python 직접 실행 확인, na 포함 행렬도 예외 없음).
+mfF = matrix.new<float>(1, 1, 0.0)
+matrix.set(mfF, 0, 0, close[15])
+pfF = matrix.pow(mfF, 0)
+var float __obs_f = na
+__obs_f := matrix.get(pfF, 0, 0)
+
+// G: n=2 bar-derived(all-valid, open/high/low/close — det(C98)/inv(C100) group D와 동일 구성,
+// 매 바 det!=0 사전 확인) + exponent=2 — 4칸 전부 관측.
+mgG = matrix.new<float>(2, 2, 0.0)
+matrix.set(mgG, 0, 0, open + 0.0)
+matrix.set(mgG, 0, 1, high + 0.0)
+matrix.set(mgG, 1, 0, low + 0.0)
+matrix.set(mgG, 1, 1, close + 0.0)
+pgG = matrix.pow(mgG, 2)
+var float __obs_g00 = na
+__obs_g00 := matrix.get(pgG, 0, 0)
+var float __obs_g01 = na
+__obs_g01 := matrix.get(pgG, 0, 1)
+var float __obs_g10 = na
+__obs_g10 := matrix.get(pgG, 1, 0)
+var float __obs_g11 = na
+__obs_g11 := matrix.get(pgG, 1, 1)
+
+// H: G와 동일 행렬 + exponent=-1 — inv 경로(non-singular 사전확인), 4칸 전부 관측.
+mhH = matrix.new<float>(2, 2, 0.0)
+matrix.set(mhH, 0, 0, open + 0.0)
+matrix.set(mhH, 0, 1, high + 0.0)
+matrix.set(mhH, 1, 0, low + 0.0)
+matrix.set(mhH, 1, 1, close + 0.0)
+phH = matrix.pow(mhH, -1)
+var float __obs_h00 = na
+__obs_h00 := matrix.get(phH, 0, 0)
+var float __obs_h01 = na
+__obs_h01 := matrix.get(phH, 0, 1)
+var float __obs_h10 = na
+__obs_h10 := matrix.get(phH, 1, 0)
+var float __obs_h11 = na
+__obs_h11 := matrix.get(phH, 1, 1)
+
+// I: n=2 na-embedded(open/close[15]/low/close, inv(C100) group E와 동일 구성) + exponent=2 —
+// na가 제곱 과정에서 섞여 전체 na로 수렴(python 직접 실행 확인).
+miI = matrix.new<float>(2, 2, 0.0)
+matrix.set(miI, 0, 0, open + 0.0)
+matrix.set(miI, 0, 1, close[15])
+matrix.set(miI, 1, 0, low + 0.0)
+matrix.set(miI, 1, 1, close + 0.0)
+piI = matrix.pow(miI, 2)
+var float __obs_i00 = na
+__obs_i00 := matrix.get(piI, 0, 0)
+var float __obs_i01 = na
+__obs_i01 := matrix.get(piI, 0, 1)
+var float __obs_i10 = na
+__obs_i10 := matrix.get(piI, 1, 0)
+var float __obs_i11 = na
+__obs_i11 := matrix.get(piI, 1, 1)
+
+// J: I와 동일 na-embedded 행렬 + exponent=-1 — inv의 pivot 탐색이 na를 유효 피벗으로 오인해도
+// 크래시 없이 전체 na로 수렴(python 직접 실행 확인, singular ValueError와 다른 경로).
+mjJ = matrix.new<float>(2, 2, 0.0)
+matrix.set(mjJ, 0, 0, open + 0.0)
+matrix.set(mjJ, 0, 1, close[15])
+matrix.set(mjJ, 1, 0, low + 0.0)
+matrix.set(mjJ, 1, 1, close + 0.0)
+pjJ = matrix.pow(mjJ, -1)
+var float __obs_j00 = na
+__obs_j00 := matrix.get(pjJ, 0, 0)
+var float __obs_j01 = na
+__obs_j01 := matrix.get(pjJ, 0, 1)
+var float __obs_j10 = na
+__obs_j10 := matrix.get(pjJ, 1, 0)
+var float __obs_j11 = na
+__obs_j11 := matrix.get(pjJ, 1, 1)
+
+// K: n=3 bar-derived 대각(open/high/low) + 리터럴 비대각(det(C98)/inv(C100) group F와 동일 구성 —
+// 이미 non-singular 사전검증됨, det!=0 범위 1009003~1235425) + exponent=2 — 9칸 전부 관측.
+mkK = matrix.new<float>(3, 3, 0.0)
+matrix.set(mkK, 0, 0, open + 0.0)
+matrix.set(mkK, 0, 1, 1.0)
+matrix.set(mkK, 0, 2, 2.0)
+matrix.set(mkK, 1, 0, 3.0)
+matrix.set(mkK, 1, 1, high + 0.0)
+matrix.set(mkK, 1, 2, 1.0)
+matrix.set(mkK, 2, 0, 2.0)
+matrix.set(mkK, 2, 1, 1.0)
+matrix.set(mkK, 2, 2, low + 0.0)
+pkK = matrix.pow(mkK, 2)
+var float __obs_k00 = na
+__obs_k00 := matrix.get(pkK, 0, 0)
+var float __obs_k01 = na
+__obs_k01 := matrix.get(pkK, 0, 1)
+var float __obs_k02 = na
+__obs_k02 := matrix.get(pkK, 0, 2)
+var float __obs_k10 = na
+__obs_k10 := matrix.get(pkK, 1, 0)
+var float __obs_k11 = na
+__obs_k11 := matrix.get(pkK, 1, 1)
+var float __obs_k12 = na
+__obs_k12 := matrix.get(pkK, 1, 2)
+var float __obs_k20 = na
+__obs_k20 := matrix.get(pkK, 2, 0)
+var float __obs_k21 = na
+__obs_k21 := matrix.get(pkK, 2, 1)
+var float __obs_k22 = na
+__obs_k22 := matrix.get(pkK, 2, 2)

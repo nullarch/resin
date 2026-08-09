@@ -1,0 +1,7 @@
+//@version=5
+indicator("ta_vwma")
+// ta.vwma 오라클 검증(ROADMAP P2 "ta.* 44종" — vwma). length=3으로 sample10.json 10바 안에서
+// 초기화 구간(NaN, 바 0~1)과 정상 구간(바 2~9)을 모두 커버. volume은 Pine 인자가 아니라 내장
+// bar series로 암묵 사용된다(analyzer.ts TA_REGISTRY.vwma 주석 참조).
+var float __obs_vwma = na
+__obs_vwma := ta.vwma(close, 3)

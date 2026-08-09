@@ -1,0 +1,22 @@
+//@version=5
+indicator("tuple_string_hist")
+
+f(hr) =>
+    sessName = ""
+    if hr >= 19 or hr < 3
+        sessName := "ASIAN"
+    else if hr >= 8 and hr < 17
+        sessName := "NEW YORK"
+    else
+        sessName := "OFF HOURS"
+    dummy = 1.0
+    [sessName, dummy]
+
+[s, n] = f(bar_index)
+
+var string __obs_cur = na
+__obs_cur := s
+var string __obs_prev = na
+__obs_prev := s[1]
+var string __obs_prev2 = na
+__obs_prev2 := s[2]

@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:crossovers": 0,
+   "var:crossunders": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:crossovers": 0,
+   "var:crossunders": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:crossovers": 0,
+   "var:crossunders": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:crossovers": 0,
+   "var:crossunders": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:crossovers": 0,
+   "var:crossunders": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:crossovers": 0,
+   "var:crossunders": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:crossovers": 0,
+   "var:crossunders": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:crossovers": 0,
+   "var:crossunders": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:crossovers": 0,
+   "var:crossunders": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:crossovers": 0,
+   "var:crossunders": 0,
+   "var:__obs_plot0": 0
+  }
+ ],
+ "finalVarState": {
+  "crossovers": 0,
+  "crossunders": 0,
+  "__obs_plot0": 0
+ }
+}

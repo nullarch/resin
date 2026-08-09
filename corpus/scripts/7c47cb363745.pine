@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Ret Hist")
+var float[] rets = array.new_float(0)
+ret = close[1] > 0 ? (close - close[1]) / close[1] * 100 : 0.0
+array.push(rets, ret)
+if array.size(rets) > 10
+    array.shift(rets)
+avgRet = array.size(rets) > 0 ? array.avg(rets) : 0.0
+negRets = 0
+for i = 0 to math.max(array.size(rets) - 1, 0)
+    if i < array.size(rets) and array.get(rets, i) < 0
+        negRets := negRets + 1
+plot(negRets, "NR")

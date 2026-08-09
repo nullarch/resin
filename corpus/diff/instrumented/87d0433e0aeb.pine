@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Map Filter")
+m = map.new<string, float>()
+map.put(m, "a", 10.0)
+map.put(m, "b", -5.0)
+map.put(m, "c", 20.0)
+map.put(m, "d", -15.0)
+positiveSum = 0.0
+for [k, v] in m
+    if v > 0
+        positiveSum := positiveSum + v
+var float __obs_plot0 = na
+__obs_plot0 := positiveSum
+plot(positiveSum, "PosSum")

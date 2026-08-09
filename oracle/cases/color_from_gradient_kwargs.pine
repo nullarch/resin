@@ -1,0 +1,13 @@
+//@version=5
+indicator("color_from_gradient_kwargs")
+// color.from_gradient(value=/bottom_value=/top_value=/bottom_color=/top_color=) kwargs(C479,
+// next_hint(C478) 지시대로 — pine2py wavealgo/builtins/color.py from_gradient 파라미터명
+// 5개(value/bottom_value/top_value/bottom_color/top_color)가 python inspect.signature
+// 재확인 결과 TV 공식 이름과 전부 정확히 일치해 진짜 오라클 대조가 가능하다(ta.cci(C477)와
+// 동일 유형). 완전 키워드 폼/혼합 폼/위치 폼 셋 다 같은 값을 내는지 확인한다.
+var string __obs_grad_kw = na
+var string __obs_grad_mixed = na
+var string __obs_grad_pos = na
+__obs_grad_kw := color.from_gradient(value=50, bottom_value=0, top_value=100, bottom_color=color.red, top_color=color.blue)
+__obs_grad_mixed := color.from_gradient(50, 0, 100, bottom_color=color.red, top_color=color.blue)
+__obs_grad_pos := color.from_gradient(50, 0, 100, color.red, color.blue)

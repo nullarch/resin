@@ -1,0 +1,5 @@
+//@version=5
+indicator("Ternary Func")
+useFast = bar_index > 5
+val = useFast ? ta.ema(close, 3) : ta.sma(close, 5)
+plot(nz(val))

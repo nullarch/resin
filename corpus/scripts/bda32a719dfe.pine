@@ -1,0 +1,11 @@
+//@version=5
+indicator("Comprehensive C95")
+fast = ta.sma(close, 3)
+slow = ta.sma(close, 5)
+var float lastCross = 0.0
+co = ta.crossover(fast, slow)
+lastCross := nz(ta.valuewhen(co, close, 0), lastCross)
+var float bs = 0.0
+bs := nz(ta.barssince(co), bs)
+var float h5 = 0.0
+h5 := ta.highest(high, 5)

@@ -1,0 +1,11 @@
+//@version=5
+indicator("Alpha Divergence")
+var float alphaDiv = 0.0
+alpha = 0.5
+pVal = (close - low) / (high - low > 0.01 ? high - low : 0.01)
+qVal = 0.5
+safeP = pVal > 0.01 ? pVal : 0.01
+safeQ = qVal > 0.01 ? qVal : 0.01
+ratio = safeP / safeQ
+term = (math.pow(ratio, alpha) - 1.0) / (alpha * (alpha - 1.0) != 0.0 ? alpha * (alpha - 1.0) : 1.0)
+alphaDiv := alphaDiv + term

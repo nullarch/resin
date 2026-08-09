@@ -1,0 +1,53 @@
+//@version=5
+indicator("ctrl_flow_expr")
+
+// if-expr (신규 로컬 '='): 단순 2분기(else만, elif 없음)
+a = if close > open
+    close - open
+else
+    open - close
+var float __obs_a = na
+__obs_a := a
+
+// if-expr (기존 var 재대입 ':='): elif 체인 3분기
+var float b = 0.0
+b := if close > open
+    1.0
+else if close < open
+    -1.0
+else
+    0.0
+var float __obs_b = na
+__obs_b := b
+
+// switch-expr (subject 없음, 신규 로컬 '=')
+c = switch
+    close > open => 1.0
+    close < open => -1.0
+    => 0.0
+var float __obs_c = na
+__obs_c := c
+
+// switch-expr (subject 있음, 기존 var 재대입 ':=')
+var float d = 0.0
+cat = close > open ? 1.0 : close < open ? -1.0 : 0.0
+d := switch cat
+    1.0 => 100.0
+    -1.0 => -100.0
+    => 0.0
+var float __obs_d = na
+__obs_d := d
+
+// for-expr (신규 로컬 '='): 마지막 반복의 마지막 표현식이 결과
+e = for i = 1 to 3
+    close + i
+var float __obs_e = na
+__obs_e := e
+
+// while-expr (신규 로컬 '='): 데이터 의존 반복(2회) + 누적, 마지막 반복의 마지막 표현식이 결과
+n = 0.0
+f = while n < 2.0
+    n := n + 1.0
+    close + n
+var float __obs_f = na
+__obs_f := f

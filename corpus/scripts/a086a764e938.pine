@@ -1,0 +1,10 @@
+//@version=5
+strategy("Breakout Trail")
+float hh = ta.highest(high, 5)
+float ll = ta.lowest(low, 5)
+float mid = (nz(hh, high) + nz(ll, low)) / 2.0
+float atrVal = nz(ta.atr(3), 1.0)
+if close > nz(hh, high) - 0.01
+    strategy.entry("Brk", strategy.long)
+if close < mid - atrVal
+    strategy.close("Brk")

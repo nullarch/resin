@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Custom Stats")
+var float[] data = array.new_float(0)
+array.push(data, close)
+if array.size(data) > 6
+    array.shift(data)
+posCount = 0
+negCount = 0
+avg = array.avg(data)
+for v in data
+    if v > avg
+        posCount := posCount + 1
+    else
+        negCount := negCount + 1
+skewProxy = (posCount + negCount) > 0 ? (posCount - negCount) / (posCount + negCount) : 0.0
+plot(skewProxy, "Skew")

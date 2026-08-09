@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Spread Type")
+enum SpType
+    VeryWide = 3
+    Wide = 2
+    Normal = 1
+    Narrow = 0
+
+spread = high - low
+avgSp = ta.sma(spread, 5)
+ratio = avgSp > 0 ? spread / avgSp : 1.0
+spType = ratio > 2.0 ? SpType.VeryWide : ratio > 1.3 ? SpType.Wide : ratio > 0.7 ? SpType.Normal : SpType.Narrow
+var float __obs_plot0 = na
+__obs_plot0 := int(spType)
+plot(int(spType), "ST")

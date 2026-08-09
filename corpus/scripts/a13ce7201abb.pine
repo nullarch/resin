@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Multi Strat")
+var ms = map.new<string, float>()
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+[m, s, h] = ta.macd(close, 3, 5, 3)
+map.put(ms, "trend", close > sma3 ? 1.0 : -1.0)
+map.put(ms, "momentum", rsi > 55 ? 1.0 : rsi < 45 ? -1.0 : 0.0)
+map.put(ms, "macd", h > 0 ? 1.0 : -1.0)
+consensus = 0.0
+for [name, sig] in ms
+    consensus := consensus + sig
+allAgree = math.abs(consensus) == 3
+plot(allAgree ? consensus / 3 : 0, "Con")

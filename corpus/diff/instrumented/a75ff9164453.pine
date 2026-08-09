@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Abs MinMax")
+arr = array.from(-5.0, 3.0, -1.0, 7.0, -2.0)
+absArr = array.abs(arr)
+mx = array.max(absArr)
+mn = array.min(absArr)
+var float __obs_plot0 = na
+__obs_plot0 := mx
+plot(mx, "Max")
+var float __obs_plot1 = na
+__obs_plot1 := mn
+plot(mn, "Min")

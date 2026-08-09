@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Trend Conv")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+spread = math.abs(sma3 - sma5)
+threshold = 10.0
+steps = 0
+while threshold > spread and steps < 15
+    threshold := threshold * 0.6
+    steps := steps + 1
+plot(steps, "St")

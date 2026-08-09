@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Best Trend")
+var float bestReturn = 0.0
+var float worstReturn = 0.0
+sma3 = ta.sma(close, 3)
+barReturn = close > 0 ? (close - open) / close * 100 : 0.0
+if close > sma3 and barReturn > bestReturn
+    bestReturn := barReturn
+if close < sma3 and barReturn < worstReturn
+    worstReturn := barReturn
+var float __obs_plot0 = na
+__obs_plot0 := bestReturn
+plot(bestReturn, "Best")
+var float __obs_plot1 = na
+__obs_plot1 := worstReturn
+plot(worstReturn, "Worst")

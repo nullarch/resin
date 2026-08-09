@@ -1,0 +1,6 @@
+//@version=5
+indicator("Phoneme Count")
+var int totalPhonemes = 0
+body = math.abs(close - open)
+phonemes = body > 4 ? 3 : body > 2 ? 2 : 1
+totalPhonemes := totalPhonemes + phonemes

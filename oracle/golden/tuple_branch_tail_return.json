@@ -1,0 +1,116 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_p1": 102.0,
+   "var:__obs_p2": 202.0,
+   "var:__obs_q1": 103.0,
+   "var:__obs_q2": 204.0,
+   "var:__obs_r1": 102,
+   "var:__obs_r2": 102,
+   "var:__obs_w1": 102.0,
+   "var:__obs_w2": 202.0
+  },
+  {
+   "var:__obs_p1": 102,
+   "var:__obs_p2": 102,
+   "var:__obs_q1": 100,
+   "var:__obs_q2": 100,
+   "var:__obs_r1": 101.0,
+   "var:__obs_r2": 200.0,
+   "var:__obs_w1": 102.0,
+   "var:__obs_w2": 202.0
+  },
+  {
+   "var:__obs_p1": 104.0,
+   "var:__obs_p2": 206.0,
+   "var:__obs_q1": 101,
+   "var:__obs_q2": 101,
+   "var:__obs_r1": 104,
+   "var:__obs_r2": 104,
+   "var:__obs_w1": 104.0,
+   "var:__obs_w2": 206.0
+  },
+  {
+   "var:__obs_p1": 102,
+   "var:__obs_p2": 102,
+   "var:__obs_q1": 104.0,
+   "var:__obs_q2": 206.0,
+   "var:__obs_r1": 101.0,
+   "var:__obs_r2": 200.0,
+   "var:__obs_w1": 102.0,
+   "var:__obs_w2": 202.0
+  },
+  {
+   "var:__obs_p1": 105.0,
+   "var:__obs_p2": 208.0,
+   "var:__obs_q1": 102,
+   "var:__obs_q2": 102,
+   "var:__obs_r1": 105,
+   "var:__obs_r2": 105,
+   "var:__obs_w1": 105.0,
+   "var:__obs_w2": 208.0
+  },
+  {
+   "var:__obs_p1": 105,
+   "var:__obs_p2": 105,
+   "var:__obs_q1": 103,
+   "var:__obs_q2": 103,
+   "var:__obs_r1": 104.0,
+   "var:__obs_r2": 206.0,
+   "var:__obs_w1": 105.0,
+   "var:__obs_w2": 208.0
+  },
+  {
+   "var:__obs_p1": 107.0,
+   "var:__obs_p2": 212.0,
+   "var:__obs_q1": 108.0,
+   "var:__obs_q2": 214.0,
+   "var:__obs_r1": 107,
+   "var:__obs_r2": 107,
+   "var:__obs_w1": 107.0,
+   "var:__obs_w2": 212.0
+  },
+  {
+   "var:__obs_p1": 105,
+   "var:__obs_p2": 105,
+   "var:__obs_q1": 103,
+   "var:__obs_q2": 103,
+   "var:__obs_r1": 104.0,
+   "var:__obs_r2": 206.0,
+   "var:__obs_w1": 105.0,
+   "var:__obs_w2": 208.0
+  },
+  {
+   "var:__obs_p1": 108.0,
+   "var:__obs_p2": 214.0,
+   "var:__obs_q1": 105,
+   "var:__obs_q2": 105,
+   "var:__obs_r1": 108,
+   "var:__obs_r2": 108,
+   "var:__obs_w1": 108.0,
+   "var:__obs_w2": 214.0
+  },
+  {
+   "var:__obs_p1": 108,
+   "var:__obs_p2": 108,
+   "var:__obs_q1": 110.0,
+   "var:__obs_q2": 218.0,
+   "var:__obs_r1": 107.0,
+   "var:__obs_r2": 212.0,
+   "var:__obs_w1": 108.0,
+   "var:__obs_w2": 214.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_p1": 108,
+  "__obs_p2": 108,
+  "__obs_q1": 110.0,
+  "__obs_q2": 218.0,
+  "__obs_r1": 107.0,
+  "__obs_r2": 212.0,
+  "__obs_w1": 108.0,
+  "__obs_w2": 214.0
+ }
+}

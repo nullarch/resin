@@ -1,0 +1,9 @@
+//@version=5
+indicator("Dissolved Oxygen")
+var doMap = map.new<string, float>()
+tempProxy = (high + low) / 2
+doLevel = 14.0 - (tempProxy - 95.0) * 0.3
+map.put(doMap, "current", doLevel)
+map.put(doMap, "temp", tempProxy)
+var float lastDO = 0.0
+lastDO := map.get(doMap, "current")

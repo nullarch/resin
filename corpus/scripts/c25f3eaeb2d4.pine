@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Risk Conv")
+atr = nz(ta.atr(3), 1.0)
+targetRisk = 100.0
+posSize = 1.0
+iters = 0
+currentRisk = posSize * atr
+while math.abs(currentRisk - targetRisk) > 1.0 and iters < 30
+    posSize := posSize + (targetRisk - currentRisk) / atr * 0.5
+    currentRisk := posSize * atr
+    iters := iters + 1
+plot(posSize, "PS")

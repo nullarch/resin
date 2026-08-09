@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Vol Osc")
+shortVol = ta.sma(volume, 3)
+longVol = ta.sma(volume, 5)
+volOsc = longVol > 0 ? (shortVol - longVol) / longVol * 100 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := volOsc
+plot(volOsc, "VO")

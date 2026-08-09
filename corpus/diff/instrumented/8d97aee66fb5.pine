@@ -1,0 +1,12 @@
+//@version=5
+indicator("If Expr Multi Body")
+var float result = 0.0
+result := if close > 100
+    float a = close
+    float b = a * 2.0
+    b
+else
+    0.0
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

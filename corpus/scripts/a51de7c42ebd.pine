@@ -1,0 +1,7 @@
+//@version=5
+indicator("Nelson-Aalen")
+var float cumHaz = 0.0
+float eventIndicator = close > open ? 1.0 : 0.0
+float atRisk = 10.0
+cumHaz := cumHaz + (eventIndicator / atRisk)
+plot(cumHaz, "CumHazard")

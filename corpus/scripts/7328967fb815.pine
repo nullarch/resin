@@ -1,0 +1,6 @@
+//@version=5
+indicator("Notch Filter")
+smoothed = ta.sma(close, 3)
+superSmoothed = ta.sma(close, 7)
+notch = close - (smoothed - superSmoothed)
+plot(notch)

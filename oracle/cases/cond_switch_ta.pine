@@ -1,0 +1,31 @@
+//@version=5
+indicator("cond_switch_ta")
+// 조건부 stateful call — switch case 본문의 per-call 상태 전진 (ROADMAP P2 항목, C65).
+// switch case 본문은 if 분기 본문(C64, cond_if_ta.pine)과 동일한 문장 레벨 조건부라는 주장을
+// pine2py 골든으로 재확인한다(pine2py도 switch를 if/elif 체인으로 트랜스파일: codegen.py
+// _gen_switch).
+// (한 줄 '=>' 본문은 pine2py _parse_block_or_expr가 표현식만 파싱해 대입문을 못 받는다 —
+// MEMORY.md Pitfalls C3. 들여쓰기 블록으로 작성할 것.)
+//
+// close>102는 sample10에서 T/F 인터리브(바2 T/바3 F/바4~9 T): case 매치가 스킵된 바(바3)에서
+// ta.ema 상태가 전진하지 않아야 한다(subject 없는 switch, default 없음 — 매치 없으면 호출 자체
+// 없음). **ta.rma가 아니라 ta.ema를 쓴다**: rma.py의 인크리멘탈 초기화는
+// `source.get(length-1-i)`로 실제 바 히스토리를 백필해(sma.py와 동일 메커니즘) 호출에 실제 갭이
+// 있으면 sma류와 같은 divergence가 rma에도 재현된다(C65에서 실제 확인 — DIVERGENCES #11이
+// "call-fed"로 뭉뚱그렸던 ema/rma 중 rma는 사실 갭 없는 케이스에서만 우연히 동형이었을 뿐).
+// ema.py는 init_sum/init_count로 source.get(0)만 누적하는 진짜 call-fed라 갭 검증에 안전하다.
+var float __obs_r = na
+__obs_r := na
+switch
+    close > 102 =>
+        __obs_r := ta.ema(close, 2)
+
+// default(bare '=>') case 본문도 cond-body: ema는 close>104인 바(5~9)에서만, rma는 default
+// (바0~4)에서만 호출 — cond_if_ta.pine의 if/else 채널과 동일한 조건, switch로 재현. 둘 다 연속
+// 호출(갭 없음)이라 rma의 히스토리 백필이 call-accumulation과 우연히 동치가 되는 케이스.
+var float __obs_m = na
+switch
+    close > 104 =>
+        __obs_m := ta.ema(close, 2)
+    =>
+        __obs_m := ta.rma(close, 2)

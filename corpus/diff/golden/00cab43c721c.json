@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:dir_": "long",
+   "var:__obs_plot0": "long"
+  },
+  {
+   "var:dir_": "long",
+   "var:__obs_plot0": "long"
+  },
+  {
+   "var:dir_": "long",
+   "var:__obs_plot0": "long"
+  },
+  {
+   "var:dir_": "long",
+   "var:__obs_plot0": "long"
+  },
+  {
+   "var:dir_": "long",
+   "var:__obs_plot0": "long"
+  },
+  {
+   "var:dir_": "long",
+   "var:__obs_plot0": "long"
+  },
+  {
+   "var:dir_": "long",
+   "var:__obs_plot0": "long"
+  },
+  {
+   "var:dir_": "long",
+   "var:__obs_plot0": "long"
+  },
+  {
+   "var:dir_": "long",
+   "var:__obs_plot0": "long"
+  },
+  {
+   "var:dir_": "long",
+   "var:__obs_plot0": "long"
+  }
+ ],
+ "finalVarState": {
+  "dir_": "long",
+  "__obs_plot0": "long"
+ }
+}

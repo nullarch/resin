@@ -1,0 +1,7 @@
+//@version=5
+indicator("test")
+m = matrix.new<float>(2, 2, 0.0)
+matrix.set(m, 0, 0, close)
+matrix.set(m, 1, 1, open)
+val = matrix.get(m, 0, 0) + matrix.get(m, 1, 1)
+plot(val)

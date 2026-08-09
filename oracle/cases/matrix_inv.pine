@@ -1,0 +1,103 @@
+//@version=5
+indicator("matrix_inv")
+
+// C100: matrix.* 열한 번째 슬라이스 — inv(Gauss-Jordan, 행렬 대수 11종의 다섯 번째 항목,
+// 42/49 -> 43/49). pine2py inv()는 n=len(m)(rows 수)만으로 항등행렬 크기를 정해 정사각 전제를
+// 검증하지 않는다 — python 직접 실행 + node scratch(scratch/probe_inv.mjs)로 확인:
+// (a) singular(피벗 열 전체 0)는 `raise ValueError`로 명시적 크래시 — det의 "잘 정의된 0.0
+//     반환"과 다른 지점(오라클 트리거 불가, runtime.test.ts hand-verified로 대체).
+// (b) n=1은 det류 undefined-leak이 없다 — Gauss-Jordan 루프를 그대로 통과해 항상 산술식 결과
+//     (나눗셈)를 반환하므로 값을 그대로 return하는 지점 자체가 없음.
+// (c) NaN 원소는 pivot 탐색의 `!=0`이 NaN에서 항상 true라 언어 무관하게 유효 피벗으로 오인,
+//     위치와 무관하게 전체 결과가 na로 수렴(python 실측: 첫 피벗 위치/비-첫 위치 둘 다 확인).
+// (d) 비정사각은 rows>columns(크래시)/rows<columns(크래시 없이 수학적으로 무의미한 값) 둘 다
+//     pine2js는 isSquare 가드로 일괄 na(null) 통일(DIVERGENCES.md #37) — pine2py 골든과 항상
+//     달라 오라클 트리거 대상에서 제외(rows>columns/rows<columns/m===null/m=[[]] 전부
+//     runtime.test.ts hand-verified로 대체).
+
+// A: n=0(0x0 빈 행렬) — inv([])=[](크래시 없음, 잘 정의된 동작), rows=0.
+maA = matrix.new<float>()
+iaA = matrix.inv(maA)
+var float __obs_a_rows = na
+__obs_a_rows := matrix.rows(iaA)
+
+// B: n=1 bar-derived(all-valid) — inv=[[1/close]].
+mbB = matrix.new<float>(1, 1, 0.0)
+matrix.set(mbB, 0, 0, close + 0.0)
+ibB = matrix.inv(mbB)
+var float __obs_b = na
+__obs_b := matrix.get(ibB, 0, 0)
+
+// C: n=1 na(close[15] — sample10 10바 범위 밖) — pivot 탐색이 na를 유효 피벗으로 오인해도
+// 크래시 없이 inv=[[na]](나눗셈 na/na=na).
+mcC = matrix.new<float>(1, 1, 0.0)
+matrix.set(mcC, 0, 0, close[15])
+icC = matrix.inv(mcC)
+var float __obs_c = na
+__obs_c := matrix.get(icC, 0, 0)
+
+// D: n=2 bar-derived(all-valid, det=open*close-high*low=2 전 바 확인) — Gauss-Jordan 표준 경로,
+// 4칸 전부 관측.
+mdD = matrix.new<float>(2, 2, 0.0)
+matrix.set(mdD, 0, 0, open + 0.0)
+matrix.set(mdD, 0, 1, high + 0.0)
+matrix.set(mdD, 1, 0, low + 0.0)
+matrix.set(mdD, 1, 1, close + 0.0)
+idD = matrix.inv(mdD)
+var float __obs_d00 = na
+__obs_d00 := matrix.get(idD, 0, 0)
+var float __obs_d01 = na
+__obs_d01 := matrix.get(idD, 0, 1)
+var float __obs_d10 = na
+__obs_d10 := matrix.get(idD, 1, 0)
+var float __obs_d11 = na
+__obs_d11 := matrix.get(idD, 1, 1)
+
+// E: n=2 na-embedded(close[15]) — pivot 탐색이 na를 오인해 크래시 없이 전체 na로 수렴(4칸 전부).
+meE = matrix.new<float>(2, 2, 0.0)
+matrix.set(meE, 0, 0, open + 0.0)
+matrix.set(meE, 0, 1, close[15])
+matrix.set(meE, 1, 0, low + 0.0)
+matrix.set(meE, 1, 1, close + 0.0)
+ieE = matrix.inv(meE)
+var float __obs_e00 = na
+__obs_e00 := matrix.get(ieE, 0, 0)
+var float __obs_e01 = na
+__obs_e01 := matrix.get(ieE, 0, 1)
+var float __obs_e10 = na
+__obs_e10 := matrix.get(ieE, 1, 0)
+var float __obs_e11 = na
+__obs_e11 := matrix.get(ieE, 1, 1)
+
+// F: n=3 bar-derived 대각(open/high/low) + 리터럴 비대각(det(C98) group F와 동일 구성 — node
+// scratch로 det!=0(=invertible)을 전 10바 사전 확인, 1009003~1235425 범위) — Gauss-Jordan
+// 표준 경로, 9칸 전부 관측.
+mfF = matrix.new<float>(3, 3, 0.0)
+matrix.set(mfF, 0, 0, open + 0.0)
+matrix.set(mfF, 0, 1, 1.0)
+matrix.set(mfF, 0, 2, 2.0)
+matrix.set(mfF, 1, 0, 3.0)
+matrix.set(mfF, 1, 1, high + 0.0)
+matrix.set(mfF, 1, 2, 1.0)
+matrix.set(mfF, 2, 0, 2.0)
+matrix.set(mfF, 2, 1, 1.0)
+matrix.set(mfF, 2, 2, low + 0.0)
+ifF = matrix.inv(mfF)
+var float __obs_f00 = na
+__obs_f00 := matrix.get(ifF, 0, 0)
+var float __obs_f01 = na
+__obs_f01 := matrix.get(ifF, 0, 1)
+var float __obs_f02 = na
+__obs_f02 := matrix.get(ifF, 0, 2)
+var float __obs_f10 = na
+__obs_f10 := matrix.get(ifF, 1, 0)
+var float __obs_f11 = na
+__obs_f11 := matrix.get(ifF, 1, 1)
+var float __obs_f12 = na
+__obs_f12 := matrix.get(ifF, 1, 2)
+var float __obs_f20 = na
+__obs_f20 := matrix.get(ifF, 2, 0)
+var float __obs_f21 = na
+__obs_f21 := matrix.get(ifF, 2, 1)
+var float __obs_f22 = na
+__obs_f22 := matrix.get(ifF, 2, 2)

@@ -1,0 +1,5 @@
+//@version=5
+indicator("Gen Enum")
+enum Dir
+    UP = 1
+    DOWN = -1

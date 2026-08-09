@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Vol State")
+var float cumVol = 0.0
+var int highVolBars = 0
+var float maxVol = 0.0
+cumVol := cumVol + volume
+maxVol := math.max(maxVol, volume)
+avgVol = ta.sma(volume, 5)
+if avgVol > 0 and volume > avgVol * 1.5
+    highVolBars := highVolBars + 1
+var float __obs_plot0 = na
+__obs_plot0 := highVolBars
+plot(highVolBars, "HVB")

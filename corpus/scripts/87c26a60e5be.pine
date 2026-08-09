@@ -1,0 +1,10 @@
+//@version=5
+indicator("Fib Levels")
+float hh = ta.highest(high, 5)
+float ll = ta.lowest(low, 5)
+float rng = nz(hh, high) - nz(ll, low)
+float fib382 = nz(ll, low) + rng * 0.382
+float fib500 = nz(ll, low) + rng * 0.500
+float fib618 = nz(ll, low) + rng * 0.618
+float nearestFib = math.abs(close - fib382) < math.abs(close - fib618) ? fib382 : fib618
+plot(nearestFib, "NearFib")

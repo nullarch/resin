@@ -1,0 +1,6 @@
+//@version=5
+indicator("COG")
+var float lastC = 0
+c = ta.cog(close, 5)
+if not na(c)
+    lastC := c

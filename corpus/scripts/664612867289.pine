@@ -1,0 +1,12 @@
+//@version=5
+indicator("Confirmation Bias")
+var int bullEvidence = 0
+var int bearEvidence = 0
+isBull = close > ta.sma(close, 5)
+if isBull
+    bullEvidence := bullEvidence + 1
+else
+    bearEvidence := bearEvidence + 1
+totalEvidence = bullEvidence + bearEvidence
+bias = totalEvidence > 0 ? (bullEvidence - bearEvidence) / totalEvidence : 0.0
+plot(bias)

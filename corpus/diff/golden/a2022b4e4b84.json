@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:check": true,
+   "var:__obs_plot0": 103
+  },
+  {
+   "var:check": true,
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:check": true,
+   "var:__obs_plot0": 102
+  },
+  {
+   "var:check": true,
+   "var:__obs_plot0": 105
+  },
+  {
+   "var:check": true,
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:check": true,
+   "var:__obs_plot0": 106
+  },
+  {
+   "var:check": true,
+   "var:__obs_plot0": 108
+  },
+  {
+   "var:check": true,
+   "var:__obs_plot0": 110
+  },
+  {
+   "var:check": true,
+   "var:__obs_plot0": 109
+  },
+  {
+   "var:check": true,
+   "var:__obs_plot0": 111
+  }
+ ],
+ "finalVarState": {
+  "check": true,
+  "__obs_plot0": 111
+ }
+}

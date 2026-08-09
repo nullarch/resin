@@ -1,0 +1,12 @@
+//@version=5
+indicator("Nested For Break")
+float total = 0.0
+for i = 1 to 3
+    for j = 1 to 10
+        if j > 2
+            break
+        total := total + i * j
+// i=1: j=1,2 → 1+2=3; i=2: j=1,2 → 2+4=6; i=3: j=1,2 → 3+6=9 → total=18
+var float result = 0.0
+result := total
+plot(result)

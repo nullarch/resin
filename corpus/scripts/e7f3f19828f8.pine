@@ -1,0 +1,10 @@
+//@version=5
+indicator("Boolean Filter")
+var float result = 0.0
+var int count = 0
+bool vol_ok = volume > 1000
+bool trend_ok = close > open
+bool range_ok = high - low < 10
+if vol_ok and trend_ok and range_ok
+    count := count + 1
+result := count

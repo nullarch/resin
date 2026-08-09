@@ -1,0 +1,59 @@
+//@version=5
+indicator("array_search")
+
+// A: literal-value array — includes/indexof found vs missing.
+arrA = array.new_float(0)
+array.push(arrA, 10.0)
+array.push(arrA, 20.0)
+array.push(arrA, 30.0)
+var bool __obs_a_inc_found = na
+__obs_a_inc_found := array.includes(arrA, 20.0)
+var bool __obs_a_inc_missing = na
+__obs_a_inc_missing := array.includes(arrA, 50.0)
+var int __obs_a_idx_found = na
+__obs_a_idx_found := array.indexof(arrA, 20.0)
+var int __obs_a_idx_missing = na
+__obs_a_idx_missing := array.indexof(arrA, 50.0)
+
+// B: duplicate value — lastindexof must return the *last* match, indexof the first.
+arrB = array.new_float(0)
+array.push(arrB, 10.0)
+array.push(arrB, 20.0)
+array.push(arrB, 10.0)
+array.push(arrB, 30.0)
+var int __obs_b_first = na
+__obs_b_first := array.indexof(arrB, 10.0)
+var int __obs_b_last = na
+__obs_b_last := array.lastindexof(arrB, 10.0)
+var int __obs_b_last_missing = na
+__obs_b_last_missing := array.lastindexof(arrB, 99.0)
+
+// C: bar-series values (varies per bar, not constant like A/B) — confirms search works against
+// live Series scalars, not just literals.
+arrC = array.new_float(0)
+array.push(arrC, open)
+array.push(arrC, high)
+array.push(arrC, low)
+var bool __obs_c_inc_found = na
+__obs_c_inc_found := array.includes(arrC, high)
+var bool __obs_c_inc_missing = na
+__obs_c_inc_missing := array.includes(arrC, close + 1000.0)
+var int __obs_c_idx_found = na
+__obs_c_idx_found := array.indexof(arrC, low)
+
+// D: na-embedded array (close[15] is out-of-range on sample10's 10 bars → a *fresh* na each bar,
+// distinct object from the na literal below) mixed with valid values. Confirms (1) a na *element*
+// doesn't shift index numbering for a *found* search value, and (2) searching for a na literal
+// against a na-containing array returns "not found" on both sides — this is the *normal* case,
+// not the identity-reuse edge case (DIVERGENCES.md #22 covers the divergent case: searching with a
+// value read back via array.get() from the same na slot, which is hand-verified only, not here).
+arrD = array.new_float(0)
+array.push(arrD, open)
+array.push(arrD, close[15])
+array.push(arrD, high)
+var bool __obs_d_inc_na = na
+__obs_d_inc_na := array.includes(arrD, na)
+var int __obs_d_idx_na = na
+__obs_d_idx_na := array.indexof(arrD, na)
+var int __obs_d_idx_high = na
+__obs_d_idx_high := array.indexof(arrD, high)

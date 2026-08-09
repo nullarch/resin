@@ -1,0 +1,11 @@
+//@version=5
+indicator("UDT Method TA")
+type Indicator
+    float value = 0.0
+    float signal = 0.0
+method isPositive(Indicator ind) =>
+    ind.value > ind.signal
+sma_ = ta.sma(close, 3)
+ema_ = ta.ema(close, 3)
+ind = Indicator.new(sma_, ema_)
+is_pos = isPositive(ind)

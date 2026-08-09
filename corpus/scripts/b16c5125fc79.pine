@@ -1,0 +1,6 @@
+//@version=5
+indicator("RSI Verify")
+var float lastRsi = 0
+r = ta.rsi(close, 3)
+if not na(r)
+    lastRsi := r

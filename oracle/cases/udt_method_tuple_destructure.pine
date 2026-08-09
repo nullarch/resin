@@ -1,0 +1,29 @@
+//@version=5
+indicator("udt_method_tuple_destructure")
+// [a, b] = w.m() -- UDT method(점 호출) 콜 결과의 top-level 튜플 디스트럭처링(C463, wild
+// "튜플 디스트럭처링의 값은 튜플을 반환하는 UDF 호출이어야 함" 클러스터 재조사로 발견 -- 이전까지는
+// bare Identifier UDF 콜(f())/ta.* 다중반환/request.security만 지원했고 method DotAccess 콜은
+// analyzeTupleDestructure의 CallExpr+DotAccess 분기가 ta/request 네임스페이스만 인식해 놓치고
+// 있었다). method 본문 마지막 문장이 튜플 리터럴이면(pine2py도 method를 flat top-level 함수로
+// codegen하는 동일 desugar라 이 케이스는 바이트 단위 대조가 유효, udt_method.pine 주석 참조) 그
+// arity를 UDF와 동일하게 tupleArity로 확정해야 한다.
+
+type Box
+    float lo = 0.0
+    float hi = 0.0
+
+method scaledBounds(Box b, float scale) =>
+    float mid = (b.lo + b.hi) / 2.0
+    float half = (b.hi - b.lo) / 2.0 * scale
+    [mid - half, mid + half]
+
+var Box bx = Box.new(0.0, 0.0)
+bx.lo := low
+bx.hi := high
+
+[lower, upper] = bx.scaledBounds(1.5)
+
+var float __obs_lower = na
+__obs_lower := lower
+var float __obs_upper = na
+__obs_upper := upper

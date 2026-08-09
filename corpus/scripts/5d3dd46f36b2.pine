@@ -1,0 +1,5 @@
+//@version=5
+indicator("block comment")
+var float result = 0.0
+x = close /* this is a comment */ + 1.0
+result := x

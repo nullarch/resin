@@ -1,0 +1,7 @@
+//@version=5
+indicator("ta_bbw")
+// ta.bbw 오라클 검증(ROADMAP P2 "ta.* 44종"). length=3, mult=2로 sample10.json 10바 안에서
+// 전부 NaN인 워밍업(바 0~1)과 유효 구간(바 2~9)을 커버.
+bbwVal = ta.bbw(close, 3, 2)
+var float __obs_bbw = na
+__obs_bbw := bbwVal

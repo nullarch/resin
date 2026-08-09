@@ -1,0 +1,42 @@
+//@version=5
+indicator("udt_matrix_field")
+// matrix<T> UDT 필드(C128, array<T>/map<K,V> C126과 동일 메커니즘 -- UDT_GENERIC_FIELD_BASES 합류)
+// 오라클 검증. pine2py도 _GENERIC_TYPE_MAP에서 matrix를 array와 함께 "list"로 매핑해(codegen.py
+// 소스 대조 확인) 필드 타입 화이트리스트/기본값 생성 경로가 array와 완전히 동일함 -- 암시 기본값은
+// field(default_factory=list)로 array와 동치, pine2js 쪽도 PineMatrix가 그냥 unknown[][]라 빈
+// 배열 []이 그대로 유효한 0행 행렬(matrix.rows/columns=0). 컨테이너에 저장하는 bar series는
+// map_basic.pine/udt_generic_field.pine 관례대로 `+ 0.0` 강제 스칼라 변환(_scalar() 가드 부재
+// latent 버그 회피, DIVERGENCES.md #29/#53 계열).
+
+type Grid
+    matrix<float> cells
+
+var Grid g = Grid.new()
+
+// bar_index 대응 수동 카운터(pine2js가 아직 bar_index 빌트인을 지원하지 않음, ROADMAP barstate 항목).
+var int barN = 0
+barN := barN + 1
+
+// 채널 A: 암시 기본값(빈 0행 행렬) -- 처음 두 바(barN<=2)엔 아직 재대입/기록이 없어 default_factory
+// 산출물 그대로 관측(rows=0, columns=0)
+if barN == 3
+    g.cells := matrix.new<float>(2, 2, 0.0)
+
+if barN > 3
+    matrix.set(g.cells, 0, 0, close + 0.0)
+    matrix.set(g.cells, 1, 1, close + 0.0)
+
+var float __obs_rows = na
+__obs_rows := matrix.rows(g.cells)
+var float __obs_cols = na
+__obs_cols := matrix.columns(g.cells)
+var float __obs_sum = na
+__obs_sum := matrix.sum(g.cells)
+
+// matrix.get on the still-empty (0-row) matrix crashes pine2py with IndexError (m[0][0], no
+// range guard in wavealgo/builtins/matrix.py `get` -- same "알려진 버그는 따르지 않는다" class as
+// C91's positive-guard fix). Guard the observation to only run once cells is a real 2x2 matrix
+// (barN>=3) so both sides can produce a golden.
+var float __obs_val00 = na
+if barN >= 3
+    __obs_val00 := matrix.get(g.cells, 0, 0)

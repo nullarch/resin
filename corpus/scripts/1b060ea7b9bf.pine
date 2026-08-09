@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Nest UDF")
+windowAvg(float[] arr) =>
+    array.size(arr) > 0 ? array.avg(arr) : 0.0
+
+deviation(float val, float avg) =>
+    avg > 0 ? (val - avg) / avg * 100 : 0.0
+
+var float[] window = array.new_float(0)
+array.push(window, close)
+if array.size(window) > 5
+    array.shift(window)
+avg = windowAvg(window)
+dev = deviation(close, avg)
+plot(dev, "Dev")

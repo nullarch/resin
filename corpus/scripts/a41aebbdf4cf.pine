@@ -1,0 +1,7 @@
+//@version=5
+indicator("Covariance")
+arr1 = array.from(1.0, 2.0, 3.0, 4.0, 5.0)
+arr2 = array.from(2.0, 4.0, 6.0, 8.0, 10.0)
+cov = array.covariance(arr1, arr2)
+std1 = array.stdev(arr1)
+std2 = array.stdev(arr2)

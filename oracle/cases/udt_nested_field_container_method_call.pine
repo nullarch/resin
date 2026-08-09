@@ -1,0 +1,34 @@
+//@version=5
+indicator("udt_nested_field_container_method_call")
+// UDT 필드가 다시 UDT이고 그 UDT의 필드가 array<T>/map<K,V>일 때 method-call 스타일 sugar(C222/
+// C323)가 2단 이상 중첩 DotAccess(`obj.field.field2.method(...)`)를 수신자로도 성립하는지 검증
+// (C495, wild 실측 `this.lines.startline.set_xy1(...)`류 — resolveUdtFieldTypeHint를 obj가
+// DotAccess인 경우까지 재귀 확장한 결과). udt_field_container_method_call.pine이 이미 검증한
+// 단일 레벨 폼과 값이 동일한 메커니즘으로 성립해야 한다(pine2py _try_method_style_call은 raw
+// dotted name을 마지막 '.' 기준으로만 분리해 obj 부분을 그대로 Python 코드로 방출하므로 중첩
+// 깊이와 무관하게 이미 지원 — 단일 레벨 오라클 케이스와 동일한 근거).
+
+type Inner
+    array<float> prices
+    map<string, float> tags
+
+type Outer
+    Inner inner
+
+var Outer o = Outer.new(Inner.new(array.new_float(0), map.new<string, float>()))
+
+var int barN = 0
+barN := barN + 1
+
+if barN > 2
+    o.inner.prices.push(close + 0.0)
+    o.inner.tags.put("last", close + 0.0)
+
+var float __obs_size = na
+__obs_size := o.inner.prices.size()
+var float __obs_last = na
+__obs_last := o.inner.prices.get(o.inner.prices.size() - 1)
+var float __obs_tag = na
+__obs_tag := o.inner.tags.get("last")
+var bool __obs_contains = na
+__obs_contains := o.inner.tags.contains("last")

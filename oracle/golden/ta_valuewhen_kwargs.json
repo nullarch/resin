@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_kw": "NaN",
+   "var:__obs_mixed": "NaN",
+   "var:__obs_pos": "NaN"
+  },
+  {
+   "var:__obs_kw": "NaN",
+   "var:__obs_mixed": "NaN",
+   "var:__obs_pos": "NaN"
+  },
+  {
+   "var:__obs_kw": "NaN",
+   "var:__obs_mixed": "NaN",
+   "var:__obs_pos": "NaN"
+  },
+  {
+   "var:__obs_kw": "NaN",
+   "var:__obs_mixed": "NaN",
+   "var:__obs_pos": "NaN"
+  },
+  {
+   "var:__obs_kw": "NaN",
+   "var:__obs_mixed": "NaN",
+   "var:__obs_pos": "NaN"
+  },
+  {
+   "var:__obs_kw": "NaN",
+   "var:__obs_mixed": "NaN",
+   "var:__obs_pos": "NaN"
+  },
+  {
+   "var:__obs_kw": 106.0,
+   "var:__obs_mixed": 106.0,
+   "var:__obs_pos": 106.0
+  },
+  {
+   "var:__obs_kw": 106.0,
+   "var:__obs_mixed": 106.0,
+   "var:__obs_pos": 106.0
+  },
+  {
+   "var:__obs_kw": 107.0,
+   "var:__obs_mixed": 107.0,
+   "var:__obs_pos": 107.0
+  },
+  {
+   "var:__obs_kw": 108.0,
+   "var:__obs_mixed": 108.0,
+   "var:__obs_pos": 108.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_kw": 108.0,
+  "__obs_mixed": 108.0,
+  "__obs_pos": 108.0
+ }
+}

@@ -1,0 +1,9 @@
+//@version=5
+indicator("Multi Tuple Cond")
+[macdLine, signal, hist] = ta.macd(close, 3, 5, 3)
+[bbMid, bbUp, bbLo] = ta.bb(close, 5, 2.0)
+bullMacd = macdLine > signal
+aboveBB = close > bbUp
+belowBB = close < bbLo
+score = (bullMacd ? 1.0 : 0.0) + (aboveBB ? 1.0 : belowBB ? -1.0 : 0.0)
+plot(score)

@@ -1,0 +1,11 @@
+//@version=5
+indicator("Shor Period")
+float chg = close - open
+float prevChg = not na(close[1]) ? close[1] - open[1] : chg
+bool crossZero = (chg > 0 and prevChg <= 0) or (chg < 0 and prevChg >= 0)
+var int crossCount = 0
+var int totalBars = 0
+totalBars := totalBars + 1
+if crossZero
+    crossCount := crossCount + 1
+float period = crossCount > 0 ? totalBars * 1.0 / crossCount : totalBars * 1.0

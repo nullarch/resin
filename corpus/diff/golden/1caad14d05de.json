@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:tj": {},
+   "var:tradeNum": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:tj": {},
+   "var:tradeNum": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:tj": {},
+   "var:tradeNum": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:tj": {},
+   "var:tradeNum": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:tj": {},
+   "var:tradeNum": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:tj": {},
+   "var:tradeNum": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:tj": {},
+   "var:tradeNum": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:tj": {},
+   "var:tradeNum": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:tj": {},
+   "var:tradeNum": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:tj": {},
+   "var:tradeNum": 0,
+   "var:__obs_plot0": 0
+  }
+ ],
+ "finalVarState": {
+  "tj": {},
+  "tradeNum": 0,
+  "__obs_plot0": 0
+ }
+}

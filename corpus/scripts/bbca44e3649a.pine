@@ -1,0 +1,8 @@
+//@version=5
+indicator("switch no disc")
+var float result = 0.0
+c = close
+result := switch
+    c > 110 => 3.0
+    c > 105 => 2.0
+    => 1.0

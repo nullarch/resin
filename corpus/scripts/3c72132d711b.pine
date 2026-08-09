@@ -1,0 +1,5 @@
+//@version=5
+indicator("CrossChain")
+var int crossCount = 0
+if ta.crossover(ta.sma(close, 3), ta.sma(close, 5))
+    crossCount := crossCount + 1

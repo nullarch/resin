@@ -1,0 +1,27 @@
+//@version=5
+indicator("math_trig")
+// sin/cos/tan/atan/todegrees/toradians: close-105.0 ranges -4..3 radians (no domain restriction for
+// any of these six), shared across bar 0..9.
+var float __obs_sin = na
+__obs_sin := math.sin(close - 105.0)
+var float __obs_cos = na
+__obs_cos := math.cos(close - 105.0)
+var float __obs_tan = na
+__obs_tan := math.tan(close - 105.0)
+var float __obs_atan = na
+__obs_atan := math.atan(close - 105.0)
+var float __obs_todegrees = na
+__obs_todegrees := math.todegrees(close - 105.0)
+var float __obs_toradians = na
+__obs_toradians := math.toradians(close - 105.0)
+// asin/acos: (close-104.5)/4.0 ranges -0.875..0.875, safely inside the [-1,1] domain (out-of-domain
+// inputs are not oracle-testable: Python math.asin/acos raise ValueError instead of returning NaN,
+// unlike JS Math.asin/acos — see LIMITATIONS.md).
+var float __obs_asin = na
+__obs_asin := math.asin((close - 104.5) / 4.0)
+var float __obs_acos = na
+__obs_acos := math.acos((close - 104.5) / 4.0)
+// atan2(y, x): y=close-105.0 (-4..3), x=open-102.0 (-2..5) — covers all four quadrants plus the
+// x===0 on-axis case (bar index 2: open=102).
+var float __obs_atan2 = na
+__obs_atan2 := math.atan2(close - 105.0, open - 102.0)

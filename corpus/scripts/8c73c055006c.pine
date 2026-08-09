@@ -1,0 +1,8 @@
+//@version=5
+indicator("String Dashboard")
+var float result = 0.0
+string trend = close > open ? "UP" : "DOWN"
+string vol = volume > 1000 ? "HIGH" : "LOW"
+int trend_len = str.length(trend)
+int vol_len = str.length(vol)
+result := trend_len + vol_len

@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_cci_kw": "NaN",
+   "var:__obs_cci_mixed": "NaN",
+   "var:__obs_cci_pos": "NaN"
+  },
+  {
+   "var:__obs_cci_kw": "NaN",
+   "var:__obs_cci_mixed": "NaN",
+   "var:__obs_cci_pos": "NaN"
+  },
+  {
+   "var:__obs_cci_kw": 100.0,
+   "var:__obs_cci_mixed": 100.0,
+   "var:__obs_cci_pos": 100.0
+  },
+  {
+   "var:__obs_cci_kw": -50.0,
+   "var:__obs_cci_mixed": -50.0,
+   "var:__obs_cci_pos": -50.0
+  },
+  {
+   "var:__obs_cci_kw": 100.0,
+   "var:__obs_cci_mixed": 100.0,
+   "var:__obs_cci_pos": 100.0
+  },
+  {
+   "var:__obs_cci_kw": 80.0,
+   "var:__obs_cci_mixed": 80.0,
+   "var:__obs_cci_pos": 80.0
+  },
+  {
+   "var:__obs_cci_kw": 100.0,
+   "var:__obs_cci_mixed": 100.0,
+   "var:__obs_cci_pos": 100.0
+  },
+  {
+   "var:__obs_cci_kw": -50.0,
+   "var:__obs_cci_mixed": -50.0,
+   "var:__obs_cci_pos": -50.0
+  },
+  {
+   "var:__obs_cci_kw": 100.0,
+   "var:__obs_cci_mixed": 100.0,
+   "var:__obs_cci_pos": 100.0
+  },
+  {
+   "var:__obs_cci_kw": 80.0,
+   "var:__obs_cci_mixed": 80.0,
+   "var:__obs_cci_pos": 80.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_cci_kw": 80.0,
+  "__obs_cci_mixed": 80.0,
+  "__obs_cci_pos": 80.0
+ }
+}

@@ -1,0 +1,18 @@
+//@version=5
+indicator("Comprehensive C99")
+type Level
+    float price = 0.0
+    string label_ = ""
+var float result = 0.0
+method desc(Level l) =>
+    l.label_ + ": " + str.tostring(l.price)
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+trend = sma3 > ema5 ? "bull" : "bear"
+levels = array.new_float(0)
+for i = 0 to 2
+    levels.push(close[i])
+result := switch trend
+    "bull" => levels.sum()
+    "bear" => -levels.sum()
+    => 0.0

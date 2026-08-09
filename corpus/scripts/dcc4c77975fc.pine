@@ -1,0 +1,7 @@
+//@version=5
+indicator("Str Coerce")
+var string msg = "Price: " + str.tostring(42.5)
+var int len = str.length(msg)
+var float result = 0.0
+result := len
+plot(result)

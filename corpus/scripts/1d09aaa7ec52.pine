@@ -1,0 +1,9 @@
+//@version=5
+indicator("While ML")
+count = 0
+x = 100.0
+while x > 50 and
+    count < 10
+    x := x * 0.9
+    count += 1
+plot(count)

@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Trade Log")
+var log = map.new<string, float>()
+var int tradeNum = 0
+sma3 = ta.sma(close, 3)
+if ta.crossover(close, sma3)
+    tradeNum := tradeNum + 1
+    map.put(log, "last_entry", close)
+    map.put(log, "trade_num", float(tradeNum))
+lastEntry = map.get(log, "last_entry", 0.0)
+pnl = lastEntry > 0 ? close - lastEntry : 0.0
+plot(pnl, "PnL")

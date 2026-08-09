@@ -1,0 +1,6 @@
+//@version=5
+indicator("Fisher Info Proxy")
+var float fisherInfo = 0.0
+diff = close - open
+variance = diff * diff
+fisherInfo := variance > 0.001 ? 1.0 / variance : 0.0

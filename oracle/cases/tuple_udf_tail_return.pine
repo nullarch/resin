@@ -1,0 +1,27 @@
+//@version=5
+indicator("tuple_udf_tail_return")
+// C611: UDF 암시 반환 꼬리의 튜플 UDF 콜 전파 — 두 폼을 함께 대조한다.
+// (1) wrapSec: 마지막 문장이 request.security(sym, tf, tupleUdf(...)) bare UDF 콜인 래퍼.
+//     pine2py request_security._resolve_expression은 UDF 콜(비-Series 값)을 그대로 통과시키고
+//     (C432 오라클 근거, request_security_bare_udf_call.pine 참조), UDF 암시 반환은 마지막
+//     ExprStmt의 값이므로 래퍼가 그 튜플을 무가공 재반환한다 — pine2js는 외부 security 노드를
+//     완전히 discard하고 내부 콜을 직접 return(HTF 슬롯 0)하는 literal port라 골든 대조 가능.
+// (2) chain2: 마지막 문장이 이미 확정된 튜플 반환 UDF의 직접 콜인 체인(zigzag→zigzagcore 관용구).
+inner(x, y) =>
+    a = x + 1
+    b = y + 2
+    [a, b]
+wrapSec() => request.security(syminfo.tickerid, "D", inner(high, low))
+[sh, sl] = wrapSec()
+chain1(x) =>
+    [x + 1.0, x * 2.0]
+chain2(y) => chain1(y)
+[c1, c2] = chain2(close)
+var float __obs_sh = na
+__obs_sh := sh
+var float __obs_sl = na
+__obs_sl := sl
+var float __obs_c1 = na
+__obs_c1 := c1
+var float __obs_c2 = na
+__obs_c2 := c2

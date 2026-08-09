@@ -1,0 +1,20 @@
+//@version=5
+indicator("bar_index_dynamic_offset")
+// C305(ROADMAP P4 next_hint 3위 "동적 히스토리 오프셋") -- bar_index[동적 오프셋] 오라클 검증.
+// 이전엔 analyzer가 dynamic offset을 bar series/파생 가격에만 허용했으나(C228), codegen의 bar_index
+// 히스토리 공식($.idx - offset)이 offsetCode를 리터럴 문자열이든 런타임 표현식이든 동일하게 받아
+// 순수 analyzer 정책 게이트였음이 드러나 확장(MEMORY.md C228 패턴 재확인). pine2py bar_index도
+// push_bar()가 매 바 담는 진짜 Series라 dynamic offset이 close[dynamic]과 동일 시맨틱(범위밖/
+// 음수->na) -- hand-verified 불필요, 오라클 대조로 충분.
+var float __obs_mod = na
+var float __obs_var = na
+var float __obs_neg = na
+
+i_mod = bar_index % 4
+__obs_mod := bar_index[i_mod]
+
+k = 5
+__obs_var := bar_index[k]
+
+j_neg = -1 - (bar_index % 2)
+__obs_neg := bar_index[j_neg]

@@ -1,0 +1,8 @@
+//@version=5
+indicator("Key Rotation")
+var int bar_num = 0
+var float current_key = 1.0
+bar_num := bar_num + 1
+if bar_num % 3 == 0
+    current_key := current_key + 1.0
+encrypted = close * current_key

@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Stack")
+var float[] stack = array.new_float(0)
+array.push(stack, close)
+if array.size(stack) > 5
+    top = array.pop(stack)
+topVal = array.size(stack) > 0 ? array.last(stack) : close
+var float __obs_plot0 = na
+__obs_plot0 := topVal
+plot(topVal, "Top")
+var float __obs_plot1 = na
+__obs_plot1 := array.size(stack)
+plot(array.size(stack), "Size")

@@ -1,0 +1,16 @@
+//@version=5
+indicator("UDT Mutation")
+type Counter
+    int count = 0
+    float sum = 0.0
+
+var Counter c = Counter.new()
+c.count := c.count + 1
+c.sum := c.sum + close
+var int final_count = 0
+final_count := c.count
+var float final_sum = 0.0
+final_sum := c.sum
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

@@ -1,0 +1,10 @@
+//@version=5
+indicator("ATR Trail")
+atrLen = 5
+atrMult = 2.0
+atrVal = ta.atr(atrLen)
+var float trailStop = 0
+if not na(atrVal)
+    newStop = close - atrVal * atrMult
+    if newStop > trailStop
+        trailStop := newStop

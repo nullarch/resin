@@ -1,0 +1,12 @@
+//@version=5
+indicator("UDT Container", overlay=true)
+type Container
+    float price = 0.0
+    float range_ = 0.0
+    string text_ = ""
+var Container c = Container.new()
+c.price := close
+c.range_ := ta.highest(high, 5) - ta.lowest(low, 5)
+c.text_ := str.format("P:{0} R:{1}", str.tostring(c.price, "#.##"), str.tostring(c.range_, "#.##"))
+plot(c.price)
+plot(c.range_)

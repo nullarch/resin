@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:state": 0,
+   "var:transitions": 0,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:state": 0,
+   "var:transitions": 0,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:state": -1,
+   "var:transitions": 1,
+   "var:__obs_plot0": -1,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:state": 1,
+   "var:transitions": 2,
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 2
+  },
+  {
+   "var:state": 1,
+   "var:transitions": 2,
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 2
+  },
+  {
+   "var:state": 1,
+   "var:transitions": 2,
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 2
+  },
+  {
+   "var:state": 1,
+   "var:transitions": 2,
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 2
+  },
+  {
+   "var:state": 1,
+   "var:transitions": 2,
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 2
+  },
+  {
+   "var:state": 1,
+   "var:transitions": 2,
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 2
+  },
+  {
+   "var:state": 1,
+   "var:transitions": 2,
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 2
+  }
+ ],
+ "finalVarState": {
+  "state": 1,
+  "transitions": 2,
+  "__obs_plot0": 1,
+  "__obs_plot1": 2
+ }
+}

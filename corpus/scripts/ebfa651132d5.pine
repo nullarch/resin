@@ -1,0 +1,7 @@
+//@version=5
+indicator("Label Draw", overlay=true)
+if barstate.islast
+    label.new(bar_index, high, text="High")
+var float result = 0.0
+result := close
+plot(result)

@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("MA Arr")
+var float[] maVals = array.new_float(0)
+sma3 = ta.sma(close, 3)
+array.push(maVals, sma3)
+if array.size(maVals) > 5
+    array.shift(maVals)
+avgMA = array.size(maVals) > 0 ? array.avg(maVals) : sma3
+plot(sma3 - avgMA, "Diff")

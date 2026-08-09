@@ -1,0 +1,7 @@
+//@version=5
+indicator("Stability Margin")
+float rawSignal = close - open
+var float smoothSignal = 0.0
+smoothSignal := 0.2 * rawSignal + 0.8 * smoothSignal
+float margin = math.abs(rawSignal) > 0.01 ? math.abs(smoothSignal / rawSignal) : 1.0
+float isStable = margin < 1.5 ? 1.0 : 0.0

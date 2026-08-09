@@ -1,0 +1,13 @@
+
+//@version=5
+strategy("Adapt Entry", overlay=true)
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 3)
+volLow = avgATR > 0 ? atr / avgATR < 0.8 : false
+if close > sma3 and rsi > 50 and volLow
+    strategy.entry("Long", strategy.long)
+if close < sma3 or rsi < 40
+    strategy.close("Long")
+plot(sma3, "MA")

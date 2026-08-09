@@ -1,0 +1,15 @@
+//@version=5
+indicator("Lorenz Osc")
+var float xL = 1.0
+var float yL = 1.0
+var float zL = 1.0
+float sigma = 0.1
+float rho = 0.28
+float beta = 0.027
+float dt = 0.1
+float dxL = sigma * (yL - xL) * dt
+float dyL = (xL * (rho - zL) - yL) * dt
+float dzL = (xL * yL - beta * zL) * dt
+xL := xL + dxL
+yL := yL + dyL
+zL := zL + dzL

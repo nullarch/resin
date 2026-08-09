@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Multi RSI")
+rsi3 = nz(ta.rsi(close, 3), 50.0)
+rsi5 = nz(ta.rsi(close, 5), 50.0)
+consensus = (rsi3 + rsi5) / 2
+diverging = math.abs(rsi3 - rsi5) > 10
+var float __obs_plot0 = na
+__obs_plot0 := consensus
+plot(consensus, "Con")

@@ -1,0 +1,116 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_rma_kw": "NaN",
+   "var:__obs_rma_pos": "NaN",
+   "var:__obs_wma_kw": "NaN",
+   "var:__obs_wma_pos": "NaN",
+   "var:__obs_vwma_kw": "NaN",
+   "var:__obs_vwma_pos": "NaN",
+   "var:__obs_stdev_kw": "NaN",
+   "var:__obs_stdev_pos": "NaN"
+  },
+  {
+   "var:__obs_rma_kw": "NaN",
+   "var:__obs_rma_pos": "NaN",
+   "var:__obs_wma_kw": "NaN",
+   "var:__obs_wma_pos": "NaN",
+   "var:__obs_vwma_kw": "NaN",
+   "var:__obs_vwma_pos": "NaN",
+   "var:__obs_stdev_kw": "NaN",
+   "var:__obs_stdev_pos": "NaN"
+  },
+  {
+   "var:__obs_rma_kw": 102.0,
+   "var:__obs_rma_pos": 102.0,
+   "var:__obs_wma_kw": 102.3333333333,
+   "var:__obs_wma_pos": 102.3333333333,
+   "var:__obs_vwma_kw": 102.0606060606,
+   "var:__obs_vwma_pos": 102.0606060606,
+   "var:__obs_stdev_kw": 0.8164965809,
+   "var:__obs_stdev_pos": 0.8164965809
+  },
+  {
+   "var:__obs_rma_kw": 102.0,
+   "var:__obs_rma_pos": 102.0,
+   "var:__obs_wma_kw": 102.3333333333,
+   "var:__obs_wma_pos": 102.3333333333,
+   "var:__obs_vwma_kw": 102.347826087,
+   "var:__obs_vwma_pos": 102.347826087,
+   "var:__obs_stdev_kw": 0.4714045208,
+   "var:__obs_stdev_pos": 0.4714045208
+  },
+  {
+   "var:__obs_rma_kw": 102.6666666667,
+   "var:__obs_rma_pos": 102.6666666667,
+   "var:__obs_wma_kw": 103.1666666667,
+   "var:__obs_wma_pos": 103.1666666667,
+   "var:__obs_vwma_kw": 103.0410958904,
+   "var:__obs_vwma_pos": 103.0410958904,
+   "var:__obs_stdev_kw": 0.8164965809,
+   "var:__obs_stdev_pos": 0.8164965809
+  },
+  {
+   "var:__obs_rma_kw": 103.4444444444,
+   "var:__obs_rma_pos": 103.4444444444,
+   "var:__obs_wma_kw": 104.1666666667,
+   "var:__obs_wma_pos": 104.1666666667,
+   "var:__obs_vwma_kw": 103.7162162162,
+   "var:__obs_vwma_pos": 103.7162162162,
+   "var:__obs_stdev_kw": 1.2472191289,
+   "var:__obs_stdev_pos": 1.2472191289
+  },
+  {
+   "var:__obs_rma_kw": 104.2962962963,
+   "var:__obs_rma_pos": 104.2962962963,
+   "var:__obs_wma_kw": 105.3333333333,
+   "var:__obs_wma_pos": 105.3333333333,
+   "var:__obs_vwma_kw": 105.0253164557,
+   "var:__obs_vwma_pos": 105.0253164557,
+   "var:__obs_stdev_kw": 0.8164965809,
+   "var:__obs_stdev_pos": 0.8164965809
+  },
+  {
+   "var:__obs_rma_kw": 104.5308641975,
+   "var:__obs_rma_pos": 104.5308641975,
+   "var:__obs_wma_kw": 105.3333333333,
+   "var:__obs_wma_pos": 105.3333333333,
+   "var:__obs_vwma_kw": 105.35,
+   "var:__obs_vwma_pos": 105.35,
+   "var:__obs_stdev_kw": 0.4714045208,
+   "var:__obs_stdev_pos": 0.4714045208
+  },
+  {
+   "var:__obs_rma_kw": 105.353909465,
+   "var:__obs_rma_pos": 105.353909465,
+   "var:__obs_wma_kw": 106.1666666667,
+   "var:__obs_wma_pos": 106.1666666667,
+   "var:__obs_vwma_kw": 106.0352941176,
+   "var:__obs_vwma_pos": 106.0352941176,
+   "var:__obs_stdev_kw": 0.8164965809,
+   "var:__obs_stdev_pos": 0.8164965809
+  },
+  {
+   "var:__obs_rma_kw": 106.2359396433,
+   "var:__obs_rma_pos": 106.2359396433,
+   "var:__obs_wma_kw": 107.1666666667,
+   "var:__obs_wma_pos": 107.1666666667,
+   "var:__obs_vwma_kw": 106.7093023256,
+   "var:__obs_vwma_pos": 106.7093023256,
+   "var:__obs_stdev_kw": 1.2472191289,
+   "var:__obs_stdev_pos": 1.2472191289
+  }
+ ],
+ "finalVarState": {
+  "__obs_rma_kw": 106.2359396433,
+  "__obs_rma_pos": 106.2359396433,
+  "__obs_wma_kw": 107.1666666667,
+  "__obs_wma_pos": 107.1666666667,
+  "__obs_vwma_kw": 106.7093023256,
+  "__obs_vwma_pos": 106.7093023256,
+  "__obs_stdev_kw": 1.2472191289,
+  "__obs_stdev_pos": 1.2472191289
+ }
+}

@@ -1,0 +1,10 @@
+//@version=5
+indicator("Cox PH")
+float h0 = 0.02
+float beta = 0.5
+float smaVal = nz(ta.sma(close, 3), close)
+float covariate = (close - smaVal) / 10.0
+float hazardCox = h0 * math.exp(beta * covariate)
+var float cumCox = 0.0
+cumCox := cumCox + hazardCox
+plot(cumCox, "CoxCumHaz")

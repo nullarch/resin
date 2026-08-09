@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Candle Cls")
+body = math.abs(close - open)
+rng = high - low
+bPct = rng > 0 ? body / rng : 0.0
+upperW = high - math.max(open, close)
+lowerW = math.min(open, close) - low
+cls = bPct < 0.1 ? 0 : bPct > 0.7 ? (close > open ? 2 : -2) : (close > open ? 1 : -1)
+var float __obs_plot0 = na
+__obs_plot0 := cls
+plot(cls, "Cls")

@@ -1,0 +1,7 @@
+//@version=5
+indicator("UDT Field Mut")
+type Portfolio
+    float totalValue = 0.0
+p = Portfolio.new()
+p.totalValue := close * 100
+plot(p.totalValue)

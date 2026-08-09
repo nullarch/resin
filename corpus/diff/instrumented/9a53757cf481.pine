@@ -1,0 +1,10 @@
+//@version=5
+indicator("MFI", overlay=false)
+length = input.int(14, title="Length")
+mfi_val = ta.mfi(hlc3, length)
+overbought = hline(80, title="Overbought")
+oversold = hline(20, title="Oversold")
+var float __obs_plot0 = na
+__obs_plot0 := mfi_val
+plot(mfi_val, title="MFI", color=color.blue)
+fill(overbought, oversold, color=color.new(color.blue, 90))

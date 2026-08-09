@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Break Res")
+threshold = ta.sma(close, 3)
+firstAbove = -1
+for i = 0 to 8
+    c = close[i]
+    if not na(c) and c > threshold
+        firstAbove := i
+        break
+plot(firstAbove, "First")

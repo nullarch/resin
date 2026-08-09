@@ -1,0 +1,13 @@
+//@version=5
+indicator("ta_pivot_varlen")
+// ta.pivothigh/ta.pivotlow series(가변) left/right 오라클 검증(배치25 (4) 계속, next_hint(C551)).
+// pine2py wavealgo/ta/pivot.py도 highest.py와 동일한 무상태 재스캔(python 직접 실행 확인)이라
+// #178과 같은 축으로 가변 length 골든이 성립한다. leftV=bar_index%3(0,1,2 순환)/
+// rightV=(bar_index+1)%3(1,2,0 순환)로 좌/우 폭을 서로 다른 위상으로 독립 변화시켜 워밍업(total>
+// data_len)/right=0(지연 없음)/left=0(왼쪽 미검사) 분기를 sample10 10바 안에서 모두 커버한다.
+leftV = bar_index % 3
+rightV = (bar_index + 1) % 3
+var float __obs_hi = na
+var float __obs_lo = na
+__obs_hi := ta.pivothigh(close, leftV, rightV)
+__obs_lo := ta.pivotlow(close, leftV, rightV)

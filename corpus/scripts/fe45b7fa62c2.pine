@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("IB Range")
+var float ibHigh = 0.0
+var float ibLow = 99999.0
+var int barNum = 0
+barNum := barNum + 1
+if barNum <= 3
+    if high > ibHigh
+        ibHigh := high
+    if low < ibLow
+        ibLow := low
+ibRange = ibHigh - ibLow
+plot(ibRange, "IB")

@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("MomFeat")
+calcMomentum(float src, int period) =>
+    diff = src - nz(src[1], src)
+    absDiff = math.abs(diff)
+    pct = src > 0 ? diff / src * 100.0 : 0.0
+    pct
+
+mom = calcMomentum(close, 1)
+plot(mom, "M")

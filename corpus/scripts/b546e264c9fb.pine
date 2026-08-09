@@ -1,0 +1,11 @@
+
+//@version=5
+strategy("Mean Rev", overlay=true)
+sma5 = ta.sma(close, 5)
+sd = ta.stdev(close, 5)
+zScore = sd > 0 ? (close - sma5) / sd : 0.0
+if zScore < -1.0
+    strategy.entry("Long", strategy.long)
+if zScore > 1.0
+    strategy.close("Long")
+plot(zScore, "Z")

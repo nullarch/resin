@@ -1,0 +1,7 @@
+//@version=5
+indicator("Exponential Hazard")
+float baseHazard = 0.05
+var float cumHazard = 0.0
+cumHazard := cumHazard + baseHazard
+float survivalExp = math.exp(-cumHazard)
+plot(survivalExp, "ExpSurvival")

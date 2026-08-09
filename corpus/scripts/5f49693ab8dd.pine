@@ -1,0 +1,12 @@
+//@version=5
+indicator("POS Tag Proxy")
+var int nounCount = 0
+var int verbCount = 0
+var int adjCount = 0
+body = close - open
+if body > 2
+    nounCount := nounCount + 1
+else if body < -2
+    verbCount := verbCount + 1
+else
+    adjCount := adjCount + 1

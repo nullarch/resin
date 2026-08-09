@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Eff Hist")
+var float[] effArr = array.new_float(0)
+body = math.abs(close - open)
+rng = high - low
+eff = rng > 0 ? body / rng : 0.0
+array.push(effArr, eff)
+if array.size(effArr) > 8
+    array.shift(effArr)
+avgEff = array.avg(effArr)
+var float __obs_plot0 = na
+__obs_plot0 := avgEff
+plot(avgEff, "AvgE")

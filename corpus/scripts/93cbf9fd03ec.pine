@@ -1,0 +1,9 @@
+//@version=5
+indicator("Pipe Friction Loss")
+frictionFactor = 0.02
+pipeLength = 10.0
+diameter = high - low
+diameter := math.max(diameter, 0.1)
+velocity = math.abs(close - open)
+headLoss = frictionFactor * (pipeLength / diameter) * (velocity * velocity) / (2.0 * 9.81)
+plot(headLoss)

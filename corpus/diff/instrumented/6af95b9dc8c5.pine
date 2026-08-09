@@ -1,0 +1,16 @@
+//@version=5
+indicator("Drug Interaction")
+var float drugA = 40.0
+var float drugB = 30.0
+baseClA = 0.2
+baseClB = 0.15
+inhibition = drugB > 20 ? 0.5 : 1.0
+drugA := drugA + (close > open ? 5.0 : 0.0) - drugA * baseClA * inhibition
+drugB := drugB + (volume > 1100 ? 3.0 : 0.0) - drugB * baseClB
+if drugA < 0
+    drugA := 0.0
+if drugB < 0
+    drugB := 0.0
+var float __obs_plot0 = na
+__obs_plot0 := drugA + drugB
+plot(drugA + drugB)

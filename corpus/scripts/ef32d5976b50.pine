@@ -1,0 +1,7 @@
+//@version=5
+indicator("Method Style Map")
+var float result = 0.0
+m = map.new<string, float>()
+m.put("a", 10.0)
+m.put("b", 20.0)
+result := m.get("a") + m.get("b")

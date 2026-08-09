@@ -1,0 +1,6 @@
+//@version=5
+indicator("HP Detrend")
+trend = ta.ema(close, 8)
+detrended = close - trend
+normalized = detrended > 0 ? 1.0 : -1.0
+plot(normalized)

@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Mom Chg")
+var float[] momChgs = array.new_float(0)
+rsi = nz(ta.rsi(close, 3), 50.0)
+prevRSI = nz(rsi[1], 50.0)
+chg = rsi - prevRSI
+array.push(momChgs, chg)
+if array.size(momChgs) > 8
+    array.shift(momChgs)
+avgChg = array.size(momChgs) > 0 ? array.avg(momChgs) : 0.0
+accelerating = chg > avgChg
+var float __obs_plot0 = na
+__obs_plot0 := accelerating ? 1 : 0
+plot(accelerating ? 1 : 0, "Acc")

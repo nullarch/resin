@@ -1,0 +1,5 @@
+//@version=5
+indicator("table cell")
+var float result = 0.0
+t = table.new(position.top_left, 2, 2)
+result := close

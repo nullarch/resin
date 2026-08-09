@@ -1,0 +1,7 @@
+//@version=5
+indicator("Dissonance")
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+dissonance = math.abs(rsiVal - 50.0)
+var float __obs_plot0 = na
+__obs_plot0 := dissonance
+plot(dissonance, title="dissonance")

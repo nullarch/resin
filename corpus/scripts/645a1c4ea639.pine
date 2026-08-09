@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Port Wt")
+var pw = map.new<string, float>()
+atr = ta.atr(3)
+invVol = atr > 0 ? 1.0 / atr : 1.0
+map.put(pw, "asset1", invVol)
+map.put(pw, "asset2", invVol * 0.8)
+map.put(pw, "asset3", invVol * 0.6)
+totalWt = 0.0
+for [k, v] in pw
+    totalWt := totalWt + v
+normWt = totalWt > 0 ? map.get(pw, "asset1", 0.0) / totalWt : 0.0
+plot(normWt, "Wt1")

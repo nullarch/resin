@@ -1,0 +1,32 @@
+//@version=5
+indicator("udt_method")
+// method 선언 + obj.method(args) 호출 desugar(UDT 네 번째 슬라이스, C124) 오라클 검증. pine2py는
+// 모든 method를 flat top-level 함수로 codegen해 obj.method(args) -> method(obj, args)로 정확히
+// desugar하므로(단일 UDT, 동명 충돌 없는 시나리오) 이 케이스는 바이트 단위 대조가 유효하다 -- 서로
+// 다른 UDT의 동명 method 충돌(pine2py의 flat 네임스페이스 latent 버그, LIMITATIONS.md 참조)은
+// 오라클로 검증할 수 없는 divergence 영역이라 hand-verified codegen 테스트로 별도 확인한다.
+
+type Point
+    float x = 0.0
+    float y = 0.0
+
+// method 본문 안에서 obj(첫 매개변수)의 필드를 읽고/써서 mutation이 호출자에 그대로 반영됨을
+// 검증(마지막 문장이 FieldAssignment라 암시 반환값은 없음 -- 호출은 ExprStmt로 결과를 버림).
+method translate(Point p, float dx, float dy) =>
+    p.x := p.x + dx
+    p.y := p.y + dy
+
+// 반환값 있는 method(암시 return, 마지막 표현식) -- method 본문 안에서 math.* 순수 빌트인이
+// 정상적으로 codegen되는지도 함께 검증.
+method magnitude(Point p) =>
+    math.sqrt(p.x * p.x + p.y * p.y)
+
+var Point pt = Point.new(3.0, 4.0)
+pt.translate(close * 0.01, 0.5)
+
+var float __obs_x = na
+var float __obs_y = na
+var float __obs_mag = na
+__obs_x := pt.x
+__obs_y := pt.y
+__obs_mag := pt.magnitude()

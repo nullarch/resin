@@ -1,0 +1,8 @@
+//@version=5
+strategy("Climate Strategy")
+storm = nz(ta.atr(3), 1.0)
+chill = ta.ema(close, 3)
+if close > chill and storm > 2
+    strategy.entry("WarmUp", strategy.long)
+if close < chill
+    strategy.close("WarmUp")

@@ -1,0 +1,35 @@
+
+//@version=5
+indicator("Stress19")
+enum Grade
+    A
+    B
+    C
+type Report
+    float score = 0.0
+    string grade = ""
+    int cells = 0
+var float grandTotal = 0.0
+matrix = array.new_float(0)
+for row = 0 to 2
+    for col = 0 to 2
+        val = close * float(row + 1) * 0.01 + float(col) * 0.1
+        array.push(matrix, val)
+rpt = Report.new()
+rpt.score := array.sum(matrix)
+rpt.cells := array.size(matrix)
+rpt.grade := switch
+    rpt.score > 20.0 => "A"
+    rpt.score > 10.0 => "B"
+    => "C"
+grade = rpt.grade == "A" ? Grade.A : rpt.grade == "B" ? Grade.B : Grade.C
+grandTotal := grandTotal + rpt.score
+gradeMap = map.new<string, float>()
+map.put(gradeMap, rpt.grade, rpt.score)
+map.put(gradeMap, "cells", float(rpt.cells))
+map.put(gradeMap, "grandTotal", grandTotal)
+total = 0.0
+for [k, v] in gradeMap
+    total := total + v
+msg = "Grade:" + rpt.grade + " Cells:" + str.tostring(rpt.cells)
+plot(total + float(str.length(msg)), "S19")

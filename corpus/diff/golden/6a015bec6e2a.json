@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:prodrug": 75.0,
+   "var:active": 25.0,
+   "var:__obs_plot0": 25.0
+  },
+  {
+   "var:prodrug": 56.25,
+   "var:active": 41.25,
+   "var:__obs_plot0": 41.25
+  },
+  {
+   "var:prodrug": 42.1875,
+   "var:active": 51.1875,
+   "var:__obs_plot0": 51.1875
+  },
+  {
+   "var:prodrug": 41.640625,
+   "var:active": 56.615625,
+   "var:__obs_plot0": 56.615625
+  },
+  {
+   "var:prodrug": 41.23046875,
+   "var:active": 61.36421874999999,
+   "var:__obs_plot0": 61.36421874999999
+  },
+  {
+   "var:prodrug": 30.9228515625,
+   "var:active": 65.5354140625,
+   "var:__obs_plot0": 65.5354140625
+  },
+  {
+   "var:prodrug": 23.192138671875,
+   "var:active": 66.71258554687499,
+   "var:__obs_plot0": 66.71258554687499
+  },
+  {
+   "var:prodrug": 27.39410400390625,
+   "var:active": 65.83936166015624,
+   "var:__obs_plot0": 65.83936166015624
+  },
+  {
+   "var:prodrug": 20.545578002929688,
+   "var:active": 66.10395149511719,
+   "var:__obs_plot0": 66.10395149511719
+  },
+  {
+   "var:prodrug": 25.409183502197266,
+   "var:active": 64.62995084633789,
+   "var:__obs_plot0": 64.62995084633789
+  }
+ ],
+ "finalVarState": {
+  "prodrug": 25.409183502197266,
+  "active": 64.62995084633789,
+  "__obs_plot0": 64.62995084633789
+ }
+}

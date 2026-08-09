@@ -1,0 +1,31 @@
+//@version=5
+indicator("request_security_na_ternary_tf")
+// request.security tf 삼항의 na(NaLiteral) 분기 폴딩(C514, wild "auto HTF" 변종 (b) 잔여 —
+// 2288dd31000d.pine `tfActive(tf1Enabled, tf1) ? tf1 : na`류, cond가 false로 폴딩되면 na 분기가
+// 선택된다). pine2py wavealgo/__init__.py request_security()의 진리값 게이트
+// (`if context is not None and timeframe:`)는 ''(falsy)라면 SecurityManager를 건너뛰지만, na는
+// codegen.py._NAN_LITERAL="float('nan')"로 컴파일돼 Python에서 NaN이 truthy라 이 게이트를
+// **통과**한다(C435 ''과는 다른 코드 경로 — python 직접 실행으로 확인, 혼동 금지). 통과 후
+// str(float('nan'))="nan"이 SecurityManager로 전달되고 _parse_tf_minutes("nan")은 맵/int 파싱/
+// 접미사 전부 실패해 "default to daily"(1440분, "D"와 같은 값) 폴백으로 떨어진다.
+//
+// 표현식은 wild 원본과 동형인 스칼라 반환 UDF 콜(f(close))을 쓴다 — pine2py
+// security._resolve_expression은 Series identity가 아닌 값을 "그대로 통과"시켜(C432/C436 선례)
+// tf 인자의 실제 HTF 캐시 집계 로직 자체를 타지 않는다(request.security로 원시 close/open 등을
+// 직접 넘기는 형태는 별도의 알려진 pine2py 캐시-타이밍 버그, MEMORY C176, 을 오라클에 끌어들여
+// 이 축과 무관한 잡음을 만든다 — 그래서 여기서는 피한다). 이 형태로도 na 분기 폴딩이 분석기
+// 하드 에러 없이 통과해 런타임까지 정상 실행됨을 골든으로 증명하며, na 폴딩 분기(x)와 명시적
+// "D" 인자(y)가 매 바 동일함을 직접 대조한다.
+tfActive(enabled, tf) =>
+    enabled and timeframe.in_seconds() <= timeframe.in_seconds(tf)
+
+f(v) => v + 1
+
+tf1Enabled = input.bool(true, "")
+tf1 = input.timeframe("1", "")
+x = request.security(syminfo.tickerid, tfActive(tf1Enabled, tf1) ? tf1 : na, f(close))
+y = request.security(syminfo.tickerid, "D", f(close))
+var float __obs_x = na
+__obs_x := x
+var float __obs_y = na
+__obs_y := y

@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_cci": "NaN"
+  },
+  {
+   "var:__obs_cci": "NaN"
+  },
+  {
+   "var:__obs_cci": 100.0
+  },
+  {
+   "var:__obs_cci": -50.0
+  },
+  {
+   "var:__obs_cci": 100.0
+  },
+  {
+   "var:__obs_cci": 80.0
+  },
+  {
+   "var:__obs_cci": 100.0
+  },
+  {
+   "var:__obs_cci": -50.0
+  },
+  {
+   "var:__obs_cci": 100.0
+  },
+  {
+   "var:__obs_cci": 80.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_cci": 80.0
+ }
+}

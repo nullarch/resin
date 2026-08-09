@@ -1,0 +1,10 @@
+//@version=5
+indicator("HMAC Integrity")
+secretKey = 137.0
+innerPad = close * secretKey
+innerHash = innerPad - math.floor(innerPad / 997.0) * 997.0
+outerPad = innerHash * (secretKey + 1.0)
+hmacVal = outerPad - math.floor(outerPad / 997.0) * 997.0
+var float __obs_plot0 = na
+__obs_plot0 := hmacVal
+plot(hmacVal)

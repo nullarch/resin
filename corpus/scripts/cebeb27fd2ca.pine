@@ -1,0 +1,8 @@
+//@version=5
+strategy("Population Boom Strategy")
+var float pop = 50.0
+pop := pop * 1.1
+if pop > 100.0
+    strategy.entry("Boom", strategy.long)
+if pop > 200.0
+    strategy.close("Boom")

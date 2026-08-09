@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Vol Thresh")
+avgVol = ta.sma(volume, 5)
+threshold = avgVol * 3.0
+steps = 0
+while threshold > volume and steps < 10
+    threshold := threshold * 0.8
+    steps := steps + 1
+plot(steps, "St")

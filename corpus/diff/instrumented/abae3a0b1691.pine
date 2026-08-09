@@ -1,0 +1,10 @@
+//@version=5
+indicator("Method ML")
+arr = array.new_float(0)
+arr.push(close +
+    open)
+arr.push(high -
+    low)
+var float __obs_plot0 = na
+__obs_plot0 := arr.avg()
+plot(arr.avg())

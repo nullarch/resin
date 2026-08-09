@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Trend Dur")
+var float[] durations = array.new_float(0)
+var int currDur = 0
+var bool wasBull = false
+sma3 = ta.sma(close, 3)
+isBull = close > sma3
+if isBull == wasBull
+    currDur := currDur + 1
+else
+    if currDur > 0
+        array.push(durations, float(currDur))
+    if array.size(durations) > 6
+        array.shift(durations)
+    currDur := 1
+    wasBull := isBull
+avgDur = array.size(durations) > 0 ? array.avg(durations) : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := avgDur
+plot(avgDur, "AD")

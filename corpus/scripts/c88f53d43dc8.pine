@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Recurrent")
+type RNNCell
+    float hidden = 0.0
+    float output = 0.0
+cell = RNNCell.new()
+inp = (close - 100.0) / 10.0
+prevHidden = nz(ta.ema(close, 3), close)
+normHidden = (prevHidden - 100.0) / 10.0
+combined = 0.6 * inp + 0.4 * normHidden
+cell.hidden := math.max(combined, 0.0)
+cell.output := 1.0 / (1.0 + math.exp(-math.max(math.min(cell.hidden, 10.0), -10.0)))
+plot(cell.output, "RNN")

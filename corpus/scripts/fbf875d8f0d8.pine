@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("ForIn UDT")
+type Metrics
+    float rsiVal = 0.0
+    float trend = 0.0
+
+var Metrics met = Metrics.new()
+var readings = map.new<string, float>()
+met.rsiVal := nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+met.trend := close > sma3 ? 1.0 : -1.0
+map.put(readings, "rsi", met.rsiVal)
+map.put(readings, "trend", met.trend)
+total = 0.0
+for [k, v] in readings
+    total := total + v
+plot(total, "Tot")

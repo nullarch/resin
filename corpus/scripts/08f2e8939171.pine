@@ -1,0 +1,11 @@
+//@version=5
+indicator("triple nest")
+var float result = 0.0
+if close > 100
+    float sum = 0.0
+    for i = 1 to 3
+        float inner = float(i)
+        while inner > 0.5
+            inner := inner / 2.0
+        sum := sum + inner
+    result := sum

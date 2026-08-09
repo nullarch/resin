@@ -1,0 +1,7 @@
+//@version=5
+indicator("Math Min Max")
+float mn = math.min(10.0, 20.0)
+float mx = math.max(10.0, 20.0)
+var float result = 0.0
+result := mx - mn
+plot(result)

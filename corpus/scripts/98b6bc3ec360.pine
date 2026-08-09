@@ -1,0 +1,10 @@
+//@version=5
+indicator("Rule 110")
+var int cell = 0
+up = close > open ? 1 : 0
+flat = math.abs(close - open) < 1.0 ? 1 : 0
+down = close < open ? 1 : 0
+idx = up * 4 + flat * 2 + down
+ruleVal = 110
+bit = math.floor(ruleVal / math.pow(2, idx))
+cell := bit % 2 == 1 ? 1 : 0

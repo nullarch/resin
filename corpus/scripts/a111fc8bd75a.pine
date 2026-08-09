@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("MultiTF")
+fastTrend = nz(ta.sma(close, 2), close)
+slowTrend = nz(ta.sma(close, 5), close)
+spread = fastTrend - slowTrend
+alignment = spread > 0 ? 1.0 : -1.0
+plot(alignment, "Align")

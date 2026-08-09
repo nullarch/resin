@@ -1,0 +1,5 @@
+//@version=5
+indicator("NzCustom")
+var float result = 0
+val = close[100]
+result := nz(val, -1)

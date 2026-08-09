@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Multi Sum")
+rsi = ta.rsi(close, 3)
+sma3 = ta.sma(close, 3)
+atr = ta.atr(3)
+s1 = close > sma3 ? "T+" : "T-"
+s2 = rsi > 50 ? "M+" : "M-"
+s3 = atr > 0 ? "V+" : "V-"
+summary = s1 + "|" + s2 + "|" + s3
+hasPlus = str.contains(summary, "+")
+var float __obs_plot0 = na
+__obs_plot0 := hasPlus ? 1 : 0
+plot(hasPlus ? 1 : 0, "HasPlus")

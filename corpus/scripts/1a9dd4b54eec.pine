@@ -1,0 +1,6 @@
+//@version=5
+indicator("Scientific")
+var float result = 0.0
+float a = 1.5e2
+float b = 2.0E-1
+result := a + b

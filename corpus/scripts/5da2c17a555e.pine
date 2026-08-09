@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("UDF Osc")
+customOsc(float price, float hi, float lo, float rsi) =>
+    rangeVal = hi - lo
+    rangePos = rangeVal > 0 ? (price - lo) / rangeVal * 100 - 50 : 0.0
+    rsiOfs = rsi - 50
+    rangePos * 0.5 + rsiOfs * 0.5
+
+hi5 = ta.highest(high, 5)
+lo5 = ta.lowest(low, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+osc = customOsc(close, hi5, lo5, rsi)
+plot(osc, "O")

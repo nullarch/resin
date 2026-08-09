@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Sig Combine")
+trendSignal(float src, int len) =>
+    ma = ta.sma(src, len)
+    src > ma ? 1.0 : -1.0
+
+momSignal(float src, int len) =>
+    r = ta.rsi(src, len)
+    r > 60 ? 1.0 : r < 40 ? -1.0 : 0.0
+
+t = trendSignal(close, 3)
+m = momSignal(close, 3)
+combined = (t + m) / 2.0
+plot(combined, "Combined")

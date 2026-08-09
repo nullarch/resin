@@ -1,0 +1,15 @@
+//@version=5
+indicator("State Machine")
+var int state = 0
+var float entry_price = 0.0
+
+if state == 0 and close > 105
+    state := 1
+    entry_price := close
+else if state == 1 and close < entry_price
+    state := 2
+else if state == 2 and close > entry_price
+    state := 0
+    entry_price := 0.0
+
+plot(close)

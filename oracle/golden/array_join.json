@@ -1,0 +1,127 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_a": "1.0,2.5,3.0",
+   "var:__obs_b": "1.0 2.5 3.0",
+   "var:__obs_c": "-3.5|0.0|100.25",
+   "var:__obs_d": "1.0,nan,2.0",
+   "var:__obs_e": "a-b-c",
+   "var:__obs_f": "True,False,True",
+   "var:__obs_g": "",
+   "var:__obs_h": "1.02.0",
+   "var:__obs_i": "5.5"
+  },
+  {
+   "var:__obs_a": "1.0,2.5,3.0",
+   "var:__obs_b": "1.0 2.5 3.0",
+   "var:__obs_c": "-3.5|0.0|100.25",
+   "var:__obs_d": "1.0,nan,2.0",
+   "var:__obs_e": "a-b-c",
+   "var:__obs_f": "True,False,True",
+   "var:__obs_g": "",
+   "var:__obs_h": "1.02.0",
+   "var:__obs_i": "5.5"
+  },
+  {
+   "var:__obs_a": "1.0,2.5,3.0",
+   "var:__obs_b": "1.0 2.5 3.0",
+   "var:__obs_c": "-3.5|0.0|100.25",
+   "var:__obs_d": "1.0,nan,2.0",
+   "var:__obs_e": "a-b-c",
+   "var:__obs_f": "True,False,True",
+   "var:__obs_g": "",
+   "var:__obs_h": "1.02.0",
+   "var:__obs_i": "5.5"
+  },
+  {
+   "var:__obs_a": "1.0,2.5,3.0",
+   "var:__obs_b": "1.0 2.5 3.0",
+   "var:__obs_c": "-3.5|0.0|100.25",
+   "var:__obs_d": "1.0,nan,2.0",
+   "var:__obs_e": "a-b-c",
+   "var:__obs_f": "True,False,True",
+   "var:__obs_g": "",
+   "var:__obs_h": "1.02.0",
+   "var:__obs_i": "5.5"
+  },
+  {
+   "var:__obs_a": "1.0,2.5,3.0",
+   "var:__obs_b": "1.0 2.5 3.0",
+   "var:__obs_c": "-3.5|0.0|100.25",
+   "var:__obs_d": "1.0,nan,2.0",
+   "var:__obs_e": "a-b-c",
+   "var:__obs_f": "True,False,True",
+   "var:__obs_g": "",
+   "var:__obs_h": "1.02.0",
+   "var:__obs_i": "5.5"
+  },
+  {
+   "var:__obs_a": "1.0,2.5,3.0",
+   "var:__obs_b": "1.0 2.5 3.0",
+   "var:__obs_c": "-3.5|0.0|100.25",
+   "var:__obs_d": "1.0,nan,2.0",
+   "var:__obs_e": "a-b-c",
+   "var:__obs_f": "True,False,True",
+   "var:__obs_g": "",
+   "var:__obs_h": "1.02.0",
+   "var:__obs_i": "5.5"
+  },
+  {
+   "var:__obs_a": "1.0,2.5,3.0",
+   "var:__obs_b": "1.0 2.5 3.0",
+   "var:__obs_c": "-3.5|0.0|100.25",
+   "var:__obs_d": "1.0,nan,2.0",
+   "var:__obs_e": "a-b-c",
+   "var:__obs_f": "True,False,True",
+   "var:__obs_g": "",
+   "var:__obs_h": "1.02.0",
+   "var:__obs_i": "5.5"
+  },
+  {
+   "var:__obs_a": "1.0,2.5,3.0",
+   "var:__obs_b": "1.0 2.5 3.0",
+   "var:__obs_c": "-3.5|0.0|100.25",
+   "var:__obs_d": "1.0,nan,2.0",
+   "var:__obs_e": "a-b-c",
+   "var:__obs_f": "True,False,True",
+   "var:__obs_g": "",
+   "var:__obs_h": "1.02.0",
+   "var:__obs_i": "5.5"
+  },
+  {
+   "var:__obs_a": "1.0,2.5,3.0",
+   "var:__obs_b": "1.0 2.5 3.0",
+   "var:__obs_c": "-3.5|0.0|100.25",
+   "var:__obs_d": "1.0,nan,2.0",
+   "var:__obs_e": "a-b-c",
+   "var:__obs_f": "True,False,True",
+   "var:__obs_g": "",
+   "var:__obs_h": "1.02.0",
+   "var:__obs_i": "5.5"
+  },
+  {
+   "var:__obs_a": "1.0,2.5,3.0",
+   "var:__obs_b": "1.0 2.5 3.0",
+   "var:__obs_c": "-3.5|0.0|100.25",
+   "var:__obs_d": "1.0,nan,2.0",
+   "var:__obs_e": "a-b-c",
+   "var:__obs_f": "True,False,True",
+   "var:__obs_g": "",
+   "var:__obs_h": "1.02.0",
+   "var:__obs_i": "5.5"
+  }
+ ],
+ "finalVarState": {
+  "__obs_a": "1.0,2.5,3.0",
+  "__obs_b": "1.0 2.5 3.0",
+  "__obs_c": "-3.5|0.0|100.25",
+  "__obs_d": "1.0,nan,2.0",
+  "__obs_e": "a-b-c",
+  "__obs_f": "True,False,True",
+  "__obs_g": "",
+  "__obs_h": "1.02.0",
+  "__obs_i": "5.5"
+ }
+}

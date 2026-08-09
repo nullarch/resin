@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Mkt Qual")
+marketQuality(float spread, float avgSpread, float vol, float avgVol) =>
+    spScore = avgSpread > 0 ? 1.0 - math.min(spread / avgSpread, 2.0) / 2 : 0.5
+    volScore = avgVol > 0 ? math.min(vol / avgVol, 2.0) / 2 : 0.5
+    spScore * 0.5 + volScore * 0.5
+
+spread = high - low
+avgSp = ta.sma(spread, 5)
+avgVol = ta.sma(volume, 5)
+quality = marketQuality(spread, avgSp, volume, avgVol)
+plot(quality, "Qual")

@@ -1,0 +1,5 @@
+//@version=5
+indicator("Builtin Safe")
+len = 5
+sma_ = ta.sma(close, len)
+plot(nz(sma_))

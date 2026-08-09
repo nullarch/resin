@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("Div Class")
+enum DivClass
+    BullRegular = 2
+    BullHidden = 1
+    None_ = 0
+    BearHidden = -1
+    BearRegular = -2
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+priceUp = close > close[1]
+rsiUp = rsi > 50
+dc = switch
+    priceUp and not rsiUp => DivClass.BearRegular
+    not priceUp and rsiUp => DivClass.BullRegular
+    => DivClass.None_
+plot(int(dc), "DC")

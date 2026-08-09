@@ -1,0 +1,20 @@
+//@version=5
+indicator("Combo11")
+percentile(arr, pct) =>
+    sz = array.size(arr)
+    idx = math.floor(float(sz) * pct / 100.0)
+    safeIdx = math.max(0, math.min(sz - 1, idx))
+    array.get(arr, int(safeIdx))
+var float cumAbove = 0.0
+prices = array.new_float(0)
+for i = 0 to 4
+    array.push(prices, nz(close[i], close))
+array.sort(prices)
+p25 = percentile(prices, 25)
+p75 = percentile(prices, 75)
+iqr = p75 - p25
+isOutlier = close > p75 + 1.5 * iqr or close < p25 - 1.5 * iqr ? 1.0 : 0.0
+cumAbove := cumAbove + isOutlier
+rsiConf = nz(ta.rsi(close, 3), 50.0) > 60.0 ? 1.0 : 0.0
+plot(cumAbove, "CumOut")
+plot(iqr, "IQR")

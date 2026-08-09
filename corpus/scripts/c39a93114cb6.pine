@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Cond Reset")
+var float accumulator = 0.0
+var int barsSinceReset = 0
+rsi = nz(ta.rsi(close, 3), 50.0)
+accumulator := accumulator + (close - open)
+barsSinceReset := barsSinceReset + 1
+if barsSinceReset >= 5
+    accumulator := 0.0
+    barsSinceReset := 0
+plot(accumulator, "Acc")

@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:pheromone": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:pheromone": 2.1,
+   "var:__obs_plot0": 2.1
+  },
+  {
+   "var:pheromone": 2.6900000000000004,
+   "var:__obs_plot0": 2.6900000000000004
+  },
+  {
+   "var:pheromone": 3.9210000000000003,
+   "var:__obs_plot0": 3.9210000000000003
+  },
+  {
+   "var:pheromone": 4.8289,
+   "var:__obs_plot0": 4.8289
+  },
+  {
+   "var:pheromone": 5.24601,
+   "var:__obs_plot0": 5.24601
+  },
+  {
+   "var:pheromone": 5.821409000000001,
+   "var:__obs_plot0": 5.821409000000001
+  },
+  {
+   "var:pheromone": 6.639268100000001,
+   "var:__obs_plot0": 6.639268100000001
+  },
+  {
+   "var:pheromone": 6.975341290000001,
+   "var:__obs_plot0": 6.975341290000001
+  },
+  {
+   "var:pheromone": 7.877807161000002,
+   "var:__obs_plot0": 7.877807161000002
+  }
+ ],
+ "finalVarState": {
+  "pheromone": 7.877807161000002,
+  "__obs_plot0": 7.877807161000002
+ }
+}

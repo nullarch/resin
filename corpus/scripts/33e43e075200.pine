@@ -1,0 +1,6 @@
+//@version=5
+indicator("cond color")
+var float result = 0.0
+bull = close > open
+c = bull ? color.rgb(0, 255, 0) : color.rgb(255, 0, 0)
+result := close

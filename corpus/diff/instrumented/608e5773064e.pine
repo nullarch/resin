@@ -1,0 +1,17 @@
+//@version=5
+indicator("Gutenberg-Richter")
+var int smallQuakes = 0
+var int medQuakes = 0
+var int largeQuakes = 0
+magnitude = high - low
+if magnitude < 3
+    smallQuakes := smallQuakes + 1
+else if magnitude < 6
+    medQuakes := medQuakes + 1
+else
+    largeQuakes := largeQuakes + 1
+total = smallQuakes + medQuakes + largeQuakes
+bValue = total > 1 ? math.log(smallQuakes + 1) / math.log(total + 1) : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := bValue
+plot(bValue)

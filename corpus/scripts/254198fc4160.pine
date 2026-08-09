@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Cross Count")
+sma3 = ta.sma(close, 3)
+var int crossCount = 0
+if ta.crossover(close, sma3) or ta.crossunder(close, sma3)
+    crossCount := crossCount + 1
+plot(crossCount, "Crosses")

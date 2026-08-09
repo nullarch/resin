@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("NumFmt")
+pct = (close - open) / open * 100.0
+formatted = str.tostring(pct, "#.##")
+fmtLen = str.length(formatted)
+var float __obs_plot0 = na
+__obs_plot0 := fmtLen
+plot(fmtLen, "FL")

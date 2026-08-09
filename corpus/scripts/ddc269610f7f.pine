@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("RecSmooth")
+var float smooth = 0.0
+target = close
+iterations = 0
+diff = math.abs(target - smooth)
+while diff > 0.01 and iterations < 20
+    smooth := smooth + (target - smooth) * 0.5
+    diff := math.abs(target - smooth)
+    iterations := iterations + 1
+plot(smooth, "S")

@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Deep Nest")
+sma3 = ta.sma(close, 3)
+result = 0.0
+if close > sma3
+    for i = 0 to 3
+        val = close[i]
+        if not na(val)
+            result := result + val
+        if result > 500
+            break
+else
+    result := close
+plot(result, "Result")

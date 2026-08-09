@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Lookback Max")
+lookback = 5
+maxVal = close
+for i = 1 to lookback
+    prev = close[i]
+    if not na(prev) and prev > maxVal
+        maxVal := prev
+plot(maxVal, "Max")

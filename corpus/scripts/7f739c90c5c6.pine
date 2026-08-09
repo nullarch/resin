@@ -1,0 +1,10 @@
+//@version=5
+indicator("Map put_all")
+var m1 = map.new<string, float>()
+var m2 = map.new<string, float>()
+map.put(m1, "a", 1.0)
+map.put(m1, "b", 2.0)
+map.put(m2, "c", 3.0)
+map.put(m2, "d", 4.0)
+map.put_all(m1, m2)
+sz = map.size(m1)

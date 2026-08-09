@@ -1,0 +1,41 @@
+
+//@version=5
+indicator("Regime Engine")
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+rsi = ta.rsi(close, 3)
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+
+// Regime detection
+trendUp = sma3 > ema5
+volHigh = atr > avgATR * 1.3
+regime = trendUp and volHigh ? 3 : trendUp ? 2 : volHigh ? 1 : 0
+
+// Adaptive params
+stopMult = regime == 3 ? 3.0 : regime >= 2 ? 2.5 : 2.0
+sizeMult = regime == 3 ? 0.5 : regime >= 2 ? 0.75 : 1.0
+
+// Signal
+signal = close > sma3 and rsi > 50 ? 1.0 : close < sma3 and rsi < 50 ? -1.0 : 0.0
+adjSignal = signal * sizeMult
+
+// History
+var float[] regimeHist = array.new_float(0)
+array.push(regimeHist, float(regime))
+if array.size(regimeHist) > 8
+    array.shift(regimeHist)
+
+var m = map.new<string, float>()
+map.put(m, "regime", float(regime))
+map.put(m, "signal", adjSignal)
+
+var int bars = 0
+bars := bars + 1
+
+var float __obs_plot0 = na
+__obs_plot0 := regime
+plot(regime, "Regime")
+var float __obs_plot1 = na
+__obs_plot1 := adjSignal
+plot(adjSignal, "AdjSig")

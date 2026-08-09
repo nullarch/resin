@@ -1,0 +1,3 @@
+//@version=5
+indicator("Test")
+r = ta.roc(close, 10)

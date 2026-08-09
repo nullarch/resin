@@ -1,0 +1,97 @@
+//@version=5
+indicator("array_stats")
+
+// A: all-valid 4-element array (open/high/low/close, not already sorted in push order —
+// exercises the median/mode sort path) — full stat sweep. 4 elements → median is even-count
+// (average of middle two).
+arrA = array.new_float(0)
+array.push(arrA, open)
+array.push(arrA, high)
+array.push(arrA, low)
+array.push(arrA, close)
+var float __obs_a_sum = na
+__obs_a_sum := array.sum(arrA)
+var float __obs_a_avg = na
+__obs_a_avg := array.avg(arrA)
+var float __obs_a_min = na
+__obs_a_min := array.min(arrA)
+var float __obs_a_max = na
+__obs_a_max := array.max(arrA)
+var float __obs_a_median = na
+__obs_a_median := array.median(arrA)
+var float __obs_a_stdev = na
+__obs_a_stdev := array.stdev(arrA)
+var float __obs_a_variance = na
+__obs_a_variance := array.variance(arrA)
+
+// B: na-embedded (close[15] — out of range on sample10's 10 bars) mixed with 3 valid values —
+// na-skip across all 8 stats. 3 valid elements after skip → median is odd-count (middle value).
+arrB = array.new_float(0)
+array.push(arrB, open)
+array.push(arrB, close[15])
+array.push(arrB, high)
+array.push(arrB, low)
+var float __obs_b_sum = na
+__obs_b_sum := array.sum(arrB)
+var float __obs_b_avg = na
+__obs_b_avg := array.avg(arrB)
+var float __obs_b_min = na
+__obs_b_min := array.min(arrB)
+var float __obs_b_max = na
+__obs_b_max := array.max(arrB)
+var float __obs_b_median = na
+__obs_b_median := array.median(arrB)
+var float __obs_b_stdev = na
+__obs_b_stdev := array.stdev(arrB)
+var float __obs_b_variance = na
+__obs_b_variance := array.variance(arrB)
+
+// C: all-na array — sum is 0 (Python sum([])==0, distinct from avg/min/max/median/stdev which
+// are na for zero valid values — DIVERGENCES.md #19 "읽기는 na" 원칙과 별개로 pine2py 자체가
+// sum만 0을 정의).
+arrC = array.new_float(0)
+array.push(arrC, close[15])
+array.push(arrC, close[16])
+var float __obs_c_sum = na
+__obs_c_sum := array.sum(arrC)
+var float __obs_c_avg = na
+__obs_c_avg := array.avg(arrC)
+var float __obs_c_min = na
+__obs_c_min := array.min(arrC)
+var float __obs_c_median = na
+__obs_c_median := array.median(arrC)
+var float __obs_c_stdev = na
+__obs_c_stdev := array.stdev(arrC)
+
+// D: single valid element — stdev/variance need na (below the 2-count floor) but
+// sum/avg/min/max/median equal that single value.
+arrD = array.new_float(0)
+array.push(arrD, close)
+var float __obs_d_sum = na
+__obs_d_sum := array.sum(arrD)
+var float __obs_d_avg = na
+__obs_d_avg := array.avg(arrD)
+var float __obs_d_stdev = na
+__obs_d_stdev := array.stdev(arrD)
+var float __obs_d_variance = na
+__obs_d_variance := array.variance(arrD)
+
+// E: mode tie-break — literal constants so the "first-encountered wins ties" rule is exactly
+// verifiable by hand (2.0 and 1.0 both appear twice, 3.0 once; 2.0 is pushed first so it wins).
+arrE = array.new_float(0)
+array.push(arrE, 2.0)
+array.push(arrE, 1.0)
+array.push(arrE, 1.0)
+array.push(arrE, 2.0)
+array.push(arrE, 3.0)
+var float __obs_e_mode = na
+__obs_e_mode := array.mode(arrE)
+
+// F: mode without ties (close pushed twice, open once — sample10 always has open != close) —
+// mode should track close every bar.
+arrF = array.new_float(0)
+array.push(arrF, close)
+array.push(arrF, close)
+array.push(arrF, open)
+var float __obs_f_mode = na
+__obs_f_mode := array.mode(arrF)

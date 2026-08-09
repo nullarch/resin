@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Chan Width")
+var float[] widths = array.new_float(0)
+hi5 = ta.highest(high, 5)
+lo5 = ta.lowest(low, 5)
+width = hi5 - lo5
+array.push(widths, width)
+if array.size(widths) > 8
+    array.shift(widths)
+avgWidth = array.size(widths) > 0 ? array.avg(widths) : width
+narrowing = width < avgWidth
+plot(narrowing ? 1 : 0, "N")

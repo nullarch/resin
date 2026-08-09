@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Pivot HL")
+hi3 = ta.highest(high, 3)
+lo3 = ta.lowest(low, 3)
+atHigh = high >= hi3
+atLow = low <= lo3
+plot(atHigh ? 1 : atLow ? -1 : 0, "PV")

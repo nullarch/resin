@@ -1,0 +1,4 @@
+//@version=5
+indicator("highestbars")
+var int hb = 0
+hb := ta.highestbars(high, 5)

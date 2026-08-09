@@ -1,0 +1,10 @@
+//@version=5
+indicator("NaN TA")
+sma10 = ta.sma(close, 10)
+var bool first_nan = false
+if bar_index == 0
+    first_nan := na(sma10)
+var bool last_valid = false
+if bar_index == 9
+    last_valid := not na(sma10)
+plot(close)

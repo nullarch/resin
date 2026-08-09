@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Mom Map")
+var mm = map.new<string, float>()
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+map.put(mm, "rsi", rsi)
+map.put(mm, "price_mom", nz(close - close[1], 0.0))
+map.put(mm, "ma_dist", close - sma3)
+total = 0.0
+for [k, v] in mm
+    total := total + v
+plot(total, "T")

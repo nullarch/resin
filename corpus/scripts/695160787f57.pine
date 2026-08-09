@@ -1,0 +1,6 @@
+//@version=5
+indicator("Availability")
+recentMaxVol = ta.highest(volume, 3)
+volPerception = recentMaxVol > 0 ? volume / recentMaxVol : 0.0
+salient = volPerception > 0.8
+plot(salient ? 1 : 0)

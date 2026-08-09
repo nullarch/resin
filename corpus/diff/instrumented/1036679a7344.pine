@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Drawdown")
+var float equity = 100.0
+pnl = close > open ? 1.0 : -0.5
+equity := equity + pnl
+var float peak = 100.0
+peak := equity > peak ? equity : peak
+dd = peak > 0 ? (peak - equity) / peak * 100.0 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := dd
+plot(dd, "DD")

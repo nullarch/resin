@@ -1,0 +1,10 @@
+//@version=5
+indicator("UDF multi return")
+calcBands(src, len, mult) =>
+    basis = ta.sma(src, len)
+    dev_val = ta.stdev(src, len) * mult
+    upper = nz(basis) + nz(dev_val)
+    lower = nz(basis) - nz(dev_val)
+    [upper, basis, lower]
+[u, m, l] = calcBands(close, 5, 2.0)
+bandwidth = u - l

@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:reversals": 0,
+   "var:bars": 1,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:reversals": 1,
+   "var:bars": 2,
+   "var:__obs_plot0": 0.5
+  },
+  {
+   "var:reversals": 2,
+   "var:bars": 3,
+   "var:__obs_plot0": 0.6666666666666666
+  },
+  {
+   "var:reversals": 3,
+   "var:bars": 4,
+   "var:__obs_plot0": 0.75
+  },
+  {
+   "var:reversals": 3,
+   "var:bars": 5,
+   "var:__obs_plot0": 0.6
+  },
+  {
+   "var:reversals": 4,
+   "var:bars": 6,
+   "var:__obs_plot0": 0.6666666666666666
+  },
+  {
+   "var:reversals": 5,
+   "var:bars": 7,
+   "var:__obs_plot0": 0.7142857142857143
+  },
+  {
+   "var:reversals": 5,
+   "var:bars": 8,
+   "var:__obs_plot0": 0.625
+  },
+  {
+   "var:reversals": 6,
+   "var:bars": 9,
+   "var:__obs_plot0": 0.6666666666666666
+  },
+  {
+   "var:reversals": 7,
+   "var:bars": 10,
+   "var:__obs_plot0": 0.7
+  }
+ ],
+ "finalVarState": {
+  "reversals": 7,
+  "bars": 10,
+  "__obs_plot0": 0.7
+ }
+}

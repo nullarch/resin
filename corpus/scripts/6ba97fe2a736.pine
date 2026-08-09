@@ -1,0 +1,15 @@
+//@version=5
+indicator("Method If Return")
+var float result = 0.0
+
+type Level
+    float val = 0.0
+
+method category(Level self) =>
+    if self.val > 100
+        "high"
+    else
+        "low"
+
+lv = Level.new(close)
+result := lv.category() == "high" ? 1.0 : 0.0

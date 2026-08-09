@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Fcst Ens")
+var models = map.new<string, float>()
+ema3 = ta.ema(close, 3)
+sma5 = ta.sma(close, 5)
+map.put(models, "ema", ema3)
+map.put(models, "sma", sma5)
+map.put(models, "mid", (ema3 + sma5) / 2)
+ensemble = 0.0
+count = 0
+for [name, val] in models
+    ensemble := ensemble + val
+    count := count + 1
+avgFcst = count > 0 ? ensemble / count : close
+plot(avgFcst, "Ens")

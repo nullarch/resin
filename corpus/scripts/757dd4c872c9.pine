@@ -1,0 +1,8 @@
+//@version=5
+indicator("Viscosity Gradient")
+currentFlow = math.abs(close - open)
+prevFlow = not na(close[1]) ? math.abs(close[1] - open[1]) : currentFlow
+shearRate = math.abs(currentFlow - prevFlow)
+viscosity = shearRate > 0 ? currentFlow / shearRate : 10.0
+viscosity := math.min(viscosity, 100.0)
+plot(viscosity)

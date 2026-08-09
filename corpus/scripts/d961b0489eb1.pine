@@ -1,0 +1,3 @@
+//@version=5
+indicator("Test")
+r = math.round_to_mintick(close)

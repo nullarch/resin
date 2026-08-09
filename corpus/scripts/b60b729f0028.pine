@@ -1,0 +1,8 @@
+//@version=5
+indicator("Array Chain")
+var float result = 0.0
+var float[] arr = array.new_float(0)
+array.push(arr, close)
+if array.size(arr) > 5
+    array.shift(arr)
+result := array.size(arr) > 0 ? array.max(arr) : 0

@@ -1,0 +1,39 @@
+
+//@version=5
+indicator("Feature Engine")
+// Raw indicators
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+rsi = ta.rsi(close, 3)
+atr = ta.atr(3)
+
+// Features
+f_trend = close > sma3 ? 1.0 : -1.0
+f_momentum = nz(rsi, 50.0) / 100.0 * 2.0 - 1.0
+f_volatility = atr > 0 ? atr / close * 100 : 0.0
+f_volume = volume > ta.sma(volume, 5) ? 1.0 : -1.0
+
+// Feature array
+features = array.from(f_trend, f_momentum, f_volatility, f_volume)
+avgFeature = array.avg(features)
+
+// Tracking
+var float[] featureHist = array.new_float(0)
+array.push(featureHist, avgFeature)
+if array.size(featureHist) > 8
+    array.shift(featureHist)
+trendingUp = array.size(featureHist) > 1 ? array.last(featureHist) > array.first(featureHist) : false
+
+var state = map.new<string, float>()
+map.put(state, "avg", avgFeature)
+map.put(state, "trending", trendingUp ? 1.0 : 0.0)
+
+var int bars = 0
+bars := bars + 1
+
+var float __obs_plot0 = na
+__obs_plot0 := avgFeature
+plot(avgFeature, "AvgFeat")
+var float __obs_plot1 = na
+__obs_plot1 := trendingUp ? 1 : 0
+plot(trendingUp ? 1 : 0, "Trending")

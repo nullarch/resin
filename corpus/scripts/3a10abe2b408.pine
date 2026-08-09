@@ -1,0 +1,12 @@
+//@version=5
+indicator("Fusion12")
+var float est1 = 100.0
+var float est2 = 100.0
+est1 := est1 + 0.5 * (close - est1)
+smaVal = nz(ta.sma(close, 3), close)
+est2 := est2 + 0.2 * (smaVal - est2)
+w1 = 0.6
+fused = w1 * est1 + (1.0 - w1) * est2
+diff = math.abs(est1 - est2)
+plot(fused, "f")
+plot(diff, "d")

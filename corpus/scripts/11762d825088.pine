@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("FracBands")
+type FractalBand
+    float upper = 0.0
+    float lower = 0.0
+    float mid = 0.0
+    int count = 0
+band = FractalBand.new()
+h5 = ta.highest(high, 5)
+l5 = ta.lowest(low, 5)
+band.upper := nz(h5, high)
+band.lower := nz(l5, low)
+band.mid := (band.upper + band.lower) / 2.0
+band.count := band.count + 1
+width = band.upper - band.lower
+plot(width, "W")

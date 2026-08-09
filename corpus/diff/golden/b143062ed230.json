@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:__obs_plot0": 238.0
+  },
+  {
+   "var:__obs_plot0": 240.0
+  },
+  {
+   "var:__obs_plot0": 236.0
+  },
+  {
+   "var:__obs_plot0": 242.0
+  },
+  {
+   "var:__obs_plot0": 246.0
+  },
+  {
+   "var:__obs_plot0": 244.0
+  },
+  {
+   "var:__obs_plot0": 248.0
+  },
+  {
+   "var:__obs_plot0": 252.0
+  },
+  {
+   "var:__obs_plot0": 250.0
+  },
+  {
+   "var:__obs_plot0": 254.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_plot0": 254.0
+ }
+}

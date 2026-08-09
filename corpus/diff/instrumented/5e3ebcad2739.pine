@@ -1,0 +1,11 @@
+//@version=5
+indicator("Math HAFZ")
+var float r1 = 0.0
+r1 := math.round(2.5)  // Pine: 3, Python default: 2
+var float r2 = 0.0
+r2 := math.round(3.5)  // Pine: 4, Python default: 4
+var float r3 = 0.0
+r3 := math.round(-2.5)  // Pine: -3, Python default: -2
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

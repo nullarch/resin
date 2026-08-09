@@ -1,0 +1,10 @@
+//@version=5
+indicator("Array For-In Idx")
+arr = array.from(10.0, 20.0, 30.0, 40.0)
+var float weighted = 0.0
+weighted := 0.0
+for [i, v] in arr
+    weighted := weighted + v * (i + 1)
+var float __obs_plot0 = na
+__obs_plot0 := weighted
+plot(weighted)

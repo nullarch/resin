@@ -1,0 +1,9 @@
+//@version=5
+strategy("Multi TA Strategy")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rsi3 = ta.rsi(close, 3)
+atrVal = ta.atr(3)
+longCond = not na(sma3) and not na(sma5) and sma3 > sma5
+if longCond
+    strategy.entry("Long", strategy.long)

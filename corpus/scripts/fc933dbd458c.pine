@@ -1,0 +1,20 @@
+
+//@version=5
+indicator("Sess Type")
+enum SessType
+    Opening = 0
+    Morning = 1
+    Midday = 2
+    Afternoon = 3
+    Closing = 4
+
+var int barNum = 0
+barNum := barNum + 1
+pos = barNum % 5
+st = switch pos
+    0 => SessType.Opening
+    1 => SessType.Morning
+    2 => SessType.Midday
+    3 => SessType.Afternoon
+    => SessType.Closing
+plot(int(st), "ST")

@@ -1,0 +1,5 @@
+//@version=5
+indicator("String Coerce BinOp")
+var float result = 0.0
+s = "val:" + str.tostring(42)
+result := str.length(s)

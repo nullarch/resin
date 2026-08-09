@@ -1,0 +1,7 @@
+//@version=5
+indicator("Wave Height")
+waveH = high - low
+smoothWave = ta.sma(waveH, 3)
+var float avgWaveH = 0.0
+if not na(smoothWave)
+    avgWaveH := smoothWave

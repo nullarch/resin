@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Adapt Th")
+adaptThreshold(float base, float atr, float avgATR) =>
+    ratio = avgATR > 0 ? atr / avgATR : 1.0
+    adjusted = base * ratio
+    math.max(math.min(adjusted, base * 1.5), base * 0.5)
+
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 3)
+th = adaptThreshold(2.0, atr, avgATR)
+breakout = (close - ta.sma(close, 3)) > th
+plot(breakout ? 1 : 0, "Brk")

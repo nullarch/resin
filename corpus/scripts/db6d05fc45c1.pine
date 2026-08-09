@@ -1,0 +1,9 @@
+//@version=5
+indicator("Multi Var")
+var float a = 0.0
+var float b = 100.0
+a := a + 1.0
+b := b - 1.0
+var float result = 0.0
+result := a + b
+plot(result)

@@ -1,0 +1,8 @@
+//@version=5
+indicator("OR Cont")
+buy = close > open or
+    close > close[1] or
+    volume > 1500
+var float __obs_plot0 = na
+__obs_plot0 := buy ? 1 : 0
+plot(buy ? 1 : 0)

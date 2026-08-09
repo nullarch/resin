@@ -1,0 +1,9 @@
+//@version=5
+indicator("ta_linreg")
+// ta.linreg 오라클 검증(ROADMAP P2 "ta.* 44종" — linreg). length=4로 sample10.json 10바 안에서
+// 워밍업 구간(NaN, 바 0~2)과 정상 구간(바 3~9)을 모두 커버. offset=0(현재 투영)과 offset=2(미래
+// 투영)를 동시에 관측해 투영 산식(intercept+slope*(n-1+offset))의 offset 항까지 검증.
+var float __obs_linreg0 = na
+var float __obs_linreg2 = na
+__obs_linreg0 := ta.linreg(close, 4, 0)
+__obs_linreg2 := ta.linreg(close, 4, 2)

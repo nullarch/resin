@@ -1,0 +1,11 @@
+//@version=5
+indicator("UDT Copy")
+type Trade
+    float entry
+    float stop
+orig = Trade.new(100.0, 90.0)
+copied = Trade.copy(orig)
+copied.entry := 200.0
+var float origEntry = 0.0
+origEntry := orig.entry
+plot(origEntry)

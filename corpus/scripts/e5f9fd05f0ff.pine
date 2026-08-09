@@ -1,0 +1,15 @@
+
+//@version=5
+strategy("Multi Sig", overlay=true)
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+[m, s, h] = ta.macd(close, 3, 5, 3)
+trendSig = close > sma3 ? 1 : -1
+momSig = rsi > 55 ? 1 : rsi < 45 ? -1 : 0
+macdSig = h > 0 ? 1 : -1
+totalSig = trendSig + momSig + macdSig
+if totalSig >= 2
+    strategy.entry("Long", strategy.long)
+if totalSig <= -1
+    strategy.close("Long")
+plot(sma3, "MA")

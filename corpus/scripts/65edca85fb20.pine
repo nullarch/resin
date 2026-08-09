@@ -1,0 +1,4 @@
+//@version=5
+indicator("SMA Condition")
+sma5 = ta.sma(close, 5)
+above = close > sma5

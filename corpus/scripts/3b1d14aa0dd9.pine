@@ -1,0 +1,11 @@
+//@version=5
+indicator("UDF pipeline")
+var float result = 0.0
+normalize(x, min_, max_) =>
+    (x - min_) / (max_ - min_)
+scale(x, factor) =>
+    x * factor
+h = ta.highest(high, 5)
+l = ta.lowest(low, 5)
+norm = normalize(close, l, h)
+result := scale(norm, 100.0)

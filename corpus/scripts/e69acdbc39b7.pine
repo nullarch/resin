@@ -1,0 +1,6 @@
+//@version=5
+indicator("Na Chain")
+var float result = 0.0
+a = close[100]
+b = nz(a, -1)
+result := b

@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Trend Lbl")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+dir = close > sma3 ? "UP" : "DN"
+align = sma3 > sma5 ? "ALIGN" : "CROSS"
+label = dir + "_" + align
+isUpAlign = label == "UP_ALIGN"
+plot(isUpAlign ? 1 : 0, "UA")

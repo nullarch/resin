@@ -1,0 +1,15 @@
+//@version=5
+indicator("Dijkstra Relax")
+var float distA = 999999.0
+var float distB = 999999.0
+var float distC = 999999.0
+float edgeAB = high - low
+float edgeBC = math.abs(close - open)
+float edgeAC = edgeAB + edgeBC
+distA := 0.0
+if distA + edgeAB < distB
+    distB := distA + edgeAB
+if distB + edgeBC < distC
+    distC := distB + edgeBC
+if distA + edgeAC < distC
+    distC := distA + edgeAC

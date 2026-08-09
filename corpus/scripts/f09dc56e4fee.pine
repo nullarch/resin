@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Ind Pipeline")
+var pipe = map.new<string, float>()
+map.put(pipe, "stage1_ma", ta.sma(close, 3))
+stage1 = map.get(pipe, "stage1_ma", close)
+map.put(pipe, "stage2_rsi", ta.rsi(close, 3))
+stage2 = map.get(pipe, "stage2_rsi", 50.0)
+map.put(pipe, "final", stage1 > close ? stage2 : 100 - stage2)
+result = map.get(pipe, "final", 50.0)
+plot(result, "Result")

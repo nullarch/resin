@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Vol Phase")
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 5)
+ratio = avgATR > 0 ? atr / avgATR : 1.0
+[mid, upper, lower] = ta.bb(close, 5, 2.0)
+bbWidth = upper - lower
+phase = switch
+    ratio > 1.5 and bbWidth > 0 => "explosion"
+    ratio > 1.2 => "expansion"
+    ratio < 0.7 => "compression"
+    => "normal"
+isExplosion = phase == "explosion"
+plot(isExplosion ? 1 : 0, "E")

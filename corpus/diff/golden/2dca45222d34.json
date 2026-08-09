@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:indicators": {
+    "rsi": 80.5615942029,
+    "cci": 101.8518518519,
+    "stoch": 81.8181818182
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:indicators": {
+    "rsi": 80.5615942029,
+    "cci": 101.8518518519,
+    "stoch": 81.8181818182
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:indicators": {
+    "rsi": 80.5615942029,
+    "cci": 101.8518518519,
+    "stoch": 81.8181818182
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:indicators": {
+    "rsi": 80.5615942029,
+    "cci": 101.8518518519,
+    "stoch": 81.8181818182
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:indicators": {
+    "rsi": 80.5615942029,
+    "cci": 101.8518518519,
+    "stoch": 81.8181818182
+   },
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:indicators": {
+    "rsi": 80.5615942029,
+    "cci": 101.8518518519,
+    "stoch": 81.8181818182
+   },
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:indicators": {
+    "rsi": 80.5615942029,
+    "cci": 101.8518518519,
+    "stoch": 81.8181818182
+   },
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:indicators": {
+    "rsi": 80.5615942029,
+    "cci": 101.8518518519,
+    "stoch": 81.8181818182
+   },
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:indicators": {
+    "rsi": 80.5615942029,
+    "cci": 101.8518518519,
+    "stoch": 81.8181818182
+   },
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:indicators": {
+    "rsi": 80.5615942029,
+    "cci": 101.8518518519,
+    "stoch": 81.8181818182
+   },
+   "var:__obs_plot0": 3
+  }
+ ],
+ "finalVarState": {
+  "indicators": {
+   "rsi": 80.5615942029,
+   "cci": 101.8518518519,
+   "stoch": 81.8181818182
+  },
+  "__obs_plot0": 3
+ }
+}

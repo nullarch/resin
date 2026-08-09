@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Chan Analysis")
+totalWidth = 0.0
+count = 0
+for p = 3 to 5
+    hi = ta.highest(high, p)
+    lo = ta.lowest(low, p)
+    totalWidth := totalWidth + (hi - lo)
+    count := count + 1
+avgWidth = count > 0 ? totalWidth / count : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := avgWidth
+plot(avgWidth, "AvgWidth")

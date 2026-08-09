@@ -1,0 +1,16 @@
+//@version=5
+indicator("EpsGreedy")
+var float qBuy = 0.0
+var float qSell = 0.0
+epsilon = 0.2
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+exploreSignal = rsiVal / 100.0
+isExplore = exploreSignal < epsilon ? 1.0 : 0.0
+action = isExplore > 0.5 ? (rsiVal > 50 ? 0.0 : 1.0) : (qBuy >= qSell ? 1.0 : 0.0)
+reward = close > open ? 1.0 : -1.0
+alphaLR = 0.1
+if action > 0.5
+    qBuy := qBuy + alphaLR * (reward - qBuy)
+else
+    qSell := qSell + alphaLR * (reward - qSell)
+plot(action, "Action")

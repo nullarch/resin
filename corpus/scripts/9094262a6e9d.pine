@@ -1,0 +1,6 @@
+//@version=5
+indicator("KCW")
+var float lastK = 0
+k = ta.kcw(close, 5, 1.5)
+if not na(k)
+    lastK := k

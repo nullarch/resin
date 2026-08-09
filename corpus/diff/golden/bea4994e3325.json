@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:pm": {
+    "fast_trend": 1.0,
+    "fast_mom": 1.0,
+    "price_pos": 1.0
+   },
+   "var:__obs_plot0": -3.0
+  },
+  {
+   "var:pm": {
+    "fast_trend": 1.0,
+    "fast_mom": 1.0,
+    "price_pos": 1.0
+   },
+   "var:__obs_plot0": -3.0
+  },
+  {
+   "var:pm": {
+    "fast_trend": 1.0,
+    "fast_mom": 1.0,
+    "price_pos": 1.0
+   },
+   "var:__obs_plot0": -3.0
+  },
+  {
+   "var:pm": {
+    "fast_trend": 1.0,
+    "fast_mom": 1.0,
+    "price_pos": 1.0
+   },
+   "var:__obs_plot0": -1.0
+  },
+  {
+   "var:pm": {
+    "fast_trend": 1.0,
+    "fast_mom": 1.0,
+    "price_pos": 1.0
+   },
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:pm": {
+    "fast_trend": 1.0,
+    "fast_mom": 1.0,
+    "price_pos": 1.0
+   },
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:pm": {
+    "fast_trend": 1.0,
+    "fast_mom": 1.0,
+    "price_pos": 1.0
+   },
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:pm": {
+    "fast_trend": 1.0,
+    "fast_mom": 1.0,
+    "price_pos": 1.0
+   },
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:pm": {
+    "fast_trend": 1.0,
+    "fast_mom": 1.0,
+    "price_pos": 1.0
+   },
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:pm": {
+    "fast_trend": 1.0,
+    "fast_mom": 1.0,
+    "price_pos": 1.0
+   },
+   "var:__obs_plot0": 3.0
+  }
+ ],
+ "finalVarState": {
+  "pm": {
+   "fast_trend": 1.0,
+   "fast_mom": 1.0,
+   "price_pos": 1.0
+  },
+  "__obs_plot0": 3.0
+ }
+}

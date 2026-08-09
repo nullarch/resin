@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:params": {
+    "alpha": 0.3,
+    "beta": 0.5,
+    "gamma": 0.2
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:params": {
+    "alpha": 0.3,
+    "beta": 0.5,
+    "gamma": 0.2
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:params": {
+    "alpha": 0.3,
+    "beta": 0.5,
+    "gamma": 0.2
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:params": {
+    "alpha": 0.3,
+    "beta": 0.5,
+    "gamma": 0.2
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:params": {
+    "alpha": 0.3,
+    "beta": 0.5,
+    "gamma": 0.2
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:params": {
+    "alpha": 0.3,
+    "beta": 0.5,
+    "gamma": 0.2
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:params": {
+    "alpha": 0.3,
+    "beta": 0.5,
+    "gamma": 0.2
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:params": {
+    "alpha": 0.3,
+    "beta": 0.5,
+    "gamma": 0.2
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:params": {
+    "alpha": 0.3,
+    "beta": 0.5,
+    "gamma": 0.2
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:params": {
+    "alpha": 0.3,
+    "beta": 0.5,
+    "gamma": 0.2
+   },
+   "var:__obs_plot0": 1.0
+  }
+ ],
+ "finalVarState": {
+  "params": {
+   "alpha": 0.3,
+   "beta": 0.5,
+   "gamma": 0.2
+  },
+  "__obs_plot0": 1.0
+ }
+}

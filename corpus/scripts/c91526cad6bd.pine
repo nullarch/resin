@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Peak Trough")
+var float lastPeak = 0.0
+var float lastTrough = 99999.0
+var int peakCount = 0
+var int troughCount = 0
+hi3 = ta.highest(high, 3)
+lo3 = ta.lowest(low, 3)
+if high >= hi3 and high > lastPeak
+    lastPeak := high
+    peakCount := peakCount + 1
+if low <= lo3 and low < lastTrough
+    lastTrough := low
+    troughCount := troughCount + 1
+plot(peakCount - troughCount, "Net")

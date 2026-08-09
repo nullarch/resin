@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:d": "<Dir.Down: 'Down'>",
+   "var:__obs_is_up": false,
+   "var:__obs_is_down": true
+  },
+  {
+   "var:d": "<Dir.Up: 'Up'>",
+   "var:__obs_is_up": true,
+   "var:__obs_is_down": false
+  },
+  {
+   "var:d": "<Dir.Up: 'Up'>",
+   "var:__obs_is_up": true,
+   "var:__obs_is_down": false
+  },
+  {
+   "var:d": "<Dir.Down: 'Down'>",
+   "var:__obs_is_up": false,
+   "var:__obs_is_down": true
+  },
+  {
+   "var:d": "<Dir.Up: 'Up'>",
+   "var:__obs_is_up": true,
+   "var:__obs_is_down": false
+  },
+  {
+   "var:d": "<Dir.Up: 'Up'>",
+   "var:__obs_is_up": true,
+   "var:__obs_is_down": false
+  },
+  {
+   "var:d": "<Dir.Up: 'Up'>",
+   "var:__obs_is_up": true,
+   "var:__obs_is_down": false
+  },
+  {
+   "var:d": "<Dir.Down: 'Down'>",
+   "var:__obs_is_up": false,
+   "var:__obs_is_down": true
+  },
+  {
+   "var:d": "<Dir.Up: 'Up'>",
+   "var:__obs_is_up": true,
+   "var:__obs_is_down": false
+  },
+  {
+   "var:d": "<Dir.Up: 'Up'>",
+   "var:__obs_is_up": true,
+   "var:__obs_is_down": false
+  }
+ ],
+ "finalVarState": {
+  "d": "<Dir.Up: 'Up'>",
+  "__obs_is_up": true,
+  "__obs_is_down": false
+ }
+}

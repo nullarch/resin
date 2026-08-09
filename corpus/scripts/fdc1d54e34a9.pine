@@ -1,0 +1,8 @@
+//@version=5
+indicator("Adjoint Pair")
+float leftAdjoint = nz(ta.lowest(low, 5), low)
+float rightAdjoint = nz(ta.highest(high, 5), high)
+float unit = close - leftAdjoint
+float counit = rightAdjoint - close
+float adjointGap = rightAdjoint - leftAdjoint
+float position = adjointGap > 0.01 ? unit / adjointGap : 0.5

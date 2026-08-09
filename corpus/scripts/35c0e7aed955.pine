@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Sort Insert")
+var float[] sorted = array.new_float(0)
+array.push(sorted, close)
+if array.size(sorted) > 5
+    array.shift(sorted)
+array.sort(sorted)
+median = array.size(sorted) > 0 ? array.get(sorted, math.floor(array.size(sorted) / 2)) : close
+plot(close - median, "Diff")

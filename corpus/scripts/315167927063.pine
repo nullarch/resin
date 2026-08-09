@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("NumFmt")
+pct = (close - open) / open * 100.0
+formatted = str.tostring(pct, "#.##")
+fmtLen = str.length(formatted)
+plot(fmtLen, "FL")

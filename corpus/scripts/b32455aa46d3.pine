@@ -1,0 +1,14 @@
+//@version=5
+indicator("MACD Switch")
+ma(float source, int length, string maType) =>
+    switch maType
+        "EMA" => ta.ema(source, length)
+        "SMA" => ta.sma(source, length)
+        "RMA" => ta.rma(source, length)
+        => ta.ema(source, length)
+fast = ma(close, 3, "EMA")
+slow = ma(close, 5, "EMA")
+macd = fast - slow
+signal = ma(macd, 3, "SMA")
+hist = macd - signal
+plot(hist)

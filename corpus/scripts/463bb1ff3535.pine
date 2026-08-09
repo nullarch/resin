@@ -1,0 +1,7 @@
+//@version=5
+indicator("UDT Draw")
+type Container
+    float price = 0.0
+    int dir = 0
+var Container c = Container.new(close, 1)
+plot(c.price)

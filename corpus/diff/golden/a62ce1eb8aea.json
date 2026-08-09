@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:cfg": "pine_fn.<locals>.Settings(rsiThreshold=60.0, atrMultiplier=2.0, lookback=5, useFilter=True)",
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": "NaN"
+  },
+  {
+   "var:cfg": "pine_fn.<locals>.Settings(rsiThreshold=60.0, atrMultiplier=2.0, lookback=5, useFilter=True)",
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": "NaN"
+  },
+  {
+   "var:cfg": "pine_fn.<locals>.Settings(rsiThreshold=60.0, atrMultiplier=2.0, lookback=5, useFilter=True)",
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": "NaN"
+  },
+  {
+   "var:cfg": "pine_fn.<locals>.Settings(rsiThreshold=60.0, atrMultiplier=2.0, lookback=5, useFilter=True)",
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 11.3333333334
+  },
+  {
+   "var:cfg": "pine_fn.<locals>.Settings(rsiThreshold=60.0, atrMultiplier=2.0, lookback=5, useFilter=True)",
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 11.5555555556
+  },
+  {
+   "var:cfg": "pine_fn.<locals>.Settings(rsiThreshold=60.0, atrMultiplier=2.0, lookback=5, useFilter=True)",
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 11.3333333334
+  },
+  {
+   "var:cfg": "pine_fn.<locals>.Settings(rsiThreshold=60.0, atrMultiplier=2.0, lookback=5, useFilter=True)",
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 11.5555555556
+  },
+  {
+   "var:cfg": "pine_fn.<locals>.Settings(rsiThreshold=60.0, atrMultiplier=2.0, lookback=5, useFilter=True)",
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 11.7037037038
+  },
+  {
+   "var:cfg": "pine_fn.<locals>.Settings(rsiThreshold=60.0, atrMultiplier=2.0, lookback=5, useFilter=True)",
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 11.8024691358
+  },
+  {
+   "var:cfg": "pine_fn.<locals>.Settings(rsiThreshold=60.0, atrMultiplier=2.0, lookback=5, useFilter=True)",
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 11.8683127572
+  }
+ ],
+ "finalVarState": {
+  "cfg": "pine_fn.<locals>.Settings(rsiThreshold=60.0, atrMultiplier=2.0, lookback=5, useFilter=True)",
+  "__obs_plot0": 1,
+  "__obs_plot1": 11.8683127572
+ }
+}

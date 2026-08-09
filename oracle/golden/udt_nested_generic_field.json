@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:b": "pine_fn.<locals>.Basket(groups={'prices': [101.0, 102.0, 103.0, 102.0, 104.0, 105.0, 106.0, 105.0, 107.0, 108.0]}, entries=[{'last': 108.0}])",
+   "var:barN": 1,
+   "var:__obs_group_size": 1,
+   "var:__obs_group_sum": 101.0,
+   "var:__obs_entry_tag": 101.0,
+   "var:__obs_entries_size": 1
+  },
+  {
+   "var:b": "pine_fn.<locals>.Basket(groups={'prices': [101.0, 102.0, 103.0, 102.0, 104.0, 105.0, 106.0, 105.0, 107.0, 108.0]}, entries=[{'last': 108.0}])",
+   "var:barN": 2,
+   "var:__obs_group_size": 2,
+   "var:__obs_group_sum": 203.0,
+   "var:__obs_entry_tag": 102.0,
+   "var:__obs_entries_size": 1
+  },
+  {
+   "var:b": "pine_fn.<locals>.Basket(groups={'prices': [101.0, 102.0, 103.0, 102.0, 104.0, 105.0, 106.0, 105.0, 107.0, 108.0]}, entries=[{'last': 108.0}])",
+   "var:barN": 3,
+   "var:__obs_group_size": 3,
+   "var:__obs_group_sum": 306.0,
+   "var:__obs_entry_tag": 103.0,
+   "var:__obs_entries_size": 1
+  },
+  {
+   "var:b": "pine_fn.<locals>.Basket(groups={'prices': [101.0, 102.0, 103.0, 102.0, 104.0, 105.0, 106.0, 105.0, 107.0, 108.0]}, entries=[{'last': 108.0}])",
+   "var:barN": 4,
+   "var:__obs_group_size": 4,
+   "var:__obs_group_sum": 408.0,
+   "var:__obs_entry_tag": 102.0,
+   "var:__obs_entries_size": 1
+  },
+  {
+   "var:b": "pine_fn.<locals>.Basket(groups={'prices': [101.0, 102.0, 103.0, 102.0, 104.0, 105.0, 106.0, 105.0, 107.0, 108.0]}, entries=[{'last': 108.0}])",
+   "var:barN": 5,
+   "var:__obs_group_size": 5,
+   "var:__obs_group_sum": 512.0,
+   "var:__obs_entry_tag": 104.0,
+   "var:__obs_entries_size": 1
+  },
+  {
+   "var:b": "pine_fn.<locals>.Basket(groups={'prices': [101.0, 102.0, 103.0, 102.0, 104.0, 105.0, 106.0, 105.0, 107.0, 108.0]}, entries=[{'last': 108.0}])",
+   "var:barN": 6,
+   "var:__obs_group_size": 6,
+   "var:__obs_group_sum": 617.0,
+   "var:__obs_entry_tag": 105.0,
+   "var:__obs_entries_size": 1
+  },
+  {
+   "var:b": "pine_fn.<locals>.Basket(groups={'prices': [101.0, 102.0, 103.0, 102.0, 104.0, 105.0, 106.0, 105.0, 107.0, 108.0]}, entries=[{'last': 108.0}])",
+   "var:barN": 7,
+   "var:__obs_group_size": 7,
+   "var:__obs_group_sum": 723.0,
+   "var:__obs_entry_tag": 106.0,
+   "var:__obs_entries_size": 1
+  },
+  {
+   "var:b": "pine_fn.<locals>.Basket(groups={'prices': [101.0, 102.0, 103.0, 102.0, 104.0, 105.0, 106.0, 105.0, 107.0, 108.0]}, entries=[{'last': 108.0}])",
+   "var:barN": 8,
+   "var:__obs_group_size": 8,
+   "var:__obs_group_sum": 828.0,
+   "var:__obs_entry_tag": 105.0,
+   "var:__obs_entries_size": 1
+  },
+  {
+   "var:b": "pine_fn.<locals>.Basket(groups={'prices': [101.0, 102.0, 103.0, 102.0, 104.0, 105.0, 106.0, 105.0, 107.0, 108.0]}, entries=[{'last': 108.0}])",
+   "var:barN": 9,
+   "var:__obs_group_size": 9,
+   "var:__obs_group_sum": 935.0,
+   "var:__obs_entry_tag": 107.0,
+   "var:__obs_entries_size": 1
+  },
+  {
+   "var:b": "pine_fn.<locals>.Basket(groups={'prices': [101.0, 102.0, 103.0, 102.0, 104.0, 105.0, 106.0, 105.0, 107.0, 108.0]}, entries=[{'last': 108.0}])",
+   "var:barN": 10,
+   "var:__obs_group_size": 10,
+   "var:__obs_group_sum": 1043.0,
+   "var:__obs_entry_tag": 108.0,
+   "var:__obs_entries_size": 1
+  }
+ ],
+ "finalVarState": {
+  "b": "pine_fn.<locals>.Basket(groups={'prices': [101.0, 102.0, 103.0, 102.0, 104.0, 105.0, 106.0, 105.0, 107.0, 108.0]}, entries=[{'last': 108.0}])",
+  "barN": 10,
+  "__obs_group_size": 10,
+  "__obs_group_sum": 1043.0,
+  "__obs_entry_tag": 108.0,
+  "__obs_entries_size": 1
+ }
+}

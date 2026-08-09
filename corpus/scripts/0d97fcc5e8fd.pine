@@ -1,0 +1,7 @@
+//@version=5
+indicator("Multiline And")
+var bool result = false
+result := close > 100 and
+    high > 110 and
+    low > 95
+plot(close)

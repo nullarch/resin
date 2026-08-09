@@ -1,0 +1,28 @@
+
+//@version=5
+indicator("PA Full")
+body = math.abs(close - open)
+range_ = high - low
+upperWick = high - math.max(close, open)
+lowerWick = math.min(close, open) - low
+
+bodyRatio = range_ > 0 ? body / range_ : 0.0
+isBull = close > open
+isLarge = body > ta.sma(body, 5) * 1.5
+
+var pc = map.new<string, float>()
+if isBull
+    map.put(pc, "bull", map.get(pc, "bull", 0.0) + 1)
+else
+    map.put(pc, "bear", map.get(pc, "bear", 0.0) + 1)
+
+var float[] bodyHist = array.new_float(0)
+array.push(bodyHist, body)
+if array.size(bodyHist) > 6
+    array.shift(bodyHist)
+
+var int bars = 0
+bars := bars + 1
+
+plot(bodyRatio, "BR")
+plot(isLarge ? 1 : 0, "Large")

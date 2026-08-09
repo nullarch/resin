@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("FallingEdge")
+cond = close > 106
+var bool prevCond = false
+var int fallingEdges = 0
+
+if not cond and prevCond
+    fallingEdges := fallingEdges + 1
+prevCond := cond
+var float __obs_plot0 = na
+__obs_plot0 := fallingEdges
+plot(fallingEdges, "FE")

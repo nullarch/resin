@@ -1,0 +1,12 @@
+//@version=5
+indicator("BayesMean")
+var float priorMean = 105.0
+var float priorPrec = 1.0
+var int nObs = 0
+nObs := nObs + 1
+dataPrec = 1.0 / math.max((high - low) * (high - low), 0.01)
+totalPrec = priorPrec + dataPrec
+postMean = (priorPrec * priorMean + dataPrec * close) / totalPrec
+priorMean := postMean
+priorPrec := totalPrec
+plot(postMean, "PostMean")

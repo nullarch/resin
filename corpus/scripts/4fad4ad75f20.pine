@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Px Cross MA")
+sma5 = ta.sma(close, 5)
+crossUp = ta.crossover(close, sma5)
+crossDn = ta.crossunder(close, sma5)
+plot(crossUp ? 1 : crossDn ? -1 : 0, "Cx")

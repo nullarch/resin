@@ -1,0 +1,12 @@
+//@version=5
+indicator("Rule Ensemble")
+var int ensembleState = 0
+left = close > open ? 1 : 0
+center = high > nz(ta.sma(high, 3), high) ? 1 : 0
+right = volume > 1000 ? 1 : 0
+idx = left * 4 + center * 2 + right
+r30bit = math.floor(30 / math.pow(2, idx)) % 2
+r90bit = math.floor(90 / math.pow(2, idx)) % 2
+r110bit = math.floor(110 / math.pow(2, idx)) % 2
+voteSum = r30bit + r90bit + r110bit
+ensembleState := voteSum >= 2 ? 1 : 0

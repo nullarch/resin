@@ -1,0 +1,23 @@
+
+//@version=5
+indicator("StateMachine")
+enum State
+    Idle = 0
+    Armed = 1
+    Fired = 2
+
+var State current = State.Idle
+var int transitions = 0
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+
+nextState = switch current
+    State.Idle => rsi > 60 ? State.Armed : State.Idle
+    State.Armed => close > open ? State.Fired : rsi < 40 ? State.Idle : State.Armed
+    State.Fired => State.Idle
+    => State.Idle
+
+if int(nextState) != int(current)
+    transitions := transitions + 1
+current := nextState
+plot(transitions, "T")

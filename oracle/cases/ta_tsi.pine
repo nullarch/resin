@@ -1,0 +1,7 @@
+//@version=5
+indicator("ta_tsi")
+// ta.tsi 오라클 검증(ROADMAP P2 "ta.* 44종" — tsi). short_length=2, long_length=3으로
+// sample10.json 10바 안에서 워밍업 구간(NaN, 바 0~3 — pc 자체가 바0엔 없고, e1이 long_length=3바
+// 축적 후 시드, e2가 short_length=2바 축적 후 시드)과 정상 구간(바 4~9)을 모두 커버.
+var float __obs_tsi = na
+__obs_tsi := ta.tsi(close, 2, 3)

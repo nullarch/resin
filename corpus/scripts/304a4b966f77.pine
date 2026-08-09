@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Risk UDT")
+type RiskTracker
+    float maxDD = 0.0
+    float peak = 0.0
+    int riskEvents = 0
+
+var RiskTracker rt2 = RiskTracker.new()
+rt2.peak := math.max(rt2.peak, close)
+dd = rt2.peak > 0 ? (rt2.peak - close) / rt2.peak * 100 : 0.0
+rt2.maxDD := math.max(rt2.maxDD, dd)
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 5)
+if avgATR > 0 and atr > avgATR * 1.5
+    rt2.riskEvents := rt2.riskEvents + 1
+plot(rt2.maxDD, "MDD")

@@ -1,0 +1,6 @@
+//@version=5
+indicator("ColorPlot")
+var string lastColor = "none"
+smaVal = ta.sma(close, 3)
+if not na(smaVal)
+    lastColor := close > smaVal ? "green" : "red"

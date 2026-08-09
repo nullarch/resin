@@ -1,0 +1,8 @@
+//@version=5
+indicator("For Div")
+float sumNorm = 0.0
+for i = 1 to 5
+    sumNorm := sumNorm + (close[i] / close)
+var float __obs_plot0 = na
+__obs_plot0 := sumNorm
+plot(sumNorm)

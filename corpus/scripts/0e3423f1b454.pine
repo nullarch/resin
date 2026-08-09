@@ -1,0 +1,23 @@
+
+//@version=5
+indicator("ToxDash")
+type ToxMetrics
+    float vpin = 0.0
+    float kyleLam = 0.0
+    float amihud = 0.0
+tox = ToxMetrics.new()
+buyVol = close >= open ? volume : 0.0
+sellVol = close < open ? volume : 0.0
+tox.vpin := math.abs(buyVol - sellVol) / (volume + 0.001)
+tox.kyleLam := volume > 0 ? math.abs(close - open) / volume * 10000.0 : 0.0
+dollarVol = close * volume
+ret = math.abs(close - close[1])
+tox.amihud := dollarVol > 0 ? nz(ret, 0.0) / dollarVol * 1e6 : 0.0
+metrics = map.new<string, float>()
+map.put(metrics, "vpin", tox.vpin)
+map.put(metrics, "kyleLam", tox.kyleLam)
+map.put(metrics, "amihud", tox.amihud)
+totalTox = 0.0
+for [key, val] in metrics
+    totalTox := totalTox + val
+plot(totalTox, "TOX")

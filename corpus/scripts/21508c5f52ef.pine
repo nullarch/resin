@@ -1,0 +1,5 @@
+//@version=5
+indicator("Barssince valuewhen")
+bullBar = close > open
+barsSinceBull = ta.barssince(bullBar)
+lastBullClose = ta.valuewhen(bullBar, close, 0)

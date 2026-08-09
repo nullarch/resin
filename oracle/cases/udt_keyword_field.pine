@@ -1,0 +1,22 @@
+//@version=5
+indicator("udt_keyword_field")
+// UDT 필드명이 예약 키워드(var/type/switch)인 경우(C263 신규) -- parseTypeField가 KEYWORD_AS_ATTR
+// 셋을 필드명 위치에도 허용하도록 확장. 읽기/쓰기 접근(obj.var 등)은 이미 parsePostfix의 DotAccess
+// 분기(L991, KEYWORD_AS_ATTR)가 커버해온 경로라 이 채널은 필드 선언 위치 하나만 신규 검증한다.
+
+type Signal
+    float var = 0.0
+    string type = "none"
+    float switch = 0.0
+
+var Signal sig = Signal.new()
+sig.var := close - open
+sig.type := close > open ? "bull" : "bear"
+sig.switch := sig.switch + 1
+
+var float __obs_var = na
+__obs_var := sig.var
+var float __obs_switch = na
+__obs_switch := sig.switch
+var string __obs_type = na
+__obs_type := sig.type

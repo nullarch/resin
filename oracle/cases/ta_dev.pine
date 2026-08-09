@@ -1,0 +1,10 @@
+//@version=5
+indicator("ta_dev")
+// ta.dev 오라클 검증(ROADMAP P2 "ta.* 44종" 완주 정정 시점에 인라인으로 남아있던 실제 누락 항목 —
+// C119에서 추가). length=3으로 sample10.json 10바 안에서 워밍업(바 0~1, data_len<length라 NaN)과
+// 정상 구간(바 2~9)을 모두 커버. pine2py wavealgo/ta/dev.py: Mean Absolute Deviation =
+// average(|v - mean|) over the last `length` bars(현재 포함, sma와 동일 창). sample10엔 na가 없어
+// 순환 버퍼가 항상 채워진 표준 경로만 커버(NaN 관련 raw-passthrough 시맨틱은 runtime.test.ts
+// hand-verified로 별도 검증).
+var float __obs_dev = na
+__obs_dev := ta.dev(close, 3)

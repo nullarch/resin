@@ -1,0 +1,11 @@
+//@version=5
+indicator("MA Switch")
+maType = "EMA"
+ma = switch maType
+    "EMA" => ta.ema(close, 5)
+    "SMA" => ta.sma(close, 5)
+    "RMA" => ta.rma(close, 5)
+    => ta.sma(close, 5)
+var float last_ma = 0.0
+last_ma := nz(ma)
+plot(close)

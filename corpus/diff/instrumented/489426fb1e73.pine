@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Data UDT")
+type DataPoint
+    float price = 0.0
+    float rsiVal = 0.0
+    float atrVal = 0.0
+
+var DataPoint dp = DataPoint.new()
+dp.price := close
+dp.rsiVal := nz(ta.rsi(close, 3), 50.0)
+dp.atrVal := nz(ta.atr(3), 1.0)
+composite = dp.price > ta.sma(close, 3) ? dp.rsiVal : 50.0 - dp.atrVal
+var float __obs_plot0 = na
+__obs_plot0 := composite
+plot(composite, "C")

@@ -1,0 +1,9 @@
+//@version=5
+indicator("Jump Detect")
+float atrVal = nz(ta.atr(3), 1.0)
+float prevC = not na(close[1]) ? close[1] : close
+float moveSize = math.abs(close - prevC)
+float isJump = moveSize > 2.0 * atrVal ? 1.0 : 0.0
+var float jumpCount = 0.0
+jumpCount := jumpCount + isJump
+plot(jumpCount, "Jumps")

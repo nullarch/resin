@@ -1,0 +1,12 @@
+//@version=5
+strategy("FE05")
+var int trades = 0
+emaVal = ta.ema(close, 3)
+atrVal = nz(ta.atr(3), 1.0)
+threshold = emaVal + atrVal
+if close > threshold
+    strategy.entry("Long", strategy.long)
+    trades := trades + 1
+else
+    if close < emaVal - atrVal
+        strategy.close("Long")

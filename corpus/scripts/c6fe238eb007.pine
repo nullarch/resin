@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Pat Freq")
+var float[] patTypes = array.new_float(0)
+body = math.abs(close - open)
+totalRange = high - low
+bodyPct = totalRange > 0 ? body / totalRange * 100 : 0.0
+patType = bodyPct < 10 ? 0.0 : close > open ? 1.0 : -1.0
+array.push(patTypes, patType)
+if array.size(patTypes) > 10
+    array.shift(patTypes)
+bullPats = 0
+for i = 0 to math.max(array.size(patTypes) - 1, 0)
+    if i < array.size(patTypes) and array.get(patTypes, i) > 0
+        bullPats := bullPats + 1
+plot(bullPats, "BP")

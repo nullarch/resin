@@ -1,0 +1,5 @@
+//@version=5
+indicator("Three-State Cyclic DFA")
+var int state = 0
+state := state == 0 ? 1 : state == 1 ? 2 : 0
+plot(state, "State")

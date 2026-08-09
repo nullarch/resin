@@ -1,0 +1,9 @@
+//@version=5
+indicator("Ocean Layers")
+var layers = array.new<float>(5, 0.0)
+surfaceT = high * 0.3
+for i = 0 to 4
+    depth_factor = 1.0 - i * 0.15
+    array.set(layers, i, surfaceT * depth_factor)
+var float deepestTemp = 0.0
+deepestTemp := array.get(layers, 4)

@@ -1,0 +1,7 @@
+//@version=5
+indicator("Hadamard Gate")
+float signal0 = close - open
+float signal1 = high - low
+float sqrt2inv = 1.0 / math.sqrt(2.0)
+float hOut0 = sqrt2inv * (signal0 + signal1)
+float hOut1 = sqrt2inv * (signal0 - signal1)

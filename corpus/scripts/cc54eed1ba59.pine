@@ -1,0 +1,19 @@
+
+//@version=5
+indicator("EAM Combo")
+enum Level
+    High = 2
+    Mid = 1
+    Low = 0
+
+var float[] scores = array.new_float(0)
+var sm = map.new<string, float>()
+rsi = nz(ta.rsi(close, 3), 50.0)
+level = rsi > 65 ? Level.High : rsi > 35 ? Level.Mid : Level.Low
+array.push(scores, float(int(level)))
+if array.size(scores) > 6
+    array.shift(scores)
+map.put(sm, "avg_level", array.avg(scores))
+map.put(sm, "max_level", array.max(scores))
+avgLevel = map.get(sm, "avg_level", 1.0)
+plot(avgLevel, "Avg")

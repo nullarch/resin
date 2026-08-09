@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("Candle Score UDF")
+candleScore(float bodyRatio, float upperShd, float lowerShd) =>
+    bullScore = bodyRatio > 60 ? 1.0 : 0.0
+    rejScore = lowerShd > 30 ? 1.0 : 0.0
+    sellScore = upperShd > 30 ? -1.0 : 0.0
+    bullScore + rejScore + sellScore
+
+body = math.abs(close - open)
+totalRange = high - low
+bodyR = totalRange > 0 ? body / totalRange * 100 : 0.0
+topBody = math.max(close, open)
+botBody = math.min(close, open)
+upperR = totalRange > 0 ? (high - topBody) / totalRange * 100 : 0.0
+lowerR = totalRange > 0 ? (botBody - low) / totalRange * 100 : 0.0
+score = candleScore(bodyR, upperR, lowerR)
+plot(score, "CS")

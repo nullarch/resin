@@ -1,0 +1,5 @@
+//@version=5
+indicator("Herd Immunity")
+r0 = close / 50.0
+herdThreshold = r0 > 1.0 ? 1.0 - 1.0 / r0 : 0.0
+pctNeeded = herdThreshold * 100.0

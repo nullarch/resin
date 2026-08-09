@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Periodic")
+var int barNum = 0
+barNum := barNum + 1
+angle = float(barNum) / 5 * math.pi * 2
+sinSignal = math.sin(angle)
+cosSignal = math.cos(angle)
+composite = sinSignal * 0.6 + cosSignal * 0.4
+plot(composite, "Comp")

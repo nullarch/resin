@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Composite")
+compositeScore(float price, int shortLen, int longLen) =>
+    fastMA = ta.sma(price, shortLen)
+    slowMA = ta.sma(price, longLen)
+    rsi = ta.rsi(price, shortLen)
+    trendScore = price > fastMA ? 1.0 : -1.0
+    maScore = fastMA > slowMA ? 1.0 : -1.0
+    momScore = rsi > 50 ? 1.0 : -1.0
+    (trendScore + maScore + momScore) / 3.0
+
+score = compositeScore(close, 3, 5)
+plot(score, "Score")

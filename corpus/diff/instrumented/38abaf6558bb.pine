@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("EnumComp")
+enum CompType
+    Trend = 1
+    Noise = 2
+    Mixed = 3
+
+trend = nz(ta.sma(close, 3), close)
+residual = math.abs(close - trend)
+trendMag = math.abs(trend)
+ctype = residual > trendMag * 0.05 ? CompType.Noise : CompType.Trend
+val = ctype == CompType.Noise ? 2.0 : 1.0
+var float __obs_plot0 = na
+__obs_plot0 := val
+plot(val, "CT")

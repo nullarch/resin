@@ -1,0 +1,19 @@
+
+//@version=5
+indicator("Enum Switch")
+enum Signal
+    StrongBuy = 2
+    Buy = 1
+    Neutral = 0
+    Sell = -1
+    StrongSell = -2
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+sig = rsi > 70 ? Signal.StrongBuy : rsi > 55 ? Signal.Buy : rsi < 30 ? Signal.StrongSell : rsi < 45 ? Signal.Sell : Signal.Neutral
+weight = switch sig
+    Signal.StrongBuy => 1.0
+    Signal.Buy => 0.5
+    Signal.StrongSell => -1.0
+    Signal.Sell => -0.5
+    => 0.0
+plot(weight, "Wt")

@@ -1,0 +1,11 @@
+
+//@version=5
+strategy("Vol Conf", overlay=true)
+sma3 = ta.sma(close, 3)
+volSMA = ta.sma(volume, 5)
+volHigh = volume > volSMA * 1.2
+if close > sma3 and volHigh
+    strategy.entry("Long", strategy.long)
+if close < sma3
+    strategy.close("Long")
+plot(sma3, "MA")

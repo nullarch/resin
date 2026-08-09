@@ -1,0 +1,7 @@
+//@version=5
+indicator("CodegenCheck")
+x = close
+if x == na
+    y = 1
+if x != na
+    z = 2

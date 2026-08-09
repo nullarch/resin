@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Join")
+arr = array.from(1.0, 2.0, 3.0)
+joined = array.join(arr, ",")
+hasComma = str.contains(joined, ",")
+plot(hasComma ? 1 : 0, "Has")

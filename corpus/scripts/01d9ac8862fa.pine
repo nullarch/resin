@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Candle Score")
+candleScore(float o, float h, float l, float c) =>
+    body = math.abs(c - o)
+    rng = h - l
+    bodyPct = rng > 0 ? body / rng : 0.0
+    isBull = c > o ? 1.0 : -1.0
+    bodyPct * isBull
+
+score = candleScore(open, high, low, close)
+plot(score, "Score")

@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Double Call")
+momentum(float src, int lookback) =>
+    prev = src[lookback]
+    not na(prev) and prev > 0 ? (src - prev) / prev * 100 : 0.0
+
+mom1 = momentum(close, 1)
+mom3 = momentum(close, 3)
+combined = mom1 * 0.7 + mom3 * 0.3
+plot(combined, "Mom")

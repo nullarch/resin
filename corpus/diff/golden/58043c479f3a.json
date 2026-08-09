@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:sr": "pine_fn.<locals>.StratResult(wins=10, losses=0, totalPnl=20.0)",
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:sr": "pine_fn.<locals>.StratResult(wins=10, losses=0, totalPnl=20.0)",
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:sr": "pine_fn.<locals>.StratResult(wins=10, losses=0, totalPnl=20.0)",
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:sr": "pine_fn.<locals>.StratResult(wins=10, losses=0, totalPnl=20.0)",
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:sr": "pine_fn.<locals>.StratResult(wins=10, losses=0, totalPnl=20.0)",
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:sr": "pine_fn.<locals>.StratResult(wins=10, losses=0, totalPnl=20.0)",
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:sr": "pine_fn.<locals>.StratResult(wins=10, losses=0, totalPnl=20.0)",
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:sr": "pine_fn.<locals>.StratResult(wins=10, losses=0, totalPnl=20.0)",
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:sr": "pine_fn.<locals>.StratResult(wins=10, losses=0, totalPnl=20.0)",
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:sr": "pine_fn.<locals>.StratResult(wins=10, losses=0, totalPnl=20.0)",
+   "var:__obs_plot0": 1.0
+  }
+ ],
+ "finalVarState": {
+  "sr": "pine_fn.<locals>.StratResult(wins=10, losses=0, totalPnl=20.0)",
+  "__obs_plot0": 1.0
+ }
+}

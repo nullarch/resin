@@ -1,0 +1,9 @@
+//@version=5
+indicator("Slash Assign")
+float x = 100.0
+x /= 4.0
+var float result = 0.0
+result := x
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

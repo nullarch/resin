@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("MTF Proxy")
+var m = map.new<string, float>()
+map.put(m, "fast_ma", ta.ema(close, 3))
+map.put(m, "slow_ma", ta.sma(close, 5))
+fast = map.get(m, "fast_ma", close)
+slow = map.get(m, "slow_ma", close)
+trend = fast > slow ? 1 : -1
+var float __obs_plot0 = na
+__obs_plot0 := trend
+plot(trend, "Trend")

@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Min Max")
+var float allTimeHigh = 0.0
+var float allTimeLow = 999999.0
+var float range_ = 0.0
+if close > allTimeHigh
+    allTimeHigh := close
+if close < allTimeLow
+    allTimeLow := close
+range_ := allTimeHigh - allTimeLow
+plot(range_, "ATR Range")

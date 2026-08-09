@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("BB EMA")
+basis = ta.ema(close, 5)
+dev = ta.stdev(close, 5) * 2
+upper = basis + dev
+lower = basis - dev
+pctB = (close - lower) / (upper - lower)
+var float __obs_plot0 = na
+__obs_plot0 := pctB
+plot(pctB, "%B")

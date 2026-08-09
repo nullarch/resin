@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:p": "pine_fn.<locals>.Profile(poc=110.33333333333333, valueHigh=113.30041152263333, valueLow=107.36625514403333)",
+   "var:__obs_plot0": 102.0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:p": "pine_fn.<locals>.Profile(poc=110.33333333333333, valueHigh=113.30041152263333, valueLow=107.36625514403333)",
+   "var:__obs_plot0": 103.33333333333333,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:p": "pine_fn.<locals>.Profile(poc=110.33333333333333, valueHigh=113.30041152263333, valueLow=107.36625514403333)",
+   "var:__obs_plot0": 101.66666666666667,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:p": "pine_fn.<locals>.Profile(poc=110.33333333333333, valueHigh=113.30041152263333, valueLow=107.36625514403333)",
+   "var:__obs_plot0": 104.33333333333333,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:p": "pine_fn.<locals>.Profile(poc=110.33333333333333, valueHigh=113.30041152263333, valueLow=107.36625514403333)",
+   "var:__obs_plot0": 106.33333333333333,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:p": "pine_fn.<locals>.Profile(poc=110.33333333333333, valueHigh=113.30041152263333, valueLow=107.36625514403333)",
+   "var:__obs_plot0": 105.33333333333333,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:p": "pine_fn.<locals>.Profile(poc=110.33333333333333, valueHigh=113.30041152263333, valueLow=107.36625514403333)",
+   "var:__obs_plot0": 107.33333333333333,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:p": "pine_fn.<locals>.Profile(poc=110.33333333333333, valueHigh=113.30041152263333, valueLow=107.36625514403333)",
+   "var:__obs_plot0": 109.33333333333333,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:p": "pine_fn.<locals>.Profile(poc=110.33333333333333, valueHigh=113.30041152263333, valueLow=107.36625514403333)",
+   "var:__obs_plot0": 108.33333333333333,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:p": "pine_fn.<locals>.Profile(poc=110.33333333333333, valueHigh=113.30041152263333, valueLow=107.36625514403333)",
+   "var:__obs_plot0": 110.33333333333333,
+   "var:__obs_plot1": 1
+  }
+ ],
+ "finalVarState": {
+  "p": "pine_fn.<locals>.Profile(poc=110.33333333333333, valueHigh=113.30041152263333, valueLow=107.36625514403333)",
+  "__obs_plot0": 110.33333333333333,
+  "__obs_plot1": 1
+ }
+}

@@ -1,0 +1,8 @@
+//@version=5
+indicator("String Ops")
+var float result = 0.0
+string base = "Hello"
+string full = base + " World"
+int len = str.length(full)
+bool has = str.contains(full, "World")
+result := has ? len : 0.0

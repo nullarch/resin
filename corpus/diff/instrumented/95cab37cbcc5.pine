@@ -1,0 +1,9 @@
+//@version=5
+indicator("Math Trig")
+float s = math.sin(0.0)
+float c = math.cos(0.0)
+var float result = 0.0
+result := s + c
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

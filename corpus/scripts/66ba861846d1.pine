@@ -1,0 +1,6 @@
+//@version=5
+indicator("Stoch")
+var float lastK = 0
+k = ta.stoch(close, high, low, 5)
+if not na(k)
+    lastK := k

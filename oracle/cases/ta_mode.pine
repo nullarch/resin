@@ -1,0 +1,10 @@
+//@version=5
+indicator("ta_mode")
+// ta.mode 오라클 검증(ROADMAP P2 "ta.* 44종" — mode, median(C115)에 이은 잔여 5종 중 4/5). length=3
+// sample10.json 10바 안에서 워밍업(바 0~1, 호출 횟수<length라 NaN)과 정상 구간(바 2~9)을 모두
+// 커버. pine2py wavealgo/ta/mode.py: 매 바 최근 length개(현재 포함) 중 개별 NaN은 집계에서
+// 제외하고(median의 "창에 NaN 있으면 전체 NaN"과 다름) 최빈값(동률이면 최솟값)을 반환. sample10엔
+// na가 없어 이 NaN-스킵 경로와 동률 tie-break(min)는 runtime.test.ts hand-verified로 별도 검증
+// (pine2py mode() 직접 실행 대비 500건 fuzz 사전 확인, DIVERGENCES 대상 아님).
+var float __obs_mode = na
+__obs_mode := ta.mode(close, 3)

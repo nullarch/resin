@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:divCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:divCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:divCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:divCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:divCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:divCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:divCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:divCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:divCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:divCount": 0,
+   "var:__obs_plot0": 0
+  }
+ ],
+ "finalVarState": {
+  "divCount": 0,
+  "__obs_plot0": 0
+ }
+}

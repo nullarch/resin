@@ -1,0 +1,11 @@
+//@version=5
+indicator("Vietoris Rips")
+float eps = 2.0
+int cnt = 0
+float prevC1 = not na(close[1]) ? close[1] : close
+float prevC2 = not na(close[2]) ? close[2] : close
+if math.abs(close - prevC1) < eps
+    cnt := cnt + 1
+if math.abs(close - prevC2) < eps
+    cnt := cnt + 1
+plot(cnt, "VR Count")

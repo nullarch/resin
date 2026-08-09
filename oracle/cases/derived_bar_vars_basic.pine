@@ -1,0 +1,23 @@
+//@version=5
+indicator("derived_bar_vars_basic")
+// hl2/hlc3/ohlc4/hlcc4/bar_index bare 식별자 오라클 검증(ROADMAP "hl2/hlc3/ohlc4/hlcc4/bar_index bare
+// 식별자 이식", DIVERGENCES.md #15, C176/C182가 발견/재확인한 격차). pine2py wavealgo/context.py
+// push_bar()가 이 5개를 별도 Series로 저장하는 공식(hl2=(h+l)/2, hlc3=(h+l+c)/3,
+// ohlc4=(o+h+l+c)/4, hlcc4=(h+l+c+c)/4, bar_index=push 시점 index)을 sample10.json 10바 전 구간에서
+// 검증. hl2[1]/bar_index[1] 히스토리 인덱싱도 함께 확인(pine2js는 별도 Series 없이 open/high/
+// low/close의 같은 offset에서 합성하므로 히스토리 참조도 정확해야 한다).
+var float __obs_hl2 = na
+var float __obs_hlc3 = na
+var float __obs_ohlc4 = na
+var float __obs_hlcc4 = na
+var float __obs_bar_index = na
+var float __obs_hl2_prev = na
+var float __obs_bar_index_prev = na
+
+__obs_hl2 := hl2
+__obs_hlc3 := hlc3
+__obs_ohlc4 := ohlc4
+__obs_hlcc4 := hlcc4
+__obs_bar_index := bar_index
+__obs_hl2_prev := hl2[1]
+__obs_bar_index_prev := bar_index[1]

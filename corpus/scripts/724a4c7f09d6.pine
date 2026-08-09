@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("UDT Osc")
+type OscState
+    float rsi = 50.0
+    float prevRsi = 50.0
+    bool rising = false
+    int direction = 0
+
+var OscState os = OscState.new()
+os.prevRsi := os.rsi
+os.rsi := nz(ta.rsi(close, 3), 50.0)
+os.rising := os.rsi > os.prevRsi
+os.direction := os.rising ? 1 : -1
+plot(os.rsi, "RSI")
+plot(os.direction, "Dir")

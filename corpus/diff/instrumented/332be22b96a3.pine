@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Stat Wt")
+sma5 = ta.sma(close, 5)
+stdev5 = ta.stdev(close, 5)
+z = stdev5 > 0 ? (close - sma5) / stdev5 : 0.0
+weight = math.abs(z) > 2 ? 0.5 : math.abs(z) > 1 ? 1.0 : 1.5
+rsi = nz(ta.rsi(close, 3), 50.0)
+signal = (rsi - 50) / 50 * weight
+var float __obs_plot0 = na
+__obs_plot0 := signal
+plot(signal, "Sig")

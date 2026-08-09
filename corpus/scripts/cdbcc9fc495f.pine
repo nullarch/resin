@@ -1,0 +1,9 @@
+//@version=5
+indicator("Deep History")
+var bool early_nan = false
+if bar_index == 2
+    early_nan := na(close[5])
+var bool late_valid = false
+if bar_index == 8
+    late_valid := not na(close[5])
+plot(close)

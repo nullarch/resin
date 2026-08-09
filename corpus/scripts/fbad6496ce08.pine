@@ -1,0 +1,10 @@
+//@version=5
+indicator("UDT na")
+type Trade
+    float entry = 0.0
+    bool active = false
+
+var t = Trade.new(100.0, true)
+var bool t_is_na = true
+t_is_na := na(t.entry)  // 0.0 is not na
+plot(close)

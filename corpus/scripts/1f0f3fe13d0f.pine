@@ -1,0 +1,15 @@
+//@version=5
+indicator("Type Method")
+var float result = 0.0
+
+type Counter
+    int n = 0
+
+method inc(Counter self) =>
+    self.n := self.n + 1
+
+c = Counter.new()
+c.inc()
+c.inc()
+c.inc()
+result := c.n

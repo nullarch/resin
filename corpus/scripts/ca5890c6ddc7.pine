@@ -1,0 +1,10 @@
+//@version=5
+indicator("Array Advanced")
+var float[] prices = array.new_float(0)
+array.push(prices, close)
+if array.size(prices) > 5
+    array.shift(prices)
+sorted = array.copy(prices)
+array.sort(sorted)
+med = array.median(prices)
+plot(med)

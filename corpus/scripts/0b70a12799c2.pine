@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Report")
+rsi = ta.rsi(close, 3)
+sma3 = ta.sma(close, 3)
+trend = close > sma3 ? "UP" : "DOWN"
+rsiZone = rsi > 70 ? "OB" : rsi < 30 ? "OS" : "NEUTRAL"
+report = "T:" + trend + " R:" + rsiZone
+reportLen = str.length(report)
+plot(reportLen, "Len")

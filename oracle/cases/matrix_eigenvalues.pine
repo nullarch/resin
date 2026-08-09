@@ -1,0 +1,100 @@
+//@version=5
+indicator("matrix_eigenvalues")
+
+// C105: matrix.* 열여섯 번째 슬라이스 — eigenvalues(고유값, 행렬 대수 11종의 열 번째 항목,
+// 47/49 -> 48/49). pine2py eigenvalues()(matrix.py L332-348)의 docstring/주석("2x2 신뢰, 큰 행렬은
+// 근사"/"QR iteration for larger matrices (simplified)")은 반복 알고리즘을 암시하지만 실제 코드는
+// 완전 closed-form(반복/수렴 없음): n=1은 m[0][0] 그대로, n=2는 trace/det 판별식(disc=tr^2-4*det)
+// 으로 disc>=0이면 [(tr+sqrt(disc))/2,(tr-sqrt(disc))/2], disc<0(복소 고유값)이면 허수부를 버리고
+// [tr/2,tr/2] 중복 반환(TV 미검증 "가설"로 literal port), n>=3은 주석과 무관하게 대각 원소를
+// 그대로 반환(`[m[i][i] for i in range(n)]`). python 직접 실행 + node fuzz 487케이스로 착수 전
+// 전수 검증 완료(matrix.ts rt.matrix.eigenvalues 주석 참조). 반환 타입은 array<float>(matrix가
+// 아님) — array.get으로 관측.
+
+// A: n=1(bar-derived, 1x1) — 값 그대로 반환.
+maA = matrix.new<float>(1, 1, 0.0)
+matrix.set(maA, 0, 0, close + 0.5)
+raA = matrix.eigenvalues(maA)
+var float __obs_a0 = na
+__obs_a0 := array.get(raA, 0)
+
+// B: n=2 disc>=0(대각행렬, bar-derived) — disc=(a-d)^2는 항상 0 이상이라 매 바 실수 고유값 보장.
+mbB = matrix.new<float>(2, 2, 0.0)
+matrix.set(mbB, 0, 0, open + 0.0)
+matrix.set(mbB, 0, 1, 0.0)
+matrix.set(mbB, 1, 0, 0.0)
+matrix.set(mbB, 1, 1, close + 0.0)
+rbB = matrix.eigenvalues(mbB)
+var float __obs_b0 = na
+__obs_b0 := array.get(rbB, 0)
+var float __obs_b1 = na
+__obs_b1 := array.get(rbB, 1)
+
+// C: n=2 disc<0(반대칭, bar-derived) — tr=0, det=b^2>0(b=high-low+1.0 항상 양수)이라 disc=-4b^2<0
+// 매 바 보장 — 복소 고유값 경로(허수부 버림, [tr/2,tr/2]=[0,0]) 확인.
+mcC = matrix.new<float>(2, 2, 0.0)
+matrix.set(mcC, 0, 0, 0.0)
+matrix.set(mcC, 0, 1, 0.0 - (high - low + 1.0))
+matrix.set(mcC, 1, 0, high - low + 1.0)
+matrix.set(mcC, 1, 1, 0.0)
+rcC = matrix.eigenvalues(mcC)
+var float __obs_c0 = na
+__obs_c0 := array.get(rcC, 0)
+var float __obs_c1 = na
+__obs_c1 := array.get(rcC, 1)
+
+// D: n=2 disc==0 정확히(리터럴, tr=4, det=4) — 부동소수점이 아닌 정수 리터럴이라 매 바 정확히 0.
+mdD = matrix.new<float>(2, 2, 0.0)
+matrix.set(mdD, 0, 0, 3.0)
+matrix.set(mdD, 0, 1, 1.0)
+matrix.set(mdD, 1, 0, -1.0)
+matrix.set(mdD, 1, 1, 1.0)
+rdD = matrix.eigenvalues(mdD)
+var float __obs_d0 = na
+__obs_d0 := array.get(rdD, 0)
+var float __obs_d1 = na
+__obs_d1 := array.get(rdD, 1)
+
+// E: n=3(bar-derived 대각, 비대각은 무관 — 대각만 그대로 읽힘).
+meE = matrix.new<float>(3, 3, 0.0)
+matrix.set(meE, 0, 0, open + 0.0)
+matrix.set(meE, 1, 1, high + 0.0)
+matrix.set(meE, 2, 2, low + 0.0)
+matrix.set(meE, 0, 1, 99.0)
+matrix.set(meE, 2, 0, -99.0)
+reE = matrix.eigenvalues(meE)
+var float __obs_e0 = na
+__obs_e0 := array.get(reE, 0)
+var float __obs_e1 = na
+__obs_e1 := array.get(reE, 1)
+var float __obs_e2 = na
+__obs_e2 := array.get(reE, 2)
+
+// F: 2x3 wide(rows<columns, bar-derived 대각 구조의 왼쪽 2x2 부분행렬) — 여분 열은 건드리지 않아
+// disc=(open-close)^2>=0이 보장되는 왼쪽 nxn 부분행렬 고유값을 그대로 반환(det(C98)의 "왼쪽 nxn
+// 부분행렬" 패턴과 동일, 크래시 없음).
+mfF = matrix.new<float>(2, 3, 0.0)
+matrix.set(mfF, 0, 0, open + 0.0)
+matrix.set(mfF, 0, 1, 0.0)
+matrix.set(mfF, 0, 2, high + 0.0)
+matrix.set(mfF, 1, 0, 0.0)
+matrix.set(mfF, 1, 1, close + 0.0)
+matrix.set(mfF, 1, 2, low + 0.0)
+rfF = matrix.eigenvalues(mfF)
+var float __obs_f0 = na
+__obs_f0 := array.get(rfF, 0)
+var float __obs_f1 = na
+__obs_f1 := array.get(rfF, 1)
+
+// G: n=2 na-embedded(close[15] — sample10 10바 범위 밖이라 매 바 항상 na) — disc/sqrt 연쇄를 타고
+// 결과 전체(2개)로 na가 수렴하는지 확인.
+mgG = matrix.new<float>(2, 2, 0.0)
+matrix.set(mgG, 0, 0, close[15])
+matrix.set(mgG, 0, 1, open + 0.0)
+matrix.set(mgG, 1, 0, high + 0.0)
+matrix.set(mgG, 1, 1, close + 0.0)
+rgG = matrix.eigenvalues(mgG)
+var float __obs_g0 = na
+__obs_g0 := array.get(rgG, 0)
+var float __obs_g1 = na
+__obs_g1 := array.get(rgG, 1)

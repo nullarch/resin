@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:totalAngle": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:totalAngle": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:totalAngle": -1.8925468811915387,
+   "var:__obs_plot0": 1.8925468811915387
+  },
+  {
+   "var:totalAngle": 0.46364760900080615,
+   "var:__obs_plot0": 0.46364760900080615
+  },
+  {
+   "var:totalAngle": 0.32175055439664213,
+   "var:__obs_plot0": 0.32175055439664213
+  },
+  {
+   "var:totalAngle": -1.5707963267948966,
+   "var:__obs_plot0": 1.5707963267948966
+  },
+  {
+   "var:totalAngle": 0.32175055439664213,
+   "var:__obs_plot0": 0.32175055439664213
+  },
+  {
+   "var:totalAngle": 0.32175055439664213,
+   "var:__obs_plot0": 0.32175055439664213
+  },
+  {
+   "var:totalAngle": -1.5707963267948966,
+   "var:__obs_plot0": 1.5707963267948966
+  },
+  {
+   "var:totalAngle": 0.32175055439664213,
+   "var:__obs_plot0": 0.32175055439664213
+  }
+ ],
+ "finalVarState": {
+  "totalAngle": 0.32175055439664213,
+  "__obs_plot0": 0.32175055439664213
+ }
+}

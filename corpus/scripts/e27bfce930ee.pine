@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Accel")
+mom1 = close - close[1]
+mom2 = not na(close[2]) ? close[1] - close[2] : 0.0
+accel = mom1 - mom2
+plot(accel, "Acc")

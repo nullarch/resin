@@ -1,0 +1,11 @@
+//@version=5
+indicator("Pivot")
+ph = ta.pivothigh(high, 2, 2)
+pl = ta.pivotlow(low, 2, 2)
+var float last_ph = 0.0
+var float last_pl = 0.0
+if not na(ph)
+    last_ph := ph
+if not na(pl)
+    last_pl := pl
+plot(close)

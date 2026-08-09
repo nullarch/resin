@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_roc": "NaN"
+  },
+  {
+   "var:__obs_roc": "NaN"
+  },
+  {
+   "var:__obs_roc": "NaN"
+  },
+  {
+   "var:__obs_roc": 0.9900990099
+  },
+  {
+   "var:__obs_roc": 1.9607843137
+  },
+  {
+   "var:__obs_roc": 1.9417475728
+  },
+  {
+   "var:__obs_roc": 3.9215686275
+  },
+  {
+   "var:__obs_roc": 0.9615384615
+  },
+  {
+   "var:__obs_roc": 1.9047619048
+  },
+  {
+   "var:__obs_roc": 1.8867924528
+  }
+ ],
+ "finalVarState": {
+  "__obs_roc": 1.8867924528
+ }
+}

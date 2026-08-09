@@ -1,0 +1,8 @@
+//@version=5
+indicator("Shared Get")
+arr = array.from(10.0, 20.0, 30.0)
+m = map.new<string, float>()
+m.put("val", 99.0)
+a_val = arr.get(1)
+m_val = m.get("val")
+plot(a_val + m_val)

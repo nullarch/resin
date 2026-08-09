@@ -1,0 +1,5 @@
+//@version=5
+indicator("OBV")
+obvVal = ta.obv()
+smaObv = ta.sma(obvVal, 5)
+obvTrend = not na(smaObv) ? nz(obvVal) > nz(smaObv) : false

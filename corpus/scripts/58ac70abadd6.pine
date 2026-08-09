@@ -1,0 +1,27 @@
+//@version=5
+indicator("Torture 6")
+enum Level
+    High = 3
+    Mid = 2
+    Low = 1
+type State
+    float value = 0.0
+    int level = 1
+method describe(State this) =>
+    this.value > 0.0 ? "positive" : "negative"
+var float accumulated = 0.0
+params = map.new<string, float>()
+params.put("alpha", 0.7)
+params.put("beta", 0.3)
+float alphaVal = 0.7
+float betaVal = 0.3
+float emaVal = nz(ta.ema(close, 3), close)
+float smaVal = nz(ta.sma(close, 5), close)
+float blended = alphaVal * emaVal + betaVal * smaVal
+float lvl = switch
+    blended > 108.0 => 3.0
+    blended > 104.0 => 2.0
+    => 1.0
+st = State.new(blended - close, int(lvl))
+string desc = st.describe()
+accumulated := accumulated + st.value

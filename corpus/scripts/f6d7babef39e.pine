@@ -1,0 +1,9 @@
+//@version=5
+indicator("Thermal Neutron Spectrum")
+float kT = 0.0253
+float energy = close / 4000.0
+float ratio = energy / kT
+float spectrum = ratio > 0 ? math.sqrt(ratio) * math.exp(-ratio) : 0.0
+var float maxSpectrum = 0.0
+if spectrum > maxSpectrum
+    maxSpectrum := spectrum

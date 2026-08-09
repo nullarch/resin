@@ -1,0 +1,12 @@
+//@version=5
+indicator("While Break")
+float count = 0.0
+float val = 1.0
+while true
+    val := val * 2.0
+    count := count + 1.0
+    if val > 100.0
+        break
+var float result = 0.0
+result := count
+plot(result)

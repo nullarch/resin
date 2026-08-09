@@ -1,0 +1,12 @@
+
+//@version=5
+strategy("FC Strat", overlay=true)
+sma3 = ta.sma(close, 3)
+slope = sma3 - sma3[1]
+forecast = sma3 + nz(slope, 0.0) * 2
+rsi = nz(ta.rsi(close, 3), 50.0)
+if forecast > close and rsi > 45
+    strategy.entry("Long", strategy.long)
+if forecast < close or rsi > 80
+    strategy.close("Long")
+plot(forecast, "FC")

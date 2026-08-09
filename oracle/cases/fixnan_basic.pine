@@ -1,0 +1,9 @@
+//@version=5
+indicator("fixnan_basic")
+// 오라클 데이터셋(sample10.json)의 close에는 na가 전혀 없어 fixnan의 "이전 non-na 값 회상" 분기는
+// 이 케이스로 검증되지 않는다(회상 로직은 hand-verified 테스트로 별도 검증 — MEMORY.md 참조,
+// pine2py의 fixnan은 Series가 아닌 스칼라 인자를 받으면 그대로 통과만 시켜 na/non-na가 실제로
+// 섞인 입력을 오라클로 만들 방법이 없음). 이 케이스는 dispatch 배선(파서~런타임~오라클 브리지)
+// 자체가 정확한지 확인하는 smoke 성격의 통과 경로 검증
+var float __obs_fixnan = na
+__obs_fixnan := fixnan(close)

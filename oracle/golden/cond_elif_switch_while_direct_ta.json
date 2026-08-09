@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_elif1": 0,
+   "var:__obs_elif2": 0,
+   "var:__obs_switch": 0,
+   "var:__obs_while": 0
+  },
+  {
+   "var:__obs_elif1": 0,
+   "var:__obs_elif2": 0,
+   "var:__obs_switch": 0,
+   "var:__obs_while": 3
+  },
+  {
+   "var:__obs_elif1": -1,
+   "var:__obs_elif2": -1,
+   "var:__obs_switch": -1,
+   "var:__obs_while": 6
+  },
+  {
+   "var:__obs_elif1": 0,
+   "var:__obs_elif2": 0,
+   "var:__obs_switch": 0,
+   "var:__obs_while": 9
+  },
+  {
+   "var:__obs_elif1": -1,
+   "var:__obs_elif2": -1,
+   "var:__obs_switch": -1,
+   "var:__obs_while": 12
+  },
+  {
+   "var:__obs_elif1": -1,
+   "var:__obs_elif2": -1,
+   "var:__obs_switch": -1,
+   "var:__obs_while": 15
+  },
+  {
+   "var:__obs_elif1": -1,
+   "var:__obs_elif2": -1,
+   "var:__obs_switch": -1,
+   "var:__obs_while": 18
+  },
+  {
+   "var:__obs_elif1": -1,
+   "var:__obs_elif2": -1,
+   "var:__obs_switch": -1,
+   "var:__obs_while": 21
+  },
+  {
+   "var:__obs_elif1": -1,
+   "var:__obs_elif2": -1,
+   "var:__obs_switch": -1,
+   "var:__obs_while": 24
+  },
+  {
+   "var:__obs_elif1": -1,
+   "var:__obs_elif2": -1,
+   "var:__obs_switch": -1,
+   "var:__obs_while": 27
+  }
+ ],
+ "finalVarState": {
+  "__obs_elif1": -1,
+  "__obs_elif2": -1,
+  "__obs_switch": -1,
+  "__obs_while": 27
+ }
+}

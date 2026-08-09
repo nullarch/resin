@@ -1,0 +1,7 @@
+//@version=5
+indicator("Waggle Dance")
+roc3 = nz(ta.roc(close, 3), 0.0)
+intensity = math.abs(roc3)
+direction = roc3 > 0 ? 1 : -1
+danceSignal = intensity > 2.0 ? direction : 0
+plot(danceSignal)

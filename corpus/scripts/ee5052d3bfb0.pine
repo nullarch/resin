@@ -1,0 +1,8 @@
+//@version=5
+indicator("Fertilizer Dosing")
+baseline = ta.sma(close, 5)
+current = ta.ema(close, 3)
+deficit = not na(baseline) and not na(current) ? baseline - current : 0.0
+dose = deficit > 0 ? deficit * 2.0 : 0.0
+var float totalDose = 0.0
+totalDose := totalDose + dose

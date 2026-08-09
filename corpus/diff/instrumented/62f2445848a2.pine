@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Dedup")
+var float[] unique = array.new_float(0)
+rounded = math.round(close)
+found = false
+for i = 0 to math.max(array.size(unique) - 1, 0)
+    if i < array.size(unique) and array.get(unique, i) == rounded
+        found := true
+if not found
+    array.push(unique, rounded)
+if array.size(unique) > 10
+    array.shift(unique)
+var float __obs_plot0 = na
+__obs_plot0 := array.size(unique)
+plot(array.size(unique), "UC")

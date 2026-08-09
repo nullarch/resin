@@ -1,0 +1,8 @@
+//@version=5
+indicator("Map CRUD")
+var m = map.new<string, float>()
+map.put(m, "close", close)
+map.put(m, "open", open)
+has_close = map.contains(m, "close")
+val = map.get(m, "close")
+sz = map.size(m)

@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("BB Squeeze")
+[mid, upper, lower] = ta.bb(close, 5, 2.0)
+width = upper - lower
+smaWidth = ta.sma(width, 3)
+squeeze = width < smaWidth
+var int squeezeCount = 0
+if squeeze
+    squeezeCount := squeezeCount + 1
+plot(squeezeCount, "Squeezes")

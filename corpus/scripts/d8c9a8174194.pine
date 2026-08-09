@@ -1,0 +1,5 @@
+//@version=5
+indicator("alert test")
+if close > open
+    alert("Bull bar!")
+var float x = 1.0

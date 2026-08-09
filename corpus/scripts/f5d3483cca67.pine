@@ -1,0 +1,10 @@
+//@version=5
+indicator("Compound ops")
+var float a = 10.0
+var float b = 100.0
+var float c = 7.0
+var float d = 2.0
+a += 5.0
+b -= 30.0
+c *= 3.0
+d /= 0.5

@@ -1,0 +1,105 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:top": "pine_fn.<locals>.Swing(y=Series(current=109, length=10), x=Series(current=9, length=10), crossed=False)",
+   "var:btm": "pine_fn.<locals>.Swing(y=Series(current=106, length=10), x=Series(current=9, length=10), crossed=False)",
+   "var:__obs_top_y": 102,
+   "var:__obs_top_x": 0,
+   "var:__obs_top_crossed": false,
+   "var:__obs_btm_y": 99,
+   "var:__obs_btm_x": 0
+  },
+  {
+   "var:top": "pine_fn.<locals>.Swing(y=Series(current=109, length=10), x=Series(current=9, length=10), crossed=False)",
+   "var:btm": "pine_fn.<locals>.Swing(y=Series(current=106, length=10), x=Series(current=9, length=10), crossed=False)",
+   "var:__obs_top_y": 103,
+   "var:__obs_top_x": 1,
+   "var:__obs_top_crossed": false,
+   "var:__obs_btm_y": 100,
+   "var:__obs_btm_x": 1
+  },
+  {
+   "var:top": "pine_fn.<locals>.Swing(y=Series(current=109, length=10), x=Series(current=9, length=10), crossed=False)",
+   "var:btm": "pine_fn.<locals>.Swing(y=Series(current=106, length=10), x=Series(current=9, length=10), crossed=False)",
+   "var:__obs_top_y": 104,
+   "var:__obs_top_x": 2,
+   "var:__obs_top_crossed": false,
+   "var:__obs_btm_y": 101,
+   "var:__obs_btm_x": 2
+  },
+  {
+   "var:top": "pine_fn.<locals>.Swing(y=Series(current=109, length=10), x=Series(current=9, length=10), crossed=False)",
+   "var:btm": "pine_fn.<locals>.Swing(y=Series(current=106, length=10), x=Series(current=9, length=10), crossed=False)",
+   "var:__obs_top_y": 103,
+   "var:__obs_top_x": 3,
+   "var:__obs_top_crossed": false,
+   "var:__obs_btm_y": 100,
+   "var:__obs_btm_x": 3
+  },
+  {
+   "var:top": "pine_fn.<locals>.Swing(y=Series(current=109, length=10), x=Series(current=9, length=10), crossed=True)",
+   "var:btm": "pine_fn.<locals>.Swing(y=Series(current=106, length=10), x=Series(current=9, length=10), crossed=False)",
+   "var:__obs_top_y": 105,
+   "var:__obs_top_x": 4,
+   "var:__obs_top_crossed": true,
+   "var:__obs_btm_y": 102,
+   "var:__obs_btm_x": 4
+  },
+  {
+   "var:top": "pine_fn.<locals>.Swing(y=Series(current=109, length=10), x=Series(current=9, length=10), crossed=True)",
+   "var:btm": "pine_fn.<locals>.Swing(y=Series(current=106, length=10), x=Series(current=9, length=10), crossed=False)",
+   "var:__obs_top_y": 106,
+   "var:__obs_top_x": 5,
+   "var:__obs_top_crossed": true,
+   "var:__obs_btm_y": 103,
+   "var:__obs_btm_x": 5
+  },
+  {
+   "var:top": "pine_fn.<locals>.Swing(y=Series(current=109, length=10), x=Series(current=9, length=10), crossed=True)",
+   "var:btm": "pine_fn.<locals>.Swing(y=Series(current=106, length=10), x=Series(current=9, length=10), crossed=False)",
+   "var:__obs_top_y": 107,
+   "var:__obs_top_x": 6,
+   "var:__obs_top_crossed": true,
+   "var:__obs_btm_y": 104,
+   "var:__obs_btm_x": 6
+  },
+  {
+   "var:top": "pine_fn.<locals>.Swing(y=Series(current=109, length=10), x=Series(current=9, length=10), crossed=True)",
+   "var:btm": "pine_fn.<locals>.Swing(y=Series(current=106, length=10), x=Series(current=9, length=10), crossed=False)",
+   "var:__obs_top_y": 106,
+   "var:__obs_top_x": 7,
+   "var:__obs_top_crossed": true,
+   "var:__obs_btm_y": 103,
+   "var:__obs_btm_x": 7
+  },
+  {
+   "var:top": "pine_fn.<locals>.Swing(y=Series(current=109, length=10), x=Series(current=9, length=10), crossed=True)",
+   "var:btm": "pine_fn.<locals>.Swing(y=Series(current=106, length=10), x=Series(current=9, length=10), crossed=False)",
+   "var:__obs_top_y": 108,
+   "var:__obs_top_x": 8,
+   "var:__obs_top_crossed": true,
+   "var:__obs_btm_y": 105,
+   "var:__obs_btm_x": 8
+  },
+  {
+   "var:top": "pine_fn.<locals>.Swing(y=Series(current=109, length=10), x=Series(current=9, length=10), crossed=True)",
+   "var:btm": "pine_fn.<locals>.Swing(y=Series(current=106, length=10), x=Series(current=9, length=10), crossed=False)",
+   "var:__obs_top_y": 109,
+   "var:__obs_top_x": 9,
+   "var:__obs_top_crossed": true,
+   "var:__obs_btm_y": 106,
+   "var:__obs_btm_x": 9
+  }
+ ],
+ "finalVarState": {
+  "top": "pine_fn.<locals>.Swing(y=Series(current=109, length=10), x=Series(current=9, length=10), crossed=True)",
+  "btm": "pine_fn.<locals>.Swing(y=Series(current=106, length=10), x=Series(current=9, length=10), crossed=False)",
+  "__obs_top_y": 109,
+  "__obs_top_x": 9,
+  "__obs_top_crossed": true,
+  "__obs_btm_y": 106,
+  "__obs_btm_x": 9
+ }
+}

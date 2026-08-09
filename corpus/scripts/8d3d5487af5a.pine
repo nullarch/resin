@@ -1,0 +1,10 @@
+//@version=5
+indicator("RankClose")
+var float sumBelow = 0.0
+var int total = 0
+total := total + 1
+prevC = nz(close[1], close)
+if close >= prevC
+    sumBelow := sumBelow + 1.0
+rank = total > 0 ? sumBelow / float(total) : 0.5
+plot(rank, "Rank")

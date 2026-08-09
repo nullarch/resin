@@ -1,0 +1,9 @@
+//@version=5
+indicator("Stoch RSI")
+rsi = ta.rsi(close, 5)
+k = ta.stoch(rsi, rsi, rsi, 5)
+d = ta.sma(k, 3)
+crossUp = ta.crossover(k, d)
+crossDown = ta.crossunder(k, d)
+signal = crossUp ? 1 : crossDown ? -1 : 0
+plot(signal)

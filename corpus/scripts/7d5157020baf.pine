@@ -1,0 +1,7 @@
+//@version=5
+indicator("str coerce")
+var float result = 0.0
+x = 42
+s = "value: " + str.tostring(x)
+if str.contains(s, "42")
+    result := 1.0

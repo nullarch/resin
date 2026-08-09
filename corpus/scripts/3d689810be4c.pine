@@ -1,0 +1,5 @@
+
+//@version=5
+indicator("PVT Precision")
+p = ta.pvt()
+plot(p)

@@ -1,0 +1,6 @@
+//@version=5
+indicator("NonVar Reset")
+var float result = 0.0
+float x = 0.0
+x += 5.0
+result := x

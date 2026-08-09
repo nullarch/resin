@@ -1,0 +1,14 @@
+//@version=5
+indicator("ProcNoise13")
+var float est = 100.0
+var float pCov = 1.0
+priceRange = high - low
+procNoise = priceRange > 0 ? priceRange * 0.1 : 0.01
+measNoise = 2.0
+predCov = pCov + procNoise
+gain = predCov > 0 ? predCov / (predCov + measNoise) : 0.0
+est := est + gain * (close - est)
+pCov := (1.0 - gain) * predCov
+var float __obs_plot0 = na
+__obs_plot0 := est
+plot(est, "e")

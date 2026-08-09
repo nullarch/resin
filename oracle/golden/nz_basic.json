@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_default": 0,
+   "var:__obs_replacement": -1.0,
+   "var:__obs_passthrough": 101
+  },
+  {
+   "var:__obs_default": 0,
+   "var:__obs_replacement": -1.0,
+   "var:__obs_passthrough": 102
+  },
+  {
+   "var:__obs_default": 0,
+   "var:__obs_replacement": -1.0,
+   "var:__obs_passthrough": 103
+  },
+  {
+   "var:__obs_default": 0,
+   "var:__obs_replacement": -1.0,
+   "var:__obs_passthrough": 102
+  },
+  {
+   "var:__obs_default": 0,
+   "var:__obs_replacement": -1.0,
+   "var:__obs_passthrough": 104
+  },
+  {
+   "var:__obs_default": 0,
+   "var:__obs_replacement": -1.0,
+   "var:__obs_passthrough": 105
+  },
+  {
+   "var:__obs_default": 0,
+   "var:__obs_replacement": -1.0,
+   "var:__obs_passthrough": 106
+  },
+  {
+   "var:__obs_default": 0,
+   "var:__obs_replacement": -1.0,
+   "var:__obs_passthrough": 105
+  },
+  {
+   "var:__obs_default": 0,
+   "var:__obs_replacement": -1.0,
+   "var:__obs_passthrough": 107
+  },
+  {
+   "var:__obs_default": 0,
+   "var:__obs_replacement": -1.0,
+   "var:__obs_passthrough": 108
+  }
+ ],
+ "finalVarState": {
+  "__obs_default": 0,
+  "__obs_replacement": -1.0,
+  "__obs_passthrough": 108
+ }
+}

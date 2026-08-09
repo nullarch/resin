@@ -1,0 +1,6 @@
+//@version=5
+indicator("ternary cont")
+var float result = 0.0
+result := true ?
+    10.0 :
+    20.0

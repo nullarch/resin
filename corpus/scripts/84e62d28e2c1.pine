@@ -1,0 +1,11 @@
+//@version=5
+indicator("Test")
+// line comment
+/* block comment */
+a = 1
+/*
+multi
+line
+*/
+b = 2
+c = a /* inline */ + b

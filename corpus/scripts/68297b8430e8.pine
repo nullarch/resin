@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Copy Reverse")
+orig = array.from(1.0, 2.0, 3.0, 4.0, 5.0)
+copied = array.copy(orig)
+array.reverse(copied)
+first = array.first(copied)
+last_ = array.last(copied)
+plot(first, "First")
+plot(last_, "Last")

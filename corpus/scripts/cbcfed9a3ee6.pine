@@ -1,0 +1,6 @@
+
+//@version=5
+indicator("Engulf")
+bullEngulf = not na(open_[1]) and close > open_ and close[1] < open_[1] and close > open_[1] and open_ < close[1]
+bearEngulf = not na(open_[1]) and close < open_ and close[1] > open_[1] and close < open_[1] and open_ > close[1]
+plot(bullEngulf ? 1 : bearEngulf ? -1 : 0, "Eng")

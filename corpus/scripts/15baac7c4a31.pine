@@ -1,0 +1,7 @@
+//@version=5
+indicator("Squeeze Momentum Full")
+[bbU, bbM, bbL] = ta.bb(close, 5, 2.0)
+[kcU, kcM, kcL] = ta.kc(close, 5, 1.5)
+sqzOn = not na(bbL) and not na(kcL) ? nz(bbL) > nz(kcL) and nz(bbU) < nz(kcU) : false
+mom = ta.linreg(close - nz(bbM), 5, 0)
+momUp = not na(mom) and not na(mom[1]) ? nz(mom) > nz(mom[1]) : false

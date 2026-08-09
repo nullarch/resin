@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Distance")
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+euclidean = math.sqrt(math.pow(close - sma3, 2) + math.pow(close - ema5, 2))
+manhattan = math.abs(close - sma3) + math.abs(close - ema5)
+plot(euclidean, "Euc")
+plot(manhattan, "Man")

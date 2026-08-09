@@ -1,0 +1,30 @@
+//@version=5
+indicator("str_replace")
+// str.replace(source, target, replacement, occurrence=0) — C108. All channels use string-literal
+// args (no na) so pine2py won't crash, and results are bar-independent (str_transform.pine pattern).
+// na-propagation (source/target/replacement=na) is NOT covered here — hand-verified in
+// runtime.test.ts instead (LIMITATIONS.md). The target==="" + occurrence-never-reached (negative/
+// non-integer/NaN) hang bug in pine2py is also NOT covered here (it would hang gen_oracle.py itself)
+// — hand-verified only, DIVERGENCES.md.
+var string __obs_a = na
+__obs_a := str.replace("hello world hello", "hello", "X")
+var string __obs_b = na
+__obs_b := str.replace("hello world hello", "hello", "X", 1)
+var string __obs_c = na
+__obs_c := str.replace("hello world hello", "hello", "X", 2)
+var string __obs_d = na
+__obs_d := str.replace("hello world hello", "hello", "X", 3)
+var string __obs_e = na
+__obs_e := str.replace("hello world hello", "hello", "X", -1)
+var string __obs_f = na
+__obs_f := str.replace("hello world hello", "xyz", "X")
+var string __obs_g = na
+__obs_g := str.replace("abc", "", "X")
+var string __obs_h = na
+__obs_h := str.replace("abc", "", "X", 2)
+var string __obs_i = na
+__obs_i := str.replace("hello", "l", "", 1)
+var string __obs_j = na
+__obs_j := str.replace("aaa", "a", "bb", 2)
+var string __obs_k = na
+__obs_k := str.replace("", "a", "X")

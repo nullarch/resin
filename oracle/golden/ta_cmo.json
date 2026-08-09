@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_cmo": "NaN"
+  },
+  {
+   "var:__obs_cmo": "NaN"
+  },
+  {
+   "var:__obs_cmo": "NaN"
+  },
+  {
+   "var:__obs_cmo": 33.3333333333
+  },
+  {
+   "var:__obs_cmo": 50.0
+  },
+  {
+   "var:__obs_cmo": 50.0
+  },
+  {
+   "var:__obs_cmo": 100.0
+  },
+  {
+   "var:__obs_cmo": 33.3333333333
+  },
+  {
+   "var:__obs_cmo": 50.0
+  },
+  {
+   "var:__obs_cmo": 50.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_cmo": 50.0
+ }
+}

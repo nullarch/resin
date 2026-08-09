@@ -1,0 +1,5 @@
+//@version=5
+indicator("Jitter")
+float chg = math.abs(close - open)
+float jitter = ta.stdev(chg, 5)
+plot(nz(jitter, 0.0), "Jitter")

@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_median": "NaN"
+  },
+  {
+   "var:__obs_median": "NaN"
+  },
+  {
+   "var:__obs_median": 102.0
+  },
+  {
+   "var:__obs_median": 102.0
+  },
+  {
+   "var:__obs_median": 103.0
+  },
+  {
+   "var:__obs_median": 104.0
+  },
+  {
+   "var:__obs_median": 105.0
+  },
+  {
+   "var:__obs_median": 105.0
+  },
+  {
+   "var:__obs_median": 106.0
+  },
+  {
+   "var:__obs_median": 107.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_median": 107.0
+ }
+}

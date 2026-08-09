@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Mom Wt")
+rsi = nz(ta.rsi(close, 3), 50.0)
+k = ta.stoch(close, high, low, 5)
+rsiWt = rsi > 70 ? 0.3 : rsi < 30 ? 0.3 : 0.5
+kWt = k > 80 ? 0.3 : k < 20 ? 0.3 : 0.5
+combined = rsi * rsiWt + k * (1 - rsiWt)
+var float __obs_plot0 = na
+__obs_plot0 := combined
+plot(combined, "Comb")

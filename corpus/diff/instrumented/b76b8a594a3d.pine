@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Double EMA")
+ema1 = ta.ema(close, 3)
+ema2 = ta.ema(ema1, 3)
+dema = 2 * ema1 - ema2
+diff = close - dema
+var float __obs_plot0 = na
+__obs_plot0 := dema
+plot(dema, "DEMA")
+var float __obs_plot1 = na
+__obs_plot1 := diff
+plot(diff, "Diff")

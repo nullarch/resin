@@ -1,0 +1,4 @@
+//@version=5
+indicator("Test")
+arr = array.new<float>(3)
+arr.set(0, close)

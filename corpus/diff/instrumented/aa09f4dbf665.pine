@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Nested Generic")
+a = array.new<float>(3, 0.0)
+array.set(a, 0, close)
+var float __obs_plot0 = na
+__obs_plot0 := array.get(a, 0)
+plot(array.get(a, 0))

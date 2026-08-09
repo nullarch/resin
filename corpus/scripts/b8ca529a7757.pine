@@ -1,0 +1,15 @@
+//@version=5
+indicator("Comprehensive C81")
+var float result = 0.0
+
+// Use before declaration (hoisted)
+result := analyze(close)
+
+// UDF with if implicit return
+analyze(float price) =>
+    sma3 = ta.sma(price, 3)
+    float safe_sma = nz(sma3, 0.0)
+    if safe_sma > 105
+        safe_sma + 10
+    else
+        safe_sma

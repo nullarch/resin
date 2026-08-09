@@ -1,0 +1,10 @@
+//@version=5
+indicator("Hubble Constant")
+var float hubbleSum = 0.0
+var int cnt = 0
+velocity = close - nz(close[1], close)
+dist = bar_index + 1.0
+hubble = dist > 0 ? velocity / dist : 0.0
+hubbleSum := hubbleSum + hubble
+cnt := cnt + 1
+avgHubble = cnt > 0 ? hubbleSum / cnt : 0.0

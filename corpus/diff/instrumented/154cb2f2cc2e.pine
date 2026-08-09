@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("Trade Stat")
+var float entry = 0.0
+var bool inPos = false
+sma3 = ta.sma(close, 3)
+if not inPos and close > sma3
+    inPos := true
+    entry := close
+if inPos and close < sma3
+    inPos := false
+status = not inPos ? "FLAT" : close > entry ? "PROFIT" : "LOSS"
+duration = inPos ? "HOLDING" : "IDLE"
+full = status + "_" + duration
+isProfit = str.contains(full, "PROFIT")
+var float __obs_plot0 = na
+__obs_plot0 := isProfit ? 1 : 0
+plot(isProfit ? 1 : 0, "Prof")

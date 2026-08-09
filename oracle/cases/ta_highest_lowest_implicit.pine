@@ -1,0 +1,15 @@
+//@version=5
+indicator("ta_highest_lowest_implicit")
+// ta.highest(length)/ta.lowest(length) 1-인자 축약형(source 생략, 암묵 high/low) 오라클 검증(C250).
+// pine2py highest.py/lowest.py가 `isinstance(source,(int,float))` 런타임 스니핑으로 실제 지원함을
+// 소스 대조로 확인(ta_highest_lowest.pine 자매 케이스와 동일 length=4, sample10.json 재사용) —
+// 명시 source 채널(ta.highest(close,4))과 나란히 관측해 두 폼이 서로 다른 함수(high/low vs close)를
+// 정확히 참조함을 같은 골든에서 대조한다.
+var float __obs_hi_implicit = na
+var float __obs_lo_implicit = na
+var float __obs_hi_explicit_high = na
+var float __obs_lo_explicit_low = na
+__obs_hi_implicit := ta.highest(4)
+__obs_lo_implicit := ta.lowest(4)
+__obs_hi_explicit_high := ta.highest(high, 4)
+__obs_lo_explicit_low := ta.lowest(low, 4)

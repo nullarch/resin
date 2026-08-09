@@ -1,0 +1,10 @@
+//@version=5
+indicator("test")
+type Inner
+    float val = 0.0
+
+type Outer
+    Inner inner = na
+
+o = Outer.new(Inner.new(close))
+plot(o.inner.val)

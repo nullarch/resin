@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Event Srch")
+rsi = nz(ta.rsi(close, 3), 50.0)
+threshold = 75.0
+found = false
+steps = 0
+while threshold > 50 and not found
+    if rsi > threshold
+        found := true
+    threshold := threshold - 5
+    steps := steps + 1
+plot(steps, "St")

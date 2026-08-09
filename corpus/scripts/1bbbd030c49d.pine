@@ -1,0 +1,11 @@
+//@version=5
+indicator("Quantum Fidelity")
+float idealX = nz(ta.sma(close, 3), close) - close
+float idealY = nz(ta.ema(close, 3), close) - close
+float actualX = close - open
+float actualY = high - low
+float dotProd = idealX * actualX + idealY * actualY
+float normIdeal = math.sqrt(idealX * idealX + idealY * idealY)
+float normActual = math.sqrt(actualX * actualX + actualY * actualY)
+float denom = math.max(normIdeal * normActual, 0.001)
+float fidelity = math.abs(dotProd / denom)

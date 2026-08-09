@@ -1,0 +1,35 @@
+//@version=5
+indicator("Ultra 004")
+
+ewma(float prev, float curr, float alpha) =>
+    alpha * curr + (1.0 - alpha) * prev
+
+var float smoothed = 0.0
+var float[] buffer = array.new_float(0)
+var map<string, float> state = map.new<string, float>()
+
+prevC = not na(close[1]) ? close[1] : close
+delta = close - prevC
+smoothed := ewma(smoothed, delta, 0.3)
+
+array.push(buffer, smoothed)
+if array.size(buffer) > 5
+    array.shift(buffer)
+
+idx = 0
+posSum = 0.0
+negSum = 0.0
+while idx < array.size(buffer)
+    val = array.get(buffer, idx)
+    if val > 0
+        posSum := posSum + val
+        if val > 2.0
+            posSum := posSum + val * 0.5
+    else
+        negSum := negSum + math.abs(val)
+    idx := idx + 1
+
+map.put(state, "bullish", posSum)
+map.put(state, "bearish", negSum)
+ratio = negSum > 0 ? posSum / negSum : posSum > 0 ? 999.0 : 0.0
+plot(ratio)

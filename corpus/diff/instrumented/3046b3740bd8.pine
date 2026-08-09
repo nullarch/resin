@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Str Enum")
+enum Dir
+    Up = 1
+    Down = -1
+    Flat = 0
+
+sma3 = ta.sma(close, 3)
+dir = close > sma3 ? Dir.Up : close < sma3 ? Dir.Down : Dir.Flat
+label = dir == Dir.Up ? "BULLISH" : dir == Dir.Down ? "BEARISH" : "NEUTRAL"
+prefix = str.substring(label, 0, 4)
+isPositive = str.contains(label, "BULL")
+var float __obs_plot0 = na
+__obs_plot0 := isPositive ? 1 : 0
+plot(isPositive ? 1 : 0, "Pos")

@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Cyc Phase")
+cyclePhase(float rsi, float price, float ma) =>
+    bullish = price > ma and rsi > 50
+    strong = rsi > 65
+    bullish and strong ? 3.0 : bullish ? 2.0 : not bullish and rsi < 35 ? 0.0 : 1.0
+
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+phase = cyclePhase(rsi, close, sma3)
+plot(phase, "Ph")

@@ -1,0 +1,14 @@
+//@version=5
+indicator("Ant Foraging")
+var float bullTrail = 0.0
+var float bearTrail = 0.0
+decay = 0.9
+if close > open
+    bullTrail := bullTrail * decay + 1.0
+    bearTrail := bearTrail * decay
+else
+    bearTrail := bearTrail * decay + 1.0
+    bullTrail := bullTrail * decay
+totalTrail = bullTrail + bearTrail
+dominance = totalTrail > 0 ? bullTrail / totalTrail : 0.5
+plot(dominance)

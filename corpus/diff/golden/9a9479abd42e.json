@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:resistance": "NaN",
+   "var:support": "NaN",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:resistance": "NaN",
+   "var:support": "NaN",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:resistance": "NaN",
+   "var:support": "NaN",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:resistance": "NaN",
+   "var:support": "NaN",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:resistance": "NaN",
+   "var:support": "NaN",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:resistance": "NaN",
+   "var:support": "NaN",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:resistance": "NaN",
+   "var:support": "NaN",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:resistance": "NaN",
+   "var:support": "NaN",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:resistance": "NaN",
+   "var:support": "NaN",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:resistance": "NaN",
+   "var:support": "NaN",
+   "var:__obs_plot0": 0
+  }
+ ],
+ "finalVarState": {
+  "resistance": "NaN",
+  "support": "NaN",
+  "__obs_plot0": 0
+ }
+}

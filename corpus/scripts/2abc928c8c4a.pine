@@ -1,0 +1,12 @@
+//@version=5
+indicator("Func Multi Body")
+var float result = 0.0
+
+compute(float src, int len) =>
+    float avg = ta.sma(src, len)
+    float dev = ta.stdev(src, len)
+    float safe_avg = nz(avg, 0.0)
+    float safe_dev = nz(dev, 0.0)
+    safe_avg + safe_dev
+
+result := compute(close, 3)

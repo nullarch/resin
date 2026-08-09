@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("SSI")
+total = 0.0
+for scale = 2 to 5
+    v = ta.stdev(close, scale)
+    total := total + nz(v, 0.0)
+ssi = total > 0 ? total / 4.0 : 0.0
+plot(ssi, "SSI")

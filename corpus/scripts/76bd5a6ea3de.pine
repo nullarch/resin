@@ -1,0 +1,10 @@
+//@version=5
+indicator("Switch No Disc")
+rsi_val = ta.rsi(close, 5)
+
+label_ = switch
+    nz(rsi_val) > 70 => "overbought"
+    nz(rsi_val) < 30 => "oversold"
+    => "neutral"
+
+plot(nz(rsi_val, 50.0))

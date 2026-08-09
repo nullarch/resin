@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Div LB")
+rsi = nz(ta.rsi(close, 3), 50.0)
+divCount = 0
+for i = 1 to 4
+    if not na(close[i])
+        pUp = close > close[i]
+        rDown = rsi < 55
+        if pUp and rDown
+            divCount := divCount + 1
+plot(divCount, "DC")

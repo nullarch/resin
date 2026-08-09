@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Tern UDF")
+classify(float val) =>
+    val > 0.5 ? "high" : val > 0 ? "mid" : "low"
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+score = (rsi - 50) / 50
+label = classify(score)
+weight = label == "high" ? 1.5 : label == "mid" ? 1.0 : 0.5
+adjusted = score * weight
+plot(adjusted, "Adj")

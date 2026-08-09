@@ -1,0 +1,9 @@
+//@version=5
+indicator("Nested UDF")
+normalize(float val, float lo, float hi) =>
+    hi != lo ? (val - lo) / (hi - lo) : 0.5
+getRSINorm(int len) =>
+    r = ta.rsi(close, len)
+    normalize(r, 0, 100)
+result = getRSINorm(5)
+plot(result)

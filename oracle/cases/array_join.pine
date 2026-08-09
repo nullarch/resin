@@ -1,0 +1,61 @@
+//@version=5
+indicator("array_join")
+// array.join(id, separator=" ") (C88) — pine2py array.py L193-195 `separator.join(str(x) for x
+// in arr)`. Bar-independent (literal args only, math_const.pine/str_basic.pine pattern) — all
+// channels stick to unambiguous element construction (explicit ".0" float literals, string/bool
+// literals) to avoid the pine2py int-vs-float `str()` formatting ambiguity documented in
+// DIVERGENCES.md (array<int> elements are NOT covered here — hand-verified only, LIMITATIONS.md).
+// Arrays are rebuilt fresh every bar (plain '=' local, not 'var' — array_slice_ops.pine pattern)
+// so channels stay fixed-size instead of growing bar-by-bar.
+
+// A: float array, custom separator — whole numbers render with a trailing ".0" (pyFloatStr).
+arrF = array.new_float(0)
+array.push(arrF, 1.0)
+array.push(arrF, 2.5)
+array.push(arrF, 3.0)
+var string __obs_a = na
+__obs_a := array.join(arrF, ",")
+
+// B: same array, separator omitted — pine2py default separator is a single space.
+var string __obs_b = na
+__obs_b := array.join(arrF)
+
+// C: negative/zero/decimal float elements.
+arrC = array.from(-3.5, 0.0, 100.25)
+var string __obs_c = na
+__obs_c := array.join(arrC, "|")
+
+// D: a na element pushed mid-array — na always compiles to a bare NaN regardless of context, so
+// this is oracle-safe (pine2py does not crash on it) and renders lowercase "nan" (join() has no
+// explicit NaN guard, unlike str.tostring's uppercase "NaN").
+arrD = array.new_float(0)
+array.push(arrD, 1.0)
+array.push(arrD, na)
+array.push(arrD, 2.0)
+var string __obs_d = na
+__obs_d := array.join(arrD, ",")
+
+// E: string array.
+arrE = array.from("a", "b", "c")
+var string __obs_e = na
+__obs_e := array.join(arrE, "-")
+
+// F: bool array — pine2py str(bool) capitalizes ("True"/"False").
+arrF2 = array.from(true, false, true)
+var string __obs_f = na
+__obs_f := array.join(arrF2, ",")
+
+// G: empty array — joins to an empty string.
+arrG = array.new_float(0)
+var string __obs_g = na
+__obs_g := array.join(arrG, ",")
+
+// H: empty-string separator — elements concatenated with no delimiter.
+arrH = array.from(1.0, 2.0)
+var string __obs_h = na
+__obs_h := array.join(arrH, "")
+
+// I: single-element array.
+arrI = array.from(5.5)
+var string __obs_i = na
+__obs_i := array.join(arrI, ",")

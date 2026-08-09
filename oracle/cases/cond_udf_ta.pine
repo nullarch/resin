@@ -1,0 +1,41 @@
+//@version=5
+indicator("cond_udf_ta")
+// [hard→분할] 조건부 stateful call — UDF 본문 슬라이스 검증 (ROADMAP line 809 마지막 조각, C162).
+// UDF 본문 안 stateful 콜은 함수-상대 슬롯 + 콜사이트별 __taBase 전파로 콜사이트마다 독립 상태를
+// 갖는다. pine2py는 UDF 본문 안 ta 콜도 정적 _taN 하나라(codegen.py _inject_stateful_kwargs의
+// _ta_call_counter) **단일 콜사이트에서만** pine2js와 동형 — 이 케이스의 네 UDF는 전부 콜사이트가
+// 정확히 1개라 골든이 유효하다(다중 콜사이트 독립성은 pine2py가 상태를 공유하는 버그라 오라클
+// 무효, DIVERGENCES.md #65 — tests/unit/codegen.test.ts hand-verified가 담당). 채널은
+// 전부 call-fed인 ta.ema만 사용(sma/rma는 첫 호출 히스토리 백필로 오라클 무효, DIVERGENCES.md #11).
+//
+// __obs_a: 매 바 무조건 호출되는 단일 콜사이트 — UDF 안 ema(src,3)가 top-level ema와 동일 전진.
+f_a(src) =>
+    ta.ema(src, 3)
+var float __obs_a = na
+__obs_a := f_a(close)
+// __obs_b: if 분기 안 콜사이트(close > 102.5인 바에서만 호출) — 호출된 바에서만 UDF 안 ema(src,2)
+// 상태가 전진(per-call 갭 시나리오, cond_if_ta의 UDF판). 첫 호출 bar2는 워밍업 NaN, 두 번째 호출
+// bar4에서 시드 (103+104)/2=103.5 (스모킹 건 — 매 바 전진이었다면 bar4는 이미 스무딩 구간).
+f_b(src) =>
+    ta.ema(src, 2)
+var float __obs_b = na
+if close > 102.5
+    __obs_b := f_b(close)
+// __obs_c: UDF 본문 안 for 루프(고정 2회/바)에서 ema(src,3) 호출 — loop-body가 udf-body 체인
+// 아래에서도 반복마다 1회 전진(cond_loop_ta __obs_a와 같은 수치가 UDF 경유로 재현되는 스모킹 건:
+// bar1 = 101.6667, 바당 1회 전진이었다면 아직 워밍업 NaN).
+f_c(src) =>
+    e = 0.0
+    for i = 0 to 1
+        e := ta.ema(src, 3)
+    e
+var float __obs_c = na
+__obs_c := f_c(close)
+// __obs_d: UDF 내부 var(fnVars slotBase)와 ta 상태(taSlots __taBase)가 한 함수에 공존 — 두
+// 콜사이트 분리 메커니즘이 서로를 깨뜨리지 않는지 검증. nz로 워밍업 NaN의 누적 오염을 차단.
+f_d(src) =>
+    var float acc = 0.0
+    acc := acc + nz(ta.ema(src, 2))
+    acc
+var float __obs_d = na
+__obs_d := f_d(close)

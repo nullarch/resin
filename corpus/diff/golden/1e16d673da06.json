@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:pos": "pine_fn.<locals>.PortPos(value=11100, weight=0.6894409937888198, rebalanceCount=0)",
+   "var:__obs_plot0": 0.673202614379085
+  },
+  {
+   "var:pos": "pine_fn.<locals>.PortPos(value=11100, weight=0.6894409937888198, rebalanceCount=0)",
+   "var:__obs_plot0": 0.6753246753246753
+  },
+  {
+   "var:pos": "pine_fn.<locals>.PortPos(value=11100, weight=0.6894409937888198, rebalanceCount=0)",
+   "var:__obs_plot0": 0.6710526315789473
+  },
+  {
+   "var:pos": "pine_fn.<locals>.PortPos(value=11100, weight=0.6894409937888198, rebalanceCount=0)",
+   "var:__obs_plot0": 0.6774193548387096
+  },
+  {
+   "var:pos": "pine_fn.<locals>.PortPos(value=11100, weight=0.6894409937888198, rebalanceCount=0)",
+   "var:__obs_plot0": 0.6815286624203821
+  },
+  {
+   "var:pos": "pine_fn.<locals>.PortPos(value=11100, weight=0.6894409937888198, rebalanceCount=0)",
+   "var:__obs_plot0": 0.6794871794871795
+  },
+  {
+   "var:pos": "pine_fn.<locals>.PortPos(value=11100, weight=0.6894409937888198, rebalanceCount=0)",
+   "var:__obs_plot0": 0.6835443037974683
+  },
+  {
+   "var:pos": "pine_fn.<locals>.PortPos(value=11100, weight=0.6894409937888198, rebalanceCount=0)",
+   "var:__obs_plot0": 0.6875
+  },
+  {
+   "var:pos": "pine_fn.<locals>.PortPos(value=11100, weight=0.6894409937888198, rebalanceCount=0)",
+   "var:__obs_plot0": 0.6855345911949685
+  },
+  {
+   "var:pos": "pine_fn.<locals>.PortPos(value=11100, weight=0.6894409937888198, rebalanceCount=0)",
+   "var:__obs_plot0": 0.6894409937888198
+  }
+ ],
+ "finalVarState": {
+  "pos": "pine_fn.<locals>.PortPos(value=11100, weight=0.6894409937888198, rebalanceCount=0)",
+  "__obs_plot0": 0.6894409937888198
+ }
+}

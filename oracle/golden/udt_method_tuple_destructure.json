@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:bx": "pine_fn.<locals>.Box(lo=Series(current=106, length=10), hi=Series(current=109, length=10))",
+   "var:__obs_lower": 98.25,
+   "var:__obs_upper": 102.75
+  },
+  {
+   "var:bx": "pine_fn.<locals>.Box(lo=Series(current=106, length=10), hi=Series(current=109, length=10))",
+   "var:__obs_lower": 99.25,
+   "var:__obs_upper": 103.75
+  },
+  {
+   "var:bx": "pine_fn.<locals>.Box(lo=Series(current=106, length=10), hi=Series(current=109, length=10))",
+   "var:__obs_lower": 100.25,
+   "var:__obs_upper": 104.75
+  },
+  {
+   "var:bx": "pine_fn.<locals>.Box(lo=Series(current=106, length=10), hi=Series(current=109, length=10))",
+   "var:__obs_lower": 99.25,
+   "var:__obs_upper": 103.75
+  },
+  {
+   "var:bx": "pine_fn.<locals>.Box(lo=Series(current=106, length=10), hi=Series(current=109, length=10))",
+   "var:__obs_lower": 101.25,
+   "var:__obs_upper": 105.75
+  },
+  {
+   "var:bx": "pine_fn.<locals>.Box(lo=Series(current=106, length=10), hi=Series(current=109, length=10))",
+   "var:__obs_lower": 102.25,
+   "var:__obs_upper": 106.75
+  },
+  {
+   "var:bx": "pine_fn.<locals>.Box(lo=Series(current=106, length=10), hi=Series(current=109, length=10))",
+   "var:__obs_lower": 103.25,
+   "var:__obs_upper": 107.75
+  },
+  {
+   "var:bx": "pine_fn.<locals>.Box(lo=Series(current=106, length=10), hi=Series(current=109, length=10))",
+   "var:__obs_lower": 102.25,
+   "var:__obs_upper": 106.75
+  },
+  {
+   "var:bx": "pine_fn.<locals>.Box(lo=Series(current=106, length=10), hi=Series(current=109, length=10))",
+   "var:__obs_lower": 104.25,
+   "var:__obs_upper": 108.75
+  },
+  {
+   "var:bx": "pine_fn.<locals>.Box(lo=Series(current=106, length=10), hi=Series(current=109, length=10))",
+   "var:__obs_lower": 105.25,
+   "var:__obs_upper": 109.75
+  }
+ ],
+ "finalVarState": {
+  "bx": "pine_fn.<locals>.Box(lo=Series(current=106, length=10), hi=Series(current=109, length=10))",
+  "__obs_lower": 105.25,
+  "__obs_upper": 109.75
+ }
+}

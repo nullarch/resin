@@ -1,0 +1,19 @@
+
+//@version=5
+indicator("Sig Reg")
+var sr = map.new<string, float>()
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+[m, s, h] = ta.macd(close, 3, 5, 3)
+map.put(sr, "rsi_sig", rsi > 55 ? 1.0 : rsi < 45 ? -1.0 : 0.0)
+map.put(sr, "trend_sig", close > sma3 ? 1.0 : -1.0)
+map.put(sr, "macd_sig", h > 0 ? 1.0 : -1.0)
+totalBull = 0.0
+totalBear = 0.0
+for [k, v] in sr
+    if v > 0
+        totalBull := totalBull + 1
+    else if v < 0
+        totalBear := totalBear + 1
+netSignal = totalBull - totalBear
+plot(netSignal, "Net")

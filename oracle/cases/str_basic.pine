@@ -1,0 +1,32 @@
+//@version=5
+indicator("str_basic")
+// All channels are bar-independent (pure string-literal args, no OHLCV dependency — like
+// math_const.pine) since these functions take string args and pine2js has no string bar series.
+// na-propagation behavior (source/target = na) is NOT covered here: pine2py's str_funcs.contains/
+// startswith/endswith/pos have no None-guard and crash (AttributeError/TypeError) on na input,
+// so gen_oracle.py itself would fail to produce a golden for those channels — hand-verified in
+// runtime.test.ts instead (LIMITATIONS.md).
+var int __obs_len0 = na
+__obs_len0 := str.length("hello")
+var int __obs_len1 = na
+__obs_len1 := str.length("")
+var bool __obs_contains0 = na
+__obs_contains0 := str.contains("hello world", "wor")
+var bool __obs_contains1 = na
+__obs_contains1 := str.contains("hello world", "xyz")
+var bool __obs_contains2 = na
+__obs_contains2 := str.contains("hello world", "")
+var bool __obs_sw0 = na
+__obs_sw0 := str.startswith("hello world", "hello")
+var bool __obs_sw1 = na
+__obs_sw1 := str.startswith("hello world", "world")
+var bool __obs_ew0 = na
+__obs_ew0 := str.endswith("hello world", "world")
+var bool __obs_ew1 = na
+__obs_ew1 := str.endswith("hello world", "hello")
+var int __obs_pos0 = na
+__obs_pos0 := str.pos("hello world", "wor")
+var int __obs_pos1 = na
+__obs_pos1 := str.pos("hello world", "xyz")
+var int __obs_pos2 = na
+__obs_pos2 := str.pos("hello world", "")

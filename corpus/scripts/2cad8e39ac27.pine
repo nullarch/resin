@@ -1,0 +1,6 @@
+//@version=5
+indicator("PVT")
+var float lastP = 0
+p = ta.pvt(close, volume)
+if not na(p)
+    lastP := p

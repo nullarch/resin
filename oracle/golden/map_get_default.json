@@ -1,0 +1,116 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:m": {
+    "existing": 5.0,
+    "counter": 9.0
+   },
+   "var:__obs_present": 5.0,
+   "var:__obs_absent": 42.0,
+   "var:__obs_counter": 0.0,
+   "var:__obs_absent_no_default": "NaN"
+  },
+  {
+   "var:m": {
+    "existing": 5.0,
+    "counter": 9.0
+   },
+   "var:__obs_present": 5.0,
+   "var:__obs_absent": 42.0,
+   "var:__obs_counter": 1.0,
+   "var:__obs_absent_no_default": "NaN"
+  },
+  {
+   "var:m": {
+    "existing": 5.0,
+    "counter": 9.0
+   },
+   "var:__obs_present": 5.0,
+   "var:__obs_absent": 42.0,
+   "var:__obs_counter": 2.0,
+   "var:__obs_absent_no_default": "NaN"
+  },
+  {
+   "var:m": {
+    "existing": 5.0,
+    "counter": 9.0
+   },
+   "var:__obs_present": 5.0,
+   "var:__obs_absent": 42.0,
+   "var:__obs_counter": 3.0,
+   "var:__obs_absent_no_default": "NaN"
+  },
+  {
+   "var:m": {
+    "existing": 5.0,
+    "counter": 9.0
+   },
+   "var:__obs_present": 5.0,
+   "var:__obs_absent": 42.0,
+   "var:__obs_counter": 4.0,
+   "var:__obs_absent_no_default": "NaN"
+  },
+  {
+   "var:m": {
+    "existing": 5.0,
+    "counter": 9.0
+   },
+   "var:__obs_present": 5.0,
+   "var:__obs_absent": 42.0,
+   "var:__obs_counter": 5.0,
+   "var:__obs_absent_no_default": "NaN"
+  },
+  {
+   "var:m": {
+    "existing": 5.0,
+    "counter": 9.0
+   },
+   "var:__obs_present": 5.0,
+   "var:__obs_absent": 42.0,
+   "var:__obs_counter": 6.0,
+   "var:__obs_absent_no_default": "NaN"
+  },
+  {
+   "var:m": {
+    "existing": 5.0,
+    "counter": 9.0
+   },
+   "var:__obs_present": 5.0,
+   "var:__obs_absent": 42.0,
+   "var:__obs_counter": 7.0,
+   "var:__obs_absent_no_default": "NaN"
+  },
+  {
+   "var:m": {
+    "existing": 5.0,
+    "counter": 9.0
+   },
+   "var:__obs_present": 5.0,
+   "var:__obs_absent": 42.0,
+   "var:__obs_counter": 8.0,
+   "var:__obs_absent_no_default": "NaN"
+  },
+  {
+   "var:m": {
+    "existing": 5.0,
+    "counter": 9.0
+   },
+   "var:__obs_present": 5.0,
+   "var:__obs_absent": 42.0,
+   "var:__obs_counter": 9.0,
+   "var:__obs_absent_no_default": "NaN"
+  }
+ ],
+ "finalVarState": {
+  "m": {
+   "existing": 5.0,
+   "counter": 9.0
+  },
+  "__obs_present": 5.0,
+  "__obs_absent": 42.0,
+  "__obs_counter": 9.0,
+  "__obs_absent_no_default": "NaN"
+ }
+}

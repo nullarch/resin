@@ -1,0 +1,38 @@
+//@version=5
+indicator("enum_titled")
+// enum 멤버 title 문자열 할당(C136, ROADMAP 'enum' 잔여 슬라이스) 오라클 검증.
+// enum_basic.pine과 동일한 구조(등가/부등가 비교 + switch 분기만 관측, DIVERGENCES.md #55 그대로
+// 재적용 — enum 값 자체의 런타임 표현은 pine2py/pine2js가 항상 다르므로 var 미러 불가)이되, 멤버
+// 중 일부에 title 문자열을 붙여 title이 순수 표시 메타데이터일 뿐 값 비교/switch 시맨틱에 전혀
+// 관여하지 않음을 확인한다(title 없는 멤버 'flat'과 title 있는 멤버 'long'/'short'을 섞음).
+enum Direction
+    long = "Long Position"
+    short = "Short Position"
+    flat
+
+var Direction d = Direction.long
+diff = close - close[1]
+if diff > 0
+    d := Direction.long
+else if diff < 0
+    d := Direction.short
+else
+    d := Direction.flat
+
+var bool __obs_is_long = na
+__obs_is_long := d == Direction.long
+var bool __obs_is_short = na
+__obs_is_short := d == Direction.short
+var bool __obs_is_flat = na
+__obs_is_flat := d == Direction.flat
+var bool __obs_not_long = na
+__obs_not_long := d != Direction.long
+
+var float __obs_switch_val = na
+switch d
+    Direction.long =>
+        __obs_switch_val := 1.0
+    Direction.short =>
+        __obs_switch_val := 2.0
+    Direction.flat =>
+        __obs_switch_val := 3.0

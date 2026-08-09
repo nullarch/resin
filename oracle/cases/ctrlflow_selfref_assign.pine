@@ -1,0 +1,44 @@
+//@version=5
+indicator("ctrlflow_selfref_assign")
+// C266: 제어문-식 대입 자기참조 -- 분기 값 표현식이 대입 대상 자기 자신을 읽는 조합
+// (`x := if cond \n x + 1.0 \n else \n x - 0.5`). C265가 발견한 "target = NaN 선대입이 분기의
+// 자기참조 읽기를 먼저 덮어써 항상 NaN" 버그의 수정(C266, `let __cfrN` 임시변수에 분기 결과를
+// 담은 뒤 마지막 1회만 target에 대입)을 검증한다.
+//
+// 오라클 가능 범위: pine2py는 단일 표현식 if/else(elif 없음)만 인라인 삼항 패스트패스
+// (`x = (x+1.0 if cond else x-0.5)`)로 처리해 이 서브셋에서만 자기참조가 올바르다 -- 이 케이스는
+// 전 채널을 그 서브셋으로만 구성했다. elif/switch/for/while 자기참조는 pine2py가 target=None
+// 선대입 구조라 TypeError로 크래시(오라클 불가) -- tests/unit/codegen.test.ts의 hand-verified
+// 실행 테스트로 별도 검증(DIVERGENCES.md 참조).
+//
+// 3채널: (1) top-level var ':=' 자기참조, (2) UDT 필드 자기참조(C265 최초 발견 패턴),
+// (3) UDF 내부 var ':=' 자기참조(funcCtx 슬롯 경로, 단일 콜사이트라 pine2py C9 공유 버그와 무관).
+
+var float x = 0.0
+x := if close % 2.0 == 0.0
+    x + 1.0
+else
+    x - 0.5
+
+type Particle
+    float energy = 100.0
+var Particle p = Particle.new()
+p.energy := if close % 2.0 == 0.0
+    p.energy + 1.0
+else
+    p.energy - 0.5
+
+f() =>
+    var float acc = 10.0
+    acc := if close % 2.0 == 0.0
+        acc + 2.0
+    else
+        acc - 1.0
+    acc
+
+var float __obs_x = na
+__obs_x := x
+var float __obs_energy = na
+__obs_energy := p.energy
+var float __obs_f = na
+__obs_f := f()

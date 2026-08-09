@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("SMA Fan")
+s3 = ta.sma(close, 3)
+s5 = ta.sma(close, 5)
+s8 = ta.sma(close, 8)
+fanWidth = s3 - s8
+expanding = math.abs(fanWidth) > math.abs(fanWidth[1])
+plot(fanWidth, "Width")
+plot(expanding ? 1 : 0, "Exp")

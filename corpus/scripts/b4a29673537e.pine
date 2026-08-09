@@ -1,0 +1,8 @@
+//@version=5
+indicator("Two Char Ops")
+var float result = 0.0
+bool eq = close == close
+bool neq = close != open
+bool lte = close <= high
+bool gte = close >= low
+result := (eq ? 1.0 : 0.0) + (neq ? 1.0 : 0.0) + (lte ? 1.0 : 0.0) + (gte ? 1.0 : 0.0)

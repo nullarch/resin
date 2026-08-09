@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Rel Score")
+relScore(float price, float ma, float rsi) =>
+    priceStr = ma > 0 ? (price - ma) / ma * 100 : 0.0
+    rsiStr = (rsi - 50) / 50
+    priceStr * 0.6 + rsiStr * 40 * 0.4
+
+sma5 = ta.sma(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+score = relScore(close, sma5, rsi)
+plot(score, "RS")

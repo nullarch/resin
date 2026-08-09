@@ -1,0 +1,6 @@
+
+//@version=5
+indicator("BB Order")
+[mid, upper, lower] = ta.bb(close, 20, 2.0)
+valid = na(upper) or upper >= mid
+plot(valid ? 1.0 : 0.0)

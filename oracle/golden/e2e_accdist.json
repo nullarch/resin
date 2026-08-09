@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_accdist": 333.3333333333
+  },
+  {
+   "var:__obs_accdist": 700.0
+  },
+  {
+   "var:__obs_accdist": 1100.0
+  },
+  {
+   "var:__obs_accdist": 1483.3333333333
+  },
+  {
+   "var:__obs_accdist": 1916.6666666667
+  },
+  {
+   "var:__obs_accdist": 2333.3333333333
+  },
+  {
+   "var:__obs_accdist": 2800.0
+  },
+  {
+   "var:__obs_accdist": 3250.0
+  },
+  {
+   "var:__obs_accdist": 3750.0
+  },
+  {
+   "var:__obs_accdist": 4233.3333333333
+  }
+ ],
+ "finalVarState": {
+  "__obs_accdist": 4233.3333333333
+ }
+}

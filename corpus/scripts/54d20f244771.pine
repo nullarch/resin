@@ -1,0 +1,30 @@
+
+//@version=5
+indicator("Stress16")
+enum Phase
+    ACCUMULATION
+    DISTRIBUTION
+    TRANSITION
+type MarketPhase
+    float indicator = 0.0
+    int duration = 0
+calcIndicator(c, o, v) =>
+    (c - o) * v / 1000.0
+var int phaseDuration = 0
+ind = calcIndicator(close, open, volume)
+phase = ind > 1.0 ? Phase.ACCUMULATION : ind < -1.0 ? Phase.DISTRIBUTION : Phase.TRANSITION
+phaseDuration := phaseDuration + 1
+mp = MarketPhase.new()
+mp.indicator := ind
+mp.duration := phaseDuration
+readings = array.new_float(0)
+for i = 0 to 4
+    array.push(readings, ind * float(i + 1) * 0.2)
+phaseMap = map.new<string, float>()
+phaseName = phase == Phase.ACCUMULATION ? "ACC" : phase == Phase.DISTRIBUTION ? "DIST" : "TRANS"
+map.put(phaseMap, phaseName, ind)
+map.put(phaseMap, "dur", float(phaseDuration))
+total = 0.0
+for [k, v] in phaseMap
+    total := total + math.abs(v)
+plot(total + array.avg(readings) + float(str.length(phaseName)), "S16")

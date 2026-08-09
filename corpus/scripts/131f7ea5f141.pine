@@ -1,0 +1,9 @@
+//@version=5
+indicator("For-in enum")
+arr = array.from(100.0, 200.0, 300.0)
+var float maxIdx = 0.0
+var float maxVal = 0.0
+for [i, v] in arr
+    if v > maxVal
+        maxVal := v
+        maxIdx := float(i)

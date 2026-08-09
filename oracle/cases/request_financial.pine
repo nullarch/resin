@@ -1,0 +1,10 @@
+//@version=5
+indicator("request_financial")
+// request.financial(신규, C257) — bar-independent(순수 NaN 스텁, wavealgo/__init__.py L118-120
+// request_financial이 인자 전부 무시하고 항상 NaN 반환). corpus 실사용 패턴(syminfo.tickerid +
+// "TOTAL_REVENUE" + "FQ") 그대로 재현 + 0-인자 호출까지 관측(request_dividends_splits.pine과
+// 동일한 관례).
+var float __obs_fin = na
+__obs_fin := request.financial(syminfo.tickerid, "TOTAL_REVENUE", "FQ")
+var float __obs_fin_bare = na
+__obs_fin_bare := request.financial()

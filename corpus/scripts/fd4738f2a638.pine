@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("UDT Stats")
+type Stats
+    float mean = 0.0
+    float stdDev = 0.0
+    float zScore = 0.0
+
+var Stats s = Stats.new()
+s.mean := ta.sma(close, 5)
+s.stdDev := ta.stdev(close, 5)
+s.zScore := s.stdDev > 0 ? (close - s.mean) / s.stdDev : 0.0
+isOutlier = math.abs(s.zScore) > 2
+plot(s.zScore, "Z")
+plot(isOutlier ? 1 : 0, "Out")

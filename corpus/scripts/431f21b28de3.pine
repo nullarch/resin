@@ -1,0 +1,4 @@
+//@version=5
+indicator("Service Time")
+float svcTime = volume > 0 ? (high - low) / volume * 1000.0 : 0.0
+plot(svcTime, "SvcTime")

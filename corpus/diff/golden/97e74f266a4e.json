@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:weights": {
+    "equity": 0.6,
+    "bond": 0.4
+   },
+   "var:rebalCount": 0,
+   "var:__obs_plot0": 0.55
+  },
+  {
+   "var:weights": {
+    "equity": 0.6,
+    "bond": 0.4
+   },
+   "var:rebalCount": 0,
+   "var:__obs_plot0": 0.55
+  },
+  {
+   "var:weights": {
+    "equity": 0.6,
+    "bond": 0.4
+   },
+   "var:rebalCount": 0,
+   "var:__obs_plot0": 0.55
+  },
+  {
+   "var:weights": {
+    "equity": 0.6,
+    "bond": 0.4
+   },
+   "var:rebalCount": 0,
+   "var:__obs_plot0": 0.55
+  },
+  {
+   "var:weights": {
+    "equity": 0.6,
+    "bond": 0.4
+   },
+   "var:rebalCount": 1,
+   "var:__obs_plot0": 0.6
+  },
+  {
+   "var:weights": {
+    "equity": 0.6,
+    "bond": 0.4
+   },
+   "var:rebalCount": 2,
+   "var:__obs_plot0": 0.6
+  },
+  {
+   "var:weights": {
+    "equity": 0.6,
+    "bond": 0.4
+   },
+   "var:rebalCount": 3,
+   "var:__obs_plot0": 0.6
+  },
+  {
+   "var:weights": {
+    "equity": 0.6,
+    "bond": 0.4
+   },
+   "var:rebalCount": 4,
+   "var:__obs_plot0": 0.6
+  },
+  {
+   "var:weights": {
+    "equity": 0.6,
+    "bond": 0.4
+   },
+   "var:rebalCount": 5,
+   "var:__obs_plot0": 0.6
+  },
+  {
+   "var:weights": {
+    "equity": 0.6,
+    "bond": 0.4
+   },
+   "var:rebalCount": 6,
+   "var:__obs_plot0": 0.6
+  }
+ ],
+ "finalVarState": {
+  "weights": {
+   "equity": 0.6,
+   "bond": 0.4
+  },
+  "rebalCount": 6,
+  "__obs_plot0": 0.6
+ }
+}

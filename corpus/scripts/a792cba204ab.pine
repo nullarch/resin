@@ -1,0 +1,9 @@
+//@version=5
+indicator("Fibonacci")
+var float result = 0.0
+float hi = 113.0
+float lo = 98.0
+float range_val = hi - lo
+float fib_382 = hi - range_val * 0.382
+float fib_618 = hi - range_val * 0.618
+result := fib_382 + fib_618

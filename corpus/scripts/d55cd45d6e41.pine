@@ -1,0 +1,5 @@
+//@version=5
+indicator("Rectify")
+detrend = close - ta.ema(close, 5)
+rectified = math.abs(detrend)
+plot(rectified)

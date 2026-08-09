@@ -1,0 +1,10 @@
+//@version=5
+indicator("Wave Celerity")
+depth = close - low
+gravity = 9.81
+celerity = depth > 0 ? math.sqrt(gravity * depth) : 0.0
+emaC = ta.ema(close, 3)
+smoothedC = not na(emaC) ? celerity : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := smoothedC
+plot(smoothedC)

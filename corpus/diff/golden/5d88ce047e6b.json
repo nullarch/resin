@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:smoothed": 51.5,
+   "var:__obs_plot0": 51.5
+  },
+  {
+   "var:smoothed": 83.0,
+   "var:__obs_plot0": 83.0
+  },
+  {
+   "var:smoothed": 90.6,
+   "var:__obs_plot0": 90.6
+  },
+  {
+   "var:smoothed": 101.4,
+   "var:__obs_plot0": 101.4
+  },
+  {
+   "var:smoothed": 105.03999999999999,
+   "var:__obs_plot0": 105.03999999999999
+  },
+  {
+   "var:smoothed": 105.47200000000001,
+   "var:__obs_plot0": 105.47200000000001
+  },
+  {
+   "var:smoothed": 106.86240000000001,
+   "var:__obs_plot0": 106.86240000000001
+  },
+  {
+   "var:smoothed": 109.05872000000001,
+   "var:__obs_plot0": 109.05872000000001
+  },
+  {
+   "var:smoothed": 109.02936,
+   "var:__obs_plot0": 109.02936
+  },
+  {
+   "var:smoothed": 110.605872,
+   "var:__obs_plot0": 110.605872
+  }
+ ],
+ "finalVarState": {
+  "smoothed": 110.605872,
+  "__obs_plot0": 110.605872
+ }
+}

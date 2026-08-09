@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Cond Append")
+msg = ""
+sma3 = ta.sma(close, 3)
+rsi = ta.rsi(close, 3)
+if close > sma3
+    msg := msg + "T+"
+else
+    msg := msg + "T-"
+if rsi > 50
+    msg := msg + "M+"
+else
+    msg := msg + "M-"
+if close > open
+    msg := msg + "PA+"
+else
+    msg := msg + "PA-"
+var float __obs_plot0 = na
+__obs_plot0 := str.length(msg)
+plot(str.length(msg), "Len")

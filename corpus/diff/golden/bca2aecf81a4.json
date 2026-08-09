@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:msg": "A / B / C",
+   "var:result": "A / B / C",
+   "var:__obs_plot0": 103
+  },
+  {
+   "var:msg": "A / B / C",
+   "var:result": "A / B / C",
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:msg": "A / B / C",
+   "var:result": "A / B / C",
+   "var:__obs_plot0": 102
+  },
+  {
+   "var:msg": "A / B / C",
+   "var:result": "A / B / C",
+   "var:__obs_plot0": 105
+  },
+  {
+   "var:msg": "A / B / C",
+   "var:result": "A / B / C",
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:msg": "A / B / C",
+   "var:result": "A / B / C",
+   "var:__obs_plot0": 106
+  },
+  {
+   "var:msg": "A / B / C",
+   "var:result": "A / B / C",
+   "var:__obs_plot0": 108
+  },
+  {
+   "var:msg": "A / B / C",
+   "var:result": "A / B / C",
+   "var:__obs_plot0": 110
+  },
+  {
+   "var:msg": "A / B / C",
+   "var:result": "A / B / C",
+   "var:__obs_plot0": 109
+  },
+  {
+   "var:msg": "A / B / C",
+   "var:result": "A / B / C",
+   "var:__obs_plot0": 111
+  }
+ ],
+ "finalVarState": {
+  "msg": "A / B / C",
+  "result": "A / B / C",
+  "__obs_plot0": 111
+ }
+}

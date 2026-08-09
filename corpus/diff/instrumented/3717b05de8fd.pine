@@ -1,0 +1,12 @@
+//@version=5
+indicator("BB Regression")
+[mid, up, lo] = ta.bb(close, 5, 2.0)
+var float last_mid = 0.0
+last_mid := nz(mid)
+var float last_up = 0.0
+last_up := nz(up)
+var float last_lo = 0.0
+last_lo := nz(lo)
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

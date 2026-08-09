@@ -1,0 +1,7 @@
+//@version=5
+indicator("Str Format")
+float val = 123.456
+string s = str.tostring(val, "#.##")
+var float result = 0.0
+result := str.length(s)
+plot(result)

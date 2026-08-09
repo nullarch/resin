@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Sort Idx")
+vals = array.from(close, open, high, low)
+indices = array.sort_indices(vals, "descending")
+topIdx = array.size(indices) > 0 ? array.get(indices, 0) : 0
+plot(topIdx, "TopIdx")

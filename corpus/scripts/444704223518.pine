@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("All Str")
+base = "HELLO"
+lower = str.lower(base)
+upper = str.upper(lower)
+sub = str.substring(base, 0, 3)
+len = str.length(base)
+has = str.contains(base, "ELL")
+rep = str.replace(base, "LLO", "LP")
+rsi = nz(ta.rsi(close, 3), 50.0)
+label = str.tostring(math.round(rsi))
+isShort = str.length(label) <= 2
+plot(isShort ? 1 : 0, "Short")

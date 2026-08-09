@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:new_fvg": "pine_fn.<locals>.Fvg(max=Series(current=109, length=10), min=Series(current=106, length=10))",
+   "var:__obs_max": 102,
+   "var:__obs_min": 99
+  },
+  {
+   "var:new_fvg": "pine_fn.<locals>.Fvg(max=Series(current=109, length=10), min=Series(current=106, length=10))",
+   "var:__obs_max": 103,
+   "var:__obs_min": 100
+  },
+  {
+   "var:new_fvg": "pine_fn.<locals>.Fvg(max=Series(current=109, length=10), min=Series(current=106, length=10))",
+   "var:__obs_max": 104,
+   "var:__obs_min": 101
+  },
+  {
+   "var:new_fvg": "pine_fn.<locals>.Fvg(max=Series(current=109, length=10), min=Series(current=106, length=10))",
+   "var:__obs_max": 103,
+   "var:__obs_min": 100
+  },
+  {
+   "var:new_fvg": "pine_fn.<locals>.Fvg(max=Series(current=109, length=10), min=Series(current=106, length=10))",
+   "var:__obs_max": 105,
+   "var:__obs_min": 102
+  },
+  {
+   "var:new_fvg": "pine_fn.<locals>.Fvg(max=Series(current=109, length=10), min=Series(current=106, length=10))",
+   "var:__obs_max": 106,
+   "var:__obs_min": 103
+  },
+  {
+   "var:new_fvg": "pine_fn.<locals>.Fvg(max=Series(current=109, length=10), min=Series(current=106, length=10))",
+   "var:__obs_max": 107,
+   "var:__obs_min": 104
+  },
+  {
+   "var:new_fvg": "pine_fn.<locals>.Fvg(max=Series(current=109, length=10), min=Series(current=106, length=10))",
+   "var:__obs_max": 106,
+   "var:__obs_min": 103
+  },
+  {
+   "var:new_fvg": "pine_fn.<locals>.Fvg(max=Series(current=109, length=10), min=Series(current=106, length=10))",
+   "var:__obs_max": 108,
+   "var:__obs_min": 105
+  },
+  {
+   "var:new_fvg": "pine_fn.<locals>.Fvg(max=Series(current=109, length=10), min=Series(current=106, length=10))",
+   "var:__obs_max": 109,
+   "var:__obs_min": 106
+  }
+ ],
+ "finalVarState": {
+  "new_fvg": "pine_fn.<locals>.Fvg(max=Series(current=109, length=10), min=Series(current=106, length=10))",
+  "__obs_max": 109,
+  "__obs_min": 106
+ }
+}

@@ -1,0 +1,4 @@
+//@version=5
+indicator("Test")
+arr = array.from(3, 1, 2)
+arr.sort()

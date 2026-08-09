@@ -1,0 +1,6 @@
+//@version=5
+indicator("Stoch RSI")
+rsi_val = ta.rsi(close, 3)
+k = ta.stoch(rsi_val, rsi_val, rsi_val, 3)
+d = ta.sma(k, 3)
+plot(k)

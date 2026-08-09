@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Vol Filter")
+var float[] vols = array.new_float(0)
+array.push(vols, volume)
+if array.size(vols) > 8
+    array.shift(vols)
+avgVol = array.avg(vols)
+highVolCount = 0
+for v in vols
+    if v > avgVol * 1.5
+        highVolCount := highVolCount + 1
+highVolPct = array.size(vols) > 0 ? highVolCount / array.size(vols) : 0.0
+plot(highVolPct, "HVP")

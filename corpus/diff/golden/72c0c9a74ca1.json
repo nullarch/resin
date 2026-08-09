@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:oscs": {
+    "rsi": 1.0,
+    "stoch": 1.0,
+    "cci": 1.0
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:oscs": {
+    "rsi": 1.0,
+    "stoch": 1.0,
+    "cci": 1.0
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:oscs": {
+    "rsi": 1.0,
+    "stoch": 1.0,
+    "cci": 1.0
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:oscs": {
+    "rsi": 1.0,
+    "stoch": 1.0,
+    "cci": 1.0
+   },
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:oscs": {
+    "rsi": 1.0,
+    "stoch": 1.0,
+    "cci": 1.0
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:oscs": {
+    "rsi": 1.0,
+    "stoch": 1.0,
+    "cci": 1.0
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:oscs": {
+    "rsi": 1.0,
+    "stoch": 1.0,
+    "cci": 1.0
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:oscs": {
+    "rsi": 1.0,
+    "stoch": 1.0,
+    "cci": 1.0
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:oscs": {
+    "rsi": 1.0,
+    "stoch": 1.0,
+    "cci": 1.0
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:oscs": {
+    "rsi": 1.0,
+    "stoch": 1.0,
+    "cci": 1.0
+   },
+   "var:__obs_plot0": 1.0
+  }
+ ],
+ "finalVarState": {
+  "oscs": {
+   "rsi": 1.0,
+   "stoch": 1.0,
+   "cci": 1.0
+  },
+  "__obs_plot0": 1.0
+ }
+}

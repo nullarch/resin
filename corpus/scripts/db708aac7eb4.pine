@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Strat Params")
+var sp = map.new<string, float>()
+map.put(sp, "fast_period", 3.0)
+map.put(sp, "slow_period", 5.0)
+map.put(sp, "rsi_entry", 55.0)
+map.put(sp, "rsi_exit", 45.0)
+rsi = nz(ta.rsi(close, 3), 50.0)
+entryThresh = map.get(sp, "rsi_entry", 55.0)
+signal = rsi > entryThresh ? 1 : 0
+plot(signal, "Sig")

@@ -1,0 +1,47 @@
+//@version=5
+indicator("for_in_matrix")
+// C709: for-in 루프 이터러블 판별 확장 -- (1) matrix(TV가 행 단위 array로 순회, matrix.ts
+// PineMatrix가 이미 unknown[][]라 JS 네이티브 for-of가 그대로 동형이라 별도 rt.matrix.row()
+// 호출 없이 인덱싱만으로 충분) (2) UDT 필드 DotAccess 별칭 '=' 로컬(`aliasedVals = basket.vals`류,
+// resolveContainerExprKind 자신은 이미 DotAccess를 resolveUdtFieldTypeHint 폴백으로 지원했으나
+// analyzeAssignment/VarDecl의 별칭 게이트가 Identifier/TernaryOp/CallExpr로만 좁아 진입이 막혀
+// 있었음, C427/C428/C682와 동일한 3-way 비대칭 패턴).
+
+var m = matrix.new<float>(2, 3, 0.0)
+matrix.set(m, 0, 0, 1.0)
+matrix.set(m, 0, 1, 2.0)
+matrix.set(m, 0, 2, 3.0)
+matrix.set(m, 1, 0, 4.0)
+matrix.set(m, 1, 1, 5.0)
+matrix.set(m, 1, 2, 6.0)
+
+sumAll = 0.0
+for row in m
+    for v in row
+        sumAll := sumAll + v
+var float __obs_matrix_sum = na
+__obs_matrix_sum := sumAll
+
+weighted = 0.0
+for [i, row] in m
+    weighted := weighted + row.get(0) * i
+var float __obs_matrix_weighted = na
+__obs_matrix_weighted := weighted
+
+type Basket
+    array<float> vals
+
+var Basket b1 = Basket.new(array.from(1.0, 2.0))
+var Basket b2 = Basket.new(array.from(3.0, 4.0, 5.0))
+var baskets = array.new<Basket>()
+if barstate.isfirst
+    array.push(baskets, b1)
+    array.push(baskets, b2)
+
+aliasSum = 0.0
+for basket in baskets
+    aliasedVals = basket.vals
+    for v in aliasedVals
+        aliasSum := aliasSum + v
+var float __obs_alias_sum = na
+__obs_alias_sum := aliasSum

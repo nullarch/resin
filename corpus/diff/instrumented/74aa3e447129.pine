@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("Strat Scores")
+var ss = map.new<string, float>()
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+map.put(ss, "mean_rev", rsi < 30 ? 1.0 : rsi > 70 ? -1.0 : 0.0)
+map.put(ss, "trend", close > sma3 and sma3 > ema5 ? 1.0 : -1.0)
+hi5 = ta.highest(high, 5)
+map.put(ss, "breakout", close > hi5 ? 1.0 : 0.0)
+bestScore = -999.0
+for [k, v] in ss
+    if v > bestScore
+        bestScore := v
+var float __obs_plot0 = na
+__obs_plot0 := bestScore
+plot(bestScore, "Best")

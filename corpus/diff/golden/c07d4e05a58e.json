@@ -1,0 +1,292 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:equity": 10000.0,
+   "var:maxEquity": 10000.0,
+   "var:maxDD": 0.0,
+   "var:compositeHistory": [
+    0.0,
+    1.0,
+    0.0,
+    3.0,
+    4.0,
+    3.0,
+    4.0,
+    6.0,
+    4.0,
+    5.0
+   ],
+   "var:m": {
+    "composite": 5.0,
+    "equity": 10008.0,
+    "maxDD": 0.019998000199980003
+   },
+   "var:totalBars": 1,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 10000.0,
+   "var:__obs_plot2": 0.0
+  },
+  {
+   "var:equity": 10001.0,
+   "var:maxEquity": 10001.0,
+   "var:maxDD": 0.0,
+   "var:compositeHistory": [
+    0.0,
+    1.0,
+    0.0,
+    3.0,
+    4.0,
+    3.0,
+    4.0,
+    6.0,
+    4.0,
+    5.0
+   ],
+   "var:m": {
+    "composite": 5.0,
+    "equity": 10008.0,
+    "maxDD": 0.019998000199980003
+   },
+   "var:totalBars": 2,
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 10001.0,
+   "var:__obs_plot2": 0.0
+  },
+  {
+   "var:equity": 9999.0,
+   "var:maxEquity": 10001.0,
+   "var:maxDD": 0.019998000199980003,
+   "var:compositeHistory": [
+    0.0,
+    1.0,
+    0.0,
+    3.0,
+    4.0,
+    3.0,
+    4.0,
+    6.0,
+    4.0,
+    5.0
+   ],
+   "var:m": {
+    "composite": 5.0,
+    "equity": 10008.0,
+    "maxDD": 0.019998000199980003
+   },
+   "var:totalBars": 3,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 9999.0,
+   "var:__obs_plot2": 0.019998000199980003
+  },
+  {
+   "var:equity": 10002.0,
+   "var:maxEquity": 10002.0,
+   "var:maxDD": 0.019998000199980003,
+   "var:compositeHistory": [
+    0.0,
+    1.0,
+    0.0,
+    3.0,
+    4.0,
+    3.0,
+    4.0,
+    6.0,
+    4.0,
+    5.0
+   ],
+   "var:m": {
+    "composite": 5.0,
+    "equity": 10008.0,
+    "maxDD": 0.019998000199980003
+   },
+   "var:totalBars": 4,
+   "var:__obs_plot0": 3,
+   "var:__obs_plot1": 10002.0,
+   "var:__obs_plot2": 0.019998000199980003
+  },
+  {
+   "var:equity": 10004.0,
+   "var:maxEquity": 10004.0,
+   "var:maxDD": 0.019998000199980003,
+   "var:compositeHistory": [
+    0.0,
+    1.0,
+    0.0,
+    3.0,
+    4.0,
+    3.0,
+    4.0,
+    6.0,
+    4.0,
+    5.0
+   ],
+   "var:m": {
+    "composite": 5.0,
+    "equity": 10008.0,
+    "maxDD": 0.019998000199980003
+   },
+   "var:totalBars": 5,
+   "var:__obs_plot0": 4,
+   "var:__obs_plot1": 10004.0,
+   "var:__obs_plot2": 0.019998000199980003
+  },
+  {
+   "var:equity": 10003.0,
+   "var:maxEquity": 10004.0,
+   "var:maxDD": 0.019998000199980003,
+   "var:compositeHistory": [
+    0.0,
+    1.0,
+    0.0,
+    3.0,
+    4.0,
+    3.0,
+    4.0,
+    6.0,
+    4.0,
+    5.0
+   ],
+   "var:m": {
+    "composite": 5.0,
+    "equity": 10008.0,
+    "maxDD": 0.019998000199980003
+   },
+   "var:totalBars": 6,
+   "var:__obs_plot0": 3,
+   "var:__obs_plot1": 10003.0,
+   "var:__obs_plot2": 0.019998000199980003
+  },
+  {
+   "var:equity": 10005.0,
+   "var:maxEquity": 10005.0,
+   "var:maxDD": 0.019998000199980003,
+   "var:compositeHistory": [
+    0.0,
+    1.0,
+    0.0,
+    3.0,
+    4.0,
+    3.0,
+    4.0,
+    6.0,
+    4.0,
+    5.0
+   ],
+   "var:m": {
+    "composite": 5.0,
+    "equity": 10008.0,
+    "maxDD": 0.019998000199980003
+   },
+   "var:totalBars": 7,
+   "var:__obs_plot0": 4,
+   "var:__obs_plot1": 10005.0,
+   "var:__obs_plot2": 0.019998000199980003
+  },
+  {
+   "var:equity": 10007.0,
+   "var:maxEquity": 10007.0,
+   "var:maxDD": 0.019998000199980003,
+   "var:compositeHistory": [
+    0.0,
+    1.0,
+    0.0,
+    3.0,
+    4.0,
+    3.0,
+    4.0,
+    6.0,
+    4.0,
+    5.0
+   ],
+   "var:m": {
+    "composite": 5.0,
+    "equity": 10008.0,
+    "maxDD": 0.019998000199980003
+   },
+   "var:totalBars": 8,
+   "var:__obs_plot0": 6,
+   "var:__obs_plot1": 10007.0,
+   "var:__obs_plot2": 0.019998000199980003
+  },
+  {
+   "var:equity": 10006.0,
+   "var:maxEquity": 10007.0,
+   "var:maxDD": 0.019998000199980003,
+   "var:compositeHistory": [
+    0.0,
+    1.0,
+    0.0,
+    3.0,
+    4.0,
+    3.0,
+    4.0,
+    6.0,
+    4.0,
+    5.0
+   ],
+   "var:m": {
+    "composite": 5.0,
+    "equity": 10008.0,
+    "maxDD": 0.019998000199980003
+   },
+   "var:totalBars": 9,
+   "var:__obs_plot0": 4,
+   "var:__obs_plot1": 10006.0,
+   "var:__obs_plot2": 0.019998000199980003
+  },
+  {
+   "var:equity": 10008.0,
+   "var:maxEquity": 10008.0,
+   "var:maxDD": 0.019998000199980003,
+   "var:compositeHistory": [
+    0.0,
+    1.0,
+    0.0,
+    3.0,
+    4.0,
+    3.0,
+    4.0,
+    6.0,
+    4.0,
+    5.0
+   ],
+   "var:m": {
+    "composite": 5.0,
+    "equity": 10008.0,
+    "maxDD": 0.019998000199980003
+   },
+   "var:totalBars": 10,
+   "var:__obs_plot0": 5,
+   "var:__obs_plot1": 10008.0,
+   "var:__obs_plot2": 0.019998000199980003
+  }
+ ],
+ "finalVarState": {
+  "equity": 10008.0,
+  "maxEquity": 10008.0,
+  "maxDD": 0.019998000199980003,
+  "compositeHistory": [
+   0.0,
+   1.0,
+   0.0,
+   3.0,
+   4.0,
+   3.0,
+   4.0,
+   6.0,
+   4.0,
+   5.0
+  ],
+  "m": {
+   "composite": 5.0,
+   "equity": 10008.0,
+   "maxDD": 0.019998000199980003
+  },
+  "totalBars": 10,
+  "__obs_plot0": 5,
+  "__obs_plot1": 10008.0,
+  "__obs_plot2": 0.019998000199980003
+ }
+}

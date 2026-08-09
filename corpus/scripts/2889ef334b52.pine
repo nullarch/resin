@@ -1,0 +1,12 @@
+//@version=5
+indicator("UDT array field")
+type DataStore
+    array<float> prices = na
+    float lastPrice = 0.0
+var ds = DataStore.new()
+if na(ds.prices)
+    ds.prices := array.new_float(0)
+array.push(ds.prices, close)
+if array.size(ds.prices) > 5
+    array.shift(ds.prices)
+ds.lastPrice := close

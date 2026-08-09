@@ -1,0 +1,8 @@
+//@version=5
+indicator("ta_barssince")
+// ta.barssince(condition) 오라클 검증(ROADMAP P2 "ta.* 44종"). condition = close > 105
+// (sample10.json 재사용, na 없는 순수 비교식이라 C25 비교연산자 na-전파 갭과 무관).
+// close=[101,102,103,102,104,105,106,105,107,108] > 105 -> [F,F,F,F,F,F,T,F,T,T]
+// 기대: bar0~5=na(한 번도 true였던 적 없음), bar6=0(방금 true), bar7=1(1바 지남), bar8=0, bar9=0
+var float __obs_x = na
+__obs_x := ta.barssince(close > 105)

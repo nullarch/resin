@@ -1,0 +1,14 @@
+//@version=5
+indicator("Str Substring")
+var string s = "hello world"
+var string sub1 = ""
+sub1 := str.substring(s, 0, 5)  // "hello"
+var int len1 = 0
+len1 := str.length(sub1)
+var string sub2 = ""
+sub2 := str.substring(s, 6)  // "world"
+var int len2 = 0
+len2 := str.length(sub2)
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

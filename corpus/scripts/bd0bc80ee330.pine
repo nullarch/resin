@@ -1,0 +1,15 @@
+//@version=5
+indicator("Dashboard")
+rsi = ta.rsi(close, 14)
+[macdLine, signal, hist] = ta.macd(close, 12, 26, 9)
+[bbMid, bbUp, bbLo] = ta.bb(close, 20, 2.0)
+sma50 = ta.sma(close, 50)
+sma200 = ta.sma(close, 200)
+goldenCross = ta.crossover(sma50, sma200)
+deathCross = ta.crossunder(sma50, sma200)
+score = 0.0
+score := nz(rsi, 50) > 50 ? score + 1 : score - 1
+score := macdLine > signal ? score + 1 : score - 1
+score := close > bbMid ? score + 1 : score - 1
+score := close > sma50 ? score + 1 : score - 1
+plot(score)

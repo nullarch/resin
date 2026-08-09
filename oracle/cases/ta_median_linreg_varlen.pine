@@ -1,0 +1,29 @@
+//@version=5
+indicator("ta_median_linreg_varlen")
+// ta.median/ta.linreg series(가변) length 오라클 검증(배치25 (4) 묶음, C550 — runtime/ta.ts
+// medianVarLen/linregVarLen). 두 함수 모두 pine2py(median.py/linreg.py)가 상태 없이 매 호출
+// 현재 length로 source.get(0..length-1)을 재구축하는 무상태 재스캔이라(get_ta_state 미사용,
+// python 직접 실행 확인 2026-08-01) highest/lowest(C547)와 동일하게 **length 값이 실제로 변하는
+// 축을 골든으로 직접 대조할 수 있다** — sma/wma(#179 고정 윈도우)와 다른 축임에 주의.
+// lenA = 5 - (bar_index % 5): sample10.json 10바에서 5,4,3,2,1,... 순환 — 바 0/1은 워밍업 NaN,
+// 바 2~9는 정상 구간(홀수/짝수 length의 median 두 분기 모두 커버).
+lenA = 5 - (bar_index % 5)
+var float __obs_med1 = na
+__obs_med1 := ta.median(close, lenA)
+// linreg 2-인자 폼(offset 생략) — varlen 경로는 barCount/barIdx가 뒤에 붙으므로 codegen이
+// offset 기본값 0을 명시적으로 패딩하는 분기(genCallExpr) 자체를 골든으로 검증.
+var float __obs_lr1 = na
+__obs_lr1 := ta.linreg(close, lenA)
+// 3-인자 폼(offset=2 투영) + source가 named local이 아닌 인라인 표현식(high+close) — Series 백업
+// 없이 콜사이트 자체 히스토리 버퍼만으로 동작함을 함께 확인(C547 len2 케이스와 동일 트릭).
+// sample10의 high-low는 상수 3이라 slope=0으로 offset 투영이 검증되지 않음(첫 골든 생성에서
+// 실측) — 바마다 변하는 high+close로 기울기가 실제로 실리는 채널을 쓴다.
+var float __obs_lr2 = na
+__obs_lr2 := ta.linreg(high + close, lenA, 2)
+// lenB: -1/2 교대 — length<0에서 pine2py linreg가 크래시 없이 +0.0을 반환하는 실측 동작
+// (빈 창 → slope=0/intercept=±0, python 직접 확인)의 literal port를 골든으로 직접 검증
+// (highest의 -inf #178과 동일 축). length=0은 pine2py ZeroDivisionError 크래시라 여기 못 넣고
+// na 자체 결정(DIVERGENCES #181, 유닛 테스트로 커버). median은 len<1 전부 크래시라 lenA만.
+lenB = bar_index % 2 == 0 ? -1 : 2
+var float __obs_lr3 = na
+__obs_lr3 := ta.linreg(close, lenB)

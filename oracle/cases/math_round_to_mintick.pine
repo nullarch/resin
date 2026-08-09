@@ -1,0 +1,24 @@
+//@version=5
+indicator("math_round_to_mintick")
+// m0: default mintick(0.01), close/7.0 — value/mintick never lands on an exact .5 tie
+// (verified with a python probe), so pine2py's Python round() (banker's) and pine2js's
+// half-away-from-zero agree here — safe for byte-exact golden comparison.
+var float __obs_m0 = na
+__obs_m0 := math.round_to_mintick(close / 7.0)
+// m1: explicit mintick=1.0, close-100.3 — also tie-free, safe for golden comparison.
+var float __obs_m1 = na
+__obs_m1 := math.round_to_mintick(close - 100.3, 1.0)
+// m2: mintick<=0 guard — value passes through unrounded (both implementations agree,
+// no rounding math involved).
+var float __obs_m2 = na
+__obs_m2 := math.round_to_mintick(close - 100.3, 0.0)
+// m3: NaN propagation (insufficient history — sample10.json only has 10 bars).
+var float __obs_m3 = na
+__obs_m3 := math.round_to_mintick(close[15])
+// m4: exact .5 ties (close-100.5, mintick=1.0) — DIVERGENCES.md #14. pine2py's round_to_mintick
+// delegates to Python's round() (banker's rounding: ties to even), while pine2js reuses
+// rt.round's half-away-from-zero (matching math.round's own documented tie-break rule). This
+// channel is EXCLUDED from golden comparison (see tests/oracle/math_round_to_mintick.test.ts)
+// and verified only by hand.
+var float __obs_m4 = na
+__obs_m4 := math.round_to_mintick(close - 100.5, 1.0)

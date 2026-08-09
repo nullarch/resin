@@ -1,0 +1,7 @@
+//@version=5
+indicator("Heartbeat")
+var int heartbeat = 0
+if close >= open
+    heartbeat := heartbeat + 1
+else
+    heartbeat := 0

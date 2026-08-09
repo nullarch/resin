@@ -1,0 +1,10 @@
+//@version=5
+indicator("C300-17")
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+smaVal = nz(ta.sma(close, 5), close)
+emaVal = nz(ta.ema(close, 3), close)
+rsiNorm = rsiVal / 100.0
+smaSignal = close > smaVal ? 1.0 : -1.0
+emaSignal = close > emaVal ? 1.0 : -1.0
+composite = 0.4 * rsiNorm + 0.3 * smaSignal + 0.3 * emaSignal
+plot(composite)

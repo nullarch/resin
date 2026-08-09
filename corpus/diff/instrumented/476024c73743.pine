@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("SMA Cross")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+bullCross = ta.crossover(sma3, sma5)
+bearCross = ta.crossunder(sma3, sma5)
+var float __obs_plot0 = na
+__obs_plot0 := bullCross ? 1 : bearCross ? -1 : 0
+plot(bullCross ? 1 : bearCross ? -1 : 0, "Cx")

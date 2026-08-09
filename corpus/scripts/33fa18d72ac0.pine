@@ -1,0 +1,8 @@
+//@version=5
+indicator("For Scope Var")
+float total = 0.0
+for i = 1 to 5
+    float step = float(i) * 2.0
+    total := total + step
+var float result = 0.0
+result := total

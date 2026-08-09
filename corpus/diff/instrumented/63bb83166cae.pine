@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Cond Report")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+atr = ta.atr(3)
+parts = ""
+parts := parts + (close > sma3 ? "T+" : "T-")
+parts := parts + (rsi > 50 ? "M+" : "M-")
+allBull = parts == "T+M+"
+var float __obs_plot0 = na
+__obs_plot0 := allBull ? 1 : 0
+plot(allBull ? 1 : 0, "Bull")

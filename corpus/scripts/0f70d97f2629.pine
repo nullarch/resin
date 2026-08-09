@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Round")
+rsi = nz(ta.rsi(close, 3), 50.0)
+rounded = math.round(rsi)
+floored = math.floor(rsi)
+ceiled = math.ceil(rsi)
+diff = ceiled - floored
+plot(diff, "Diff")

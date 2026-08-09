@@ -1,0 +1,5 @@
+
+//@version=5
+indicator("SMA Num")
+s = ta.sma(close, 5)
+plot(s)

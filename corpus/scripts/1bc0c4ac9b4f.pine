@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Sharpe")
+ret = close[1] > 0 ? (close - close[1]) / close[1] * 100 : 0.0
+avgRet = ta.sma(ret, 5)
+retDev = ta.stdev(ret, 5)
+sharpe = retDev > 0 ? avgRet / retDev : 0.0
+plot(sharpe, "SR")

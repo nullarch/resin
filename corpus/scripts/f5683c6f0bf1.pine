@@ -1,0 +1,7 @@
+//@version=5
+indicator("Cross")
+var int cnt = 0
+sma2 = ta.sma(close, 2)
+sma4 = ta.sma(close, 4)
+if ta.cross(sma2, sma4)
+    cnt := cnt + 1

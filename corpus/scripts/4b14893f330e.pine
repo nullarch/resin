@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Score Norm")
+normalizeScore(float raw, float minR, float maxR) =>
+    clamped = math.max(minR, math.min(maxR, raw))
+    range_ = maxR - minR
+    range_ > 0 ? (clamped - minR) / range_ * 2 - 1 : 0.0
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+normRSI = normalizeScore(rsi, 20.0, 80.0)
+k = ta.stoch(close, high, low, 5)
+normK = normalizeScore(k, 10.0, 90.0)
+combined = normRSI * 0.6 + normK * 0.4
+plot(combined, "Comb")

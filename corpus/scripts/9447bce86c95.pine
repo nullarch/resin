@@ -1,0 +1,4 @@
+//@version=5
+indicator("Ternary Chain")
+spread = high - low
+category = spread > 8 ? 3.0 : spread > 6 ? 2.0 : spread > 4 ? 1.0 : 0.0

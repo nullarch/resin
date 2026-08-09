@@ -1,0 +1,6 @@
+//@version=5
+indicator("Kleisli Composition")
+float a = nz(ta.sma(close, 3), close)
+float b = nz(ta.ema(a, 3), a)
+float c = nz(ta.rsi(b, 5), 50.0)
+float composed = c / 100.0

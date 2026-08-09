@@ -1,0 +1,11 @@
+//@version=5
+indicator("Safe Div")
+var float r1 = 0.0
+r1 := 10.0 / 0.0  // should be NaN, not crash
+var bool is_nan = false
+is_nan := na(r1)
+var float r2 = 0.0
+r2 := 10.0 / 2.0  // should be 5.0
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

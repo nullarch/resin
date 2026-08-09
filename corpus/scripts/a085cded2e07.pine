@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Osc Extr")
+var float maxRSI = 0.0
+var float minRSI = 100.0
+rsi = nz(ta.rsi(close, 3), 50.0)
+if rsi > maxRSI
+    maxRSI := rsi
+if rsi < minRSI
+    minRSI := rsi
+rsiRange = maxRSI - minRSI
+plot(rsiRange, "Range")

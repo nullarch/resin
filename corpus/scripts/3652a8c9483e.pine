@@ -1,0 +1,11 @@
+//@version=5
+indicator("Vocabulary Richness")
+var float[] seen = array.new_float(0)
+roundClose = math.floor(close)
+found = false
+for i = 0 to array.size(seen) - 1
+    if array.get(seen, i) == roundClose
+        found := true
+if not found
+    array.push(seen, roundClose)
+vocabSize = array.size(seen)

@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Hidden Div")
+rsi = nz(ta.rsi(close, 3), 50.0)
+priceLowerHigh = not na(close[3]) and close < close[3]
+rsiHigherHigh = rsi > 55
+hiddenBear = priceLowerHigh and rsiHigherHigh
+plot(hiddenBear ? 1 : 0, "HB")

@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Triple Cross")
+s3 = ta.sma(close, 3)
+s5 = ta.sma(close, 5)
+s8 = ta.sma(close, 8)
+bullOrder = s3 > s5 and s5 > s8
+prevBull = s3[1] <= s5[1] or s5[1] <= s8[1]
+freshBull = bullOrder and prevBull
+plot(bullOrder ? 1 : 0, "Bull")
+plot(freshBull ? 1 : 0, "Fresh")

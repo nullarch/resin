@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:trades": 0,
+   "var:cumPnL": 0.0,
+   "var:inTrade": false,
+   "var:entryPrice": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:trades": 0,
+   "var:cumPnL": 0.0,
+   "var:inTrade": false,
+   "var:entryPrice": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:trades": 0,
+   "var:cumPnL": 0.0,
+   "var:inTrade": false,
+   "var:entryPrice": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:trades": 0,
+   "var:cumPnL": 0.0,
+   "var:inTrade": false,
+   "var:entryPrice": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:trades": 1,
+   "var:cumPnL": 0.0,
+   "var:inTrade": true,
+   "var:entryPrice": 107,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:trades": 1,
+   "var:cumPnL": 0.0,
+   "var:inTrade": true,
+   "var:entryPrice": 107,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:trades": 1,
+   "var:cumPnL": 0.0,
+   "var:inTrade": true,
+   "var:entryPrice": 107,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:trades": 1,
+   "var:cumPnL": 0.0,
+   "var:inTrade": true,
+   "var:entryPrice": 107,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:trades": 1,
+   "var:cumPnL": 0.0,
+   "var:inTrade": true,
+   "var:entryPrice": 107,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:trades": 1,
+   "var:cumPnL": 0.0,
+   "var:inTrade": true,
+   "var:entryPrice": 107,
+   "var:__obs_plot0": 0.0
+  }
+ ],
+ "finalVarState": {
+  "trades": 1,
+  "cumPnL": 0.0,
+  "inTrade": true,
+  "entryPrice": 107,
+  "__obs_plot0": 0.0
+ }
+}

@@ -1,0 +1,7 @@
+//@version=5
+indicator("scope func")
+var float result = 0.0
+myFunc(a, b) =>
+    c = a + b
+    c * 2.0
+result := myFunc(3.0, 4.0)

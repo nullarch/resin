@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Input Types")
+mode = input.string("sma", "Mode")
+enabled = input.bool(true, "Enabled")
+length = input.int(5, "Length")
+result = enabled ? (mode == "sma" ? ta.sma(close, length) : ta.ema(close, length)) : close
+plot(result, "Result")

@@ -1,0 +1,9 @@
+//@version=5
+indicator("Regex Pattern Counter")
+var int matchCount = 0
+var int consecutive = 0
+isBull = close > open
+consecutive := isBull ? consecutive + 1 : 0
+if consecutive >= 2
+    matchCount := matchCount + 1
+plot(matchCount, "Matches")

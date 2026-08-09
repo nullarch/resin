@@ -1,0 +1,14 @@
+//@version=5
+indicator("Binary Search")
+var float result = 0.0
+float lo = 0.0
+float hi = 100.0
+int steps = 0
+while hi - lo > 1.0
+    float mid = (lo + hi) / 2.0
+    if mid < 50.0
+        lo := mid
+    else
+        hi := mid
+    steps := steps + 1
+result := steps

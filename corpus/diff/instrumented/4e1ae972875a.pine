@@ -1,0 +1,10 @@
+//@version=5
+indicator("Color Trans")
+var color c1 = color.new(#ff0000, 50)
+var color c2 = color.new(color.blue, 80)
+var color c3 = color.rgb(255, 0, 0, 128)
+var bool valid = false
+valid := not na(c1) and not na(c2) and not na(c3)
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

@@ -1,0 +1,19 @@
+
+//@version=5
+indicator("UDT Funcs")
+type Portfolio
+    float equity = 10000.0
+    float maxEquity = 10000.0
+    float drawdown = 0.0
+
+updatePortfolio(Portfolio p, float pnl) =>
+    p.equity := p.equity + pnl
+    if p.equity > p.maxEquity
+        p.maxEquity := p.equity
+    p.drawdown := p.maxEquity > 0 ? (p.maxEquity - p.equity) / p.maxEquity * 100 : 0.0
+
+var Portfolio port = Portfolio.new()
+pnl = close - open
+updatePortfolio(port, pnl)
+plot(port.equity, "Eq")
+plot(port.drawdown, "DD")

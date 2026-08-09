@@ -1,0 +1,6 @@
+//@version=5
+indicator("BoolStr")
+var string lastMsg = ""
+cond = close > 110
+msg = "Above 110: " + cond
+lastMsg := msg

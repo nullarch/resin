@@ -1,0 +1,5 @@
+//@version=5
+indicator("DMI ADX")
+[diplus, diminus, adx] = ta.dmi(5, 5)
+strongTrend = not na(adx) and nz(adx) > 25
+bullDom = not na(diplus) and not na(diminus) and nz(diplus) > nz(diminus)

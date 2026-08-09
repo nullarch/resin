@@ -1,0 +1,281 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:__obs_sum_param": 60.0,
+   "var:__obs_sum_method": 60.0,
+   "var:candles": [
+    "pine_fn.<locals>.Candle(h=5.0, l=1.0)",
+    "pine_fn.<locals>.Candle(h=9.0, l=2.0)"
+   ],
+   "var:__obs_highest": 9.0,
+   "var:m2": {
+    "a": 1.0,
+    "b": 2.0
+   },
+   "var:__obs_sum_map": 3.0,
+   "var:b": [
+    100.0,
+    200.0
+   ],
+   "var:__obs_sum_typehint_var": 300.0,
+   "var:__obs_sum_typehint_local": 15.0
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:__obs_sum_param": 60.0,
+   "var:__obs_sum_method": 60.0,
+   "var:candles": [
+    "pine_fn.<locals>.Candle(h=5.0, l=1.0)",
+    "pine_fn.<locals>.Candle(h=9.0, l=2.0)"
+   ],
+   "var:__obs_highest": 9.0,
+   "var:m2": {
+    "a": 1.0,
+    "b": 2.0
+   },
+   "var:__obs_sum_map": 3.0,
+   "var:b": [
+    100.0,
+    200.0
+   ],
+   "var:__obs_sum_typehint_var": 300.0,
+   "var:__obs_sum_typehint_local": 15.0
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:__obs_sum_param": 60.0,
+   "var:__obs_sum_method": 60.0,
+   "var:candles": [
+    "pine_fn.<locals>.Candle(h=5.0, l=1.0)",
+    "pine_fn.<locals>.Candle(h=9.0, l=2.0)"
+   ],
+   "var:__obs_highest": 9.0,
+   "var:m2": {
+    "a": 1.0,
+    "b": 2.0
+   },
+   "var:__obs_sum_map": 3.0,
+   "var:b": [
+    100.0,
+    200.0
+   ],
+   "var:__obs_sum_typehint_var": 300.0,
+   "var:__obs_sum_typehint_local": 15.0
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:__obs_sum_param": 60.0,
+   "var:__obs_sum_method": 60.0,
+   "var:candles": [
+    "pine_fn.<locals>.Candle(h=5.0, l=1.0)",
+    "pine_fn.<locals>.Candle(h=9.0, l=2.0)"
+   ],
+   "var:__obs_highest": 9.0,
+   "var:m2": {
+    "a": 1.0,
+    "b": 2.0
+   },
+   "var:__obs_sum_map": 3.0,
+   "var:b": [
+    100.0,
+    200.0
+   ],
+   "var:__obs_sum_typehint_var": 300.0,
+   "var:__obs_sum_typehint_local": 15.0
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:__obs_sum_param": 60.0,
+   "var:__obs_sum_method": 60.0,
+   "var:candles": [
+    "pine_fn.<locals>.Candle(h=5.0, l=1.0)",
+    "pine_fn.<locals>.Candle(h=9.0, l=2.0)"
+   ],
+   "var:__obs_highest": 9.0,
+   "var:m2": {
+    "a": 1.0,
+    "b": 2.0
+   },
+   "var:__obs_sum_map": 3.0,
+   "var:b": [
+    100.0,
+    200.0
+   ],
+   "var:__obs_sum_typehint_var": 300.0,
+   "var:__obs_sum_typehint_local": 15.0
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:__obs_sum_param": 60.0,
+   "var:__obs_sum_method": 60.0,
+   "var:candles": [
+    "pine_fn.<locals>.Candle(h=5.0, l=1.0)",
+    "pine_fn.<locals>.Candle(h=9.0, l=2.0)"
+   ],
+   "var:__obs_highest": 9.0,
+   "var:m2": {
+    "a": 1.0,
+    "b": 2.0
+   },
+   "var:__obs_sum_map": 3.0,
+   "var:b": [
+    100.0,
+    200.0
+   ],
+   "var:__obs_sum_typehint_var": 300.0,
+   "var:__obs_sum_typehint_local": 15.0
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:__obs_sum_param": 60.0,
+   "var:__obs_sum_method": 60.0,
+   "var:candles": [
+    "pine_fn.<locals>.Candle(h=5.0, l=1.0)",
+    "pine_fn.<locals>.Candle(h=9.0, l=2.0)"
+   ],
+   "var:__obs_highest": 9.0,
+   "var:m2": {
+    "a": 1.0,
+    "b": 2.0
+   },
+   "var:__obs_sum_map": 3.0,
+   "var:b": [
+    100.0,
+    200.0
+   ],
+   "var:__obs_sum_typehint_var": 300.0,
+   "var:__obs_sum_typehint_local": 15.0
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:__obs_sum_param": 60.0,
+   "var:__obs_sum_method": 60.0,
+   "var:candles": [
+    "pine_fn.<locals>.Candle(h=5.0, l=1.0)",
+    "pine_fn.<locals>.Candle(h=9.0, l=2.0)"
+   ],
+   "var:__obs_highest": 9.0,
+   "var:m2": {
+    "a": 1.0,
+    "b": 2.0
+   },
+   "var:__obs_sum_map": 3.0,
+   "var:b": [
+    100.0,
+    200.0
+   ],
+   "var:__obs_sum_typehint_var": 300.0,
+   "var:__obs_sum_typehint_local": 15.0
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:__obs_sum_param": 60.0,
+   "var:__obs_sum_method": 60.0,
+   "var:candles": [
+    "pine_fn.<locals>.Candle(h=5.0, l=1.0)",
+    "pine_fn.<locals>.Candle(h=9.0, l=2.0)"
+   ],
+   "var:__obs_highest": 9.0,
+   "var:m2": {
+    "a": 1.0,
+    "b": 2.0
+   },
+   "var:__obs_sum_map": 3.0,
+   "var:b": [
+    100.0,
+    200.0
+   ],
+   "var:__obs_sum_typehint_var": 300.0,
+   "var:__obs_sum_typehint_local": 15.0
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:__obs_sum_param": 60.0,
+   "var:__obs_sum_method": 60.0,
+   "var:candles": [
+    "pine_fn.<locals>.Candle(h=5.0, l=1.0)",
+    "pine_fn.<locals>.Candle(h=9.0, l=2.0)"
+   ],
+   "var:__obs_highest": 9.0,
+   "var:m2": {
+    "a": 1.0,
+    "b": 2.0
+   },
+   "var:__obs_sum_map": 3.0,
+   "var:b": [
+    100.0,
+    200.0
+   ],
+   "var:__obs_sum_typehint_var": 300.0,
+   "var:__obs_sum_typehint_local": 15.0
+  }
+ ],
+ "finalVarState": {
+  "a": [
+   10.0,
+   20.0,
+   30.0
+  ],
+  "__obs_sum_param": 60.0,
+  "__obs_sum_method": 60.0,
+  "candles": [
+   "pine_fn.<locals>.Candle(h=5.0, l=1.0)",
+   "pine_fn.<locals>.Candle(h=9.0, l=2.0)"
+  ],
+  "__obs_highest": 9.0,
+  "m2": {
+   "a": 1.0,
+   "b": 2.0
+  },
+  "__obs_sum_map": 3.0,
+  "b": [
+   100.0,
+   200.0
+  ],
+  "__obs_sum_typehint_var": 300.0,
+  "__obs_sum_typehint_local": 15.0
+ }
+}

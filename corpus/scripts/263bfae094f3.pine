@@ -1,0 +1,8 @@
+//@version=5
+indicator("Freq Est")
+detrend = close - ta.sma(close, 5)
+var int crossCount = 0
+prevDet = nz(detrend[1])
+if (detrend > 0 and prevDet <= 0) or (detrend < 0 and prevDet >= 0)
+    crossCount := crossCount + 1
+plot(crossCount)

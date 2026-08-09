@@ -1,0 +1,8 @@
+//@version=5
+indicator("var cond acc")
+var int upCount = 0
+var int dnCount = 0
+if close > open
+    upCount := upCount + 1
+else
+    dnCount := dnCount + 1

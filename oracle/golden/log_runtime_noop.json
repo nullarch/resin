@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_x": 102.0
+  },
+  {
+   "var:__obs_x": 103.0
+  },
+  {
+   "var:__obs_x": 104.0
+  },
+  {
+   "var:__obs_x": 103.0
+  },
+  {
+   "var:__obs_x": 105.0
+  },
+  {
+   "var:__obs_x": 106.0
+  },
+  {
+   "var:__obs_x": 107.0
+  },
+  {
+   "var:__obs_x": 106.0
+  },
+  {
+   "var:__obs_x": 108.0
+  },
+  {
+   "var:__obs_x": 109.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_x": 109.0
+ }
+}

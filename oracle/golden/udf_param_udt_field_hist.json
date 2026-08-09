@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:obj": "pine_fn.<locals>.Pt(v=Series(current=108, length=10))",
+   "var:__obs_x": "NaN"
+  },
+  {
+   "var:obj": "pine_fn.<locals>.Pt(v=Series(current=108, length=10))",
+   "var:__obs_x": "NaN"
+  },
+  {
+   "var:obj": "pine_fn.<locals>.Pt(v=Series(current=108, length=10))",
+   "var:__obs_x": 203
+  },
+  {
+   "var:obj": "pine_fn.<locals>.Pt(v=Series(current=108, length=10))",
+   "var:__obs_x": 205
+  },
+  {
+   "var:obj": "pine_fn.<locals>.Pt(v=Series(current=108, length=10))",
+   "var:__obs_x": 205
+  },
+  {
+   "var:obj": "pine_fn.<locals>.Pt(v=Series(current=108, length=10))",
+   "var:__obs_x": 206
+  },
+  {
+   "var:obj": "pine_fn.<locals>.Pt(v=Series(current=108, length=10))",
+   "var:__obs_x": 209
+  },
+  {
+   "var:obj": "pine_fn.<locals>.Pt(v=Series(current=108, length=10))",
+   "var:__obs_x": 211
+  },
+  {
+   "var:obj": "pine_fn.<locals>.Pt(v=Series(current=108, length=10))",
+   "var:__obs_x": 211
+  },
+  {
+   "var:obj": "pine_fn.<locals>.Pt(v=Series(current=108, length=10))",
+   "var:__obs_x": 212
+  }
+ ],
+ "finalVarState": {
+  "obj": "pine_fn.<locals>.Pt(v=Series(current=108, length=10))",
+  "__obs_x": 212
+ }
+}

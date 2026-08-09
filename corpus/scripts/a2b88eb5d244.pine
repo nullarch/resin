@@ -1,0 +1,7 @@
+//@version=5
+indicator("Standardize")
+arr = array.from(10.0, 20.0, 30.0, 40.0, 50.0)
+std = array.standardize(arr)
+stdSize = array.size(std)
+identical = array.from(5.0, 5.0, 5.0)
+stdIdentical = array.standardize(identical)

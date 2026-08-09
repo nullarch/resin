@@ -1,0 +1,10 @@
+//@version=5
+indicator("Fibonacci Levels")
+highest5 = ta.highest(high, 5)
+lowest5 = ta.lowest(low, 5)
+rng = nz(highest5) - nz(lowest5)
+fib236 = nz(lowest5) + rng * 0.236
+fib382 = nz(lowest5) + rng * 0.382
+fib500 = nz(lowest5) + rng * 0.500
+fib618 = nz(lowest5) + rng * 0.618
+fib786 = nz(lowest5) + rng * 0.786

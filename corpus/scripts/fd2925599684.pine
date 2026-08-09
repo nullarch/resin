@@ -1,0 +1,9 @@
+//@version=5
+indicator("Method Chain TA")
+arr = array.new<float>(0)
+arr.push(close)
+sma_val = ta.sma(close, 3)
+arr.push(sma_val)
+var float result = 0.0
+result := arr.sum()
+plot(result)

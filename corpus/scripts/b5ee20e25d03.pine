@@ -1,0 +1,27 @@
+//@version=5
+indicator("Comprehensive C77")
+
+// var persistence
+var float total = 0.0
+
+// non-var per-bar
+float bar_val = close - open
+
+// typed declaration
+int bar_count = 10
+
+// for range with variable
+float sum = 0.0
+for i = 0 to bar_count - 1
+    sum += 1.0
+
+// if expression
+float bonus = if bar_val > 0
+    1.0
+else
+    0.0
+
+// TA
+sma3 = ta.sma(close, 3)
+
+total := sum + bonus + nz(sma3, 0.0)

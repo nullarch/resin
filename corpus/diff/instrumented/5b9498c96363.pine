@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Rank")
+var float[] window = array.new_float(0)
+array.push(window, close)
+if array.size(window) > 5
+    array.shift(window)
+sorted = array.copy(window)
+array.sort(sorted)
+rank = array.indexof(sorted, close)
+normRank = array.size(sorted) > 1 ? rank / (array.size(sorted) - 1) : 0.5
+var float __obs_plot0 = na
+__obs_plot0 := normRank
+plot(normRank, "Rank")

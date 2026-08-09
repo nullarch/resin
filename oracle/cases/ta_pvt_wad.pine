@@ -1,0 +1,8 @@
+//@version=5
+indicator("ta_pvt_wad")
+// ta.pvt/ta.wad 오라클 검증(ROADMAP P2 "ta.* 44종"). 둘 다 인자 없음(close/volume 또는
+// high/low/close 암묵 사용) — sample10.json 전 구간 관측.
+var float __obs_pvt = na
+var float __obs_wad = na
+__obs_pvt := ta.pvt()
+__obs_wad := ta.wad()

@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("TA Suite")
+sma = ta.sma(close, 5)
+ema = ta.ema(close, 5)
+rsi = ta.rsi(close, 3)
+atr = ta.atr(3)
+[macd, sig, hist] = ta.macd(close, 3, 5, 3)
+[mid, up, lo] = ta.bb(close, 5, 2.0)
+stoch = ta.stoch(close, high, low, 5)
+cci = ta.cci(close, 5)
+var float __obs_plot0 = na
+__obs_plot0 := rsi
+plot(rsi, "RSI")
+var float __obs_plot1 = na
+__obs_plot1 := atr
+plot(atr, "ATR")

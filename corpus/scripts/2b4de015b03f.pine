@@ -1,0 +1,10 @@
+//@version=5
+indicator("UDF Scope")
+calc(x) =>
+    local_var = x * 2.0
+    local_var + 1.0
+
+var float result = 0.0
+result := calc(5.0)
+// local_var is not accessible here
+plot(result)

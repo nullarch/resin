@@ -1,0 +1,9 @@
+//@version=5
+indicator("UDF chain")
+double(x) =>
+    x * 2
+triple(x) =>
+    x * 3
+combined(x) =>
+    double(x) + triple(x)
+result = combined(close)

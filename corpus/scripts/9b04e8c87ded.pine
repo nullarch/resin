@@ -1,0 +1,8 @@
+//@version=5
+indicator("Keyword Field Type")
+type Config
+    string type = "default"
+    float value = 0.0
+Config c = Config.new(value=5.0)
+var float result = 0.0
+result := c.value

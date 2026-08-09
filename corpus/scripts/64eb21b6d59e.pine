@@ -1,0 +1,13 @@
+//@version=5
+strategy("CopulaStrat")
+var int pos = 0
+rankC = nz(ta.rsi(close, 5), 50.0) / 100.0
+rankV = nz(ta.rsi(volume, 5), 50.0) / 100.0
+dep = math.abs(rankC - rankV)
+if dep < 0.1 and rankC > 0.6 and pos == 0
+    strategy.entry("Long", strategy.long)
+    pos := 1
+else if dep > 0.4 and pos == 1
+    strategy.close("Long")
+    pos := 0
+plot(dep, "Dep")

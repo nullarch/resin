@@ -1,0 +1,9 @@
+//@version=5
+indicator("Fib Levels")
+hi = ta.highest(high, 5)
+lo = ta.lowest(low, 5)
+range_ = hi - lo
+fib382 = hi - range_ * 0.382
+fib618 = hi - range_ * 0.618
+plot(fib382)
+plot(fib618)

@@ -1,0 +1,8 @@
+//@version=5
+indicator("Nested TA 3")
+rsi14 = ta.rsi(close, 5)
+sma_rsi = ta.sma(rsi14, 3)
+ema_sma_rsi = ta.ema(sma_rsi, 3)
+var float r = 0.0
+r := nz(ema_sma_rsi, 50.0)
+plot(close)

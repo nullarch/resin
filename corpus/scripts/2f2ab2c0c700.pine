@@ -1,0 +1,10 @@
+//@version=5
+indicator("Test")
+var labels = array.new<label>(0)
+if close > open
+    lbl = label.new(bar_index, high, "Bull")
+    label.set_color(lbl, color.green)
+    labels.push(lbl)
+if labels.size() > 10
+    old = labels.shift()
+    label.delete(old)

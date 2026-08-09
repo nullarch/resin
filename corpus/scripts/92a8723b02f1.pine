@@ -1,0 +1,6 @@
+
+//@version=5
+indicator("Vol MA")
+avgVol = ta.sma(volume, 5)
+aboveAvg = volume > avgVol
+plot(aboveAvg ? 1 : 0, "AA")

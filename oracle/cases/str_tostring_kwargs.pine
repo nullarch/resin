@@ -1,0 +1,14 @@
+//@version=5
+indicator("str_tostring_kwargs")
+// C403: str.tostring(value=) kwarg 신규 지원(next_hint(C402) 1순위, wild 최다 서브클러스터) 오라클
+// 채널 -- value=만 오라클 가능(pine2py wavealgo/builtins/str_funcs.py tostring의 실제 파라미터명이
+// 정확히 'value', python inspect.signature 직접 확인). format=은 pine2py 내부 파라미터명이
+// 'format_str'이라 그대로 넘기면 TypeError로 크래시(오라클 구조적 불가) -- codegen 동치성
+// hand-verified로 별도 대체(tests/codegen.test.ts 참조).
+var string __obs_kw_value_int = na
+__obs_kw_value_int := str.tostring(value=5)
+var string __obs_kw_value_float = na
+__obs_kw_value_float := str.tostring(value=5.25)
+var string __obs_kw_value_loop = na
+for k = 0 to 2
+    __obs_kw_value_loop := str.tostring(value=k)

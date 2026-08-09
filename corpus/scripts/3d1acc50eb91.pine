@@ -1,0 +1,14 @@
+//@version=5
+indicator("Donchian")
+length = 5
+upper = ta.highest(high, length)
+lower = ta.lowest(low, length)
+mid = (nz(upper) + nz(lower)) / 2
+breakUp = close > nz(upper[1])
+breakDown = close < nz(lower[1])
+var int signal = 0
+if breakUp
+    signal := 1
+if breakDown
+    signal := -1
+plot(mid)

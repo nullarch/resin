@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Vol Hist")
+var float[] volHist = array.new_float(0)
+array.push(volHist, volume)
+if array.size(volHist) > 8
+    array.shift(volHist)
+avgVol = array.avg(volHist)
+maxVol = array.max(volHist)
+relVol = maxVol > 0 ? volume / maxVol : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := relVol
+plot(relVol, "Rel")

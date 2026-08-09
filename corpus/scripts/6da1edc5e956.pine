@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Body Wick")
+body = math.abs(close - open)
+upperWick = high - math.max(open, close)
+lowerWick = math.min(open, close) - low
+totalWick = upperWick + lowerWick
+bodyWickRatio = totalWick > 0 ? body / totalWick : 10.0
+plot(bodyWickRatio, "BWR")

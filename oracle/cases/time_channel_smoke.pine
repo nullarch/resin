@@ -1,0 +1,7 @@
+//@version=5
+indicator("time_channel_smoke")
+var float acc = 0.0
+acc := acc + close
+sma3 = ta.sma(close, 3)
+var float __obs_sma3 = na
+__obs_sma3 := sma3

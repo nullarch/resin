@@ -1,0 +1,98 @@
+//@version=5
+indicator("matrix_mutate")
+
+// C92: matrix.* 세 번째 슬라이스(add_row/add_col/remove_row/remove_col/swap_rows/swap_columns).
+// 전 섹션 매 바 재생성(비-var) 행렬 + close 기반 초기값(matrix_row_col.pine Section B와 동일
+// 패턴) — 구조 변경 연산 자체의 정확성 검증이 목적이라 var 지속성은 불필요(그건 matrix_basic/
+// matrix_row_col의 set/get/row/col이 이미 검증). 모든 index는 컴파일타임 int 리터럴만 사용
+// (음수/범위밖/na 인덱스는 pine2py 자체가 크래시하거나 latent TypeError(DIVERGENCES.md #32)를
+// 내 오라클 비교가 불가능 — tests/unit/runtime.test.ts의 hand-verified로 대체, matrix.ts 주석
+// 참조). matrix.new/set의 initial_value/값 인자는 matrix.set의 latent Series 버그(#30/#29와
+// 동일 계열) 우회를 위해 전부 `close + N.0`으로 산술 강제 스칼라 변환(matrix_basic.pine과 동일
+// 설계).
+
+// A: add_row — 2x2 행렬 중간(index=1)에 새 행 삽입. rows 증가 + 삽입 행 값 + 밀려난 행 관측.
+ma = matrix.new<float>(2, 2, 0.0)
+matrix.set(ma, 0, 0, close + 0.0)
+matrix.set(ma, 0, 1, close + 1.0)
+matrix.set(ma, 1, 0, close + 2.0)
+matrix.set(ma, 1, 1, close + 3.0)
+matrix.add_row(ma, 1, array.from(close + 10.0, close + 11.0))
+var float __obs_a_rows = na
+__obs_a_rows := matrix.rows(ma)
+var float __obs_a_new_row_0 = na
+__obs_a_new_row_0 := matrix.get(ma, 1, 0)
+var float __obs_a_new_row_1 = na
+__obs_a_new_row_1 := matrix.get(ma, 1, 1)
+var float __obs_a_shifted_row_0 = na
+__obs_a_shifted_row_0 := matrix.get(ma, 2, 0)
+
+// A2: add_row 기본 인자(index=-1 append, value=na → columns(m) 폭의 NaN-채움 행).
+ma2 = matrix.new<float>(1, 2, close + 0.0)
+matrix.add_row(ma2)
+var float __obs_a2_rows = na
+__obs_a2_rows := matrix.rows(ma2)
+var float __obs_a2_new_row_isnan = na
+__obs_a2_new_row_isnan := matrix.get(ma2, 1, 0)
+
+// B: add_col — 2x2 행렬 중간(index=1)에 새 열 삽입. columns 증가 + 삽입 열 값 + 밀려난 열 관측.
+mb = matrix.new<float>(2, 2, 0.0)
+matrix.set(mb, 0, 0, close + 0.0)
+matrix.set(mb, 0, 1, close + 1.0)
+matrix.set(mb, 1, 0, close + 2.0)
+matrix.set(mb, 1, 1, close + 3.0)
+matrix.add_col(mb, 1, array.from(close + 20.0, close + 21.0))
+var float __obs_b_columns = na
+__obs_b_columns := matrix.columns(mb)
+var float __obs_b_new_col_0 = na
+__obs_b_new_col_0 := matrix.get(mb, 0, 1)
+var float __obs_b_new_col_1 = na
+__obs_b_new_col_1 := matrix.get(mb, 1, 1)
+var float __obs_b_shifted_col_0 = na
+__obs_b_shifted_col_0 := matrix.get(mb, 0, 2)
+
+// C: remove_row — 3x1 행렬에서 index=1 제거. 반환값(제거된 행) + rows 감소 + 밀린 행 관측.
+mc = matrix.new<float>(3, 1, 0.0)
+matrix.set(mc, 0, 0, close + 0.0)
+matrix.set(mc, 1, 0, close + 1.0)
+matrix.set(mc, 2, 0, close + 2.0)
+removed_row = matrix.remove_row(mc, 1)
+var float __obs_c_removed = na
+__obs_c_removed := array.get(removed_row, 0)
+var float __obs_c_rows_after = na
+__obs_c_rows_after := matrix.rows(mc)
+var float __obs_c_row1_after = na
+__obs_c_row1_after := matrix.get(mc, 1, 0)
+
+// D: remove_col — 1x3 행렬에서 index=1 제거. 반환값(제거된 열) + columns 감소 + 밀린 열 관측.
+md = matrix.new<float>(1, 3, 0.0)
+matrix.set(md, 0, 0, close + 0.0)
+matrix.set(md, 0, 1, close + 1.0)
+matrix.set(md, 0, 2, close + 2.0)
+removed_col = matrix.remove_col(md, 1)
+var float __obs_d_removed = na
+__obs_d_removed := array.get(removed_col, 0)
+var float __obs_d_columns_after = na
+__obs_d_columns_after := matrix.columns(md)
+var float __obs_d_col1_after = na
+__obs_d_col1_after := matrix.get(md, 0, 1)
+
+// E: swap_rows — 2x1 행렬의 두 행 교환.
+me = matrix.new<float>(2, 1, 0.0)
+matrix.set(me, 0, 0, close + 0.0)
+matrix.set(me, 1, 0, close + 1.0)
+matrix.swap_rows(me, 0, 1)
+var float __obs_e_row0 = na
+__obs_e_row0 := matrix.get(me, 0, 0)
+var float __obs_e_row1 = na
+__obs_e_row1 := matrix.get(me, 1, 0)
+
+// F: swap_columns — 1x2 행렬의 두 열 교환.
+mf = matrix.new<float>(1, 2, 0.0)
+matrix.set(mf, 0, 0, close + 0.0)
+matrix.set(mf, 0, 1, close + 1.0)
+matrix.swap_columns(mf, 0, 1)
+var float __obs_f_col0 = na
+__obs_f_col0 := matrix.get(mf, 0, 0)
+var float __obs_f_col1 = na
+__obs_f_col1 := matrix.get(mf, 0, 1)

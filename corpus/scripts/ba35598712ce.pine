@@ -1,0 +1,4 @@
+//@version=5
+indicator("Input TextArea")
+notes = input.text_area("notes", "Notes")
+plot(close)

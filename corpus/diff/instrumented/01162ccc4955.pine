@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Rel Str")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rs = sma5 > 0 ? sma3 / sma5 : 1.0
+rsChange = rs - 1.0
+var float __obs_plot0 = na
+__obs_plot0 := rsChange * 100
+plot(rsChange * 100, "RS")

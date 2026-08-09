@@ -1,0 +1,42 @@
+//@version=5
+indicator("Comprehensive 61", overlay=true)
+
+// For range: ascending with step
+float step_sum = 0.0
+for i = 0 to 10 by 2
+    step_sum := step_sum + i
+
+// For range: descending
+float desc_sum = 0.0
+for i = 5 to 1
+    desc_sum := desc_sum + i
+
+// For with break
+float brk_sum = 0.0
+for i = 1 to 100
+    if i > 3
+        break
+    brk_sum := brk_sum + i
+
+// Alert (no-op)
+alertcondition(close > 105, title="High", message="Price high")
+
+// Drawing (no-op)
+if barstate.islast
+    label.new(bar_index, high, text="Top")
+    line.new(bar_index - 5, close[5], bar_index, close)
+
+// TA
+sma3 = ta.sma(close, 3)
+
+// Array accumulation
+var arr = array.from(1.0, 2.0, 3.0)
+float arr_total = 0.0
+for v in arr
+    arr_total := arr_total + v
+
+var float result = 0.0
+result := step_sum + desc_sum + brk_sum + arr_total + nz(sma3, 0.0)
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

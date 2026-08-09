@@ -1,0 +1,39 @@
+//@version=5
+indicator("udt_tuple_destructure_return")
+// [a, b] = udf() 튜플 디스트럭처링에서 원소가 UDT 인스턴스일 때(UDF 내부의 var UDT를 그대로 튜플
+// 반환하는 wild 관용구 `[top, btm] = swings(length)`, C387) top-level 대상 이름의 필드 읽기/쓰기
+// 신규 지원. swings() 내부는 var Swing top/btm을 매 바 무조건 갱신해 튜플 반환하고(주의: 조건부
+// UDT var 재대입은 이 케이스의 범위 밖 -- pine2py가 UDT .new() 생성자 콜을 stateful 콜처럼 취급해
+// if-게이트 이후 매 바 재실행하는 별개의 pine2py 자체 버그를 이번 조사 중 발견함, MEMORY.md 참조.
+// 이 오라클은 C387(튜플 디스트럭처 UDT 필드 접근) 검증이 목적이라 그 무관한 축은 피한다), top-level은
+// 그 반환값을 디스트럭처링한 뒤 필드를 읽고(top.y/top.x) top-level 조건부 필드 대입
+// (top.crossed := true, 일반 FieldAssignment -- UDF 내부 var 재대입과 달리 이 축은 위 버그의
+// 영향을 받지 않음)도 검증한다.
+
+type Swing
+    float y = na
+    int x = na
+    bool crossed = false
+
+swings(len) =>
+    var Swing top = Swing.new(na, na)
+    var Swing btm = Swing.new(na, na)
+    top := Swing.new(high, bar_index)
+    btm := Swing.new(low, bar_index)
+    [top, btm]
+
+[top, btm] = swings(3)
+
+if bar_index > 3 and not top.crossed
+    top.crossed := true
+
+var float __obs_top_y = na
+__obs_top_y := top.y
+var int __obs_top_x = na
+__obs_top_x := top.x
+var bool __obs_top_crossed = na
+__obs_top_crossed := top.crossed
+var float __obs_btm_y = na
+__obs_btm_y := btm.y
+var int __obs_btm_x = na
+__obs_btm_x := btm.x

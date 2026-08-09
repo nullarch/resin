@@ -1,0 +1,10 @@
+//@version=5
+indicator("Nyquist Check")
+float vol1 = ta.stdev(close, 2)
+float vol3 = ta.stdev(close, 5)
+float ratio = nz(vol3, 0.01) > 0 ? nz(vol1, 0.0) / nz(vol3, 0.01) : 1.0
+bool aliased = ratio > 1.5
+float score = aliased ? 1.0 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := score
+plot(score, "Aliased")

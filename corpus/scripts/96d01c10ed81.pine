@@ -1,0 +1,3 @@
+//@version=5
+indicator("Test")
+htf_close = request.security(syminfo.tickerid, "D", close)

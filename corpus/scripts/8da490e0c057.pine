@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Range Map")
+rsi = ta.rsi(close, 3)
+// Map RSI (0-100) to (-1, 1)
+mapped = (nz(rsi, 50.0) - 50.0) / 50.0
+clamped = math.max(-1.0, math.min(1.0, mapped))
+plot(clamped, "Mapped")

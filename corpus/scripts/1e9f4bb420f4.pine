@@ -1,0 +1,6 @@
+//@version=5
+indicator("Cast Float Na")
+float x = float(na)
+var bool is_nan = false
+is_nan := na(x)
+plot(close)

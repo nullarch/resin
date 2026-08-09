@@ -1,0 +1,11 @@
+
+//@version=5
+strategy("StrStrat", overlay=true)
+rsi = nz(ta.rsi(close, 3), 50.0)
+tradeId = "T_" + str.tostring(bar_index)
+
+if rsi > 60 and close > open
+    strategy.entry(tradeId, strategy.long)
+if rsi < 40
+    strategy.close(tradeId)
+plot(str.length(tradeId), "TL")

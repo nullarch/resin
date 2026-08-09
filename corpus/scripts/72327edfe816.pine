@@ -1,0 +1,10 @@
+//@version=5
+indicator("Generic Map")
+var m = map.new<string, float>()
+m.put("x", 1.0)
+m.put("y", 2.0)
+var int sz = 0
+sz := m.size()
+var float val = 0.0
+val := m.get("y")
+plot(close)

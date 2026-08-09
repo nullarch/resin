@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Zero Div")
+denom = close - close
+safeDivResult = denom != 0 ? close / denom : 0.0
+pineDiv = close / denom
+plot(safeDivResult + nz(pineDiv, 0.0), "R")

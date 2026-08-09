@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Switch Expr")
+rsi = nz(ta.rsi(close, 3), 50.0)
+weight = switch
+    rsi > 70 => 0.25
+    rsi > 60 => 0.5
+    rsi > 40 => 1.0
+    rsi > 30 => 0.5
+    => 0.25
+adjustedClose = close * weight
+plot(adjustedClose, "Adj")

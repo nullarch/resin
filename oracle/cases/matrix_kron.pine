@@ -1,0 +1,127 @@
+//@version=5
+indicator("matrix_kron")
+
+// C103: matrix.* 열네 번째 슬라이스 — kron(행렬 대수 11종의 여덟 번째 항목, 45/49 -> 46/49).
+// pine2py kron()(matrix.py L310-320)은 mult/pow(C97/C102)처럼 이미 구현된 함수를 재호출하는
+// 합성이 아니라 새 알고리즘(4중 루프, 상태 없는 순수 함수) — r1,c1=len(m1),len(m1[0]) /
+// r2,c2=len(m2),len(m2[0])로 결과 크기(r1*r2 x c1*c2)를 정한 뒤
+// result[i*r2+p][j*c2+q]=m1[i][j]*m2[p][q]. python 직접 실행 + node fuzz 3,000샘플
+// (scratch/gen_kron_cases.mjs+compare_kron_fuzz.mjs, 크기 1~3 x 1~3 + 10% NaN 임베딩)로 착수
+// 전 검증. m1/m2===null 및 0행 행렬(len(m1[0])의 `m1[0]` 자체가 IndexError)은 python/JS 둘 다
+// 동일하게 크래시 — na(null)로 흡수, 오라클 트리거 대상에서 제외(runtime.test.ts hand-verified로
+// 대체). 0열 행렬(예 [[]])은 크래시 없이 well-defined [[]] 반환 — G그룹으로 오라클 검증.
+
+// A: 1x2 mat(bar-derived, open/high) kron 1x2 mat(리터럴) — 표준 크로네커 곱, 결과 1x4 전부 관측.
+maA = matrix.new<float>(1, 2, 0.0)
+matrix.set(maA, 0, 0, open + 0.0)
+matrix.set(maA, 0, 1, high + 0.0)
+mbA = matrix.new<float>(1, 2, 0.0)
+matrix.set(mbA, 0, 0, 2.0)
+matrix.set(mbA, 0, 1, 3.0)
+raA = matrix.kron(maA, mbA)
+var float __obs_a0 = na
+__obs_a0 := matrix.get(raA, 0, 0)
+var float __obs_a1 = na
+__obs_a1 := matrix.get(raA, 0, 1)
+var float __obs_a2 = na
+__obs_a2 := matrix.get(raA, 0, 2)
+var float __obs_a3 = na
+__obs_a3 := matrix.get(raA, 0, 3)
+
+// B: 1x2 mat(na-embedded at j=0 via close[15] — sample10 10바 범위 밖, j=1은 bar-derived) kron
+// 1x2 mat(리터럴, all-valid) — j=0에서 파생된 두 칸(q=0,1)만 na, j=1에서 파생된 두 칸은 유효.
+mcB = matrix.new<float>(1, 2, 0.0)
+matrix.set(mcB, 0, 0, close[15])
+matrix.set(mcB, 0, 1, high + 0.0)
+rbB = matrix.kron(mcB, mbA)
+var float __obs_b0 = na
+__obs_b0 := matrix.get(rbB, 0, 0)
+var float __obs_b1 = na
+__obs_b1 := matrix.get(rbB, 0, 1)
+var float __obs_b2 = na
+__obs_b2 := matrix.get(rbB, 0, 2)
+var float __obs_b3 = na
+__obs_b3 := matrix.get(rbB, 0, 3)
+
+// C: 2x1 mat(bar-derived, open;close) kron 1x2 mat(리터럴, mbA 재사용) — r2=1이라 결과 행이 m1
+// 행 인덱스와 그대로 대응(i*r2+p=i), c1=1이라 결과 열이 m2 열 인덱스와 그대로 대응(j*c2+q=q).
+// 결과 2x2 전부 관측.
+mdC = matrix.new<float>(2, 1, 0.0)
+matrix.set(mdC, 0, 0, open + 0.0)
+matrix.set(mdC, 1, 0, close + 0.0)
+rcC = matrix.kron(mdC, mbA)
+var float __obs_c00 = na
+__obs_c00 := matrix.get(rcC, 0, 0)
+var float __obs_c01 = na
+__obs_c01 := matrix.get(rcC, 0, 1)
+var float __obs_c10 = na
+__obs_c10 := matrix.get(rcC, 1, 0)
+var float __obs_c11 = na
+__obs_c11 := matrix.get(rcC, 1, 1)
+
+// D: 2x2 mat(bar-derived, open/high;low/close) kron 1x1 mat(리터럴 5.0) — 1x1 상대는 mult()의
+// 스칼라 분기와 다른 코드 경로(순수 4중 루프)로 동일 효과(전 원소 5배)를 내는지 검증.
+meD = matrix.new<float>(2, 2, 0.0)
+matrix.set(meD, 0, 0, open + 0.0)
+matrix.set(meD, 0, 1, high + 0.0)
+matrix.set(meD, 1, 0, low + 0.0)
+matrix.set(meD, 1, 1, close + 0.0)
+mfD = matrix.new<float>(1, 1, 0.0)
+matrix.set(mfD, 0, 0, 5.0)
+rdD = matrix.kron(meD, mfD)
+var float __obs_d00 = na
+__obs_d00 := matrix.get(rdD, 0, 0)
+var float __obs_d01 = na
+__obs_d01 := matrix.get(rdD, 0, 1)
+var float __obs_d10 = na
+__obs_d10 := matrix.get(rdD, 1, 0)
+var float __obs_d11 = na
+__obs_d11 := matrix.get(rdD, 1, 1)
+
+// E: 1x1 mat(na via close[16]) kron 2x2 mat(bar-derived, meD 재사용) — na인 좌측 원소가 결과
+// 전체에 곱해져 4칸 전부 na로 수렴(python 직접 실행 확인).
+mgE = matrix.new<float>(1, 1, 0.0)
+matrix.set(mgE, 0, 0, close[16])
+reE = matrix.kron(mgE, meD)
+var float __obs_e00 = na
+__obs_e00 := matrix.get(reE, 0, 0)
+var float __obs_e01 = na
+__obs_e01 := matrix.get(reE, 0, 1)
+var float __obs_e10 = na
+__obs_e10 := matrix.get(reE, 1, 0)
+var float __obs_e11 = na
+__obs_e11 := matrix.get(reE, 1, 1)
+
+// F: 2x2 mat(bar-derived, meD 재사용) kron 2x1 mat(리터럴 1.0;0.0) — 결과 4x2(r1*r2=4, c1*c2=2),
+// p=0 행(짝수 행)은 m1 값 그대로, p=1 행(홀수 행)은 0으로 소거되는 인터리빙 패턴을 8칸 전부 관측.
+mhF = matrix.new<float>(2, 1, 0.0)
+matrix.set(mhF, 0, 0, 1.0)
+matrix.set(mhF, 1, 0, 0.0)
+rfF = matrix.kron(meD, mhF)
+var float __obs_f00 = na
+__obs_f00 := matrix.get(rfF, 0, 0)
+var float __obs_f01 = na
+__obs_f01 := matrix.get(rfF, 0, 1)
+var float __obs_f10 = na
+__obs_f10 := matrix.get(rfF, 1, 0)
+var float __obs_f11 = na
+__obs_f11 := matrix.get(rfF, 1, 1)
+var float __obs_f20 = na
+__obs_f20 := matrix.get(rfF, 2, 0)
+var float __obs_f21 = na
+__obs_f21 := matrix.get(rfF, 2, 1)
+var float __obs_f30 = na
+__obs_f30 := matrix.get(rfF, 3, 0)
+var float __obs_f31 = na
+__obs_f31 := matrix.get(rfF, 3, 1)
+
+// G: 1x0(0열, `not m`엔 안 걸리지만 nc=0) mat kron 1x1 mat(bar-derived) — 크래시 없이 well-defined
+// 1x0 결과([[]])로 수렴(python/JS 둘 다 확인) — matrix.get으로 관측할 셀이 없어 rows/columns만 관측.
+miG = matrix.new<float>(1, 0, 0.0)
+mjG = matrix.new<float>(1, 1, 0.0)
+matrix.set(mjG, 0, 0, close + 0.0)
+rgG = matrix.kron(miG, mjG)
+var float __obs_g_rows = na
+__obs_g_rows := matrix.rows(rgG)
+var float __obs_g_cols = na
+__obs_g_cols := matrix.columns(rgG)

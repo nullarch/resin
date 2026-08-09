@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:s": "hello world",
+   "var:has_world": true,
+   "var:starts_h": true,
+   "var:result": 3.0,
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:s": "hello world",
+   "var:has_world": true,
+   "var:starts_h": true,
+   "var:result": 3.0,
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:s": "hello world",
+   "var:has_world": true,
+   "var:starts_h": true,
+   "var:result": 3.0,
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:s": "hello world",
+   "var:has_world": true,
+   "var:starts_h": true,
+   "var:result": 3.0,
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:s": "hello world",
+   "var:has_world": true,
+   "var:starts_h": true,
+   "var:result": 3.0,
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:s": "hello world",
+   "var:has_world": true,
+   "var:starts_h": true,
+   "var:result": 3.0,
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:s": "hello world",
+   "var:has_world": true,
+   "var:starts_h": true,
+   "var:result": 3.0,
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:s": "hello world",
+   "var:has_world": true,
+   "var:starts_h": true,
+   "var:result": 3.0,
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:s": "hello world",
+   "var:has_world": true,
+   "var:starts_h": true,
+   "var:result": 3.0,
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:s": "hello world",
+   "var:has_world": true,
+   "var:starts_h": true,
+   "var:result": 3.0,
+   "var:__obs_plot0": 3.0
+  }
+ ],
+ "finalVarState": {
+  "s": "hello world",
+  "has_world": true,
+  "starts_h": true,
+  "result": 3.0,
+  "__obs_plot0": 3.0
+ }
+}

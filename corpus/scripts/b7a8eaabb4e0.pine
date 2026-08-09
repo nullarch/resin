@@ -1,0 +1,6 @@
+//@version=5
+indicator("String Quote")
+var string s = "He said hello"
+var int len_ = 0
+len_ := str.length(s)
+plot(close)

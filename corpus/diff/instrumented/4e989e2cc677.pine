@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Comp Osc")
+rsi = nz(ta.rsi(close, 3), 50.0)
+k = nz(ta.stoch(close, high, low, 3), 50.0)
+rsiNorm = (rsi - 50) / 50
+stochNorm = (k - 50) / 50
+composite = rsiNorm * 0.6 + stochNorm * 0.4
+var float __obs_plot0 = na
+__obs_plot0 := composite
+plot(composite, "CO")

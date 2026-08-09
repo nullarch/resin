@@ -1,0 +1,13 @@
+//@version=5
+indicator("Spike Train")
+var spikeTrain = array.new<float>(0)
+fired = close > open ? 1.0 : 0.0
+array.push(spikeTrain, fired)
+if array.size(spikeTrain) > 5
+    array.shift(spikeTrain)
+totalSpikes = 0.0
+sz = array.size(spikeTrain)
+for i = 0 to sz - 1
+    totalSpikes := totalSpikes + array.get(spikeTrain, i)
+firingRate = sz > 0 ? totalSpikes / sz : 0.0
+plot(firingRate)

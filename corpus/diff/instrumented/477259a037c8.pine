@@ -1,0 +1,9 @@
+//@version=5
+indicator("Mixed Ops")
+x = close *
+    2 +
+    open *
+    3
+var float __obs_plot0 = na
+__obs_plot0 := x / 5
+plot(x / 5)

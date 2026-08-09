@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Regime Map FI")
+var rm = map.new<string, float>()
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+map.put(rm, "ma_cross", sma3 > sma5 ? 1.0 : -1.0)
+map.put(rm, "rsi_dir", rsi > 55 ? 1.0 : rsi < 45 ? -1.0 : 0.0)
+map.put(rm, "price_pos", close > sma5 ? 1.0 : -1.0)
+total = 0.0
+for [k, v] in rm
+    total := total + v
+var float __obs_plot0 = na
+__obs_plot0 := total
+plot(total, "T")

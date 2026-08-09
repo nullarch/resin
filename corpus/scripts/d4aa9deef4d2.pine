@@ -1,0 +1,9 @@
+//@version=5
+indicator("UDF Tuple")
+myCalc(x) =>
+    a = x * 2
+    b = x * 3
+    [a, b]
+var float result = 0.0
+[p, q] = myCalc(close)
+result := p + q

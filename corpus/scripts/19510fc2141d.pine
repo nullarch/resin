@@ -1,0 +1,12 @@
+//@version=5
+indicator("UDT Array Field")
+var float result = 0.0
+
+type Tracker
+    float best = 0.0
+    float worst = 999.0
+
+t = Tracker.new()
+t.best := math.max(t.best, close)
+t.worst := math.min(t.worst, close)
+result := t.best - t.worst

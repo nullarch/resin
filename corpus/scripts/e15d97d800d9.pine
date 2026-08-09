@@ -1,0 +1,7 @@
+//@version=5
+indicator("Wave Packet")
+float carrier = close - nz(ta.sma(close, 3), close)
+float envelope = math.abs(carrier)
+float prevEnv = not na(close[1]) ? math.abs(close[1] - nz(ta.sma(close, 3), close)) : envelope
+float groupVel = envelope - prevEnv
+float phaseVel = carrier

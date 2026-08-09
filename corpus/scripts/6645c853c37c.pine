@@ -1,0 +1,6 @@
+//@version=5
+indicator("WMA_EMA")
+var float result = 0
+chain = ta.wma(ta.ema(close, 3), 3)
+if not na(chain)
+    result := chain

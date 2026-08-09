@@ -1,0 +1,11 @@
+//@version=5
+indicator("ta_vwap_kwargs")
+// ta.vwap(source=) 키워드 인자 오라클 검증(C471, next_hint(C470) 지시대로 corpus_scan --top=15
+// 재실행 후 신규 "키워드 인자" 잔여 클러스터 세분화 — wild 최다빈도 6건이 전량 `ta.vwap(source =
+// close)` 1-인자 폼). pine2py wavealgo/ta/vwap.py의 첫 파라미터 이름이 정확히 "source"라(TV 공식
+// 이름과 일치) kwarg 폼도 위치 인자 폼(oracle/cases/ta_vwap.pine)과 동일한 값을 내는 진짜 오라클
+// 대조가 가능하다 — ta_kwargs.pine이 sma/ema/rsi 등에 적용한 것과 동일한 패턴.
+var float __obs_vwap_kw = na
+var float __obs_vwap_pos = na
+__obs_vwap_kw := ta.vwap(source=close)
+__obs_vwap_pos := ta.vwap(close)

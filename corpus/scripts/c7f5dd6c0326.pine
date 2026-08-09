@@ -1,0 +1,11 @@
+//@version=5
+indicator("PRE")
+float atrVal = nz(ta.atr(3), 1.0)
+float rsiVal = nz(ta.rsi(close, 5), 50.0)
+float expensive = atrVal * rsiVal / 50.0
+float result = 0.0
+if close > open
+    result := expensive * 1.1
+else
+    result := expensive * 0.9
+float used = result + expensive

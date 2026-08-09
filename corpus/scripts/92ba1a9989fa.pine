@@ -1,0 +1,8 @@
+//@version=5
+indicator("ST")
+var float lastST = 0
+var float lastDir = 0
+[st, dir] = ta.supertrend(2, 5)
+if not na(st)
+    lastST := st
+    lastDir := dir

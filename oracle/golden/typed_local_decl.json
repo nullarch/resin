@@ -1,0 +1,116 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_float": 1.5,
+   "var:__obs_int": 3,
+   "var:__obs_bool": true,
+   "var:__obs_str": "hi",
+   "var:__obs_chained": 4.5,
+   "var:__obs_close_local": 102.0,
+   "var:__obs_if_local": "NaN",
+   "var:__obs_loop_local": 4.0
+  },
+  {
+   "var:__obs_float": 1.5,
+   "var:__obs_int": 3,
+   "var:__obs_bool": true,
+   "var:__obs_str": "hi",
+   "var:__obs_chained": 4.5,
+   "var:__obs_close_local": 103.0,
+   "var:__obs_if_local": "NaN",
+   "var:__obs_loop_local": 4.0
+  },
+  {
+   "var:__obs_float": 1.5,
+   "var:__obs_int": 3,
+   "var:__obs_bool": true,
+   "var:__obs_str": "hi",
+   "var:__obs_chained": 4.5,
+   "var:__obs_close_local": 104.0,
+   "var:__obs_if_local": "NaN",
+   "var:__obs_loop_local": 4.0
+  },
+  {
+   "var:__obs_float": 1.5,
+   "var:__obs_int": 3,
+   "var:__obs_bool": true,
+   "var:__obs_str": "hi",
+   "var:__obs_chained": 4.5,
+   "var:__obs_close_local": 103.0,
+   "var:__obs_if_local": 3,
+   "var:__obs_loop_local": 4.0
+  },
+  {
+   "var:__obs_float": 1.5,
+   "var:__obs_int": 3,
+   "var:__obs_bool": true,
+   "var:__obs_str": "hi",
+   "var:__obs_chained": 4.5,
+   "var:__obs_close_local": 105.0,
+   "var:__obs_if_local": 3,
+   "var:__obs_loop_local": 4.0
+  },
+  {
+   "var:__obs_float": 1.5,
+   "var:__obs_int": 3,
+   "var:__obs_bool": true,
+   "var:__obs_str": "hi",
+   "var:__obs_chained": 4.5,
+   "var:__obs_close_local": 106.0,
+   "var:__obs_if_local": 3,
+   "var:__obs_loop_local": 4.0
+  },
+  {
+   "var:__obs_float": 1.5,
+   "var:__obs_int": 3,
+   "var:__obs_bool": true,
+   "var:__obs_str": "hi",
+   "var:__obs_chained": 4.5,
+   "var:__obs_close_local": 107.0,
+   "var:__obs_if_local": 3,
+   "var:__obs_loop_local": 4.0
+  },
+  {
+   "var:__obs_float": 1.5,
+   "var:__obs_int": 3,
+   "var:__obs_bool": true,
+   "var:__obs_str": "hi",
+   "var:__obs_chained": 4.5,
+   "var:__obs_close_local": 106.0,
+   "var:__obs_if_local": 3,
+   "var:__obs_loop_local": 4.0
+  },
+  {
+   "var:__obs_float": 1.5,
+   "var:__obs_int": 3,
+   "var:__obs_bool": true,
+   "var:__obs_str": "hi",
+   "var:__obs_chained": 4.5,
+   "var:__obs_close_local": 108.0,
+   "var:__obs_if_local": 3,
+   "var:__obs_loop_local": 4.0
+  },
+  {
+   "var:__obs_float": 1.5,
+   "var:__obs_int": 3,
+   "var:__obs_bool": true,
+   "var:__obs_str": "hi",
+   "var:__obs_chained": 4.5,
+   "var:__obs_close_local": 109.0,
+   "var:__obs_if_local": 3,
+   "var:__obs_loop_local": 4.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_float": 1.5,
+  "__obs_int": 3,
+  "__obs_bool": true,
+  "__obs_str": "hi",
+  "__obs_chained": 4.5,
+  "__obs_close_local": 109.0,
+  "__obs_if_local": 3,
+  "__obs_loop_local": 4.0
+ }
+}

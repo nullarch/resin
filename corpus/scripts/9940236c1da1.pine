@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Adaptive MA")
+atrVal = ta.atr(3)
+smaATR = ta.sma(atrVal, 5)
+ratio = smaATR != 0 ? atrVal / smaATR : 1.0
+adaptiveMA = switch
+    ratio > 1.5 => ta.ema(close, 3)
+    ratio > 1.0 => ta.sma(close, 5)
+    => ta.wma(close, 8)
+plot(adaptiveMA, "AMA")

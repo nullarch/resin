@@ -1,0 +1,10 @@
+//@version=5
+indicator("While Conv")
+float val = close
+int cnt = 0
+while cnt < 3
+    val := (val + close) / 2
+    cnt := cnt + 1
+var float __obs_plot0 = na
+__obs_plot0 := val
+plot(val)

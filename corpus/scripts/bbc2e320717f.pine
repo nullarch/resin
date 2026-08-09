@@ -1,0 +1,13 @@
+//@version=5
+indicator("S/R Levels")
+var labels = array.new_label(0)
+var lines = array.new_line(0)
+/* Clean up old drawings */
+if array.size(labels) > 50
+    label.delete(array.shift(labels))
+if array.size(lines) > 50
+    line.delete(array.shift(lines))
+/* Add new level */
+if ta.pivothigh(high, 5, 5)
+    lbl = label.new(bar_index, high, "R")
+    array.push(labels, lbl)

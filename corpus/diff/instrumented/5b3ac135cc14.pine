@@ -1,0 +1,9 @@
+//@version=5
+indicator("ForIn Arr Destr")
+arr = array.from(10.0, 20.0, 30.0)
+total = 0.0
+for [idx, val] in arr
+    total := total + val * (idx + 1)
+var float __obs_plot0 = na
+__obs_plot0 := total
+plot(total)

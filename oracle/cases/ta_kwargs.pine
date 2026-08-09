@@ -1,0 +1,26 @@
+//@version=5
+indicator("ta_kwargs")
+// ta.* 키워드 인자(source=/length=) 오라클 검증(C400, next_hint(C399) 1순위 — wild kwarg blanket
+// 잔여 재세분류 결과 ta.*(source=/length=) kwarg가 24건 중 최대 서브클러스터). 이 케이스는 pine2py
+// wavealgo 쪽 파라미터 이름이 TV 실제 이름과 정확히 일치하는 7종(sma/ema/rsi/highest/lowest/
+// change/cum)만 관측한다 — crossover/crossunder(pine2py 내부 파라미터명이 a/b라 source1=/source2=
+// kwarg가 TypeError로 크래시)/alma(offset_mult라 offset= 크래시)/pivotlow(left/right인데
+// **kwargs로 leftbars=/rightbars=를 조용히 흡수해 기본값 5로 무시 — 값이 반영 안 되는 거짓 통과)는
+// 오라클 구조적 불가(C291/C292/C296과 동일 축) — codegen 동치성(kwarg 폼이 이미 오라클 검증된
+// 위치 인자 폼과 바이트 단위로 동일한 런타임 호출을 emit함, tests/unit/codegen.test.ts)으로 대체
+// hand-verified 처리. 완전 키워드 폼과 위치+키워드 혼합 폼(wild 실사용 357ef62d7abd.pine 등)을
+// 모두 관측해 두 경로가 같은 값을 내는지 함께 확인한다.
+var float __obs_sma_kw = na
+var float __obs_ema_mixed = na
+var float __obs_rsi_kw = na
+var float __obs_highest_kw = na
+var float __obs_lowest_kw = na
+var float __obs_change_kw = na
+var float __obs_cum_kw = na
+__obs_sma_kw := ta.sma(source=close, length=3)
+__obs_ema_mixed := ta.ema(close, length=9)
+__obs_rsi_kw := ta.rsi(source=close, length=14)
+__obs_highest_kw := ta.highest(source=close, length=8)
+__obs_lowest_kw := ta.lowest(source=low, length=2)
+__obs_change_kw := ta.change(source=close)
+__obs_cum_kw := ta.cum(source=close)

@@ -1,0 +1,13 @@
+
+//@version=5
+strategy("Take Profit", overlay=true)
+sma3 = ta.sma(close, 3)
+atr = ta.atr(3)
+var float entryPx = 0.0
+if close > sma3
+    strategy.entry("Long", strategy.long)
+    entryPx := close
+tp = entryPx + atr * 3
+if close > tp and entryPx > 0
+    strategy.close("Long")
+plot(sma3, "MA")

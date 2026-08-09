@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:gBest": 105,
+   "var:__obs_plot0": 1.9047619047619049
+  },
+  {
+   "var:gBest": 106,
+   "var:__obs_plot0": 1.8867924528301887
+  },
+  {
+   "var:gBest": 106,
+   "var:__obs_plot0": 3.7735849056603774
+  },
+  {
+   "var:gBest": 107,
+   "var:__obs_plot0": 1.8691588785046727
+  },
+  {
+   "var:gBest": 109,
+   "var:__obs_plot0": 1.834862385321101
+  },
+  {
+   "var:gBest": 109,
+   "var:__obs_plot0": 2.7522935779816518
+  },
+  {
+   "var:gBest": 110,
+   "var:__obs_plot0": 1.8181818181818181
+  },
+  {
+   "var:gBest": 112,
+   "var:__obs_plot0": 1.7857142857142856
+  },
+  {
+   "var:gBest": 112,
+   "var:__obs_plot0": 2.6785714285714284
+  },
+  {
+   "var:gBest": 113,
+   "var:__obs_plot0": 1.7699115044247788
+  }
+ ],
+ "finalVarState": {
+  "gBest": 113,
+  "__obs_plot0": 1.7699115044247788
+ }
+}

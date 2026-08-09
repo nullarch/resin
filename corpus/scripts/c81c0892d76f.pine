@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Mom Div")
+mom = close - close[3]
+priceUp = not na(close[3]) and close > close[3]
+momWeaker = not na(close[3]) and nz(mom, 0.0) < nz(close[3] - close[6], 0.0)
+bearMomDiv = priceUp and momWeaker
+plot(bearMomDiv ? 1 : 0, "BMD")

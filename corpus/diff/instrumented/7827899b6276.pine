@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Sortino")
+var float sumDownSq = 0.0
+var float sumRet = 0.0
+var int cnt = 0
+ret = close - open
+downside = ret < 0 ? ret * ret : 0.0
+sumDownSq := sumDownSq + downside
+sumRet := sumRet + ret
+cnt := cnt + 1
+meanRet = cnt > 0 ? sumRet / cnt : 0.0
+downDev = cnt > 0 ? math.sqrt(sumDownSq / cnt) : 1.0
+sortino = downDev > 0.001 ? meanRet / downDev : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := sortino
+plot(sortino, "Sort")

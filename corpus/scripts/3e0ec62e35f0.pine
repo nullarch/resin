@@ -1,0 +1,9 @@
+//@version=5
+indicator("WhileAccum")
+var int result = 0
+x = 1
+total = 0
+while x <= 5
+    total := total + x
+    x := x + 1
+result := total

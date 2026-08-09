@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("UDT Fields")
+type Candle
+    float bodySize = 0.0
+    float upperWick = 0.0
+    float lowerWick = 0.0
+    float totalRange = 0.0
+    bool isBullish = false
+
+var Candle c = Candle.new()
+c.bodySize := math.abs(close - open)
+c.upperWick := high - math.max(open, close)
+c.lowerWick := math.min(open, close) - low
+c.totalRange := high - low
+c.isBullish := close > open
+bodyRatio = c.totalRange > 0 ? c.bodySize / c.totalRange : 0.0
+plot(bodyRatio, "BR")

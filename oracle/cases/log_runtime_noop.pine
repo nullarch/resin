@@ -1,0 +1,23 @@
+//@version=5
+indicator("log_runtime_noop")
+
+// C231: log.info/warning/error(pine2py _LogNamespace 전부 순수 no-op, corpus log.info 최다빈도
+// 8건 실측) + runtime.warning(stderr 출력만 하는 진짜 no-op, 계산값 무관) — 호출 자체가 크래시
+// 없이 통과하고 이후 계산이 그대로 이어지는지를 __obs_x 관측 채널로 확인한다. 인자에 bar series
+// (close)를 그대로 넘겨 pine2py *args 가변 인자 경로도 함께 태운다. runtime.error는 실제 호출되면
+// pine2py wavealgo.runtime_error가 RuntimeError를 던져 오라클 골든 생성 자체가 불가능(hand-verified
+// 대상, MEMORY.md C125/C110류 "오라클 불가" 축과 동일 성격) — 여기서는 항상 거짓인 조건으로 가드해
+// 트랜스파일 성공 + 미호출 경로만 확인하고, 실제 halt 동작은 tests/unit/codegen.test.ts의
+// hand-verified E2E(transpile()+run())로 별도 검증한다.
+
+x = close + 1.0
+log.info("price: {0}", close)
+log.warning("warn {0}", x)
+log.error("err")
+runtime.warning("just a warning")
+
+if bar_index < 0
+    runtime.error("never reached in this sample")
+
+var float __obs_x = na
+__obs_x := x

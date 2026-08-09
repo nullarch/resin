@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Cumul")
+cumClose = ta.cum(close)
+cumVol = ta.cum(volume)
+vwap = cumVol > 0 ? ta.cum(close * volume) / cumVol : close
+plot(vwap, "VWAP")

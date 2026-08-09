@@ -1,0 +1,11 @@
+//@version=5
+indicator("Time-Varying Cov")
+float emaVal = nz(ta.ema(close, 3), close)
+float covariate = (close - emaVal) / close
+float baseHaz = 0.03
+float modifiedHaz = baseHaz * math.exp(2.0 * covariate)
+var float tvSurv = 1.0
+tvSurv := tvSurv * (1.0 - math.min(modifiedHaz, 0.99))
+var float __obs_plot0 = na
+__obs_plot0 := tvSurv
+plot(tvSurv, "TVSurv")

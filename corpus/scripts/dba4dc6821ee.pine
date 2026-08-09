@@ -1,0 +1,13 @@
+//@version=5
+indicator("Enum Switch")
+enum Direction
+    Up = 1
+    Down = -1
+    Flat = 0
+getDir() =>
+    switch
+        close > open => Direction.Up
+        close < open => Direction.Down
+        => Direction.Flat
+dir = getDir()
+plot(dir == Direction.Up ? 1 : dir == Direction.Down ? -1 : 0)

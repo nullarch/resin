@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("Entropy")
+var float[] rets = array.new_float(0)
+ret = close - open
+array.push(rets, ret)
+if array.size(rets) > 8
+    array.shift(rets)
+posRatio = 0.0
+posCount = 0
+for v in rets
+    if v > 0
+        posCount := posCount + 1
+p = array.size(rets) > 0 ? posCount / array.size(rets) : 0.5
+entropy = p > 0 and p < 1 ? -(p * math.log(p) + (1 - p) * math.log(1 - p)) : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := entropy
+plot(entropy, "Ent")

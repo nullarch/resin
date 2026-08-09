@@ -1,0 +1,10 @@
+//@version=5
+indicator("Modular Exp")
+base = 2.0
+exp = bar_index + 1.0
+modulus = 7.0
+result = math.pow(base, exp)
+modResult = result - math.floor(result / modulus) * modulus
+var float __obs_plot0 = na
+__obs_plot0 := modResult
+plot(modResult, "ModExp")

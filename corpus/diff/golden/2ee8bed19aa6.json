@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:resistLevel": 0.0,
+   "var:supportLevel": 99999.0,
+   "var:touchCount": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:resistLevel": 0.0,
+   "var:supportLevel": 99999.0,
+   "var:touchCount": 2,
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:resistLevel": 0.0,
+   "var:supportLevel": 99999.0,
+   "var:touchCount": 3,
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:resistLevel": 0.0,
+   "var:supportLevel": 99999.0,
+   "var:touchCount": 4,
+   "var:__obs_plot0": 4
+  },
+  {
+   "var:resistLevel": 109,
+   "var:supportLevel": 98,
+   "var:touchCount": 4,
+   "var:__obs_plot0": 4
+  },
+  {
+   "var:resistLevel": 109,
+   "var:supportLevel": 98,
+   "var:touchCount": 4,
+   "var:__obs_plot0": 4
+  },
+  {
+   "var:resistLevel": 110,
+   "var:supportLevel": 98,
+   "var:touchCount": 4,
+   "var:__obs_plot0": 4
+  },
+  {
+   "var:resistLevel": 112,
+   "var:supportLevel": 98,
+   "var:touchCount": 4,
+   "var:__obs_plot0": 4
+  },
+  {
+   "var:resistLevel": 112,
+   "var:supportLevel": 98,
+   "var:touchCount": 4,
+   "var:__obs_plot0": 4
+  },
+  {
+   "var:resistLevel": 113,
+   "var:supportLevel": 98,
+   "var:touchCount": 4,
+   "var:__obs_plot0": 4
+  }
+ ],
+ "finalVarState": {
+  "resistLevel": 113,
+  "supportLevel": 98,
+  "touchCount": 4,
+  "__obs_plot0": 4
+ }
+}

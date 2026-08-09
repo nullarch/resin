@@ -1,0 +1,9 @@
+//@version=5
+indicator("Chain Ternary")
+var int x = 2
+float val = x == 1 ? 10.0 : x == 2 ? 20.0 : x == 3 ? 30.0 : 0.0
+var float result = 0.0
+result := val
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

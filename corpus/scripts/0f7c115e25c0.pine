@@ -1,0 +1,7 @@
+//@version=5
+indicator("Map Indicator")
+var m = map.new<string, float>()
+m.put("high", high)
+m.put("low", low)
+if m.contains("high")
+    plot(close)

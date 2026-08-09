@@ -1,0 +1,5 @@
+
+//@version=5
+indicator("WVAD Precision")
+w = ta.wvad()
+plot(w)

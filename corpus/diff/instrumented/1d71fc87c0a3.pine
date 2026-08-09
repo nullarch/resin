@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Multi Var")
+var float total = 0.0
+var float maxVal = 0.0
+var float minVal = 999999.0
+var int count = 0
+count := count + 1
+total := total + close
+if close > maxVal
+    maxVal := close
+if close < minVal
+    minVal := close
+avg = count > 0 ? total / count : close
+rng = maxVal - minVal
+var float __obs_plot0 = na
+__obs_plot0 := avg
+plot(avg, "Avg")
+var float __obs_plot1 = na
+__obs_plot1 := rng
+plot(rng, "Rng")

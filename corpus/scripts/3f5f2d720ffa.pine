@@ -1,0 +1,4 @@
+//@version=5
+indicator("Input Symbol")
+sym = input.symbol("BTCUSDT", "Symbol")
+plot(close)

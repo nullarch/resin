@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:central": 37.5,
+   "var:peripheral": 28.0,
+   "var:__obs_plot0": 37.5
+  },
+  {
+   "var:central": 29.174999999999997,
+   "var:peripheral": 32.7,
+   "var:__obs_plot0": 29.174999999999997
+  },
+  {
+   "var:central": 23.233749999999997,
+   "var:peripheral": 35.265,
+   "var:__obs_plot0": 23.233749999999997
+  },
+  {
+   "var:central": 20.628437499999997,
+   "var:peripheral": 36.38525,
+   "var:__obs_plot0": 20.628437499999997
+  },
+  {
+   "var:central": 19.047009375000002,
+   "var:peripheral": 36.872412499999996,
+   "var:__obs_plot0": 19.047009375000002
+  },
+  {
+   "var:central": 18.06779734375,
+   "var:peripheral": 36.994573124999995,
+   "var:__obs_plot0": 18.06779734375
+  },
+  {
+   "var:central": 17.443525585937497,
+   "var:peripheral": 36.90867528124999,
+   "var:__obs_plot0": 17.443525585937497
+  },
+  {
+   "var:central": 17.029159158984374,
+   "var:peripheral": 36.706512870312494,
+   "var:__obs_plot0": 17.029159158984374
+  },
+  {
+   "var:central": 16.739604740371096,
+   "var:peripheral": 36.44169341507812,
+   "var:__obs_plot0": 16.739604740371096
+  },
+  {
+   "var:central": 16.524912422749026,
+   "var:peripheral": 36.14544502164453,
+   "var:__obs_plot0": 16.524912422749026
+  }
+ ],
+ "finalVarState": {
+  "central": 16.524912422749026,
+  "peripheral": 36.14544502164453,
+  "__obs_plot0": 16.524912422749026
+ }
+}

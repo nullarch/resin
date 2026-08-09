@@ -1,0 +1,12 @@
+//@version=5
+indicator("udf_single_var")
+
+runningSum(x) =>
+    var float total = 0.0
+    total := total + x
+    total
+
+s = runningSum(close)
+
+var float __obs_s = na
+__obs_s := s

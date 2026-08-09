@@ -1,0 +1,45 @@
+//@version=5
+indicator("array_map_method_call")
+
+// A: method-call 스타일 array(C222, Pine v5 sugar) — top-level var 수신자(arrayVars 경로).
+// `arrA.push(close)` == `array.push(arrA, close)` — array.py push는 _scalar() 가드가 있어
+// bare close도 안전(array_basic.pine과 동일 근거, +0.0 불필요).
+var arrA = array.new_float(0)
+arrA.push(close)
+var float __obs_a_size = na
+__obs_a_size := arrA.size()
+var float __obs_a_last = na
+__obs_a_last := arrA.get(arrA.size() - 1)
+var float __obs_a_pop = na
+__obs_a_pop := arrA.pop()
+
+// B: method-call 스타일 array — '=' 로컬 수신자(containerKindHints 경로, C216 for-in 인프라
+// 재사용 — top-level var 전용 arrayVars가 아니라 이쪽으로 판별됨). sort의 order 위치가
+// method-call 형태에서는 expr.args[0](receiver가 앞으로 안 밀린 자리)이라는 receiverOffset
+// 보정도 함께 검증.
+arrB = array.from(3.0, 1.0, 2.0)
+arrB.sort("descending")
+var float __obs_b0 = na
+__obs_b0 := arrB.get(0)
+var float __obs_b_size = na
+__obs_b_size := arrB.size()
+
+// C: method-call 스타일 map — top-level var 수신자(mapVars 경로). map.put은 bare series를
+// 그대로 저장하는 pine2py latent 버그(map_basic.pine과 동일 근거)라 `+ 0.0`으로 스칼라 강제.
+var mC = map.new<string, float>()
+mC.put("close", close + 0.0)
+var float __obs_c_get = na
+__obs_c_get := mC.get("close")
+var float __obs_c_size = na
+__obs_c_size := mC.size()
+var bool __obs_c_contains = na
+__obs_c_contains := mC.contains("close")
+
+// D: method-call 스타일 map — '=' 로컬 수신자(containerKindHints 경로).
+mD = map.new<string, float>()
+mD.put("x", 1.0)
+mD.put("y", 2.0)
+var float __obs_d_x = na
+__obs_d_x := mD.get("x")
+var float __obs_d_size = na
+__obs_d_size := mD.size()

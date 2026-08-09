@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Pat Scan")
+higherHighs = 0
+for i = 1 to 4
+    curr = high[i]
+    prev = high[i + 1]
+    if not na(curr) and not na(prev) and curr > prev
+        higherHighs := higherHighs + 1
+strongTrend = higherHighs >= 3
+plot(higherHighs, "HH Count")
+plot(strongTrend ? 1 : 0, "Strong")

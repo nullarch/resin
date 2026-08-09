@@ -1,0 +1,5 @@
+//@version=5
+indicator("input string")
+src = input.string("close", "Source")
+var string result = ""
+result := src

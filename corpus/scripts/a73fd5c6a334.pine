@@ -1,0 +1,36 @@
+
+//@version=5
+strategy("Stress15")
+type Position
+    float size = 0.0
+    float avgPrice = 0.0
+    string side = "FLAT"
+pos = Position.new()
+rsi = nz(ta.rsi(close, 3), 50.0)
+pos.side := switch
+    rsi > 60 => "LONG"
+    rsi < 40 => "SHORT"
+    => "FLAT"
+pos.size := pos.side != "FLAT" ? 1.0 : 0.0
+pos.avgPrice := close
+riskLevels = array.new_float(0)
+atr = nz(ta.atr(3), 1.0)
+for mult = 1 to 4
+    array.push(riskLevels, close - float(mult) * atr)
+decay = pos.size
+iterations = 0
+while decay > 0.1 and iterations < 10
+    decay := decay * 0.7
+    iterations := iterations + 1
+info = map.new<string, float>()
+map.put(info, "risk", array.sum(riskLevels))
+map.put(info, "decay_steps", float(iterations))
+total = 0.0
+for [k, v] in info
+    total := total + v
+msg = pos.side + ":" + str.tostring(math.round(rsi))
+if pos.side == "LONG"
+    strategy.entry("L", strategy.long)
+if pos.side == "SHORT"
+    strategy.close("L")
+plot(total + float(str.length(msg)), "S15")

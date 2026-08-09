@@ -1,0 +1,5 @@
+//@version=5
+indicator("Div Ternary")
+denom = close - open
+ratio = denom != 0 ? (high - low) / denom : 0.0
+plot(ratio)

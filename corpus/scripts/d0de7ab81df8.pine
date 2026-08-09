@@ -1,0 +1,7 @@
+//@version=5
+indicator("Drawing Noop")
+var float result = 0.0
+l = label.new(bar_index, close, "test")
+ln = line.new(bar_index, close, bar_index, high)
+b = box.new(bar_index, high, bar_index, low)
+result := close

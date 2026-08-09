@@ -1,0 +1,13 @@
+//@version=5
+indicator("LICM")
+float sma5 = nz(ta.sma(close, 5), close)
+float atrVal = nz(ta.atr(3), 1.0)
+float threshold = sma5 + atrVal * 2.0
+scores = array.new<float>(0)
+for i = 0 to 4
+    float level = close + float(i) * 0.5
+    float score = level > threshold ? 1.0 : 0.0
+    scores.push(score)
+float total = 0.0
+for s in scores
+    total := total + s

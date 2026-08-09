@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:idx": 2,
+   "var:has_20": true,
+   "var:has_99": false,
+   "var:__obs_plot0": 103
+  },
+  {
+   "var:idx": 2,
+   "var:has_20": true,
+   "var:has_99": false,
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:idx": 2,
+   "var:has_20": true,
+   "var:has_99": false,
+   "var:__obs_plot0": 102
+  },
+  {
+   "var:idx": 2,
+   "var:has_20": true,
+   "var:has_99": false,
+   "var:__obs_plot0": 105
+  },
+  {
+   "var:idx": 2,
+   "var:has_20": true,
+   "var:has_99": false,
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:idx": 2,
+   "var:has_20": true,
+   "var:has_99": false,
+   "var:__obs_plot0": 106
+  },
+  {
+   "var:idx": 2,
+   "var:has_20": true,
+   "var:has_99": false,
+   "var:__obs_plot0": 108
+  },
+  {
+   "var:idx": 2,
+   "var:has_20": true,
+   "var:has_99": false,
+   "var:__obs_plot0": 110
+  },
+  {
+   "var:idx": 2,
+   "var:has_20": true,
+   "var:has_99": false,
+   "var:__obs_plot0": 109
+  },
+  {
+   "var:idx": 2,
+   "var:has_20": true,
+   "var:has_99": false,
+   "var:__obs_plot0": 111
+  }
+ ],
+ "finalVarState": {
+  "idx": 2,
+  "has_20": true,
+  "has_99": false,
+  "__obs_plot0": 111
+ }
+}

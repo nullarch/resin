@@ -1,0 +1,9 @@
+//@version=5
+indicator("Queue Length")
+var int queueLen = 0
+float prevVol = not na(volume[1]) ? volume[1] : 0.0
+if volume > prevVol
+    queueLen := queueLen + 1
+else
+    queueLen := 0
+plot(queueLen, "QueueLen")

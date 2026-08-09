@@ -1,0 +1,12 @@
+
+//@version=5
+strategy("Breakout", overlay=true)
+hi5 = ta.highest(high, 5)
+avgVol = ta.sma(volume, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+if close > hi5[1] and volume > avgVol and rsi > 50
+    strategy.entry("Long", strategy.long)
+sma3 = ta.sma(close, 3)
+if close < sma3
+    strategy.close("Long")
+plot(hi5, "Hi")

@@ -1,0 +1,5 @@
+//@version=5
+indicator("color cond")
+sma3 = ta.sma(close, 3)
+clr = close > nz(sma3) ? color.green : color.red
+plot(close, color=clr)

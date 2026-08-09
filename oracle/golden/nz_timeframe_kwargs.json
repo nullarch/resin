@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_nz_replacement_kw": -1.0,
+   "var:__obs_nz_replacement_kw_passthrough": 101,
+   "var:__obs_tf_in_seconds_kw_d": 86400,
+   "var:__obs_tf_in_seconds_kw_empty": 86400
+  },
+  {
+   "var:__obs_nz_replacement_kw": -1.0,
+   "var:__obs_nz_replacement_kw_passthrough": 102,
+   "var:__obs_tf_in_seconds_kw_d": 86400,
+   "var:__obs_tf_in_seconds_kw_empty": 86400
+  },
+  {
+   "var:__obs_nz_replacement_kw": -1.0,
+   "var:__obs_nz_replacement_kw_passthrough": 103,
+   "var:__obs_tf_in_seconds_kw_d": 86400,
+   "var:__obs_tf_in_seconds_kw_empty": 86400
+  },
+  {
+   "var:__obs_nz_replacement_kw": -1.0,
+   "var:__obs_nz_replacement_kw_passthrough": 102,
+   "var:__obs_tf_in_seconds_kw_d": 86400,
+   "var:__obs_tf_in_seconds_kw_empty": 86400
+  },
+  {
+   "var:__obs_nz_replacement_kw": -1.0,
+   "var:__obs_nz_replacement_kw_passthrough": 104,
+   "var:__obs_tf_in_seconds_kw_d": 86400,
+   "var:__obs_tf_in_seconds_kw_empty": 86400
+  },
+  {
+   "var:__obs_nz_replacement_kw": -1.0,
+   "var:__obs_nz_replacement_kw_passthrough": 105,
+   "var:__obs_tf_in_seconds_kw_d": 86400,
+   "var:__obs_tf_in_seconds_kw_empty": 86400
+  },
+  {
+   "var:__obs_nz_replacement_kw": -1.0,
+   "var:__obs_nz_replacement_kw_passthrough": 106,
+   "var:__obs_tf_in_seconds_kw_d": 86400,
+   "var:__obs_tf_in_seconds_kw_empty": 86400
+  },
+  {
+   "var:__obs_nz_replacement_kw": -1.0,
+   "var:__obs_nz_replacement_kw_passthrough": 105,
+   "var:__obs_tf_in_seconds_kw_d": 86400,
+   "var:__obs_tf_in_seconds_kw_empty": 86400
+  },
+  {
+   "var:__obs_nz_replacement_kw": -1.0,
+   "var:__obs_nz_replacement_kw_passthrough": 107,
+   "var:__obs_tf_in_seconds_kw_d": 86400,
+   "var:__obs_tf_in_seconds_kw_empty": 86400
+  },
+  {
+   "var:__obs_nz_replacement_kw": -1.0,
+   "var:__obs_nz_replacement_kw_passthrough": 108,
+   "var:__obs_tf_in_seconds_kw_d": 86400,
+   "var:__obs_tf_in_seconds_kw_empty": 86400
+  }
+ ],
+ "finalVarState": {
+  "__obs_nz_replacement_kw": -1.0,
+  "__obs_nz_replacement_kw_passthrough": 108,
+  "__obs_tf_in_seconds_kw_d": 86400,
+  "__obs_tf_in_seconds_kw_empty": 86400
+ }
+}

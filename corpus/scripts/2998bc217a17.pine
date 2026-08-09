@@ -1,0 +1,9 @@
+//@version=5
+indicator("Key Derivation")
+masterKey = close * 0.1 + volume * 0.01
+iterations = 5
+derived = masterKey
+for i = 1 to iterations
+    derived := derived * 31.0 + 17.0
+    derived := derived - math.floor(derived / 9973.0) * 9973.0
+plot(derived)

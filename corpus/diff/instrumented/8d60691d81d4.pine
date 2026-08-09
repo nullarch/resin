@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Math Chain")
+x = close - open
+absX = math.abs(x)
+sqrtX = math.sqrt(absX + 1)
+logX = math.log(sqrtX)
+result = math.round(logX * 100) / 100
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result, "Result")

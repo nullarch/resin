@@ -1,0 +1,4 @@
+//@version=5
+indicator("Test")
+lbl = label.new(bar_index, close)
+lbl.set_text("Updated")

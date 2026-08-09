@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("ALMA")
+almaVal = ta.alma(close, 5, 0.85, 6)
+diff = close - almaVal
+var float __obs_plot0 = na
+__obs_plot0 := almaVal
+plot(almaVal, "ALMA")
+var float __obs_plot1 = na
+__obs_plot1 := diff
+plot(diff, "Diff")

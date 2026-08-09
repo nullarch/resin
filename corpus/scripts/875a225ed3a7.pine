@@ -1,0 +1,12 @@
+//@version=5
+indicator("Betti1 Loops")
+float fast = ta.ema(close, 3)
+float slow = ta.ema(close, 5)
+var int crossovers = 0
+var int crossunders = 0
+if ta.crossover(fast, slow)
+    crossovers := crossovers + 1
+if ta.crossunder(fast, slow)
+    crossunders := crossunders + 1
+float betti1 = math.min(crossovers, crossunders)
+plot(betti1, "Betti1")

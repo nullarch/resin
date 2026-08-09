@@ -1,0 +1,160 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:arr": [
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:m": {
+    "avg": 108.8
+   },
+   "var:info": "pine_fn.<locals>.Info(value=108.8, count=10)",
+   "var:__obs_plot0": 103.0
+  },
+  {
+   "var:arr": [
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:m": {
+    "avg": 108.8
+   },
+   "var:info": "pine_fn.<locals>.Info(value=108.8, count=10)",
+   "var:__obs_plot0": 103.5
+  },
+  {
+   "var:arr": [
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:m": {
+    "avg": 108.8
+   },
+   "var:info": "pine_fn.<locals>.Info(value=108.8, count=10)",
+   "var:__obs_plot0": 103.0
+  },
+  {
+   "var:arr": [
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:m": {
+    "avg": 108.8
+   },
+   "var:info": "pine_fn.<locals>.Info(value=108.8, count=10)",
+   "var:__obs_plot0": 103.5
+  },
+  {
+   "var:arr": [
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:m": {
+    "avg": 108.8
+   },
+   "var:info": "pine_fn.<locals>.Info(value=108.8, count=10)",
+   "var:__obs_plot0": 104.2
+  },
+  {
+   "var:arr": [
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:m": {
+    "avg": 108.8
+   },
+   "var:info": "pine_fn.<locals>.Info(value=108.8, count=10)",
+   "var:__obs_plot0": 104.8
+  },
+  {
+   "var:arr": [
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:m": {
+    "avg": 108.8
+   },
+   "var:info": "pine_fn.<locals>.Info(value=108.8, count=10)",
+   "var:__obs_plot0": 105.6
+  },
+  {
+   "var:arr": [
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:m": {
+    "avg": 108.8
+   },
+   "var:info": "pine_fn.<locals>.Info(value=108.8, count=10)",
+   "var:__obs_plot0": 107.2
+  },
+  {
+   "var:arr": [
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:m": {
+    "avg": 108.8
+   },
+   "var:info": "pine_fn.<locals>.Info(value=108.8, count=10)",
+   "var:__obs_plot0": 108.0
+  },
+  {
+   "var:arr": [
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:m": {
+    "avg": 108.8
+   },
+   "var:info": "pine_fn.<locals>.Info(value=108.8, count=10)",
+   "var:__obs_plot0": 108.8
+  }
+ ],
+ "finalVarState": {
+  "arr": [
+   106,
+   108,
+   110,
+   109,
+   111
+  ],
+  "m": {
+   "avg": 108.8
+  },
+  "info": "pine_fn.<locals>.Info(value=108.8, count=10)",
+  "__obs_plot0": 108.8
+ }
+}

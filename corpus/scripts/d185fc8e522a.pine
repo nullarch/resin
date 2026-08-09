@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("UDT Drawing")
+type MyPanel
+    float value = 0.0
+    string text = ""
+
+panel = MyPanel.new()
+panel.value := ta.rsi(close, 14)
+panel.text := str.tostring(panel.value)
+plot(panel.value)

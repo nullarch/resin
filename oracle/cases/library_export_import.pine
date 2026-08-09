@@ -1,0 +1,23 @@
+//@version=5
+// library()/export/import 파스-스루 오라클 검증(C274, corpus LIBRARY 15건/IMPORT 7건/EXPORT 1건
+// 클러스터 해소). pine2py도 library()를 codegen.py _SCRIPT_DECL_FUNCS(indicator/strategy/library
+// 셋 다 동일 취급)로 파스만 하고 comment로 버릴 뿐 declaration 노드로 승격하지 않으며(script.declaration
+// 은 여전히 None), export는 exported 플래그를 설정만 하고 아무도 읽지 않으며(codegen 분기 없음), import는
+// ImportDecl로 파스돼 comment 한 줄로 버려질 뿐 실제 외부 라이브러리 로드는 어디에도 없다(python 소스
+// grep으로 확인, docs/pinescript/09-edge-cases.md도 "Phase 1 미지원"으로 명시) — 셋 다 순수 no-op
+// 파스-스루라는 점을 이 오라클로 수치까지 확정한다(단순 파스 성공 확인을 넘어 export된 함수가 실제로
+// 정상 실행값을 내는지까지 검증).
+library("MathUtils")
+import user/somelib/1 as extlib
+import TradingView/ta/1 as tvta
+
+export addOne(float x) =>
+    x + 1.0
+
+export scaleBy(float x, float factor) =>
+    x * factor
+
+var float __obs_add = na
+__obs_add := addOne(close)
+var float __obs_scale = na
+__obs_scale := scaleBy(close, 2.0)

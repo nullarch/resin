@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Trend Desc")
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = ta.atr(3)
+dir = close > sma3 ? "UP" : "DN"
+mom = rsi > 60 ? "Strong" : rsi < 40 ? "Weak" : "Neutral"
+desc = dir + "_" + mom
+isStrongUp = desc == "UP_Strong"
+plot(isStrongUp ? 1 : 0, "SU")

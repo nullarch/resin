@@ -1,0 +1,24 @@
+//@version=5
+indicator("tuple_literal_destructure")
+// C631: [a, b] = [e1, e2] 직접 튜플 리터럴 값(함수 호출 없이 브래킷 값 그대로 -- TV "tuple
+// declaration", wild ccb3f0d6d70d.pine 최소사례 등 4파일). pine2py 대조 확인 완료: parser.py
+// _parse_tuple_destructure가 RHS를 범용 _parse_expression으로 파싱해 브래킷 리터럴을 함수콜과
+// 동일하게 받아들이고(codegen.py TupleExpr -> Python list literal), `a, b = [close, True]` 등이
+// 그대로 실행까지 완주함(hand-verified). 원소가 산술식(bar series 포함)인 기본 폼과, 이미 존재하는
+// '=' 로컬을 재대상으로 삼는 스왑 관용구(`[x, y] = [y, x]` -- RHS 배열이 원자적으로 먼저 평가돼야
+// 정확함, 순차 대입이면 깨짐)를 함께 검증한다.
+
+[sum, diff] = [close + open, close - open]
+
+x = close
+y = open
+[x, y] = [y, x]
+
+var float __obs_sum = na
+__obs_sum := sum
+var float __obs_diff = na
+__obs_diff := diff
+var float __obs_x = na
+__obs_x := x
+var float __obs_y = na
+__obs_y := y

@@ -1,0 +1,10 @@
+//@version=5
+indicator("RankVol")
+var float cumCount = 0.0
+var float belowCount = 0.0
+cumCount := cumCount + 1.0
+prevV = nz(volume[1], volume)
+if volume >= prevV
+    belowCount := belowCount + 1.0
+rankV = cumCount > 0 ? belowCount / cumCount : 0.5
+plot(rankV, "RankV")

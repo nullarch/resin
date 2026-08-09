@@ -1,0 +1,12 @@
+//@version=5
+indicator("Arith Code")
+var float intervalLow = 0.0
+var float intervalHigh = 1.0
+float span = intervalHigh - intervalLow
+bool bullish = close > open
+float midpoint = intervalLow + span * 0.6
+if bullish
+    intervalHigh := midpoint
+else
+    intervalLow := midpoint
+float codeWidth = intervalHigh - intervalLow

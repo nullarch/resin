@@ -1,0 +1,26 @@
+
+//@version=5
+indicator("Stats Full")
+sma5 = ta.sma(close, 5)
+stdev5 = ta.stdev(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+ret = close[1] > 0 ? (close - close[1]) / close[1] * 100 : 0.0
+
+z = stdev5 > 0 ? (close - sma5) / stdev5 : 0.0
+cv = sma5 > 0 ? stdev5 / sma5 * 100 : 0.0
+avgRet = ta.sma(ret, 5)
+retDev = ta.stdev(ret, 5)
+sharpe = retDev > 0 ? avgRet / retDev : 0.0
+
+statScore = z * 0.3 + sharpe * 0.4 + (rsi - 50) / 50 * 0.3
+
+var int goodBars = 0
+if statScore > 0.5
+    goodBars := goodBars + 1
+
+var float __obs_plot0 = na
+__obs_plot0 := statScore
+plot(statScore, "SS")
+var float __obs_plot1 = na
+__obs_plot1 := goodBars
+plot(goodBars, "GB")

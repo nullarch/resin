@@ -1,0 +1,26 @@
+//@version=5
+indicator("ta_kc_kcw")
+// ta.kc/ta.kcw 오라클 검증(ROADMAP P2 "ta.* 44종" — kc/kcw). 두 변형을 관측: length=3/mult=2.0/
+// useTrueRange=true(basis만 골든과 일치 — range는 rt.ta.atr의 의도된 divergence, DIVERGENCES.md)와
+// length=4/mult=1.5/useTrueRange=false(basis만 골든과 일치 — range=high-low는 TV 실제 semantics로
+// pine2py kc.py의 source-source=0 버그를 따르지 않는 의도된 divergence).
+[basisT, upperT, lowerT] = ta.kc(close, 3, 2.0, true)
+kcwT = ta.kcw(close, 3, 2.0, true)
+[basisF, upperF, lowerF] = ta.kc(close, 4, 1.5, false)
+kcwF = ta.kcw(close, 4, 1.5, false)
+var float __obs_basis_t = na
+var float __obs_upper_t = na
+var float __obs_lower_t = na
+var float __obs_kcw_t = na
+var float __obs_basis_f = na
+var float __obs_upper_f = na
+var float __obs_lower_f = na
+var float __obs_kcw_f = na
+__obs_basis_t := basisT
+__obs_upper_t := upperT
+__obs_lower_t := lowerT
+__obs_kcw_t := kcwT
+__obs_basis_f := basisF
+__obs_upper_f := upperF
+__obs_lower_f := lowerF
+__obs_kcw_f := kcwF

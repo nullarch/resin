@@ -1,0 +1,19 @@
+
+//@version=5
+indicator("Skew")
+var float[] rets = array.new_float(0)
+ret = close - close[1]
+if not na(ret)
+    array.push(rets, ret)
+if array.size(rets) > 8
+    array.shift(rets)
+avg = array.avg(rets)
+sd = array.stdev(rets)
+skewSum = 0.0
+n = array.size(rets)
+for i = 0 to math.max(n - 1, 0)
+    if i < n
+        diff = array.get(rets, i) - avg
+        skewSum := skewSum + math.pow(diff, 3)
+skew = sd > 0 and n > 2 ? skewSum / (n * math.pow(sd, 3)) : 0.0
+plot(skew, "Skew")

@@ -1,0 +1,11 @@
+//@version=5
+indicator("method UDT")
+type Acc
+    float total = 0.0
+method addVal(Acc a, float v) =>
+    a.total := a.total + v
+    a.total
+var float result = 0.0
+acc = Acc.new(0.0)
+acc.addVal(close)
+result := acc.total

@@ -1,0 +1,8 @@
+//@version=5
+indicator("scope func")
+x = 100.0
+myFunc() =>
+    x = 999.0
+    x
+var float result = 0.0
+result := x

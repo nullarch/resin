@@ -1,0 +1,24 @@
+//@version=5
+indicator("Supertrend")
+// TV 빌트인 "Supertrend" 인디케이터 E2E 재현(ROADMAP P2 "TV 빌트인 인디케이터 E2E" 일곱 번째
+// 슬라이스, SuperTrend 단독 -- ATR에 이어 divergence 있는 두 번째 채널). ta.supertrend 자체의
+// 계산은 이미 oracle/cases/ta_supertrend.pine(factor=2.0/atrPeriod=3)이 개별 검증했다 -- 단
+// ta.supertrend는 내부 ta.atr의 warmup divergence(DIVERGENCES.md #10, ta.atr가 pine2py atr.py
+// 재스캔보다 한 바 일찍 유효값을 냄)가 band/direction 상태 전이를 통해 전체 궤적으로 전파돼
+// pine2js가 pine2py golden보다 한 바 일찍(bar2) 유효값을 내고 그 시드 값도 다르다(96.5 vs golden
+// bar3=95.5) -- bar4부터는 두 구현이 정확히 일치(tests/oracle/ta_supertrend.test.ts hand-verified
+// 패턴 그대로). 이 케이스도 순수 compareToGolden을 못 쓰고 그 hand-verified 패턴을 재사용한다.
+// factor=2.0/atrPeriod=3은 ta_supertrend.pine과 동일 파라미터를 재사용(sample10.json에서 이미
+// 워밍업/수렴 구간이 검증된 조합 그대로).
+factorInput = input.float(2.0, "Factor")
+atrPeriodInput = input.int(3, "ATR Period")
+
+[value, direction] = ta.supertrend(factorInput, atrPeriodInput)
+
+plot(value, "SuperTrend")
+plot(direction, "Direction")
+
+var float __obs_value = na
+var float __obs_direction = na
+__obs_value := value
+__obs_direction := direction

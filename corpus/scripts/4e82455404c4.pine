@@ -1,0 +1,9 @@
+//@version=5
+indicator("Custom StochRSI")
+rsi5 = ta.rsi(close, 5)
+rsiH = ta.highest(rsi5, 5)
+rsiL = ta.lowest(rsi5, 5)
+stochRSI = not na(rsiH) and not na(rsiL) and nz(rsiH) != nz(rsiL) ? (nz(rsi5) - nz(rsiL)) / (nz(rsiH) - nz(rsiL)) * 100 : 50.0
+k = ta.sma(stochRSI, 3)
+d = ta.sma(k, 3)
+bullCross = ta.crossover(k, d)

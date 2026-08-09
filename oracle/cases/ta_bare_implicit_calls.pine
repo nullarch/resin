@@ -1,0 +1,26 @@
+//@version=5
+indicator("ta_bare_implicit_calls")
+// 괄호 없는 ta.* 암묵 호출 9종 오라클 검증(C248, ROADMAP P4 "네임스페이스 접근은 호출식만 지원"
+// 클러스터 최다 하위패턴, corpus 20/35파일 — 2d2ea85c794d.pine/2f9ed69b77f7.pine 등 최소 재현).
+// ta_atr_tr.pine/ta_obv_accdist.pine/ta_pvt_wad.pine/ta_nvi_pvi.pine/ta_wvad_iii.pine이 이미
+// 명시 호출형(`ta.tr()` 등)으로 이 9종 산식 자체는 전부 검증해뒀다 — 이 케이스는 산식이 아니라
+// "괄호 없는 문법이 명시 호출형과 바이트 단위로 동일한 값을 내는가"만 별도로 확인한다(파서가
+// 0-인자 CallExpr로 desugar하므로 이론상 동일해야 하지만, gen_oracle.py 골든 대조로 실측).
+var float __obs_tr = na
+var float __obs_accdist = na
+var float __obs_wad = na
+var float __obs_wvad = na
+var float __obs_iii = na
+var float __obs_obv = na
+var float __obs_pvt = na
+var float __obs_nvi = na
+var float __obs_pvi = na
+__obs_tr := ta.tr
+__obs_accdist := ta.accdist
+__obs_wad := ta.wad
+__obs_wvad := ta.wvad
+__obs_iii := ta.iii
+__obs_obv := ta.obv
+__obs_pvt := ta.pvt
+__obs_nvi := ta.nvi
+__obs_pvi := ta.pvi

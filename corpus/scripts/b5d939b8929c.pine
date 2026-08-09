@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Str Conv")
+rsi = nz(ta.rsi(close, 3), 50.0)
+target = rsi / 100
+estimate = 0.5
+iters = 0
+while math.abs(estimate - target) > 0.01 and iters < 20
+    estimate := estimate + (target - estimate) * 0.4
+    iters := iters + 1
+plot(estimate, "Est")

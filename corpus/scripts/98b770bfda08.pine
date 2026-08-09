@@ -1,0 +1,8 @@
+//@version=5
+indicator("VarInUDF")
+counter() =>
+    var int cnt = 0
+    cnt := cnt + 1
+    cnt
+var int lastCount = 0
+lastCount := counter()

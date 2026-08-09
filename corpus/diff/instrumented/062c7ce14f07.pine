@@ -1,0 +1,7 @@
+//@version=5
+indicator("Log Zero")
+val = math.log(0.0)
+isNeg = val < -1000 ? 1 : 0
+var float __obs_plot0 = na
+__obs_plot0 := isNeg
+plot(isNeg)

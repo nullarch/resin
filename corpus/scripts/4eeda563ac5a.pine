@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Bool Arith")
+a = close > open
+b = close > ta.sma(close, 3)
+c = nz(ta.rsi(close, 3), 50.0) > 50
+score = (a ? 1 : 0) + (b ? 1 : 0) + (c ? 1 : 0)
+pct = score / 3.0 * 100
+plot(pct, "Pct")

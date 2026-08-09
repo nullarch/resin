@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:bullPatterns": 0,
+   "var:bearPatterns": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bullPatterns": 0,
+   "var:bearPatterns": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bullPatterns": 0,
+   "var:bearPatterns": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bullPatterns": 0,
+   "var:bearPatterns": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bullPatterns": 0,
+   "var:bearPatterns": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bullPatterns": 0,
+   "var:bearPatterns": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bullPatterns": 0,
+   "var:bearPatterns": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bullPatterns": 0,
+   "var:bearPatterns": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bullPatterns": 0,
+   "var:bearPatterns": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bullPatterns": 0,
+   "var:bearPatterns": 0,
+   "var:__obs_plot0": 0
+  }
+ ],
+ "finalVarState": {
+  "bullPatterns": 0,
+  "bearPatterns": 0,
+  "__obs_plot0": 0
+ }
+}

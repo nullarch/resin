@@ -1,0 +1,5 @@
+//@version=5
+indicator("Var Decl")
+var float result = 0.0
+float x = 42.0
+result := x

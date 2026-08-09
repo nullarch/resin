@@ -1,0 +1,6 @@
+//@version=5
+indicator("Maxwell Divergence")
+float priceChange = close - (not na(close[1]) ? close[1] : close)
+float volChange = volume - (not na(volume[1]) ? volume[1] : volume)
+float divergence = priceChange > 0.0 ? volChange : -volChange
+float divNorm = divergence / math.max(volume, 1.0)

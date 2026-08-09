@@ -1,0 +1,7 @@
+//@version=5
+indicator("Running stats")
+var prices = array.new_float(0)
+array.push(prices, close)
+sz = array.size(prices)
+avg_price = array.avg(prices)
+std_price = sz >= 2 ? array.stdev(prices) : 0.0

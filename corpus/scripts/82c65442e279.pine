@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Vol Stats")
+var vs = map.new<string, float>()
+map.put(vs, "current", volume)
+map.put(vs, "sma", ta.sma(volume, 5))
+smaVol = map.get(vs, "sma", volume)
+map.put(vs, "ratio", smaVol > 0 ? volume / smaVol : 1.0)
+map.put(vs, "relative", volume > smaVol ? 1.0 : -1.0)
+ratio = map.get(vs, "ratio", 1.0)
+plot(ratio, "Ratio")

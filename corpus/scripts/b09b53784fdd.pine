@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Skew")
+sma5 = ta.sma(close, 5)
+median = (ta.highest(close, 5) + ta.lowest(close, 5)) / 2
+stdev5 = ta.stdev(close, 5)
+skew = stdev5 > 0 ? 3 * (sma5 - median) / stdev5 : 0.0
+plot(skew, "Sk")

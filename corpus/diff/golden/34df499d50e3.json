@@ -1,0 +1,292 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:bullBars": 0,
+   "var:bearBars": 1,
+   "var:maxScore": -3.0,
+   "var:minScore": -3.0,
+   "var:scoreHistory": [
+    -3.0,
+    -3.0,
+    -3.0,
+    1.0,
+    1.0,
+    -1.0,
+    2.0,
+    4.0,
+    0.0,
+    2.0
+   ],
+   "var:m": {
+    "total": 2.0,
+    "bulls": 5.0,
+    "bears": 5.0
+   },
+   "var:__obs_plot0": -3,
+   "var:__obs_plot1": 0,
+   "var:__obs_plot2": 1
+  },
+  {
+   "var:bullBars": 0,
+   "var:bearBars": 2,
+   "var:maxScore": -3.0,
+   "var:minScore": -3.0,
+   "var:scoreHistory": [
+    -3.0,
+    -3.0,
+    -3.0,
+    1.0,
+    1.0,
+    -1.0,
+    2.0,
+    4.0,
+    0.0,
+    2.0
+   ],
+   "var:m": {
+    "total": 2.0,
+    "bulls": 5.0,
+    "bears": 5.0
+   },
+   "var:__obs_plot0": -3,
+   "var:__obs_plot1": 0,
+   "var:__obs_plot2": 2
+  },
+  {
+   "var:bullBars": 0,
+   "var:bearBars": 3,
+   "var:maxScore": -3.0,
+   "var:minScore": -3.0,
+   "var:scoreHistory": [
+    -3.0,
+    -3.0,
+    -3.0,
+    1.0,
+    1.0,
+    -1.0,
+    2.0,
+    4.0,
+    0.0,
+    2.0
+   ],
+   "var:m": {
+    "total": 2.0,
+    "bulls": 5.0,
+    "bears": 5.0
+   },
+   "var:__obs_plot0": -3,
+   "var:__obs_plot1": 0,
+   "var:__obs_plot2": 3
+  },
+  {
+   "var:bullBars": 1,
+   "var:bearBars": 3,
+   "var:maxScore": 1.0,
+   "var:minScore": -3.0,
+   "var:scoreHistory": [
+    -3.0,
+    -3.0,
+    -3.0,
+    1.0,
+    1.0,
+    -1.0,
+    2.0,
+    4.0,
+    0.0,
+    2.0
+   ],
+   "var:m": {
+    "total": 2.0,
+    "bulls": 5.0,
+    "bears": 5.0
+   },
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 1,
+   "var:__obs_plot2": 3
+  },
+  {
+   "var:bullBars": 2,
+   "var:bearBars": 3,
+   "var:maxScore": 1.0,
+   "var:minScore": -3.0,
+   "var:scoreHistory": [
+    -3.0,
+    -3.0,
+    -3.0,
+    1.0,
+    1.0,
+    -1.0,
+    2.0,
+    4.0,
+    0.0,
+    2.0
+   ],
+   "var:m": {
+    "total": 2.0,
+    "bulls": 5.0,
+    "bears": 5.0
+   },
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 2,
+   "var:__obs_plot2": 3
+  },
+  {
+   "var:bullBars": 2,
+   "var:bearBars": 4,
+   "var:maxScore": 1.0,
+   "var:minScore": -3.0,
+   "var:scoreHistory": [
+    -3.0,
+    -3.0,
+    -3.0,
+    1.0,
+    1.0,
+    -1.0,
+    2.0,
+    4.0,
+    0.0,
+    2.0
+   ],
+   "var:m": {
+    "total": 2.0,
+    "bulls": 5.0,
+    "bears": 5.0
+   },
+   "var:__obs_plot0": -1,
+   "var:__obs_plot1": 2,
+   "var:__obs_plot2": 4
+  },
+  {
+   "var:bullBars": 3,
+   "var:bearBars": 4,
+   "var:maxScore": 2.0,
+   "var:minScore": -3.0,
+   "var:scoreHistory": [
+    -3.0,
+    -3.0,
+    -3.0,
+    1.0,
+    1.0,
+    -1.0,
+    2.0,
+    4.0,
+    0.0,
+    2.0
+   ],
+   "var:m": {
+    "total": 2.0,
+    "bulls": 5.0,
+    "bears": 5.0
+   },
+   "var:__obs_plot0": 2,
+   "var:__obs_plot1": 3,
+   "var:__obs_plot2": 4
+  },
+  {
+   "var:bullBars": 4,
+   "var:bearBars": 4,
+   "var:maxScore": 4.0,
+   "var:minScore": -3.0,
+   "var:scoreHistory": [
+    -3.0,
+    -3.0,
+    -3.0,
+    1.0,
+    1.0,
+    -1.0,
+    2.0,
+    4.0,
+    0.0,
+    2.0
+   ],
+   "var:m": {
+    "total": 2.0,
+    "bulls": 5.0,
+    "bears": 5.0
+   },
+   "var:__obs_plot0": 4,
+   "var:__obs_plot1": 4,
+   "var:__obs_plot2": 4
+  },
+  {
+   "var:bullBars": 4,
+   "var:bearBars": 5,
+   "var:maxScore": 4.0,
+   "var:minScore": -3.0,
+   "var:scoreHistory": [
+    -3.0,
+    -3.0,
+    -3.0,
+    1.0,
+    1.0,
+    -1.0,
+    2.0,
+    4.0,
+    0.0,
+    2.0
+   ],
+   "var:m": {
+    "total": 2.0,
+    "bulls": 5.0,
+    "bears": 5.0
+   },
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 4,
+   "var:__obs_plot2": 5
+  },
+  {
+   "var:bullBars": 5,
+   "var:bearBars": 5,
+   "var:maxScore": 4.0,
+   "var:minScore": -3.0,
+   "var:scoreHistory": [
+    -3.0,
+    -3.0,
+    -3.0,
+    1.0,
+    1.0,
+    -1.0,
+    2.0,
+    4.0,
+    0.0,
+    2.0
+   ],
+   "var:m": {
+    "total": 2.0,
+    "bulls": 5.0,
+    "bears": 5.0
+   },
+   "var:__obs_plot0": 2,
+   "var:__obs_plot1": 5,
+   "var:__obs_plot2": 5
+  }
+ ],
+ "finalVarState": {
+  "bullBars": 5,
+  "bearBars": 5,
+  "maxScore": 4.0,
+  "minScore": -3.0,
+  "scoreHistory": [
+   -3.0,
+   -3.0,
+   -3.0,
+   1.0,
+   1.0,
+   -1.0,
+   2.0,
+   4.0,
+   0.0,
+   2.0
+  ],
+  "m": {
+   "total": 2.0,
+   "bulls": 5.0,
+   "bears": 5.0
+  },
+  "__obs_plot0": 2,
+  "__obs_plot1": 5,
+  "__obs_plot2": 5
+ }
+}

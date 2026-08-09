@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Sig Buffer")
+var buf = map.new<string, float>()
+rsi = ta.rsi(close, 3)
+sig = close > ta.sma(close, 3) ? 1.0 : -1.0
+map.put(buf, "s3", map.get(buf, "s2", 0.0))
+map.put(buf, "s2", map.get(buf, "s1", 0.0))
+map.put(buf, "s1", sig)
+avg3 = (map.get(buf, "s1", 0.0) + map.get(buf, "s2", 0.0) + map.get(buf, "s3", 0.0)) / 3.0
+plot(avg3, "Avg3")

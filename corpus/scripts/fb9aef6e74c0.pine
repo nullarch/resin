@@ -1,0 +1,28 @@
+
+//@version=5
+indicator("Stress11")
+type Accumulator
+    float sum = 0.0
+    int steps = 0
+acc = Accumulator.new()
+var float runSum = 0.0
+val = high - low
+steps = 0
+while val > 0.5 and steps < 15
+    acc.sum := acc.sum + val
+    val := val * 0.8
+    steps := steps + 1
+acc.steps := steps
+runSum := runSum + acc.sum
+levelName = switch
+    acc.steps > 8 => "DEEP"
+    acc.steps > 4 => "MED"
+    => "SHALLOW"
+data = map.new<string, float>()
+map.put(data, "sum", acc.sum)
+map.put(data, "steps", float(acc.steps))
+map.put(data, "runSum", runSum)
+collected = array.new_float(0)
+for [k, v] in data
+    array.push(collected, v)
+plot(array.sum(collected) + float(str.length(levelName)), "S11")

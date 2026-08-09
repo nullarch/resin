@@ -1,0 +1,126 @@
+//@version=5
+indicator("matrix_eigenvectors")
+
+// C106: matrix.* 열일곱 번째이자 마지막 슬라이스 — eigenvectors(고유벡터, 행렬 대수 11종의
+// 열한 번째 항목, 48/49 -> 49/49 완주). pine2py eigenvectors()(matrix.py L351-372)는
+// evals=eigenvalues(m) 재호출(이미 구현된 rt.matrix.eigenvalues를 내부에서 그대로 재호출하는
+// 합성) 후 (A-λI)v=0의 null space를 "첫 행으로 비율 계산"하는 closed-form: n=2는
+// mat[0][0]=m[0][0]-ev가 |·|>1e-10이면 [-mat[0][1]/mat[0][0], 1.0], 아니면 [1.0,0.0]. n!=2(1
+// 포함, n>=3 포함)는 evals의 "값"과 무관하게 "개수"만큼 고정 벡터 [1.0,0.0,...,0.0]을 반복
+// 반환. 반환 타입은 matrix<float>(eigenvalues의 array<float>와 반대) — matrix.get으로 관측.
+
+// A: n=1(bar-derived, 1x1) — 고정 [1.0], 셀 값과 무관.
+maA = matrix.new<float>(1, 1, 0.0)
+matrix.set(maA, 0, 0, close + 0.5)
+raA = matrix.eigenvectors(maA)
+var float __obs_a0 = na
+__obs_a0 := matrix.get(raA, 0, 0)
+
+// B: n=2 diagonal(bar-derived) — 대각행렬이라 evals=[max(a,d), min(a,d)]가 각각 m[0][0]/m[1][1]과
+// 정확히 일치해, 한쪽 고유값은 mat[0][0]=0(폴백 [1,0])으로, 다른 쪽은 mat[0][0]!=0(비율 분기,
+// 비대각이 0이라 비율 결과도 0)으로 매 바 자연 분기.
+mbB = matrix.new<float>(2, 2, 0.0)
+matrix.set(mbB, 0, 0, open + 0.0)
+matrix.set(mbB, 0, 1, 0.0)
+matrix.set(mbB, 1, 0, 0.0)
+matrix.set(mbB, 1, 1, close + 0.0)
+rbB = matrix.eigenvectors(mbB)
+var float __obs_b00 = na
+__obs_b00 := matrix.get(rbB, 0, 0)
+var float __obs_b01 = na
+__obs_b01 := matrix.get(rbB, 0, 1)
+var float __obs_b10 = na
+__obs_b10 := matrix.get(rbB, 1, 0)
+var float __obs_b11 = na
+__obs_b11 := matrix.get(rbB, 1, 1)
+
+// C: n=2 disc<0(반대칭, bar-derived) — 두 고유값 모두 tr/2=0으로 겹치고(eigenvalues C105 확인),
+// m[0][0]=0이라 mat[0][0]=0-0=0 항상(폴백 [1,0] 분기만 타는지 확인).
+mcC = matrix.new<float>(2, 2, 0.0)
+matrix.set(mcC, 0, 0, 0.0)
+matrix.set(mcC, 0, 1, 0.0 - (high - low + 1.0))
+matrix.set(mcC, 1, 0, high - low + 1.0)
+matrix.set(mcC, 1, 1, 0.0)
+rcC = matrix.eigenvectors(mcC)
+var float __obs_c00 = na
+__obs_c00 := matrix.get(rcC, 0, 0)
+var float __obs_c01 = na
+__obs_c01 := matrix.get(rcC, 0, 1)
+var float __obs_c10 = na
+__obs_c10 := matrix.get(rcC, 1, 0)
+var float __obs_c11 = na
+__obs_c11 := matrix.get(rcC, 1, 1)
+
+// D: n=2 disc==0 정확히(리터럴, tr=4, det=4) — 두 고유값 모두 2.0으로 겹치고, mat[0][0]=3-2=1!=0
+// (비율 분기, 비대각=1이라 비율=-1로 비자명한 값) — 매 바 정확히 동일한 값.
+mdD = matrix.new<float>(2, 2, 0.0)
+matrix.set(mdD, 0, 0, 3.0)
+matrix.set(mdD, 0, 1, 1.0)
+matrix.set(mdD, 1, 0, -1.0)
+matrix.set(mdD, 1, 1, 1.0)
+rdD = matrix.eigenvectors(mdD)
+var float __obs_d00 = na
+__obs_d00 := matrix.get(rdD, 0, 0)
+var float __obs_d01 = na
+__obs_d01 := matrix.get(rdD, 0, 1)
+var float __obs_d10 = na
+__obs_d10 := matrix.get(rdD, 1, 0)
+var float __obs_d11 = na
+__obs_d11 := matrix.get(rdD, 1, 1)
+
+// E: n=3(bar-derived 대각, 비대각은 무관) — 고정 [1,0,0]을 evals 개수(3개)만큼 반복하는지 확인.
+meE = matrix.new<float>(3, 3, 0.0)
+matrix.set(meE, 0, 0, open + 0.0)
+matrix.set(meE, 1, 1, high + 0.0)
+matrix.set(meE, 2, 2, low + 0.0)
+matrix.set(meE, 0, 1, 99.0)
+matrix.set(meE, 2, 0, -99.0)
+reE = matrix.eigenvectors(meE)
+var float __obs_e00 = na
+__obs_e00 := matrix.get(reE, 0, 0)
+var float __obs_e01 = na
+__obs_e01 := matrix.get(reE, 0, 1)
+var float __obs_e02 = na
+__obs_e02 := matrix.get(reE, 0, 2)
+var float __obs_e10 = na
+__obs_e10 := matrix.get(reE, 1, 0)
+var float __obs_e20 = na
+__obs_e20 := matrix.get(reE, 2, 0)
+
+// F: 2x3 wide(rows<columns, bar-derived 대각 구조의 왼쪽 2x2 부분행렬) — 여분 열은 건드리지 않아
+// 크래시 없이 왼쪽 nxn 부분행렬 기반 고유벡터를 그대로 반환.
+mfF = matrix.new<float>(2, 3, 0.0)
+matrix.set(mfF, 0, 0, open + 0.0)
+matrix.set(mfF, 0, 1, 0.0)
+matrix.set(mfF, 0, 2, high + 0.0)
+matrix.set(mfF, 1, 0, 0.0)
+matrix.set(mfF, 1, 1, close + 0.0)
+matrix.set(mfF, 1, 2, low + 0.0)
+rfF = matrix.eigenvectors(mfF)
+var float __obs_f00 = na
+__obs_f00 := matrix.get(rfF, 0, 0)
+var float __obs_f01 = na
+__obs_f01 := matrix.get(rfF, 0, 1)
+var float __obs_f10 = na
+__obs_f10 := matrix.get(rfF, 1, 0)
+var float __obs_f11 = na
+__obs_f11 := matrix.get(rfF, 1, 1)
+
+// G: n=2 na-embedded(close[15] — sample10 10바 범위 밖이라 매 바 항상 na) — disc/sqrt 연쇄를 타고
+// evals가 na로 수렴하면, eigenvectors의 n==2 분기도 mat[0][0]=m[0][0]-ev가 na가 돼 비교
+// (abs(mat00)>1e-10)가 항상 false로 떨어져 [1.0,0.0] 폴백으로 수렴하는지 확인(evals 값 자체가
+// na여도 eigenvectors 결과 자체는 na로 전파되지 않는 특이 케이스 — na 비교는 항상 false이므로).
+mgG = matrix.new<float>(2, 2, 0.0)
+matrix.set(mgG, 0, 0, close[15])
+matrix.set(mgG, 0, 1, open + 0.0)
+matrix.set(mgG, 1, 0, high + 0.0)
+matrix.set(mgG, 1, 1, close + 0.0)
+rgG = matrix.eigenvectors(mgG)
+var float __obs_g00 = na
+__obs_g00 := matrix.get(rgG, 0, 0)
+var float __obs_g01 = na
+__obs_g01 := matrix.get(rgG, 0, 1)
+var float __obs_g10 = na
+__obs_g10 := matrix.get(rgG, 1, 0)
+var float __obs_g11 = na
+__obs_g11 := matrix.get(rgG, 1, 1)

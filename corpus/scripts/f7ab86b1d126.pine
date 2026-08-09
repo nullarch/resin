@@ -1,0 +1,6 @@
+
+//@version=5
+indicator("CMO")
+cmoVal = ta.cmo(close, 5)
+bullMom = cmoVal > 0
+plot(cmoVal, "CMO")

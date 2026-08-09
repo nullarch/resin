@@ -1,0 +1,7 @@
+//@version=5
+indicator("Str Method")
+var s = "  Hello  "
+var s2 = str.trim(s)
+var s3 = str.lower(s2)
+var int len_ = str.length(s3)
+plot(len_)

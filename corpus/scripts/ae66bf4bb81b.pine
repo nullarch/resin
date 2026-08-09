@@ -1,0 +1,6 @@
+
+//@version=5
+indicator("Alert")
+if close > open
+    alert("Price up", alert.freq_once_per_bar)
+plot(close)

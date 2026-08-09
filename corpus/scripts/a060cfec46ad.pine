@@ -1,0 +1,6 @@
+//@version=5
+indicator("sort asc")
+var a = array.from(3.0, 1.0, 2.0)
+array.sort(a, order.ascending)
+var float first = 0.0
+first := array.get(a, 0)

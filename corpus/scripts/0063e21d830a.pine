@@ -1,0 +1,12 @@
+
+//@version=5
+strategy("Position Size", overlay=true)
+rsiVal = ta.rsi(close, 3)
+sma3 = ta.sma(close, 3)
+if rsiVal < 40 and close > sma3
+    strategy.entry("Long", strategy.long, qty=2)
+else if rsiVal < 30
+    strategy.entry("Long", strategy.long, qty=1)
+if rsiVal > 70
+    strategy.close("Long")
+plot(rsiVal, "RSI")

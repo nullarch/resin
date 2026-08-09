@@ -1,0 +1,12 @@
+//@version=5
+indicator("math_const")
+// pi/e/phi/rphi are argument-less namespace constants (bare DotAccess, not a call) — value is
+// identical on every bar, so the obs mirror just re-asserts the same constant each bar.
+var float __obs_pi = na
+__obs_pi := math.pi
+var float __obs_e = na
+__obs_e := math.e
+var float __obs_phi = na
+__obs_phi := math.phi
+var float __obs_rphi = na
+__obs_rphi := math.rphi

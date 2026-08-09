@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Sess Vols")
+var float[] sessVols = array.new_float(0)
+var float cumVol = 0.0
+var int barInSess = 0
+barInSess := barInSess + 1
+cumVol := cumVol + volume
+if barInSess >= 5
+    array.push(sessVols, cumVol)
+    if array.size(sessVols) > 5
+        array.shift(sessVols)
+    barInSess := 0
+    cumVol := 0.0
+avgSessVol = array.size(sessVols) > 0 ? array.avg(sessVols) : 0.0
+plot(avgSessVol, "ASV")

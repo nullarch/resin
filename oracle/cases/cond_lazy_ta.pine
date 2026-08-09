@@ -1,0 +1,28 @@
+//@version=5
+indicator("cond_lazy_ta")
+// C66 조건부 stateful call — 삼항/and·or lazy 위치의 eager 호이스팅 (ROADMAP P2 lazy 슬라이스).
+// **오라클 유효 범위 주의**: pine2py는 삼항을 `(A if c else B)`, and/or를 Python and/or로
+// 트랜스파일해(codegen.py _gen_expr TernaryOp/_gen_binop) 실제로 lazy 평가한다 — TV v5는 양쪽을
+// 항상 평가하므로(pine2js는 eager 호이스팅) 조건이 변하는 시나리오는 골든 자체가 TV와 갈린다
+// (DIVERGENCES.md #12, C14 'var + 제어문-식'과 같은 오라클 무효 패턴). 이 케이스는 조건을
+// 상수(전 바 T 또는 전 바 F)로 고정해 pine2py의 lazy 평가가 우연히 eager와 동치가 되게 만들어
+// 호이스팅 플러밍(코드 생성/슬롯 배선/값 결합)만 골든으로 검증한다. 조건이 변하는 갭 시나리오는
+// tests/oracle/cond_lazy_ta.test.ts의 hand-verified 트레이스가 검증한다.
+
+// 삼항 true 분기 관측(조건 항상 T: close>0). pine2js는 false 분기 ta.ema(close,3)도 매 바
+// 호출하지만 그 상태는 어떤 관측 채널에도 닿지 않아 골든과 일치한다.
+var float __obs_t = na
+__obs_t := close > 0 ? ta.ema(close, 2) : ta.ema(close, 3)
+
+// 삼항 false 분기 관측(조건 항상 F: close<0) — 반대 방향.
+var float __obs_f = na
+__obs_f := close < 0 ? ta.ema(close, 5) : ta.wma(close, 2)
+
+// and 우변(좌변 항상 T: close>0): pine2py도 우변을 매 바 평가 — 중첩 콜(sma가 crossover 인자)
+// 포함 호이스팅 배선 검증.
+var float __obs_a = na
+__obs_a := close > 0 and ta.crossover(close, ta.sma(close, 3)) ? 1.0 : 0.0
+
+// or 우변(좌변 항상 F: close<0): pine2py도 우변을 매 바 평가.
+var float __obs_o = na
+__obs_o := close < 0 or ta.rsi(close, 2) > 60 ? 1.0 : 0.0

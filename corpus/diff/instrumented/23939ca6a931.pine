@@ -1,0 +1,13 @@
+//@version=5
+indicator("SNR04")
+var float sumSignalSq = 0.0
+var float sumNoiseSq = 0.0
+signal = nz(ta.sma(close, 3), close)
+noise = close - signal
+sumSignalSq := sumSignalSq + signal * signal
+sumNoiseSq := sumNoiseSq + noise * noise
+snr = sumNoiseSq > 0.001 ? sumSignalSq / sumNoiseSq : 0.0
+snrDb = snr > 0 ? 10.0 * math.log10(snr) : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := snrDb
+plot(snrDb, "snr")

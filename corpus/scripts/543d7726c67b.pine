@@ -1,0 +1,4 @@
+//@version=5
+indicator("Test")
+arr = array.new<float>(10)
+val = arr.get(0)

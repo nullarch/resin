@@ -1,0 +1,5 @@
+
+//@version=5
+indicator("Color RGB")
+col = color.rgb(255, 0, 0, 50)
+plot(close, color=col)

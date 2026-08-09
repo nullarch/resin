@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("MA Lbl")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+trend = sma3 > sma5 ? "BULL" : "BEAR"
+position = close > sma3 ? "ABOVE" : "BELOW"
+label = trend + "_" + position
+isBullAbove = label == "BULL_ABOVE"
+var float __obs_plot0 = na
+__obs_plot0 := isBullAbove ? 1 : 0
+plot(isBullAbove ? 1 : 0, "BA")

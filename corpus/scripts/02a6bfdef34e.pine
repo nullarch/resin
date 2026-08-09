@@ -1,0 +1,9 @@
+//@version=5
+indicator("RSI Div")
+rsi = ta.rsi(close, 5)
+priceLow = ta.lowest(low, 5)
+rsiLow = ta.lowest(rsi, 5)
+prevPriceLow = ta.lowest(low[5], 5)
+prevRsiLow = ta.lowest(rsi[5], 5)
+bullDiv = not na(prevPriceLow) and not na(prevRsiLow) ? (priceLow < prevPriceLow and rsiLow > prevRsiLow ? 1 : 0) : 0
+plot(bullDiv)

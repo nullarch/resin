@@ -1,0 +1,10 @@
+//@version=5
+indicator("ta_vwap")
+// ta.vwap 오라클 검증(ROADMAP P2 "ta.* 44종"). Pine 문법상 volume 인자가 없어 내장 bar series
+// volume을 암묵 사용(vwma/mfi와 동일). 세션/anchor 리셋 없는 바0부터 전체 누적(pine2py vwap.py
+// 동일 시맨틱 — 'no session reset in backtest mode', LIMITATIONS.md 참조). 워밍업 구간이 없어
+// 바0부터 전 구간 검증됨. 콜사이트 2개(close/high)로 상태 슬롯 독립도 함께 검증.
+var float __obs_vwap_c = na
+var float __obs_vwap_h = na
+__obs_vwap_c := ta.vwap(close)
+__obs_vwap_h := ta.vwap(high)

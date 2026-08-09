@@ -1,0 +1,9 @@
+//@version=5
+indicator("Quarantine Model")
+var float transmissionRate = 0.5
+var float quarantineLevel = 0.0
+if close > 107
+    quarantineLevel := math.min(quarantineLevel + 0.1, 0.8)
+else
+    quarantineLevel := math.max(quarantineLevel - 0.05, 0.0)
+effectiveRate = transmissionRate * (1.0 - quarantineLevel)

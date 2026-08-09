@@ -1,0 +1,12 @@
+//@version=5
+indicator("UDF Var TA")
+var float result = 0.0
+
+custom_ind() =>
+    var float prev_sma = 0.0
+    sma3 = ta.sma(close, 3)
+    float current = nz(sma3, close)
+    prev_sma := current
+    current
+
+result := custom_ind()

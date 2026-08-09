@@ -1,0 +1,6 @@
+
+//@version=5
+indicator("Correlation")
+corr = ta.correlation(close, volume, 5)
+highCorr = not na(corr) and corr > 0.5
+plot(corr, "Corr")

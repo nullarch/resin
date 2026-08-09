@@ -1,0 +1,16 @@
+//@version=5
+indicator("time_vars_no_channel")
+var float __obs_time = na
+var float __obs_year = na
+var float __obs_dayofweek = na
+var float __obs_hour = na
+var float __obs_time_tradingday = na
+var float __obs_last_bar_index = na
+var float __obs_last_bar_time = na
+__obs_time := time
+__obs_year := year
+__obs_dayofweek := dayofweek
+__obs_hour := hour
+__obs_time_tradingday := time_tradingday
+__obs_last_bar_index := last_bar_index
+__obs_last_bar_time := last_bar_time

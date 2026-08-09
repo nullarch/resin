@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Level Track")
+var levels = map.new<string, float>()
+map.put(levels, "r1", ta.highest(high, 5))
+map.put(levels, "s1", ta.lowest(low, 5))
+r1 = map.get(levels, "r1", high)
+s1 = map.get(levels, "s1", low)
+mid = (r1 + s1) / 2.0
+distFromMid = close - mid
+var float __obs_plot0 = na
+__obs_plot0 := distFromMid
+plot(distFromMid, "Dist")

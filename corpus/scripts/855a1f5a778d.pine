@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Small Num")
+tiny = 0.000001
+result = close + tiny - close
+verySmall = result < 0.001
+plot(verySmall ? 1 : 0, "VS")

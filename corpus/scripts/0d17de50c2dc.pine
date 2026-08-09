@@ -1,0 +1,7 @@
+//@version=5
+indicator("Map Keys")
+var float result = 0.0
+m = map.new<string, float>()
+m.put("a", 1.0)
+m.put("b", 2.0)
+result := array.size(m.keys())

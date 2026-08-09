@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("VWAP Cross")
+vwap = ta.vwap(close)
+bullCross = ta.crossover(close, vwap)
+bearCross = ta.crossunder(close, vwap)
+above = close > vwap
+var float __obs_plot0 = na
+__obs_plot0 := above ? 1 : 0
+plot(above ? 1 : 0, "Above")
+var float __obs_plot1 = na
+__obs_plot1 := bullCross ? 1 : bearCross ? -1 : 0
+plot(bullCross ? 1 : bearCross ? -1 : 0, "Cross")

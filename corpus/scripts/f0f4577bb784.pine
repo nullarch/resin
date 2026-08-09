@@ -1,0 +1,4 @@
+//@version=5
+indicator("deep history")
+var float deep = 0.0
+deep := nz(close[5], 0.0)

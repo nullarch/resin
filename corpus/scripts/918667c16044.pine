@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Reg Conv")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+gap = math.abs(sma3 - sma5)
+est = gap
+iters = 0
+while est > 0.01 and iters < 30
+    est := est * 0.8
+    iters := iters + 1
+plot(iters, "Its")

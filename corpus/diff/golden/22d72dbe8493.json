@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:s": "pine_fn.<locals>.IndState(rsi=80.5615942029, macd=-0.0206983025, atr=5.9341563786, score=1)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:s": "pine_fn.<locals>.IndState(rsi=80.5615942029, macd=-0.0206983025, atr=5.9341563786, score=1)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:s": "pine_fn.<locals>.IndState(rsi=80.5615942029, macd=-0.0206983025, atr=5.9341563786, score=1)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:s": "pine_fn.<locals>.IndState(rsi=80.5615942029, macd=-0.0206983025, atr=5.9341563786, score=1)",
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:s": "pine_fn.<locals>.IndState(rsi=80.5615942029, macd=-0.0206983025, atr=5.9341563786, score=1)",
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:s": "pine_fn.<locals>.IndState(rsi=80.5615942029, macd=-0.0206983025, atr=5.9341563786, score=1)",
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:s": "pine_fn.<locals>.IndState(rsi=80.5615942029, macd=-0.0206983025, atr=5.9341563786, score=1)",
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:s": "pine_fn.<locals>.IndState(rsi=80.5615942029, macd=-0.0206983025, atr=5.9341563786, score=1)",
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:s": "pine_fn.<locals>.IndState(rsi=80.5615942029, macd=-0.0206983025, atr=5.9341563786, score=1)",
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:s": "pine_fn.<locals>.IndState(rsi=80.5615942029, macd=-0.0206983025, atr=5.9341563786, score=1)",
+   "var:__obs_plot0": 1
+  }
+ ],
+ "finalVarState": {
+  "s": "pine_fn.<locals>.IndState(rsi=80.5615942029, macd=-0.0206983025, atr=5.9341563786, score=1)",
+  "__obs_plot0": 1
+ }
+}

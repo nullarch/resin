@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Inv Vol")
+atr = ta.atr(3)
+invVol = atr > 0 ? 1.0 / atr : 0.0
+totalInvVol = invVol + (atr > 0 ? 1.0 / (atr * 1.5) : 0.0)
+weight = totalInvVol > 0 ? invVol / totalInvVol : 0.5
+var float __obs_plot0 = na
+__obs_plot0 := weight
+plot(weight, "Weight")

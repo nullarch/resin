@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Map Compare")
+var prev = map.new<string, float>()
+var curr = map.new<string, float>()
+map.put(prev, "close", map.get(curr, "close", close))
+map.put(curr, "close", close)
+map.put(curr, "rsi", ta.rsi(close, 3))
+prevClose = map.get(prev, "close", close)
+change = close - prevClose
+var float __obs_plot0 = na
+__obs_plot0 := change
+plot(change, "Change")

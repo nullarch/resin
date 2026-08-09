@@ -1,0 +1,36 @@
+//@version=5
+indicator("syminfo_basic")
+// syminfo.*(14종) 오라클 검증 (ROADMAP P2 "barstate/session/syminfo/timeframe" 두 번째 슬라이스).
+// 전부 pine2py wavealgo/builtins/syminfo.py의 @dataclass 기본값 그대로 고정된 컴파일타임 상수라
+// math_const.pine/color_basic.pine과 동일하게 바 데이터와 무관하게 매 바 동일값. country/
+// volumetype은 pine2py codegen.py IDENTIFIER_MAP에 매핑이 없어(bare "syminfo" 식별자 자체가
+// 미등록, 오라클 불가) 제외 — LIMITATIONS.md 참조.
+var string __obs_ticker = na
+var string __obs_tickerid = na
+var string __obs_prefix = na
+var string __obs_root = na
+var string __obs_description = na
+var string __obs_type = na
+var string __obs_basecurrency = na
+var string __obs_currency = na
+var string __obs_timezone = na
+var string __obs_session = na
+var float __obs_mintick = na
+var float __obs_minmove = na
+var float __obs_pointvalue = na
+var float __obs_pricescale = na
+
+__obs_ticker := syminfo.ticker
+__obs_tickerid := syminfo.tickerid
+__obs_prefix := syminfo.prefix
+__obs_root := syminfo.root
+__obs_description := syminfo.description
+__obs_type := syminfo.type
+__obs_basecurrency := syminfo.basecurrency
+__obs_currency := syminfo.currency
+__obs_timezone := syminfo.timezone
+__obs_session := syminfo.session
+__obs_mintick := syminfo.mintick
+__obs_minmove := syminfo.minmove
+__obs_pointvalue := syminfo.pointvalue
+__obs_pricescale := syminfo.pricescale

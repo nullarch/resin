@@ -1,0 +1,4 @@
+//@version=5
+indicator("Security expr")
+dailySMA = request.security(syminfo.tickerid, "D", ta.sma(close, 5))
+weeklyRSI = request.security(syminfo.tickerid, "W", ta.rsi(close, 5))

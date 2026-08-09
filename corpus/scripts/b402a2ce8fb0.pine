@@ -1,0 +1,9 @@
+//@version=5
+indicator("Map Contains")
+var m = map.new<string, float>()
+map.put(m, "x", 42.0)
+var bool has_x = map.contains(m, "x")
+map.remove(m, "x")
+var bool after = map.contains(m, "x")
+var float val = has_x ? 1.0 : 0.0
+plot(val)

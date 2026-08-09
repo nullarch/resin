@@ -1,0 +1,7 @@
+//@version=5
+indicator("Plus 3")
+x = close +
+    open +
+    high +
+    low
+plot(x / 4)

@@ -1,0 +1,7 @@
+//@version=5
+indicator("test")
+int x = 5
+x := x + 1
+var float __obs_plot0 = na
+__obs_plot0 := x
+plot(x)

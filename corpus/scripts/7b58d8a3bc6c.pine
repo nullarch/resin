@@ -1,0 +1,8 @@
+//@version=5
+indicator("Cascade")
+var float innerState = 100.0
+var float outerState = 100.0
+float innerTarget = close
+innerState := 0.5 * innerTarget + 0.5 * innerState
+float outerTarget = innerState
+outerState := 0.2 * outerTarget + 0.8 * outerState

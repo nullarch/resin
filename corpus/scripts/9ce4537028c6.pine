@@ -1,0 +1,12 @@
+
+//@version=5
+strategy("Pattern Strat", overlay=true)
+bullBar = close > open
+prevBear = not na(close[1]) and close[1] < open[1]
+reversal = prevBear and bullBar and close > high[1]
+sma3 = ta.sma(close, 3)
+if reversal and close > sma3
+    strategy.entry("Long", strategy.long)
+if close < sma3
+    strategy.close("Long")
+plot(sma3, "MA")

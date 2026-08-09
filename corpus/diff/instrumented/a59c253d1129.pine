@@ -1,0 +1,8 @@
+//@version=5
+indicator("Mom Hist")
+mom = close - close[3]
+prevMom = mom[1]
+accel = mom - nz(prevMom)
+var float __obs_plot0 = na
+__obs_plot0 := accel
+plot(accel)

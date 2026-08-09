@@ -1,0 +1,10 @@
+//@version=5
+indicator("Multi TA Div")
+rsiVal = ta.rsi(close, 5)
+atrVal = ta.atr(high, low, close, 5)
+ratio = rsiVal / 100
+atrNorm = atrVal / close
+combined = ratio + atrNorm
+var float __obs_plot0 = na
+__obs_plot0 := combined
+plot(combined)

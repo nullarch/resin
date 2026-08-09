@@ -1,0 +1,11 @@
+//@version=5
+indicator("GammaProxy")
+c0 = close
+c1 = nz(close[1], close)
+c2 = nz(close[2], close)
+firstDeriv = c0 - c1
+secondDeriv = (c0 - 2.0 * c1 + c2)
+gammaProxy = math.abs(secondDeriv)
+var float __obs_plot0 = na
+__obs_plot0 := gammaProxy
+plot(gammaProxy, "Gamma")

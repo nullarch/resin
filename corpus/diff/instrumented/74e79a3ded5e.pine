@@ -1,0 +1,11 @@
+//@version=5
+indicator("Emax Dose-Response")
+emax = 100.0
+ec50 = 50.0
+dose = nz(ta.rsi(close, 5), 50.0)
+effect = dose > 0 ? (emax * dose) / (ec50 + dose) : 0.0
+hillCoeff = 1.5
+effectHill = dose > 0 ? (emax * math.pow(dose, hillCoeff)) / (math.pow(ec50, hillCoeff) + math.pow(dose, hillCoeff)) : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := effectHill
+plot(effectHill)

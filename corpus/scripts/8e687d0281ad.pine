@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Pivot")
+pivot = (high + low + close) / 3
+r1 = 2 * pivot - low
+s1 = 2 * pivot - high
+plot(pivot, "P")
+plot(r1, "R1")

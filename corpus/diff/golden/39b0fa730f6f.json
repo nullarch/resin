@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:at": "pine_fn.<locals>.AllTypes(fVal=Series(current=111, length=10), iVal=80, bVal=True, sVal='up')",
+   "var:__obs_plot0": 103,
+   "var:__obs_plot1": 50
+  },
+  {
+   "var:at": "pine_fn.<locals>.AllTypes(fVal=Series(current=111, length=10), iVal=80, bVal=True, sVal='up')",
+   "var:__obs_plot0": 104,
+   "var:__obs_plot1": 50
+  },
+  {
+   "var:at": "pine_fn.<locals>.AllTypes(fVal=Series(current=111, length=10), iVal=80, bVal=True, sVal='up')",
+   "var:__obs_plot0": 102,
+   "var:__obs_plot1": 33
+  },
+  {
+   "var:at": "pine_fn.<locals>.AllTypes(fVal=Series(current=111, length=10), iVal=80, bVal=True, sVal='up')",
+   "var:__obs_plot0": 105,
+   "var:__obs_plot1": 73
+  },
+  {
+   "var:at": "pine_fn.<locals>.AllTypes(fVal=Series(current=111, length=10), iVal=80, bVal=True, sVal='up')",
+   "var:__obs_plot0": 107,
+   "var:__obs_plot1": 83
+  },
+  {
+   "var:at": "pine_fn.<locals>.AllTypes(fVal=Series(current=111, length=10), iVal=80, bVal=True, sVal='up')",
+   "var:__obs_plot0": 106,
+   "var:__obs_plot1": 65
+  },
+  {
+   "var:at": "pine_fn.<locals>.AllTypes(fVal=Series(current=111, length=10), iVal=80, bVal=True, sVal='up')",
+   "var:__obs_plot0": 108,
+   "var:__obs_plot1": 78
+  },
+  {
+   "var:at": "pine_fn.<locals>.AllTypes(fVal=Series(current=111, length=10), iVal=80, bVal=True, sVal='up')",
+   "var:__obs_plot0": 110,
+   "var:__obs_plot1": 86
+  },
+  {
+   "var:at": "pine_fn.<locals>.AllTypes(fVal=Series(current=111, length=10), iVal=80, bVal=True, sVal='up')",
+   "var:__obs_plot0": 109,
+   "var:__obs_plot1": 67
+  },
+  {
+   "var:at": "pine_fn.<locals>.AllTypes(fVal=Series(current=111, length=10), iVal=80, bVal=True, sVal='up')",
+   "var:__obs_plot0": 111,
+   "var:__obs_plot1": 80
+  }
+ ],
+ "finalVarState": {
+  "at": "pine_fn.<locals>.AllTypes(fVal=Series(current=111, length=10), iVal=80, bVal=True, sVal='up')",
+  "__obs_plot0": 111,
+  "__obs_plot1": 80
+ }
+}

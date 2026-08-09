@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_v1": 101,
+   "var:__obs_v2": 101,
+   "var:__obs_v3": 101
+  },
+  {
+   "var:__obs_v1": 102,
+   "var:__obs_v2": 102,
+   "var:__obs_v3": 102
+  },
+  {
+   "var:__obs_v1": 103,
+   "var:__obs_v2": 103,
+   "var:__obs_v3": 103
+  },
+  {
+   "var:__obs_v1": 102,
+   "var:__obs_v2": 102,
+   "var:__obs_v3": 102
+  },
+  {
+   "var:__obs_v1": 104,
+   "var:__obs_v2": 104,
+   "var:__obs_v3": 104
+  },
+  {
+   "var:__obs_v1": 105,
+   "var:__obs_v2": 105,
+   "var:__obs_v3": 105
+  },
+  {
+   "var:__obs_v1": 106,
+   "var:__obs_v2": 106,
+   "var:__obs_v3": 106
+  },
+  {
+   "var:__obs_v1": 105,
+   "var:__obs_v2": 105,
+   "var:__obs_v3": 105
+  },
+  {
+   "var:__obs_v1": 107,
+   "var:__obs_v2": 107,
+   "var:__obs_v3": 107
+  },
+  {
+   "var:__obs_v1": 108,
+   "var:__obs_v2": 108,
+   "var:__obs_v3": 108
+  }
+ ],
+ "finalVarState": {
+  "__obs_v1": 108,
+  "__obs_v2": 108,
+  "__obs_v3": 108
+ }
+}

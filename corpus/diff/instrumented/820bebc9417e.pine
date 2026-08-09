@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("Manual EMA")
+period = 5
+alpha = 2.0 / (period + 1)
+var float ema = na
+if na(ema)
+    ema := close
+else
+    ema := alpha * close + (1 - alpha) * ema
+builtinEMA = ta.ema(close, 5)
+diff = math.abs(ema - builtinEMA)
+var float __obs_plot0 = na
+__obs_plot0 := ema
+plot(ema, "ManualEMA")
+var float __obs_plot1 = na
+__obs_plot1 := diff
+plot(diff, "Diff")

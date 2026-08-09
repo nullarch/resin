@@ -1,0 +1,8 @@
+//@version=5
+indicator("NS-09 Turbulence")
+smaClose = ta.sma(close, 5)
+devClose = nz(ta.stdev(close, 5), 0.01)
+meanAbs = nz(smaClose, 1.0)
+absM = math.abs(meanAbs)
+turbulence = absM > 0.01 ? devClose / absM : 0.0
+plot(turbulence)

@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("UDT TA")
+type Signal
+    float value = 0.0
+    bool active = false
+
+getSignal() =>
+    s = Signal.new()
+    s.value := ta.rsi(close, 14)
+    s.active := s.value > 50
+    s
+
+sig = getSignal()
+plot(sig.value)

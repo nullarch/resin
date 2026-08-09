@@ -1,0 +1,6 @@
+//@version=5
+indicator("HAVING Clause")
+avg5 = ta.sma(close, 5)
+var int groups_passing = 0
+if not na(avg5) and avg5 > 105.0
+    groups_passing := groups_passing + 1

@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("ZScore")
+mean = ta.sma(close, 5)
+sd = ta.stdev(close, 5)
+zscore = sd > 0 ? (close - mean) / sd : 0.0
+extreme = math.abs(zscore) > 2.0
+var float __obs_plot0 = na
+__obs_plot0 := zscore
+plot(zscore, "Z")
+var float __obs_plot1 = na
+__obs_plot1 := extreme ? 1 : 0
+plot(extreme ? 1 : 0, "Extreme")

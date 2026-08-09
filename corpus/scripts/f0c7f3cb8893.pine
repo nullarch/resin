@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Map Str")
+var m = map.new<string, string>()
+dir = close > open ? "bull" : "bear"
+map.put(m, "current", dir)
+map.put(m, "prev", nz(map.get(m, "current", ""), "none"))
+val = map.get(m, "current", "")
+isBull = val == "bull"
+plot(isBull ? 1 : 0, "Bull")

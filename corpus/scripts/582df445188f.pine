@@ -1,0 +1,35 @@
+
+//@version=5
+indicator("Portfolio Tracker")
+type Signal
+    string name = ""
+    float score = 0.0
+
+var float[] history = array.new_float(0)
+var int barCount = 0
+barCount := barCount + 1
+
+// Indicators
+sma3 = ta.sma(close, 3)
+rsiVal = ta.rsi(close, 3)
+atrVal = ta.atr(3)
+
+// Scoring
+trendScore = close > sma3 ? 1.0 : -1.0
+momScore = rsiVal > 50 ? 1.0 : -1.0
+totalScore = trendScore + momScore
+
+// Track in array
+array.push(history, totalScore)
+
+// Map summary
+var m = map.new<string, float>()
+map.put(m, "score", totalScore)
+map.put(m, "atr", atrVal)
+map.put(m, "bars", float(barCount))
+
+// Signal
+sig = Signal.new("main", totalScore)
+
+plot(totalScore, "Score")
+plot(array.size(history), "History")

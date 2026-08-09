@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_stdev1": "NaN",
+   "var:__obs_stdev2": 0.0,
+   "var:__obs_sum1": 102.0,
+   "var:__obs_sum2": 101.0
+  },
+  {
+   "var:__obs_stdev1": "NaN",
+   "var:__obs_stdev2": 0.5,
+   "var:__obs_sum1": 205.0,
+   "var:__obs_sum2": 203.0
+  },
+  {
+   "var:__obs_stdev1": 0.8164965809,
+   "var:__obs_stdev2": 0.0,
+   "var:__obs_sum1": 309.0,
+   "var:__obs_sum2": 306.0
+  },
+  {
+   "var:__obs_stdev1": 0.5,
+   "var:__obs_stdev2": 0.5,
+   "var:__obs_sum1": 207.0,
+   "var:__obs_sum2": 408.0
+  },
+  {
+   "var:__obs_stdev1": 0.0,
+   "var:__obs_stdev2": 0.0,
+   "var:__obs_sum1": 105.0,
+   "var:__obs_sum2": 512.0
+  },
+  {
+   "var:__obs_stdev1": 1.166190379,
+   "var:__obs_stdev2": 0.5,
+   "var:__obs_sum1": 521.0,
+   "var:__obs_sum2": 617.0
+  },
+  {
+   "var:__obs_stdev1": 1.4790199458,
+   "var:__obs_stdev2": 0.0,
+   "var:__obs_sum1": 421.0,
+   "var:__obs_sum2": 723.0
+  },
+  {
+   "var:__obs_stdev1": 0.4714045208,
+   "var:__obs_stdev2": 0.5,
+   "var:__obs_sum1": 319.0,
+   "var:__obs_sum2": 828.0
+  },
+  {
+   "var:__obs_stdev1": 1.0,
+   "var:__obs_stdev2": 0.0,
+   "var:__obs_sum1": 214.0,
+   "var:__obs_sum2": 935.0
+  },
+  {
+   "var:__obs_stdev1": 0.0,
+   "var:__obs_stdev2": 0.5,
+   "var:__obs_sum1": 109.0,
+   "var:__obs_sum2": 1043.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_stdev1": 0.0,
+  "__obs_stdev2": 0.5,
+  "__obs_sum1": 109.0,
+  "__obs_sum2": 1043.0
+ }
+}

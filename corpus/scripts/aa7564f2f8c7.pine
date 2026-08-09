@@ -1,0 +1,14 @@
+
+//@version=5
+strategy("IB Break")
+var float ibHigh = 0.0
+var int barNum = 0
+barNum := barNum + 1
+if barNum <= 2
+    if high > ibHigh
+        ibHigh := high
+if barNum > 2 and close > ibHigh and ibHigh > 0
+    strategy.entry("Long", strategy.long)
+if barNum > 5
+    strategy.close("Long")
+plot(ibHigh, "IBH")

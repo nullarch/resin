@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Max Idx")
+vals = array.from(close, open, high, low, volume)
+maxVal = -999999.0
+maxIdx = 0
+for [idx, val] in vals
+    fv = float(val)
+    if fv > maxVal
+        maxVal := fv
+        maxIdx := idx
+plot(maxIdx, "MaxIdx")

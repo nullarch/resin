@@ -1,0 +1,21 @@
+//@version=5
+strategy("EntStrat10")
+var int ups = 0
+var int downs = 0
+var int bars = 0
+bars := bars + 1
+if close > open
+    ups := ups + 1
+else
+    downs := downs + 1
+pUp = bars > 0 ? float(ups) / float(bars) : 0.5
+pDown = 1.0 - pUp
+entropy = 0.0
+if pUp > 0.01 and pDown > 0.01
+    entropy := -(pUp * math.log(pUp) + pDown * math.log(pDown))
+maxEnt = math.log(2.0)
+normEnt = maxEnt > 0 ? entropy / maxEnt : 1.0
+if normEnt < 0.8 and close > open
+    strategy.entry("TL", strategy.long)
+if normEnt < 0.8 and close < open
+    strategy.entry("TS", strategy.short)

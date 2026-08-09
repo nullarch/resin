@@ -1,0 +1,127 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:deltas": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:deltas": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:deltas": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:deltas": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:deltas": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:deltas": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:deltas": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:deltas": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:deltas": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:deltas": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:__obs_plot0": 1.0
+  }
+ ],
+ "finalVarState": {
+  "deltas": [
+   2,
+   2,
+   2,
+   2,
+   2,
+   2
+  ],
+  "__obs_plot0": 1.0
+ }
+}

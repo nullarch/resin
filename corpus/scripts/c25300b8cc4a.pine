@@ -1,0 +1,12 @@
+//@version=5
+indicator("Deep Dot")
+type Inner
+    float value = 0.0
+type Outer
+    Inner data = Inner.new()
+    float scale = 1.0
+var Outer obj = Outer.new()
+obj.data.value := close
+obj.scale := high - low
+result = obj.data.value * obj.scale
+plot(result)

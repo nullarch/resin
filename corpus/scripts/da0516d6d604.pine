@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("MA Support")
+sma5 = ta.sma(close, 5)
+dist = close - sma5
+nearMA = sma5 > 0 and math.abs(dist) / sma5 * 100 < 0.5
+bounceUp = nearMA and close > open
+plot(bounceUp ? 1 : 0, "BU")

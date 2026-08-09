@@ -1,0 +1,358 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:accFloat": [
+    101,
+    102,
+    103,
+    102,
+    104,
+    105,
+    106,
+    105,
+    107,
+    108
+   ],
+   "var:__obs_acc_size": 1,
+   "var:m": {
+    "k": 108
+   },
+   "var:__obs_map_get": 101,
+   "var:mtx": [
+    [
+     108,
+     0.0
+    ],
+    [
+     0.0,
+     0.0
+    ]
+   ],
+   "var:__obs_mtx_get": 101,
+   "var:__obs_local_sum": 10.0,
+   "var:__obs_if_local": "NaN"
+  },
+  {
+   "var:accFloat": [
+    101,
+    102,
+    103,
+    102,
+    104,
+    105,
+    106,
+    105,
+    107,
+    108
+   ],
+   "var:__obs_acc_size": 2,
+   "var:m": {
+    "k": 108
+   },
+   "var:__obs_map_get": 102,
+   "var:mtx": [
+    [
+     108,
+     0.0
+    ],
+    [
+     0.0,
+     0.0
+    ]
+   ],
+   "var:__obs_mtx_get": 102,
+   "var:__obs_local_sum": 10.0,
+   "var:__obs_if_local": "NaN"
+  },
+  {
+   "var:accFloat": [
+    101,
+    102,
+    103,
+    102,
+    104,
+    105,
+    106,
+    105,
+    107,
+    108
+   ],
+   "var:__obs_acc_size": 3,
+   "var:m": {
+    "k": 108
+   },
+   "var:__obs_map_get": 103,
+   "var:mtx": [
+    [
+     108,
+     0.0
+    ],
+    [
+     0.0,
+     0.0
+    ]
+   ],
+   "var:__obs_mtx_get": 103,
+   "var:__obs_local_sum": 10.0,
+   "var:__obs_if_local": "NaN"
+  },
+  {
+   "var:accFloat": [
+    101,
+    102,
+    103,
+    102,
+    104,
+    105,
+    106,
+    105,
+    107,
+    108
+   ],
+   "var:__obs_acc_size": 4,
+   "var:m": {
+    "k": 108
+   },
+   "var:__obs_map_get": 102,
+   "var:mtx": [
+    [
+     108,
+     0.0
+    ],
+    [
+     0.0,
+     0.0
+    ]
+   ],
+   "var:__obs_mtx_get": 102,
+   "var:__obs_local_sum": 10.0,
+   "var:__obs_if_local": 102
+  },
+  {
+   "var:accFloat": [
+    101,
+    102,
+    103,
+    102,
+    104,
+    105,
+    106,
+    105,
+    107,
+    108
+   ],
+   "var:__obs_acc_size": 5,
+   "var:m": {
+    "k": 108
+   },
+   "var:__obs_map_get": 104,
+   "var:mtx": [
+    [
+     108,
+     0.0
+    ],
+    [
+     0.0,
+     0.0
+    ]
+   ],
+   "var:__obs_mtx_get": 104,
+   "var:__obs_local_sum": 10.0,
+   "var:__obs_if_local": 104
+  },
+  {
+   "var:accFloat": [
+    101,
+    102,
+    103,
+    102,
+    104,
+    105,
+    106,
+    105,
+    107,
+    108
+   ],
+   "var:__obs_acc_size": 6,
+   "var:m": {
+    "k": 108
+   },
+   "var:__obs_map_get": 105,
+   "var:mtx": [
+    [
+     108,
+     0.0
+    ],
+    [
+     0.0,
+     0.0
+    ]
+   ],
+   "var:__obs_mtx_get": 105,
+   "var:__obs_local_sum": 10.0,
+   "var:__obs_if_local": 105
+  },
+  {
+   "var:accFloat": [
+    101,
+    102,
+    103,
+    102,
+    104,
+    105,
+    106,
+    105,
+    107,
+    108
+   ],
+   "var:__obs_acc_size": 7,
+   "var:m": {
+    "k": 108
+   },
+   "var:__obs_map_get": 106,
+   "var:mtx": [
+    [
+     108,
+     0.0
+    ],
+    [
+     0.0,
+     0.0
+    ]
+   ],
+   "var:__obs_mtx_get": 106,
+   "var:__obs_local_sum": 10.0,
+   "var:__obs_if_local": 106
+  },
+  {
+   "var:accFloat": [
+    101,
+    102,
+    103,
+    102,
+    104,
+    105,
+    106,
+    105,
+    107,
+    108
+   ],
+   "var:__obs_acc_size": 8,
+   "var:m": {
+    "k": 108
+   },
+   "var:__obs_map_get": 105,
+   "var:mtx": [
+    [
+     108,
+     0.0
+    ],
+    [
+     0.0,
+     0.0
+    ]
+   ],
+   "var:__obs_mtx_get": 105,
+   "var:__obs_local_sum": 10.0,
+   "var:__obs_if_local": 105
+  },
+  {
+   "var:accFloat": [
+    101,
+    102,
+    103,
+    102,
+    104,
+    105,
+    106,
+    105,
+    107,
+    108
+   ],
+   "var:__obs_acc_size": 9,
+   "var:m": {
+    "k": 108
+   },
+   "var:__obs_map_get": 107,
+   "var:mtx": [
+    [
+     108,
+     0.0
+    ],
+    [
+     0.0,
+     0.0
+    ]
+   ],
+   "var:__obs_mtx_get": 107,
+   "var:__obs_local_sum": 10.0,
+   "var:__obs_if_local": 107
+  },
+  {
+   "var:accFloat": [
+    101,
+    102,
+    103,
+    102,
+    104,
+    105,
+    106,
+    105,
+    107,
+    108
+   ],
+   "var:__obs_acc_size": 10,
+   "var:m": {
+    "k": 108
+   },
+   "var:__obs_map_get": 108,
+   "var:mtx": [
+    [
+     108,
+     0.0
+    ],
+    [
+     0.0,
+     0.0
+    ]
+   ],
+   "var:__obs_mtx_get": 108,
+   "var:__obs_local_sum": 10.0,
+   "var:__obs_if_local": 108
+  }
+ ],
+ "finalVarState": {
+  "accFloat": [
+   101,
+   102,
+   103,
+   102,
+   104,
+   105,
+   106,
+   105,
+   107,
+   108
+  ],
+  "__obs_acc_size": 10,
+  "m": {
+   "k": 108
+  },
+  "__obs_map_get": 108,
+  "mtx": [
+   [
+    108,
+    0.0
+   ],
+   [
+    0.0,
+    0.0
+   ]
+  ],
+  "__obs_mtx_get": 108,
+  "__obs_local_sum": 10.0,
+  "__obs_if_local": 108
+ }
+}

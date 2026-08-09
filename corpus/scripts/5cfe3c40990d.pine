@@ -1,0 +1,17 @@
+//@version=5
+indicator("TitForTat")
+var int myAction = 1
+var int oppAction = 1
+var float myScore = 0.0
+oppAction := close > nz(close[1], close) ? 1 : 0
+if myAction == 1 and oppAction == 1
+    myScore := myScore + 3.0
+else if myAction == 1 and oppAction == 0
+    myScore := myScore + 0.0
+else if myAction == 0 and oppAction == 1
+    myScore := myScore + 5.0
+else
+    myScore := myScore + 1.0
+myAction := oppAction
+plot(myScore, "Score")
+plot(float(myAction), "Act")

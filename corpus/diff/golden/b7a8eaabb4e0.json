@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:s": "He said hello",
+   "var:len_": 13,
+   "var:__obs_plot0": 103
+  },
+  {
+   "var:s": "He said hello",
+   "var:len_": 13,
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:s": "He said hello",
+   "var:len_": 13,
+   "var:__obs_plot0": 102
+  },
+  {
+   "var:s": "He said hello",
+   "var:len_": 13,
+   "var:__obs_plot0": 105
+  },
+  {
+   "var:s": "He said hello",
+   "var:len_": 13,
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:s": "He said hello",
+   "var:len_": 13,
+   "var:__obs_plot0": 106
+  },
+  {
+   "var:s": "He said hello",
+   "var:len_": 13,
+   "var:__obs_plot0": 108
+  },
+  {
+   "var:s": "He said hello",
+   "var:len_": 13,
+   "var:__obs_plot0": 110
+  },
+  {
+   "var:s": "He said hello",
+   "var:len_": 13,
+   "var:__obs_plot0": 109
+  },
+  {
+   "var:s": "He said hello",
+   "var:len_": 13,
+   "var:__obs_plot0": 111
+  }
+ ],
+ "finalVarState": {
+  "s": "He said hello",
+  "len_": 13,
+  "__obs_plot0": 111
+ }
+}

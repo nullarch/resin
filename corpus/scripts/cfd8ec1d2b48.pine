@@ -1,0 +1,9 @@
+//@version=5
+indicator("UDF Switch Return")
+classify(x) =>
+    switch
+        x > 110 => 3
+        x > 105 => 2
+        => 1
+var int result = 0
+result := classify(close)

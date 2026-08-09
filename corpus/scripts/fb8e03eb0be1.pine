@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Div Type")
+rsi = nz(ta.rsi(close, 3), 50.0)
+priceDir = close > close[1] ? 1 : -1
+rsiDir = rsi > 50 ? 1 : -1
+divType = switch
+    priceDir == 1 and rsiDir == -1 => "bear_regular"
+    priceDir == -1 and rsiDir == 1 => "bull_regular"
+    priceDir == 1 and rsiDir == 1 => "confirm_bull"
+    => "confirm_bear"
+isDiv = divType == "bear_regular" or divType == "bull_regular"
+plot(isDiv ? 1 : 0, "D")

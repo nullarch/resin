@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("Thresh Map")
+var tm = map.new<string, float>()
+map.put(tm, "rsi_ob", 70.0)
+map.put(tm, "rsi_os", 30.0)
+map.put(tm, "atr_hi", 2.5)
+breaches = 0
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = nz(ta.atr(3), 1.0)
+for [k, v] in tm
+    if k == "rsi_ob" and rsi > v
+        breaches := breaches + 1
+    if k == "rsi_os" and rsi < v
+        breaches := breaches + 1
+    if k == "atr_hi" and atr > v
+        breaches := breaches + 1
+plot(breaches, "Br")

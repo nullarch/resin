@@ -1,0 +1,10 @@
+//@version=5
+indicator("Phase Gate")
+float rsiVal = nz(ta.rsi(close, 5), 50.0)
+float angle = rsiVal / 100.0 * 3.14159
+float cosAngle = math.cos(angle)
+float sinAngle = math.sin(angle)
+float inputX = close - nz(ta.sma(close, 3), close)
+float inputY = high - low
+float rotX = inputX * cosAngle - inputY * sinAngle
+float rotY = inputX * sinAngle + inputY * cosAngle

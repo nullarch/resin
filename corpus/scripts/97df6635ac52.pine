@@ -1,0 +1,5 @@
+//@version=5
+indicator("Import Test")
+import PineCoders/ta/1 as PCta
+var float result = 0.0
+result := close

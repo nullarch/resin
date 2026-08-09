@@ -1,0 +1,93 @@
+//@version=5
+indicator("array_slice_ops")
+
+// sample10.json invariant: low < open < close < high on every bar (strictly, no ties) — makes
+// sort/reverse fully deterministic bar-by-bar without needing literal-only data.
+
+// A: array.sort(id) — ascending default. Pushed out of order, expect [low, open, close, high].
+arrA = array.new_float(0)
+array.push(arrA, open)
+array.push(arrA, high)
+array.push(arrA, low)
+array.push(arrA, close)
+array.sort(arrA)
+var float __obs_a0 = na
+__obs_a0 := array.get(arrA, 0)
+var float __obs_a3 = na
+__obs_a3 := array.get(arrA, 3)
+
+// B: array.sort(id, order.descending) — expect [high, close, open, low].
+arrB = array.new_float(0)
+array.push(arrB, open)
+array.push(arrB, high)
+array.push(arrB, low)
+array.push(arrB, close)
+array.sort(arrB, order.descending)
+var float __obs_b0 = na
+__obs_b0 := array.get(arrB, 0)
+var float __obs_b3 = na
+__obs_b3 := array.get(arrB, 3)
+
+// C: array.reverse(id) — pushed [open, high, low, close], expect [close, low, high, open].
+arrC = array.new_float(0)
+array.push(arrC, open)
+array.push(arrC, high)
+array.push(arrC, low)
+array.push(arrC, close)
+array.reverse(arrC)
+var float __obs_c0 = na
+__obs_c0 := array.get(arrC, 0)
+var float __obs_c3 = na
+__obs_c3 := array.get(arrC, 3)
+
+// D: array.slice(id, index_from, index_to) — explicit range and index_from-only (default index_to).
+arrD = array.new_float(0)
+array.push(arrD, open)
+array.push(arrD, high)
+array.push(arrD, low)
+array.push(arrD, close)
+array.push(arrD, 999.0)
+slicedD = array.slice(arrD, 1, 3)
+var float __obs_d_size = na
+__obs_d_size := array.size(slicedD)
+var float __obs_d0 = na
+__obs_d0 := array.get(slicedD, 0)
+var float __obs_d1 = na
+__obs_d1 := array.get(slicedD, 1)
+slicedD2 = array.slice(arrD, 2)
+var float __obs_d2_size = na
+__obs_d2_size := array.size(slicedD2)
+var float __obs_d2_last = na
+__obs_d2_last := array.get(slicedD2, 2)
+slicedDAll = array.slice(arrD)
+var float __obs_dall_size = na
+__obs_dall_size := array.size(slicedDAll)
+
+// E: array.concat(id1, id2) — two 2-element arrays joined into a new 4-element array.
+arrE1 = array.new_float(0)
+array.push(arrE1, open)
+array.push(arrE1, high)
+arrE2 = array.new_float(0)
+array.push(arrE2, low)
+array.push(arrE2, close)
+concatE = array.concat(arrE1, arrE2)
+var float __obs_e_size = na
+__obs_e_size := array.size(concatE)
+var float __obs_e0 = na
+__obs_e0 := array.get(concatE, 0)
+var float __obs_e3 = na
+__obs_e3 := array.get(concatE, 3)
+
+// F: array.copy(id) — new array independent from the source (growing the copy must not grow the
+// original).
+arrF = array.new_float(0)
+array.push(arrF, open)
+array.push(arrF, high)
+copiedF = array.copy(arrF)
+array.push(copiedF, 999.0)
+var float __obs_f_copy_size = na
+__obs_f_copy_size := array.size(copiedF)
+var float __obs_f_src_size = na
+__obs_f_src_size := array.size(arrF)
+var float __obs_f_copy2 = na
+__obs_f_copy2 := array.get(copiedF, 2)

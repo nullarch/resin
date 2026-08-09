@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Risk Lvl")
+enum RiskLevel
+    Conservative = 1
+    Moderate = 2
+    Aggressive = 3
+
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+ratio = avgATR > 0 ? atr / avgATR : 1.0
+level = ratio > 1.5 ? RiskLevel.Conservative : ratio > 1.0 ? RiskLevel.Moderate : RiskLevel.Aggressive
+sizeMultiplier = level == RiskLevel.Conservative ? 0.5 : level == RiskLevel.Moderate ? 0.75 : 1.0
+plot(sizeMultiplier, "SM")

@@ -1,0 +1,10 @@
+//@version=5
+indicator("NS-10 Bernoulli")
+var float kinetic = 0.0
+if not na(close[1])
+    vel = close - close[1]
+    kinetic := 0.5 * vel * vel
+potential = close / 100.0
+pressureE = volume / 10000.0
+totalEnergy = kinetic + potential + pressureE
+plot(totalEnergy)

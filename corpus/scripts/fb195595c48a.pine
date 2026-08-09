@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Risk Metrics")
+var rm = map.new<string, float>()
+atr = ta.atr(3)
+map.put(rm, "atr", atr)
+map.put(rm, "vol_pct", close > 0 ? atr / close * 100 : 0.0)
+map.put(rm, "risk_unit", atr > 0 ? 100.0 / atr : 0.0)
+volPct = map.get(rm, "vol_pct", 0.0)
+plot(volPct, "VolPct")

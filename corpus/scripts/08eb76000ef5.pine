@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Fcst Error")
+forecastError(float predicted, float actual) =>
+    error = actual - predicted
+    absError = math.abs(error)
+    pctError = actual != 0 ? absError / math.abs(actual) * 100 : 0.0
+    pctError
+
+ema3 = ta.ema(close, 3)
+err = forecastError(ema3, close)
+plot(err, "Err")

@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_ma": 102
+  },
+  {
+   "var:__obs_ma": 103
+  },
+  {
+   "var:__obs_ma": 104
+  },
+  {
+   "var:__obs_ma": 103
+  },
+  {
+   "var:__obs_ma": 105
+  },
+  {
+   "var:__obs_ma": 106
+  },
+  {
+   "var:__obs_ma": 107
+  },
+  {
+   "var:__obs_ma": 106
+  },
+  {
+   "var:__obs_ma": 108
+  },
+  {
+   "var:__obs_ma": 109
+  }
+ ],
+ "finalVarState": {
+  "__obs_ma": 109
+ }
+}

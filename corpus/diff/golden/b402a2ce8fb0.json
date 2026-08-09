@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:m": {},
+   "var:has_x": true,
+   "var:after": false,
+   "var:val": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:m": {},
+   "var:has_x": true,
+   "var:after": false,
+   "var:val": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:m": {},
+   "var:has_x": true,
+   "var:after": false,
+   "var:val": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:m": {},
+   "var:has_x": true,
+   "var:after": false,
+   "var:val": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:m": {},
+   "var:has_x": true,
+   "var:after": false,
+   "var:val": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:m": {},
+   "var:has_x": true,
+   "var:after": false,
+   "var:val": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:m": {},
+   "var:has_x": true,
+   "var:after": false,
+   "var:val": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:m": {},
+   "var:has_x": true,
+   "var:after": false,
+   "var:val": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:m": {},
+   "var:has_x": true,
+   "var:after": false,
+   "var:val": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:m": {},
+   "var:has_x": true,
+   "var:after": false,
+   "var:val": 1.0,
+   "var:__obs_plot0": 1.0
+  }
+ ],
+ "finalVarState": {
+  "m": {},
+  "has_x": true,
+  "after": false,
+  "val": 1.0,
+  "__obs_plot0": 1.0
+ }
+}

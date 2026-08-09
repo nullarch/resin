@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("UDT Method")
+type Stats
+    float total = 0.0
+    int count = 0
+    float avg = 0.0
+
+method update(Stats s, float val) =>
+    s.total := s.total + val
+    s.count := s.count + 1
+    s.avg := s.total / s.count
+
+var Stats st = Stats.new()
+st.update(close)
+plot(st.avg, "Avg")

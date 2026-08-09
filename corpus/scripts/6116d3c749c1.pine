@@ -1,0 +1,5 @@
+//@version=5
+indicator("Stoch")
+k = ta.stoch(close, high, low, 5)
+d = ta.sma(k, 3)
+kAboveD = not na(k) and not na(d) and nz(k) > nz(d)

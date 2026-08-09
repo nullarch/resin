@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Switch Disc")
+dir = close > open ? 1 : close < open ? -1 : 0
+result = switch dir
+    1 => close - open
+    -1 => open - close
+    => 0.0
+plot(result, "Body")

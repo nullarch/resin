@@ -1,0 +1,6 @@
+//@version=5
+indicator("Volume Analysis")
+obvVal = ta.obv(close, volume)
+adVal = ta.accdist(close, high, low, volume)
+plot(obvVal, "OBV")
+plot(adVal, "A/D")

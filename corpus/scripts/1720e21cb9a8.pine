@@ -1,0 +1,7 @@
+//@version=5
+indicator("User Var History")
+diff = close - nz(close[1], close)
+prev_diff = diff[1]
+var float result = 0.0
+result := nz(prev_diff, 0.0)
+plot(result)

@@ -1,0 +1,15 @@
+//@version=5
+indicator("while_basic")
+i = 0
+sum = 0
+while i < 10
+    i := i + 1
+    if i == 3
+        continue
+    if i == 8
+        break
+    sum := sum + i
+var float __obs_sum = na
+__obs_sum := sum
+var float __obs_i = na
+__obs_i := i

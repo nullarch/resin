@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("WMA Cross")
+wma3 = ta.wma(close, 3)
+wma5 = ta.wma(close, 5)
+bullCross = ta.crossover(wma3, wma5)
+bearCross = ta.crossunder(wma3, wma5)
+signal = bullCross ? 1 : bearCross ? -1 : 0
+plot(signal, "Signal")

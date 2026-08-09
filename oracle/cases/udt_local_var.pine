@@ -1,0 +1,26 @@
+//@version=5
+indicator("udt_local_var")
+// '=' 로컬 UDT 인스턴스 추적(C224, containerKindHints의 UDT 버전 -- array/map의 C216 이전 상태와
+// 동일했던 기존 제약 해소) 오라클 검증. udt_basic.pine이 이미 'var' 선언 UDT를 커버하므로 여기서는
+// '=' 로컬 전용 채널만 다룬다 -- pine2py는 var/​'=' 로컬 구분과 무관하게 동일한 인스턴스 속성 접근
+// (플레인 객체, 이름 기반)이라 이 구문 갈림 자체는 오라클 비교에 영향이 없다.
+
+type Bar
+    float x = 1.0
+    int n = 2
+
+// 채널 A: top-level '=' 로컬 -- 매 바 재평가되는 문장이라 매 바 새 인스턴스로 재생성된 뒤 그
+// 자리에서 필드 대입(':=')/읽기가 정상 동작하는지 확인(var 게이팅 없음, close_local이 매 바 갱신).
+p = Bar.new(close + 0.0, 10)
+p.x := p.x + 1.0
+var float __obs_p_x = na
+__obs_p_x := p.x
+var float __obs_p_n = na
+__obs_p_n := p.n
+
+// 채널 B: '=' 로컬 필드 읽기 결과를 var 누적기(ta.cum(close)와 동치인 러닝 합계)에 흘려 넣어
+// '=' 로컬 읽기가 다른 top-level 문맥(var 대입 RHS)에서도 정상 동작함을 확인.
+var float acc = 0.0
+acc := acc + p.x
+var float __obs_acc = na
+__obs_acc := acc

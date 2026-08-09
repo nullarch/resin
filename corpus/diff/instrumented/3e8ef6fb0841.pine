@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Micro UDT")
+type MicroData
+    float spread = 0.0
+    float intensity = 0.0
+    float efficiency = 0.0
+
+var MicroData md = MicroData.new()
+md.spread := high - low
+md.intensity := md.spread > 0 ? volume / md.spread : 0.0
+netMove = math.abs(close - open)
+md.efficiency := md.spread > 0 ? netMove / md.spread : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := md.efficiency
+plot(md.efficiency, "Eff")

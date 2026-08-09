@@ -1,0 +1,11 @@
+
+//@version=5
+strategy("Pullback Entry", overlay=true)
+sma5 = ta.sma(close, 5)
+rsi = ta.rsi(close, 3)
+pullback = close > sma5 and rsi < 45
+if pullback
+    strategy.entry("PB Long", strategy.long)
+if close < sma5
+    strategy.close("PB Long")
+plot(rsi, "RSI")

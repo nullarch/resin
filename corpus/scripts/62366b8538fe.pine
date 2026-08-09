@@ -1,0 +1,9 @@
+//@version=5
+strategy("EmaCrossVar")
+var int trades = 0
+fast = nz(ta.ema(close, 3), close)
+slow = nz(ta.ema(close, 5), close)
+if ta.crossover(fast, slow)
+    strategy.entry("L", strategy.long)
+    trades := trades + 1
+plot(float(trades), "T")

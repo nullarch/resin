@@ -1,0 +1,22 @@
+//@version=5
+indicator("Comprehensive Parser")
+
+type Signal
+    float var = 0.0
+    string type = "none"
+
+calc_signal(float src, int len) =>
+    ta.sma(src, len)
+
+Signal sig = Signal.new()
+float fast = calc_signal(
+    close,
+    3)
+float slow = calc_signal(close, 5)
+
+if not na(fast) and not na(slow)
+    sig.var := fast - slow
+    sig.type := fast > slow ? "bull" : "bear"
+
+var float result = 0.0
+result := sig.var

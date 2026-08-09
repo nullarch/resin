@@ -1,0 +1,6 @@
+//@version=5
+indicator("TR")
+var float lastTR = 0
+trVal = ta.tr
+if not na(trVal)
+    lastTR := trVal

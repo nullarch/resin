@@ -1,0 +1,6 @@
+//@version=5
+indicator("TR")
+var float lastTR = 0
+t = ta.tr(high, low, close)
+if not na(t)
+    lastTR := t

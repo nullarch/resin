@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:equity": 100.5,
+   "var:peak": 100.5,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:equity": 101.0,
+   "var:peak": 101.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:equity": 101.5,
+   "var:peak": 101.5,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:equity": 102.0,
+   "var:peak": 102.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:equity": 102.5,
+   "var:peak": 102.5,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:equity": 103.0,
+   "var:peak": 103.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:equity": 103.5,
+   "var:peak": 103.5,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:equity": 104.0,
+   "var:peak": 104.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:equity": 104.5,
+   "var:peak": 104.5,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:equity": 105.0,
+   "var:peak": 105.0,
+   "var:__obs_plot0": 0.0
+  }
+ ],
+ "finalVarState": {
+  "equity": 105.0,
+  "peak": 105.0,
+  "__obs_plot0": 0.0
+ }
+}

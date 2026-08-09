@@ -1,0 +1,4 @@
+//@version=5
+indicator("ModEq")
+var float result = 100
+result %= 7

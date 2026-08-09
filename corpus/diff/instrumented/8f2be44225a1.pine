@@ -1,0 +1,8 @@
+//@version=5
+indicator("Normal After")
+x = close +
+    open
+y = high - low
+var float __obs_plot0 = na
+__obs_plot0 := x + y
+plot(x + y)

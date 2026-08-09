@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Trade Log")
+type TradeEntry
+    int bar_idx = 0
+    float price = 0.0
+    string side = ""
+
+var TradeEntry lastTrade = TradeEntry.new()
+sma3 = ta.sma(close, 3)
+if ta.crossover(close, sma3)
+    lastTrade := TradeEntry.new(bar_index, close, "long")
+else if ta.crossunder(close, sma3)
+    lastTrade := TradeEntry.new(bar_index, close, "short")
+plot(lastTrade.price, "Last Price")

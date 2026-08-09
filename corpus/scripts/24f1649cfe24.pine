@@ -1,0 +1,5 @@
+//@version=5
+indicator("Temperature Anomaly")
+baseline = ta.sma(close, 5)
+anomaly = close - baseline
+plot(anomaly, title="anomaly")

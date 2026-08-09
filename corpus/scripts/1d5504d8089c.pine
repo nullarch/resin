@@ -1,0 +1,8 @@
+//@version=5
+indicator("Escape Velocity")
+mass = volume / 100.0
+radius = high - low
+escVel = radius > 0 ? math.sqrt(2.0 * mass / radius) : 0.0
+var float maxEsc = 0.0
+if escVel > maxEsc
+    maxEsc := escVel

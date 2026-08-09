@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("MFI")
+mfi = ta.mfi(close, 5)
+overbought = mfi > 80
+oversold = mfi < 20
+plot(mfi, "MFI")
+plot(overbought ? 1 : oversold ? -1 : 0, "Zone")

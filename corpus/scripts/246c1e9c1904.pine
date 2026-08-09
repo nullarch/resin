@@ -1,0 +1,7 @@
+//@version=5
+indicator("MACD Color")
+[macdLine, signalLine, hist] = ta.macd(close, 3, 5, 3)
+histColor = hist >= 0 ?
+    (hist[1] < hist ? color.green : color.lime) :
+    (hist[1] < hist ? color.red : color.maroon)
+plot(hist, color=histColor)

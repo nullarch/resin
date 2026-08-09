@@ -1,0 +1,11 @@
+//@version=5
+indicator("Switch Multi Body")
+string mode = "calc"
+var float result = 0.0
+result := switch mode
+    "calc" =>
+        float a = 10.0
+        float b = 20.0
+        a + b
+    => 0.0
+plot(result)

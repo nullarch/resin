@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Risk Adj")
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 5)
+ratio = avgATR > 0 ? atr / avgATR : 1.0
+sizeAdj = ratio > 1.5 ? 0.5 : ratio > 1.0 ? 0.75 : 1.0
+baseSize = 100.0
+adjSize = baseSize * sizeAdj
+var float __obs_plot0 = na
+__obs_plot0 := adjSize
+plot(adjSize, "AS")

@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_ymd": 1705276800000,
+   "var:__obs_ymdhms": 1705321845000,
+   "var:__obs_tz": 1705321845000,
+   "var:__obs_defaults": 1717232400000
+  },
+  {
+   "var:__obs_ymd": 1705276800000,
+   "var:__obs_ymdhms": 1705321845000,
+   "var:__obs_tz": 1705321845000,
+   "var:__obs_defaults": 1717232400000
+  },
+  {
+   "var:__obs_ymd": 1705276800000,
+   "var:__obs_ymdhms": 1705321845000,
+   "var:__obs_tz": 1705321845000,
+   "var:__obs_defaults": 1717232400000
+  },
+  {
+   "var:__obs_ymd": 1705276800000,
+   "var:__obs_ymdhms": 1705321845000,
+   "var:__obs_tz": 1705321845000,
+   "var:__obs_defaults": 1717232400000
+  },
+  {
+   "var:__obs_ymd": 1705276800000,
+   "var:__obs_ymdhms": 1705321845000,
+   "var:__obs_tz": 1705321845000,
+   "var:__obs_defaults": 1717232400000
+  },
+  {
+   "var:__obs_ymd": 1705276800000,
+   "var:__obs_ymdhms": 1705321845000,
+   "var:__obs_tz": 1705321845000,
+   "var:__obs_defaults": 1717232400000
+  },
+  {
+   "var:__obs_ymd": 1705276800000,
+   "var:__obs_ymdhms": 1705321845000,
+   "var:__obs_tz": 1705321845000,
+   "var:__obs_defaults": 1717232400000
+  },
+  {
+   "var:__obs_ymd": 1705276800000,
+   "var:__obs_ymdhms": 1705321845000,
+   "var:__obs_tz": 1705321845000,
+   "var:__obs_defaults": 1717232400000
+  },
+  {
+   "var:__obs_ymd": 1705276800000,
+   "var:__obs_ymdhms": 1705321845000,
+   "var:__obs_tz": 1705321845000,
+   "var:__obs_defaults": 1717232400000
+  },
+  {
+   "var:__obs_ymd": 1705276800000,
+   "var:__obs_ymdhms": 1705321845000,
+   "var:__obs_tz": 1705321845000,
+   "var:__obs_defaults": 1717232400000
+  }
+ ],
+ "finalVarState": {
+  "__obs_ymd": 1705276800000,
+  "__obs_ymdhms": 1705321845000,
+  "__obs_tz": 1705321845000,
+  "__obs_defaults": 1717232400000
+ }
+}

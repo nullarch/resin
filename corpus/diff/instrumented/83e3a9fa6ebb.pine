@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Period Lbl")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+shortTrend = sma3 > close[1] ? "SHORT_UP" : "SHORT_DN"
+longTrend = sma5 > 0 and sma3 > sma5 ? "LONG_UP" : "LONG_DN"
+label = shortTrend + "_" + longTrend
+isBothUp = label == "SHORT_UP_LONG_UP"
+var float __obs_plot0 = na
+__obs_plot0 := isBothUp ? 1 : 0
+plot(isBothUp ? 1 : 0, "BU")

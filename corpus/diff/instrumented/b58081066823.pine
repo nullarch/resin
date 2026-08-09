@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("ATR Trail")
+atr = nz(ta.atr(3), 1.0)
+mult = 2.0
+var float trailStop = 0.0
+newStop = close - atr * mult
+if close > trailStop and newStop > trailStop
+    trailStop := newStop
+else if close < trailStop
+    trailStop := close - atr * mult
+var float __obs_plot0 = na
+__obs_plot0 := trailStop
+plot(trailStop, "Trail")

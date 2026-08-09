@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Port Metric")
+calcSortino(float avgRet, float downDev) =>
+    downDev > 0 ? avgRet / downDev : 0.0
+
+ret = close[1] > 0 ? (close - close[1]) / close[1] : 0.0
+avgRet = ta.sma(ret, 5)
+negRet = nz(ret, 0.0) < 0 ? ret * ret : 0.0
+downDev = math.sqrt(nz(ta.sma(negRet, 5), 0.0))
+sortino = calcSortino(avgRet, downDev)
+plot(sortino, "Sort")

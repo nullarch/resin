@@ -1,0 +1,105 @@
+//@version=5
+indicator("matrix_mult")
+
+// C97: matrix.* 여덟 번째 슬라이스 — mult(행렬 대수 11종의 두 번째 항목, 39/49 -> 40/49).
+// pine2py mult()의 3분기(스칼라/벡터/행렬)를 python 직접 실행으로 검증: 스칼라 분기는 Python
+// `isinstance(nan, float)==True`라 na 스칼라도 스칼라 분기로 들어가 전 원소가 na로 오염된다
+// (literal port, G그룹). 벡터/행렬 분기는 na 원소가 dot product sum에 섞이면 그 항 전체가 na
+// (IEEE754 NaN 전파, 별도 분기 불필요 — B/D그룹). 빈 벡터([])/na 행렬 인자는 pine2py가 크래시하는
+// 미정의 지점이라 오라클로 트리거 불가(matrix.ts rt.matrix.mult 주석 참조, runtime.test.ts
+// hand-verified로 대체).
+
+// A: 2x2 mat(bar-derived) x 2x2 mat(컴파일타임 리터럴) — 표준 행렬곱 4칸 전부 검증.
+maA = matrix.new<float>(2, 2, 0.0)
+matrix.set(maA, 0, 0, open + 0.0)
+matrix.set(maA, 0, 1, high + 0.0)
+matrix.set(maA, 1, 0, low + 0.0)
+matrix.set(maA, 1, 1, close + 0.0)
+mbA = matrix.new<float>(2, 2, 0.0)
+matrix.set(mbA, 0, 0, 1.0)
+matrix.set(mbA, 0, 1, 2.0)
+matrix.set(mbA, 1, 0, 3.0)
+matrix.set(mbA, 1, 1, 4.0)
+raA = matrix.mult(maA, mbA)
+var float __obs_a00 = na
+__obs_a00 := matrix.get(raA, 0, 0)
+var float __obs_a01 = na
+__obs_a01 := matrix.get(raA, 0, 1)
+var float __obs_a10 = na
+__obs_a10 := matrix.get(raA, 1, 0)
+var float __obs_a11 = na
+__obs_a11 := matrix.get(raA, 1, 1)
+
+// B: 2x2 mat(na-embedded at [0][1] via close[15] — sample10 10바 범위 밖) x 2x2 mat(all-valid) —
+// na가 dot product에 섞이는 행(row 0)의 두 칸 모두 na, 영향 없는 row 1은 A와 동일 로직으로 유효.
+mcB = matrix.new<float>(2, 2, 0.0)
+matrix.set(mcB, 0, 0, open + 0.0)
+matrix.set(mcB, 0, 1, close[15])
+matrix.set(mcB, 1, 0, low + 0.0)
+matrix.set(mcB, 1, 1, close + 0.0)
+rbB = matrix.mult(mcB, mbA)
+var float __obs_b00 = na
+__obs_b00 := matrix.get(rbB, 0, 0)
+var float __obs_b01 = na
+__obs_b01 := matrix.get(rbB, 0, 1)
+var float __obs_b10 = na
+__obs_b10 := matrix.get(rbB, 1, 0)
+var float __obs_b11 = na
+__obs_b11 := matrix.get(rbB, 1, 1)
+
+// C: 2x2 mat(bar-derived, A그룹 maA 재사용) x vector(array.from, length 2, all-valid) — 벡터
+// 분기, 2칸 dot product.
+vC = array.from(2.0, 3.0)
+rcC = matrix.mult(maA, vC)
+var float __obs_c0 = na
+__obs_c0 := array.get(rcC, 0)
+var float __obs_c1 = na
+__obs_c1 := array.get(rcC, 1)
+
+// D: 2x2 mat(maA 재사용) x vector(array.from, length 2, na-embedded at index 1 via close[16]) —
+// 두 행 모두 na(같은 벡터를 모든 행이 공유하므로 na 인덱스가 있으면 전 행이 na로 오염).
+vD = array.from(2.0, close[16])
+rdD = matrix.mult(maA, vD)
+var float __obs_d0 = na
+__obs_d0 := array.get(rdD, 0)
+var float __obs_d1 = na
+__obs_d1 := array.get(rdD, 1)
+
+// E: 1x1 mat(bar-derived) x scalar(정상값) — 스칼라 분기 기본 검증.
+mfE = matrix.new<float>(1, 1, 0.0)
+matrix.set(mfE, 0, 0, close + 0.0)
+reE = matrix.mult(mfE, 3.0)
+var float __obs_e00 = na
+__obs_e00 := matrix.get(reE, 0, 0)
+
+// F: 1x1 mat(mfE 재사용) x na 스칼라(close[15]) — Python isinstance(nan,float)==True라 스칼라
+// 분기로 들어가 전 원소가 na(literal port, python 직접 실행 확인).
+rfF = matrix.mult(mfE, close[15])
+var float __obs_f00 = na
+__obs_f00 := matrix.get(rfF, 0, 0)
+
+// G: 2x3 mat x 3x2 mat(둘 다 컴파일타임 리터럴, 정사각 아닌 차원 조합) — 일반 차원(non-square)
+// 행렬곱 검증(k=3 내적, 결과 2x2).
+mgG = matrix.new<float>(2, 3, 0.0)
+matrix.set(mgG, 0, 0, 1.0)
+matrix.set(mgG, 0, 1, 2.0)
+matrix.set(mgG, 0, 2, 3.0)
+matrix.set(mgG, 1, 0, 4.0)
+matrix.set(mgG, 1, 1, 5.0)
+matrix.set(mgG, 1, 2, 6.0)
+mhG = matrix.new<float>(3, 2, 0.0)
+matrix.set(mhG, 0, 0, 1.0)
+matrix.set(mhG, 0, 1, 0.0)
+matrix.set(mhG, 1, 0, 0.0)
+matrix.set(mhG, 1, 1, 1.0)
+matrix.set(mhG, 2, 0, 1.0)
+matrix.set(mhG, 2, 1, 1.0)
+rgG = matrix.mult(mgG, mhG)
+var float __obs_g00 = na
+__obs_g00 := matrix.get(rgG, 0, 0)
+var float __obs_g01 = na
+__obs_g01 := matrix.get(rgG, 0, 1)
+var float __obs_g10 = na
+__obs_g10 := matrix.get(rgG, 1, 0)
+var float __obs_g11 = na
+__obs_g11 := matrix.get(rgG, 1, 1)

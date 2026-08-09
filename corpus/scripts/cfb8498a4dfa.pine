@@ -1,0 +1,7 @@
+//@version=5
+indicator("Straddle")
+strike = 106.0
+premium = 3.0
+payoff = math.abs(close - strike) - premium
+net = math.max(payoff, -premium)
+plot(net, "StraddlePnl")

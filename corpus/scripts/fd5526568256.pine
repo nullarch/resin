@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Str UDT")
+type StrTracker
+    float maxRS = 0.0
+    float minRS = 99.0
+    int strongBars = 0
+
+var StrTracker st = StrTracker.new()
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rs = sma5 > 0 ? sma3 / sma5 * 100 : 100.0
+st.maxRS := math.max(st.maxRS, rs)
+st.minRS := math.min(st.minRS, rs)
+if rs > 100
+    st.strongBars := st.strongBars + 1
+plot(st.strongBars, "SB")

@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_a": 101,
+   "var:__obs_b": 101,
+   "var:__obs_x": 101,
+   "var:__obs_y": 100,
+   "var:__obs_s": 303.0
+  },
+  {
+   "var:__obs_a": 102,
+   "var:__obs_b": 102,
+   "var:__obs_x": 102,
+   "var:__obs_y": 101,
+   "var:__obs_s": 306.0
+  },
+  {
+   "var:__obs_a": 103,
+   "var:__obs_b": 103,
+   "var:__obs_x": 103,
+   "var:__obs_y": 102,
+   "var:__obs_s": 309.0
+  },
+  {
+   "var:__obs_a": 102,
+   "var:__obs_b": 102,
+   "var:__obs_x": 102,
+   "var:__obs_y": 101,
+   "var:__obs_s": 306.0
+  },
+  {
+   "var:__obs_a": 104,
+   "var:__obs_b": 104,
+   "var:__obs_x": 104,
+   "var:__obs_y": 103,
+   "var:__obs_s": 312.0
+  },
+  {
+   "var:__obs_a": 105,
+   "var:__obs_b": 105,
+   "var:__obs_x": 105,
+   "var:__obs_y": 104,
+   "var:__obs_s": 315.0
+  },
+  {
+   "var:__obs_a": 106,
+   "var:__obs_b": 106,
+   "var:__obs_x": 106,
+   "var:__obs_y": 105,
+   "var:__obs_s": 318.0
+  },
+  {
+   "var:__obs_a": 105,
+   "var:__obs_b": 105,
+   "var:__obs_x": 105,
+   "var:__obs_y": 104,
+   "var:__obs_s": 315.0
+  },
+  {
+   "var:__obs_a": 107,
+   "var:__obs_b": 107,
+   "var:__obs_x": 107,
+   "var:__obs_y": 106,
+   "var:__obs_s": 321.0
+  },
+  {
+   "var:__obs_a": 108,
+   "var:__obs_b": 108,
+   "var:__obs_x": 108,
+   "var:__obs_y": 107,
+   "var:__obs_s": 324.0
+  }
+ ],
+ "finalVarState": {
+  "__obs_a": 108,
+  "__obs_b": 108,
+  "__obs_x": 108,
+  "__obs_y": 107,
+  "__obs_s": 324.0
+ }
+}

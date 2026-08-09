@@ -1,0 +1,7 @@
+//@version=5
+indicator("Interval Detector")
+var float interval = 0.0
+calcInterval(a, b) =>
+    math.abs(a - b)
+prevC = not na(close[1]) ? close[1] : close
+interval := calcInterval(close, prevC)

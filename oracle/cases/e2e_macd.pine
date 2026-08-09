@@ -1,0 +1,26 @@
+//@version=5
+indicator("MACD")
+// TV 빌트인 "MACD" 인디케이터 E2E 재현(ROADMAP P2 "TV 빌트인 인디케이터 15종 E2E" 첫 슬라이스,
+// 3종 중 1). ta.macd 자체의 계산은 이미 oracle/cases/ta_macd.pine(순수 __obs 미러, close 직접
+// 사용)으로 개별 검증됐다 -- 이 케이스는 그 위에 indicator()/input.int/input.source/plot()을
+// 얹어 "완성된 빌트인 스크립트" 구조 전체(다중 input 결선 + 다중 plot 슬롯 배정 + topLevel plot
+// 게이트)가 파이프라인을 통과하는지를 검증한다. fast=2/slow=3/signal=2는 ta_macd.pine과 동일
+// 파라미터를 재사용(sample10.json 10바 안에서 워밍업(바0~1)/macd만 유효(바2)/전부 유효(바3~9)를
+// 이미 커버해둔 조합 그대로 재사용 -- 새 파라미터 조합을 만들 필요가 없다).
+fastLength = input.int(2, "Fast Length")
+slowLength = input.int(3, "Slow Length")
+signalLength = input.int(2, "Signal Smoothing")
+src = input.source(close, "Source")
+
+[macdLine, signalLine, histLine] = ta.macd(src, fastLength, slowLength, signalLength)
+
+plot(histLine, "Histogram")
+plot(macdLine, "MACD")
+plot(signalLine, "Signal")
+
+var float __obs_macd = na
+var float __obs_signal = na
+var float __obs_hist = na
+__obs_macd := macdLine
+__obs_signal := signalLine
+__obs_hist := histLine

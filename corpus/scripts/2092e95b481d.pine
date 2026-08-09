@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Trend Filt")
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+trendStr = close > sma3 and sma3 > ema5 ? 2.0 : close > sma3 ? 1.0 : close < sma3 and sma3 < ema5 ? -2.0 : close < sma3 ? -1.0 : 0.0
+filtered = math.abs(trendStr) >= 2 ? trendStr : 0.0
+plot(filtered, "Filt")

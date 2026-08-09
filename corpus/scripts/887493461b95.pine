@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Div Guard")
+a = close - close
+b = high - low
+safeDiv = b > 0 ? a / b : 0.0
+safeMod = b > 0 ? math.abs(a) % b : 0.0
+plot(safeDiv, "Div")
+plot(safeMod, "Mod")

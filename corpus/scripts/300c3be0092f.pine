@@ -1,0 +1,10 @@
+//@version=5
+strategy("Trail Target Strategy")
+atr = ta.atr(3)
+longCond = ta.crossover(ta.sma(close, 3), ta.sma(close, 5))
+if longCond and not na(atr)
+    strategy.entry("L", strategy.long)
+    strategy.exit("Exit", "L",
+        profit=atr * 2,
+        loss=atr)
+plot(close)

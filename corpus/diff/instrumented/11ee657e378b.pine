@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("StrArr")
+var string[] labels = array.new_string(0)
+tag = close > open ? "UP" : "DN"
+array.push(labels, tag)
+if array.size(labels) > 5
+    array.shift(labels)
+
+totalLen = 0.0
+for i = 0 to array.size(labels) - 1
+    s = array.get(labels, i)
+    totalLen := totalLen + float(str.length(s))
+var float __obs_plot0 = na
+__obs_plot0 := totalLen
+plot(totalLen, "TL")

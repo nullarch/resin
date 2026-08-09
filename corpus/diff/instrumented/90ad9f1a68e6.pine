@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Filt Lbl")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+quality = close > sma3 and rsi > 55 ? "CONFIRMED" : close > sma3 ? "UNCONFIRMED" : "REJECTED"
+direction = close > close[1] ? "UP" : "DN"
+label = quality + "_" + direction
+isGood = label == "CONFIRMED_UP"
+var float __obs_plot0 = na
+__obs_plot0 := isGood ? 1 : 0
+plot(isGood ? 1 : 0, "G")

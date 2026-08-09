@@ -1,0 +1,12 @@
+//@version=5
+indicator("Enum Switch")
+enum Direction
+    Up = 1
+    Down = -1
+    Flat = 0
+dir = close > close[1] ? Direction.Up : close < close[1] ? Direction.Down : Direction.Flat
+val = switch dir
+    Direction.Up => ta.sma(close, 3)
+    Direction.Down => ta.ema(close, 3)
+    => close
+plot(val)

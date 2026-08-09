@@ -1,0 +1,7 @@
+//@version=5
+indicator("Box Draw", overlay=true)
+if barstate.islast
+    box.new(bar_index - 10, high, bar_index, low, border_color=close > open ? color.green : color.red)
+var float result = 0.0
+result := close
+plot(result)

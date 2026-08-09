@@ -1,0 +1,41 @@
+//@version=5
+indicator("Comprehensive Parser")
+
+type Metric
+    float val
+
+enum Mode
+    Fast = 1
+    Slow = 2
+
+method doubled(Metric m) =>
+    m.val * 2.0
+
+f_add(a, b) =>
+    a + b
+
+var float total = 0.0
+
+// compound ops
+float x = 10.0
+x += 5.0
+x *= 2.0
+
+// for + break/continue
+float sum_val = 0.0
+for i = 1 to 10
+    if i > 5
+        break
+    if i == 3
+        continue
+    sum_val := sum_val + float(i)
+
+// type + method
+met = Metric.new(25.0)
+float d = met.doubled()
+
+// UDF
+float added = f_add(x, sum_val)
+
+total := added + d
+plot(total)

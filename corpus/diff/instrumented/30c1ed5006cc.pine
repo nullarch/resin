@@ -1,0 +1,14 @@
+//@version=5
+indicator("Keltner")
+ema5 = ta.ema(close, 5)
+atr3 = ta.atr(3)
+mult = 1.5
+upperKC = nz(ema5) + nz(atr3) * mult
+lowerKC = nz(ema5) - nz(atr3) * mult
+inChannel = close <= upperKC and close >= lowerKC
+var float __obs_plot0 = na
+__obs_plot0 := upperKC
+plot(upperKC, "Upper KC")
+var float __obs_plot1 = na
+__obs_plot1 := lowerKC
+plot(lowerKC, "Lower KC")

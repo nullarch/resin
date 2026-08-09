@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:cPairs": 0,
+   "var:dPairs": 0,
+   "var:tiedPairs": 1,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:cPairs": 1,
+   "var:dPairs": 0,
+   "var:tiedPairs": 1,
+   "var:__obs_plot0": 0.5
+  },
+  {
+   "var:cPairs": 2,
+   "var:dPairs": 0,
+   "var:tiedPairs": 1,
+   "var:__obs_plot0": 0.6666666666666666
+  },
+  {
+   "var:cPairs": 3,
+   "var:dPairs": 0,
+   "var:tiedPairs": 1,
+   "var:__obs_plot0": 0.75
+  },
+  {
+   "var:cPairs": 3,
+   "var:dPairs": 1,
+   "var:tiedPairs": 1,
+   "var:__obs_plot0": 0.4
+  },
+  {
+   "var:cPairs": 4,
+   "var:dPairs": 1,
+   "var:tiedPairs": 1,
+   "var:__obs_plot0": 0.5
+  },
+  {
+   "var:cPairs": 5,
+   "var:dPairs": 1,
+   "var:tiedPairs": 1,
+   "var:__obs_plot0": 0.5714285714285714
+  },
+  {
+   "var:cPairs": 6,
+   "var:dPairs": 1,
+   "var:tiedPairs": 1,
+   "var:__obs_plot0": 0.625
+  },
+  {
+   "var:cPairs": 7,
+   "var:dPairs": 1,
+   "var:tiedPairs": 1,
+   "var:__obs_plot0": 0.6666666666666666
+  },
+  {
+   "var:cPairs": 8,
+   "var:dPairs": 1,
+   "var:tiedPairs": 1,
+   "var:__obs_plot0": 0.7
+  }
+ ],
+ "finalVarState": {
+  "cPairs": 8,
+  "dPairs": 1,
+  "tiedPairs": 1,
+  "__obs_plot0": 0.7
+ }
+}

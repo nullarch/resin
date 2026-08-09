@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Array Transform")
+src = array.from(1.0, 4.0, 9.0, 16.0, 25.0)
+float[] result = array.new_float(0)
+for val in src
+    array.push(result, math.sqrt(val))
+total = array.sum(result)
+var float __obs_plot0 = na
+__obs_plot0 := total
+plot(total, "Sum")

@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Mom UDT")
+type MomTracker
+    float peakRSI = 0.0
+    float troughRSI = 100.0
+    int bullCount = 0
+
+var MomTracker mt = MomTracker.new()
+rsi = nz(ta.rsi(close, 3), 50.0)
+mt.peakRSI := math.max(mt.peakRSI, rsi)
+mt.troughRSI := math.min(mt.troughRSI, rsi)
+if rsi > 55
+    mt.bullCount := mt.bullCount + 1
+plot(mt.bullCount, "BC")

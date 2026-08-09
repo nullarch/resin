@@ -1,0 +1,9 @@
+//@version=5
+indicator("Nonce Search")
+var int nonce_count = 0
+var bool found = false
+target = 108.0
+if not found
+    nonce_count := nonce_count + 1
+    if close >= target
+        found := true

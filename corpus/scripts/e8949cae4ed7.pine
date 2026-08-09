@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("PctRank")
+var float[] window = array.new_float(0)
+array.push(window, close)
+if array.size(window) > 5
+    array.shift(window)
+
+countBelow = 0
+sz = array.size(window)
+for i = 0 to math.max(sz - 1, 0)
+    if i < sz
+        val = array.get(window, i)
+        if val < close
+            countBelow := countBelow + 1
+pctRank = sz > 0 ? countBelow / sz * 100.0 : 50.0
+plot(pctRank, "PR")

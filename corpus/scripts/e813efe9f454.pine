@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("TR")
+trVal = ta.tr
+atrVal = ta.atr(3)
+ratio = atrVal != 0 ? trVal / atrVal : 1.0
+plot(ratio, "TR/ATR")

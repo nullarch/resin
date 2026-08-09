@@ -1,0 +1,7 @@
+//@version=5
+indicator("input all")
+len = input.int(5, "Length")
+mult = input.float(2.0, "Mult")
+title = input.string("Signal", "Title")
+show = input.bool(true, "Show")
+clr = input.color(color.blue, "Color")

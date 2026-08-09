@@ -1,0 +1,8 @@
+//@version=5
+indicator("Math Sum")
+s = math.sum(close, 3)
+var float last_s = 0.0
+last_s := nz(s)
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

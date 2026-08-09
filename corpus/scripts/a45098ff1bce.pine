@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("RSI Bands")
+rsi = nz(ta.rsi(close, 3), 50.0)
+rsiMA = ta.sma(rsi, 5)
+rsiSD = ta.stdev(rsi, 5)
+upperBand = rsiMA + rsiSD * 2
+lowerBand = rsiMA - rsiSD * 2
+overbought = rsi > upperBand
+oversold = rsi < lowerBand
+plot(rsi, "RSI")
+plot(overbought ? 1 : oversold ? -1 : 0, "Sig")

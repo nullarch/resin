@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_middle": "NaN",
+   "var:__obs_upper": "NaN",
+   "var:__obs_lower": "NaN"
+  },
+  {
+   "var:__obs_middle": "NaN",
+   "var:__obs_upper": "NaN",
+   "var:__obs_lower": "NaN"
+  },
+  {
+   "var:__obs_middle": 102.0,
+   "var:__obs_upper": 103.6329931619,
+   "var:__obs_lower": 100.3670068381
+  },
+  {
+   "var:__obs_middle": 102.3333333333,
+   "var:__obs_upper": 103.2761423749,
+   "var:__obs_lower": 101.3905242918
+  },
+  {
+   "var:__obs_middle": 103.0,
+   "var:__obs_upper": 104.6329931619,
+   "var:__obs_lower": 101.3670068381
+  },
+  {
+   "var:__obs_middle": 103.6666666667,
+   "var:__obs_upper": 106.1611049245,
+   "var:__obs_lower": 101.1722284088
+  },
+  {
+   "var:__obs_middle": 105.0,
+   "var:__obs_upper": 106.6329931619,
+   "var:__obs_lower": 103.3670068381
+  },
+  {
+   "var:__obs_middle": 105.3333333333,
+   "var:__obs_upper": 106.2761423749,
+   "var:__obs_lower": 104.3905242918
+  },
+  {
+   "var:__obs_middle": 106.0,
+   "var:__obs_upper": 107.6329931619,
+   "var:__obs_lower": 104.3670068381
+  },
+  {
+   "var:__obs_middle": 106.6666666667,
+   "var:__obs_upper": 109.1611049245,
+   "var:__obs_lower": 104.1722284088
+  }
+ ],
+ "finalVarState": {
+  "__obs_middle": 106.6666666667,
+  "__obs_upper": 109.1611049245,
+  "__obs_lower": 104.1722284088
+ }
+}

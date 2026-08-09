@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Multi State")
+var float peak = 0.0
+var float trough = 99999.0
+var int upStreak = 0
+var int dnStreak = 0
+var float cumReturn = 0.0
+peak := math.max(peak, close)
+trough := math.min(trough, close)
+ret = close[1] > 0 ? (close - close[1]) / close[1] : 0.0
+cumReturn := cumReturn + nz(ret, 0.0)
+if close > close[1]
+    upStreak := upStreak + 1
+    dnStreak := 0
+else
+    dnStreak := dnStreak + 1
+    upStreak := 0
+var float __obs_plot0 = na
+__obs_plot0 := upStreak - dnStreak
+plot(upStreak - dnStreak, "Str")

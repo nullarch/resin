@@ -1,0 +1,26 @@
+//@version=5
+indicator("udt_constructor_method_chain")
+// C632: UDT 생성자 콜에 method를 중간 변수 없이 바로 체이닝(`Type.new().method()`), wild
+// a14303e258ac.pine `SessionDays.new().from_chart()`류 최소사례(callexpr_other 표본, tuple-172
+// 클러스터). pine2py 대조: parser.py _parse_method_call의 obj가 범용 ast.Node라 obj가 CallExpr
+// (생성자 콜)이어도 obj 종류 구분 없이 그대로 파싱/실행됨(hand-verified). 스칼라/튜플 반환 폼을
+// 함께 검증한다.
+
+type Box
+    float v
+
+method scalarSum(Box this) =>
+    this.v + 1
+
+method tupleSplit(Box this) =>
+    [this.v * 2, this.v * 3]
+
+s = Box.new(close).scalarSum()
+[a, b] = Box.new(close).tupleSplit()
+
+var float __obs_s = na
+__obs_s := s
+var float __obs_a = na
+__obs_a := a
+var float __obs_b = na
+__obs_b := b

@@ -1,0 +1,4 @@
+//@version=5
+indicator("Digital Signature")
+rsi_val = nz(ta.rsi(close, 3), 50.0)
+signature_valid = rsi_val >= 20.0 and rsi_val <= 80.0 ? 1.0 : 0.0

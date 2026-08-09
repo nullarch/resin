@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "sample10.json",
+ "bars": [
+  {
+   "var:__obs_cur": "ASIAN",
+   "var:__obs_prev": "NaN",
+   "var:__obs_prev2": "NaN"
+  },
+  {
+   "var:__obs_cur": "ASIAN",
+   "var:__obs_prev": "ASIAN",
+   "var:__obs_prev2": "NaN"
+  },
+  {
+   "var:__obs_cur": "ASIAN",
+   "var:__obs_prev": "ASIAN",
+   "var:__obs_prev2": "ASIAN"
+  },
+  {
+   "var:__obs_cur": "OFF HOURS",
+   "var:__obs_prev": "ASIAN",
+   "var:__obs_prev2": "ASIAN"
+  },
+  {
+   "var:__obs_cur": "OFF HOURS",
+   "var:__obs_prev": "OFF HOURS",
+   "var:__obs_prev2": "ASIAN"
+  },
+  {
+   "var:__obs_cur": "OFF HOURS",
+   "var:__obs_prev": "OFF HOURS",
+   "var:__obs_prev2": "OFF HOURS"
+  },
+  {
+   "var:__obs_cur": "OFF HOURS",
+   "var:__obs_prev": "OFF HOURS",
+   "var:__obs_prev2": "OFF HOURS"
+  },
+  {
+   "var:__obs_cur": "OFF HOURS",
+   "var:__obs_prev": "OFF HOURS",
+   "var:__obs_prev2": "OFF HOURS"
+  },
+  {
+   "var:__obs_cur": "NEW YORK",
+   "var:__obs_prev": "OFF HOURS",
+   "var:__obs_prev2": "OFF HOURS"
+  },
+  {
+   "var:__obs_cur": "NEW YORK",
+   "var:__obs_prev": "NEW YORK",
+   "var:__obs_prev2": "OFF HOURS"
+  }
+ ],
+ "finalVarState": {
+  "__obs_cur": "NEW YORK",
+  "__obs_prev": "NEW YORK",
+  "__obs_prev2": "OFF HOURS"
+ }
+}

@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("OBV")
+var float obv = 0.0
+if close > close[1]
+    obv := obv + volume
+else if close < close[1]
+    obv := obv - volume
+obvMA = ta.sma(obv, 5)
+bullish = obv > obvMA
+plot(obv, "OBV")
+plot(bullish ? 1 : 0, "Bull")

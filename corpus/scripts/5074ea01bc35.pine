@@ -1,0 +1,6 @@
+//@version=5
+indicator("Not UDT Copy")
+var float result = 0.0
+float[] arr = array.from(1.0, 2.0, 3.0)
+float[] arr2 = array.copy(arr)
+result := array.size(arr2)

@@ -1,0 +1,5 @@
+//@version=5
+indicator("Phase ROC")
+roc = ta.roc(close, 3)
+phase = nz(roc, 0.0) > 0 ? 1 : nz(roc, 0.0) < 0 ? -1 : 0
+plot(phase)
