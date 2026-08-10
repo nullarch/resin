@@ -30,7 +30,10 @@
     "bin",
     "src",
     "scripts/ts-esm-loader-hook.mjs",
-    "API.md"
+    "API.md",
+    "README.zh-CN.md",
+    "README.ja.md",
+    "README.ko.md"
   ],
   "engines": {
     "node": ">=22.18"

@@ -20,6 +20,13 @@
 </p>
 
 <p align="center">
+  <strong>English</strong> ·
+  <a href="README.zh-CN.md">简体中文</a> ·
+  <a href="README.ja.md">日本語</a> ·
+  <a href="README.ko.md">한국어</a>
+</p>
+
+<p align="center">
   <img src="docs/hero.svg" width="640" alt="Terminal session: a Pine Script indicator is compiled to JavaScript with resin build and executed with resin run">
 </p>
 
@@ -28,7 +35,7 @@ same indicators, same series semantics, your own machine. TradingView will not
 let a script leave the platform; this is how you get it out.
 
 - **95.1%** of 10,618 real-world scripts compile ([measured, method below](#coverage-and-where-the-number-comes-from))
-- **9,822 tests**, plus a differential oracle matched to an independent
+- **9,839 tests**, plus a differential oracle matched to an independent
   implementation at 1e-9
 - **Zero runtime dependencies** — the CLI runs straight from a clone, no
   install step, no build step
