@@ -196,8 +196,9 @@ is internal and will change. See [API.md](API.md).
   `plotchar` / `plotarrow` / `plotcandle` / `plotbar`, `bgcolor` / `barcolor` /
   `hline` / `fill`, and every `label` / `line` / `box` / `table` creation come
   back under `run(result, data).viz` — or `resin run --viz out.json` from the
-  CLI. Rendering them is still your problem; `polyline`, `linefill`, `alert`
-  and `alertcondition` remain no-ops.
+  CLI. [resin-lightweight-charts](https://github.com/nullarch/resin-lightweight-charts)
+  renders that data on TradingView's own open-source charts; `polyline`,
+  `linefill`, `alert` and `alertcondition` remain no-ops.
 - **Order fills follow TradingView's documented rule — market orders at the next
   bar's open — but that has not been confirmed against TradingView itself.** The
   rule is implemented from the specification, not from a side-by-side run. If

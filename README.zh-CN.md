@@ -172,7 +172,8 @@ console.log(ctx.plots[0].toArray());
   plot 的样式与逐 K 线颜色、`plotshape` / `plotchar` / `plotarrow` / `plotcandle` /
   `plotbar`、`bgcolor` / `barcolor` / `hline` / `fill`，以及每一次 `label` / `line` /
   `box` / `table` 的创建，都会通过 `run(result, data).viz` 返回——CLI 里用
-  `resin run --viz out.json`。把它们画出来仍然是你的事；`polyline`、`linefill`、
+  `resin run --viz out.json`。[resin-lightweight-charts](https://github.com/nullarch/resin-lightweight-charts)
+  可以把这些数据画在 TradingView 自家的开源图表上；`polyline`、`linefill`、
   `alert` 和 `alertcondition` 仍是空操作。
 - **订单成交遵循 TradingView 文档所述的规则——市价单在下一根 K 线开盘成交——但这一点尚未与
   TradingView 本身对照确认。** 该规则是照着规范实现的，而不是通过并排运行验证的。如果你依赖的是

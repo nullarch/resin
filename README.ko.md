@@ -183,8 +183,10 @@ console.log(ctx.plots[0].toArray());
   캡처됩니다: plot의 스타일·바별 색, `plotshape` / `plotchar` / `plotarrow` /
   `plotcandle` / `plotbar`, `bgcolor` / `barcolor` / `hline` / `fill`, 그리고 모든
   `label` / `line` / `box` / `table` 생성이 `run(result, data).viz`로 — CLI에서는
-  `resin run --viz out.json`으로 — 돌아옵니다. 그리는 것은 여전히 당신의 몫이고,
-  `polyline`, `linefill`, `alert`, `alertcondition`은 no-op으로 남습니다.
+  `resin run --viz out.json`으로 — 돌아옵니다.
+  [resin-lightweight-charts](https://github.com/nullarch/resin-lightweight-charts)가
+  이 데이터를 TradingView 자신의 오픈소스 차트 위에 그려주며, `polyline`,
+  `linefill`, `alert`, `alertcondition`은 no-op으로 남습니다.
 - **주문 체결은 TradingView가 문서화한 규칙(시장가 주문은 다음 바 시가)을 따르지만, TradingView
   자체와 대조해 확인한 것은 아닙니다.** 규칙은 명세를 보고 구현한 것이지 나란히 돌려서 얻은
   것이 아닙니다. 지표 값이 아니라 백테스트 숫자에 의존한다면 잠정치로 취급하세요.

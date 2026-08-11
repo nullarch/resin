@@ -185,8 +185,10 @@ console.log(ctx.plots[0].toArray());
   代わりにキャプチャされます: plot のスタイルとバーごとの色、`plotshape` / `plotchar` /
   `plotarrow` / `plotcandle` / `plotbar`、`bgcolor` / `barcolor` / `hline` / `fill`、
   そしてすべての `label` / `line` / `box` / `table` の生成が `run(result, data).viz` —
-  CLI では `resin run --viz out.json` — で返ってきます。描画は依然としてあなたの仕事で、
-  `polyline`、`linefill`、`alert`、`alertcondition` は no-op のままです。
+  CLI では `resin run --viz out.json` — で返ってきます。
+  [resin-lightweight-charts](https://github.com/nullarch/resin-lightweight-charts) が
+  このデータを TradingView 自身のオープンソースチャート上に描画します。`polyline`、
+  `linefill`、`alert`、`alertcondition` は no-op のままです。
 - **注文約定は TradingView が文書化しているルール（成行は次バーの始値）に従いますが、TradingView 自身と
   突き合わせて確認したわけではありません。** ルールは仕様書から実装したものであって、並走比較から
   得たものではありません。インジケーターの値ではなくバックテストの数字に依存するのであれば、
