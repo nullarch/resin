@@ -10,6 +10,8 @@
 
 import { Context, type OHLCVData } from "./context";
 import { rt } from "./rt";
+// Type-only: erased at runtime, so no runtime cycle back into the transpiler.
+import type { TranspileOk } from "../transpiler/pipeline";
 
 export type BarSnapshot = Record<string, number>;
 
@@ -39,11 +41,30 @@ export function compile(code: string): (ctx: Context) => () => void {
   };
 }
 
+// Object form (viz S0): everything run() needs is already on TranspileOk, so take it
+// whole. The positional form below stays supported — this is an additive overload,
+// not a replacement. New slot kinds land here once instead of at every call site.
+export function run(result: TranspileOk, data: OHLCVData, opts?: { inputs?: Record<string, unknown> }): RunResult;
 export function run(
   code: string,
   varSlots: string[],
   taSlotCount: number,
   data: OHLCVData,
+  fnVarSlotCount?: number,
+  historySlotCount?: number,
+  taScratchSize?: number,
+  inputs?: Record<string, unknown>,
+  plotTitles?: string[],
+  securityTfs?: string[],
+  refHistorySlotCount?: number,
+  condCallHistorySlotCount?: number,
+  condCallRefHistorySlotCount?: number,
+): RunResult;
+export function run(
+  codeOrResult: string | TranspileOk,
+  varSlotsOrData?: string[] | OHLCVData,
+  taSlotCountOrOpts?: number | { inputs?: Record<string, unknown> },
+  positionalData?: OHLCVData,
   fnVarSlotCount: number = 0,
   historySlotCount: number = 0,
   taScratchSize: number = 0,
@@ -54,6 +75,20 @@ export function run(
   condCallHistorySlotCount: number = 0,
   condCallRefHistorySlotCount: number = 0,
 ): RunResult {
+  if (typeof codeOrResult !== "string") {
+    const r = codeOrResult;
+    const opts = (taSlotCountOrOpts as { inputs?: Record<string, unknown> } | undefined) ?? {};
+    return run(
+      r.code, r.varSlots, r.taSlotCount, varSlotsOrData as OHLCVData,
+      r.fnVarSlotCount, r.historySlotCount, r.taScratchSize, opts.inputs ?? {},
+      r.plotTitles, r.securityTfs, r.refHistorySlotCount,
+      r.condCallHistorySlotCount, r.condCallRefHistorySlotCount,
+    );
+  }
+  const code = codeOrResult;
+  const varSlots = varSlotsOrData as string[];
+  const taSlotCount = taSlotCountOrOpts as number;
+  const data = positionalData as OHLCVData;
   const ctx = new Context(
     data,
     varSlots.length,

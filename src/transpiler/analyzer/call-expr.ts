@@ -4784,6 +4784,22 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         }
       }
       prog.directives.add(expr);
+      // overlay (viz S0) — C164 default_qty_value 선례를 그대로 따르는 지시어 메타데이터 추출.
+      // library()에는 overlay 파라미터가 없으므로 제외. 값이 BoolLiteral이 아니면 조용히 false로
+      // 두는 대신 하드 에러 — 조용히 틀린 pane 배정은 조용한 오답이다(qty 선례와 동일 근거).
+      // TV 문법상 overlay는 const bool이라 리터럴 외의 표현식은 애초에 유효 Pine이 아니다.
+      if (callee.name !== "library") {
+        const overlayExpr = directiveArgExpr(expr, paramNames, "overlay");
+        if (overlayExpr !== undefined) {
+          if (overlayExpr.kind === "BoolLiteral") {
+            prog.overlay = overlayExpr.value;
+          } else {
+            prog.errors.push(
+              `'${callee.name}' overlay argument must be a true/false literal (L${expr.line}:${expr.col})`,
+            );
+          }
+        }
+      }
       // strategy.* 사용(entry/close 콜 + long/position_size류 속성)의 선행 조건 플래그(C163) —
       // 단일 패스라 "선언이 사용보다 소스에서 먼저" 규칙이 자연히 강제된다(LIMITATIONS.md).
       if (callee.name === "strategy") {

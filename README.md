@@ -35,7 +35,7 @@ same indicators, same series semantics, your own machine. TradingView will not
 let a script leave the platform; this is how you get it out.
 
 - **95.1%** of 10,618 real-world scripts compile ([measured, method below](#coverage-and-where-the-number-comes-from))
-- **9,839 tests**, plus a differential oracle matched to an independent
+- **9,848 tests**, plus a differential oracle matched to an independent
   implementation at 1e-9
 - **Zero runtime dependencies** — the CLI runs straight from a clone, no
   install step, no build step

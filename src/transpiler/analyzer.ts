@@ -2037,6 +2037,11 @@ export interface AnalyzedProgram {
   // 방출하고 그 앞 initial_capital 슬롯도 기본값으로 채운다(C129 "지정된 가장 뒤쪽 슬롯까지만 방출"
   // — 미지정 스크립트 출력 무변화). qtyIsCash(아래)와는 call-expr.ts if/else-if 구조상 상호 배타.
   strategyQtyIsPercent: boolean;
+  // indicator()/strategy()/study() 지시어에서 추출한 overlay (viz S0) — strategyDefaultQty와
+  // 동일한 "지시어 no-op 원칙의 예외 메타데이터". pane 배정(true = 메인 차트 위)의 근거로
+  // TranspileOk.viz에 실린다. TV 시그니처상 const bool이라 BoolLiteral만 수용, 미지정 시 TV
+  // 기본값 false (call-expr.ts 지시어 분기가 추출·검증).
+  overlay: boolean;
   // strategy(default_qty_type=strategy.cash) 지정 여부(C330) — default_qty_value를 계약 수가 아니라
   // **통화 금액**으로 해석(qty = 금액/체결가, equity 무관 — percent_of_equity의 "잔고 비율"과 다른 축).
   // true면 codegen이 configure 다섯 번째 인자(true)를 방출하고 네 번째(percent) 슬롯도 명시적으로
@@ -3257,6 +3262,7 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
     strategyPyramiding: null,
     strategyInitialCapital: null,
     strategyQtyIsPercent: false,
+    overlay: false,
     strategyQtyIsCash: false,
     strategyCurrency: SYMINFO_STRING_PROPS.get("currency")!,
     stmtCalls: new Set(),

@@ -23,6 +23,8 @@
 import { Series, RefSeries } from "./series";
 import { StrategyState } from "./strategy";
 import { build as buildSecurityCache, type SecurityCache } from "./security";
+// Type-only: erased at runtime, so no runtime cycle back into the transpiler.
+import type { TranspileOk } from "../transpiler/pipeline";
 
 export interface OHLCVData {
   open: ArrayLike<number>;
@@ -103,6 +105,23 @@ export class Context {
   // above (reverse access only, no raw exposure), but the cache builder needs
   // forward ArrayLike. This is the constructor argument itself — no copy.
   private rawData: OHLCVData;
+
+  // Object form (viz S0): build a Context straight from a TranspileOk instead of
+  // hand-copying its twelve slot fields into the positional constructor. The
+  // positional form stays supported; new slot kinds land here once instead of at
+  // every call site (API.md "Rough edges" — this is that overload).
+  static from(
+    result: TranspileOk,
+    data: OHLCVData,
+    opts: { inputs?: Record<string, unknown> } = {},
+  ): Context {
+    return new Context(
+      data, result.varSlots.length, result.taSlotCount, result.fnVarSlotCount,
+      result.historySlotCount, result.taScratchSize, opts.inputs ?? {},
+      result.plotTitles.length, result.securityTfs, result.refHistorySlotCount,
+      result.condCallHistorySlotCount, result.condCallRefHistorySlotCount,
+    );
+  }
 
   constructor(
     data: OHLCVData,

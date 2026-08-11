@@ -21,6 +21,11 @@ export interface TranspileOk {
   condCallHistorySlotCount: number; // size of $.condCallHistSlots — call-count history for stateful calls inside a conditional
   condCallRefHistorySlotCount: number; // size of $.condCallRefHistSlots — the same, for drawing-constructor results
   isStrategy: boolean; // whether the script declares strategy() at top level
+  // Visualization metadata (viz S0). Grows slice by slice; consumers should treat
+  // unknown future fields as additive.
+  viz: {
+    overlay: boolean; // indicator()/strategy() overlay= — true puts plots on the main chart pane
+  };
 }
 
 export interface TranspileErr {
@@ -59,5 +64,6 @@ export function transpile(source: string, options?: AnalyzeOptions): TranspileRe
     condCallHistorySlotCount: analyzed.condCallHistorySlotCount,
     condCallRefHistorySlotCount: analyzed.condCallRefHistorySlotCount,
     isStrategy: analyzed.isStrategy,
+    viz: { overlay: analyzed.overlay },
   };
 }

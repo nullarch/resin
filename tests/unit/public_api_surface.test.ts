@@ -195,9 +195,12 @@ describe("(b) API.md agrees with the code", () => {
   });
 
   it("the arity API.md claims matches the real signatures", () => {
-    expect(run.length).toBe(4); // 4 required; the other 9 have defaults, which Function.length ignores
-    expect(Context.length).toBe(3); // 3 required, 9 defaulted
-    expect(API_MD).toContain("`run()` takes 13 positional arguments and `Context` takes 12");
+    // run's implementation signature dispatches both spellings: 4 params before the
+    // first default (codeOrResult, varSlotsOrData, taSlotCountOrOpts, positionalData).
+    expect(run.length).toBe(4);
+    expect(Context.length).toBe(3); // 3 required, 9 defaulted (positional constructor)
+    expect(typeof Context.from).toBe("function"); // object form (viz S0)
+    expect(API_MD).toContain("take 13 and 12 hand-copied");
   });
 });
 
