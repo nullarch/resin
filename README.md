@@ -122,6 +122,11 @@ under mixed and often absent licenses, and redistributing it is not ours to do.
 So you cannot reproduce that specific number here — you can only reproduce the
 method, by running `resin check` over scripts you already have.
 
+The `corpus/` directory you will find here is a different set, not that survey:
+Pine fixtures taken from the reference implementation's own test suite, which the
+differential replay below runs against its golden output. Source comments that
+cite `corpus/wild/...` do mean the survey, and those paths do not resolve here.
+
 ## How it is verified
 
 Three independent checks, because a compiler that is merely self-consistent is
