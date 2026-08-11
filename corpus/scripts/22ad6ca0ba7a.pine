@@ -1,0 +1,11 @@
+//@version=5
+indicator("ExpReplay")
+rewards = array.new_float(0)
+states = array.new_float(0)
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+reward = close > open ? 1.0 : -1.0
+array.push(states, rsiVal)
+array.push(rewards, reward)
+bufSize = array.size(rewards)
+avgBufReward = bufSize > 0 ? array.sum(rewards) / float(bufSize) : 0.0
+plot(avgBufReward, "AvgBuf")

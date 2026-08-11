@@ -1,0 +1,10 @@
+//@version=5
+indicator("OU Process")
+float mu = ta.sma(close, 5)
+float theta = 0.5
+float prevC = not na(close[1]) ? close[1] : close
+float ouStep = theta * (mu - prevC)
+float ouVal = prevC + ouStep
+var float __obs_plot0 = na
+__obs_plot0 := ouVal
+plot(ouVal, "OU")

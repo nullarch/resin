@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("SM UDT")
+type StateMachine
+    int state = 0
+    int duration = 0
+    int transitions = 0
+
+var StateMachine sm = StateMachine.new()
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+newState = close > sma3 and rsi > 55 ? 1 : close < sma3 and rsi < 45 ? -1 : 0
+if newState != sm.state
+    sm.transitions := sm.transitions + 1
+    sm.duration := 0
+sm.state := newState
+sm.duration := sm.duration + 1
+plot(sm.transitions, "Tr")

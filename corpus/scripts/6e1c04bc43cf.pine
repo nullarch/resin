@@ -1,0 +1,8 @@
+//@version=5
+indicator("Fmt Multi")
+a = 100.5
+b = 200.3
+var float total = 0.0
+txt = str.format("A={0} B={1}", a, b)
+total := a + b
+plot(total)

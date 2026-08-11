@@ -1,0 +1,7 @@
+//@version=5
+indicator("Switch Expr")
+spread = high - low
+category = switch
+    spread > 8 => "wide"
+    spread > 5 => "medium"
+    => "narrow"

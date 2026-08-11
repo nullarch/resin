@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Model Params")
+var params = map.new<string, float>()
+sma3 = ta.sma(close, 3)
+map.put(params, "alpha", 0.3)
+map.put(params, "beta", 0.1)
+map.put(params, "level", sma3)
+paramSum = 0.0
+for [k, v] in params
+    paramSum := paramSum + v
+var float __obs_plot0 = na
+__obs_plot0 := paramSum
+plot(paramSum, "Sum")

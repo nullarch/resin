@@ -1,0 +1,13 @@
+//@version=5
+indicator("Homology Class")
+float diff1 = close - open
+float diff2 = high - close
+var int classCount = 0
+var int prevPattern = 0
+int curPattern = (diff1 > 0 ? 1 : 0) + (diff2 > 0 ? 2 : 0)
+if curPattern != prevPattern
+    classCount := classCount + 1
+prevPattern := curPattern
+var float __obs_plot0 = na
+__obs_plot0 := classCount
+plot(classCount, "HomClass")

@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Cov Calc")
+var float[] prices = array.new_float(0)
+var float[] vols = array.new_float(0)
+array.push(prices, close)
+array.push(vols, volume)
+if array.size(prices) > 5
+    array.shift(prices)
+    array.shift(vols)
+cov = array.size(prices) >= 2 ? array.covariance(prices, vols) : 0.0
+plot(cov, "Cov")

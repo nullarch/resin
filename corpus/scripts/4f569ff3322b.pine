@@ -1,0 +1,23 @@
+//@version=5
+strategy("AllFeat 004", overlay=true)
+getStrength(vals, sz) =>
+    s = 0.0
+    for i = 0 to sz - 1
+        s := s + array.get(vals, i)
+    s
+var scores = array.new_float(0)
+var float strength = 0.0
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+score = rsiVal > 60 ? 2.0 : rsiVal < 40 ? -2.0 : 0.0
+array.push(scores, score)
+if array.size(scores) > 5
+    array.shift(scores)
+strength := getStrength(scores, array.size(scores))
+action = switch
+    strength > 3 => "buy"
+    strength < -3 => "sell"
+    => "hold"
+if action == "buy"
+    strategy.entry("L", strategy.long)
+if action == "sell"
+    strategy.entry("S", strategy.short)

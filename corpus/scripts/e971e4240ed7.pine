@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("ZScore")
+sma20 = ta.sma(close, 5)
+stdev20 = ta.stdev(close, 5)
+zscore = stdev20 > 0 ? (close - sma20) / stdev20 : 0.0
+plot(zscore, "Z")

@@ -1,0 +1,19 @@
+//@version=5
+strategy("Combo14")
+weight(importance) =>
+    importance > 0.7 ? 2.0 : importance > 0.3 ? 1.0 : 0.5
+var int entryCount = 0
+signals = map.new<string, float>()
+map.put(signals, "rsi", nz(ta.rsi(close, 5), 50.0) / 100.0)
+map.put(signals, "sma", close > nz(ta.sma(close, 5), close) ? 0.8 : 0.2)
+map.put(signals, "vol", volume > 1100 ? 0.7 : 0.3)
+totalScore = 0.0
+for [name, val] in signals
+    w = weight(val)
+    totalScore := totalScore + w * val
+if totalScore > 2.5 and entryCount < 3
+    strategy.entry("SE", strategy.long)
+    entryCount := entryCount + 1
+else if totalScore < 1.0
+    strategy.close("SE")
+plot(totalScore, "Score")

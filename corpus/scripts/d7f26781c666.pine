@@ -1,0 +1,8 @@
+//@version=5
+indicator("Array Push Pop")
+var arr = array.new_float(0)
+array.push(arr, close)
+if array.size(arr) > 5
+    array.shift(arr)
+var int lastSize = 0
+lastSize := array.size(arr)

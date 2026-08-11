@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Every Some Adv")
+positive = array.from(1.0, 2.0, 3.0)
+mixed = array.from(1.0, 0.0, 3.0)
+allPos = array.every(positive)
+someZero = array.some(mixed)
+plot(allPos ? 1 : 0, "AllPos")
+plot(someZero ? 1 : 0, "SomeTrue")

@@ -1,0 +1,12 @@
+//@version=5
+indicator("Enum int")
+enum Level
+    Low = 1
+    Medium = 2
+    High = 3
+var lvl = Level.Low
+if close > 110
+    lvl := Level.High
+else if close > 105
+    lvl := Level.Medium
+lvlNum = int(lvl)

@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Sig Str")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+bullScore = (rsi > 55 ? 1 : 0) + (close > sma3 ? 1 : 0) + (close > open ? 1 : 0)
+strength = switch bullScore
+    3 => "strong_buy"
+    2 => "buy"
+    1 => "neutral"
+    => "sell"
+isStrong = strength == "strong_buy"
+plot(isStrong ? 1 : 0, "Str")

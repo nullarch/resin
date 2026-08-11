@@ -1,0 +1,17 @@
+//@version=5
+indicator("SEIR Model")
+var float sVal = 900.0
+var float eVal = 50.0
+var float iVal = 40.0
+var float rVal = 10.0
+float beta = 0.3
+float sigma = 0.2
+float gamma = 0.1
+float pop = 1000.0
+float newExposed = beta * sVal * iVal / pop
+float newInfectious = sigma * eVal
+float newRecov = gamma * iVal
+sVal := math.max(sVal - newExposed, 0.0)
+eVal := math.max(eVal + newExposed - newInfectious, 0.0)
+iVal := math.max(iVal + newInfectious - newRecov, 0.0)
+rVal := rVal + newRecov

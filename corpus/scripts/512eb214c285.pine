@@ -1,0 +1,20 @@
+
+//@version=5
+indicator("Osc UDT")
+type OscState
+    float rsi = 50.0
+    float stoch = 50.0
+    float composite = 50.0
+    bool divergence = false
+
+var OscState os = OscState.new()
+var float prevComp = 50.0
+os.rsi := nz(ta.rsi(close, 3), 50.0)
+os.stoch := ta.stoch(close, high, low, 5)
+newComp = (os.rsi + os.stoch) / 2
+priceUp = close > close[1]
+oscDown = newComp < prevComp
+os.divergence := not na(close[1]) and priceUp and oscDown
+prevComp := newComp
+os.composite := newComp
+plot(os.composite, "Comp")

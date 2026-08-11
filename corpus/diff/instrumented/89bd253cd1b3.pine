@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Arr Filter")
+src = array.from(close, open, high, low)
+var float[] above = array.new_float(0)
+array.clear(above)
+sma3 = ta.sma(close, 3)
+for val in src
+    fv = float(val)
+    if fv > sma3
+        array.push(above, fv)
+cnt = array.size(above)
+var float __obs_plot0 = na
+__obs_plot0 := cnt
+plot(cnt, "AboveMA")

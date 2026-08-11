@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("Var Patterns")
+var float peak = 0.0
+var float trough = 99999.0
+var int upBars = 0
+var int dnBars = 0
+var float cumRet = 0.0
+peak := math.max(peak, close)
+trough := math.min(trough, close)
+if close > close[1]
+    upBars := upBars + 1
+else
+    dnBars := dnBars + 1
+ret = nz(close - close[1], 0.0)
+cumRet := cumRet + ret
+winRate = upBars + dnBars > 0 ? float(upBars) / (upBars + dnBars) * 100 : 50.0
+plot(winRate, "WR")

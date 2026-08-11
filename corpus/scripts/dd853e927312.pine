@@ -1,0 +1,10 @@
+//@version=5
+indicator("Lagrange L1")
+m1 = close
+m2 = nz(close[1], close)
+totalM = m1 + m2
+l1 = totalM > 0 ? m1 * (1.0 - math.pow(m2 / (3.0 * totalM), 1.0 / 3.0)) : 0.0
+var float avgL1 = 0.0
+var int cnt = 0
+cnt := cnt + 1
+avgL1 := avgL1 + (l1 - avgL1) / cnt

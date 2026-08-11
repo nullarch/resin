@@ -1,0 +1,4 @@
+//@version=5
+indicator("StrSub")
+var string result = ""
+result := str.substring("hello world", 6, 11)

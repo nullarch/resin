@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Thresh Desc")
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = nz(ta.atr(3), 1.0)
+rsiZone = rsi > 65 ? "OB" : rsi < 35 ? "OS" : "MID"
+volZone = atr > 2.0 ? "HV" : "LV"
+desc = rsiZone + "_" + volZone
+isOB_HV = desc == "OB_HV"
+var float __obs_plot0 = na
+__obs_plot0 := isOB_HV ? 1 : 0
+plot(isOB_HV ? 1 : 0, "OBHV")

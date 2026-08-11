@@ -1,0 +1,11 @@
+//@version=5
+indicator("Mortality By Wave")
+wave = switch
+    bar_index < 3 => 1
+    bar_index < 6 => 2
+    => 3
+baseMortality = switch wave
+    1 => 0.05
+    2 => 0.03
+    => 0.02
+adjustedMortality = baseMortality * (1.0 + (close - 100.0) / 200.0)

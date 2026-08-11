@@ -1,0 +1,7 @@
+//@version=5
+indicator("N-gram Window")
+var float[] window = array.new_float(3, 0.0)
+array.set(window, 0, nz(close[2], close))
+array.set(window, 1, nz(close[1], close))
+array.set(window, 2, close)
+ngramSum = array.get(window, 0) + array.get(window, 1) + array.get(window, 2)

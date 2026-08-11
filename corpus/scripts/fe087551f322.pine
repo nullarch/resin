@@ -1,0 +1,10 @@
+//@version=5
+indicator("Proof of Work")
+target = 50.0
+var int totalWork = 0
+attempt = close * 17.0 + open * 13.0
+hashVal = attempt - math.floor(attempt / 256.0) * 256.0
+solved = hashVal < target ? 1 : 0
+totalWork := totalWork + 1
+difficulty = totalWork > 0 ? target / totalWork * 100.0 : 100.0
+plot(difficulty)

@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("RollRes")
+var float[] resBuf = array.new_float(0)
+trend = nz(ta.sma(close, 3), close)
+res = math.abs(close - trend)
+array.push(resBuf, res)
+if array.size(resBuf) > 5
+    array.shift(resBuf)
+float total = 0.0
+for i = 0 to array.size(resBuf) - 1
+    total := total + array.get(resBuf, i)
+avgRes = array.size(resBuf) > 0 ? total / array.size(resBuf) : 0.0
+plot(avgRes, "AR")

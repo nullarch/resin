@@ -1,0 +1,10 @@
+
+//@version=5
+strategy("TrendFollow", overlay=true)
+trend = nz(ta.sma(close, 5), close)
+residual = close - trend
+if residual < 0 and close > open
+    strategy.entry("Long", strategy.long)
+if residual > 0
+    strategy.close("Long")
+plot(residual, "Res")

@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Risk Thresh")
+atr = nz(ta.atr(3), 1.0)
+threshold = 0.5
+steps = 0
+while threshold < atr and steps < 20
+    threshold := threshold * 1.5
+    steps := steps + 1
+var float __obs_plot0 = na
+__obs_plot0 := steps
+plot(steps, "St")

@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Band Pos")
+bandPosition(float price, float upper, float lower) =>
+    range_ = upper - lower
+    range_ > 0 ? (price - lower) / range_ : 0.5
+
+[mid, upper, lower] = ta.bb(close, 5, 2.0)
+pos = bandPosition(close, upper, lower)
+plot(pos, "BP")

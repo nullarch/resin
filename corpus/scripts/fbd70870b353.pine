@@ -1,0 +1,9 @@
+//@version=5
+indicator("MACD Color")
+fastLen = 3
+slowLen = 5
+sigLen = 3
+[macdLine, signalLine, histLine] = ta.macd(close, fastLen, slowLen, sigLen)
+isGrowing = histLine > histLine[1]
+isPositive = histLine >= 0
+plot(histLine)

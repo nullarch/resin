@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Sig Filter")
+rsi = ta.rsi(close, 3)
+sma3 = ta.sma(close, 3)
+atr = ta.atr(3)
+signal = 0
+if close > sma3
+    if rsi > 50
+        if atr > 0
+            signal := 2
+        else
+            signal := 1
+    else
+        signal := 0
+else
+    if rsi < 30
+        signal := -2
+    else
+        signal := -1
+plot(signal, "Signal")

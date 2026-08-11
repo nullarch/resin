@@ -1,0 +1,12 @@
+//@version=5
+indicator("TA Regression 3")
+wma5 = ta.wma(close, 5)
+vwma5 = ta.vwma(close, 5)
+hma5 = ta.hma(close, 5)
+var float last_wma = 0.0
+last_wma := nz(wma5)
+var float last_vwma = 0.0
+last_vwma := nz(vwma5)
+var float last_hma = 0.0
+last_hma := nz(hma5)
+plot(close)

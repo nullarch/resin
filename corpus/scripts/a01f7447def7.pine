@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Ichimoku")
+conversionPeriod = 3
+basePeriod = 5
+conversion = (ta.highest(high, conversionPeriod) + ta.lowest(low, conversionPeriod)) / 2.0
+base = (ta.highest(high, basePeriod) + ta.lowest(low, basePeriod)) / 2.0
+bullish = close > conversion and conversion > base
+plot(conversion, "Conversion")
+plot(base, "Base")
+plot(bullish ? 1 : 0, "Bull")

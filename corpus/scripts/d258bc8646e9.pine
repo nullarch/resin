@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("While Arr")
+var float[] vals = array.new_float(0)
+array.push(vals, close)
+if array.size(vals) > 8
+    array.shift(vals)
+target = array.avg(vals)
+estimate = close
+iters = 0
+while math.abs(estimate - target) > 0.01 and iters < 30
+    estimate := estimate + (target - estimate) * 0.4
+    iters := iters + 1
+plot(iters, "Its")

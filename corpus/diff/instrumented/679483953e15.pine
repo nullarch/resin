@@ -1,0 +1,37 @@
+
+//@version=5
+indicator("Stat Full")
+mean = ta.sma(close, 5)
+sd = ta.stdev(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+
+zscore = sd > 0 ? (close - mean) / sd : 0.0
+cv = mean > 0 ? sd / mean : 0.0
+
+var float[] rets = array.new_float(0)
+ret = close - close[1]
+if not na(ret)
+    array.push(rets, ret)
+if array.size(rets) > 8
+    array.shift(rets)
+
+avgRet = array.avg(rets)
+sdRet = array.stdev(rets)
+sharpe = sdRet > 0 ? avgRet / sdRet : 0.0
+
+var ss = map.new<string, float>()
+map.put(ss, "zscore", zscore)
+map.put(ss, "sharpe", sharpe)
+map.put(ss, "cv", cv)
+
+composite = zscore * 0.3 + sharpe * 0.4 + (1 - cv) * 0.3
+
+var int bars = 0
+bars := bars + 1
+
+var float __obs_plot0 = na
+__obs_plot0 := composite
+plot(composite, "Comp")
+var float __obs_plot1 = na
+__obs_plot1 := zscore
+plot(zscore, "Z")

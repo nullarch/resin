@@ -1,0 +1,6 @@
+//@version=5
+indicator("UDF Defaults")
+myFunc(float src, int length = 14, float mult = 2.0) =>
+    ta.sma(src, length) * mult
+result = myFunc(close)
+plot(result)

@@ -1,0 +1,5 @@
+//@version=5
+indicator("Percent")
+x = 100 %
+    3
+plot(x)

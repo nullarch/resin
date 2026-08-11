@@ -1,0 +1,7 @@
+//@version=5
+indicator("Mixed Ops")
+x = close *
+    2 +
+    open *
+    3
+plot(x / 5)

@@ -1,0 +1,8 @@
+//@version=5
+indicator("Nested NZ")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+float val = nz(sma3, nz(sma5, close))
+var float result = 0.0
+result := val
+plot(result)

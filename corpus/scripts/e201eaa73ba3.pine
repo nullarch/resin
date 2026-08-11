@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Stoch Sig")
+k = ta.stoch(close, high, low, 3)
+d = ta.sma(k, 3)
+kVal = nz(k, 50.0)
+dVal = nz(d, 50.0)
+bullCross = kVal > dVal and kVal < 30
+plot(bullCross ? 1 : 0, "BC")

@@ -1,0 +1,281 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:bullRun": 0,
+   "var:bearRun": 1,
+   "var:bestScore": 0.0,
+   "var:history": [
+    0.0,
+    0.0,
+    0.0,
+    2.0,
+    5.0,
+    4.0,
+    5.0,
+    6.0,
+    4.0,
+    5.0
+   ],
+   "var:m": {
+    "score": 5.0,
+    "avg": 3.1,
+    "best": 6.0
+   },
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0.0,
+   "var:__obs_plot2": 0.0
+  },
+  {
+   "var:bullRun": 0,
+   "var:bearRun": 2,
+   "var:bestScore": 0.0,
+   "var:history": [
+    0.0,
+    0.0,
+    0.0,
+    2.0,
+    5.0,
+    4.0,
+    5.0,
+    6.0,
+    4.0,
+    5.0
+   ],
+   "var:m": {
+    "score": 5.0,
+    "avg": 3.1,
+    "best": 6.0
+   },
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0.0,
+   "var:__obs_plot2": 0.0
+  },
+  {
+   "var:bullRun": 0,
+   "var:bearRun": 3,
+   "var:bestScore": 0.0,
+   "var:history": [
+    0.0,
+    0.0,
+    0.0,
+    2.0,
+    5.0,
+    4.0,
+    5.0,
+    6.0,
+    4.0,
+    5.0
+   ],
+   "var:m": {
+    "score": 5.0,
+    "avg": 3.1,
+    "best": 6.0
+   },
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0.0,
+   "var:__obs_plot2": 0.0
+  },
+  {
+   "var:bullRun": 0,
+   "var:bearRun": 4,
+   "var:bestScore": 2.0,
+   "var:history": [
+    0.0,
+    0.0,
+    0.0,
+    2.0,
+    5.0,
+    4.0,
+    5.0,
+    6.0,
+    4.0,
+    5.0
+   ],
+   "var:m": {
+    "score": 5.0,
+    "avg": 3.1,
+    "best": 6.0
+   },
+   "var:__obs_plot0": 2,
+   "var:__obs_plot1": 0.5,
+   "var:__obs_plot2": 2.0
+  },
+  {
+   "var:bullRun": 1,
+   "var:bearRun": 0,
+   "var:bestScore": 5.0,
+   "var:history": [
+    0.0,
+    0.0,
+    0.0,
+    2.0,
+    5.0,
+    4.0,
+    5.0,
+    6.0,
+    4.0,
+    5.0
+   ],
+   "var:m": {
+    "score": 5.0,
+    "avg": 3.1,
+    "best": 6.0
+   },
+   "var:__obs_plot0": 5,
+   "var:__obs_plot1": 1.4,
+   "var:__obs_plot2": 5.0
+  },
+  {
+   "var:bullRun": 2,
+   "var:bearRun": 0,
+   "var:bestScore": 5.0,
+   "var:history": [
+    0.0,
+    0.0,
+    0.0,
+    2.0,
+    5.0,
+    4.0,
+    5.0,
+    6.0,
+    4.0,
+    5.0
+   ],
+   "var:m": {
+    "score": 5.0,
+    "avg": 3.1,
+    "best": 6.0
+   },
+   "var:__obs_plot0": 4,
+   "var:__obs_plot1": 1.8333333333333333,
+   "var:__obs_plot2": 5.0
+  },
+  {
+   "var:bullRun": 3,
+   "var:bearRun": 0,
+   "var:bestScore": 5.0,
+   "var:history": [
+    0.0,
+    0.0,
+    0.0,
+    2.0,
+    5.0,
+    4.0,
+    5.0,
+    6.0,
+    4.0,
+    5.0
+   ],
+   "var:m": {
+    "score": 5.0,
+    "avg": 3.1,
+    "best": 6.0
+   },
+   "var:__obs_plot0": 5,
+   "var:__obs_plot1": 2.2857142857142856,
+   "var:__obs_plot2": 5.0
+  },
+  {
+   "var:bullRun": 4,
+   "var:bearRun": 0,
+   "var:bestScore": 6.0,
+   "var:history": [
+    0.0,
+    0.0,
+    0.0,
+    2.0,
+    5.0,
+    4.0,
+    5.0,
+    6.0,
+    4.0,
+    5.0
+   ],
+   "var:m": {
+    "score": 5.0,
+    "avg": 3.1,
+    "best": 6.0
+   },
+   "var:__obs_plot0": 6,
+   "var:__obs_plot1": 2.75,
+   "var:__obs_plot2": 6.0
+  },
+  {
+   "var:bullRun": 5,
+   "var:bearRun": 0,
+   "var:bestScore": 6.0,
+   "var:history": [
+    0.0,
+    0.0,
+    0.0,
+    2.0,
+    5.0,
+    4.0,
+    5.0,
+    6.0,
+    4.0,
+    5.0
+   ],
+   "var:m": {
+    "score": 5.0,
+    "avg": 3.1,
+    "best": 6.0
+   },
+   "var:__obs_plot0": 4,
+   "var:__obs_plot1": 2.888888888888889,
+   "var:__obs_plot2": 6.0
+  },
+  {
+   "var:bullRun": 6,
+   "var:bearRun": 0,
+   "var:bestScore": 6.0,
+   "var:history": [
+    0.0,
+    0.0,
+    0.0,
+    2.0,
+    5.0,
+    4.0,
+    5.0,
+    6.0,
+    4.0,
+    5.0
+   ],
+   "var:m": {
+    "score": 5.0,
+    "avg": 3.1,
+    "best": 6.0
+   },
+   "var:__obs_plot0": 5,
+   "var:__obs_plot1": 3.1,
+   "var:__obs_plot2": 6.0
+  }
+ ],
+ "finalVarState": {
+  "bullRun": 6,
+  "bearRun": 0,
+  "bestScore": 6.0,
+  "history": [
+   0.0,
+   0.0,
+   0.0,
+   2.0,
+   5.0,
+   4.0,
+   5.0,
+   6.0,
+   4.0,
+   5.0
+  ],
+  "m": {
+   "score": 5.0,
+   "avg": 3.1,
+   "best": 6.0
+  },
+  "__obs_plot0": 5,
+  "__obs_plot1": 3.1,
+  "__obs_plot2": 6.0
+ }
+}

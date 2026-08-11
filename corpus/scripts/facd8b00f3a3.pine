@@ -1,0 +1,4 @@
+//@version=5
+indicator("ATR Inject")
+var float result = 0.0
+result := ta.atr(5)

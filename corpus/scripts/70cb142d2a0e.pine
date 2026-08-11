@@ -1,0 +1,19 @@
+//@version=5
+indicator("Climate-Agriculture")
+// Climatology: Koppen-like classification
+tempIndex = (high + low) / 2
+precipIndex = volume / 100.0
+// Agriculture: crop suitability
+var string bestCrop = "none"
+if tempIndex > 105 and precipIndex > 10
+    bestCrop := "rice"
+else if tempIndex > 102 and precipIndex > 5
+    bestCrop := "wheat"
+else if tempIndex > 100
+    bestCrop := "barley"
+else
+    bestCrop := "rye"
+// Yield model
+cropYield = tempIndex > 100 ? precipIndex * 0.8 : precipIndex * 0.4
+var float totalYield = 0.0
+totalYield := totalYield + cropYield

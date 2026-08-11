@@ -1,0 +1,46 @@
+
+//@version=5
+indicator("Quant Backtest")
+// Indicators
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+rsi = ta.rsi(close, 3)
+atr = ta.atr(3)
+
+// Signal
+bullish = close > sma3 and rsi > 50
+bearish = close < sma3 and rsi < 50
+
+// Position tracking
+var int position = 0
+var float entryPrice = 0.0
+var float totalPnl = 0.0
+var int trades = 0
+
+if bullish and position == 0
+    position := 1
+    entryPrice := close
+    trades := trades + 1
+else if bearish and position == 1
+    pnl = close - entryPrice
+    totalPnl := totalPnl + pnl
+    position := 0
+    entryPrice := 0.0
+
+// Stats
+var float[] pnlHistory = array.new_float(0)
+if position == 0 and entryPrice == 0.0 and trades > 0
+    array.push(pnlHistory, totalPnl)
+    if array.size(pnlHistory) > 8
+        array.shift(pnlHistory)
+
+var state = map.new<string, float>()
+map.put(state, "position", float(position))
+map.put(state, "pnl", totalPnl)
+map.put(state, "trades", float(trades))
+
+var int bars = 0
+bars := bars + 1
+
+plot(totalPnl, "PnL")
+plot(trades, "Trades")

@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("DD Hist")
+var float[] drawdowns = array.new_float(0)
+var float peak = 0.0
+peak := math.max(peak, close)
+dd = peak > 0 ? (peak - close) / peak * 100 : 0.0
+if dd > 0.5
+    array.push(drawdowns, dd)
+if array.size(drawdowns) > 10
+    array.shift(drawdowns)
+avgDD = array.size(drawdowns) > 0 ? array.avg(drawdowns) : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := avgDD
+plot(avgDD, "AvgDD")

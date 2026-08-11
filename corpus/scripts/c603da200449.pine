@@ -1,0 +1,5 @@
+//@version=5
+indicator("History Momentum")
+var float momentum = 0.0
+if not na(close[3])
+    momentum := close - close[3]

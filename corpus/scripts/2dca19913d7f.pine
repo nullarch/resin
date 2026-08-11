@@ -1,0 +1,5 @@
+//@version=5
+indicator("cast bool")
+var float result = 0.0
+b = bool(0)
+result := b ? 1.0 : 0.0

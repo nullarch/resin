@@ -1,0 +1,8 @@
+//@version=5
+indicator("Array percentile")
+arr = array.from(10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0)
+p25 = array.percentile_nearest_rank(arr, 25)
+p50 = array.percentile_nearest_rank(arr, 50)
+p75 = array.percentile_nearest_rank(arr, 75)
+p50_lin = array.percentile_linear_interpolation(arr, 50)
+prank = array.percentrank(arr, 55.0)

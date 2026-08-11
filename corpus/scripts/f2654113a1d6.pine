@@ -1,0 +1,7 @@
+//@version=5
+indicator("BB order")
+[upper, middle, lower] = ta.bb(close, 5, 2.0)
+var bool orderOk = true
+if not na(upper) and not na(lower)
+    if upper < lower
+        orderOk := false

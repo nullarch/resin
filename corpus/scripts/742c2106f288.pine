@@ -1,0 +1,6 @@
+
+//@version=5
+indicator("MACD Hist")
+[macdLine, signalLine, hist] = ta.macd(close, 3, 5, 3)
+histRising = hist > hist[1]
+plot(histRising ? 1 : 0, "HR")

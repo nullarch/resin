@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Algo Map FI")
+var params = map.new<string, float>()
+map.put(params, "alpha", 0.3)
+map.put(params, "beta", 0.5)
+map.put(params, "gamma", 0.2)
+paramSum = 0.0
+for [k, v] in params
+    paramSum := paramSum + v
+normalized = paramSum > 0 ? 1.0 / paramSum : 1.0
+var float __obs_plot0 = na
+__obs_plot0 := normalized
+plot(normalized, "N")

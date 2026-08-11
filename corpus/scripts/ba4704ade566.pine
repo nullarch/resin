@@ -1,0 +1,7 @@
+//@version=5
+indicator("Empty Map")
+m = map.new<string, float>()
+val = map.get(m, "nonexistent")
+var int isNa = 0
+isNa := na(val) ? 1 : 0
+plot(isNa)

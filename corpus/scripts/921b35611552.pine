@@ -1,0 +1,10 @@
+//@version=5
+indicator("test")
+var float highest = 0.0
+var float lowest = 99999.0
+var int count = 0
+highest := math.max(highest, high)
+lowest := math.min(lowest, low)
+count := count + 1
+spread = highest - lowest
+plot(spread)

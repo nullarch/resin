@@ -1,0 +1,30 @@
+//@version=5
+indicator("Comprehensive 53")
+
+// Array with binary search
+var arr = array.from(10.0, 20.0, 30.0, 40.0, 50.0)
+var int bs_idx = array.binary_search(arr, 30.0)
+
+// String operations
+var s = "hello world"
+var s2 = str.replace(s, "world", "pine")
+var int slen = str.length(s2)
+
+// TA
+sma3 = ta.sma(close, 3)
+
+// var persistence
+var float counter = 0.0
+counter := counter + 1.0
+
+// Drawing noop
+var lbl = label.new(bar_index, close, "test")
+label.set_text(lbl, "ok")
+
+// max_bars_back noop
+max_bars_back(close, 200)
+
+// Result
+var float result = 0.0
+result := counter + bs_idx + slen + nz(sma3, 0.0)
+plot(close)

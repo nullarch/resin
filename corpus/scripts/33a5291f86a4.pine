@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Sig Qual")
+signalQuality(float sigStrength, float vol, float trend) =>
+    base = math.abs(sigStrength)
+    volAdj = vol > 0 ? math.min(1.0 / vol, 2.0) : 1.0
+    trendAdj = trend > 0 ? 1.2 : 0.8
+    base * volAdj * trendAdj
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = ta.atr(3)
+sma3 = ta.sma(close, 3)
+sigStr = rsi - 50
+trend = close - sma3
+qual = signalQuality(sigStr, atr, trend)
+plot(qual, "Qual")

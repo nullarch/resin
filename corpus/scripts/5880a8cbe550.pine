@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Power")
+sqr = math.pow(close - open, 2)
+cube = math.pow(math.abs(close - open), 3)
+sqrtVal = math.sqrt(sqr)
+cbrtProxy = math.pow(math.abs(cube), 1.0/3.0)
+plot(sqrtVal, "Sqrt")
+plot(cbrtProxy, "Cbrt")

@@ -1,0 +1,6 @@
+
+//@version=5
+indicator("Supertrend")
+[st, dir] = ta.supertrend(3.0, 3)
+bullish = dir < 0
+plot(st, "ST")

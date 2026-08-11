@@ -1,0 +1,5 @@
+//@version=5
+indicator("StateBins")
+rsiVal = nz(ta.rsi(close, 5), 50.0)
+state = rsiVal < 20 ? 0 : rsiVal < 40 ? 1 : rsiVal < 60 ? 2 : rsiVal < 80 ? 3 : 4
+plot(float(state), "State")

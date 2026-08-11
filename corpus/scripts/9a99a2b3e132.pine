@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Pct Rank")
+rsi = nz(ta.rsi(close, 3), 50.0)
+var float[] rsiHist = array.new_float(0)
+array.push(rsiHist, rsi)
+if array.size(rsiHist) > 8
+    array.shift(rsiHist)
+belowCount = 0
+for v in rsiHist
+    if v < rsi
+        belowCount := belowCount + 1
+pctRank = array.size(rsiHist) > 0 ? belowCount / array.size(rsiHist) * 100 : 50.0
+plot(pctRank, "PR")

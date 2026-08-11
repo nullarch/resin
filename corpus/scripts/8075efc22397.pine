@@ -1,0 +1,4 @@
+//@version=5
+indicator("standardize test")
+arr = array.from(5.0, 5.0, 5.0)
+result = array.standardize(arr)

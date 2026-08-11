@@ -1,0 +1,5 @@
+//@version=5
+indicator("RT Error")
+if false
+    runtime.error("should not reach")
+plot(close)

@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Math Chain")
+x = close - open
+absX = math.abs(x)
+sqrtX = math.sqrt(absX + 1)
+logX = math.log(sqrtX)
+result = math.round(logX * 100) / 100
+plot(result, "Result")

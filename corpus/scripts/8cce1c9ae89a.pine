@@ -1,0 +1,8 @@
+//@version=5
+indicator("Cortical Column")
+inputSignal = close - open
+layer4 = inputSignal * 0.8
+layer23 = layer4 + (high - close) * 0.3
+layer5 = layer23 * 0.6 + layer4 * 0.4
+output = math.abs(layer5)
+plot(output)

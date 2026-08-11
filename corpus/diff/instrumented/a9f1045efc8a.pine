@@ -1,0 +1,16 @@
+//@version=5
+indicator("Population PK")
+var float meanCl = 0.2
+var float sdCl = 0.05
+baseCl = meanCl
+volEffect = volume / 10000.0
+individualCl = baseCl + volEffect * sdCl
+conc = close - low
+eliminated = conc * individualCl
+remaining = conc - eliminated
+remaining := remaining > 0 ? remaining : 0.0
+smaRemaining = ta.sma(close, 5)
+score = not na(smaRemaining) ? remaining : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := score
+plot(score)

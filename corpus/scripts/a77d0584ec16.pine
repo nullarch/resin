@@ -1,0 +1,19 @@
+
+//@version=5
+strategy("Comp Strat", overlay=true)
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 5)
+[macd, sig, hist] = ta.macd(close, 3, 5, 3)
+
+trendOK = sma3 > sma5
+momOK = rsi > 50 and hist > 0
+riskOK = avgATR > 0 and atr / avgATR < 1.5
+
+if trendOK and momOK and riskOK
+    strategy.entry("Long", strategy.long)
+if not trendOK or rsi < 40
+    strategy.close("Long")
+plot(sma3, "F")

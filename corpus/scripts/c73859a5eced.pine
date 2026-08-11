@@ -1,0 +1,5 @@
+//@version=5
+indicator("AssignFor")
+var int result = 0
+result := for i = 0 to 4
+    i

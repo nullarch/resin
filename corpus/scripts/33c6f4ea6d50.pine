@@ -1,0 +1,6 @@
+//@version=5
+indicator("shorthand qualified")
+var float[] acc = array.new<float>(0)
+array.push(acc, close)
+var int sz = 0
+sz := array.size(acc)

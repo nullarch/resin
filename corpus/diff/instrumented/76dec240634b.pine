@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Pow2")
+target = close
+pow2 = 1.0
+while pow2 < target
+    pow2 := pow2 * 2
+var float __obs_plot0 = na
+__obs_plot0 := pow2
+plot(pow2, "NextPow2")

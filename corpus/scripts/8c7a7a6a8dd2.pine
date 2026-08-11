@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("DPO")
+smaVal = nz(ta.sma(close, 5), close)
+dpo = close - smaVal
+isPositive = dpo > 0 ? 1.0 : -1.0
+plot(isPositive, "DPO_Sign")

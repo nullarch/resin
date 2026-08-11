@@ -1,0 +1,7 @@
+//@version=5
+indicator("Attack Rate")
+var float cohortSize = 500.0
+var float totalInfected = 0.0
+float dailyAttack = close / 20.0
+totalInfected := math.min(totalInfected + dailyAttack, cohortSize)
+float attackRate = totalInfected / cohortSize * 100.0

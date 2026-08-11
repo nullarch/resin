@@ -1,0 +1,10 @@
+//@version=5
+indicator("MACD Regression")
+[mLine, sig, hist] = ta.macd(close, 3, 5, 3)
+var float last_m = 0.0
+last_m := nz(mLine)
+var float last_sig = 0.0
+last_sig := nz(sig)
+var float last_hist = 0.0
+last_hist := nz(hist)
+plot(close)

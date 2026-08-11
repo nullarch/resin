@@ -1,0 +1,10 @@
+//@version=5
+indicator("Custom MFI")
+pine_mfi(float src, int length) =>
+    change = ta.change(src)
+    upper = math.sum(volume * (change <= 0.0 ? 0.0 : src), length)
+    lower = math.sum(volume * (change >= 0.0 ? 0.0 : src), length)
+    mfi = lower != 0 ? 100.0 - 100.0 / (1.0 + upper / lower) : 50.0
+    mfi
+result = pine_mfi(close, 14)
+plot(result)

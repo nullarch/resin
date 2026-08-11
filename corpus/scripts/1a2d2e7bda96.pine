@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Vol Adj MA")
+volAdjMA(float src, int basePeriod) =>
+    atr = ta.atr(3)
+    avgATR = ta.sma(atr, 5)
+    ratio = avgATR > 0 ? atr / avgATR : 1.0
+    adjPeriod = math.max(2, int(basePeriod * ratio))
+    ta.sma(src, adjPeriod)
+
+vama = volAdjMA(close, 5)
+plot(vama, "VAMA")

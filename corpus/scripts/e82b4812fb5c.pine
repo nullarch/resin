@@ -1,0 +1,10 @@
+//@version=5
+indicator("BoolLogic")
+var int result = 0
+smaVal = ta.sma(close, 3)
+emaVal = ta.ema(close, 3)
+if not na(smaVal) and not na(emaVal)
+    if (close > smaVal and close > emaVal) or (close > 110)
+        result := 1
+    else if not (close > 100) and close < smaVal
+        result := -1

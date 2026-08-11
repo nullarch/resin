@@ -1,0 +1,6 @@
+//@version=5
+indicator("Impedance Match")
+float atrVal = nz(ta.atr(3), 1.0)
+float momentum = math.abs(close - (not na(close[1]) ? close[1] : close))
+float impedance = atrVal > 0.01 ? momentum / atrVal : 0.0
+float matched = impedance > 0.5 and impedance < 2.0 ? 1.0 : 0.0

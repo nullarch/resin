@@ -1,0 +1,19 @@
+//@version=5
+indicator("FE16")
+var float bestScore = 0.0
+smaVal = ta.sma(close, 3)
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+metrics = map.new<string, float>()
+map.put(metrics, "trend", smaVal)
+map.put(metrics, "momentum", rsiVal)
+map.put(metrics, "price", close)
+keys = map.keys(metrics)
+mx = 0.0
+for [idx, k] in keys
+    val = map.get(metrics, k)
+    v = nz(val, 0.0)
+    mx := math.max(mx, v)
+if mx > bestScore
+    bestScore := mx
+else
+    bestScore := bestScore * 0.99

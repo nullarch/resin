@@ -1,0 +1,8 @@
+//@version=5
+indicator("Volume Momentum")
+vwma5 = ta.vwma(close, 5)
+sma5 = ta.sma(close, 5)
+volMom = nz(vwma5) - nz(sma5)
+cumVol = ta.cum(volume)
+avgVol = cumVol / float(bar_index + 1)
+relVol = avgVol > 0 ? volume / avgVol : 1.0

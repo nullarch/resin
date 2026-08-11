@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Price Cluster")
+tick = 0.5
+rounded = math.round(close / tick) * tick
+diff = close - rounded
+var float __obs_plot0 = na
+__obs_plot0 := rounded
+plot(rounded, "Rounded")
+var float __obs_plot1 = na
+__obs_plot1 := diff
+plot(diff, "Diff")

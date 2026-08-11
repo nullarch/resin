@@ -1,0 +1,11 @@
+//@version=5
+indicator("Mean Free Path")
+float chg = close - open
+float prevChg = not na(close[1]) ? close[1] - open[1] : chg
+bool collision = (chg > 0 and prevChg < 0) or (chg < 0 and prevChg > 0)
+var int collisions = 0
+var int totalBars = 0
+totalBars := totalBars + 1
+if collision
+    collisions := collisions + 1
+float meanFreePath = collisions > 0 ? totalBars / collisions : totalBars * 1.0

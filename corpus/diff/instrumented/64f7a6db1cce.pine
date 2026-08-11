@@ -1,0 +1,9 @@
+//@version=5
+indicator("Cont In For")
+sum = 0.0
+for i = 0 to 3
+    sum += close[i] +
+        open[i]
+var float __obs_plot0 = na
+__obs_plot0 := sum
+plot(sum)

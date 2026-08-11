@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Candle Type")
+body = math.abs(close - open)
+rng = high - low
+ratio = rng > 0 ? body / rng : 0.5
+candleType = switch
+    ratio > 0.8 => "marubozu"
+    ratio > 0.5 => "normal"
+    ratio > 0.2 => "spinning"
+    => "doji"
+isDoji = candleType == "doji"
+plot(ratio, "Ratio")
+plot(isDoji ? 1 : 0, "Doji")

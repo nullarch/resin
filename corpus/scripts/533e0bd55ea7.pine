@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Hysteresis")
+var bool active = false
+upperThresh = 107.0
+lowerThresh = 104.0
+
+if not active and close > upperThresh
+    active := true
+if active and close < lowerThresh
+    active := false
+
+plot(active ? 1 : 0, "A")

@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Run MaxMin")
+var float[] window = array.new_float(0)
+array.push(window, close)
+if array.size(window) > 8
+    array.shift(window)
+runMax = array.size(window) > 0 ? array.max(window) : close
+runMin = array.size(window) > 0 ? array.min(window) : close
+rng = runMax - runMin
+plot(rng, "Rng")

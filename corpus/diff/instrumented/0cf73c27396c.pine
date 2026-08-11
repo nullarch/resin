@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("MSVar")
+scaleMap = map.new<string, float>()
+v3 = ta.stdev(close, 3)
+v5 = ta.stdev(close, 5)
+map.put(scaleMap, "scale3", nz(v3, 0.0))
+map.put(scaleMap, "scale5", nz(v5, 0.0))
+s3 = map.get(scaleMap, "scale3")
+s5 = map.get(scaleMap, "scale5")
+total = nz(s3, 0.0) + nz(s5, 0.0)
+var float __obs_plot0 = na
+__obs_plot0 := total
+plot(total, "MSV")

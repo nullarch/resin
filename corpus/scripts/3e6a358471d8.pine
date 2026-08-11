@@ -1,0 +1,22 @@
+
+//@version=5
+indicator("Sig UDT")
+type SignalState
+    int direction = 0
+    float strength = 0.0
+    int age = 0
+    bool confirmed = false
+
+var SignalState ss = SignalState.new()
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+newDir = close > sma3 and rsi > 55 ? 1 : close < sma3 and rsi < 45 ? -1 : 0
+if newDir != 0 and newDir != ss.direction
+    ss.direction := newDir
+    ss.strength := math.abs(rsi - 50) / 50
+    ss.age := 0
+    ss.confirmed := false
+ss.age := ss.age + 1
+if ss.age >= 2
+    ss.confirmed := true
+plot(ss.confirmed ? ss.direction : 0, "Sig")

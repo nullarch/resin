@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:m": {
+    "oversold": 33.3333333333,
+    "overbought": 80.5615942029
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:m": {
+    "oversold": 33.3333333333,
+    "overbought": 80.5615942029
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:m": {
+    "oversold": 33.3333333333,
+    "overbought": 80.5615942029
+   },
+   "var:__obs_plot0": -1
+  },
+  {
+   "var:m": {
+    "oversold": 33.3333333333,
+    "overbought": 80.5615942029
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:m": {
+    "oversold": 33.3333333333,
+    "overbought": 80.5615942029
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:m": {
+    "oversold": 33.3333333333,
+    "overbought": 80.5615942029
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:m": {
+    "oversold": 33.3333333333,
+    "overbought": 80.5615942029
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:m": {
+    "oversold": 33.3333333333,
+    "overbought": 80.5615942029
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:m": {
+    "oversold": 33.3333333333,
+    "overbought": 80.5615942029
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:m": {
+    "oversold": 33.3333333333,
+    "overbought": 80.5615942029
+   },
+   "var:__obs_plot0": 1
+  }
+ ],
+ "finalVarState": {
+  "m": {
+   "oversold": 33.3333333333,
+   "overbought": 80.5615942029
+  },
+  "__obs_plot0": 1
+ }
+}

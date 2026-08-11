@@ -1,0 +1,9 @@
+//@version=5
+indicator("Synapse Strength")
+var float synapticWeight = 0.5
+preSignal = close > open ? 1.0 : 0.0
+postSignal = high > close[1] or na(close[1]) ? 1.0 : 0.0
+hebbian = preSignal * postSignal
+synapticWeight := synapticWeight + 0.01 * hebbian - 0.005
+synapticWeight := math.max(0.0, math.min(1.0, synapticWeight))
+plot(synapticWeight)

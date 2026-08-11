@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Switch Cond")
+result = switch
+    close > 110 => "high"
+    close > 105 => "mid"
+    => "low"
+plot(close)

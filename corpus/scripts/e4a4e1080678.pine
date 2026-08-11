@@ -1,0 +1,4 @@
+//@version=5
+indicator("Req Security BM")
+htfClose = request.security(syminfo.tickerid, "D", close, barmerge.gaps_off, barmerge.lookahead_off)
+plot(htfClose)

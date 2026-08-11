@@ -1,0 +1,10 @@
+//@version=5
+indicator("UDF Multi Return")
+var float result = 0.0
+
+compute(float a, float b) =>
+    float sum = a + b
+    float diff = a - b
+    sum * diff
+
+result := compute(10.0, 3.0)

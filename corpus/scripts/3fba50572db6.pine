@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("MA Map")
+var mm = map.new<string, float>()
+map.put(mm, "sma3", ta.sma(close, 3))
+map.put(mm, "sma5", ta.sma(close, 5))
+map.put(mm, "ema3", ta.ema(close, 3))
+aboveCount = 0
+for [k, v] in mm
+    if close > v
+        aboveCount := aboveCount + 1
+plot(aboveCount, "AC")

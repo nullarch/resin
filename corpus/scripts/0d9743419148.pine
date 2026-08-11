@@ -1,0 +1,12 @@
+//@version=5
+indicator("Array Full")
+var arr = array.new_float(0)
+array.push(arr, close)
+if array.size(arr) > 5
+    array.shift(arr)
+sorted = array.copy(arr)
+array.sort(sorted)
+avg_val = array.avg(arr)
+med_val = array.median(arr)
+min_val = array.min(arr)
+max_val = array.max(arr)

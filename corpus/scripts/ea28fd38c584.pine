@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Percentile")
+arr = array.from(10.0, 20.0, 30.0, 40.0, 50.0)
+p25 = array.percentile_nearest_rank(arr, 25)
+p75 = array.percentile_nearest_rank(arr, 75)
+rng = array.range(arr)
+plot(rng, "Range")

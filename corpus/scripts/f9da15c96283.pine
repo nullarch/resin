@@ -1,0 +1,29 @@
+
+//@version=5
+indicator("Osc Full")
+rsi = nz(ta.rsi(close, 3), 50.0)
+k = ta.stoch(close, high, low, 5)
+cci = nz(ta.cci(close, 5), 0.0)
+[bbM, bbU, bbL] = ta.bb(close, 5, 2.0)
+
+// Normalize
+normRSI = (rsi - 50) / 50
+normK = (k - 50) / 50
+normCCI = cci / 200
+bbWidth = bbU - bbL
+pctB = bbWidth > 0 ? (close - bbL) / bbWidth : 0.5
+normBB = pctB * 2 - 1
+
+// Ensemble
+ensemble = (normRSI + normK + normCCI + normBB) / 4
+
+var float[] ensHist = array.new_float(0)
+array.push(ensHist, ensemble)
+if array.size(ensHist) > 8
+    array.shift(ensHist)
+
+var int bars = 0
+bars := bars + 1
+
+plot(ensemble, "Ens")
+plot(array.avg(ensHist), "Avg")

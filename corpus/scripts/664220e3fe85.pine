@@ -1,0 +1,5 @@
+//@version=5
+indicator("Shared Get")
+var float result = 0.0
+a = array.from(10.0, 20.0, 30.0)
+result := a.get(1)

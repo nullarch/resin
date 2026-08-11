@@ -1,0 +1,7 @@
+//@version=5
+indicator("ZK Range Proof")
+lower = 100.0
+upper = 115.0
+in_range = close >= lower and close <= upper ? 1.0 : 0.0
+proof_valid = in_range == 1.0 ? true : false
+commitment = close * 0.001 + 42.0

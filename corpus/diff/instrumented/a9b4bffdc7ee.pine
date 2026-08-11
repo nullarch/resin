@@ -1,0 +1,9 @@
+//@version=5
+indicator("Str TA Label")
+rsi_ = ta.rsi(close, 5)
+txt = "RSI: " + str.tostring(rsi_, "#.#")
+if barstate.islast
+    label.new(bar_index, close, txt)
+var float __obs_plot0 = na
+__obs_plot0 := rsi_
+plot(rsi_)

@@ -1,0 +1,12 @@
+//@version=5
+indicator("Skewness Proxy")
+float prevC = not na(close[1]) ? close[1] : close
+float ret = close - prevC
+float mu = ta.sma(ret, 5)
+float dev = ret - mu
+float dev3 = dev * dev * dev
+float m3 = ta.sma(dev3, 5)
+float sigma = ta.stdev(ret, 5)
+float sig3 = sigma * sigma * sigma
+float skew = sig3 > 0.0001 ? m3 / sig3 : 0.0
+plot(skew, "Skew")

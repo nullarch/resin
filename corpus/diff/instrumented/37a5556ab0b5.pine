@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Vol Track")
+type VolTracker
+    float avgVol = 0.0
+    float relVol = 1.0
+    bool isSpike = false
+
+var VolTracker vt = VolTracker.new()
+vt.avgVol := ta.sma(volume, 5)
+vt.relVol := vt.avgVol > 0 ? volume / vt.avgVol : 1.0
+vt.isSpike := vt.relVol > 2.0
+var float __obs_plot0 = na
+__obs_plot0 := vt.relVol
+plot(vt.relVol, "Rel")

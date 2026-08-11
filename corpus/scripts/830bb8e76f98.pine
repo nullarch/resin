@@ -1,0 +1,10 @@
+//@version=5
+indicator("MTF RSI")
+rsi14 = ta.rsi(close, 14)
+rsiDaily = request.security(syminfo.tickerid, "D", ta.rsi(close, 14))
+rsiWeekly = request.security(syminfo.tickerid, "W", ta.rsi(close, 14))
+hline(70, "Overbought")
+hline(30, "Oversold")
+plot(rsi14, "RSI", color=color.blue)
+plot(rsiDaily, "Daily RSI", color=color.orange)
+plot(rsiWeekly, "Weekly RSI", color=color.red)

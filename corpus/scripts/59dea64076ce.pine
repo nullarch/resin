@@ -1,0 +1,6 @@
+//@version=5
+indicator("Barstate Last")
+var int last_bar = -1
+if barstate.islast
+    last_bar := bar_index
+plot(last_bar)

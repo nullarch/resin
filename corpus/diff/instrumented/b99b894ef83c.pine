@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("Brk Cont")
+firstBullAboveMA = -1
+sma3 = ta.sma(close, 3)
+for i = 0 to 8
+    c = close[i]
+    o = open[i]
+    if na(c) or na(o)
+        continue
+    if c < o
+        continue
+    if c > sma3
+        firstBullAboveMA := i
+        break
+var float __obs_plot0 = na
+__obs_plot0 := firstBullAboveMA
+plot(firstBullAboveMA, "Idx")

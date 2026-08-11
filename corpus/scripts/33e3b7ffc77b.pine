@@ -1,0 +1,5 @@
+
+//@version=5
+indicator("WAD Precision")
+w = ta.wad()
+plot(w)

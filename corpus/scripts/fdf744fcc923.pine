@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Hist Vol")
+ret = close[1] > 0 ? math.log(close / close[1]) : 0.0
+avgRet = ta.sma(ret, 5)
+retDev = ret - avgRet
+sqDev = retDev * retDev
+avgSqDev = ta.sma(sqDev, 5)
+hvol = math.sqrt(avgSqDev) * math.sqrt(252.0) * 100
+plot(hvol, "HV")

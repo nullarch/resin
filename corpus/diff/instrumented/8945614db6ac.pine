@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Strat Met")
+var sm = map.new<string, float>()
+var float equity = 10000.0
+var float maxEquity = 10000.0
+ret = close - close[1]
+equity := equity + nz(ret, 0.0) * 10
+maxEquity := math.max(maxEquity, equity)
+dd = maxEquity > 0 ? (maxEquity - equity) / maxEquity * 100 : 0.0
+map.put(sm, "equity", equity)
+map.put(sm, "max_equity", maxEquity)
+map.put(sm, "drawdown", dd)
+map.put(sm, "return_pct", (equity - 10000) / 10000 * 100)
+var float __obs_plot0 = na
+__obs_plot0 := map.get(sm, "return_pct", 0.0)
+plot(map.get(sm, "return_pct", 0.0), "Ret")

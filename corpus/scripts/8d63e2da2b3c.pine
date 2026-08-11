@@ -1,0 +1,6 @@
+//@version=5
+indicator("GaussTransform")
+rank = nz(ta.rsi(close, 5), 50.0) / 100.0
+safeRank = math.max(0.01, math.min(0.99, rank))
+approxInvNorm = (safeRank - 0.5) * 3.0
+plot(approxInvNorm, "Z")

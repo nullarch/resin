@@ -1,0 +1,10 @@
+//@version=5
+indicator("Sunk Cost")
+var int invested = 0
+var float entryPrice = na
+if na(entryPrice)
+    entryPrice := close
+invested := invested + 1
+lossPercent = nz(entryPrice) > 0 ? (close - nz(entryPrice)) / nz(entryPrice) * 100.0 : 0.0
+sunkCostBias = lossPercent < 0 ? invested : 0
+plot(sunkCostBias)

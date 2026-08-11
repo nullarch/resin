@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("UDTStr")
+type Signal
+    string name = "none"
+    string direction = "flat"
+    float value = 0.0
+
+var Signal sig = Signal.new()
+sig.name := "RSI_Signal"
+rsi = nz(ta.rsi(close, 3), 50.0)
+sig.direction := rsi > 55 ? "long" : rsi < 45 ? "short" : "flat"
+sig.value := rsi
+
+nameLen = str.length(sig.name)
+dirLen = str.length(sig.direction)
+plot(nameLen + dirLen, "NL")

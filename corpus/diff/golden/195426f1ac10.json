@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:bullTrail": 1.0,
+   "var:bearTrail": 0.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:bullTrail": 1.9,
+   "var:bearTrail": 0.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:bullTrail": 2.71,
+   "var:bearTrail": 0.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:bullTrail": 3.439,
+   "var:bearTrail": 0.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:bullTrail": 4.0951,
+   "var:bearTrail": 0.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:bullTrail": 4.68559,
+   "var:bearTrail": 0.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:bullTrail": 5.217031,
+   "var:bearTrail": 0.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:bullTrail": 5.6953279000000006,
+   "var:bearTrail": 0.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:bullTrail": 6.12579511,
+   "var:bearTrail": 0.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:bullTrail": 6.5132155990000005,
+   "var:bearTrail": 0.0,
+   "var:__obs_plot0": 1.0
+  }
+ ],
+ "finalVarState": {
+  "bullTrail": 6.5132155990000005,
+  "bearTrail": 0.0,
+  "__obs_plot0": 1.0
+ }
+}

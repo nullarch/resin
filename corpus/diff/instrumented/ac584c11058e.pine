@@ -1,0 +1,11 @@
+//@version=5
+indicator("Fibonacci")
+var float fib1 = 0.0
+var float fib2 = 1.0
+var float fibCurr = 0.0
+fibCurr := fib1 + fib2
+fib1 := fib2
+fib2 := fibCurr
+var float __obs_plot0 = na
+__obs_plot0 := fibCurr
+plot(fibCurr, "Fib")

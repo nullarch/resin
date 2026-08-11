@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("FC UDT")
+type Forecast
+    float level = 0.0
+    float trend = 0.0
+    float prediction = 0.0
+
+var Forecast fc = Forecast.new()
+sma3 = ta.sma(close, 3)
+fc.level := sma3
+fc.trend := sma3 - sma3[1]
+fc.prediction := fc.level + nz(fc.trend, 0.0) * 2
+err = math.abs(close - fc.prediction)
+plot(fc.prediction, "Pred")

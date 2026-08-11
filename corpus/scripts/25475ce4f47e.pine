@@ -1,0 +1,7 @@
+//@version=5
+indicator("Var Array Acc")
+var arr = array.new_float(0)
+array.push(arr, close)
+var int sz = 0
+sz := array.size(arr)
+plot(sz)

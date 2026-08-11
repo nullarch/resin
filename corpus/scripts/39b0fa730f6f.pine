@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("All Types")
+type AllTypes
+    float fVal = 1.5
+    int iVal = 10
+    bool bVal = true
+    string sVal = "test"
+
+var AllTypes at = AllTypes.new()
+at.fVal := close
+at.iVal := int(nz(ta.rsi(close, 3), 50.0))
+at.bVal := close > open
+at.sVal := at.bVal ? "up" : "down"
+plot(at.fVal, "F")
+plot(at.iVal, "I")

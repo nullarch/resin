@@ -1,0 +1,11 @@
+//@version=5
+indicator("Vol Profile")
+vwap = ta.vwap(close)
+upperDev = vwap + 2.0 * ta.stdev(close, 20)
+lowerDev = vwap - 2.0 * ta.stdev(close, 20)
+isAbove = close > upperDev
+isBelow = close < lowerDev
+plot(vwap)
+plot(upperDev)
+plot(lowerDev)
+plot(isAbove ? 1.0 : isBelow ? -1.0 : 0.0)

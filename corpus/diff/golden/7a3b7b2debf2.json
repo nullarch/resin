@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:riseCount": 0,
+   "var:fallCount": 0,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:riseCount": 0,
+   "var:fallCount": 0,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:riseCount": 0,
+   "var:fallCount": 0,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:riseCount": 0,
+   "var:fallCount": 0,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:riseCount": 0,
+   "var:fallCount": 0,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:riseCount": 0,
+   "var:fallCount": 0,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:riseCount": 0,
+   "var:fallCount": 0,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:riseCount": 0,
+   "var:fallCount": 0,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:riseCount": 0,
+   "var:fallCount": 0,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:riseCount": 0,
+   "var:fallCount": 0,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0
+  }
+ ],
+ "finalVarState": {
+  "riseCount": 0,
+  "fallCount": 0,
+  "__obs_plot0": 0,
+  "__obs_plot1": 0
+ }
+}

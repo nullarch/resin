@@ -1,0 +1,13 @@
+//@version=5
+indicator("GreeksAgg")
+prevClose = nz(close[1], close)
+deltaP = prevClose > 0 ? (close - prevClose) / prevClose : 0.0
+gammaP = math.abs(close - 2.0 * nz(close[1], close) + nz(close[2], close))
+vol = nz(ta.stdev(close, 3), 1.0)
+vegaP = vol
+arr = array.new_float(0)
+array.push(arr, math.abs(deltaP) * 100.0)
+array.push(arr, gammaP)
+array.push(arr, vegaP)
+score = array.sum(arr)
+plot(score, "GrkScore")

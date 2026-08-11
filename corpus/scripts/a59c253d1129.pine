@@ -1,0 +1,6 @@
+//@version=5
+indicator("Mom Hist")
+mom = close - close[3]
+prevMom = mom[1]
+accel = mom - nz(prevMom)
+plot(accel)

@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Mom Rank")
+var float[] momArr = array.new_float(0)
+mom = close - close[3]
+if not na(mom)
+    array.push(momArr, mom)
+if array.size(momArr) > 8
+    array.shift(momArr)
+currentMom = close - close[3]
+rank = 0
+for v in momArr
+    if not na(currentMom) and v < currentMom
+        rank := rank + 1
+normRank = array.size(momArr) > 0 ? rank / array.size(momArr) : 0.5
+plot(normRank, "Rank")

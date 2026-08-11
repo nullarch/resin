@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("PnL Hist")
+var float[] pnls = array.new_float(0)
+var bool inPos = false
+var float entry = 0.0
+sma3 = ta.sma(close, 3)
+if not inPos and close > sma3
+    inPos := true
+    entry := close
+if inPos and close < sma3
+    array.push(pnls, close - entry)
+    inPos := false
+totalPnl = array.sum(pnls)
+avgPnl = array.size(pnls) > 0 ? array.avg(pnls) : 0.0
+plot(totalPnl, "Total")

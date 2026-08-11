@@ -1,0 +1,7 @@
+//@version=5
+strategy("ChainStrat")
+smoothEma = ta.ema(ta.sma(close, 3), 3)
+if not na(smoothEma) and close > smoothEma
+    strategy.entry("Long", strategy.long)
+if not na(smoothEma) and close < smoothEma
+    strategy.close("Long")

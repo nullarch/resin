@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:startPrice": 103,
+   "var:periods": 1,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:startPrice": 103,
+   "var:periods": 2,
+   "var:__obs_plot0": 0.9708737864077666
+  },
+  {
+   "var:startPrice": 103,
+   "var:periods": 3,
+   "var:__obs_plot0": -0.9708737864077666
+  },
+  {
+   "var:startPrice": 103,
+   "var:periods": 4,
+   "var:__obs_plot0": 1.9417475728155331
+  },
+  {
+   "var:startPrice": 103,
+   "var:periods": 5,
+   "var:__obs_plot0": 3.8834951456310662
+  },
+  {
+   "var:startPrice": 103,
+   "var:periods": 6,
+   "var:__obs_plot0": 2.9126213592232997
+  },
+  {
+   "var:startPrice": 103,
+   "var:periods": 7,
+   "var:__obs_plot0": 4.854368932038833
+  },
+  {
+   "var:startPrice": 103,
+   "var:periods": 8,
+   "var:__obs_plot0": 6.796116504854366
+  },
+  {
+   "var:startPrice": 103,
+   "var:periods": 9,
+   "var:__obs_plot0": 5.825242718446599
+  },
+  {
+   "var:startPrice": 103,
+   "var:periods": 10,
+   "var:__obs_plot0": 7.7669902912621325
+  }
+ ],
+ "finalVarState": {
+  "startPrice": 103,
+  "periods": 10,
+  "__obs_plot0": 7.7669902912621325
+ }
+}

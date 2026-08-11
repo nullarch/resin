@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Comp Calc")
+compositeIndicator(float rsi, float trendDir, float volRatio) =>
+    rsiNorm = (rsi - 50) / 50
+    volAdj = volRatio > 1.3 ? 0.8 : 1.0
+    (rsiNorm + trendDir) / 2 * volAdj
+
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 5)
+trendDir = close > sma3 ? 1.0 : -1.0
+volRatio = avgATR > 0 ? atr / avgATR : 1.0
+comp = compositeIndicator(rsi, trendDir, volRatio)
+plot(comp, "C")

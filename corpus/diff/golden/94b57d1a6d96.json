@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:lastFit": 50.0,
+   "var:stagnCount": 0,
+   "var:mutRate": 0.08,
+   "var:__obs_plot0": 0.08
+  },
+  {
+   "var:lastFit": 50.0,
+   "var:stagnCount": 1,
+   "var:mutRate": 0.06,
+   "var:__obs_plot0": 0.06
+  },
+  {
+   "var:lastFit": 50.0,
+   "var:stagnCount": 2,
+   "var:mutRate": 0.05,
+   "var:__obs_plot0": 0.05
+  },
+  {
+   "var:lastFit": 50.0,
+   "var:stagnCount": 3,
+   "var:mutRate": 0.05,
+   "var:__obs_plot0": 0.05
+  },
+  {
+   "var:lastFit": 75.0,
+   "var:stagnCount": 0,
+   "var:mutRate": 0.05,
+   "var:__obs_plot0": 0.05
+  },
+  {
+   "var:lastFit": 64.8648648649,
+   "var:stagnCount": 0,
+   "var:mutRate": 0.05,
+   "var:__obs_plot0": 0.05
+  },
+  {
+   "var:lastFit": 73.7373737374,
+   "var:stagnCount": 0,
+   "var:mutRate": 0.05,
+   "var:__obs_plot0": 0.05
+  },
+  {
+   "var:lastFit": 80.0383877159,
+   "var:stagnCount": 0,
+   "var:mutRate": 0.05,
+   "var:__obs_plot0": 0.05
+  },
+  {
+   "var:lastFit": 69.6015021907,
+   "var:stagnCount": 0,
+   "var:mutRate": 0.05,
+   "var:__obs_plot0": 0.05
+  },
+  {
+   "var:lastFit": 77.0749744316,
+   "var:stagnCount": 0,
+   "var:mutRate": 0.05,
+   "var:__obs_plot0": 0.05
+  }
+ ],
+ "finalVarState": {
+  "lastFit": 77.0749744316,
+  "stagnCount": 0,
+  "mutRate": 0.05,
+  "__obs_plot0": 0.05
+ }
+}

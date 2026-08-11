@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("ReLU")
+relu(x) =>
+    math.max(x, 0.0)
+diff = close - open
+out = relu(diff)
+plot(out, "ReLU")

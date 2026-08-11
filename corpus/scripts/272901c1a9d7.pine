@@ -1,0 +1,5 @@
+//@version=5
+indicator("Unary")
+var float result = 0.0
+x = -close
+result := x

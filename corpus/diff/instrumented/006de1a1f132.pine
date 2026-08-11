@@ -1,0 +1,16 @@
+//@version=5
+indicator("Switch Var")
+var float bullBars = 0.0
+var float bearBars = 0.0
+var float flatBars = 0.0
+chg = close - open
+if chg > 0
+    bullBars := bullBars + 1
+else if chg < 0
+    bearBars := bearBars + 1
+else
+    flatBars := flatBars + 1
+total = bullBars + bearBars + flatBars
+var float __obs_plot0 = na
+__obs_plot0 := bullBars / total * 100
+plot(bullBars / total * 100)

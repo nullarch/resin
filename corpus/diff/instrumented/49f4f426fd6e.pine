@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("WinRate")
+var float[] rets = array.new_float(0)
+ret = close - open
+array.push(rets, ret)
+if array.size(rets) > 8
+    array.shift(rets)
+int wins = 0
+for i = 0 to array.size(rets) - 1
+    r = array.get(rets, i)
+    wins := r > 0 ? wins + 1 : wins
+sz = array.size(rets)
+winRate = sz > 0 ? wins / sz * 100.0 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := winRate
+plot(winRate, "WR")

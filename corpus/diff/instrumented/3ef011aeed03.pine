@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("VA HL")
+var float vaHigh = 0.0
+var float vaLow = 99999.0
+midPrice = (high + low) / 2.0
+if volume > 1000
+    if midPrice > vaHigh
+        vaHigh := midPrice
+    if midPrice < vaLow
+        vaLow := midPrice
+spread = vaHigh - vaLow
+var float __obs_plot0 = na
+__obs_plot0 := spread
+plot(spread, "VA Spread")

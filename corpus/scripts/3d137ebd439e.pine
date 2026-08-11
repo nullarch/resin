@@ -1,0 +1,7 @@
+//@version=5
+indicator("Hoisting Func")
+var float result = 0.0
+result := myFunc(10.0)
+
+myFunc(x) =>
+    x * 2

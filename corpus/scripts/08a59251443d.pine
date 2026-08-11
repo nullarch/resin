@@ -1,0 +1,16 @@
+
+//@version=5
+strategy("UDF Strat", overlay=true)
+generateSignal(float rsiVal, float maVal, float price) =>
+    bull = rsiVal > 50 and price > maVal
+    bear = rsiVal < 50 and price < maVal
+    bull ? 1 : bear ? -1 : 0
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+sig = generateSignal(rsi, sma3, close)
+if sig == 1
+    strategy.entry("Long", strategy.long)
+if sig == -1
+    strategy.close("Long")
+plot(sma3, "MA")

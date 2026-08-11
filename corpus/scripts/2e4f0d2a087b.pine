@@ -1,0 +1,5 @@
+//@version=5
+indicator("deep index")
+var float result = 0.0
+if bar_index >= 5
+    result := close[5]

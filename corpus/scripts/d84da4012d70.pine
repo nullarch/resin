@@ -1,0 +1,4 @@
+//@version=5
+indicator("req security")
+var float result = 0.0
+result := close

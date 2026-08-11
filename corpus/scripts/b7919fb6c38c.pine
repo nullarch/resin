@@ -1,0 +1,6 @@
+//@version=5
+indicator("Args Kwargs Basic")
+float s = ta.sma(close, 3)
+var float result = 0.0
+if not na(s)
+    result := s

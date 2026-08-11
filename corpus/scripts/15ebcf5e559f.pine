@@ -1,0 +1,6 @@
+//@version=5
+indicator("Array Sort Median")
+var float result = 0.0
+a = array.from(30.0, 10.0, 20.0)
+a.sort()
+result := a.median()

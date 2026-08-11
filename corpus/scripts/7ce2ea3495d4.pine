@@ -1,0 +1,12 @@
+
+//@version=5
+strategy("SR Bounce", overlay=true)
+lo5 = ta.lowest(low, 5)
+hi5 = ta.highest(high, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+nearSupport = close < lo5 * 1.02
+if nearSupport and rsi < 40
+    strategy.entry("Long", strategy.long)
+if close > hi5 * 0.98
+    strategy.close("Long")
+plot(lo5, "Sup")

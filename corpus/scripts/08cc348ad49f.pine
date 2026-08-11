@@ -1,0 +1,4 @@
+//@version=5
+indicator("tf in sec")
+var float result = 0.0
+result := float(timeframe.in_seconds("D"))

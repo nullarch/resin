@@ -1,0 +1,6 @@
+//@version=5
+indicator("Var Array")
+var prices = array.new_float(0)
+array.push(prices, close)
+sz = array.size(prices)
+plot(sz)

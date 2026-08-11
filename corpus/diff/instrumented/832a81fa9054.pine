@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Candle Hist")
+var int[] types = array.new_int(0)
+candleType = close > open ? 1 : close < open ? -1 : 0
+array.push(types, candleType)
+if array.size(types) > 6
+    array.shift(types)
+bullCount = 0
+for v in types
+    if v > 0
+        bullCount := bullCount + 1
+bullPct = array.size(types) > 0 ? bullCount / array.size(types) : 0.5
+var float __obs_plot0 = na
+__obs_plot0 := bullPct
+plot(bullPct, "BullPct")

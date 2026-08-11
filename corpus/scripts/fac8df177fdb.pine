@@ -1,0 +1,7 @@
+//@version=5
+indicator("Quorum Vote")
+var int votes = 0
+sma5 = ta.sma(close, 5)
+if not na(sma5) and close > sma5
+    votes := votes + 1
+quorum_met = votes >= 3 ? 1.0 : 0.0

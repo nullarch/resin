@@ -1,0 +1,39 @@
+
+//@version=5
+strategy("Stress18")
+enum OrderType
+    MARKET
+    LIMIT
+    STOP
+type Order
+    float price = 0.0
+    float qty = 1.0
+    string tag = ""
+calcQty(volatility) =>
+    volatility > 2.0 ? 0.5 : 1.0
+atr = nz(ta.atr(3), 1.0)
+orderType = atr > 3.0 ? OrderType.STOP : atr > 1.5 ? OrderType.LIMIT : OrderType.MARKET
+order = Order.new()
+order.price := close
+order.qty := calcQty(atr)
+order.tag := orderType == OrderType.MARKET ? "MKT" : orderType == OrderType.LIMIT ? "LMT" : "STP"
+fillLevels = array.new_float(0)
+for i = 1 to 4
+    array.push(fillLevels, close + float(i) * atr * 0.5)
+adjustments = 0
+temp = atr
+while temp > 0.5 and adjustments < 10
+    temp := temp * 0.85
+    adjustments := adjustments + 1
+orderBook = map.new<string, float>()
+map.put(orderBook, "price", order.price)
+map.put(orderBook, "qty", order.qty)
+map.put(orderBook, "adj", float(adjustments))
+total = 0.0
+for [k, v] in orderBook
+    total := total + v
+if orderType == OrderType.MARKET
+    strategy.entry("Mkt", strategy.long)
+if orderType == OrderType.STOP
+    strategy.close("Mkt")
+plot(total + array.sum(fillLevels) + float(str.length(order.tag)), "S18")

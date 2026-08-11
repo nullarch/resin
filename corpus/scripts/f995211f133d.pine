@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Factor Map")
+var fm = map.new<string, float>()
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+map.put(fm, "momentum", (rsi - 50) / 50)
+map.put(fm, "trend", close > sma3 ? 1.0 : -1.0)
+map.put(fm, "volume", volume > ta.sma(volume, 5) ? 1.0 : 0.0)
+composite = 0.0
+for [k, v] in fm
+    composite := composite + v
+plot(composite, "C")

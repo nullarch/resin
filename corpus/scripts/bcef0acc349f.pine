@@ -1,0 +1,12 @@
+//@version=5
+indicator("Complex plot")
+sma5 = ta.sma(close, 5)
+ema5 = ta.ema(close, 5)
+rsi5 = ta.rsi(close, 5)
+bullClr = color.new(color.green, 50)
+bearClr = color.new(color.red, 50)
+maClr = close > nz(sma5) ? bullClr : bearClr
+p1 = plot(sma5, "SMA", color=maClr)
+p2 = plot(ema5, "EMA", color=color.blue)
+fill(p1, p2, color=color.new(color.gray, 90))
+hline(0, "Zero")

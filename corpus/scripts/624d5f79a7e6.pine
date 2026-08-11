@@ -1,0 +1,10 @@
+//@version=5
+indicator("UDT copy")
+type State
+    float value = 0.0
+    int count = 0
+var s1 = State.new()
+s1.value := close
+s1.count := s1.count + 1
+s2 = State.copy(s1)
+s2.value := high

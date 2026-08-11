@@ -1,0 +1,11 @@
+//@version=5
+indicator("Multi Plot")
+upper = ta.sma(close, 5) + ta.stdev(close, 5)
+lower = ta.sma(close, 5) - ta.stdev(close, 5)
+var float __obs_plot0 = na
+__obs_plot0 := upper
+p1 = plot(upper)
+var float __obs_plot1 = na
+__obs_plot1 := lower
+p2 = plot(lower)
+fill(p1, p2, color=color.new(color.blue, 80))

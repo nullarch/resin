@@ -1,0 +1,10 @@
+//@version=5
+indicator("Simplex Dim")
+float threshold = 5.0
+int dim = 0
+bool e1 = math.abs(close - open) < threshold
+bool e2 = math.abs(high - low) < threshold
+bool e3 = math.abs(close - low) < threshold
+dim := dim + (e1 ? 1 : 0) + (e2 ? 1 : 0) + (e3 ? 1 : 0)
+int simplexDim = dim >= 3 ? 2 : (dim >= 1 ? 1 : 0)
+plot(simplexDim, "Dim")

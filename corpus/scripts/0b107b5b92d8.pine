@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Range Analysis")
+var float[] ranges = array.new_float(0)
+barRange = high - low
+array.push(ranges, barRange)
+if array.size(ranges) > 8
+    array.shift(ranges)
+avgRange = array.avg(ranges)
+maxRange = array.max(ranges)
+minRange = array.min(ranges)
+rangeExpansion = barRange > avgRange * 1.5
+plot(avgRange, "AvgRange")
+plot(rangeExpansion ? 1 : 0, "Expansion")

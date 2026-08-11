@@ -1,0 +1,8 @@
+//@version=5
+indicator("Cloud Cover")
+sma3 = ta.sma(close, 3)
+cloudy = close < sma3 and high - low > 3
+coverVal = cloudy ? 1.0 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := coverVal
+plot(coverVal, title="cover")

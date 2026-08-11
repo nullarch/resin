@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:base": "pine_fn.<locals>.Config(threshold=1.0, multiplier=2.0, period=5)",
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:base": "pine_fn.<locals>.Config(threshold=1.0, multiplier=2.0, period=5)",
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:base": "pine_fn.<locals>.Config(threshold=1.0, multiplier=2.0, period=5)",
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:base": "pine_fn.<locals>.Config(threshold=1.0, multiplier=2.0, period=5)",
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:base": "pine_fn.<locals>.Config(threshold=1.0, multiplier=2.0, period=5)",
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:base": "pine_fn.<locals>.Config(threshold=1.0, multiplier=2.0, period=5)",
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:base": "pine_fn.<locals>.Config(threshold=1.0, multiplier=2.0, period=5)",
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:base": "pine_fn.<locals>.Config(threshold=1.0, multiplier=2.0, period=5)",
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:base": "pine_fn.<locals>.Config(threshold=1.0, multiplier=2.0, period=5)",
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:base": "pine_fn.<locals>.Config(threshold=1.0, multiplier=2.0, period=5)",
+   "var:__obs_plot0": 2.0
+  }
+ ],
+ "finalVarState": {
+  "base": "pine_fn.<locals>.Config(threshold=1.0, multiplier=2.0, period=5)",
+  "__obs_plot0": 2.0
+ }
+}

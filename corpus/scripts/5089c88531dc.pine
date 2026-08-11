@@ -1,0 +1,17 @@
+//@version=5
+indicator("StateEnum09")
+enum FilterState
+    CONVERGING
+    STABLE
+    DIVERGING
+var float est = 100.0
+var float prevErr = 10.0
+gain = 0.3
+err = math.abs(close - est)
+est := est + gain * (close - est)
+fState = switch
+    err < prevErr * 0.9 => FilterState.CONVERGING
+    err > prevErr * 1.1 => FilterState.DIVERGING
+    => FilterState.STABLE
+prevErr := err
+plot(est, "e")

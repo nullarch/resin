@@ -1,0 +1,11 @@
+//@version=5
+indicator("Half Life")
+float mu = ta.sma(close, 5)
+float deviation = close - mu
+float prevDev = not na(close[1]) ? (close[1] - mu) : deviation
+float absDevPrev = math.abs(prevDev)
+float ratio = absDevPrev > 0.01 ? math.abs(deviation) / absDevPrev : 1.0
+float halfLife = ratio > 0 and ratio < 1 ? -math.log(2.0) / math.log(ratio) : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := halfLife
+plot(halfLife, "HalfLife")

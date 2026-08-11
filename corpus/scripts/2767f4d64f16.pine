@@ -1,0 +1,8 @@
+//@version=5
+indicator("Ising Model")
+float sma5 = nz(ta.sma(close, 5), close)
+float spin = close > sma5 ? 1.0 : -1.0
+var float magnetization = 0.0
+var int cnt = 0
+cnt := cnt + 1
+magnetization := magnetization + (spin - magnetization) / cnt

@@ -1,0 +1,7 @@
+//@version=5
+indicator("test")
+change = close - close[1]
+pctChange = change / close[1] * 100
+var float __obs_plot0 = na
+__obs_plot0 := pctChange
+plot(pctChange)

@@ -1,0 +1,4 @@
+//@version=5
+indicator("Test")
+arr = array.from(1, 2, 3)
+allTrue = array.every(arr)

@@ -1,0 +1,9 @@
+//@version=5
+indicator("Competing Risks")
+float rsiVal = nz(ta.rsi(close, 3), 50.0)
+float hazardA = rsiVal > 60.0 ? 0.08 : 0.01
+float hazardB = volume > 1200 ? 0.05 : 0.01
+float totalHazard = hazardA + hazardB
+var float survComp = 1.0
+survComp := survComp * (1.0 - totalHazard)
+plot(survComp, "CompSurv")

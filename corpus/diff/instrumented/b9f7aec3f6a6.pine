@@ -1,0 +1,9 @@
+//@version=5
+indicator("DG-10 Christoffel")
+var float gamma = 0.0
+atr3 = nz(ta.atr(3), 1.0)
+atr5 = nz(ta.atr(5), 1.0)
+gamma := atr5 > 0.01 ? (atr3 - atr5) / atr5 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := gamma
+plot(gamma)

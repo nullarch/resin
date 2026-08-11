@@ -1,0 +1,4 @@
+//@version=5
+strategy("Test Strategy")
+if close > open
+    strategy.entry("Long", strategy.long)

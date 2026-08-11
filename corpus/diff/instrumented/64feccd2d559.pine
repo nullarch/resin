@@ -1,0 +1,15 @@
+//@version=5
+indicator("For-In TA")
+periods = array.from(3.0, 5.0, 8.0)
+var float avgSMA = 0.0
+total = 0.0
+count = 0
+for p in periods
+    smaVal = ta.sma(close, int(p))
+    if not na(smaVal)
+        total := total + smaVal
+        count := count + 1
+avgSMA := count > 0 ? total / count : na
+var float __obs_plot0 = na
+__obs_plot0 := avgSMA
+plot(avgSMA)

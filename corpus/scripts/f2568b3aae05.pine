@@ -1,0 +1,6 @@
+//@version=5
+indicator("Escapes")
+s = "a\nb\tc"
+var int len_ = 0
+len_ := str.length(s)
+plot(len_)

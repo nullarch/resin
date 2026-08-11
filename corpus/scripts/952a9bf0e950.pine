@@ -1,0 +1,6 @@
+//@version=5
+indicator("Monoid Product")
+float ratio = close / math.max(not na(close[1]) ? close[1] : close, 0.01)
+var float product = 1.0
+product := product * ratio
+float logProduct = math.log(math.max(product, 0.0001))

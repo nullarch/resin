@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Cum Change")
+chg = ta.change(close, 1)
+cumChg = ta.cum(chg)
+var float __obs_plot0 = na
+__obs_plot0 := cumChg
+plot(cumChg, "CumChange")

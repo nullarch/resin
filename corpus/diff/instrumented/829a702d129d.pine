@@ -1,0 +1,12 @@
+//@version=5
+indicator("NaN Cmp")
+float x = float(na)
+var bool gt = x > 0
+var bool lt = x < 0
+var bool eq = x == 0
+// All comparisons with NaN return false
+var float result = 0.0
+result := (gt ? 1.0 : 0.0) + (lt ? 10.0 : 0.0) + (eq ? 100.0 : 0.0)
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

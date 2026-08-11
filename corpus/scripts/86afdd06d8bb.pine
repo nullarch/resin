@@ -1,0 +1,18 @@
+//@version=5
+indicator("Fib Levels", overlay=true)
+lookback = 50
+highest_price = ta.highest(high, lookback)
+lowest_price = ta.lowest(low, lookback)
+diff = highest_price - lowest_price
+fib236 = highest_price - diff * 0.236
+fib382 = highest_price - diff * 0.382
+fib500 = highest_price - diff * 0.500
+fib618 = highest_price - diff * 0.618
+fib786 = highest_price - diff * 0.786
+plot(highest_price)
+plot(fib236)
+plot(fib382)
+plot(fib500)
+plot(fib618)
+plot(fib786)
+plot(lowest_price)

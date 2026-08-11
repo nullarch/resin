@@ -1,0 +1,6 @@
+//@version=5
+indicator("MFI")
+var float lastM = 0
+m = ta.mfi(hlc3, 5)
+if not na(m)
+    lastM := m

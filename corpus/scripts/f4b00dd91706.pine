@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Mom Comp")
+mom3 = close - close[3]
+mom5 = not na(close[5]) ? close - close[5] : 0.0
+momDiff = nz(mom3, 0.0) - nz(mom5, 0.0) * 0.6
+plot(momDiff, "MD")

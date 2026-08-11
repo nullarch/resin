@@ -1,0 +1,14 @@
+//@version=5
+indicator("Barcode")
+var float featureStart = 0.0
+var int featureLen = 0
+var int maxBarcode = 0
+bool aboveMean = close > nz(ta.sma(close, 5), close)
+if aboveMean
+    if featureLen == 0
+        featureStart := close
+    featureLen := featureLen + 1
+else
+    maxBarcode := math.max(maxBarcode, featureLen)
+    featureLen := 0
+plot(maxBarcode, "MaxBarcode")

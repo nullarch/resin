@@ -1,0 +1,7 @@
+//@version=5
+indicator("Reassign")
+x = 0.0
+x := 1.0
+x := 2.0
+x := x + 1.0
+plot(x)

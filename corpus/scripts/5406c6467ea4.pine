@@ -1,0 +1,6 @@
+//@version=5
+indicator("Mom")
+var float lastMom = 0
+m = ta.mom(close, 3)
+if not na(m)
+    lastMom := m

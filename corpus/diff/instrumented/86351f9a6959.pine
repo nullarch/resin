@@ -1,0 +1,36 @@
+//@version=5
+indicator("PageRankProxy")
+rank = array.new_float(3, 1.0 / 3.0)
+d = 0.85
+e01 = math.abs(close - open) < 5.0 ? 1.0 : 0.0
+e12 = math.abs(open - high) < 8.0 ? 1.0 : 0.0
+e02 = math.abs(close - high) < 8.0 ? 1.0 : 0.0
+for iter = 0 to 2
+    r0 = array.get(rank, 0)
+    r1 = array.get(rank, 1)
+    r2 = array.get(rank, 2)
+    outDeg0 = e01 + e02
+    outDeg1 = e01 + e12
+    outDeg2 = e02 + e12
+    new0 = (1.0 - d) / 3.0
+    new1 = (1.0 - d) / 3.0
+    new2 = (1.0 - d) / 3.0
+    if outDeg1 > 0.0
+        new0 := new0 + d * e01 * r1 / outDeg1
+    if outDeg2 > 0.0
+        new0 := new0 + d * e02 * r2 / outDeg2
+    if outDeg0 > 0.0
+        new1 := new1 + d * e01 * r0 / outDeg0
+    if outDeg2 > 0.0
+        new1 := new1 + d * e12 * r2 / outDeg2
+    if outDeg0 > 0.0
+        new2 := new2 + d * e02 * r0 / outDeg0
+    if outDeg1 > 0.0
+        new2 := new2 + d * e12 * r1 / outDeg1
+    array.set(rank, 0, new0)
+    array.set(rank, 1, new1)
+    array.set(rank, 2, new2)
+topRank = array.max(rank)
+var float __obs_plot0 = na
+__obs_plot0 := topRank
+plot(topRank, "TopPR")

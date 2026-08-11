@@ -1,0 +1,9 @@
+//@version=5
+indicator("Pure Pursuit")
+float lookahead = 3.0
+float sma5 = nz(ta.sma(close, 5), close)
+float pathTarget = sma5 + lookahead
+float lateralError = pathTarget - close
+float wheelbase = 2.5
+float curvature = wheelbase > 0.01 ? 2.0 * lateralError / (lookahead * lookahead) : 0.0
+float steerAngle = math.atan(curvature * wheelbase) * 57.2958

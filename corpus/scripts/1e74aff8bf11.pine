@@ -1,0 +1,8 @@
+//@version=5
+indicator("multiline bool")
+var float result = 0.0
+cond = close > open and
+    high > low and
+    volume > 0
+if cond
+    result := close

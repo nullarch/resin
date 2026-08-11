@@ -1,0 +1,5 @@
+//@version=5
+indicator("Lamport Clock")
+var float clock_val = 0.0
+increment = math.abs(close - open) + 1.0
+clock_val := clock_val + increment

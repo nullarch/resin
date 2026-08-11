@@ -1,0 +1,7 @@
+//@version=5
+indicator("Array Stats")
+var a = array.new_float(0)
+array.push(a, close)
+var float stats = 0.0
+stats := array.avg(a) + array.min(a) + array.max(a)
+plot(close)

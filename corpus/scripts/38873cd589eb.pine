@@ -1,0 +1,8 @@
+//@version=5
+indicator("test")
+period = switch
+    close > 108 => 3
+    close > 104 => 5
+    => 7
+result = ta.sma(close, period)
+plot(result)

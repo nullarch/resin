@@ -1,0 +1,5 @@
+//@version=5
+indicator("input default")
+len = input(14, "Length")
+var int result = 0
+result := len

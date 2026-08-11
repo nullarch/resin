@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("WMA SMA Div")
+wma5 = ta.wma(close, 5)
+sma5 = ta.sma(close, 5)
+divergence = wma5 - sma5
+increasing = divergence > divergence[1]
+plot(divergence, "Div")
+plot(increasing ? 1 : 0, "Inc")

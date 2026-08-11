@@ -1,0 +1,11 @@
+//@version=5
+indicator("UDT Basic Fields")
+var float result = 0.0
+
+type Position
+    float entry = 0.0
+    float stop_loss = 0.0
+    bool is_long = true
+
+p = Position.new(close, close - 5, true)
+result := p.entry

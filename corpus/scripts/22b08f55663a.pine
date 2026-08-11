@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Flow Lbl")
+totalRange = high - low
+buyPress = totalRange > 0 ? (close - low) / totalRange : 0.5
+flowDir = buyPress > 0.6 ? "BUY" : buyPress < 0.4 ? "SELL" : "MIXED"
+avgVol = ta.sma(volume, 5)
+volStr = avgVol > 0 and volume > avgVol * 1.5 ? "HEAVY" : "LIGHT"
+label = flowDir + "_" + volStr
+isBuyHeavy = label == "BUY_HEAVY"
+plot(isBuyHeavy ? 1 : 0, "BH")

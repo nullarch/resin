@@ -1,0 +1,10 @@
+//@version=5
+indicator("String Escape")
+var string s = "line1\nline2\ttab"
+var int len_ = 0
+len_ := str.length(s)
+var bool has_n = false
+has_n := str.contains(s, "\n")
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

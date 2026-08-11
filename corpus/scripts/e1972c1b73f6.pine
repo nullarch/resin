@@ -1,0 +1,7 @@
+//@version=5
+indicator("Test")
+x = foo(close)
+foo(src) =>
+    bar(src) + 1
+bar(src) =>
+    src * 2

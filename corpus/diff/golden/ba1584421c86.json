@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:regretA": 0.0,
+   "var:regretB": 0.0,
+   "var:__obs_plot0": 0.5
+  },
+  {
+   "var:regretA": 0.0,
+   "var:regretB": 0.0,
+   "var:__obs_plot0": 0.5
+  },
+  {
+   "var:regretA": 0.0,
+   "var:regretB": 1.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:regretA": 0.0,
+   "var:regretB": 1.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:regretA": 0.0,
+   "var:regretB": 1.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:regretA": 0.0,
+   "var:regretB": 1.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:regretA": 0.0,
+   "var:regretB": 1.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:regretA": 0.0,
+   "var:regretB": 1.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:regretA": 0.0,
+   "var:regretB": 1.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:regretA": 0.0,
+   "var:regretB": 1.0,
+   "var:__obs_plot0": 0.0
+  }
+ ],
+ "finalVarState": {
+  "regretA": 0.0,
+  "regretB": 1.0,
+  "__obs_plot0": 0.0
+ }
+}

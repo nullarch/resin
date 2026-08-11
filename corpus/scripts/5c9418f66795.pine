@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Exp Smooth")
+var float smooth = 0.0
+alpha = 0.3
+smooth := alpha * close + (1 - alpha) * smooth
+residual = close - smooth
+plot(smooth, "Sm")
+plot(residual, "Res")

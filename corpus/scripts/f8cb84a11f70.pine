@@ -1,0 +1,10 @@
+//@version=5
+indicator("Switch TA Branch")
+var int mode = 2
+float ta_val = switch mode
+    1 => ta.sma(close, 3)
+    2 => ta.ema(close, 5)
+    => close
+var float result = 0.0
+result := nz(ta_val, 0.0)
+plot(result)

@@ -1,0 +1,5 @@
+//@version=5
+indicator("Valuewhen")
+bullish = close > open
+lastBullClose = ta.valuewhen(bullish, close, 0)
+plot(lastBullClose)

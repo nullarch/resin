@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("MDD%")
+var float peak = 0.0
+var float maxDD = 0.0
+peak := math.max(peak, close)
+dd = peak > 0 ? (peak - close) / peak * 100 : 0.0
+maxDD := math.max(maxDD, dd)
+plot(maxDD, "MDD")

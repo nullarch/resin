@@ -1,0 +1,5 @@
+//@version=5
+indicator("test")
+var float[] allCloses = array.new_float(0)
+array.push(allCloses, close)
+plot(array.size(allCloses))

@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("PriceImpact")
+impactMap = map.new<string, float>()
+spread = high - low
+for i = 1 to 4
+    size = float(i) * 0.25
+    impact = spread * math.sqrt(size)
+    map.put(impactMap, "size" + str.tostring(i), impact)
+totalImpact = 0.0
+for [key, val] in impactMap
+    totalImpact := totalImpact + val
+var float __obs_plot0 = na
+__obs_plot0 := totalImpact
+plot(totalImpact, "PI")

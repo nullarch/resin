@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Sort Rank")
+var float[] vals = array.new_float(0)
+rsi = nz(ta.rsi(close, 3), 50.0)
+array.push(vals, rsi)
+if array.size(vals) > 6
+    array.shift(vals)
+sorted = array.copy(vals)
+array.sort(sorted)
+rank = array.indexof(sorted, rsi)
+pctRank = array.size(sorted) > 1 ? float(rank) / (array.size(sorted) - 1) * 100 : 50.0
+var float __obs_plot0 = na
+__obs_plot0 := pctRank
+plot(pctRank, "PR")

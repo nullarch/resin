@@ -1,0 +1,5 @@
+//@version=5
+indicator("Color Literal")
+var float result = 0.0
+result := close
+plot(result, color=#FF0000)

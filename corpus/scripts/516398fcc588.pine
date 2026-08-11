@@ -1,0 +1,10 @@
+//@version=5
+indicator("Betti-0")
+float dist = math.abs(close - open)
+float epsilon = 3.0
+var int components = 0
+if dist > epsilon
+    components := components + 1
+else
+    components := math.max(components - 1, 0)
+plot(components, "Betti0")

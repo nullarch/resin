@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Map Report")
+var data = map.new<string, float>()
+map.put(data, "sma", ta.sma(close, 3))
+map.put(data, "rsi", nz(ta.rsi(close, 3), 50.0))
+map.put(data, "atr", ta.atr(3))
+sum = 0.0
+count = 0
+for [k, v] in data
+    sum := sum + v
+    count := count + 1
+avgVal = count > 0 ? sum / count : 0.0
+plot(avgVal, "AvgVal")

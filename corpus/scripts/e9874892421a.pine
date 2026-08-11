@@ -1,0 +1,14 @@
+//@version=5
+indicator("Aftershock Sequence")
+var int timeSinceMain = 0
+var bool mainshockOccurred = false
+atrVal = nz(ta.atr(3), 1.0)
+spike = (high - low) > atrVal * 2
+if spike and not mainshockOccurred
+    mainshockOccurred := true
+    timeSinceMain := 0
+if mainshockOccurred
+    timeSinceMain := timeSinceMain + 1
+cParam = 1.0
+aftershockRate = mainshockOccurred and timeSinceMain > 0 ? 10.0 / (timeSinceMain + cParam) : 0.0
+plot(aftershockRate)

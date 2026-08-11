@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Mom Rank")
+var float[] moms = array.new_float(0)
+array.clear(moms)
+for p = 1 to 5
+    prev = close[p]
+    mom = not na(prev) and prev > 0 ? (close - prev) / prev * 100 : 0.0
+    array.push(moms, mom)
+maxMom = array.max(moms)
+minMom = array.min(moms)
+var float __obs_plot0 = na
+__obs_plot0 := maxMom
+plot(maxMom, "MaxMom")
+var float __obs_plot1 = na
+__obs_plot1 := minMom
+plot(minMom, "MinMom")

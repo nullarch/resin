@@ -1,0 +1,6 @@
+//@version=5
+indicator("MACD Verify")
+[macdLine, signalLine, histLine] = ta.macd(close, 3, 5, 2)
+var float lastMacd = 0
+if not na(macdLine)
+    lastMacd := macdLine

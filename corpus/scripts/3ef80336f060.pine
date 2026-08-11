@@ -1,0 +1,9 @@
+//@version=5
+indicator("Chaos Game")
+float a1 = 100.0
+float a2 = 110.0
+float a3 = 105.0
+var float pos = 105.0
+float selector = close - math.floor(close / 3.0) * 3.0
+float target = selector < 1.0 ? a1 : selector < 2.0 ? a2 : a3
+pos := (pos + target) / 2.0

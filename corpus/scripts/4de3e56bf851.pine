@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Regime Hist")
+var regimes = map.new<string, float>()
+rsi = ta.rsi(close, 3)
+rsiVal = nz(rsi, 50.0)
+currentRegime = rsiVal > 60 ? 2.0 : rsiVal < 40 ? 0.0 : 1.0
+map.put(regimes, "prev", map.get(regimes, "current", 1.0))
+map.put(regimes, "current", currentRegime)
+changed = map.get(regimes, "current", 1.0) != map.get(regimes, "prev", 1.0)
+plot(currentRegime, "Regime")
+plot(changed ? 1 : 0, "Changed")

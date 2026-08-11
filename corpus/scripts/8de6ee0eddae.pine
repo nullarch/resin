@@ -1,0 +1,20 @@
+
+//@version=5
+indicator("Stat Zone")
+enum StatZone
+    ExtremeHigh = 2
+    High = 1
+    Normal = 0
+    Low = -1
+    ExtremeLow = -2
+
+sma5 = ta.sma(close, 5)
+stdev = nz(ta.stdev(close, 5), 1.0)
+z = stdev > 0 ? (close - sma5) / stdev : 0.0
+zone = switch
+    z > 2 => StatZone.ExtremeHigh
+    z > 1 => StatZone.High
+    z < -2 => StatZone.ExtremeLow
+    z < -1 => StatZone.Low
+    => StatZone.Normal
+plot(int(zone), "Z")

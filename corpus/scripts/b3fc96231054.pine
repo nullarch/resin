@@ -1,0 +1,16 @@
+//@version=5
+indicator("FE12")
+var float momentum = 0.0
+rocVal = nz(ta.roc(close, 3), 0.0)
+levels = map.new<string, float>()
+map.put(levels, "low", 1.0)
+map.put(levels, "mid", 2.0)
+map.put(levels, "high", 3.0)
+power = math.abs(rocVal) > 5 ? math.pow(2.0, 3.0) : math.pow(2.0, 1.0)
+cnt = 0
+x = 0
+while x < 3
+    cnt := cnt + 1
+    x := x + 1
+if rocVal > 0
+    momentum := momentum + power

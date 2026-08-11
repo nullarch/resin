@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("ToStr")
+rsi = nz(ta.rsi(close, 3), 50.0)
+rsiStr = str.tostring(math.round(rsi))
+hasDigit = str.length(rsiStr) > 0
+plot(hasDigit ? 1 : 0, "Has")

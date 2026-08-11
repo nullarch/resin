@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:mr": "pine_fn.<locals>.MomRegime(score=-0.19438405797100006, regime=0, duration=1)",
+   "var:__obs_plot0": -0.5,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:mr": "pine_fn.<locals>.MomRegime(score=-0.19438405797100006, regime=0, duration=1)",
+   "var:__obs_plot0": -0.5,
+   "var:__obs_plot1": 2
+  },
+  {
+   "var:mr": "pine_fn.<locals>.MomRegime(score=-0.19438405797100006, regime=0, duration=1)",
+   "var:__obs_plot0": -0.666666666667,
+   "var:__obs_plot1": 3
+  },
+  {
+   "var:mr": "pine_fn.<locals>.MomRegime(score=-0.19438405797100006, regime=0, duration=1)",
+   "var:__obs_plot0": -0.26666666666699995,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:mr": "pine_fn.<locals>.MomRegime(score=-0.19438405797100006, regime=0, duration=1)",
+   "var:__obs_plot0": -0.16666666666699997,
+   "var:__obs_plot1": 2
+  },
+  {
+   "var:mr": "pine_fn.<locals>.MomRegime(score=-0.19438405797100006, regime=0, duration=1)",
+   "var:__obs_plot0": -0.34959349593499994,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:mr": "pine_fn.<locals>.MomRegime(score=-0.19438405797100006, regime=0, duration=1)",
+   "var:__obs_plot0": -0.21078431372500006,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:mr": "pine_fn.<locals>.MomRegime(score=-0.19438405797100006, regime=0, duration=1)",
+   "var:__obs_plot0": 0.867895545315,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:mr": "pine_fn.<locals>.MomRegime(score=-0.19438405797100006, regime=0, duration=1)",
+   "var:__obs_plot0": -0.321932193219,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:mr": "pine_fn.<locals>.MomRegime(score=-0.19438405797100006, regime=0, duration=1)",
+   "var:__obs_plot0": -0.19438405797100006,
+   "var:__obs_plot1": 1
+  }
+ ],
+ "finalVarState": {
+  "mr": "pine_fn.<locals>.MomRegime(score=-0.19438405797100006, regime=0, duration=1)",
+  "__obs_plot0": -0.19438405797100006,
+  "__obs_plot1": 1
+ }
+}

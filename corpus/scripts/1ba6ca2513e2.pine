@@ -1,0 +1,6 @@
+//@version=5
+indicator("CCI")
+var float lastCCI = 0
+c = ta.cci(close, 5)
+if not na(c)
+    lastCCI := c

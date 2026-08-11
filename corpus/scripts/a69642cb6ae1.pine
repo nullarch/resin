@@ -1,0 +1,12 @@
+//@version=5
+indicator("UDF Multi Var")
+var float result = 0.0
+
+multi_state() =>
+    var float sum_val = 0.0
+    var int count = 0
+    sum_val := sum_val + close
+    count := count + 1
+    sum_val / count
+
+result := multi_state()

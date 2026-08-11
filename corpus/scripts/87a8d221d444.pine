@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Single Elem")
+var float[] single = array.new_float(0)
+array.push(single, close)
+if array.size(single) > 1
+    array.shift(single)
+avg = array.avg(single)
+mn = array.min(single)
+mx = array.max(single)
+plot(avg, "Avg")

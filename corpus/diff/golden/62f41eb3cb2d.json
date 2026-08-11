@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:of": "pine_fn.<locals>.OrderFlow(buyPressure=1333.3333333333, sellPressure=533.3333333333, delta=800.0000000000001)",
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:of": "pine_fn.<locals>.OrderFlow(buyPressure=1333.3333333333, sellPressure=533.3333333333, delta=800.0000000000001)",
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:of": "pine_fn.<locals>.OrderFlow(buyPressure=1333.3333333333, sellPressure=533.3333333333, delta=800.0000000000001)",
+   "var:__obs_plot0": 600.0
+  },
+  {
+   "var:of": "pine_fn.<locals>.OrderFlow(buyPressure=1333.3333333333, sellPressure=533.3333333333, delta=800.0000000000001)",
+   "var:__obs_plot0": 700.0
+  },
+  {
+   "var:of": "pine_fn.<locals>.OrderFlow(buyPressure=1333.3333333333, sellPressure=533.3333333333, delta=800.0000000000001)",
+   "var:__obs_plot0": 720.0
+  },
+  {
+   "var:of": "pine_fn.<locals>.OrderFlow(buyPressure=1333.3333333333, sellPressure=533.3333333333, delta=800.0000000000001)",
+   "var:__obs_plot0": 740.0
+  },
+  {
+   "var:of": "pine_fn.<locals>.OrderFlow(buyPressure=1333.3333333333, sellPressure=533.3333333333, delta=800.0000000000001)",
+   "var:__obs_plot0": 660.0
+  },
+  {
+   "var:of": "pine_fn.<locals>.OrderFlow(buyPressure=1333.3333333333, sellPressure=533.3333333333, delta=800.0000000000001)",
+   "var:__obs_plot0": 680.0
+  },
+  {
+   "var:of": "pine_fn.<locals>.OrderFlow(buyPressure=1333.3333333333, sellPressure=533.3333333333, delta=800.0000000000001)",
+   "var:__obs_plot0": 700.0
+  },
+  {
+   "var:of": "pine_fn.<locals>.OrderFlow(buyPressure=1333.3333333333, sellPressure=533.3333333333, delta=800.0000000000001)",
+   "var:__obs_plot0": 800.0000000000001
+  }
+ ],
+ "finalVarState": {
+  "of": "pine_fn.<locals>.OrderFlow(buyPressure=1333.3333333333, sellPressure=533.3333333333, delta=800.0000000000001)",
+  "__obs_plot0": 800.0000000000001
+ }
+}

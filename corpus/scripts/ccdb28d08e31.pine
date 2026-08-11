@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Rel Str")
+assetReturn = close > 0 ? (close - close[3]) / close[3] * 100 : 0.0
+benchReturn = ta.sma(close, 5) > 0 ? (close - ta.sma(close, 5)) / ta.sma(close, 5) * 100 : 0.0
+relStrength = assetReturn - nz(benchReturn, 0.0)
+plot(relStrength, "RS")

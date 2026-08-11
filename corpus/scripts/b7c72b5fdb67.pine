@@ -1,0 +1,12 @@
+
+//@version=5
+strategy("Vol Confirm", overlay=true)
+sma3 = ta.sma(close, 3)
+avgVol = ta.sma(volume, 5)
+highVol = volume > avgVol * 1.3
+rsi = nz(ta.rsi(close, 3), 50.0)
+if close > sma3 and highVol and rsi > 50
+    strategy.entry("Long", strategy.long)
+if close < sma3 or rsi > 80
+    strategy.close("Long")
+plot(sma3, "MA")

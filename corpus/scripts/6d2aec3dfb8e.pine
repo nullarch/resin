@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Time Phase")
+var int barNum = 0
+barNum := barNum + 1
+pos = barNum % 5
+phase = switch
+    pos == 0 => "open"
+    pos <= 1 => "early"
+    pos <= 3 => "mid"
+    => "late"
+isEarly = phase == "open" or phase == "early"
+plot(isEarly ? 1 : 0, "E")

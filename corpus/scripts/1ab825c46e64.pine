@@ -1,0 +1,11 @@
+//@version=5
+indicator("Attenuation Decay")
+var float peakAmplitude = 0.0
+amplitude = high - low
+if amplitude > peakAmplitude
+    peakAmplitude := amplitude
+attenuationFactor = 0.85
+peakAmplitude := peakAmplitude * attenuationFactor
+current = amplitude
+ratio = peakAmplitude > 0 ? current / peakAmplitude : 1.0
+plot(ratio)

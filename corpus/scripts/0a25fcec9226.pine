@@ -1,0 +1,6 @@
+//@version=5
+indicator("MathHeavy")
+var float result = 0
+angle = math.atan2(3.0, 4.0)
+dist = math.sqrt(math.pow(3, 2) + math.pow(4, 2))
+result := math.round(dist * math.sin(angle) + math.cos(angle), 2)

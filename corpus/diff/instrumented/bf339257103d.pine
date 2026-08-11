@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("TF Session")
+tf = timeframe.period
+isintra = timeframe.isintraday
+isdaily = timeframe.isdaily
+mult = timeframe.multiplier
+var float __obs_plot0 = na
+__obs_plot0 := mult
+plot(mult, "Mult")

@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Dual Fusion")
+rsi = nz(ta.rsi(close, 3), 50.0)
+[m, s, h] = ta.macd(close, 3, 5, 3)
+rsiSig = rsi > 55 ? 1.0 : rsi < 45 ? -1.0 : 0.0
+macdSig = h > 0 ? 1.0 : -1.0
+fusion = rsiSig * 0.5 + macdSig * 0.5
+var float __obs_plot0 = na
+__obs_plot0 := fusion
+plot(fusion, "Fus")

@@ -1,0 +1,6 @@
+//@version=5
+indicator("Framing")
+absChange = close - nz(close[1])
+pctChange = nz(close[1]) > 0 ? absChange / nz(close[1]) * 100.0 : 0.0
+frameDiff = math.abs(absChange) - math.abs(pctChange)
+plot(frameDiff)

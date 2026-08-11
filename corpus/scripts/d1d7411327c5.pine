@@ -1,0 +1,8 @@
+//@version=5
+indicator("If Block")
+var float result = 0.0
+if close > 105
+    result := 1.0
+else
+    result := -1.0
+plot(result)

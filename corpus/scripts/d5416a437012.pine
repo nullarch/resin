@@ -1,0 +1,7 @@
+//@version=5
+indicator("Scope Shadow")
+var float result = 0.0
+float x = 10.0
+if close > 100
+    float x = 20.0
+    result := x

@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Norm Mom")
+normMom(float val, float minVal, float maxVal) =>
+    range_ = maxVal - minVal
+    range_ > 0 ? (val - minVal) / range_ * 100 : 50.0
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+normalized = normMom(rsi, 20.0, 80.0)
+clamped = math.max(0.0, math.min(100.0, normalized))
+plot(clamped, "Norm")

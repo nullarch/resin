@@ -1,0 +1,7 @@
+//@version=5
+indicator("Encryption XOR")
+key_stream = math.floor(volume / 100.0)
+plaintext = close
+ciphertext = plaintext + key_stream
+decrypted = ciphertext - key_stream
+diff = math.abs(decrypted - plaintext)

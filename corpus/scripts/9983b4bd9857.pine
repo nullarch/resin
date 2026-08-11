@@ -1,0 +1,6 @@
+//@version=5
+indicator("Barstate")
+isFirst = barstate.isfirst
+isLast = barstate.islast
+val = isFirst ? open : isLast ? close : hl2
+plot(val)

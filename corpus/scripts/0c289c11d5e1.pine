@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Reg Class")
+classifyRegime(float price, float ma, float rsi, float atr, float avgATR) =>
+    trend = price > ma ? 1.0 : -1.0
+    momentum = (rsi - 50) / 50
+    vol = avgATR > 0 ? atr / avgATR : 1.0
+    trend * 0.4 + momentum * 0.4 + (vol > 1.2 ? -0.2 : 0.2)
+
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 5)
+score = classifyRegime(close, sma3, rsi, atr, avgATR)
+plot(score, "S")

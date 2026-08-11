@@ -1,0 +1,37 @@
+//@version=5
+indicator("Cycle 125 Comprehensive", overlay=true)
+type MarketState
+    string phase = "neutral"
+    float momentum = 0.0
+    int score = 0
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+ema5 = ta.ema(close, 5)
+rsi5 = ta.rsi(close, 5)
+atr3 = ta.atr(3)
+obvVal = ta.obv()
+[macdLine, sigLine, hist] = ta.macd(close, 3, 5, 3)
+var prices = array.new_float(0)
+var m = map.new<string, float>()
+var int totalBars = 0
+ms = MarketState.new()
+ms.score := 0
+if not na(sma3) and close > nz(sma3)
+    ms.score := ms.score + 1
+if not na(ema5) and close > nz(ema5)
+    ms.score := ms.score + 1
+if not na(rsi5) and nz(rsi5) > 50
+    ms.score := ms.score + 1
+if not na(macdLine) and not na(sigLine) and nz(macdLine) > nz(sigLine)
+    ms.score := ms.score + 1
+ms.phase := ms.score >= 3 ? "bullish" : ms.score <= 1 ? "bearish" : "neutral"
+ms.momentum := not na(sma3) and not na(sma5) ? nz(sma3) - nz(sma5) : 0.0
+array.push(prices, close)
+if array.size(prices) > 5
+    array.shift(prices)
+map.put(m, "phase_score", float(ms.score))
+map.put(m, "momentum", ms.momentum)
+clr = ms.phase == "bullish" ? color.green : ms.phase == "bearish" ? color.red : color.gray
+plot(sma3, "Fast", color=clr)
+plot(sma5, "Slow")
+totalBars := totalBars + 1

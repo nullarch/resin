@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("ZScore")
+mean = ta.sma(close, 5)
+sd = ta.stdev(close, 5)
+zscore = sd > 0 ? (close - mean) / sd : 0.0
+extreme = math.abs(zscore) > 2.0
+plot(zscore, "Z")
+plot(extreme ? 1 : 0, "Extreme")

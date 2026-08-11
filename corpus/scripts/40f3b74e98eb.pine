@@ -1,0 +1,10 @@
+//@version=5
+indicator("Case Fatality Rate")
+var float cumCases = 0.0
+var float cumDeaths = 0.0
+newCases = close
+deathRate = 0.02
+newDeaths = newCases * deathRate
+cumCases := cumCases + newCases
+cumDeaths := cumDeaths + newDeaths
+cfr = cumCases > 0 ? cumDeaths / cumCases * 100.0 : 0.0

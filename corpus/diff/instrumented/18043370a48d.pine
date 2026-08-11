@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Info Ratio")
+excessReturn = close - ta.sma(close, 5)
+trackingError = ta.stdev(excessReturn, 5)
+ir = trackingError > 0 ? ta.sma(excessReturn, 5) / trackingError : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := ir
+plot(ir, "IR")

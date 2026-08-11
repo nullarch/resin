@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:prev_close": 103,
+   "var:diff": 103.0,
+   "var:result": 103.0,
+   "var:__obs_plot0": 103.0
+  },
+  {
+   "var:prev_close": 104,
+   "var:diff": 1,
+   "var:result": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:prev_close": 102,
+   "var:diff": -2,
+   "var:result": -2,
+   "var:__obs_plot0": -2
+  },
+  {
+   "var:prev_close": 105,
+   "var:diff": 3,
+   "var:result": 3,
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:prev_close": 107,
+   "var:diff": 2,
+   "var:result": 2,
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:prev_close": 106,
+   "var:diff": -1,
+   "var:result": -1,
+   "var:__obs_plot0": -1
+  },
+  {
+   "var:prev_close": 108,
+   "var:diff": 2,
+   "var:result": 2,
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:prev_close": 110,
+   "var:diff": 2,
+   "var:result": 2,
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:prev_close": 109,
+   "var:diff": -1,
+   "var:result": -1,
+   "var:__obs_plot0": -1
+  },
+  {
+   "var:prev_close": 111,
+   "var:diff": 2,
+   "var:result": 2,
+   "var:__obs_plot0": 2
+  }
+ ],
+ "finalVarState": {
+  "prev_close": 111,
+  "diff": 2,
+  "result": 2,
+  "__obs_plot0": 2
+ }
+}

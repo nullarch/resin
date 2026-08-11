@@ -1,0 +1,10 @@
+//@version=5
+indicator("Switch TA Expr")
+var int mode = 1
+float val = switch mode
+    1 => nz(ta.sma(close, 3), 0.0)
+    2 => nz(ta.ema(close, 5), 0.0)
+    => close
+var float result = 0.0
+result := val
+plot(result)

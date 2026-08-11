@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("CI95")
+var float[] sample = array.new_float(0)
+array.push(sample, close)
+if array.size(sample) > 5
+    array.shift(sample)
+mean = array.avg(sample)
+sumSq = 0.0
+for [i, v] in sample
+    sumSq := sumSq + math.pow(v - mean, 2)
+sz = array.size(sample)
+stdErr = sz > 1 ? math.sqrt(sumSq / float(sz - 1)) / math.sqrt(float(sz)) : 1.0
+zCrit = 1.96
+ciUpper = mean + zCrit * stdErr
+ciLower = mean - zCrit * stdErr
+ciWidth = ciUpper - ciLower
+plot(ciWidth, "CIW")

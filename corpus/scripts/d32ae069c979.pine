@@ -1,0 +1,7 @@
+//@version=5
+indicator("Constant Folding Boolean")
+bool alwaysTrue = 1.0 > 0.0
+bool alwaysFalse = 0.0 > 1.0
+float result = alwaysTrue ? close : 0.0
+float dead = alwaysFalse ? 999.0 : close
+float sum = result + dead

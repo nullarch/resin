@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:c": "pine_fn.<locals>.Container(price=Series(current=111, length=10), dir=1)",
+   "var:__obs_plot0": 103
+  },
+  {
+   "var:c": "pine_fn.<locals>.Container(price=Series(current=111, length=10), dir=1)",
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:c": "pine_fn.<locals>.Container(price=Series(current=111, length=10), dir=1)",
+   "var:__obs_plot0": 102
+  },
+  {
+   "var:c": "pine_fn.<locals>.Container(price=Series(current=111, length=10), dir=1)",
+   "var:__obs_plot0": 105
+  },
+  {
+   "var:c": "pine_fn.<locals>.Container(price=Series(current=111, length=10), dir=1)",
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:c": "pine_fn.<locals>.Container(price=Series(current=111, length=10), dir=1)",
+   "var:__obs_plot0": 106
+  },
+  {
+   "var:c": "pine_fn.<locals>.Container(price=Series(current=111, length=10), dir=1)",
+   "var:__obs_plot0": 108
+  },
+  {
+   "var:c": "pine_fn.<locals>.Container(price=Series(current=111, length=10), dir=1)",
+   "var:__obs_plot0": 110
+  },
+  {
+   "var:c": "pine_fn.<locals>.Container(price=Series(current=111, length=10), dir=1)",
+   "var:__obs_plot0": 109
+  },
+  {
+   "var:c": "pine_fn.<locals>.Container(price=Series(current=111, length=10), dir=1)",
+   "var:__obs_plot0": 111
+  }
+ ],
+ "finalVarState": {
+  "c": "pine_fn.<locals>.Container(price=Series(current=111, length=10), dir=1)",
+  "__obs_plot0": 111
+ }
+}

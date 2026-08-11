@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Wt Rank")
+vals = array.from(close, open, high, low)
+totalWt = 0.0
+wtSum = 0.0
+for [idx, val] in vals
+    wt = float(4 - idx)
+    wtSum := wtSum + float(val) * wt
+    totalWt := totalWt + wt
+result = totalWt > 0 ? wtSum / totalWt : close
+plot(result, "WtRank")

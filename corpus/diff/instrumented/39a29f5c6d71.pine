@@ -1,0 +1,7 @@
+//@version=5
+indicator("Vol Norm")
+volSma = ta.sma(volume, 5)
+normVol = volume / volSma
+var float __obs_plot0 = na
+__obs_plot0 := normVol
+plot(normVol)

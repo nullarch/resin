@@ -1,0 +1,22 @@
+//@version=5
+indicator("MutInfo11")
+var float nTotal = 0.0
+var float nUpHigh = 0.0
+var float nUp = 0.0
+var float nHigh = 0.0
+nTotal := nTotal + 1.0
+isUp = close > open
+isHighVol = volume > 1100
+if isUp
+    nUp := nUp + 1.0
+if isHighVol
+    nHigh := nHigh + 1.0
+if isUp and isHighVol
+    nUpHigh := nUpHigh + 1.0
+pJoint = nTotal > 0 ? nUpHigh / nTotal : 0.0
+pA = nTotal > 0 ? nUp / nTotal : 0.0
+pB = nTotal > 0 ? nHigh / nTotal : 0.0
+mi = 0.0
+if pJoint > 0.001 and pA > 0.001 and pB > 0.001
+    mi := pJoint * math.log(pJoint / (pA * pB))
+plot(mi, "mi")

@@ -1,0 +1,10 @@
+//@version=5
+indicator("Reactor Kinetics")
+var float power = 100.0
+float reactivity = (close - 106.0) / 1000.0
+float promptNeutronLife = 0.001
+float betaEff = 0.0065
+float period = reactivity != 0.0 ? promptNeutronLife / (reactivity - betaEff) : 999.0
+float changeFactor = 1.0 + reactivity * 0.1
+power := math.max(power * changeFactor, 0.01)
+power := math.min(power, 1e6)

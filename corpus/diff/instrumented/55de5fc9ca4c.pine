@@ -1,0 +1,10 @@
+//@version=5
+indicator("Persist Landscape")
+float hh = ta.highest(high, 5)
+float ll = ta.lowest(low, 5)
+float span = hh - ll
+float prevSpan = not na(close[1]) ? span : 0.0
+float landscape = math.max(span - prevSpan, 0.0)
+var float __obs_plot0 = na
+__obs_plot0 := landscape
+plot(landscape, "PLandscape")

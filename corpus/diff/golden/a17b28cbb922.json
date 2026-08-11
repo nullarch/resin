@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:maxVol": 1000,
+   "var:cumVol": 1000.0,
+   "var:highVolBars": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:maxVol": 1200,
+   "var:cumVol": 2200.0,
+   "var:highVolBars": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:maxVol": 1200,
+   "var:cumVol": 3000.0,
+   "var:highVolBars": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:maxVol": 1500,
+   "var:cumVol": 4500.0,
+   "var:highVolBars": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:maxVol": 1500,
+   "var:cumVol": 5800.0,
+   "var:highVolBars": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:maxVol": 1500,
+   "var:cumVol": 6700.0,
+   "var:highVolBars": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:maxVol": 1500,
+   "var:cumVol": 7800.0,
+   "var:highVolBars": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:maxVol": 1500,
+   "var:cumVol": 9200.0,
+   "var:highVolBars": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:maxVol": 1500,
+   "var:cumVol": 10200.0,
+   "var:highVolBars": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:maxVol": 1600,
+   "var:cumVol": 11800.0,
+   "var:highVolBars": 0,
+   "var:__obs_plot0": 0
+  }
+ ],
+ "finalVarState": {
+  "maxVol": 1600,
+  "cumVol": 11800.0,
+  "highVolBars": 0,
+  "__obs_plot0": 0
+ }
+}

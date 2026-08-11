@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Stat State")
+var float sumRet = 0.0
+var float sumSqRet = 0.0
+var int count = 0
+ret = close[1] > 0 ? (close - close[1]) / close[1] * 100 : 0.0
+sumRet := sumRet + ret
+sumSqRet := sumSqRet + ret * ret
+count := count + 1
+meanRet = count > 0 ? sumRet / count : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := meanRet
+plot(meanRet, "MR")

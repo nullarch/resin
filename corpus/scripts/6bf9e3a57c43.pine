@@ -1,0 +1,7 @@
+//@version=5
+indicator("Bool NA")
+sma5 = ta.sma(close, 5)
+cond1 = not na(sma5)
+cond2 = close > open and high > close[1]
+cond3 = cond1 and cond2
+result = cond3 ? close : 0.0

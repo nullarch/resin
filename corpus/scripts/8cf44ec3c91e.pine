@@ -1,0 +1,12 @@
+
+//@version=5
+strategy("Mom Strat", overlay=true)
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+bullMom = rsi > 55 and sma3 > sma5 and close > sma3
+if bullMom
+    strategy.entry("Long", strategy.long)
+if rsi < 45 or close < sma5
+    strategy.close("Long")
+plot(sma3, "MA")

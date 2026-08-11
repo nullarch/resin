@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Sig Persist")
+var int lastSignal = 0
+var int signalAge = 0
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+newSignal = close > sma3 and rsi > 60 ? 1 : close < sma3 and rsi < 40 ? -1 : 0
+if newSignal != 0
+    lastSignal := newSignal
+    signalAge := 0
+else
+    signalAge := signalAge + 1
+active = signalAge < 3 ? lastSignal : 0
+plot(active, "Act")

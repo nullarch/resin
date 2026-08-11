@@ -1,0 +1,3 @@
+//@version=5
+indicator("WVAD")
+w = ta.wvad(open, high, low, close, volume)

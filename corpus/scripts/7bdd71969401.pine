@@ -1,0 +1,11 @@
+//@version=5
+indicator("Recurrence")
+float zoneCenter = 105.0
+float zoneWidth = 3.0
+bool inZone = math.abs(close - zoneCenter) < zoneWidth
+var int recurrences = 0
+var int totalBars = 0
+totalBars := totalBars + 1
+if inZone
+    recurrences := recurrences + 1
+float recRate = totalBars > 0 ? recurrences / totalBars : 0.0

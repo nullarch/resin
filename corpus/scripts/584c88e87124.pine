@@ -1,0 +1,3 @@
+//@version=5
+indicator("Gen Mode")
+sma3 = ta.sma(close, 3)

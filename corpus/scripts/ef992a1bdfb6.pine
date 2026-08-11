@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("KC")
+[kcMid, kcUpper, kcLower] = ta.kc(close, 5, 2.0)
+inChannel = close <= kcUpper and close >= kcLower
+var int insideCount = 0
+if inChannel
+    insideCount := insideCount + 1
+plot(kcMid, "Mid")

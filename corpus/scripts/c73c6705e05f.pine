@@ -1,0 +1,7 @@
+//@version=5
+indicator("Math Abs Sign")
+float a = math.abs(-42.5)
+float s = math.sign(-10.0)
+var float result = 0.0
+result := a + s
+plot(result)

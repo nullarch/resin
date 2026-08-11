@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("While Full")
+rsi = nz(ta.rsi(close, 3), 50.0)
+target = rsi / 100
+estimate = 0.5
+alpha = 0.3
+steps = 0
+maxSteps = 25
+while math.abs(estimate - target) > 0.005 and steps < maxSteps
+    error = target - estimate
+    estimate := estimate + error * alpha
+    steps := steps + 1
+plot(steps, "St")

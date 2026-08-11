@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Includes")
+var float[] levels = array.new_float(0)
+sma3 = ta.sma(close, 3)
+rounded = math.round(sma3)
+if not array.includes(levels, rounded)
+    array.push(levels, rounded)
+if array.size(levels) > 5
+    array.shift(levels)
+levelCount = array.size(levels)
+plot(levelCount, "Levels")

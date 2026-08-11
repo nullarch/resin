@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:peak": 10000.0,
+   "var:maxDD": 0.0,
+   "var:equity": 10000.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:peak": 10010.0,
+   "var:maxDD": 0.0,
+   "var:equity": 10010.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:peak": 10010.0,
+   "var:maxDD": 0.1998001998001998,
+   "var:equity": 9990.0,
+   "var:__obs_plot0": 0.1998001998001998
+  },
+  {
+   "var:peak": 10020.0,
+   "var:maxDD": 0.1998001998001998,
+   "var:equity": 10020.0,
+   "var:__obs_plot0": 0.1998001998001998
+  },
+  {
+   "var:peak": 10040.0,
+   "var:maxDD": 0.1998001998001998,
+   "var:equity": 10040.0,
+   "var:__obs_plot0": 0.1998001998001998
+  },
+  {
+   "var:peak": 10040.0,
+   "var:maxDD": 0.1998001998001998,
+   "var:equity": 10030.0,
+   "var:__obs_plot0": 0.1998001998001998
+  },
+  {
+   "var:peak": 10050.0,
+   "var:maxDD": 0.1998001998001998,
+   "var:equity": 10050.0,
+   "var:__obs_plot0": 0.1998001998001998
+  },
+  {
+   "var:peak": 10070.0,
+   "var:maxDD": 0.1998001998001998,
+   "var:equity": 10070.0,
+   "var:__obs_plot0": 0.1998001998001998
+  },
+  {
+   "var:peak": 10070.0,
+   "var:maxDD": 0.1998001998001998,
+   "var:equity": 10060.0,
+   "var:__obs_plot0": 0.1998001998001998
+  },
+  {
+   "var:peak": 10080.0,
+   "var:maxDD": 0.1998001998001998,
+   "var:equity": 10080.0,
+   "var:__obs_plot0": 0.1998001998001998
+  }
+ ],
+ "finalVarState": {
+  "peak": 10080.0,
+  "maxDD": 0.1998001998001998,
+  "equity": 10080.0,
+  "__obs_plot0": 0.1998001998001998
+ }
+}

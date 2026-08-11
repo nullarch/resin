@@ -1,0 +1,8 @@
+//@version=5
+indicator("String Quote")
+var string s = "He said hello"
+var int len_ = 0
+len_ := str.length(s)
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

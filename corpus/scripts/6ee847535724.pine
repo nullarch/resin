@@ -1,0 +1,11 @@
+//@version=5
+indicator("UDF Calls UDF")
+var float result = 0.0
+
+double(x) =>
+    x * 2
+
+quad(x) =>
+    double(double(x))
+
+result := quad(3.0)

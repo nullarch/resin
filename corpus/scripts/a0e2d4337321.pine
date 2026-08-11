@@ -1,0 +1,8 @@
+//@version=5
+indicator("While Expr Converge")
+var float result = 0.0
+float val = 100.0
+result := while val > 10.0
+    val := val / 2
+    val
+plot(result)

@@ -1,0 +1,22 @@
+
+//@version=5
+indicator("Multi UDF")
+trendSignal(float price, float ma) =>
+    price > ma ? 1.0 : -1.0
+
+momSignal(float rsi) =>
+    (rsi - 50) / 50
+
+volAdjust(float signal, float atr, float avgAtr) =>
+    ratio = avgAtr > 0 ? atr / avgAtr : 1.0
+    ratio < 1.5 ? signal : signal * 0.5
+
+sma5 = ta.sma(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+t = trendSignal(close, sma5)
+m = momSignal(rsi)
+combined = t * 0.5 + m * 0.5
+final = volAdjust(combined, atr, avgATR)
+plot(final, "Fin")

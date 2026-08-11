@@ -1,0 +1,11 @@
+//@version=5
+indicator("Marine Food Chain")
+trophicTransfer(biomassIn, efficiency) =>
+    biomassIn * efficiency
+
+phytoplankton = volume / 100.0
+zooplankton = trophicTransfer(phytoplankton, 0.1)
+smallFish = trophicTransfer(zooplankton, 0.1)
+predator = trophicTransfer(smallFish, 0.1)
+var float topPredBiomass = 0.0
+topPredBiomass := predator

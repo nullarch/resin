@@ -1,0 +1,6 @@
+//@version=5
+indicator("PDA Stack Depth")
+var int stackDepth = 0
+pushSymbol = close > open
+stackDepth := pushSymbol ? stackDepth + 1 : math.max(stackDepth - 1, 0)
+plot(stackDepth, "StackDepth")

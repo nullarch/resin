@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Score Sys")
+rsi = ta.rsi(close, 3)
+sma3 = ta.sma(close, 3)
+atr = ta.atr(3)
+s1 = close > sma3 ? 2.0 : close > sma3 * 0.99 ? 1.0 : 0.0
+s2 = rsi > 60 ? 2.0 : rsi > 40 ? 1.0 : 0.0
+s3 = atr > ta.sma(atr, 5) ? 1.0 : 0.0
+total = s1 + s2 + s3
+pct = total / 5.0 * 100
+plot(pct, "Score%")

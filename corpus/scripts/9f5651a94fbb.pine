@@ -1,0 +1,29 @@
+//@version=5
+indicator("Comprehensive C79")
+var float result = 0.0
+
+type Stats
+    float mean = 0.0
+    float count = 0.0
+
+// TA chain
+ema3 = ta.ema(close, 3)
+sma_of_ema = ta.sma(ema3, 3)
+
+// Array
+float[] arr = array.from(1.0, 2.0, 3.0)
+float arr_sum = 0.0
+for val in arr
+    arr_sum += val
+
+// Switch
+string mode = "ema"
+float ta_val = switch mode
+    "ema" => nz(ema3, 0.0)
+    "sma" => nz(sma_of_ema, 0.0)
+    => close
+
+// UDT
+s = Stats.new(ta_val, arr_sum)
+
+result := s.mean + s.count

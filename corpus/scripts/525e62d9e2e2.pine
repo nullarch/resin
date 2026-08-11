@@ -1,0 +1,30 @@
+
+//@version=5
+indicator("Edge Full")
+var float safeVal = 0.0
+var data = map.new<string, float>()
+var float[] hist = array.new_float(0)
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma5 = ta.sma(close, 5)
+safeDist = sma5 > 0 ? (close - sma5) / sma5 * 100 : 0.0
+
+map.put(data, "rsi", rsi)
+map.put(data, "dist", safeDist)
+missing = map.get(data, "nonexistent", 0.0)
+
+array.push(hist, rsi)
+if array.size(hist) > 5
+    array.shift(hist)
+
+total = 0.0
+for [k, v] in data
+    total := total + nz(v, 0.0)
+
+avgHist = array.size(hist) > 0 ? array.avg(hist) : 50.0
+
+result = 0.0
+result := total > 0 ? math.min(total, 200.0) : math.max(total, -200.0)
+
+safeVal := nz(result, 0.0)
+plot(safeVal, "SV")

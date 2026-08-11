@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Consec Bars")
+bullCount = 0
+bearCount = 0
+for i = 0 to 4
+    c = close[i]
+    o = open[i]
+    if not na(c) and not na(o)
+        if c > o
+            bullCount := bullCount + 1
+        else
+            bearCount := bearCount + 1
+bullDominant = bullCount > bearCount
+plot(bullCount, "Bulls")
+plot(bearCount, "Bears")

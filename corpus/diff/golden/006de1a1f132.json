@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:bullBars": 1.0,
+   "var:bearBars": 0.0,
+   "var:flatBars": 0.0,
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:bullBars": 2.0,
+   "var:bearBars": 0.0,
+   "var:flatBars": 0.0,
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:bullBars": 3.0,
+   "var:bearBars": 0.0,
+   "var:flatBars": 0.0,
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:bullBars": 4.0,
+   "var:bearBars": 0.0,
+   "var:flatBars": 0.0,
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:bullBars": 5.0,
+   "var:bearBars": 0.0,
+   "var:flatBars": 0.0,
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:bullBars": 6.0,
+   "var:bearBars": 0.0,
+   "var:flatBars": 0.0,
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:bullBars": 7.0,
+   "var:bearBars": 0.0,
+   "var:flatBars": 0.0,
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:bullBars": 8.0,
+   "var:bearBars": 0.0,
+   "var:flatBars": 0.0,
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:bullBars": 9.0,
+   "var:bearBars": 0.0,
+   "var:flatBars": 0.0,
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:bullBars": 10.0,
+   "var:bearBars": 0.0,
+   "var:flatBars": 0.0,
+   "var:__obs_plot0": 100.0
+  }
+ ],
+ "finalVarState": {
+  "bullBars": 10.0,
+  "bearBars": 0.0,
+  "flatBars": 0.0,
+  "__obs_plot0": 100.0
+ }
+}

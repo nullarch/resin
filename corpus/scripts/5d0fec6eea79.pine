@@ -1,0 +1,10 @@
+//@version=5
+indicator("Geology-Hydrology")
+// Geology: rock permeability from porosity
+porosity = (high - low) / high * 100
+permeability = porosity * porosity * 0.01
+// Hydrology: groundwater flow rate (Darcy's law proxy)
+hydraulicGradient = nz(ta.atr(3), 1.0) / close * 10
+flowRate = permeability * hydraulicGradient
+var float totalFlow = 0.0
+totalFlow := totalFlow + flowRate

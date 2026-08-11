@@ -1,0 +1,6 @@
+//@version=5
+indicator("Math Sqrt Neg")
+float x = math.sqrt(-1.0)
+var bool is_nan = false
+is_nan := na(x)
+plot(close)

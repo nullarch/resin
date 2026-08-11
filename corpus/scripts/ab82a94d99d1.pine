@@ -1,0 +1,19 @@
+
+//@version=5
+indicator("Swing")
+var float swingHigh = 0.0
+var float swingLow = 999999.0
+var int barsSinceHigh = 0
+var int barsSinceLow = 0
+if high > swingHigh
+    swingHigh := high
+    barsSinceHigh := 0
+else
+    barsSinceHigh := barsSinceHigh + 1
+if low < swingLow
+    swingLow := low
+    barsSinceLow := 0
+else
+    barsSinceLow := barsSinceLow + 1
+plot(barsSinceHigh, "BSH")
+plot(barsSinceLow, "BSL")

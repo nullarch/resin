@@ -1,0 +1,21 @@
+//@version=5
+indicator("Vectorization Proxy")
+type BatchResult
+    float minVal = 0.0
+    float maxVal = 0.0
+    float avgVal = 0.0
+inputs = array.new<float>(0)
+inputs.push(close)
+inputs.push(open)
+inputs.push(high)
+inputs.push(low)
+float minV = 999999.0
+float maxV = -999999.0
+float sumV = 0.0
+for v in inputs
+    minV := math.min(minV, v)
+    maxV := math.max(maxV, v)
+    sumV := sumV + v
+float avgV = inputs.size() > 0 ? sumV / inputs.size() : 0.0
+batch = BatchResult.new(minV, maxV, avgV)
+float spread = batch.maxVal - batch.minVal

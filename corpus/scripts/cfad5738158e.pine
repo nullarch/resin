@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Method Bind")
+type Counter
+    float value = 0.0
+
+method increment(Counter c) =>
+    c.value := c.value + 1.0
+    c
+
+var cnt = Counter.new()
+cnt := cnt.increment()
+plot(cnt.value)

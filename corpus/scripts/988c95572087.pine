@@ -1,0 +1,11 @@
+//@version=5
+indicator("Multi Func")
+var float result = 0.0
+
+double(x) =>
+    x * 2
+
+triple(x) =>
+    x * 3
+
+result := double(5.0) + triple(3.0)

@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Cast")
+rsi = nz(ta.rsi(close, 3), 50.0)
+intRsi = int(rsi)
+floatBack = float(intRsi)
+diff = rsi - floatBack
+var float __obs_plot0 = na
+__obs_plot0 := diff
+plot(diff, "Diff")

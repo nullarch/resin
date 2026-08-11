@@ -1,0 +1,9 @@
+//@version=5
+indicator("Na BinOp")
+var float result = 0.0
+float x = close
+float y = na
+if x != na
+    result := 1.0
+if y == na
+    result := result + 10.0

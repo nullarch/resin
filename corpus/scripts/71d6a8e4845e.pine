@@ -1,0 +1,24 @@
+
+//@version=5
+strategy("Stress06")
+enum Action
+    BUY
+    SELL
+    HOLD
+getAction(diff) =>
+    diff > 2.0 ? Action.BUY : diff < -2.0 ? Action.SELL : Action.HOLD
+var float pnl = 0.0
+signals = array.new_float(0)
+for i = 0 to 4
+    smaVal = ta.sma(close, 3 + i)
+    diff = close - nz(smaVal, close)
+    array.push(signals, diff)
+avgSig = array.sum(signals) / math.max(float(array.size(signals)), 1.0)
+action = getAction(avgSig)
+actionStr = action == Action.BUY ? "BUY" : action == Action.SELL ? "SELL" : "HOLD"
+pnl := pnl + (action == Action.BUY ? 1.0 : action == Action.SELL ? -1.0 : 0.0)
+if action == Action.BUY
+    strategy.entry("Go", strategy.long)
+if action == Action.SELL
+    strategy.close("Go")
+plot(pnl + float(str.length(actionStr)), "S06")

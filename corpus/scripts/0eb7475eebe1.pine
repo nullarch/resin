@@ -1,0 +1,7 @@
+//@version=5
+indicator("Collision Detection")
+var int collisions = 0
+bucket_a = math.floor(close * 7.0) % 5
+bucket_b = math.floor(open * 7.0) % 5
+if bucket_a == bucket_b
+    collisions := collisions + 1

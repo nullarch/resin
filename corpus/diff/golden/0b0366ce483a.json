@@ -1,0 +1,160 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:mt": 0.01,
+   "var:is_first": true,
+   "var:last_diff": 0,
+   "var:vcnt": 1.0,
+   "var:truncated": 3,
+   "var:arr": [
+    1.0,
+    2.0,
+    3.0
+   ],
+   "var:result": 10.0,
+   "var:__obs_plot0": 103
+  },
+  {
+   "var:mt": 0.01,
+   "var:is_first": true,
+   "var:last_diff": 1,
+   "var:vcnt": 2.0,
+   "var:truncated": 3,
+   "var:arr": [
+    1.0,
+    2.0,
+    3.0
+   ],
+   "var:result": 11.0,
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:mt": 0.01,
+   "var:is_first": true,
+   "var:last_diff": -2,
+   "var:vcnt": 3.0,
+   "var:truncated": 3,
+   "var:arr": [
+    1.0,
+    2.0,
+    3.0
+   ],
+   "var:result": 115.0,
+   "var:__obs_plot0": 102
+  },
+  {
+   "var:mt": 0.01,
+   "var:is_first": true,
+   "var:last_diff": 3,
+   "var:vcnt": 4.0,
+   "var:truncated": 3,
+   "var:arr": [
+    1.0,
+    2.0,
+    3.0
+   ],
+   "var:result": 116.6666666667,
+   "var:__obs_plot0": 105
+  },
+  {
+   "var:mt": 0.01,
+   "var:is_first": true,
+   "var:last_diff": 2,
+   "var:vcnt": 5.0,
+   "var:truncated": 3,
+   "var:arr": [
+    1.0,
+    2.0,
+    3.0
+   ],
+   "var:result": 118.6666666667,
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:mt": 0.01,
+   "var:is_first": true,
+   "var:last_diff": -1,
+   "var:vcnt": 6.0,
+   "var:truncated": 3,
+   "var:arr": [
+    1.0,
+    2.0,
+    3.0
+   ],
+   "var:result": 121.0,
+   "var:__obs_plot0": 106
+  },
+  {
+   "var:mt": 0.01,
+   "var:is_first": true,
+   "var:last_diff": 2,
+   "var:vcnt": 7.0,
+   "var:truncated": 3,
+   "var:arr": [
+    1.0,
+    2.0,
+    3.0
+   ],
+   "var:result": 123.0,
+   "var:__obs_plot0": 108
+  },
+  {
+   "var:mt": 0.01,
+   "var:is_first": true,
+   "var:last_diff": 2,
+   "var:vcnt": 8.0,
+   "var:truncated": 3,
+   "var:arr": [
+    1.0,
+    2.0,
+    3.0
+   ],
+   "var:result": 125.0,
+   "var:__obs_plot0": 110
+  },
+  {
+   "var:mt": 0.01,
+   "var:is_first": true,
+   "var:last_diff": -1,
+   "var:vcnt": 9.0,
+   "var:truncated": 3,
+   "var:arr": [
+    1.0,
+    2.0,
+    3.0
+   ],
+   "var:result": 127.0,
+   "var:__obs_plot0": 109
+  },
+  {
+   "var:mt": 0.01,
+   "var:is_first": true,
+   "var:last_diff": 2,
+   "var:vcnt": 10.0,
+   "var:truncated": 3,
+   "var:arr": [
+    1.0,
+    2.0,
+    3.0
+   ],
+   "var:result": 129.0,
+   "var:__obs_plot0": 111
+  }
+ ],
+ "finalVarState": {
+  "mt": 0.01,
+  "is_first": true,
+  "last_diff": 2,
+  "vcnt": 10.0,
+  "truncated": 3,
+  "arr": [
+   1.0,
+   2.0,
+   3.0
+  ],
+  "result": 129.0,
+  "__obs_plot0": 111
+ }
+}

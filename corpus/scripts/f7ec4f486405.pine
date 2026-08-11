@@ -1,0 +1,6 @@
+//@version=5
+indicator("Sign Encode")
+float chg = not na(close[1]) ? close - close[1] : 0.0
+float signBit = chg > 0 ? 1.0 : chg < 0 ? -1.0 : 0.0
+var float signSum = 0.0
+signSum := signSum + signBit

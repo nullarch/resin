@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:wins": 0,
+   "var:total": 0,
+   "var:avgWin": 0.0,
+   "var:avgLoss": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:wins": 1,
+   "var:total": 1,
+   "var:avgWin": 1.0,
+   "var:avgLoss": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:wins": 1,
+   "var:total": 2,
+   "var:avgWin": 1.0,
+   "var:avgLoss": 2.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:wins": 2,
+   "var:total": 3,
+   "var:avgWin": 2.0,
+   "var:avgLoss": 2.0,
+   "var:__obs_plot0": 0.33333333333333326
+  },
+  {
+   "var:wins": 3,
+   "var:total": 4,
+   "var:avgWin": 2.0,
+   "var:avgLoss": 2.0,
+   "var:__obs_plot0": 0.5
+  },
+  {
+   "var:wins": 3,
+   "var:total": 5,
+   "var:avgWin": 2.0,
+   "var:avgLoss": 1.5,
+   "var:__obs_plot0": 0.29999999999999993
+  },
+  {
+   "var:wins": 4,
+   "var:total": 6,
+   "var:avgWin": 2.0,
+   "var:avgLoss": 1.5,
+   "var:__obs_plot0": 0.4166666666666666
+  },
+  {
+   "var:wins": 5,
+   "var:total": 7,
+   "var:avgWin": 2.0,
+   "var:avgLoss": 1.5,
+   "var:__obs_plot0": 0.5
+  },
+  {
+   "var:wins": 5,
+   "var:total": 8,
+   "var:avgWin": 2.0,
+   "var:avgLoss": 1.3333333333333333,
+   "var:__obs_plot0": 0.375
+  },
+  {
+   "var:wins": 6,
+   "var:total": 9,
+   "var:avgWin": 2.0,
+   "var:avgLoss": 1.3333333333333333,
+   "var:__obs_plot0": 0.4444444444444444
+  }
+ ],
+ "finalVarState": {
+  "wins": 6,
+  "total": 9,
+  "avgWin": 2.0,
+  "avgLoss": 1.3333333333333333,
+  "__obs_plot0": 0.4444444444444444
+ }
+}

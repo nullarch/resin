@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Bin Search")
+var float[] sorted = array.new_float(0)
+array.push(sorted, close)
+array.sort(sorted)
+idx = array.binary_search(sorted, close)
+found = idx >= 0
+var float __obs_plot0 = na
+__obs_plot0 := found ? 1 : 0
+plot(found ? 1 : 0, "Found")
+var float __obs_plot1 = na
+__obs_plot1 := array.size(sorted)
+plot(array.size(sorted), "Size")

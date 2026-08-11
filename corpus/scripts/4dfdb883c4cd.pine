@@ -1,0 +1,24 @@
+
+//@version=5
+indicator("State Machine")
+var int state = 0
+var float entryPx = 0.0
+var int holdBars = 0
+var float bestPnl = 0.0
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+
+if state == 0
+    if close > sma3 and rsi > 50
+        state := 1
+        entryPx := close
+        holdBars := 0
+else if state == 1
+    holdBars := holdBars + 1
+    pnl = close - entryPx
+    bestPnl := math.max(bestPnl, pnl)
+    if holdBars > 5 or close < sma3 or pnl < -2
+        state := 0
+        bestPnl := 0.0
+plot(state, "State")
+plot(holdBars, "Bars")

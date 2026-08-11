@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Vol Sig")
+volSMA = ta.sma(volume, 5)
+ratio = volSMA > 0 ? volume / volSMA : 1.0
+priceUp = close > open
+sig = ratio > 2.0 and priceUp ? 2 : ratio > 1.5 and priceUp ? 1 : ratio > 2.0 and not priceUp ? -2 : ratio > 1.5 and not priceUp ? -1 : 0
+plot(sig, "Sig")

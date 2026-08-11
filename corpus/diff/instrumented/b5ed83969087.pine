@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("SR Levels")
+highest = high
+lowest = low
+for i = 1 to 5
+    h = high[i]
+    l = low[i]
+    if not na(h) and h > highest
+        highest := h
+    if not na(l) and l < lowest
+        lowest := l
+midpoint = (highest + lowest) / 2.0
+var float __obs_plot0 = na
+__obs_plot0 := midpoint
+plot(midpoint, "Mid")

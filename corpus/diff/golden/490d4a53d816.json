@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:first_seen": true,
+   "var:last_seen": false,
+   "var:__obs_plot0": 103
+  },
+  {
+   "var:first_seen": true,
+   "var:last_seen": false,
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:first_seen": true,
+   "var:last_seen": false,
+   "var:__obs_plot0": 102
+  },
+  {
+   "var:first_seen": true,
+   "var:last_seen": false,
+   "var:__obs_plot0": 105
+  },
+  {
+   "var:first_seen": true,
+   "var:last_seen": false,
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:first_seen": true,
+   "var:last_seen": false,
+   "var:__obs_plot0": 106
+  },
+  {
+   "var:first_seen": true,
+   "var:last_seen": false,
+   "var:__obs_plot0": 108
+  },
+  {
+   "var:first_seen": true,
+   "var:last_seen": false,
+   "var:__obs_plot0": 110
+  },
+  {
+   "var:first_seen": true,
+   "var:last_seen": false,
+   "var:__obs_plot0": 109
+  },
+  {
+   "var:first_seen": true,
+   "var:last_seen": true,
+   "var:__obs_plot0": 111
+  }
+ ],
+ "finalVarState": {
+  "first_seen": true,
+  "last_seen": true,
+  "__obs_plot0": 111
+ }
+}

@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Hi RSI")
+rsi = ta.rsi(close, 3)
+hiRSI = ta.highest(rsi, 5)
+loRSI = ta.lowest(rsi, 5)
+rsiRange = hiRSI - loRSI
+var float __obs_plot0 = na
+__obs_plot0 := hiRSI
+plot(hiRSI, "HiRSI")
+var float __obs_plot1 = na
+__obs_plot1 := rsiRange
+plot(rsiRange, "Range")

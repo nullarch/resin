@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Multi Plot")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+bull = sma3 > sma5
+bear = sma3 < sma5
+plot(sma3, "Fast", color=bull ? color.green : color.red)
+plot(sma5, "Slow")
+bgcolor(bull ? color.new(color.green, 90) : color.new(color.red, 90))

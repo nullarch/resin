@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Wick")
+upperWick = high - math.max(close, open_)
+lowerWick = math.min(close, open_) - low
+barRange = high - low
+wickRatio = barRange > 0 ? (upperWick + lowerWick) / barRange : 0.0
+plot(wickRatio, "WR")

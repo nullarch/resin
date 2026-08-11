@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:haClose": 101.5,
+   "var:haOpen": 101.5,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:haClose": 103.0,
+   "var:haOpen": 0.0,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:haClose": 101.5,
+   "var:haOpen": 102.25,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:haClose": 104.0,
+   "var:haOpen": 50.75,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:haClose": 106.0,
+   "var:haOpen": 103.125,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:haClose": 105.0,
+   "var:haOpen": 78.375,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:haClose": 107.0,
+   "var:haOpen": 104.0625,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:haClose": 109.0,
+   "var:haOpen": 92.6875,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:haClose": 108.0,
+   "var:haOpen": 106.53125,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:haClose": 110.0,
+   "var:haOpen": 100.34375,
+   "var:__obs_plot0": 1
+  }
+ ],
+ "finalVarState": {
+  "haClose": 110.0,
+  "haOpen": 100.34375,
+  "__obs_plot0": 1
+ }
+}

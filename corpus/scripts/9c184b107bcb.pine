@@ -1,0 +1,4 @@
+//@version=5
+indicator("Deep TA Chain")
+result = ta.ema(ta.sma(ta.rsi(close, 5), 3), 3)
+plot(result)

@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Adapt Osc")
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 5)
+volRatio = avgATR > 0 ? atr / avgATR : 1.0
+rsi = nz(ta.rsi(close, 3), 50.0)
+adaptOsc = (rsi - 50) * volRatio
+plot(adaptOsc, "AO")

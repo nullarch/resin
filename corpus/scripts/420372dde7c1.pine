@@ -1,0 +1,9 @@
+//@version=5
+indicator("MACD Full")
+fastMA = ta.ema(close, 3)
+slowMA = ta.ema(close, 5)
+macdLine = fastMA - slowMA
+signalLine = ta.ema(macdLine, 3)
+histogram = macdLine - signalLine
+histColor = histogram >= 0 ? (histogram > histogram[1] ? 1 : 2) : (histogram < histogram[1] ? 3 : 4)
+plot(histColor)

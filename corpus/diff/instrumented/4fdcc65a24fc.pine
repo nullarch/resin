@@ -1,0 +1,8 @@
+//@version=5
+indicator("Status Quo")
+midPrice = ta.sma(close, 5)
+comfortRange = nz(ta.atr(5), 1.0) * 0.5
+inZone = math.abs(close - midPrice) < comfortRange
+var float __obs_plot0 = na
+__obs_plot0 := inZone ? 0 : close > midPrice ? 1 : -1
+plot(inZone ? 0 : close > midPrice ? 1 : -1)

@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("HLC3")
+tp = (high + low + close) / 3
+tpMA = ta.sma(tp, 5)
+deviation = tp - tpMA
+var float __obs_plot0 = na
+__obs_plot0 := deviation
+plot(deviation, "Dev")

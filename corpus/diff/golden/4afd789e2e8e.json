@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:sumRet": 0.0,
+   "var:sumSqRet": 0.0,
+   "var:n": 0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:sumRet": 1.0,
+   "var:sumSqRet": 1.0,
+   "var:n": 1,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:sumRet": -1.0,
+   "var:sumSqRet": 5.0,
+   "var:n": 2,
+   "var:__obs_plot0": -0.3333333333333333
+  },
+  {
+   "var:sumRet": 2.0,
+   "var:sumSqRet": 14.0,
+   "var:n": 3,
+   "var:__obs_plot0": 0.32444284226152503
+  },
+  {
+   "var:sumRet": 4.0,
+   "var:sumSqRet": 18.0,
+   "var:n": 4,
+   "var:__obs_plot0": 0.5345224838248488
+  },
+  {
+   "var:sumRet": 3.0,
+   "var:sumSqRet": 19.0,
+   "var:n": 5,
+   "var:__obs_plot0": 0.3234983196103152
+  },
+  {
+   "var:sumRet": 5.0,
+   "var:sumSqRet": 23.0,
+   "var:n": 6,
+   "var:__obs_plot0": 0.4703604341917987
+  },
+  {
+   "var:sumRet": 7.0,
+   "var:sumSqRet": 27.0,
+   "var:n": 7,
+   "var:__obs_plot0": 0.5916079783099616
+  },
+  {
+   "var:sumRet": 6.0,
+   "var:sumSqRet": 28.0,
+   "var:n": 8,
+   "var:__obs_plot0": 0.4375949744936837
+  },
+  {
+   "var:sumRet": 8.0,
+   "var:sumSqRet": 32.0,
+   "var:n": 9,
+   "var:__obs_plot0": 0.5345224838248487
+  }
+ ],
+ "finalVarState": {
+  "sumRet": 8.0,
+  "sumSqRet": 32.0,
+  "n": 9,
+  "__obs_plot0": 0.5345224838248487
+ }
+}

@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Consol Break")
+hi5 = ta.highest(high, 5)
+lo5 = ta.lowest(low, 5)
+rangeVal = hi5 - lo5
+avgRange = ta.sma(high - low, 5)
+isConsolidation = avgRange > 0 and rangeVal / avgRange < 3
+breakout = isConsolidation and (close > hi5 * 0.99 or close < lo5 * 1.01)
+var float __obs_plot0 = na
+__obs_plot0 := breakout ? 1 : 0
+plot(breakout ? 1 : 0, "CB")

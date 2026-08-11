@@ -1,0 +1,8 @@
+//@version=5
+indicator("Lattice Energy")
+charge1 = close / 100.0
+charge2 = nz(close[1], close) / 100.0
+dist = math.abs(close - nz(close[1], close))
+latticeE = dist > 0.1 ? -(charge1 * charge2) / dist : 0.0
+var float totalE = 0.0
+totalE := totalE + latticeE

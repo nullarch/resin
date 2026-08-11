@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Case Conv")
+trend = close > ta.sma(close, 3) ? "bullish" : "bearish"
+upper = str.upper(trend)
+hasB = str.startswith(upper, "B")
+plot(hasB ? 1 : 0, "StartsB")
+plot(str.length(upper), "Len")

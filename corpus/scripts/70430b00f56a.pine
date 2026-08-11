@@ -1,0 +1,9 @@
+//@version=5
+indicator("For-In Map")
+m = map.new<string, float>()
+m.put("a", 1.0)
+m.put("b", 2.0)
+m.put("c", 3.0)
+total = 0.0
+for [key, val] in m
+    total := total + val

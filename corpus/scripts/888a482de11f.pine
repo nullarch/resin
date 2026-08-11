@@ -1,0 +1,7 @@
+//@version=5
+strategy("EMA Strategy")
+sma3 = ta.sma(close, 3)
+if close > sma3
+    strategy.entry("Long", strategy.long)
+if close < sma3
+    strategy.close("Long")

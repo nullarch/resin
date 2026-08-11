@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("Wt Composite")
+var weights = map.new<string, float>()
+var signals = map.new<string, float>()
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+map.put(weights, "rsi", 0.4)
+map.put(weights, "trend", 0.35)
+map.put(weights, "vol", 0.25)
+map.put(signals, "rsi", (rsi - 50) / 50)
+map.put(signals, "trend", close > sma3 ? 1.0 : -1.0)
+map.put(signals, "vol", volume > ta.sma(volume, 5) ? 1.0 : 0.0)
+composite = 0.0
+for [k, w] in weights
+    s = map.get(signals, k, 0.0)
+    composite := composite + w * s
+plot(composite, "C")

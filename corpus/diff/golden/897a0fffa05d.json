@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:lastSwingHi": 0.0,
+   "var:lastSwingLo": 99999.0,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 99999.0
+  },
+  {
+   "var:lastSwingHi": 0.0,
+   "var:lastSwingLo": 99999.0,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 99999.0
+  },
+  {
+   "var:lastSwingHi": 106,
+   "var:lastSwingLo": 99999.0,
+   "var:__obs_plot0": 106,
+   "var:__obs_plot1": 99999.0
+  },
+  {
+   "var:lastSwingHi": 106,
+   "var:lastSwingLo": 99,
+   "var:__obs_plot0": 106,
+   "var:__obs_plot1": 99
+  },
+  {
+   "var:lastSwingHi": 106,
+   "var:lastSwingLo": 99,
+   "var:__obs_plot0": 106,
+   "var:__obs_plot1": 99
+  },
+  {
+   "var:lastSwingHi": 109,
+   "var:lastSwingLo": 99,
+   "var:__obs_plot0": 109,
+   "var:__obs_plot1": 99
+  },
+  {
+   "var:lastSwingHi": 109,
+   "var:lastSwingLo": 102,
+   "var:__obs_plot0": 109,
+   "var:__obs_plot1": 102
+  },
+  {
+   "var:lastSwingHi": 109,
+   "var:lastSwingLo": 102,
+   "var:__obs_plot0": 109,
+   "var:__obs_plot1": 102
+  },
+  {
+   "var:lastSwingHi": 112,
+   "var:lastSwingLo": 102,
+   "var:__obs_plot0": 112,
+   "var:__obs_plot1": 102
+  },
+  {
+   "var:lastSwingHi": 112,
+   "var:lastSwingLo": 105,
+   "var:__obs_plot0": 112,
+   "var:__obs_plot1": 105
+  }
+ ],
+ "finalVarState": {
+  "lastSwingHi": 112,
+  "lastSwingLo": 105,
+  "__obs_plot0": 112,
+  "__obs_plot1": 105
+ }
+}

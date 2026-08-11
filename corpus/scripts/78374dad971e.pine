@@ -1,0 +1,4 @@
+//@version=5
+indicator("HLCC4")
+var float result = 0
+result := hlcc4

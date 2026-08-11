@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Sig Track")
+var int signalStr = 0
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+if close > sma3 and rsi > 55
+    signalStr := math.min(signalStr + 1, 5)
+else if close < sma3 and rsi < 45
+    signalStr := math.max(signalStr - 1, -5)
+else
+    signalStr := signalStr > 0 ? signalStr - 1 : signalStr < 0 ? signalStr + 1 : 0
+plot(signalStr, "Str")

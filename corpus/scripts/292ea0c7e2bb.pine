@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("TStat")
+var float[] rets = array.new_float(0)
+prevC = nz(close[1], close)
+ret = prevC > 0 ? (close - prevC) / prevC : 0.0
+array.push(rets, ret)
+if array.size(rets) > 5
+    array.shift(rets)
+meanRet = array.avg(rets)
+sumSq = 0.0
+for [i, r] in rets
+    sumSq := sumSq + math.pow(r - meanRet, 2)
+sz = array.size(rets)
+stdErr = sz > 1 ? math.sqrt(sumSq / float(sz - 1)) / math.sqrt(float(sz)) : 1.0
+hypothesizedMean = 0.0
+tStat = stdErr > 0.0001 ? (meanRet - hypothesizedMean) / stdErr : 0.0
+plot(tStat, "T")

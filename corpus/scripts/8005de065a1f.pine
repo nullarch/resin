@@ -1,0 +1,12 @@
+//@version=5
+indicator("BB Squeeze")
+len = 5
+basis = ta.sma(close, len)
+bb_dev = ta.stdev(close, len) * 2.0
+bb_upper = basis + bb_dev
+bb_lower = basis - bb_dev
+atr_val = ta.atr(len)
+kc_upper = basis + atr_val * 1.5
+kc_lower = basis - atr_val * 1.5
+squeeze = bb_lower > kc_lower and bb_upper < kc_upper
+plot(squeeze ? 1 : 0)

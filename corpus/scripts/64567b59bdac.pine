@@ -1,0 +1,8 @@
+//@version=5
+indicator("UDF TA isolation")
+var float result = 0.0
+myMA(src, len) =>
+    ta.sma(src, len)
+s1 = myMA(close, 3)
+s2 = myMA(close, 5)
+result := s1

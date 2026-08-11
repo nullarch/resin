@@ -1,0 +1,6 @@
+//@version=5
+indicator("ForStep")
+var int total = 0
+s = 2
+for i = 0 to 4 by s
+    total := total + i

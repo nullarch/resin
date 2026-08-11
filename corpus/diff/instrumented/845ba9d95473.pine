@@ -1,0 +1,10 @@
+//@version=5
+indicator("Vol Profile")
+var volumes = array.new_float(0)
+var prices = array.new_float(0)
+volumes.push(volume)
+prices.push(close)
+avgVol = volumes.avg()
+var float __obs_plot0 = na
+__obs_plot0 := volume > avgVol ? 1 : 0
+plot(volume > avgVol ? 1 : 0)

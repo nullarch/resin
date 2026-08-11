@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Regime Scan")
+sma3 = ta.sma(close, 3)
+bullSignals = 0
+for i = 0 to 4
+    if not na(close[i])
+        if close[i] > sma3
+            bullSignals := bullSignals + 1
+regimeStr = bullSignals / 5.0
+var float __obs_plot0 = na
+__obs_plot0 := regimeStr
+plot(regimeStr, "RS")

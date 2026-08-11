@@ -1,0 +1,7 @@
+//@version=5
+indicator("Boolean Na")
+var float result = 0.0
+sma20 = ta.sma(close, 20)
+bool valid = not na(close) and not na(open)
+bool has_sma = not na(sma20)
+result := valid ? 1.0 : 0.0

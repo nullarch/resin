@@ -1,0 +1,11 @@
+//@version=5
+indicator("Enum Decl Scope")
+enum Dir
+    Up = 1
+    Down = 2
+Dir d = Dir.Up
+var float result = 0.0
+result := switch d
+    Dir.Up => 100.0
+    Dir.Down => 200.0
+    => 0.0

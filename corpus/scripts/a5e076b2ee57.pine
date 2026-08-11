@@ -1,0 +1,7 @@
+//@version=5
+indicator("Pollinator Activity")
+tempProxy = (high + low) / 2
+seasonFactor = bar_index < 5 ? 1.2 : 0.8
+pollinatorIndex = tempProxy > 100 ? 80.0 * seasonFactor : 40.0 * seasonFactor
+var float avgPollinator = 0.0
+avgPollinator := avgPollinator + pollinatorIndex / 10.0

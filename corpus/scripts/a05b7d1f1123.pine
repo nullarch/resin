@@ -1,0 +1,8 @@
+//@version=5
+indicator("Fermi-Dirac")
+float mu = ta.sma(close, 5)
+float kT = nz(ta.atr(3), 1.0)
+float energy = close
+float safeKT = math.max(kT, 0.01)
+float exponent = math.min((energy - nz(mu, close)) / safeKT, 20.0)
+float occupation = 1.0 / (math.exp(exponent) + 1.0)

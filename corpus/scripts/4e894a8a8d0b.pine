@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Reg Desc")
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+trend = close > sma3 ? "BULL" : "BEAR"
+strength = rsi > 65 ? "STRONG" : rsi < 35 ? "STRONG" : "WEAK"
+desc = trend + "_" + strength
+isStrongBull = desc == "BULL_STRONG"
+plot(isStrongBull ? 1 : 0, "SB")

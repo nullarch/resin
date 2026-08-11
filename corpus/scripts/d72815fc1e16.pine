@@ -1,0 +1,10 @@
+//@version=5
+indicator("Nested CF")
+var float total = 0.0
+if close > open
+    for i = 1 to 3
+        mode = switch i
+            1 => 1.0
+            2 => 2.0
+            => 3.0
+        total := total + mode

@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Switch Multi Body")
+x = 1
+result = switch x
+    1 =>
+        a = ta.sma(close, 5)
+        b = ta.ema(close, 5)
+        (a + b) / 2.0
+    2 =>
+        c = ta.rsi(close, 14)
+        c
+    => 0.0
+plot(result)

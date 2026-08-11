@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("ROC Filter")
+roc1 = ta.roc(close, 1)
+roc3 = ta.roc(close, 3)
+accelerating = roc1 > 0 and roc3 > 0 and roc1 > roc3
+var int accelBars = 0
+if accelerating
+    accelBars := accelBars + 1
+var float __obs_plot0 = na
+__obs_plot0 := roc1
+plot(roc1, "ROC1")
+var float __obs_plot1 = na
+__obs_plot1 := roc3
+plot(roc3, "ROC3")

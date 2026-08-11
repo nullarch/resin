@@ -1,0 +1,13 @@
+//@version=5
+indicator("TLB Hit Rate")
+var float hits = 0.0
+var float misses = 0.0
+float pageNum = math.floor(close) % 16
+float prevPage = not na(close[1]) ? math.floor(close[1]) % 16 : -1.0
+bool isHit = math.abs(pageNum - prevPage) < 2.0
+if isHit
+    hits := hits + 1.0
+else
+    misses := misses + 1.0
+float total = hits + misses
+float hitRate = total > 0.0 ? hits / total * 100.0 : 0.0

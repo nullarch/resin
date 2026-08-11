@@ -1,0 +1,8 @@
+//@version=5
+indicator("Boolean Chain")
+var float result = 0.0
+bool cond1 = close > open
+bool cond2 = high > 110
+bool cond3 = low < 110
+bool all_true = cond1 and cond2 and cond3
+result := all_true ? 1.0 : 0.0

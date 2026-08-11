@@ -1,0 +1,10 @@
+//@version=5
+indicator("Linear Traj")
+float startX = 100.0
+float endX = 110.0
+int numSteps = 10
+float barIdx = close - 100.0
+float progress = barIdx / numSteps
+float clampedProgress = math.max(0.0, math.min(1.0, progress))
+float posX = startX + (endX - startX) * clampedProgress
+float velocity = (endX - startX) / numSteps

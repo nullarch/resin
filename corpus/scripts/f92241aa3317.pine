@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Decreasing Step")
+value = 100.0
+step = 10.0
+iterations = 0
+while step > 0.01 and iterations < 50
+    if value > close
+        value := value - step
+    else
+        step := step / 2
+    iterations := iterations + 1
+plot(value, "Value")

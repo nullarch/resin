@@ -1,0 +1,8 @@
+//@version=5
+indicator("UDF Expr Return")
+var float result = 0.0
+
+square(x) =>
+    x * x
+
+result := square(5.0)

@@ -1,0 +1,28 @@
+//@version=5
+indicator("Combo16")
+stats(arr) =>
+    total = 0.0
+    mx = array.get(arr, 0)
+    mn = array.get(arr, 0)
+    for i = 0 to array.size(arr) - 1
+        v = array.get(arr, i)
+        total := total + v
+        mx := math.max(mx, v)
+        mn := math.min(mn, v)
+    avg = array.size(arr) > 0 ? total / float(array.size(arr)) : 0.0
+    [avg, mx, mn]
+var float cumRange = 0.0
+prices = array.new_float(0)
+array.push(prices, close)
+array.push(prices, high)
+array.push(prices, low)
+array.push(prices, open)
+[avg, mx, mn] = stats(prices)
+rng = mx - mn
+cumRange := cumRange + rng
+labels = map.new<string, float>()
+map.put(labels, "avg", avg)
+map.put(labels, "range", rng)
+tag = rng > 5.0 ? "wide" : "narrow"
+plot(cumRange, "CumRng")
+plot(avg, "Avg")

@@ -1,0 +1,6 @@
+//@version=5
+indicator("Shadow")
+x = 10.0
+if close > 0
+    x := 20.0
+plot(x)

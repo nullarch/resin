@@ -1,0 +1,7 @@
+//@version=5
+indicator("safe div")
+a = close / 0
+b = 0.0 / 0.0
+c = close / open
+d = close % 0
+e = 10.0 % 3.0

@@ -1,0 +1,15 @@
+
+//@version=5
+strategy("Adapt Algo", overlay=true)
+sma3 = ta.sma(close, 3)
+ema3 = ta.ema(close, 3)
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 5)
+useEMA = avgATR > 0 and atr > avgATR * 1.2
+signal = useEMA ? ema3 : sma3
+rsi = nz(ta.rsi(close, 3), 50.0)
+if close > signal and rsi > 50
+    strategy.entry("Long", strategy.long)
+if close < signal
+    strategy.close("Long")
+plot(signal, "Sig")

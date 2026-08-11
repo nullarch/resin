@@ -1,0 +1,7 @@
+//@version=5
+indicator("Switch DefOnly")
+x = 99
+var int r = 0
+r := switch x
+    => 42
+plot(r)

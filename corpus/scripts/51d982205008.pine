@@ -1,0 +1,8 @@
+//@version=5
+indicator("ArrMethod")
+var float result = 0
+a = array.new_float(0)
+a.push(1.0)
+a.push(2.0)
+a.push(3.0)
+result := a.sum()

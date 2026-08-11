@@ -1,0 +1,8 @@
+//@version=5
+indicator("VolSmile")
+atmStrike = nz(ta.sma(close, 5), close)
+dist = math.abs(close - atmStrike)
+baseVol = nz(ta.stdev(close, 5), 1.0)
+smileAdj = 1.0 + 0.1 * dist
+adjVol = baseVol * smileAdj
+plot(adjVol, "SmileVol")

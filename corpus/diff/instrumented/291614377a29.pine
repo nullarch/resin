@@ -1,0 +1,14 @@
+//@version=5
+indicator("Momentum Complex")
+length = 5
+src = close
+mom_ = ta.mom(src, length)
+roc_ = ta.roc(src, length)
+atr_ = ta.atr(high, low, close, length)
+momNorm = mom_ / atr_
+var float __obs_plot0 = na
+__obs_plot0 := momNorm
+plot(momNorm)
+var float __obs_plot1 = na
+__obs_plot1 := roc_
+plot(roc_)

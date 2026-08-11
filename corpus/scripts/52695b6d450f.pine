@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("Spread Type")
+enum SpreadType
+    Narrow = 0
+    Normal = 1
+    Wide = 2
+    Extreme = 3
+
+barRange = high - low
+avgRange = ta.sma(high - low, 5)
+ratio = avgRange > 0 ? barRange / avgRange : 1.0
+st = switch
+    ratio > 2.0 => SpreadType.Extreme
+    ratio > 1.3 => SpreadType.Wide
+    ratio < 0.7 => SpreadType.Narrow
+    => SpreadType.Normal
+plot(int(st), "ST")

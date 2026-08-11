@@ -1,0 +1,9 @@
+//@version=5
+indicator("Ternary Arg")
+bull = close > open
+src = bull ? close : open
+len = bull ? 3 : 5
+result = ta.sma(src, len)
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

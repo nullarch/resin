@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Switch No Disc")
+result = switch
+    close > 110 => 3.0
+    close > 105 => 2.0
+    close > 100 => 1.0
+    => 0.0
+plot(result)

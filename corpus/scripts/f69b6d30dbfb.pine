@@ -1,0 +1,12 @@
+//@version=5
+indicator("Math Precision")
+a = math.round(close, 2)
+b = math.ceil(close)
+c = math.floor(close)
+d = math.abs(close - open)
+e = math.sign(close - open)
+f = math.pow(close / 100, 2)
+g = math.sqrt(d)
+h = math.log(close)
+plot(a)
+plot(g)

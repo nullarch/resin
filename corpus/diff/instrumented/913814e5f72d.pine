@@ -1,0 +1,8 @@
+//@version=5
+indicator("C300-15")
+meanVal = ta.sma(close, 5)
+devVal = nz(ta.stdev(close, 5), 1.0)
+zScore = devVal > 0.01 ? (close - nz(meanVal, close)) / devVal : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := zScore
+plot(zScore)

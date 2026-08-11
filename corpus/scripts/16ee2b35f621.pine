@@ -1,0 +1,8 @@
+//@version=5
+indicator("IfExpr")
+var int result = 0
+x = if close > 100
+    1
+else
+    -1
+result := x

@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("NZ Defaults")
+val1 = close[20]
+val2 = close[1]
+safe1 = nz(val1, -1.0)
+safe2 = nz(val2, 0.0)
+safe3 = nz(val1)
+plot(safe1, "Safe1")
+plot(safe2, "Safe2")

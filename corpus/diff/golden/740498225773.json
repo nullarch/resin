@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:roundCount": 1,
+   "var:totalBars": 1,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:roundCount": 2,
+   "var:totalBars": 2,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:roundCount": 3,
+   "var:totalBars": 3,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:roundCount": 4,
+   "var:totalBars": 4,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:roundCount": 5,
+   "var:totalBars": 5,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:roundCount": 6,
+   "var:totalBars": 6,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:roundCount": 7,
+   "var:totalBars": 7,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:roundCount": 8,
+   "var:totalBars": 8,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:roundCount": 9,
+   "var:totalBars": 9,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:roundCount": 10,
+   "var:totalBars": 10,
+   "var:__obs_plot0": 1.0
+  }
+ ],
+ "finalVarState": {
+  "roundCount": 10,
+  "totalBars": 10,
+  "__obs_plot0": 1.0
+ }
+}

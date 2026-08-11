@@ -1,0 +1,29 @@
+//@version=5
+indicator("Comprehensive 117")
+type Level
+    float price = 0.0
+    string label_text = ""
+    bool active = false
+myCalc(src, len) =>
+    ta.sma(src, len)
+var levels = array.new<Level>(0)
+var m = map.new<string, float>()
+smaVal = myCalc(close, 3)
+rsiVal = ta.rsi(close, 5)
+atrVal = ta.atr(3)
+if not na(smaVal) and not na(atrVal)
+    upper = smaVal + nz(atrVal)
+    lower = smaVal - nz(atrVal)
+    map.put(m, "upper", upper)
+    map.put(m, "lower", lower)
+var float maxRSI = 0.0
+if not na(rsiVal) and rsiVal > maxRSI
+    maxRSI := rsiVal
+[macdLine, signalLine, hist] = ta.macd(close, 12, 26, 9)
+trend = switch
+    not na(macdLine) and macdLine > 0 => "BULL"
+    => "BEAR"
+if barstate.islast
+    label.new(bar_index, close, trend)
+var int barCount = 0
+barCount := barCount + 1

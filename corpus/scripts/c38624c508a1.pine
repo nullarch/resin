@@ -1,0 +1,8 @@
+//@version=5
+indicator("INNER JOIN")
+var int joined_rows = 0
+price_ok = close > 104.0
+vol_ok = volume > 1000.0
+if price_ok and vol_ok
+    joined_rows := joined_rows + 1
+join_result = price_ok and vol_ok ? close * volume : 0.0

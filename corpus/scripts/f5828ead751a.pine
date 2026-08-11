@@ -1,0 +1,8 @@
+//@version=5
+indicator("NaN propagation")
+sma3 = ta.sma(close, 3)
+val1 = nz(sma3) + 1.0
+val2 = nz(sma3) * 2.0
+val3 = nz(sma3) - close
+isNa1 = na(sma3)
+safe = nz(sma3, close)

@@ -1,0 +1,11 @@
+//@version=5
+indicator("Ternary Prec")
+rsi = ta.rsi(close, 5)
+level = rsi > 80 ? 3 :
+    rsi > 60 ? 2 :
+    rsi > 40 ? 1 :
+    rsi > 20 ? 0 :
+    -1
+var float __obs_plot0 = na
+__obs_plot0 := level
+plot(level)

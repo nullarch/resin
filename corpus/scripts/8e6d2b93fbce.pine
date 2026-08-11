@@ -1,0 +1,5 @@
+//@version=5
+indicator("Context Bound OHLCV")
+float mid = (high + low) / 2.0
+var float result = 0.0
+result := mid

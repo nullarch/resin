@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Drawing Noop")
+sma3 = ta.sma(close, 3)
+if ta.crossover(close, sma3)
+    label.new(bar_index, high, "Buy")
+if ta.crossunder(close, sma3)
+    label.new(bar_index, low, "Sell")
+hline(50, "Mid")
+plot(sma3, "SMA")

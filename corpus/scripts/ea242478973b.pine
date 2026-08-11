@@ -1,0 +1,3 @@
+//@version=5
+indicator("Test")
+b = ta.bbw(close, 20, 2.0)

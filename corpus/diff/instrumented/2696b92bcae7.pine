@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Enum Float")
+enum Weight
+    Heavy = 3
+    Medium = 2
+    Light = 1
+
+w = close > ta.sma(close, 3) ? Weight.Heavy : Weight.Light
+multiplier = float(w) / 3.0
+adjusted = close * multiplier
+var float __obs_plot0 = na
+__obs_plot0 := adjusted
+plot(adjusted, "Adj")

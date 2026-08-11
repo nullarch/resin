@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Bull Engulf")
+prevBear = close[1] < open[1]
+currBull = close > open
+engulf = not na(close[1]) and prevBear and currBull and close > open[1] and open < close[1]
+var float __obs_plot0 = na
+__obs_plot0 := engulf ? 1 : 0
+plot(engulf ? 1 : 0, "BE")

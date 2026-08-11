@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Arr Range")
+var float[] data = array.new_float(0)
+array.push(data, close)
+if array.size(data) > 8
+    array.shift(data)
+rng = array.range(data)
+avg = array.avg(data)
+cv = avg > 0 ? rng / avg : 0.0
+plot(cv, "CV")

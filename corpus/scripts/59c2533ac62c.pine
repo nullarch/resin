@@ -1,0 +1,12 @@
+//@version=5
+indicator("enum val")
+enum Dir
+    Up = 1
+    Down = -1
+    Flat = 0
+var float result = 0.0
+d = close > open ? Dir.Up : Dir.Down
+result := switch d
+    Dir.Up => 100.0
+    Dir.Down => -100.0
+    => 0.0

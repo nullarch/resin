@@ -1,0 +1,6 @@
+//@version=5
+indicator("UDF Default Params")
+myFunc(src, mult) =>
+    val = src * mult
+    val > 500 ? val : 0.0
+result = myFunc(close, 5.0)

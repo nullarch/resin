@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Ind State")
+type IndState
+    float rsi = 50.0
+    float macd = 0.0
+    float atr = 0.0
+    int score = 0
+
+var IndState s = IndState.new()
+s.rsi := nz(ta.rsi(close, 3), 50.0)
+[m, sig, h] = ta.macd(close, 3, 5, 3)
+s.macd := h
+s.atr := ta.atr(3)
+score = 0
+score := score + (s.rsi > 50 ? 1 : 0)
+score := score + (s.macd > 0 ? 1 : 0)
+s.score := score
+var float __obs_plot0 = na
+__obs_plot0 := s.score
+plot(s.score, "Score")

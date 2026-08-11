@@ -1,0 +1,4 @@
+//@version=5
+indicator("tuple TA")
+[macdLine, signalLine, histLine] = ta.macd(close, 12, 26, 9)
+[upper, middle, lower] = ta.bb(close, 5, 2.0)

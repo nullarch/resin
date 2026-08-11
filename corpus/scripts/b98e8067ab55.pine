@@ -1,0 +1,5 @@
+//@version=5
+indicator("Amplitude")
+amp = high - low
+smoothAmp = ta.sma(amp, 3)
+plot(smoothAmp, title="amplitude")

@@ -1,0 +1,12 @@
+//@version=5
+indicator("Map Cond")
+m = map.new<string, float>()
+if close > open
+    m.put("trend", 1.0)
+else
+    m.put("trend", -1.0)
+m.put("vol", volume)
+trend = m.get("trend")
+var float __obs_plot0 = na
+__obs_plot0 := nz(trend, 0)
+plot(nz(trend, 0))

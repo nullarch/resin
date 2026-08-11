@@ -1,0 +1,9 @@
+//@version=5
+indicator("test")
+var float dayOpen = na
+if session.isfirstbar
+    dayOpen := open
+change = not na(dayOpen) ? close - dayOpen : 0
+var float __obs_plot0 = na
+__obs_plot0 := change
+plot(change)

@@ -1,0 +1,4 @@
+//@version=5
+indicator("Test")
+t = table.new(position.top_right, 2, 2)
+t.cell(0, 0, "Header")

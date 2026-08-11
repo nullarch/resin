@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Contains")
+rsi = nz(ta.rsi(close, 3), 50.0)
+label = rsi > 60 ? "BULL_STRONG" : rsi > 50 ? "BULL_WEAK" : "BEAR"
+hasBull = str.contains(label, "BULL")
+plot(hasBull ? 1 : 0, "Bull")

@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:prevMu": 103,
+   "var:prevSig": 1.0,
+   "var:__obs_plot0": 103.0
+  },
+  {
+   "var:prevMu": 104,
+   "var:prevSig": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:prevMu": 103.0,
+   "var:prevSig": 0.8164965809,
+   "var:__obs_plot0": 1.0166973516348856
+  },
+  {
+   "var:prevMu": 103.6666666667,
+   "var:prevSig": 1.2472191289,
+   "var:__obs_plot0": 0.7937042004704874
+  },
+  {
+   "var:prevMu": 104.6666666667,
+   "var:prevSig": 2.0548046677,
+   "var:__obs_plot0": 1.2853771440627402
+  },
+  {
+   "var:prevMu": 106.0,
+   "var:prevSig": 0.8164965809,
+   "var:__obs_plot0": 1.8196660945138194
+  },
+  {
+   "var:prevMu": 107.0,
+   "var:prevSig": 0.8164965809,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:prevMu": 108.0,
+   "var:prevSig": 1.6329931619,
+   "var:__obs_plot0": 1.2909944487815157
+  },
+  {
+   "var:prevMu": 109.0,
+   "var:prevSig": 0.8164965809,
+   "var:__obs_plot0": 1.2909944487815157
+  },
+  {
+   "var:prevMu": 110.0,
+   "var:prevSig": 0.8164965809,
+   "var:__obs_plot0": 1.0
+  }
+ ],
+ "finalVarState": {
+  "prevMu": 110.0,
+  "prevSig": 0.8164965809,
+  "__obs_plot0": 1.0
+ }
+}

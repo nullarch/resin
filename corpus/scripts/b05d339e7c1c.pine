@@ -1,0 +1,5 @@
+//@version=5
+indicator("HMA ALMA")
+hma5 = ta.hma(close, 5)
+alma5 = ta.alma(close, 5, 0.85, 6)
+diff = nz(hma5) - nz(alma5)

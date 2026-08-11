@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Deep Ternary TA")
+rsiVal = ta.rsi(close, 3)
+sma3 = ta.sma(close, 3)
+atrVal = ta.atr(3)
+score = close > sma3 ? (rsiVal > 60 ? (atrVal > 2 ? 3 : 2) : 1) : (rsiVal < 40 ? (atrVal > 2 ? -3 : -2) : -1)
+var float __obs_plot0 = na
+__obs_plot0 := score
+plot(score, "Score")

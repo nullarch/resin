@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("UDT Reset")
+type Accumulator
+    float sum = 0.0
+    int bars = 0
+
+var Accumulator acc = Accumulator.new()
+acc.sum := acc.sum + (close - open)
+acc.bars := acc.bars + 1
+if acc.bars >= 5
+    acc.sum := 0.0
+    acc.bars := 0
+plot(acc.sum, "Sum")

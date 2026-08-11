@@ -1,0 +1,6 @@
+//@version=5
+indicator("LP EMA Filter")
+raw = close
+smooth = ta.ema(close, 5)
+noise = raw - smooth
+plot(noise)

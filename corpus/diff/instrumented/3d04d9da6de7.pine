@@ -1,0 +1,11 @@
+//@version=5
+indicator("Var Reset")
+var int count = 0
+count := close > open ? count + 1 : 0
+maxCount = ta.highest(count, 5)
+var float __obs_plot0 = na
+__obs_plot0 := count
+plot(count)
+var float __obs_plot1 = na
+__obs_plot1 := maxCount
+plot(maxCount)

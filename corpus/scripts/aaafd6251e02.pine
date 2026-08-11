@@ -1,0 +1,11 @@
+//@version=5
+strategy("NS-19 Rayleigh-Benard")
+hiVal = nz(ta.highest(high, 5), high)
+loVal = nz(ta.lowest(low, 5), low)
+gradient = hiVal - loVal
+atrVal = nz(ta.atr(3), 1.0)
+rayleigh = atrVal > 0.01 ? gradient / atrVal : 0.0
+if rayleigh > 3.0
+    strategy.entry("Convect", strategy.long)
+if rayleigh < 1.0
+    strategy.close("Convect")

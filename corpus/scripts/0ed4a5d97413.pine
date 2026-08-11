@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Candle Type")
+body = math.abs(close - open)
+totalRange = high - low
+bodyPct = totalRange > 0 ? body / totalRange : 0.0
+isBull = close > open
+candleType = switch
+    bodyPct > 0.7 and isBull => "strong_bull"
+    bodyPct > 0.7 and not isBull => "strong_bear"
+    bodyPct < 0.15 => "doji"
+    isBull => "bull"
+    => "bear"
+isStrong = str.contains(candleType, "strong")
+plot(isStrong ? 1 : 0, "Strong")

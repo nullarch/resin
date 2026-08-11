@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("NVI PVI")
+n = ta.nvi()
+p = ta.pvi()
+var float __obs_plot0 = na
+__obs_plot0 := n + p
+plot(n + p)

@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("EMA SMA Ratio")
+ema3 = ta.ema(close, 3)
+sma3 = ta.sma(close, 3)
+ratio = sma3 > 0 ? ema3 / sma3 : 1.0
+trendStrength = (ratio - 1.0) * 100
+var float __obs_plot0 = na
+__obs_plot0 := trendStrength
+plot(trendStrength, "Strength")

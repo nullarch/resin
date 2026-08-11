@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Journal")
+var tj = map.new<string, float>()
+var int tradeNum = 0
+sma3 = ta.sma(close, 3)
+if close > sma3 and close[1] <= sma3[1] and not na(close[1]) and not na(sma3[1])
+    tradeNum := tradeNum + 1
+    map.put(tj, "last_entry", close)
+    map.put(tj, "trade_num", float(tradeNum))
+lastEntry = map.get(tj, "last_entry", close)
+unrealPnl = close - lastEntry
+plot(unrealPnl, "PnL")

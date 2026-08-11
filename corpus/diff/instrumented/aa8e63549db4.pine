@@ -1,0 +1,12 @@
+//@version=5
+indicator("Overconfidence")
+var int winStreak = 0
+isUp = close > open
+if isUp
+    winStreak := winStreak + 1
+else
+    winStreak := 0
+overconfident = winStreak >= 3
+var float __obs_plot0 = na
+__obs_plot0 := overconfident ? 1 : 0
+plot(overconfident ? 1 : 0)

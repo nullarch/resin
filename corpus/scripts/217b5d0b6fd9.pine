@@ -1,0 +1,4 @@
+//@version=5
+indicator("IntFmt")
+var string lastFmt = ""
+lastFmt := str.tostring(3.14159, "integer")

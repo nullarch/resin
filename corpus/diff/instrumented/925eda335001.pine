@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Comp Wt")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 5)
+highVol = avgATR > 0 and atr / avgATR > 1.3
+trendWt = highVol ? 0.3 : 0.5
+momWt = highVol ? 0.5 : 0.3
+volWt = 1.0 - trendWt - momWt
+composite = (close > sma3 ? 1 : -1) * trendWt + (rsi - 50) / 50 * momWt
+var float __obs_plot0 = na
+__obs_plot0 := composite
+plot(composite, "C")

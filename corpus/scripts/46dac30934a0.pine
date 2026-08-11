@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Alloc Mode")
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+mode = switch
+    atr > avgATR * 2.0 => "hedge"
+    rsi > 65 and atr > avgATR => "reduce"
+    rsi < 35 and atr < avgATR => "accumulate"
+    => "maintain"
+isAccum = mode == "accumulate"
+plot(isAccum ? 1 : 0, "Accum")

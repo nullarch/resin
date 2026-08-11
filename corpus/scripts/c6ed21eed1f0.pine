@@ -1,0 +1,7 @@
+//@version=5
+indicator("TF Change")
+is_new_day = timeframe.change("D")
+var int day_count = 0
+if is_new_day
+    day_count := day_count + 1
+plot(close)

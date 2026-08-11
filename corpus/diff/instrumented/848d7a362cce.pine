@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Rot History")
+var int rot = 0
+prevC = close[1]
+if not na(prevC)
+    rot := close > prevC ? rot + 1 : rot - 1
+rotArr = array.new_float(0)
+array.push(rotArr, float(rot))
+array.push(rotArr, float(math.abs(rot)))
+avg = array.sum(rotArr) / math.max(float(array.size(rotArr)), 1.0)
+var float __obs_plot0 = na
+__obs_plot0 := avg
+plot(avg, "RotAvg")

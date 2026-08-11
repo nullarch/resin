@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Osc Hist A")
+var float[] oscHist = array.new_float(0)
+rsi = nz(ta.rsi(close, 3), 50.0)
+osc = rsi - 50
+array.push(oscHist, osc)
+if array.size(oscHist) > 10
+    array.shift(oscHist)
+avgOsc = array.size(oscHist) > 0 ? array.avg(oscHist) : 0.0
+rising = osc > avgOsc
+var float __obs_plot0 = na
+__obs_plot0 := rising ? 1 : 0
+plot(rising ? 1 : 0, "R")

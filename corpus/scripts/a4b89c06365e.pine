@@ -1,0 +1,5 @@
+//@version=5
+indicator("var drawing")
+var float result = 0.0
+var lbl = label.new(bar_index, close)
+result := close

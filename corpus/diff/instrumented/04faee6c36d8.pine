@@ -1,0 +1,14 @@
+//@version=5
+indicator("C300-19")
+var float haClose = 0.0
+var float haOpen = 0.0
+haClose := (open + high + low + close) / 4.0
+haOpen := (haOpen + haClose) / 2.0
+haHigh = math.max(high, math.max(haOpen, haClose))
+haLow = math.min(low, math.min(haOpen, haClose))
+var float __obs_plot0 = na
+__obs_plot0 := haClose
+plot(haClose)
+var float __obs_plot1 = na
+__obs_plot1 := haOpen
+plot(haOpen)

@@ -1,0 +1,18 @@
+//@version=5
+indicator("Pivot S/R", overlay=true)
+leftBars = input.int(5)
+rightBars = input.int(5)
+ph = ta.pivothigh(leftBars, rightBars)
+pl = ta.pivotlow(leftBars, rightBars)
+var float resistance = na
+var float support = na
+if not na(ph)
+    resistance := ph
+if not na(pl)
+    support := pl
+var float __obs_plot0 = na
+__obs_plot0 := resistance
+plot(resistance, "R", color=color.red, style=plot.style_cross)
+var float __obs_plot1 = na
+__obs_plot1 := support
+plot(support, "S", color=color.green, style=plot.style_cross)

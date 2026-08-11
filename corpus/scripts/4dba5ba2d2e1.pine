@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Bar Map")
+var bm = map.new<string, float>()
+map.put(bm, "body", math.abs(close - open_))
+map.put(bm, "range", high - low)
+map.put(bm, "volume", volume)
+total = 0.0
+for [k, v] in bm
+    total := total + v
+plot(total, "Tot")

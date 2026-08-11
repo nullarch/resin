@@ -1,0 +1,3 @@
+//@version=5
+indicator("Test")
+t = timestamp(2021, 1, 1)

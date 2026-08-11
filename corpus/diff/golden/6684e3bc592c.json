@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:rm": {
+    "stop_pct": 2.0,
+    "target_pct": 4.0,
+    "max_risk": 5.0
+   },
+   "var:__obs_plot0": 3.6666666666666665
+  },
+  {
+   "var:rm": {
+    "stop_pct": 2.0,
+    "target_pct": 4.0,
+    "max_risk": 5.0
+   },
+   "var:__obs_plot0": 3.6666666666666665
+  },
+  {
+   "var:rm": {
+    "stop_pct": 2.0,
+    "target_pct": 4.0,
+    "max_risk": 5.0
+   },
+   "var:__obs_plot0": 3.6666666666666665
+  },
+  {
+   "var:rm": {
+    "stop_pct": 2.0,
+    "target_pct": 4.0,
+    "max_risk": 5.0
+   },
+   "var:__obs_plot0": 3.6666666666666665
+  },
+  {
+   "var:rm": {
+    "stop_pct": 2.0,
+    "target_pct": 4.0,
+    "max_risk": 5.0
+   },
+   "var:__obs_plot0": 3.6666666666666665
+  },
+  {
+   "var:rm": {
+    "stop_pct": 2.0,
+    "target_pct": 4.0,
+    "max_risk": 5.0
+   },
+   "var:__obs_plot0": 3.6666666666666665
+  },
+  {
+   "var:rm": {
+    "stop_pct": 2.0,
+    "target_pct": 4.0,
+    "max_risk": 5.0
+   },
+   "var:__obs_plot0": 3.6666666666666665
+  },
+  {
+   "var:rm": {
+    "stop_pct": 2.0,
+    "target_pct": 4.0,
+    "max_risk": 5.0
+   },
+   "var:__obs_plot0": 3.6666666666666665
+  },
+  {
+   "var:rm": {
+    "stop_pct": 2.0,
+    "target_pct": 4.0,
+    "max_risk": 5.0
+   },
+   "var:__obs_plot0": 3.6666666666666665
+  },
+  {
+   "var:rm": {
+    "stop_pct": 2.0,
+    "target_pct": 4.0,
+    "max_risk": 5.0
+   },
+   "var:__obs_plot0": 3.6666666666666665
+  }
+ ],
+ "finalVarState": {
+  "rm": {
+   "stop_pct": 2.0,
+   "target_pct": 4.0,
+   "max_risk": 5.0
+  },
+  "__obs_plot0": 3.6666666666666665
+ }
+}

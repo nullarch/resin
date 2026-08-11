@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Lower Shd")
+botBody = math.min(close, open)
+lowerShadow = botBody - low
+totalRange = high - low
+shadowRatio = totalRange > 0 ? lowerShadow / totalRange * 100 : 0.0
+plot(shadowRatio, "LS")

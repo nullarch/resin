@@ -1,0 +1,17 @@
+//@version=5
+indicator("UDTCyc13")
+type CycleInfo
+    float phase = 0.0
+    float amplitude = 0.0
+    float period = 5.0
+    int crossings = 0
+var CycleInfo ci = CycleInfo.new()
+trend = nz(ta.sma(close, 3), close)
+cycle = close - trend
+ci.amplitude := math.abs(cycle)
+ci.phase := ci.phase + 2.0 * math.pi / ci.period
+if ci.phase > 2.0 * math.pi
+    ci.phase := ci.phase - 2.0 * math.pi
+    ci.crossings := ci.crossings + 1
+plot(ci.amplitude, "a")
+plot(ci.phase, "p")

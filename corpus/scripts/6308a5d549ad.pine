@@ -1,0 +1,4 @@
+//@version=5
+indicator("StrConcat")
+title = "SMA" + " " + "Cross"
+x = close

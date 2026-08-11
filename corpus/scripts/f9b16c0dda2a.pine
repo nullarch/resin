@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Deep4")
+var int deepCount = 0
+if close > 100
+    for i = 0 to 2
+        if float(i) < (high - low)
+            n = 2
+            while n > 0
+                deepCount := deepCount + 1
+                n := n - 1
+plot(float(deepCount), "D")

@@ -1,0 +1,12 @@
+//@version=5
+strategy("EMA Cross", overlay=true)
+fast = ta.ema(close, 3)
+slow = ta.ema(close, 5)
+longCond = ta.crossover(fast, slow)
+shortCond = ta.crossunder(fast, slow)
+if longCond
+    strategy.entry("Long", strategy.long)
+if shortCond
+    strategy.close("Long")
+plot(fast)
+plot(slow)

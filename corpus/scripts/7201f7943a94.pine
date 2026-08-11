@@ -1,0 +1,9 @@
+//@version=5
+indicator("While countdown")
+var int steps = 0
+n = 100
+count = 0
+while n > 1
+    n := int(n / 2)
+    count := count + 1
+steps := count

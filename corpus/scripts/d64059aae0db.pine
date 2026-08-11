@@ -1,0 +1,28 @@
+//@version=5
+indicator("DoubleQ")
+var float q1Buy = 0.0
+var float q1Sell = 0.0
+var float q2Buy = 0.0
+var float q2Sell = 0.0
+var int step = 0
+step := step + 1
+alphaLR = 0.1
+gammaDisc = 0.9
+reward = close > open ? 1.0 : -1.0
+useQ1 = step % 2 == 0
+if useQ1
+    bestA = q1Buy >= q1Sell ? 1 : 0
+    targetQ = bestA == 1 ? q2Buy : q2Sell
+    if q1Buy >= q1Sell
+        q1Buy := q1Buy + alphaLR * (reward + gammaDisc * targetQ - q1Buy)
+    else
+        q1Sell := q1Sell + alphaLR * (reward + gammaDisc * targetQ - q1Sell)
+else
+    bestA = q2Buy >= q2Sell ? 1 : 0
+    targetQ = bestA == 1 ? q1Buy : q1Sell
+    if q2Buy >= q2Sell
+        q2Buy := q2Buy + alphaLR * (reward + gammaDisc * targetQ - q2Buy)
+    else
+        q2Sell := q2Sell + alphaLR * (reward + gammaDisc * targetQ - q2Sell)
+avgQ = (math.max(q1Buy, q1Sell) + math.max(q2Buy, q2Sell)) / 2.0
+plot(avgQ, "AvgQ")

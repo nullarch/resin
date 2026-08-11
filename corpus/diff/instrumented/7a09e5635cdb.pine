@@ -1,0 +1,15 @@
+//@version=5
+indicator("All Inputs")
+length = input.int(5, "Length")
+mult = input.float(2.0, "Mult")
+show = input.bool(true, "Show")
+src = input.string("close", "Source")
+clr = input.color(color.red, "Color")
+tf = input.timeframe("", "TF")
+sym = input.symbol("BTCUSDT", "Sym")
+sess = input.session("0930-1600", "Sess")
+lvl = input.price(100.0, "Level")
+sma_ = ta.sma(close, length)
+var float __obs_plot0 = na
+__obs_plot0 := show ? sma_ : close
+plot(show ? sma_ : close)

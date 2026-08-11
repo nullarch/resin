@@ -1,0 +1,5 @@
+//@version=5
+indicator("Storm Intensity")
+storm = nz(ta.atr(3), 1.0)
+severity = storm > 5 ? 3 : storm > 3 ? 2 : 1
+plot(severity, title="severity")

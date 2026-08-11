@@ -1,0 +1,20 @@
+
+//@version=5
+indicator("Deep If")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+result = 0
+if close > sma3
+    if rsi > 60
+        if close > close[1]
+            result := 3
+        else
+            result := 2
+    else
+        result := 1
+else
+    if rsi < 40
+        result := -2
+    else
+        result := -1
+plot(result, "R")

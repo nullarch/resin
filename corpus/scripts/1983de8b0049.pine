@@ -1,0 +1,5 @@
+//@version=5
+indicator("Delta Encode")
+float delta = not na(close[1]) ? close - close[1] : 0.0
+var float sumDelta = 0.0
+sumDelta := sumDelta + delta

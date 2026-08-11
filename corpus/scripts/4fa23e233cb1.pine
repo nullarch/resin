@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Max Consec")
+var int currentStreak = 0
+var int maxStreak = 0
+var float prevClose = 0.0
+if prevClose > 0
+    if close > prevClose
+        currentStreak := currentStreak > 0 ? currentStreak + 1 : 1
+    else
+        currentStreak := currentStreak < 0 ? currentStreak - 1 : -1
+if math.abs(currentStreak) > maxStreak
+    maxStreak := math.abs(currentStreak)
+prevClose := close
+plot(currentStreak, "Streak")
+plot(maxStreak, "Max")

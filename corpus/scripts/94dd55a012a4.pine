@@ -1,0 +1,10 @@
+//@version=5
+indicator("Switch NoDsc Expr")
+float val = switch
+    close > 110 => 3.0
+    close > 105 => 2.0
+    close > 100 => 1.0
+    => 0.0
+var float result = 0.0
+result := val
+plot(result)

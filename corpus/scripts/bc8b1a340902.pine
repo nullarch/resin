@@ -1,0 +1,7 @@
+//@version=5
+indicator("test")
+double(x) => x * 2
+triple(x) => x * 3
+combined(x) => double(x) + triple(x)
+result = combined(close)
+plot(result)

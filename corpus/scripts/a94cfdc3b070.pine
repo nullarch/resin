@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Trend Phase")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+spread = sma3 - sma5
+prevSpread = nz(sma3[1] - sma5[1], 0.0)
+phase = switch
+    spread > 0 and spread > prevSpread => "accelerating"
+    spread > 0 => "decelerating"
+    spread < 0 and spread < prevSpread => "declining"
+    => "recovering"
+isAccel = phase == "accelerating"
+plot(isAccel ? 1 : 0, "Acc")

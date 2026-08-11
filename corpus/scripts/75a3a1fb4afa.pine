@@ -1,0 +1,4 @@
+//@version=5
+indicator("tf period")
+var float result = 0.0
+result := timeframe.period == "D" ? 1.0 : 0.0

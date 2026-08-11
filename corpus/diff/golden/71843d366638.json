@@ -1,0 +1,226 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0,
+    40.0,
+    50.0
+   ],
+   "var:bs_idx": 2,
+   "var:s": "hello world",
+   "var:s2": "hello pine",
+   "var:slen": 10,
+   "var:counter": 1.0,
+   "var:lbl": {
+    "type": "label",
+    "id": 2059566489472
+   },
+   "var:result": 13.0,
+   "var:__obs_plot0": 103
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0,
+    40.0,
+    50.0
+   ],
+   "var:bs_idx": 2,
+   "var:s": "hello world",
+   "var:s2": "hello pine",
+   "var:slen": 10,
+   "var:counter": 2.0,
+   "var:lbl": {
+    "type": "label",
+    "id": 2059566489472
+   },
+   "var:result": 14.0,
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0,
+    40.0,
+    50.0
+   ],
+   "var:bs_idx": 2,
+   "var:s": "hello world",
+   "var:s2": "hello pine",
+   "var:slen": 10,
+   "var:counter": 3.0,
+   "var:lbl": {
+    "type": "label",
+    "id": 2059566489472
+   },
+   "var:result": 118.0,
+   "var:__obs_plot0": 102
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0,
+    40.0,
+    50.0
+   ],
+   "var:bs_idx": 2,
+   "var:s": "hello world",
+   "var:s2": "hello pine",
+   "var:slen": 10,
+   "var:counter": 4.0,
+   "var:lbl": {
+    "type": "label",
+    "id": 2059566489472
+   },
+   "var:result": 119.6666666667,
+   "var:__obs_plot0": 105
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0,
+    40.0,
+    50.0
+   ],
+   "var:bs_idx": 2,
+   "var:s": "hello world",
+   "var:s2": "hello pine",
+   "var:slen": 10,
+   "var:counter": 5.0,
+   "var:lbl": {
+    "type": "label",
+    "id": 2059566489472
+   },
+   "var:result": 121.6666666667,
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0,
+    40.0,
+    50.0
+   ],
+   "var:bs_idx": 2,
+   "var:s": "hello world",
+   "var:s2": "hello pine",
+   "var:slen": 10,
+   "var:counter": 6.0,
+   "var:lbl": {
+    "type": "label",
+    "id": 2059566489472
+   },
+   "var:result": 124.0,
+   "var:__obs_plot0": 106
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0,
+    40.0,
+    50.0
+   ],
+   "var:bs_idx": 2,
+   "var:s": "hello world",
+   "var:s2": "hello pine",
+   "var:slen": 10,
+   "var:counter": 7.0,
+   "var:lbl": {
+    "type": "label",
+    "id": 2059566489472
+   },
+   "var:result": 126.0,
+   "var:__obs_plot0": 108
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0,
+    40.0,
+    50.0
+   ],
+   "var:bs_idx": 2,
+   "var:s": "hello world",
+   "var:s2": "hello pine",
+   "var:slen": 10,
+   "var:counter": 8.0,
+   "var:lbl": {
+    "type": "label",
+    "id": 2059566489472
+   },
+   "var:result": 128.0,
+   "var:__obs_plot0": 110
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0,
+    40.0,
+    50.0
+   ],
+   "var:bs_idx": 2,
+   "var:s": "hello world",
+   "var:s2": "hello pine",
+   "var:slen": 10,
+   "var:counter": 9.0,
+   "var:lbl": {
+    "type": "label",
+    "id": 2059566489472
+   },
+   "var:result": 130.0,
+   "var:__obs_plot0": 109
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0,
+    40.0,
+    50.0
+   ],
+   "var:bs_idx": 2,
+   "var:s": "hello world",
+   "var:s2": "hello pine",
+   "var:slen": 10,
+   "var:counter": 10.0,
+   "var:lbl": {
+    "type": "label",
+    "id": 2059566489472
+   },
+   "var:result": 132.0,
+   "var:__obs_plot0": 111
+  }
+ ],
+ "finalVarState": {
+  "arr": [
+   10.0,
+   20.0,
+   30.0,
+   40.0,
+   50.0
+  ],
+  "bs_idx": 2,
+  "s": "hello world",
+  "s2": "hello pine",
+  "slen": 10,
+  "counter": 10.0,
+  "lbl": {
+   "type": "label",
+   "id": 2059566489472
+  },
+  "result": 132.0,
+  "__obs_plot0": 111
+ }
+}

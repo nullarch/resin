@@ -1,0 +1,19 @@
+
+//@version=5
+indicator("Map Arr")
+var data = map.new<string, float>()
+var float[] history = array.new_float(0)
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+map.put(data, "rsi", rsi)
+map.put(data, "trend", sma3 > ta.sma(close, 5) ? 1.0 : -1.0)
+composite = 0.0
+for [k, v] in data
+    composite := composite + v
+array.push(history, composite)
+if array.size(history) > 8
+    array.shift(history)
+avgComp = array.size(history) > 0 ? array.avg(history) : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := avgComp
+plot(avgComp, "AC")

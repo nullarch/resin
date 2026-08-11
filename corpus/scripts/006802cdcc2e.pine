@@ -1,0 +1,8 @@
+//@version=5
+indicator("nested UDF")
+var float result = 0.0
+inner(x) =>
+    x * 2
+outer(x) =>
+    inner(x) + 1
+result := outer(5.0)

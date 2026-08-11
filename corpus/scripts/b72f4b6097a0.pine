@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("MA Conv Scan")
+minDiff = 999999.0
+for p = 3 to 5
+    ma = ta.sma(close, p)
+    diff = math.abs(close - ma)
+    if diff < minDiff
+        minDiff := diff
+plot(minDiff, "MinDiff")

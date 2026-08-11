@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Range Exp")
+barRange = high - low
+avgRange = ta.sma(high - low, 5)
+expansion = avgRange > 0 ? barRange / avgRange : 1.0
+isExpansion = expansion > 1.5
+plot(expansion, "Exp")

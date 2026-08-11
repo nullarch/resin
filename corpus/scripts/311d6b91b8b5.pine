@@ -1,0 +1,4 @@
+//@version=5
+indicator("Ticker Std")
+sym = ticker.standard(syminfo.tickerid)
+plot(close)

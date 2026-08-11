@@ -1,0 +1,13 @@
+//@version=5
+indicator("Multi Plot KW")
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+var float __obs_plot0 = na
+__obs_plot0 := sma3
+plot(sma3, title="SMA 3", color=color.blue, linewidth=2)
+var float __obs_plot1 = na
+__obs_plot1 := ema5
+plot(ema5, title="EMA 5", color=color.red, linewidth=1)
+var float __obs_plot2 = na
+__obs_plot2 := close
+plot(close, title="Close")

@@ -1,0 +1,9 @@
+//@version=5
+indicator("Pheromone Trail")
+var float pheromone = 0.0
+evapRate = 0.1
+deposit = volume / 1000.0
+pheromone := pheromone * (1.0 - evapRate) + deposit
+var float __obs_plot0 = na
+__obs_plot0 := pheromone
+plot(pheromone)

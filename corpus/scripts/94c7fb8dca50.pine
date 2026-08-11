@@ -1,0 +1,26 @@
+
+//@version=5
+indicator("Roll Corr")
+var float[] xs = array.new_float(0)
+var float[] ys = array.new_float(0)
+array.push(xs, close)
+array.push(ys, volume)
+if array.size(xs) > 8
+    array.shift(xs)
+    array.shift(ys)
+meanX = array.size(xs) > 0 ? array.avg(xs) : close
+meanY = array.size(ys) > 0 ? array.avg(ys) : volume
+sumProd = 0.0
+sumX2 = 0.0
+sumY2 = 0.0
+sz = array.size(xs)
+for i = 0 to math.max(sz - 1, 0)
+    if i < sz
+        dx = array.get(xs, i) - meanX
+        dy = array.get(ys, i) - meanY
+        sumProd := sumProd + dx * dy
+        sumX2 := sumX2 + dx * dx
+        sumY2 := sumY2 + dy * dy
+denom = math.sqrt(sumX2 * sumY2)
+corr = denom > 0 ? sumProd / denom : 0.0
+plot(corr, "Corr")

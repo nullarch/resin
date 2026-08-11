@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Bool Complex")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+avgVol = ta.sma(volume, 5)
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 5)
+bullTrend = sma3 > sma5 and close > sma3
+bullMom = rsi > 55 and rsi < 80
+volConfirm = volume > avgVol
+lowRisk = avgATR > 0 and atr / avgATR < 1.5
+strongBuy = bullTrend and bullMom and volConfirm and lowRisk
+weakBuy = (bullTrend or bullMom) and not (rsi > 75)
+plot(strongBuy ? 2 : weakBuy ? 1 : 0, "Sig")

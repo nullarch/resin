@@ -1,0 +1,6 @@
+//@version=5
+indicator("Inputs")
+length = input.int(14, "Length")
+mult = input.float(2.0, "Multiplier")
+show = input.bool(true, "Show")
+plot(ta.sma(close, length) * mult)

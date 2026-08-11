@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Sig Strength")
+rsi = ta.rsi(close, 3)
+sma3 = ta.sma(close, 3)
+aboveMA = close > sma3
+rsiVal = nz(rsi, 50.0)
+strength = switch
+    aboveMA and rsiVal > 70 => "very_strong"
+    aboveMA and rsiVal > 50 => "strong"
+    aboveMA => "moderate"
+    rsiVal < 30 => "very_weak"
+    => "weak"
+isStrong = strength == "very_strong" or strength == "strong"
+plot(isStrong ? 1 : 0, "Strong")

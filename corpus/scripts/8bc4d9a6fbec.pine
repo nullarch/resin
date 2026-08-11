@@ -1,0 +1,13 @@
+//@version=5
+indicator("ATR Channels", overlay=true)
+length = 14
+mult = 2.0
+basis = ta.sma(close, length)
+atr = ta.atr(length)
+upper = basis + mult * atr
+lower = basis - mult * atr
+expanding = atr > atr[1]
+plot(basis)
+plot(upper)
+plot(lower)
+plot(expanding ? 1.0 : 0.0)

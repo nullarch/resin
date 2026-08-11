@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("UDT Nested")
+type Level
+    float price = 0.0
+    int touches = 0
+
+method touch(Level l, float p) =>
+    l.price := p
+    l.touches := l.touches + 1
+
+var Level support = Level.new()
+var Level resistance = Level.new()
+if close < open
+    support.touch(low)
+else
+    resistance.touch(high)
+plot(support.touches + resistance.touches, "Total Touches")

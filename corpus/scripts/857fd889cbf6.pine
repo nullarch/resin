@@ -1,0 +1,13 @@
+
+//@version=5
+strategy("Grid Sim", overlay=true)
+sma5 = ta.sma(close, 5)
+atr = ta.atr(3)
+level1 = sma5 - atr
+level2 = sma5 + atr
+if close < level1
+    strategy.entry("Grid1", strategy.long)
+if close > level2
+    strategy.close("Grid1")
+plot(level1, "L1")
+plot(level2, "L2")

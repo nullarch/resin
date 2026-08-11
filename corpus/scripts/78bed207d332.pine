@@ -1,0 +1,7 @@
+//@version=5
+strategy("Pos Track")
+if bar_index == 2
+    strategy.entry("Long", strategy.long)
+var float pos = 0.0
+pos := strategy.position_size
+plot(pos)

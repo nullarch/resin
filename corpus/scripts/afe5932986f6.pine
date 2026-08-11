@@ -1,0 +1,5 @@
+//@version=5
+indicator("Ternary")
+var int result = 0
+direction = close > open ? 1 : -1
+result := direction

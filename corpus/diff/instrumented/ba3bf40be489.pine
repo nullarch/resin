@@ -1,0 +1,22 @@
+
+//@version=5
+indicator("Kelly")
+var int wins = 0
+var int losses = 0
+var float avgWin = 0.0
+var float avgLoss = 0.0
+chg = close - close[1]
+if not na(chg)
+    if chg > 0
+        wins := wins + 1
+        avgWin := avgWin + (chg - avgWin) / wins
+    else if chg < 0
+        losses := losses + 1
+        avgLoss := avgLoss + (math.abs(chg) - avgLoss) / losses
+total = wins + losses
+winRate = total > 0 ? float(wins) / float(total) : 0.5
+payoff = avgLoss > 0 ? avgWin / avgLoss : 1.0
+kelly = winRate - (1 - winRate) / payoff
+var float __obs_plot0 = na
+__obs_plot0 := kelly
+plot(kelly, "Kelly")

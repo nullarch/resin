@@ -1,0 +1,8 @@
+//@version=5
+indicator("RSI + MA")
+rsi = ta.rsi(close, 5)
+rsiMA = ta.sma(rsi, 3)
+overbought = rsi > 70
+oversold = rsi < 30
+signal = overbought ? -1 : oversold ? 1 : 0
+plot(signal)

@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Conv Test")
+mean = ta.sma(close, 5)
+estimate = close
+iters = 0
+while math.abs(estimate - mean) > 0.01 and iters < 50
+    estimate := estimate + (mean - estimate) * 0.3
+    iters := iters + 1
+converged = iters < 50
+plot(iters, "Its")

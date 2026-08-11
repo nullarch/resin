@@ -1,0 +1,13 @@
+//@version=5
+indicator("Func If Return")
+var float result = 0.0
+
+classify(float val) =>
+    if val > 110
+        3.0
+    else if val > 105
+        2.0
+    else
+        1.0
+
+result := classify(close)

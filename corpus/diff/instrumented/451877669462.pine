@@ -1,0 +1,10 @@
+//@version=5
+indicator("Session Bars")
+isFirst = session.isfirstbar
+isLast = session.islastbar
+var float __obs_plot0 = na
+__obs_plot0 := isFirst ? 1 : 0
+plot(isFirst ? 1 : 0)
+var float __obs_plot1 = na
+__obs_plot1 := isLast ? 1 : 0
+plot(isLast ? 1 : 0)

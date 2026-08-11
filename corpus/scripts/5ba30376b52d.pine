@@ -1,0 +1,8 @@
+//@version=5
+indicator("For Array")
+var arr = array.new_float(0)
+arr := array.new_float(0)
+for i = 0 to 4
+    arr.push(close[i])
+total = arr.sum()
+avg_ = arr.avg()

@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Liq Adj")
+avgVol = ta.sma(volume, 5)
+relVol = avgVol > 0 ? volume / avgVol : 1.0
+liqMult = relVol > 2.0 ? 1.0 : relVol > 1.0 ? 0.8 : relVol > 0.5 ? 0.5 : 0.2
+rsi = nz(ta.rsi(close, 3), 50.0)
+adjSignal = (rsi - 50) / 50 * liqMult
+var float __obs_plot0 = na
+__obs_plot0 := adjSignal
+plot(adjSignal, "Adj")

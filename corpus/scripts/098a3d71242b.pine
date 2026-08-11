@@ -1,0 +1,8 @@
+//@version=5
+indicator("UDF TA")
+f_smooth(src, len) =>
+    ta.sma(src, len)
+
+var float result = 0.0
+result := f_smooth(close, 3)
+plot(result)

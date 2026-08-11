@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:currentStreak": 0,
+   "var:maxStreak": 0,
+   "var:prevClose": 103,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:currentStreak": 1,
+   "var:maxStreak": 1,
+   "var:prevClose": 104,
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:currentStreak": -1,
+   "var:maxStreak": 1,
+   "var:prevClose": 102,
+   "var:__obs_plot0": -1,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:currentStreak": 1,
+   "var:maxStreak": 1,
+   "var:prevClose": 105,
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:currentStreak": 2,
+   "var:maxStreak": 2,
+   "var:prevClose": 107,
+   "var:__obs_plot0": 2,
+   "var:__obs_plot1": 2
+  },
+  {
+   "var:currentStreak": -1,
+   "var:maxStreak": 2,
+   "var:prevClose": 106,
+   "var:__obs_plot0": -1,
+   "var:__obs_plot1": 2
+  },
+  {
+   "var:currentStreak": 1,
+   "var:maxStreak": 2,
+   "var:prevClose": 108,
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 2
+  },
+  {
+   "var:currentStreak": 2,
+   "var:maxStreak": 2,
+   "var:prevClose": 110,
+   "var:__obs_plot0": 2,
+   "var:__obs_plot1": 2
+  },
+  {
+   "var:currentStreak": -1,
+   "var:maxStreak": 2,
+   "var:prevClose": 109,
+   "var:__obs_plot0": -1,
+   "var:__obs_plot1": 2
+  },
+  {
+   "var:currentStreak": 1,
+   "var:maxStreak": 2,
+   "var:prevClose": 111,
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 2
+  }
+ ],
+ "finalVarState": {
+  "currentStreak": 1,
+  "maxStreak": 2,
+  "prevClose": 111,
+  "__obs_plot0": 1,
+  "__obs_plot1": 2
+ }
+}

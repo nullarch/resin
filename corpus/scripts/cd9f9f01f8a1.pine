@@ -1,0 +1,9 @@
+//@version=5
+indicator("PropensityScore")
+rsiVal = nz(ta.rsi(close, 5), 50.0)
+propensity = rsiVal / 100.0
+treated = propensity > 0.5 ? 1.0 : 0.0
+outcome = close - nz(close[1], close)
+iptw = treated == 1.0 ? outcome / math.max(propensity, 0.01) : -outcome / math.max(1.0 - propensity, 0.01)
+plot(iptw, "IPTW")
+plot(propensity, "Prop")

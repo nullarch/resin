@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Sig Hist")
+var float[] sigHist = array.new_float(0)
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+sig = close > sma3 ? 1.0 : -1.0
+array.push(sigHist, sig)
+if array.size(sigHist) > 6
+    array.shift(sigHist)
+avgSig = array.avg(sigHist)
+persistent = math.abs(avgSig) > 0.5
+var float __obs_plot0 = na
+__obs_plot0 := persistent ? avgSig : 0.0
+plot(persistent ? avgSig : 0.0, "Pers")

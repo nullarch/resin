@@ -1,0 +1,8 @@
+//@version=5
+indicator("UDFCompose")
+var float result = 0
+addOne(x) =>
+    x + 1
+addTwo(x) =>
+    addOne(addOne(x))
+result := addTwo(3.0)

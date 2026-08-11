@@ -1,0 +1,5 @@
+//@version=5
+indicator("Compound Var")
+var float total = 0.0
+total += close
+plot(total)

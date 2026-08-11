@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:sumZX": 0.0,
+   "var:sumZY": 0.0,
+   "var:cnt": 1,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:sumZX": 0.0,
+   "var:sumZY": 0.0,
+   "var:cnt": 2,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:sumZX": 0.0,
+   "var:sumZY": 0.0,
+   "var:cnt": 3,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:sumZX": 0.0,
+   "var:sumZY": 0.0,
+   "var:cnt": 4,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:sumZX": 280.0,
+   "var:sumZY": 840.0,
+   "var:cnt": 5,
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:sumZX": 520.0,
+   "var:sumZY": -600.0,
+   "var:cnt": 6,
+   "var:__obs_plot0": -1.1538461538461537
+  },
+  {
+   "var:sumZX": 480.0,
+   "var:sumZY": -720.0,
+   "var:cnt": 7,
+   "var:__obs_plot0": -1.5
+  },
+  {
+   "var:sumZX": 800.0,
+   "var:sumZY": 240.0,
+   "var:cnt": 8,
+   "var:__obs_plot0": 0.3
+  },
+  {
+   "var:sumZX": 940.0,
+   "var:sumZY": -600.0,
+   "var:cnt": 9,
+   "var:__obs_plot0": -0.6382978723404256
+  },
+  {
+   "var:sumZX": 1740.0,
+   "var:sumZY": 1800.0,
+   "var:cnt": 10,
+   "var:__obs_plot0": 1.0344827586206897
+  }
+ ],
+ "finalVarState": {
+  "sumZX": 1740.0,
+  "sumZY": 1800.0,
+  "cnt": 10,
+  "__obs_plot0": 1.0344827586206897
+ }
+}

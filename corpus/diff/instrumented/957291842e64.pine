@@ -1,0 +1,6 @@
+//@version=5
+indicator("Import Test")
+import TradingView/ta/5 as tvta
+var float __obs_plot0 = na
+__obs_plot0 := ta.sma(close, 14)
+plot(ta.sma(close, 14))

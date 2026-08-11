@@ -1,0 +1,12 @@
+//@version=5
+indicator("multi plot")
+var float result = 0.0
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+var float __obs_plot0 = na
+__obs_plot0 := sma3
+plot(sma3, "Fast")
+var float __obs_plot1 = na
+__obs_plot1 := sma5
+plot(sma5, "Slow")
+result := sma3

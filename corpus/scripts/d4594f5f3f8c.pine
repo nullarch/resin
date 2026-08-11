@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("RSI ROC")
+rsi = ta.rsi(close, 3)
+rsiROC = rsi - rsi[1]
+rsiAccel = rsiROC - rsiROC[1]
+plot(rsiROC, "RSI ROC")
+plot(rsiAccel, "RSI Accel")

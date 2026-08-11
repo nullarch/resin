@@ -1,0 +1,5 @@
+//@version=5
+indicator("NzPattern")
+var float result = 0
+smaVal = ta.sma(close, 20)
+result := nz(smaVal, close)

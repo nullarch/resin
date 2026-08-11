@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:bt": "pine_fn.<locals>.BandTracker(maxWidth=8.236504112800006, minWidth=5.6568542493999985, squeezeCount=0)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bt": "pine_fn.<locals>.BandTracker(maxWidth=8.236504112800006, minWidth=5.6568542493999985, squeezeCount=0)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bt": "pine_fn.<locals>.BandTracker(maxWidth=8.236504112800006, minWidth=5.6568542493999985, squeezeCount=0)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bt": "pine_fn.<locals>.BandTracker(maxWidth=8.236504112800006, minWidth=5.6568542493999985, squeezeCount=0)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bt": "pine_fn.<locals>.BandTracker(maxWidth=8.236504112800006, minWidth=5.6568542493999985, squeezeCount=0)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bt": "pine_fn.<locals>.BandTracker(maxWidth=8.236504112800006, minWidth=5.6568542493999985, squeezeCount=0)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bt": "pine_fn.<locals>.BandTracker(maxWidth=8.236504112800006, minWidth=5.6568542493999985, squeezeCount=0)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bt": "pine_fn.<locals>.BandTracker(maxWidth=8.236504112800006, minWidth=5.6568542493999985, squeezeCount=0)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bt": "pine_fn.<locals>.BandTracker(maxWidth=8.236504112800006, minWidth=5.6568542493999985, squeezeCount=0)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bt": "pine_fn.<locals>.BandTracker(maxWidth=8.236504112800006, minWidth=5.6568542493999985, squeezeCount=0)",
+   "var:__obs_plot0": 0
+  }
+ ],
+ "finalVarState": {
+  "bt": "pine_fn.<locals>.BandTracker(maxWidth=8.236504112800006, minWidth=5.6568542493999985, squeezeCount=0)",
+  "__obs_plot0": 0
+ }
+}

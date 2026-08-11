@@ -1,0 +1,12 @@
+//@version=5
+indicator("Input Defaults")
+len = input.int(14, "Length")
+mult = input.float(2.0, "Multiplier")
+show = input.bool(true, "Show")
+var int result_len = 0
+var float result_mult = 0.0
+var bool result_show = false
+result_len := len
+result_mult := mult
+result_show := show
+plot(close)

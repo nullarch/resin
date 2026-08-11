@@ -1,0 +1,7 @@
+//@version=5
+indicator("Hash Table")
+var float[] buckets = array.new_float(5, 0.0)
+idx = math.floor(close * 3.0) % 5
+current = array.get(buckets, idx)
+array.set(buckets, idx, current + 1.0)
+total_entries = array.get(buckets, 0) + array.get(buckets, 1) + array.get(buckets, 2) + array.get(buckets, 3) + array.get(buckets, 4)

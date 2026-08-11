@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("MF Proxy")
+typicalPrice = (high + low + close) / 3
+rawMF = typicalPrice * volume
+posMF = close > close[1] and not na(close[1]) ? rawMF : 0.0
+negMF = close < close[1] and not na(close[1]) ? rawMF : 0.0
+posMFSum = ta.cum(posMF)
+negMFSum = ta.cum(negMF)
+mfRatio = negMFSum > 0 ? posMFSum / negMFSum : 1.0
+mfi = 100 - 100 / (1 + mfRatio)
+var float __obs_plot0 = na
+__obs_plot0 := mfi
+plot(mfi, "MFI")

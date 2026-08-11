@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:signals": 0,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:signals": 0,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:signals": 0,
+   "var:__obs_plot0": -0.13333333333360003,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:signals": 0,
+   "var:__obs_plot0": 0.33666666666640005,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:signals": -1,
+   "var:__obs_plot0": 0.6907867080296302,
+   "var:__obs_plot1": -1
+  },
+  {
+   "var:signals": -1,
+   "var:__obs_plot0": 0.2999480781219562,
+   "var:__obs_plot1": -1
+  },
+  {
+   "var:signals": -2,
+   "var:__obs_plot0": 0.5562040042440866,
+   "var:__obs_plot1": -2
+  },
+  {
+   "var:signals": -3,
+   "var:__obs_plot0": 0.7184364776152302,
+   "var:__obs_plot1": -3
+  },
+  {
+   "var:signals": -3,
+   "var:__obs_plot0": 0.3235202626045142,
+   "var:__obs_plot1": -3
+  },
+  {
+   "var:signals": -4,
+   "var:__obs_plot0": 0.5863013575514526,
+   "var:__obs_plot1": -4
+  }
+ ],
+ "finalVarState": {
+  "signals": -4,
+  "__obs_plot0": 0.5863013575514526,
+  "__obs_plot1": -4
+ }
+}

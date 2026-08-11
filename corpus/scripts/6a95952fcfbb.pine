@@ -1,0 +1,5 @@
+//@version=5
+indicator("Wien Law")
+float temperature = nz(ta.atr(3), 1.0)
+float peakWavelength = temperature > 0.01 ? 2897.8 / temperature : 0.0
+float peakFreq = peakWavelength > 0.01 ? 1.0 / peakWavelength : 0.0

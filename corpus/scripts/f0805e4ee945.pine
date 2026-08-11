@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Manual ST", overlay=true)
+factor = 3.0
+len = 10
+atr_val = ta.atr(len)
+hl2_val = (high + low) / 2.0
+upper_band = hl2_val + factor * atr_val
+lower_band = hl2_val - factor * atr_val
+plot(upper_band)
+plot(lower_band)

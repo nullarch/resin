@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Vol Pctl")
+var float[] volHist = array.new_float(0)
+atr = ta.atr(3)
+array.push(volHist, atr)
+if array.size(volHist) > 8
+    array.shift(volHist)
+sorted = array.copy(volHist)
+array.sort(sorted)
+pctl = array.percentile_linear_interpolation(sorted, 50.0)
+isAboveMedian = atr > pctl
+plot(isAboveMedian ? 1 : 0, "AbvMed")

@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("CCI Smooth")
+cci = ta.cci(close, 5)
+smoothCCI = ta.ema(cci, 3)
+rising = smoothCCI > smoothCCI[1]
+plot(smoothCCI, "SmCCI")
+plot(rising ? 1 : 0, "Rising")

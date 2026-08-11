@@ -1,0 +1,9 @@
+//@version=5
+indicator("Var Shift")
+var float prev_close = 0.0
+var float diff = 0.0
+diff := close - prev_close
+prev_close := close
+var float result = 0.0
+result := diff
+plot(result)

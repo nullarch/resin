@@ -1,0 +1,5 @@
+//@version=5
+indicator("Multi Tuple")
+[macdLine, signalLine, histLine] = ta.macd(close, 3, 5, 3)
+[middle, upper, lower] = ta.bb(close, 5, 2.0)
+spread = upper - lower

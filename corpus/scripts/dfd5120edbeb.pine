@@ -1,0 +1,13 @@
+//@version=5
+indicator("Method UDT Field")
+var float result = 0.0
+
+type Range
+    float high_val = 0.0
+    float low_val = 0.0
+
+method span(Range self) =>
+    self.high_val - self.low_val
+
+r = Range.new(high, low)
+result := r.span()

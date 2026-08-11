@@ -1,0 +1,7 @@
+//@version=5
+indicator("Barssince")
+bullish = close > open
+bars = ta.barssince(bullish)
+var float __obs_plot0 = na
+__obs_plot0 := bars
+plot(bars)

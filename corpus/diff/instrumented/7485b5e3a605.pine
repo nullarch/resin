@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("CAGR Sim")
+var float startPrice = 0.0
+var int periods = 0
+if startPrice == 0.0
+    startPrice := close
+periods := periods + 1
+totalReturn = startPrice > 0 ? (close / startPrice - 1.0) * 100 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := totalReturn
+plot(totalReturn, "TotalRet")

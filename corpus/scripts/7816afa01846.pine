@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("DD Hist")
+var float[] ddHist = array.new_float(0)
+var float peak = 0.0
+peak := math.max(peak, close)
+dd = peak > 0 ? (peak - close) / peak * 100 : 0.0
+array.push(ddHist, dd)
+if array.size(ddHist) > 10
+    array.shift(ddHist)
+maxDD = array.size(ddHist) > 0 ? array.max(ddHist) : 0.0
+plot(maxDD, "MDD")

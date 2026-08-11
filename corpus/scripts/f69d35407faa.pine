@@ -1,0 +1,11 @@
+//@version=5
+indicator("enum switch")
+enum Direction
+    Up = 1
+    Down = 2
+var float result = 0.0
+dir = close > open ? Direction.Up : Direction.Down
+result := switch dir
+    Direction.Up => close
+    Direction.Down => open
+    => 0.0

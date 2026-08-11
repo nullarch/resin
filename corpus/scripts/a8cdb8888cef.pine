@@ -1,0 +1,8 @@
+//@version=5
+indicator("Var Array Accumulator")
+var float[] prices = array.new_float(0)
+array.push(prices, close)
+var float total = 0.0
+total := 0.0
+for i = 0 to array.size(prices) - 1
+    total := total + array.get(prices, i)

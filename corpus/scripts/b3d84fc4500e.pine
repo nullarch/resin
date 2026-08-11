@@ -1,0 +1,8 @@
+//@version=5
+indicator("Rate Limiter")
+float maxRate = 2.0
+var float output = 100.0
+float desired = close
+float diff = desired - output
+float clampedDiff = math.max(-maxRate, math.min(maxRate, diff))
+output := output + clampedDiff

@@ -1,0 +1,4 @@
+//@version=5
+indicator("tostring mintick")
+var string s = ""
+s := str.tostring(1.50000000, "mintick")

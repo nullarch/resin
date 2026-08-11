@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Squeeze", overlay=false)
+length = 20
+src = close
+bb_mult = 2.0
+kc_mult = 1.5
+
+basis = ta.sma(src, length)
+dev = bb_mult * ta.stdev(src, length)
+upper_bb = basis + dev
+lower_bb = basis - dev
+
+ma = ta.sma(src, length)
+atr_val = ta.atr(length)
+upper_kc = ma + kc_mult * atr_val
+lower_kc = ma - kc_mult * atr_val
+
+sqz_on = lower_bb > lower_kc and upper_bb < upper_kc
+val = ta.linreg(src - ta.sma(src, length), length, 0)
+plot(val)

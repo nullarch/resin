@@ -1,0 +1,11 @@
+//@version=5
+indicator("Switch ML")
+mode = close > open ? 1 : 0
+result = switch mode
+    1 =>
+        x = ta.sma(close, 3)
+        y = ta.ema(close, 3)
+        (x + y) / 2
+    =>
+        close
+plot(result)

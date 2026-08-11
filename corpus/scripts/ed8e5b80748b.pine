@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Eq Curve")
+var float equity = 10000.0
+var bool inPos = false
+var float entryPx = 0.0
+sma3 = ta.sma(close, 3)
+if not inPos and close > sma3
+    inPos := true
+    entryPx := close
+if inPos and close < sma3
+    pnl = close - entryPx
+    equity := equity + pnl * 100
+    inPos := false
+plot(equity, "Eq")

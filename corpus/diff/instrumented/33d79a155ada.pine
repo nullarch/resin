@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Beta")
+assetChg = close - close[1]
+bench = ta.sma(close, 3)
+benchChg = bench - bench[1]
+var float sumXY = 0.0
+var float sumX2 = 0.0
+var int n = 0
+if not na(assetChg) and not na(benchChg)
+    sumXY := sumXY + assetChg * benchChg
+    sumX2 := sumX2 + benchChg * benchChg
+    n := n + 1
+beta = sumX2 > 0 ? sumXY / sumX2 : 1.0
+var float __obs_plot0 = na
+__obs_plot0 := beta
+plot(beta, "Beta")

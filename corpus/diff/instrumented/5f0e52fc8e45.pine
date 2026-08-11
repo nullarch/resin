@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Gap Anal")
+prevClose = close[1]
+gapUp = not na(prevClose) and open > prevClose
+gapDn = not na(prevClose) and open < prevClose
+gapSize = not na(prevClose) ? math.abs(open - prevClose) : 0.0
+gapFilled = gapUp ? close <= prevClose : gapDn ? close >= prevClose : false
+var float __obs_plot0 = na
+__obs_plot0 := gapSize
+plot(gapSize, "Size")
+var float __obs_plot1 = na
+__obs_plot1 := gapFilled ? 1 : 0
+plot(gapFilled ? 1 : 0, "Filled")

@@ -1,0 +1,31 @@
+//@version=5
+indicator("SAR Simple", overlay=true)
+var float sarVal = 0.0
+var bool isBelow = true
+var float ep = 0.0
+var float af = 0.02
+if bar_index == 0
+    sarVal := low
+    ep := high
+    isBelow := true
+else
+    sarVal := sarVal + af * (ep - sarVal)
+    if isBelow
+        if sarVal > low
+            isBelow := false
+            sarVal := math.max(high, ep)
+            ep := low
+            af := 0.02
+        else if high > ep
+            ep := high
+            af := math.min(af + 0.02, 0.2)
+    else
+        if sarVal < high
+            isBelow := true
+            sarVal := math.min(low, ep)
+            ep := high
+            af := 0.02
+        else if low < ep
+            ep := low
+            af := math.min(af + 0.02, 0.2)
+plot(sarVal)

@@ -1,0 +1,127 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0,
+    40.0
+   ],
+   "var:last_idx": 6.0,
+   "var:last_val": 100.0,
+   "var:__obs_plot0": 103
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0,
+    40.0
+   ],
+   "var:last_idx": 6.0,
+   "var:last_val": 100.0,
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0,
+    40.0
+   ],
+   "var:last_idx": 6.0,
+   "var:last_val": 100.0,
+   "var:__obs_plot0": 102
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0,
+    40.0
+   ],
+   "var:last_idx": 6.0,
+   "var:last_val": 100.0,
+   "var:__obs_plot0": 105
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0,
+    40.0
+   ],
+   "var:last_idx": 6.0,
+   "var:last_val": 100.0,
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0,
+    40.0
+   ],
+   "var:last_idx": 6.0,
+   "var:last_val": 100.0,
+   "var:__obs_plot0": 106
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0,
+    40.0
+   ],
+   "var:last_idx": 6.0,
+   "var:last_val": 100.0,
+   "var:__obs_plot0": 108
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0,
+    40.0
+   ],
+   "var:last_idx": 6.0,
+   "var:last_val": 100.0,
+   "var:__obs_plot0": 110
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0,
+    40.0
+   ],
+   "var:last_idx": 6.0,
+   "var:last_val": 100.0,
+   "var:__obs_plot0": 109
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0,
+    40.0
+   ],
+   "var:last_idx": 6.0,
+   "var:last_val": 100.0,
+   "var:__obs_plot0": 111
+  }
+ ],
+ "finalVarState": {
+  "arr": [
+   10.0,
+   20.0,
+   30.0,
+   40.0
+  ],
+  "last_idx": 6.0,
+  "last_val": 100.0,
+  "__obs_plot0": 111
+ }
+}

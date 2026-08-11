@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Cum Delta")
+delta = close > open ? volume : close < open ? -volume : 0.0
+cumDelta = ta.cum(delta)
+cumDeltaMA = ta.sma(cumDelta, 5)
+diverging = (cumDelta > cumDeltaMA and close < ta.sma(close, 3)) or (cumDelta < cumDeltaMA and close > ta.sma(close, 3))
+plot(cumDelta, "CumDelta")

@@ -1,0 +1,9 @@
+//@version=5
+indicator("Venturi Effect")
+widePipe = high - low
+narrowPipe = math.abs(close - open)
+wideArea = math.max(widePipe, 0.1)
+narrowArea = math.max(narrowPipe, 0.1)
+ratio = wideArea / narrowArea
+velocityIncrease = ratio > 1.0 ? math.sqrt(ratio) : 1.0
+plot(velocityIncrease)

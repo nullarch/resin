@@ -1,0 +1,12 @@
+
+//@version=5
+strategy("Trend Follow", overlay=true)
+ema3 = ta.ema(close, 3)
+sma5 = ta.sma(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+trendUp = ema3 > sma5 and close > ema3
+if trendUp and rsi > 45
+    strategy.entry("Long", strategy.long)
+if close < sma5
+    strategy.close("Long")
+plot(ema3, "EMA")

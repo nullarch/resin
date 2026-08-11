@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:dir": 0,
+   "var:label_": "flat",
+   "var:__obs_plot0": 103
+  },
+  {
+   "var:dir": 1,
+   "var:label_": "rising",
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:dir": -1,
+   "var:label_": "falling",
+   "var:__obs_plot0": 102
+  },
+  {
+   "var:dir": 1,
+   "var:label_": "rising",
+   "var:__obs_plot0": 105
+  },
+  {
+   "var:dir": 1,
+   "var:label_": "rising",
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:dir": -1,
+   "var:label_": "falling",
+   "var:__obs_plot0": 106
+  },
+  {
+   "var:dir": 1,
+   "var:label_": "rising",
+   "var:__obs_plot0": 108
+  },
+  {
+   "var:dir": 1,
+   "var:label_": "rising",
+   "var:__obs_plot0": 110
+  },
+  {
+   "var:dir": -1,
+   "var:label_": "falling",
+   "var:__obs_plot0": 109
+  },
+  {
+   "var:dir": 1,
+   "var:label_": "rising",
+   "var:__obs_plot0": 111
+  }
+ ],
+ "finalVarState": {
+  "dir": 1,
+  "label_": "rising",
+  "__obs_plot0": 111
+ }
+}

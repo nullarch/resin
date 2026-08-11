@@ -1,0 +1,18 @@
+//@version=5
+indicator("Supertrend")
+atr3 = ta.atr(3)
+mult = 1.5
+upperBand = hl2 + nz(atr3) * mult
+lowerBand = hl2 - nz(atr3) * mult
+var float trend = 1.0
+var float supertrend = 0.0
+if trend == 1.0
+    supertrend := math.max(lowerBand, supertrend)
+    if close < supertrend
+        trend := -1.0
+        supertrend := upperBand
+else
+    supertrend := math.min(upperBand, supertrend)
+    if close > supertrend
+        trend := 1.0
+        supertrend := lowerBand

@@ -1,0 +1,16 @@
+//@version=5
+indicator("Volcano-Atmosphere")
+// Volcanology: eruption intensity
+magmaPressure = nz(ta.atr(3), 1.0) * 10
+eruptionThreshold = 50.0
+var int eruptions = 0
+var float ashInAtmosphere = 0.0
+if magmaPressure > eruptionThreshold
+    eruptions := eruptions + 1
+    ashInAtmosphere := ashInAtmosphere + magmaPressure
+// Atmospheric science: solar dimming from ash
+dimmingFactor = ashInAtmosphere > 0 ? 1.0 / (1.0 + ashInAtmosphere * 0.01) : 1.0
+// Ash settles over time
+ashInAtmosphere := ashInAtmosphere * 0.9
+var float lastDimming = 1.0
+lastDimming := dimmingFactor

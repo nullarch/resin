@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Run Var")
+var float meanVal = 0.0
+var float m2 = 0.0
+var int n = 0
+n := n + 1
+delta = close - meanVal
+meanVal := meanVal + delta / n
+delta2 = close - meanVal
+m2 := m2 + delta * delta2
+variance = n > 1 ? m2 / (n - 1) : 0.0
+plot(variance, "Var")

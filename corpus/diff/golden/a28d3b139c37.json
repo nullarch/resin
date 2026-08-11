@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:fc": {
+    "rsi_threshold": 60.0,
+    "confirm_bars": 2.0,
+    "min_atr_mult": 0.5
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:fc": {
+    "rsi_threshold": 60.0,
+    "confirm_bars": 2.0,
+    "min_atr_mult": 0.5
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:fc": {
+    "rsi_threshold": 60.0,
+    "confirm_bars": 2.0,
+    "min_atr_mult": 0.5
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:fc": {
+    "rsi_threshold": 60.0,
+    "confirm_bars": 2.0,
+    "min_atr_mult": 0.5
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:fc": {
+    "rsi_threshold": 60.0,
+    "confirm_bars": 2.0,
+    "min_atr_mult": 0.5
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:fc": {
+    "rsi_threshold": 60.0,
+    "confirm_bars": 2.0,
+    "min_atr_mult": 0.5
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:fc": {
+    "rsi_threshold": 60.0,
+    "confirm_bars": 2.0,
+    "min_atr_mult": 0.5
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:fc": {
+    "rsi_threshold": 60.0,
+    "confirm_bars": 2.0,
+    "min_atr_mult": 0.5
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:fc": {
+    "rsi_threshold": 60.0,
+    "confirm_bars": 2.0,
+    "min_atr_mult": 0.5
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:fc": {
+    "rsi_threshold": 60.0,
+    "confirm_bars": 2.0,
+    "min_atr_mult": 0.5
+   },
+   "var:__obs_plot0": 1
+  }
+ ],
+ "finalVarState": {
+  "fc": {
+   "rsi_threshold": 60.0,
+   "confirm_bars": 2.0,
+   "min_atr_mult": 0.5
+  },
+  "__obs_plot0": 1
+ }
+}

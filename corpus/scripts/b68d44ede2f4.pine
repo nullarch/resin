@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Trend Track")
+var int trendBars = 0
+var int trendDir = 0
+sma3 = ta.sma(close, 3)
+newDir = close > sma3 ? 1 : -1
+if newDir == trendDir
+    trendBars := trendBars + 1
+else
+    trendDir := newDir
+    trendBars := 1
+plot(trendBars * trendDir, "TB")

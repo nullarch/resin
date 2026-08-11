@@ -1,0 +1,8 @@
+//@version=5
+indicator("Aggregate Functions")
+var float running_sum = 0.0
+var int row_count = 0
+running_sum := running_sum + close
+row_count := row_count + 1
+running_avg = row_count > 0 ? running_sum / row_count : 0.0
+running_max = ta.highest(close, 5)

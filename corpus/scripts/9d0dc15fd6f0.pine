@@ -1,0 +1,11 @@
+//@version=5
+strategy("CycStrat10")
+trend = nz(ta.ema(close, 5), close)
+cycle = close - trend
+var float prevCyc = 0.0
+momentum = cycle - prevCyc
+prevCyc := cycle
+if momentum > 0.5 and close > open
+    strategy.entry("CL", strategy.long)
+if momentum < -0.5 and close < open
+    strategy.entry("CS", strategy.short)

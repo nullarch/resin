@@ -1,0 +1,6 @@
+//@version=5
+indicator("Line Cont Complex")
+longCond = close > ta.sma(close, 3) and
+    ta.rsi(close, 5) > 50 and
+    volume > ta.sma(volume, 3)
+plot(longCond ? 1.0 : 0.0)

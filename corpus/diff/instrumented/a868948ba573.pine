@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Every Some")
+vals = array.from(close, open, high, low)
+allPositive = array.every(vals)
+anyPositive = array.some(vals)
+var float __obs_plot0 = na
+__obs_plot0 := allPositive ? 1 : 0
+plot(allPositive ? 1 : 0, "Every")
+var float __obs_plot1 = na
+__obs_plot1 := anyPositive ? 1 : 0
+plot(anyPositive ? 1 : 0, "Some")

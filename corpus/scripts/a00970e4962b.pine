@@ -1,0 +1,10 @@
+//@version=5
+indicator("Boolean logic")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rsi5 = ta.rsi(close, 5)
+cond1 = close > open and not na(sma3) and not na(sma5)
+cond2 = close > nz(sma3) or close > nz(sma5)
+cond3 = cond1 and cond2
+cond4 = not cond1 or (not na(rsi5) and nz(rsi5) > 50)
+final = cond3 or cond4

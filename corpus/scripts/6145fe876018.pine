@@ -1,0 +1,14 @@
+//@version=5
+indicator("Return Body Nested")
+var float result = 0.0
+
+nested(x) =>
+    if x > 100
+        if x > 110
+            3.0
+        else
+            2.0
+    else
+        1.0
+
+result := nested(close)

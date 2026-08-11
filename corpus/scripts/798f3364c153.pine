@@ -1,0 +1,8 @@
+//@version=5
+indicator("test")
+x = 3
+result = switch x
+    1, 2 => 1
+    3, 4 => 2
+    => 0
+plot(result)

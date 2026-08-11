@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Cross Bar Accum")
+totalRange = 0.0
+for i = 0 to 4
+    h = high[i]
+    l = low[i]
+    if not na(h) and not na(l)
+        totalRange := totalRange + (h - l)
+avgRange = totalRange / 5
+atrVal = ta.atr(5)
+plot(avgRange, "ManualATR")
+plot(atrVal, "TA_ATR")

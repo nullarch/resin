@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Range Check")
+var float[] closes = array.new_float(0)
+array.push(closes, close)
+if array.size(closes) > 5
+    array.shift(closes)
+rng = array.range(closes)
+avgClose = array.avg(closes)
+rngPct = avgClose > 0 ? rng / avgClose * 100 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := rngPct
+plot(rngPct, "RngPct")

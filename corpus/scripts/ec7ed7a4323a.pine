@@ -1,0 +1,35 @@
+//@version=5
+indicator("Ultra 001")
+type Reservoir
+    float level = 0.0
+    float capacity = 100.0
+
+method addFlow(Reservoir this, float amount) =>
+    remaining = this.capacity - this.level
+    added = math.min(amount, remaining)
+    this.level := this.level + added
+
+var Reservoir tank = Reservoir.new(0.0, 100.0)
+var float[] fillHistory = array.new_float(0)
+
+rsiVal = nz(ta.rsi(close, 5), 50.0)
+fillRate = switch
+    rsiVal > 70 => 5.0
+    rsiVal > 50 => 3.0
+    rsiVal > 30 => 1.0
+    => 0.5
+
+prevC = not na(close[1]) ? close[1] : close
+boost = close > prevC ? 1.5 : 1.0
+tank.addFlow(fillRate * boost)
+
+array.push(fillHistory, tank.level)
+if array.size(fillHistory) > 5
+    array.shift(fillHistory)
+
+avgFill = 0.0
+for i = 0 to array.size(fillHistory) - 1
+    avgFill := avgFill + array.get(fillHistory, i)
+avgFill := array.size(fillHistory) > 0 ? avgFill / array.size(fillHistory) : 0.0
+
+plot(avgFill)

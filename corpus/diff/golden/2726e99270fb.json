@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:vm": {
+    "vol": 1600,
+    "avg": 1200.0,
+    "price": 111
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:vm": {
+    "vol": 1600,
+    "avg": 1200.0,
+    "price": 111
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:vm": {
+    "vol": 1600,
+    "avg": 1200.0,
+    "price": 111
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:vm": {
+    "vol": 1600,
+    "avg": 1200.0,
+    "price": 111
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:vm": {
+    "vol": 1600,
+    "avg": 1200.0,
+    "price": 111
+   },
+   "var:__obs_plot0": 2567.0
+  },
+  {
+   "var:vm": {
+    "vol": 1600,
+    "avg": 1200.0,
+    "price": 111
+   },
+   "var:__obs_plot0": 2146.0
+  },
+  {
+   "var:vm": {
+    "vol": 1600,
+    "avg": 1200.0,
+    "price": 111
+   },
+   "var:__obs_plot0": 2328.0
+  },
+  {
+   "var:vm": {
+    "vol": 1600,
+    "avg": 1200.0,
+    "price": 111
+   },
+   "var:__obs_plot0": 2750.0
+  },
+  {
+   "var:vm": {
+    "vol": 1600,
+    "avg": 1200.0,
+    "price": 111
+   },
+   "var:__obs_plot0": 2249.0
+  },
+  {
+   "var:vm": {
+    "vol": 1600,
+    "avg": 1200.0,
+    "price": 111
+   },
+   "var:__obs_plot0": 2911.0
+  }
+ ],
+ "finalVarState": {
+  "vm": {
+   "vol": 1600,
+   "avg": 1200.0,
+   "price": 111
+  },
+  "__obs_plot0": 2911.0
+ }
+}

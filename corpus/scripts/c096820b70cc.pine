@@ -1,0 +1,8 @@
+//@version=5
+indicator("Landscape Envelope")
+float emaVal = ta.ema(close, 5)
+float upperEnv = emaVal * 1.02
+float lowerEnv = emaVal * 0.98
+float landscape = close > upperEnv ? close - upperEnv :
+    close < lowerEnv ? lowerEnv - close : 0.0
+plot(landscape, "Landscape")

@@ -1,0 +1,5 @@
+//@version=5
+indicator("Color Gradient")
+rsi = ta.rsi(close, 5)
+c = color.from_gradient(nz(rsi, 50), 0, 100, color.red, color.green)
+plot(nz(rsi, 50), color=c)

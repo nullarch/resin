@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:ts": "pine_fn.<locals>.ThreshState(upper=75.0, lower=25.0, hitCount=5)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ts": "pine_fn.<locals>.ThreshState(upper=75.0, lower=25.0, hitCount=5)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ts": "pine_fn.<locals>.ThreshState(upper=75.0, lower=25.0, hitCount=5)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ts": "pine_fn.<locals>.ThreshState(upper=75.0, lower=25.0, hitCount=5)",
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:ts": "pine_fn.<locals>.ThreshState(upper=75.0, lower=25.0, hitCount=5)",
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:ts": "pine_fn.<locals>.ThreshState(upper=75.0, lower=25.0, hitCount=5)",
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:ts": "pine_fn.<locals>.ThreshState(upper=75.0, lower=25.0, hitCount=5)",
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:ts": "pine_fn.<locals>.ThreshState(upper=75.0, lower=25.0, hitCount=5)",
+   "var:__obs_plot0": 4
+  },
+  {
+   "var:ts": "pine_fn.<locals>.ThreshState(upper=75.0, lower=25.0, hitCount=5)",
+   "var:__obs_plot0": 4
+  },
+  {
+   "var:ts": "pine_fn.<locals>.ThreshState(upper=75.0, lower=25.0, hitCount=5)",
+   "var:__obs_plot0": 5
+  }
+ ],
+ "finalVarState": {
+  "ts": "pine_fn.<locals>.ThreshState(upper=75.0, lower=25.0, hitCount=5)",
+  "__obs_plot0": 5
+ }
+}

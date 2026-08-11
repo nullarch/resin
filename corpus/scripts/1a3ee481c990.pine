@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Vol Price")
+avgVol = ta.sma(volume, 3)
+priceUp = close > close[1]
+volUp = volume > avgVol
+confirmed = priceUp and volUp
+plot(confirmed ? 1 : 0, "Conf")

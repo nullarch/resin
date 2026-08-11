@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Box Noop")
+bx = box.new(bar_index, high, bar_index + 1, low)
+box.set_bgcolor(bx, color.new(color.green, 80))
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

@@ -1,0 +1,11 @@
+//@version=5
+indicator("Weibull Hazard")
+float kShape = 1.5
+float lambdaScale = 5.0
+var int barIdx = 0
+barIdx := barIdx + 1
+float tVal = math.max(barIdx, 1)
+float hazard = (kShape / lambdaScale) * math.pow(tVal / lambdaScale, kShape - 1.0)
+var float __obs_plot0 = na
+__obs_plot0 := hazard
+plot(hazard, "WeibullHaz")

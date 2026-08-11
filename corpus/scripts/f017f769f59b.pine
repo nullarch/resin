@@ -1,0 +1,10 @@
+//@version=5
+indicator("Round HAFZ")
+a = math.round(2.5)
+b = math.round(3.5)
+c = math.round(-2.5)
+d = math.round(1.234, 2)
+plot(a)
+plot(b)
+plot(c)
+plot(d)

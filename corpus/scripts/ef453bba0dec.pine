@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Trend Vote")
+var votes = map.new<string, float>()
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+map.put(votes, "ma_cross", sma3 > ema5 ? 1.0 : -1.0)
+map.put(votes, "rsi", rsi > 50 ? 1.0 : -1.0)
+map.put(votes, "price", close > sma3 ? 1.0 : -1.0)
+bullVotes = 0
+for [k, v] in votes
+    if v > 0
+        bullVotes := bullVotes + 1
+plot(bullVotes, "Bull")

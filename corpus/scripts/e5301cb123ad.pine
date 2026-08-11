@@ -1,0 +1,11 @@
+//@version=5
+indicator("Enum Basic")
+var float result = 0.0
+
+enum Trend
+    Up = 1
+    Down = -1
+    Flat = 0
+
+Trend t = close > open ? Trend.Up : Trend.Down
+result := t == Trend.Up ? 1.0 : -1.0

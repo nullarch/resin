@@ -1,0 +1,10 @@
+//@version=5
+indicator("Vaccination Coverage")
+var float totalVaccinated = 0.0
+float population = 10000.0
+float dailyDoses = volume / 10.0
+totalVaccinated := totalVaccinated + dailyDoses
+float coveragePct = totalVaccinated / population * 100.0
+var float maxCoverage = 0.0
+if coveragePct > maxCoverage
+    maxCoverage := coveragePct

@@ -1,0 +1,25 @@
+//@version=5
+indicator("Mega 8")
+type Particle
+    float pos = 0.0
+    float vel = 0.0
+    float fitness = 0.0
+evaluate(float pos, float target) =>
+    1.0 / (math.abs(pos - target) + 0.01)
+var float globalBest = 0.0
+float target = nz(ta.sma(close, 5), close)
+float atrVal = nz(ta.atr(3), 1.0)
+particles = array.new<float>(0)
+float startPos = close - atrVal * 2.0
+int steps = 0
+while startPos < close + atrVal * 2.0 and steps < 15
+    float fit = evaluate(startPos, target)
+    particles.push(fit)
+    startPos := startPos + atrVal * 0.5
+    steps := steps + 1
+float best = 0.0
+for f in particles
+    best := math.max(best, f)
+globalBest := math.max(globalBest, best)
+p = Particle.new(close, atrVal, best)
+float convergence = globalBest > 0.01 ? best / globalBest : 0.0

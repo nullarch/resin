@@ -1,0 +1,10 @@
+//@version=5
+indicator("Switch no disc")
+sma5 = ta.sma(close, 5)
+rsi5 = ta.rsi(close, 5)
+zone = switch
+    not na(rsi5) and nz(rsi5) > 70 => "overbought"
+    not na(rsi5) and nz(rsi5) < 30 => "oversold"
+    not na(sma5) and close > nz(sma5) => "above_ma"
+    not na(sma5) and close < nz(sma5) => "below_ma"
+    => "neutral"

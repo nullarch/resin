@@ -1,0 +1,11 @@
+//@version=5
+indicator("UDT Method")
+type Signal
+    float value = 0.0
+    int direction = 0
+method update(Signal this, float v, int d) =>
+    this.value := v
+    this.direction := d
+sig = Signal.new()
+sig.update(close, close > open ? 1 : -1)
+plot(sig.value)

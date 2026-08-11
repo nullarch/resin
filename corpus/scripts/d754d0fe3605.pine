@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("BinClassify")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma5 = ta.sma(close, 5)
+aboveSma = close > sma5 ? 1.0 : 0.0
+bullRsi = rsi > 50 ? 1.0 : 0.0
+score = (aboveSma + bullRsi) / 2.0
+prediction = score >= 0.5 ? 1 : 0
+plot(prediction, "P")

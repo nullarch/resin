@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("MultiLine")
+line1 = "Close: " + str.tostring(close)
+line2 = "Volume: " + str.tostring(volume)
+line3 = close > open ? "Bullish" : "Bearish"
+fullLabel = line1 + "
+" + line2 + "
+" + line3
+totalLen = str.length(fullLabel)
+var float __obs_plot0 = na
+__obs_plot0 := totalLen
+plot(totalLen, "TL")

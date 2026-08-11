@@ -1,0 +1,10 @@
+//@version=5
+indicator("UniformPrior")
+priorUp = 0.5
+priorDown = 0.5
+var float __obs_plot0 = na
+__obs_plot0 := priorUp
+plot(priorUp, "PriorUp")
+var float __obs_plot1 = na
+__obs_plot1 := priorDown
+plot(priorDown, "PriorDn")

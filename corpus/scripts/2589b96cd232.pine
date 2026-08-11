@@ -1,0 +1,5 @@
+//@version=5
+indicator("Input Time Color")
+startTime = input.time(timestamp("2024-01-01"), "Start")
+col = input.color(color.red, "Color")
+plot(close)

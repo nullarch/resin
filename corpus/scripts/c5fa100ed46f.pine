@@ -1,0 +1,9 @@
+//@version=5
+indicator("Barycenter")
+float emaFast = nz(ta.ema(close, 3), close)
+float emaSlow = nz(ta.ema(close, 5), close)
+float weight1 = 0.6
+float weight2 = 0.4
+float barycenter = weight1 * emaFast + weight2 * emaSlow
+float transportToCenter = math.abs(close - barycenter)
+plot(transportToCenter, "Bary")

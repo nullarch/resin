@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("ConsecBars")
+bullish = close > open
+var int streak = 0
+var bool wasBull = false
+same = bullish == wasBull
+streak := same ? streak + 1 : 1
+wasBull := bullish
+var float __obs_plot0 = na
+__obs_plot0 := streak
+plot(streak, "Str")

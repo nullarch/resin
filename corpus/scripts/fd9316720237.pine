@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Dash Full")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+atr = nz(ta.atr(3), 1.0)
+avgVol = ta.sma(volume, 5)
+
+trendScore = (close > sma3 ? 1 : -1) + (sma3 > sma5 ? 1 : -1)
+momScore = (rsi - 50) / 25
+volConfirm = avgVol > 0 ? volume / avgVol : 1.0
+
+composite = trendScore * 0.4 + momScore * 0.4 + (volConfirm > 1 ? 0.2 : -0.2)
+
+var int bullBars = 0
+if composite > 0.5
+    bullBars := bullBars + 1
+
+plot(composite, "Comp")
+plot(bullBars, "BB")

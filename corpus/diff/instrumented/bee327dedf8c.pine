@@ -1,0 +1,7 @@
+//@version=5
+indicator("Str Trim")
+var s = str.trim("  hello  ")
+var int len_ = str.length(s)
+var float __obs_plot0 = na
+__obs_plot0 := len_
+plot(len_)

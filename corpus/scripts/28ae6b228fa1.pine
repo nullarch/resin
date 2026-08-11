@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Filt UDT")
+type FilterState
+    int confirmCount = 0
+    float lastSignal = 0.0
+    int filtered = 0
+
+var FilterState fs = FilterState.new()
+sma3 = ta.sma(close, 3)
+bull = close > sma3
+if bull
+    fs.confirmCount := fs.confirmCount + 1
+else
+    fs.confirmCount := 0
+if fs.confirmCount >= 2
+    fs.lastSignal := 1.0
+    fs.filtered := fs.filtered + 1
+else if fs.confirmCount == 0
+    fs.lastSignal := 0.0
+plot(fs.filtered, "F")

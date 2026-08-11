@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Dyn Thresh")
+var th = map.new<string, float>()
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+mult = atr > avgATR ? 1.5 : 1.0
+map.put(th, "buy", ta.sma(close, 3) - atr * mult)
+map.put(th, "sell", ta.sma(close, 3) + atr * mult)
+buyLevel = map.get(th, "buy", close)
+sellLevel = map.get(th, "sell", close)
+inRange = close > buyLevel and close < sellLevel
+var float __obs_plot0 = na
+__obs_plot0 := inRange ? 1 : 0
+plot(inRange ? 1 : 0, "InRange")

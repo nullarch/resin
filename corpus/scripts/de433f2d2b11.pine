@@ -1,0 +1,8 @@
+//@version=5
+indicator("Natural Gradient")
+var float paramEst = 50.0
+gradient = close - paramEst
+fisherInv = (high - low) > 0.01 ? 1.0 / ((high - low) * (high - low)) : 1.0
+stepSize = 0.01
+natGrad = fisherInv * gradient
+paramEst := paramEst + stepSize * natGrad

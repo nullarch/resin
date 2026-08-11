@@ -1,0 +1,8 @@
+//@version=5
+indicator("Func TA")
+var float result = 0.0
+
+myMA(float src, int len) =>
+    ta.sma(src, len)
+
+result := nz(myMA(close, 3), 0.0)

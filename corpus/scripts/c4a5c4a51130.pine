@@ -1,0 +1,8 @@
+//@version=5
+indicator("Zero Knowledge Proof")
+secret = math.floor(close) - 100.0
+commitment = secret * secret
+challenge = math.floor(high - low)
+response = secret * challenge + open * 0.01
+valid = response > 0 ? 1.0 : 0.0
+plot(commitment)

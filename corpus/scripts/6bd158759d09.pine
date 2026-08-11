@@ -1,0 +1,13 @@
+//@version=5
+indicator("Method UDT")
+type Vec
+    float x
+    float y
+
+method length(Vec v) =>
+    math.sqrt(v.x * v.x + v.y * v.y)
+
+var p = Vec.new(3.0, 4.0)
+var float result = 0.0
+result := p.length()
+plot(result)

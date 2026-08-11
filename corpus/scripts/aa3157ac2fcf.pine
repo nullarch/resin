@@ -1,0 +1,43 @@
+
+//@version=5
+indicator("Risk Dashboard")
+// Price analysis
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+rsi = ta.rsi(close, 3)
+atr = ta.atr(3)
+
+// Volatility metrics
+atrPct = close > 0 ? atr / close * 100 : 0.0
+hi5 = ta.highest(close, 5)
+lo5 = ta.lowest(close, 5)
+rng = hi5 - lo5
+rngPct = lo5 > 0 ? rng / lo5 * 100 : 0.0
+
+// Risk scoring
+var float[] atrHistory = array.new_float(0)
+array.push(atrHistory, atrPct)
+if array.size(atrHistory) > 8
+    array.shift(atrHistory)
+avgAtrPct = array.avg(atrHistory)
+
+// State tracking
+var float maxRng = 0.0
+if rngPct > maxRng
+    maxRng := rngPct
+
+var int barCount = 0
+barCount := barCount + 1
+
+// Dashboard map
+var dash = map.new<string, float>()
+map.put(dash, "volatility", atrPct)
+map.put(dash, "range", rngPct)
+map.put(dash, "rsi", rsi)
+
+// Risk level
+riskLevel = atrPct > avgAtrPct * 1.5 ? 3.0 : atrPct > avgAtrPct ? 2.0 : 1.0
+
+plot(riskLevel, "Risk")
+plot(atrPct, "ATR%")
+plot(rngPct, "Range%")

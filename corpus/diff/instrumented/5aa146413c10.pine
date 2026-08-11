@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Corr Proxy")
+priceChg = close - close[1]
+volChg = (high - low) - (high[1] - low[1])
+sameDir = not na(priceChg) and not na(volChg) and ((priceChg > 0 and volChg > 0) or (priceChg < 0 and volChg < 0))
+var float __obs_plot0 = na
+__obs_plot0 := sameDir ? 1 : 0
+plot(sameDir ? 1 : 0, "Same")

@@ -1,0 +1,7 @@
+//@version=5
+indicator("fill test")
+upper = ta.sma(close, 3) + ta.stdev(close, 3)
+lower = ta.sma(close, 3) - ta.stdev(close, 3)
+p1 = plot(upper)
+p2 = plot(lower)
+fill(p1, p2, color=color.new(color.blue, 90))

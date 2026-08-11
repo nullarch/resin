@@ -1,0 +1,7 @@
+//@version=5
+indicator("SwitchExpr")
+var string zone = "none"
+zone := switch
+    close > 110 => "high"
+    close > 105 => "mid"
+    => "low"

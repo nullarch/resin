@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Vol Mom")
+volMA3 = ta.sma(volume, 3)
+volMA5 = ta.sma(volume, 5)
+volMom = volMA5 > 0 ? volMA3 / volMA5 : 1.0
+expanding = volMom > 1.2
+contracting = volMom < 0.8
+plot(volMom, "VM")
+plot(expanding ? 1 : 0, "Exp")

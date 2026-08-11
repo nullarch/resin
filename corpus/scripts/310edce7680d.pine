@@ -1,0 +1,7 @@
+//@version=5
+indicator("View Derived")
+view_midprice = (high + low) / 2.0
+view_spread = high - low
+view_vwap_est = (high + low + close) / 3.0
+view_relative_vol = volume / 1000.0
+composite_score = view_midprice + view_spread * view_relative_vol

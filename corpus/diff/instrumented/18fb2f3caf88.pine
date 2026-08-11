@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("MSE Loss")
+var float cumLoss = 0.0
+var int barNum = 0
+barNum := barNum + 1
+prediction = nz(ta.ema(close, 3), close)
+actual = close
+err = actual - prediction
+squaredErr = err * err
+cumLoss := cumLoss + squaredErr
+avgLoss = barNum > 0 ? cumLoss / float(barNum) : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := avgLoss
+plot(avgLoss, "MSE")

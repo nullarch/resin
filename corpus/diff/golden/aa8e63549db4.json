@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:winStreak": 1,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:winStreak": 2,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:winStreak": 3,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:winStreak": 4,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:winStreak": 5,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:winStreak": 6,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:winStreak": 7,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:winStreak": 8,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:winStreak": 9,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:winStreak": 10,
+   "var:__obs_plot0": 1
+  }
+ ],
+ "finalVarState": {
+  "winStreak": 10,
+  "__obs_plot0": 1
+ }
+}

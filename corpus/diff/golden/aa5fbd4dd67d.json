@@ -1,0 +1,160 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0,
+    40.0
+   ],
+   "var:first": 10.0,
+   "var:last_": 40.0,
+   "var:idx20": 1,
+   "var:has30": true,
+   "var:has99": false,
+   "var:__obs_plot0": 103
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0,
+    40.0
+   ],
+   "var:first": 10.0,
+   "var:last_": 40.0,
+   "var:idx20": 1,
+   "var:has30": true,
+   "var:has99": false,
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0,
+    40.0
+   ],
+   "var:first": 10.0,
+   "var:last_": 40.0,
+   "var:idx20": 1,
+   "var:has30": true,
+   "var:has99": false,
+   "var:__obs_plot0": 102
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0,
+    40.0
+   ],
+   "var:first": 10.0,
+   "var:last_": 40.0,
+   "var:idx20": 1,
+   "var:has30": true,
+   "var:has99": false,
+   "var:__obs_plot0": 105
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0,
+    40.0
+   ],
+   "var:first": 10.0,
+   "var:last_": 40.0,
+   "var:idx20": 1,
+   "var:has30": true,
+   "var:has99": false,
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0,
+    40.0
+   ],
+   "var:first": 10.0,
+   "var:last_": 40.0,
+   "var:idx20": 1,
+   "var:has30": true,
+   "var:has99": false,
+   "var:__obs_plot0": 106
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0,
+    40.0
+   ],
+   "var:first": 10.0,
+   "var:last_": 40.0,
+   "var:idx20": 1,
+   "var:has30": true,
+   "var:has99": false,
+   "var:__obs_plot0": 108
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0,
+    40.0
+   ],
+   "var:first": 10.0,
+   "var:last_": 40.0,
+   "var:idx20": 1,
+   "var:has30": true,
+   "var:has99": false,
+   "var:__obs_plot0": 110
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0,
+    40.0
+   ],
+   "var:first": 10.0,
+   "var:last_": 40.0,
+   "var:idx20": 1,
+   "var:has30": true,
+   "var:has99": false,
+   "var:__obs_plot0": 109
+  },
+  {
+   "var:a": [
+    10.0,
+    20.0,
+    30.0,
+    40.0
+   ],
+   "var:first": 10.0,
+   "var:last_": 40.0,
+   "var:idx20": 1,
+   "var:has30": true,
+   "var:has99": false,
+   "var:__obs_plot0": 111
+  }
+ ],
+ "finalVarState": {
+  "a": [
+   10.0,
+   20.0,
+   30.0,
+   40.0
+  ],
+  "first": 10.0,
+  "last_": 40.0,
+  "idx20": 1,
+  "has30": true,
+  "has99": false,
+  "__obs_plot0": 111
+ }
+}

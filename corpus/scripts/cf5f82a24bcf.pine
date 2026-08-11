@@ -1,0 +1,6 @@
+
+//@version=5
+indicator("Multi Level")
+rsi = nz(ta.rsi(close, 3), 50.0)
+level = rsi > 80 ? 5 : rsi > 65 ? 4 : rsi > 50 ? 3 : rsi > 35 ? 2 : rsi > 20 ? 1 : 0
+plot(level, "Level")

@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Round")
+val = nz(ta.rsi(close, 3), 50.0)
+rounded = math.round(val)
+floored = math.floor(val)
+ceiled = math.ceil(val)
+truncated = int(val)
+fracPart = val - floored
+plot(fracPart, "Frac")

@@ -1,0 +1,12 @@
+//@version=5
+indicator("UDT New Copy")
+type Point
+    float x
+    float y
+
+p1 = Point.new(10.0, 20.0)
+p2 = Point.copy(p1)
+p2.x := 99.0
+var float result = 0.0
+result := p1.x + p2.x
+plot(result)

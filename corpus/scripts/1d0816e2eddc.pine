@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Multi Win")
+var float[] short_ = array.new_float(0)
+var float[] long_ = array.new_float(0)
+array.push(short_, close)
+array.push(long_, close)
+if array.size(short_) > 3
+    array.shift(short_)
+if array.size(long_) > 8
+    array.shift(long_)
+shortAvg = array.avg(short_)
+longAvg = array.avg(long_)
+spread = shortAvg - longAvg
+plot(spread, "Spread")

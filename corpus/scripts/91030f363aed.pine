@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Generic Map")
+map<string, float> data = map.new<string, float>()
+data.put("close", close)
+result = data.get("close", 0.0)
+plot(result)

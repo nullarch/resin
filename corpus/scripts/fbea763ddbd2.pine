@@ -1,0 +1,7 @@
+//@version=5
+indicator("Phase Velocity")
+float dx = not na(close[1]) ? close - close[1] : 0.0
+float dy = not na(close[2]) ? close[1] - close[2] : 0.0
+float velocity = math.sqrt(dx * dx + dy * dy)
+var float maxVel = 0.0
+maxVel := math.max(maxVel, velocity)

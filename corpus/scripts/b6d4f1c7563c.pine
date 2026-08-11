@@ -1,0 +1,6 @@
+//@version=5
+indicator("ForInArr")
+var float result = 0
+a = array.from(1.0, 2.0, 3.0, 4.0, 5.0)
+for val in a
+    result := result + val

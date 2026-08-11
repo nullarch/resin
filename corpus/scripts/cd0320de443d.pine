@@ -1,0 +1,10 @@
+//@version=5
+indicator("UDF Compose")
+double(x) =>
+    x * 2
+addOne(x) =>
+    x + 1
+transform(x) =>
+    addOne(double(x))
+var float result = 0
+result := transform(5.0)

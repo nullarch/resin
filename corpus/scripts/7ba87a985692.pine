@@ -1,0 +1,24 @@
+//@version=5
+indicator("Multi Expr")
+// if expression
+float if_val = if close > 105
+    1.0
+else
+    0.0
+
+// switch expression
+var int mode = 2
+float sw_val = switch mode
+    1 => 10.0
+    2 => 20.0
+    => 0.0
+
+// for expression
+float total = 0.0
+float for_val = for i = 1 to 3
+    total := total + i
+    total
+
+var float result = 0.0
+result := if_val + sw_val + for_val
+plot(result)

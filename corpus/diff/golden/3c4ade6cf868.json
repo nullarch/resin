@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:cm": {
+    "close_chg": 2.0,
+    "vol_chg": 600.0
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:cm": {
+    "close_chg": 2.0,
+    "vol_chg": 600.0
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:cm": {
+    "close_chg": 2.0,
+    "vol_chg": 600.0
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:cm": {
+    "close_chg": 2.0,
+    "vol_chg": 600.0
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:cm": {
+    "close_chg": 2.0,
+    "vol_chg": 600.0
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:cm": {
+    "close_chg": 2.0,
+    "vol_chg": 600.0
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:cm": {
+    "close_chg": 2.0,
+    "vol_chg": 600.0
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:cm": {
+    "close_chg": 2.0,
+    "vol_chg": 600.0
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:cm": {
+    "close_chg": 2.0,
+    "vol_chg": 600.0
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:cm": {
+    "close_chg": 2.0,
+    "vol_chg": 600.0
+   },
+   "var:__obs_plot0": 1
+  }
+ ],
+ "finalVarState": {
+  "cm": {
+   "close_chg": 2.0,
+   "vol_chg": 600.0
+  },
+  "__obs_plot0": 1
+ }
+}

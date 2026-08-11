@@ -1,0 +1,10 @@
+
+//@version=5
+strategy("PA Strat", overlay=true)
+bullBar = close > open and (close - open) > (high - low) * 0.5
+sma3 = ta.sma(close, 3)
+if bullBar and close > sma3
+    strategy.entry("Long", strategy.long)
+if close < sma3
+    strategy.close("Long")
+plot(sma3, "MA")

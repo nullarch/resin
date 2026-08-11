@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:dd": {
+    "price_chg": 2,
+    "rsi": 80.5615942029,
+    "vol_chg": 600
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:dd": {
+    "price_chg": 2,
+    "rsi": 80.5615942029,
+    "vol_chg": 600
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:dd": {
+    "price_chg": 2,
+    "rsi": 80.5615942029,
+    "vol_chg": 600
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:dd": {
+    "price_chg": 2,
+    "rsi": 80.5615942029,
+    "vol_chg": 600
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:dd": {
+    "price_chg": 2,
+    "rsi": 80.5615942029,
+    "vol_chg": 600
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:dd": {
+    "price_chg": 2,
+    "rsi": 80.5615942029,
+    "vol_chg": 600
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:dd": {
+    "price_chg": 2,
+    "rsi": 80.5615942029,
+    "vol_chg": 600
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:dd": {
+    "price_chg": 2,
+    "rsi": 80.5615942029,
+    "vol_chg": 600
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:dd": {
+    "price_chg": 2,
+    "rsi": 80.5615942029,
+    "vol_chg": 600
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:dd": {
+    "price_chg": 2,
+    "rsi": 80.5615942029,
+    "vol_chg": 600
+   },
+   "var:__obs_plot0": 0
+  }
+ ],
+ "finalVarState": {
+  "dd": {
+   "price_chg": 2,
+   "rsi": 80.5615942029,
+   "vol_chg": 600
+  },
+  "__obs_plot0": 0
+ }
+}

@@ -1,0 +1,32 @@
+
+//@version=5
+indicator("Vol Full")
+avgVol = ta.sma(volume, 5)
+cumPV = ta.cum(close * volume)
+cumV = ta.cum(volume)
+vwap = cumV > 0 ? cumPV / cumV : close
+
+var float obv = 0.0
+if close > close[1] and not na(close[1])
+    obv := obv + volume
+else if close < close[1] and not na(close[1])
+    obv := obv - volume
+
+relVol = avgVol > 0 ? volume / avgVol : 1.0
+buyPressure = close > open ? volume : 0.0
+sellPressure = close < open ? volume : 0.0
+
+var float[] volHist = array.new_float(0)
+array.push(volHist, relVol)
+if array.size(volHist) > 6
+    array.shift(volHist)
+
+var int bars = 0
+bars := bars + 1
+
+var float __obs_plot0 = na
+__obs_plot0 := relVol
+plot(relVol, "RelVol")
+var float __obs_plot1 = na
+__obs_plot1 := vwap
+plot(vwap, "VWAP")

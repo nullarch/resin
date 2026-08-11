@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Pct Rank")
+var float[] window = array.new_float(0)
+array.push(window, close)
+if array.size(window) > 8
+    array.shift(window)
+pRank = array.percentrank(window, close)
+var float __obs_plot0 = na
+__obs_plot0 := pRank
+plot(pRank, "PctRank")

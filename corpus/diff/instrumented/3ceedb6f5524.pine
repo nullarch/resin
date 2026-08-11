@@ -1,0 +1,17 @@
+//@version=5
+indicator("ChickenGame")
+aggPayoff = high - close
+passPayoff = close - low
+bothAgg = -(high - low)
+bothPass = 0.5 * (close - open)
+rsiVal = nz(ta.rsi(close, 5), 50.0)
+pAgg = rsiVal / 100.0
+euAgg = (1.0 - pAgg) * aggPayoff + pAgg * bothAgg
+euPass = (1.0 - pAgg) * bothPass + pAgg * passPayoff
+bestChoice = euAgg > euPass ? 1.0 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := bestChoice
+plot(bestChoice, "Choice")
+var float __obs_plot1 = na
+__obs_plot1 := euAgg - euPass
+plot(euAgg - euPass, "Diff")

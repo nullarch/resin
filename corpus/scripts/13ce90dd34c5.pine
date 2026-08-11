@@ -1,0 +1,11 @@
+//@version=5
+indicator("RSI + BB")
+length = input.int(14, "RSI Length")
+src = input.source(close, "Source")
+rsiVal = ta.rsi(src, length)
+[bbMid, bbUp, bbLow] = ta.bb(rsiVal, 20, 2.0)
+isBullish = ta.crossover(rsiVal, bbLow) and not na(rsiVal[1])
+plot(rsiVal, "RSI", color.blue)
+hline(70)
+hline(30)
+plotshape(isBullish, style=shape.triangleup, location=location.belowbar)

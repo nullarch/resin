@@ -1,0 +1,9 @@
+//@version=5
+indicator("NoiseRatio15")
+atrVal = nz(ta.atr(3), 1.0)
+absMove = math.abs(close - open)
+noiseRatio = atrVal > 0.001 ? absMove / atrVal : 1.0
+efficiency = math.min(noiseRatio, 2.0)
+var float __obs_plot0 = na
+__obs_plot0 := efficiency
+plot(efficiency, "nr")

@@ -1,0 +1,8 @@
+//@version=5
+indicator("A* Cost")
+float gCost = close - 100.0
+float goal = 115.0
+float hCost = math.abs(goal - close)
+float fCost = gCost + hCost
+float sma3 = nz(ta.sma(close, 3), close)
+float improved = fCost < (sma3 - 100.0 + math.abs(goal - sma3)) ? 1.0 : 0.0

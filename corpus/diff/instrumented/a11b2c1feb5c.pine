@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Arr Filter")
+var float[] prices = array.new_float(0)
+array.push(prices, close)
+if array.size(prices) > 6
+    array.shift(prices)
+posCount = 0
+sma3 = ta.sma(close, 3)
+for v in prices
+    if v > sma3
+        posCount := posCount + 1
+ratio = array.size(prices) > 0 ? posCount / array.size(prices) : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := ratio
+plot(ratio, "Ratio")

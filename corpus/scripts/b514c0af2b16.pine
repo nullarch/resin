@@ -1,0 +1,34 @@
+
+//@version=5
+indicator("Cycle 91 Full")
+
+// TA numerical verification
+sma_val = ta.sma(close, 5)
+ema_val = ta.ema(close, 10)
+rsi_val = ta.rsi(close, 14)
+[macdL, sigL, hist] = ta.macd(close, 12, 26, 9)
+[bb_m, bb_u, bb_l] = ta.bb(close, 20, 2.0)
+
+// State isolation
+sma_fast = ta.sma(close, 3)
+sma_slow = ta.sma(close, 10)
+
+// For-in
+var array<float> prices = array.new<float>(0)
+array.push(prices, close)
+if array.size(prices) > 5
+    array.shift(prices)
+
+// Switch expression
+signal = switch
+    rsi_val > 70 => -1.0
+    rsi_val < 30 => 1.0
+    => 0.0
+
+// UDT
+type Result
+    float score = 0.0
+
+r = Result.new()
+r.score := sma_fast - sma_slow + signal
+plot(r.score)

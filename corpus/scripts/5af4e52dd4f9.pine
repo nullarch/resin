@@ -1,0 +1,6 @@
+//@version=5
+indicator("OBV")
+var float lastO = 0
+o = ta.obv(close, volume)
+if not na(o)
+    lastO := o

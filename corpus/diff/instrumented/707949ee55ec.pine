@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Supertrend")
+[st, dir] = ta.supertrend(3.0, 3)
+bullish = dir < 0
+var float __obs_plot0 = na
+__obs_plot0 := st
+plot(st, "ST")

@@ -1,0 +1,8 @@
+//@version=5
+indicator("ForIdxVal")
+var float sumVal = 0
+var int sumIdx = 0
+a = array.from(10.0, 20.0, 30.0)
+for [idx, val] in a
+    sumVal := sumVal + val
+    sumIdx := sumIdx + idx

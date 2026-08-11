@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:excitation": 1.6800000000000002,
+   "var:inhibition": 0.9600000000000002,
+   "var:__obs_plot0": 1.4400000000000002
+  },
+  {
+   "var:excitation": 2.296,
+   "var:inhibition": 1.3120000000000003,
+   "var:__obs_plot0": 1.968
+  },
+  {
+   "var:excitation": 2.1672,
+   "var:inhibition": 1.2384000000000002,
+   "var:__obs_plot0": 1.8576
+  },
+  {
+   "var:excitation": 2.63704,
+   "var:inhibition": 1.50688,
+   "var:__obs_plot0": 2.26032
+  },
+  {
+   "var:excitation": 2.965928,
+   "var:inhibition": 1.6948160000000003,
+   "var:__obs_plot0": 2.542224
+  },
+  {
+   "var:excitation": 3.1961495999999996,
+   "var:inhibition": 1.8263711999999999,
+   "var:__obs_plot0": 2.7395568
+  },
+  {
+   "var:excitation": 3.3573047199999997,
+   "var:inhibition": 1.91845984,
+   "var:__obs_plot0": 2.87768976
+  },
+  {
+   "var:excitation": 3.470113304,
+   "var:inhibition": 1.982921888,
+   "var:__obs_plot0": 2.974382832
+  },
+  {
+   "var:excitation": 3.5490793127999996,
+   "var:inhibition": 2.0280453216,
+   "var:__obs_plot0": 3.0420679823999994
+  },
+  {
+   "var:excitation": 3.6043555189599994,
+   "var:inhibition": 2.05963172512,
+   "var:__obs_plot0": 3.0894475876799996
+  }
+ ],
+ "finalVarState": {
+  "excitation": 3.6043555189599994,
+  "inhibition": 2.05963172512,
+  "__obs_plot0": 3.0894475876799996
+ }
+}

@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Clamp Norm")
+rsi = nz(ta.rsi(close, 3), 50.0)
+clamped = math.max(20.0, math.min(80.0, rsi))
+normalized = (clamped - 20.0) / 60.0
+scaled = normalized * 2.0 - 1.0
+plot(scaled, "Scaled")

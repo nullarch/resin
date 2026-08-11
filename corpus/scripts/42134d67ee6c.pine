@@ -1,0 +1,4 @@
+//@version=5
+indicator("Median Mode")
+med5 = ta.median(close, 5)
+mode5 = ta.mode(close, 5)

@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:uVec": 20.085536923187668,
+   "var:vVec": 1.0,
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:uVec": 7.3890560989306495,
+   "var:vVec": 1.0,
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:uVec": 2.718281828459045,
+   "var:vVec": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:uVec": 7.3890560989306495,
+   "var:vVec": 1.0,
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:uVec": 7.3890560989306495,
+   "var:vVec": 1.0,
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:uVec": 7.3890560989306495,
+   "var:vVec": 1.0,
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:uVec": 7.3890560989306495,
+   "var:vVec": 1.0,
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:uVec": 7.3890560989306495,
+   "var:vVec": 1.0,
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:uVec": 7.3890560989306495,
+   "var:vVec": 1.0,
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:uVec": 7.3890560989306495,
+   "var:vVec": 1.0,
+   "var:__obs_plot0": 2.0
+  }
+ ],
+ "finalVarState": {
+  "uVec": 7.3890560989306495,
+  "vVec": 1.0,
+  "__obs_plot0": 2.0
+ }
+}

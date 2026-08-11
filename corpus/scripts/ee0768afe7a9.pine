@@ -1,0 +1,21 @@
+//@version=5
+indicator("Combo17")
+var float entropy = 0.0
+smaVal = nz(ta.sma(close, 3), close)
+bins = array.new_float(5, 0.0)
+idx = 0
+while idx < 5
+    val = nz(close[idx], close) - smaVal
+    binIdx = val > 2.0 ? 4 : val > 1.0 ? 3 : val > 0.0 ? 2 : val > -1.0 ? 1 : 0
+    prev = array.get(bins, binIdx)
+    array.set(bins, binIdx, prev + 1.0)
+    idx := idx + 1
+totalObs = 5.0
+localEntropy = 0.0
+for i = 0 to 4
+    cnt = array.get(bins, i)
+    p = cnt / totalObs
+    contrib = p > 0.0 ? -p * math.log(math.max(p, 0.0001)) : 0.0
+    localEntropy := localEntropy + contrib
+entropy := 0.9 * entropy + 0.1 * localEntropy
+plot(entropy, "Entropy")

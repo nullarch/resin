@@ -1,0 +1,5 @@
+//@version=5
+indicator("BB Tuple")
+[middle, upper, lower] = ta.bb(close, 5, 2.0)
+bandwidth = (upper - lower) / middle * 100
+plot(bandwidth)

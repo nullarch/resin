@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Multi Plot Fill")
+upper = ta.sma(high, 10)
+lower = ta.sma(low, 10)
+p1 = plot(upper)
+p2 = plot(lower)
+fill(p1, p2, color=color.new(color.blue, 80))

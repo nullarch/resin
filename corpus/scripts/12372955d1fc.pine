@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Ind Scores")
+var scores = map.new<string, float>()
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+map.put(scores, "rsi", rsi > 55 ? 1.0 : rsi < 45 ? -1.0 : 0.0)
+map.put(scores, "ma", close > sma3 ? 1.0 : -1.0)
+map.put(scores, "vol", volume > ta.sma(volume, 3) ? 1.0 : 0.0)
+total = 0.0
+for [k, v] in scores
+    total := total + v
+plot(total, "Tot")

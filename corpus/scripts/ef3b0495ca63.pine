@@ -1,0 +1,17 @@
+//@version=5
+indicator("C300-20")
+var int regime = 0
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+atrVal = nz(ta.atr(3), 1.0)
+trendScore = 0.0
+if not na(sma3) and not na(sma5)
+    if nz(sma3, 0.0) > nz(sma5, 0.0)
+        trendScore := trendScore + 1
+if rsiVal > 60
+    trendScore := trendScore + 1
+if atrVal > 3.0
+    trendScore := trendScore + 1
+regime := trendScore >= 2 ? 1 : 0
+plot(regime)

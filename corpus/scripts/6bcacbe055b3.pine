@@ -1,0 +1,8 @@
+//@version=5
+indicator("Survival Rule")
+var int cell = 1
+bullBar = close > open ? 1 : 0
+bigRange = (high - low) > 5 ? 1 : 0
+hiVol = volume > 1100 ? 1 : 0
+nbrs = bullBar + bigRange + hiVol
+cell := cell == 1 ? (nbrs >= 1 and nbrs <= 2 ? 1 : 0) : (nbrs == 2 ? 1 : 0)

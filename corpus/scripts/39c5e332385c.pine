@@ -1,0 +1,7 @@
+//@version=5
+indicator("bb width")
+var float result = 0.0
+[mid, upper, lower] = ta.bb(close, 5, 2.0)
+if not na(upper) and not na(lower) and not na(mid) and mid != 0
+    width = (upper - lower) / mid
+    result := width

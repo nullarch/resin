@@ -1,0 +1,6 @@
+//@version=5
+indicator("Bitplane")
+float chg = not na(close[1]) ? math.abs(close - close[1]) : 0.0
+int tier = chg > 4.0 ? 3 : chg > 2.0 ? 2 : chg > 1.0 ? 1 : 0
+var int maxTier = 0
+maxTier := math.max(maxTier, tier)

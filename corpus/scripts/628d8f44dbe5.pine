@@ -1,0 +1,36 @@
+//@version=5
+indicator("Torture 13")
+enum Phase
+    Accumulation = 1
+    Markup = 2
+    Distribution = 3
+    Markdown = 4
+type MarketPhase
+    float momentum = 0.0
+    float breadth = 0.0
+method phaseStrength(MarketPhase this) =>
+    math.sqrt(this.momentum * this.momentum + this.breadth * this.breadth)
+var int phaseChanges = 0
+var float prevPhase = 0.0
+float rsiVal = nz(ta.rsi(close, 5), 50.0)
+float sma3 = nz(ta.sma(close, 3), close)
+float sma5 = nz(ta.sma(close, 5), close)
+float phase = 0.0
+if close > sma3 and sma3 > sma5
+    if rsiVal > 60
+        phase := 2.0
+    else
+        phase := 1.0
+else
+    if rsiVal < 40
+        phase := 4.0
+    else
+        phase := 3.0
+if phase != prevPhase and prevPhase != 0.0
+    phaseChanges := phaseChanges + 1
+prevPhase := phase
+mp = MarketPhase.new(close - sma3, rsiVal / 100.0)
+float strength = mp.phaseStrength()
+phases = array.new<float>(0)
+phases.push(phase)
+phases.push(strength)

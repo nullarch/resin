@@ -1,0 +1,19 @@
+
+//@version=5
+indicator("Multi Key")
+var mk = map.new<string, float>()
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+atr = ta.atr(3)
+map.put(mk, "rsi", rsi)
+map.put(mk, "trend", close - sma3)
+map.put(mk, "vol", atr)
+map.put(mk, "score", (rsi - 50) / 50 + (close > sma3 ? 0.5 : -0.5))
+score = map.get(mk, "score", 0.0)
+keyCount = map.size(mk)
+var float __obs_plot0 = na
+__obs_plot0 := score
+plot(score, "Score")
+var float __obs_plot1 = na
+__obs_plot1 := keyCount
+plot(keyCount, "Keys")

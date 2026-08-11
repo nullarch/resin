@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Thresh Find")
+sma3 = ta.sma(close, 3)
+atr = ta.atr(3)
+threshold = sma3 + atr * 3
+step = atr * 0.5
+iters = 0
+while threshold > sma3 + atr and iters < 10
+    threshold := threshold - step
+    iters := iters + 1
+var float __obs_plot0 = na
+__obs_plot0 := threshold
+plot(threshold, "Thresh")

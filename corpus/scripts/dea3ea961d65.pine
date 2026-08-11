@@ -1,0 +1,5 @@
+//@version=5
+indicator("for assign")
+var float total = 0.0
+total := for i = 1 to 5
+    float(i)

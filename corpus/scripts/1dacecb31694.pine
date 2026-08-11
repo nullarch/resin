@@ -1,0 +1,11 @@
+//@version=5
+indicator("Map Signals")
+var m = map.new<string, int>()
+if close > open
+    prev = map.get(m, "up", 0)
+    map.put(m, "up", prev + 1)
+else
+    prev = map.get(m, "down", 0)
+    map.put(m, "down", prev + 1)
+var int result = 0
+result := map.get(m, "up", 0)

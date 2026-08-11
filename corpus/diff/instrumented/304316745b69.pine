@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Sig Hist")
+var float[] signals = array.new_float(0)
+rsi = nz(ta.rsi(close, 3), 50.0)
+sig = rsi > 55 ? 1.0 : rsi < 45 ? -1.0 : 0.0
+array.push(signals, sig)
+if array.size(signals) > 5
+    array.shift(signals)
+avgSig = array.size(signals) > 0 ? array.avg(signals) : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := avgSig
+plot(avgSig, "Avg")

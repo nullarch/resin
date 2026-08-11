@@ -1,0 +1,11 @@
+//@version=5
+indicator("Nested Switch")
+var int r = 0
+if close > 100
+    r := switch
+        close > 110 => 3
+        close > 105 => 2
+        => 1
+else
+    r := 0
+plot(r)

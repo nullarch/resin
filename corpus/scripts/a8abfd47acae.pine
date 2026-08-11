@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Dev BBW")
+devVal = ta.dev(close, 5)
+[mid, upper, lower] = ta.bb(close, 5, 2.0)
+bbw = (upper - lower) / mid
+plot(devVal, "Dev")
+plot(bbw, "BBW")

@@ -1,0 +1,127 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:bodies": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bodies": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bodies": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bodies": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bodies": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bodies": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bodies": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bodies": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bodies": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:bodies": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "var:__obs_plot0": 0
+  }
+ ],
+ "finalVarState": {
+  "bodies": [
+   2,
+   2,
+   2,
+   2,
+   2,
+   2
+  ],
+  "__obs_plot0": 0
+ }
+}

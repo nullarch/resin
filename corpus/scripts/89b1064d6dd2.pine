@@ -1,0 +1,7 @@
+//@version=5
+indicator("Gain Schedule")
+float rawAtr = nz(ta.atr(3), 1.0)
+float baseGain = 0.5
+float gain = rawAtr > 5.0 ? baseGain * 0.5 : baseGain * 1.5
+float err = 106.0 - close
+float output = gain * err

@@ -1,0 +1,7 @@
+//@version=5
+indicator("precision")
+var float result = 0.0
+s = ta.sma(close, 3)
+e = ta.ema(close, 3)
+if not na(s) and not na(e)
+    result := s - e

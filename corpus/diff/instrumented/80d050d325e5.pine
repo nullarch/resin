@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Cum Ret")
+ret = close > 0 and close[1] > 0 ? (close - close[1]) / close[1] : 0.0
+cumRet = ta.cum(ret)
+cumRetPct = cumRet * 100
+var float __obs_plot0 = na
+__obs_plot0 := cumRetPct
+plot(cumRetPct, "CumRet%")

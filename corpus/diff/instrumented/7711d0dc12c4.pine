@@ -1,0 +1,13 @@
+//@version=5
+indicator("CoordGame")
+var float coordScore = 0.0
+var int rounds = 0
+rounds := rounds + 1
+myChoice = close > nz(ta.sma(close, 3), close) ? 1.0 : 0.0
+oppChoice = volume > nz(ta.sma(volume, 3), volume) ? 1.0 : 0.0
+matched = math.abs(myChoice - oppChoice) < 0.01 ? 1.0 : 0.0
+coordScore := coordScore + matched * 2.0
+avgCoord = rounds > 0 ? coordScore / float(rounds) : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := avgCoord
+plot(avgCoord, "Coord")

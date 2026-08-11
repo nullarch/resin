@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:sm": {
+    "price_vs_ma3": 1.0,
+    "price_vs_ma5": 1.0,
+    "rsi_bull": 1.0
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:sm": {
+    "price_vs_ma3": 1.0,
+    "price_vs_ma5": 1.0,
+    "rsi_bull": 1.0
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:sm": {
+    "price_vs_ma3": 1.0,
+    "price_vs_ma5": 1.0,
+    "rsi_bull": 1.0
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:sm": {
+    "price_vs_ma3": 1.0,
+    "price_vs_ma5": 1.0,
+    "rsi_bull": 1.0
+   },
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:sm": {
+    "price_vs_ma3": 1.0,
+    "price_vs_ma5": 1.0,
+    "rsi_bull": 1.0
+   },
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:sm": {
+    "price_vs_ma3": 1.0,
+    "price_vs_ma5": 1.0,
+    "rsi_bull": 1.0
+   },
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:sm": {
+    "price_vs_ma3": 1.0,
+    "price_vs_ma5": 1.0,
+    "rsi_bull": 1.0
+   },
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:sm": {
+    "price_vs_ma3": 1.0,
+    "price_vs_ma5": 1.0,
+    "rsi_bull": 1.0
+   },
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:sm": {
+    "price_vs_ma3": 1.0,
+    "price_vs_ma5": 1.0,
+    "rsi_bull": 1.0
+   },
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:sm": {
+    "price_vs_ma3": 1.0,
+    "price_vs_ma5": 1.0,
+    "rsi_bull": 1.0
+   },
+   "var:__obs_plot0": 3.0
+  }
+ ],
+ "finalVarState": {
+  "sm": {
+   "price_vs_ma3": 1.0,
+   "price_vs_ma5": 1.0,
+   "rsi_bull": 1.0
+  },
+  "__obs_plot0": 3.0
+ }
+}

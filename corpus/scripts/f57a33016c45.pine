@@ -1,0 +1,6 @@
+//@version=5
+indicator("momentum")
+var float result = 0.0
+mom = ta.mom(close, 3)
+momSma = ta.sma(mom, 3)
+result := mom - momSma

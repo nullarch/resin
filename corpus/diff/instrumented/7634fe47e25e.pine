@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("Pat Stats")
+var ps = map.new<string, float>()
+var int bars = 0
+bars := bars + 1
+bullBar = close > open_ ? 1.0 : 0.0
+map.put(ps, "bull_count", map.get(ps, "bull_count", 0.0) + bullBar)
+map.put(ps, "bear_count", map.get(ps, "bear_count", 0.0) + (1.0 - bullBar))
+map.put(ps, "total", float(bars))
+bullPct = 0.0
+for [k, v] in ps
+    if k == "bull_count"
+        total = map.get(ps, "total", 1.0)
+        bullPct := total > 0 ? v / total * 100 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := bullPct
+plot(bullPct, "BP")

@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Cluster")
+hi5 = ta.highest(high, 5)
+lo5 = ta.lowest(low, 5)
+rangeVal = hi5 - lo5
+levels = 1
+step = rangeVal / 5
+current = lo5 + step
+while current < hi5 and levels < 10
+    if math.abs(close - current) < step * 0.5
+        levels := levels + 1
+    current := current + step
+plot(levels, "Lv")

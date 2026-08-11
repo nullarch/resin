@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("RegimeAlloc")
+rsi = nz(ta.rsi(close, 3), 50.0)
+atrVal = nz(ta.atr(3), 1.0)
+smaVal = nz(ta.sma(close, 3), close)
+regime = close > smaVal and rsi > 50 ? "bull" : close < smaVal and rsi < 50 ? "bear" : "neutral"
+eqPct = regime == "bull" ? 80.0 : regime == "bear" ? 30.0 : 50.0
+bondPct = 100.0 - eqPct
+labelStr = "EQ:" + str.tostring(eqPct) + " BD:" + str.tostring(bondPct)
+plot(eqPct, "EQ")

@@ -1,0 +1,7 @@
+//@version=5
+indicator("line cont")
+var float result = 0.0
+longCondition = close > open and
+    high > high[1] and
+    low > low[1]
+result := longCondition ? 1.0 : 0.0

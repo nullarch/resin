@@ -1,0 +1,8 @@
+//@version=5
+indicator("NaN Arith")
+float x = float(na)
+float a = x + 5.0
+float b = x * 2.0
+float c = x - 1.0
+var bool all_na = na(a) and na(b) and na(c)
+plot(close)

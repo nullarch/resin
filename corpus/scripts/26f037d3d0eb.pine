@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Default Param")
+weightedMA(float src, int period, float alpha = 0.5) =>
+    ema = ta.ema(src, period)
+    sma = ta.sma(src, period)
+    ema * alpha + sma * (1.0 - alpha)
+
+wma1 = weightedMA(close, 3)
+wma2 = weightedMA(close, 3, 0.8)
+diff = wma1 - wma2
+plot(diff, "Diff")

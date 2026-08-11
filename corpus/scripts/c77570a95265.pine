@@ -1,0 +1,8 @@
+//@version=5
+indicator("RealSpread")
+mid = (high + low) / 2.0
+prevMid = (nz(high[1], high) + nz(low[1], low)) / 2.0
+prevClose = nz(close[1], close)
+direction = prevClose >= prevMid ? 1.0 : -1.0
+realSpread = 2.0 * direction * (prevClose - mid)
+plot(realSpread, "RSpr")

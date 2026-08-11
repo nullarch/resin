@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Mom Rank")
+var float[] moms = array.new_float(0)
+array.clear(moms)
+for p = 1 to 5
+    prev = close[p]
+    mom = not na(prev) and prev > 0 ? (close - prev) / prev * 100 : 0.0
+    array.push(moms, mom)
+maxMom = array.max(moms)
+minMom = array.min(moms)
+plot(maxMom, "MaxMom")
+plot(minMom, "MinMom")

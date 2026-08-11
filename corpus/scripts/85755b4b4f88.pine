@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Plot Colors")
+sma3 = ta.sma(close, 3)
+rsi = ta.rsi(close, 3)
+trend = close > sma3
+trendColor = trend ? color.green : color.red
+rsiColor = rsi > 70 ? color.red : rsi < 30 ? color.green : color.gray
+plot(sma3, "SMA", color=trendColor)
+plot(rsi, "RSI", color=rsiColor)
+bgcolor(color.new(trendColor, 90))
+hline(50, "Mid")

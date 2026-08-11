@@ -1,0 +1,7 @@
+//@version=5
+indicator("ML Func Ternary")
+bull = close > open
+result = ta.sma(
+    bull ? close : open,
+    bull ? 3 : 5)
+plot(result)

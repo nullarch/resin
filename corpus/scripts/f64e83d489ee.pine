@@ -1,0 +1,8 @@
+//@version=5
+indicator("RMST")
+float hazConst = 0.07
+var float surv = 1.0
+surv := surv * (1.0 - hazConst)
+var float rmst = 0.0
+rmst := rmst + surv
+plot(rmst, "RMST")

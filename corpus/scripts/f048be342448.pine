@@ -1,0 +1,7 @@
+//@version=5
+indicator("Test")
+/*
+// This line-comment is inside block comment
+Still a comment
+*/
+z = 5

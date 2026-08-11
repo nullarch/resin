@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Hist Vol")
+logRet = close > 0 and close[1] > 0 ? math.log(close / close[1]) : 0.0
+hv = ta.stdev(logRet, 5) * math.sqrt(252)
+var float __obs_plot0 = na
+__obs_plot0 := hv
+plot(hv, "HV")

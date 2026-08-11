@@ -1,0 +1,6 @@
+//@version=5
+indicator("SMA EMA Convergence")
+var float result = 0.0
+s = ta.sma(close, 3)
+e = ta.ema(close, 3)
+result := math.abs(s - e)

@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("TSI")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+maAlign = sma3 > sma5 ? 1.0 : -1.0
+rsiStr = (rsi - 50) / 50
+tsi = maAlign * 0.5 + rsiStr * 0.5
+plot(tsi, "TSI")

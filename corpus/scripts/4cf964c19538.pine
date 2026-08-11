@@ -1,0 +1,7 @@
+//@version=5
+indicator("DELETE WHERE")
+var float[] records = array.new_float(0)
+array.push(records, close)
+if array.size(records) > 5
+    array.remove(records, 0)
+remaining = array.size(records)

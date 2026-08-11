@@ -1,0 +1,8 @@
+//@version=5
+indicator("Adaptive LB")
+float atrVal = nz(ta.atr(3), 1.0)
+float avgAtr = ta.sma(atrVal, 5)
+float ratio = nz(avgAtr, 1.0) > 0 ? atrVal / nz(avgAtr, 1.0) : 1.0
+int period = math.max(math.round(3.0 * ratio), 2)
+float adaptSma = ta.sma(close, period)
+plot(nz(adaptSma, close), "AdaptSMA")

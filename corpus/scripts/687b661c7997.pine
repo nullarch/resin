@@ -1,0 +1,9 @@
+//@version=5
+indicator("UDT No Default")
+var float result = 0.0
+
+type Simple
+    float val = 0.0
+
+s = Simple.new(99.0)
+result := s.val

@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("VarBranch")
+var float state = 0.0
+var int mode = 0
+if close > open
+    state := state + 1.0
+    if volume > 1200
+        mode := 1
+    else
+        mode := 2
+else
+    state := state - 0.5
+    mode := 0
+combined = state + float(mode)
+plot(combined, "S")

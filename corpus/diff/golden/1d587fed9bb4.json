@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:scores": {
+    "mom": 0.6112318840579999,
+    "trend": 0.5,
+    "revert": -1.0
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:scores": {
+    "mom": 0.6112318840579999,
+    "trend": 0.5,
+    "revert": -1.0
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:scores": {
+    "mom": 0.6112318840579999,
+    "trend": 0.5,
+    "revert": -1.0
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:scores": {
+    "mom": 0.6112318840579999,
+    "trend": 0.5,
+    "revert": -1.0
+   },
+   "var:__obs_plot0": 0.5
+  },
+  {
+   "var:scores": {
+    "mom": 0.6112318840579999,
+    "trend": 0.5,
+    "revert": -1.0
+   },
+   "var:__obs_plot0": 0.666666666666
+  },
+  {
+   "var:scores": {
+    "mom": 0.6112318840579999,
+    "trend": 0.5,
+    "revert": -1.0
+   },
+   "var:__obs_plot0": 0.3008130081300001
+  },
+  {
+   "var:scores": {
+    "mom": 0.6112318840579999,
+    "trend": 0.5,
+    "revert": -1.0
+   },
+   "var:__obs_plot0": 0.5784313725499999
+  },
+  {
+   "var:scores": {
+    "mom": 0.6112318840579999,
+    "trend": 0.5,
+    "revert": -1.0
+   },
+   "var:__obs_plot0": 0.73579109063
+  },
+  {
+   "var:scores": {
+    "mom": 0.6112318840579999,
+    "trend": 0.5,
+    "revert": -1.0
+   },
+   "var:__obs_plot0": 0.35613561356199996
+  },
+  {
+   "var:scores": {
+    "mom": 0.6112318840579999,
+    "trend": 0.5,
+    "revert": -1.0
+   },
+   "var:__obs_plot0": 0.6112318840579999
+  }
+ ],
+ "finalVarState": {
+  "scores": {
+   "mom": 0.6112318840579999,
+   "trend": 0.5,
+   "revert": -1.0
+  },
+  "__obs_plot0": 0.6112318840579999
+ }
+}

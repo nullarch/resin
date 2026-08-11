@@ -1,0 +1,9 @@
+//@version=5
+strategy("Language Model Strategy")
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+atrVal = nz(ta.atr(3), 1.0)
+signal = (rsiVal - 50.0) * atrVal
+if signal > 5.0
+    strategy.entry("Buy", strategy.long)
+if signal < -5.0
+    strategy.close("Buy")

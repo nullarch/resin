@@ -1,0 +1,12 @@
+//@version=5
+indicator("Extreme Spread")
+float spread = high - low
+float maxSpread = ta.highest(spread, 5)
+float avgSpread = ta.sma(spread, 5)
+float spreadRatio = avgSpread > 0.01 ? maxSpread / avgSpread : 1.0
+var float worstRatio = 0.0
+if spreadRatio > worstRatio
+    worstRatio := spreadRatio
+var float __obs_plot0 = na
+__obs_plot0 := worstRatio
+plot(worstRatio, "WorstSpread")

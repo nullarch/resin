@@ -1,0 +1,9 @@
+//@version=5
+indicator("UDT Field Mut")
+type Portfolio
+    float totalValue = 0.0
+p = Portfolio.new()
+p.totalValue := close * 100
+var float __obs_plot0 = na
+__obs_plot0 := p.totalValue
+plot(p.totalValue)

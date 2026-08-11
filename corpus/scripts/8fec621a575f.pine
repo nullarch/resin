@@ -1,0 +1,26 @@
+//@version=5
+indicator("Comprehensive 115")
+type Config
+    int period = 5
+    float mult = 2.0
+cfg = Config.new(3, 1.5)
+myTA(src, len) =>
+    ta.sma(src, len)
+var arr = array.new_float(0)
+var m = map.new<string, float>()
+var float maxRSI = 0.0
+smaVal = myTA(close, cfg.period)
+emaVal = ta.ema(close, cfg.period)
+rsiVal = ta.rsi(close, cfg.period)
+atrVal = ta.atr(cfg.period)
+if not na(smaVal)
+    array.push(arr, smaVal)
+    map.put(m, "sma", smaVal)
+if not na(rsiVal) and rsiVal > maxRSI
+    maxRSI := rsiVal
+trend = switch
+    close > nz(smaVal) and close > nz(emaVal) => "STRONG_UP"
+    close > nz(smaVal) => "UP"
+    => "DOWN"
+var int barCount = 0
+barCount := barCount + 1

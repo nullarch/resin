@@ -1,0 +1,6 @@
+//@version=5
+indicator("CMO")
+var float lastC = 0
+c = ta.cmo(close, 5)
+if not na(c)
+    lastC := c

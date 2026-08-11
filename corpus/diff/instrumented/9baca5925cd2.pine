@@ -1,0 +1,8 @@
+//@version=5
+indicator("test")
+bullish = close > open and high > high[1]
+bearish = close < open and low < low[1]
+signal = bullish ? (volume > volume[1] ? 2 : 1) : bearish ? (volume > volume[1] ? -2 : -1) : 0
+var float __obs_plot0 = na
+__obs_plot0 := signal
+plot(signal)

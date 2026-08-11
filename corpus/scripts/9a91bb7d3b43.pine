@@ -1,0 +1,6 @@
+//@version=5
+indicator("Method Call Args")
+float[] arr = array.from(5.0, 3.0, 1.0, 4.0, 2.0)
+array.sort(arr)
+var float result = 0.0
+result := array.get(arr, 0)

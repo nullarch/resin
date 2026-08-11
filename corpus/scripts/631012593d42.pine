@@ -1,0 +1,8 @@
+//@version=5
+indicator("Map CRUD")
+var m = map.new<string, float>()
+map.put(m, "a", 10.0)
+map.put(m, "b", 20.0)
+var float a_val = map.get(m, "a")
+var int sz = map.size(m)
+plot(a_val)

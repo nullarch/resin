@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Trend Cnt")
+var int bullBars = 0
+var int bearBars = 0
+sma3 = ta.sma(close, 3)
+if close > sma3
+    bullBars := bullBars + 1
+else
+    bearBars := bearBars + 1
+ratio = (bullBars + bearBars) > 0 ? bullBars / (bullBars + bearBars) : 0.5
+plot(ratio, "BullR")

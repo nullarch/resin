@@ -1,0 +1,6 @@
+//@version=5
+indicator("NS-03 Viscosity")
+atrVal = nz(ta.atr(3), 1.0)
+volFlow = volume > 0 ? volume / 1000.0 : 1.0
+viscosity = atrVal / volFlow
+plot(viscosity)

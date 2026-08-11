@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:msg": "Price: 42.5 Vol: 1000",
+   "var:len": 21,
+   "var:result": 21,
+   "var:__obs_plot0": 21
+  },
+  {
+   "var:msg": "Price: 42.5 Vol: 1000",
+   "var:len": 21,
+   "var:result": 21,
+   "var:__obs_plot0": 21
+  },
+  {
+   "var:msg": "Price: 42.5 Vol: 1000",
+   "var:len": 21,
+   "var:result": 21,
+   "var:__obs_plot0": 21
+  },
+  {
+   "var:msg": "Price: 42.5 Vol: 1000",
+   "var:len": 21,
+   "var:result": 21,
+   "var:__obs_plot0": 21
+  },
+  {
+   "var:msg": "Price: 42.5 Vol: 1000",
+   "var:len": 21,
+   "var:result": 21,
+   "var:__obs_plot0": 21
+  },
+  {
+   "var:msg": "Price: 42.5 Vol: 1000",
+   "var:len": 21,
+   "var:result": 21,
+   "var:__obs_plot0": 21
+  },
+  {
+   "var:msg": "Price: 42.5 Vol: 1000",
+   "var:len": 21,
+   "var:result": 21,
+   "var:__obs_plot0": 21
+  },
+  {
+   "var:msg": "Price: 42.5 Vol: 1000",
+   "var:len": 21,
+   "var:result": 21,
+   "var:__obs_plot0": 21
+  },
+  {
+   "var:msg": "Price: 42.5 Vol: 1000",
+   "var:len": 21,
+   "var:result": 21,
+   "var:__obs_plot0": 21
+  },
+  {
+   "var:msg": "Price: 42.5 Vol: 1000",
+   "var:len": 21,
+   "var:result": 21,
+   "var:__obs_plot0": 21
+  }
+ ],
+ "finalVarState": {
+  "msg": "Price: 42.5 Vol: 1000",
+  "len": 21,
+  "result": 21,
+  "__obs_plot0": 21
+ }
+}

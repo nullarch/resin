@@ -1,0 +1,14 @@
+//@version=5
+indicator("Op Prec")
+var bool a = true
+var bool b = false
+var bool c = true
+// not b = true, then true and true = true, then true or false = true
+var bool r1 = a and not b or false
+// not false = true, false or true = true
+var bool r2 = false or not b
+var float result = 0.0
+result := (r1 ? 1.0 : 0.0) + (r2 ? 10.0 : 0.0)
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

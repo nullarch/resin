@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Mom Break")
+hi5 = ta.highest(high, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+priceBreak = close > hi5[1]
+momConfirm = rsi > 55
+confirmedBreak = priceBreak and momConfirm
+plot(confirmedBreak ? 1 : 0, "MB")

@@ -1,0 +1,6 @@
+/*
+Multi-line comment at start
+*/
+//@version=5
+indicator("Test")
+x = 42

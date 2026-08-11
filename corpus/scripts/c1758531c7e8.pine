@@ -1,0 +1,7 @@
+//@version=5
+indicator("Utilization Rho")
+float spread = high - low
+float capacity = spread > 0 ? volume / spread : 0.0
+float avgCap = ta.sma(capacity, 3)
+float rho = avgCap > 0 ? capacity / avgCap : 0.0
+plot(math.min(rho, 2.0), "Rho")

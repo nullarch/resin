@@ -1,0 +1,12 @@
+//@version=5
+indicator("MethodIf")
+var string result = ""
+type Signal
+    float value = 0.0
+method label(Signal this) =>
+    if this.value > 0
+        "BUY"
+    else
+        "SELL"
+sig = Signal.new(value=1.0)
+result := sig.label()

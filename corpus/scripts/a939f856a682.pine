@@ -1,0 +1,46 @@
+
+//@version=5
+indicator("4000 Milestone")
+ema3 = ta.ema(close, 3)
+sma5 = ta.sma(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = ta.atr(3)
+[m, s, h] = ta.macd(close, 3, 5, 3)
+k = ta.stoch(close, high, low, 5)
+[mid, upper, lower] = ta.bb(close, 5, 2.0)
+sd = ta.stdev(close, 5)
+
+type MarketState
+    float trendScore = 0.0
+    float momScore = 0.0
+    float volScore = 0.0
+    float composite = 0.0
+
+var MarketState ms = MarketState.new()
+var float[] history = array.new_float(0)
+var dashboard = map.new<string, float>()
+
+ms.trendScore := (close > ema3 ? 1.0 : 0.0) + (ema3 > sma5 ? 1.0 : 0.0)
+ms.momScore := (rsi > 50 ? 1.0 : 0.0) + (h > 0 ? 1.0 : 0.0) + (k > 50 ? 1.0 : 0.0)
+ms.volScore := close > 0 ? atr / close * 100 : 0.0
+
+array.push(history, ms.trendScore + ms.momScore)
+if array.size(history) > 8
+    array.shift(history)
+
+map.put(dashboard, "trend", ms.trendScore)
+map.put(dashboard, "momentum", ms.momScore)
+map.put(dashboard, "volatility", ms.volScore)
+map.put(dashboard, "avg_score", array.avg(history))
+
+zscore = sd > 0 ? (close - sma5) / sd : 0.0
+sigmoid = 1.0 / (1.0 + math.exp(-(rsi - 50) / 10))
+
+ms.composite := sigmoid * 0.3 + ms.trendScore / 2 * 0.3 + ms.momScore / 3 * 0.2 + (1 - math.min(ms.volScore / 5, 1)) * 0.2
+clamped = math.max(0.0, math.min(1.0, ms.composite))
+
+var int bars = 0
+bars := bars + 1
+
+plot(clamped, "Score")
+plot(zscore, "Z")

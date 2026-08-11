@@ -1,0 +1,18 @@
+//@version=5
+indicator("UDT Position")
+type Position
+    float entryPrice = 0.0
+    int direction = 0
+    int bars = 0
+var pos = Position.new()
+sma_ = ta.sma(close, 3)
+if pos.direction == 0 and not na(sma_)
+    if close > sma_
+        pos.direction := 1
+        pos.entryPrice := close
+        pos.bars := 0
+if pos.direction != 0
+    pos.bars := pos.bars + 1
+    if pos.bars > 3
+        pos.direction := 0
+plot(pos.direction)

@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Dual MA")
+fast = ta.sma(close, 3)
+slow = ta.sma(close, 5)
+bullish = fast > slow
+bearish = fast < slow
+signal = bullish ? 1 : bearish ? -1 : 0
+plot(signal, "Sig")

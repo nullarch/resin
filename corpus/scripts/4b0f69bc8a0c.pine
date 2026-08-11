@@ -1,0 +1,4 @@
+//@version=5
+indicator("chart ha")
+var float result = 0.0
+result := chart.is_heikinashi() ? 1.0 : 0.0

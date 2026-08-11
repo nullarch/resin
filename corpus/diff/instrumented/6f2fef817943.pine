@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Vol Regime")
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 5)
+ratio = avgATR > 0 ? atr / avgATR : 1.0
+regime = ratio > 1.5 ? 2 : ratio > 1.0 ? 1 : 0
+var float __obs_plot0 = na
+__obs_plot0 := regime
+plot(regime, "VR")

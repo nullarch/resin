@@ -1,0 +1,19 @@
+
+//@version=5
+indicator("UDT Enum")
+enum Side
+    Long = 1
+    Short = -1
+    Flat = 0
+
+type Position
+    float entry = 0.0
+    int direction = 0
+
+var Position pos = Position.new()
+sma3 = ta.sma(close, 3)
+if ta.crossover(close, sma3)
+    pos := Position.new(close, int(Side.Long))
+else if ta.crossunder(close, sma3)
+    pos := Position.new(close, int(Side.Short))
+plot(pos.direction, "Dir")

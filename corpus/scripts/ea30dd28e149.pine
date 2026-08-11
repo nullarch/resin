@@ -1,0 +1,18 @@
+//@version=5
+indicator("Trade Tracker")
+type Trade
+    float entryPrice = 0.0
+    float currentPnL = 0.0
+    int barsHeld = 0
+    bool isActive = false
+var trade = Trade.new()
+sma5 = ta.sma(close, 5)
+if not trade.isActive and not na(sma5) and close > nz(sma5)
+    trade.isActive := true
+    trade.entryPrice := close
+    trade.barsHeld := 0
+if trade.isActive
+    trade.barsHeld := trade.barsHeld + 1
+    trade.currentPnL := close - trade.entryPrice
+    if trade.barsHeld > 3
+        trade.isActive := false

@@ -1,0 +1,9 @@
+//@version=5
+strategy("Tail Risk Stop")
+float prevC = not na(close[1]) ? close[1] : close
+float retAbs = math.abs(close - prevC)
+float atrVal = nz(ta.atr(3), 1.0)
+if close > ta.sma(close, 3)
+    strategy.entry("Long", strategy.long)
+if retAbs > 2.5 * atrVal
+    strategy.close("Long")

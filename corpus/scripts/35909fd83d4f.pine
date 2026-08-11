@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Micro Map")
+var mm = map.new<string, float>()
+spread = high - low
+avgSp = ta.sma(spread, 5)
+avgVol = ta.sma(volume, 5)
+map.put(mm, "spread_z", avgSp > 0 ? (spread - avgSp) / avgSp : 0.0)
+map.put(mm, "vol_z", avgVol > 0 ? (volume - avgVol) / avgVol : 0.0)
+map.put(mm, "eff", spread > 0 ? math.abs(close - open) / spread : 0.0)
+avgMetric = 0.0
+cnt = 0.0
+for [k, v] in mm
+    avgMetric := avgMetric + v
+    cnt := cnt + 1
+avgMetric := cnt > 0 ? avgMetric / cnt : 0.0
+plot(avgMetric, "Avg")

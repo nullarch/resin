@@ -1,0 +1,6 @@
+//@version=5
+indicator("WPR")
+var float lastW = 0
+w = ta.wpr(5)
+if not na(w)
+    lastW := w

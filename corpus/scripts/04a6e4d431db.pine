@@ -1,0 +1,9 @@
+//@version=5
+indicator("switch multi")
+var float result = 0.0
+rsiVal = ta.rsi(close, 5)
+zone = switch
+    rsiVal > 70 => "overbought"
+    rsiVal < 30 => "oversold"
+    => "neutral"
+result := zone == "neutral" ? 0.0 : zone == "overbought" ? 1.0 : -1.0

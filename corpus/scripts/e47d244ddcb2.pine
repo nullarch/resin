@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Filt Map")
+var fm = map.new<string, float>()
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+map.put(fm, "above_ma", close > sma3 ? 1.0 : 0.0)
+map.put(fm, "rsi_bull", rsi > 55 ? 1.0 : 0.0)
+map.put(fm, "vol_up", volume > ta.sma(volume, 5) ? 1.0 : 0.0)
+passCount = 0
+for [k, v] in fm
+    if v > 0
+        passCount := passCount + 1
+plot(passCount, "PC")

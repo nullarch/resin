@@ -1,0 +1,10 @@
+//@version=5
+indicator("Multiscale OT")
+float fast = nz(ta.ema(close, 3), close)
+float slow = nz(ta.ema(close, 5), close)
+float wFast = math.abs(close - fast)
+float wSlow = math.abs(close - slow)
+float multiW = 0.5 * wFast + 0.5 * wSlow
+var float cumMulti = 0.0
+cumMulti := cumMulti + multiW
+plot(cumMulti, "MultiW")

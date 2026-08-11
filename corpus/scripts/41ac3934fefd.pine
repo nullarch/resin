@@ -1,0 +1,29 @@
+
+//@version=5
+indicator("Cyc Full")
+var int barNum = 0
+barNum := barNum + 1
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+atr = ta.atr(3)
+
+cyclePos = barNum % 5
+sinComponent = math.sin(float(barNum) / 5 * math.pi * 2)
+
+var int direction = 0
+var int changes = 0
+newDir = close > sma3 ? 1 : -1
+if newDir != direction and direction != 0
+    changes := changes + 1
+direction := newDir
+
+var float[] amps = array.new_float(0)
+array.push(amps, high - low)
+if array.size(amps) > 6
+    array.shift(amps)
+
+var int bars = 0
+bars := bars + 1
+
+plot(sinComponent, "Sin")
+plot(changes, "Chg")

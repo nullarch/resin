@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Median Osc")
+med = ta.median(close, 5)
+osc = close - med
+var float __obs_plot0 = na
+__obs_plot0 := osc
+plot(osc, "Oscillator")

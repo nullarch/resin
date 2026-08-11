@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:sumRet": 0.0,
+   "var:sumSqRet": 0.0,
+   "var:count": 1,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:sumRet": 0.9708737864077669,
+   "var:sumSqRet": 0.9425959091337541,
+   "var:count": 2,
+   "var:__obs_plot0": 0.48543689320388345
+  },
+  {
+   "var:sumRet": -0.9522031366691562,
+   "var:sumSqRet": 4.64082076120476,
+   "var:count": 3,
+   "var:__obs_plot0": -0.31740104555638543
+  },
+  {
+   "var:sumRet": 1.9889733339190787,
+   "var:sumSqRet": 13.291339792346626,
+   "var:count": 4,
+   "var:__obs_plot0": 0.4972433334797697
+  },
+  {
+   "var:sumRet": 3.893735238680984,
+   "var:sumSqRet": 16.919457706178825,
+   "var:count": 5,
+   "var:__obs_plot0": 0.7787470477361967
+  },
+  {
+   "var:sumRet": 2.9591557994286477,
+   "var:sumSqRet": 17.792896434452036,
+   "var:count": 6,
+   "var:__obs_plot0": 0.49319263323810797
+  },
+  {
+   "var:sumRet": 4.845948252258836,
+   "var:sumSqRet": 21.352882194508997,
+   "var:count": 7,
+   "var:__obs_plot0": 0.6922783217512622
+  },
+  {
+   "var:sumRet": 6.697800104110687,
+   "var:sumSqRet": 24.78223747571613,
+   "var:count": 8,
+   "var:__obs_plot0": 0.8372250130138359
+  },
+  {
+   "var:sumRet": 5.788709195019778,
+   "var:sumSqRet": 25.608683756707865,
+   "var:count": 9,
+   "var:__obs_plot0": 0.6431899105577531
+  },
+  {
+   "var:sumRet": 7.6235715803408794,
+   "var:sumSqRet": 28.975403729774108,
+   "var:count": 10,
+   "var:__obs_plot0": 0.762357158034088
+  }
+ ],
+ "finalVarState": {
+  "sumRet": 7.6235715803408794,
+  "sumSqRet": 28.975403729774108,
+  "count": 10,
+  "__obs_plot0": 0.762357158034088
+ }
+}

@@ -1,0 +1,6 @@
+//@version=5
+indicator("color new")
+c = color.new(color.red, 50)
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

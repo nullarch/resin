@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("MeanRev")
+smaVal = nz(ta.sma(close, 5), close)
+atrVal = nz(ta.atr(3), 1.0)
+zProxy = atrVal > 0.001 ? (close - smaVal) / atrVal : 0.0
+signal = zProxy > 2.0 ? -1 : zProxy < -2.0 ? 1 : 0
+plot(signal, "S")

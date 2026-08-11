@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Adapt Thresh")
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+volRegime = atr > avgATR * 1.5 ? "high" : atr > avgATR ? "normal" : "low"
+threshold = volRegime == "high" ? 2.0 : volRegime == "normal" ? 1.5 : 1.0
+level = ta.sma(close, 3) + atr * threshold
+plot(level, "Level")

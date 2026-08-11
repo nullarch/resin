@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:sig": "pine_fn.<locals>.Signal(name='RSI_Signal', direction='long', value=80.5615942029)",
+   "var:__obs_plot0": 14
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(name='RSI_Signal', direction='long', value=80.5615942029)",
+   "var:__obs_plot0": 14
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(name='RSI_Signal', direction='long', value=80.5615942029)",
+   "var:__obs_plot0": 15
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(name='RSI_Signal', direction='long', value=80.5615942029)",
+   "var:__obs_plot0": 14
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(name='RSI_Signal', direction='long', value=80.5615942029)",
+   "var:__obs_plot0": 14
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(name='RSI_Signal', direction='long', value=80.5615942029)",
+   "var:__obs_plot0": 14
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(name='RSI_Signal', direction='long', value=80.5615942029)",
+   "var:__obs_plot0": 14
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(name='RSI_Signal', direction='long', value=80.5615942029)",
+   "var:__obs_plot0": 14
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(name='RSI_Signal', direction='long', value=80.5615942029)",
+   "var:__obs_plot0": 14
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(name='RSI_Signal', direction='long', value=80.5615942029)",
+   "var:__obs_plot0": 14
+  }
+ ],
+ "finalVarState": {
+  "sig": "pine_fn.<locals>.Signal(name='RSI_Signal', direction='long', value=80.5615942029)",
+  "__obs_plot0": 14
+ }
+}

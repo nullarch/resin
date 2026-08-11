@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Multi Calc")
+analyze(float price, float ma, float atr_val) =>
+    dist = price - ma
+    normalized = atr_val > 0 ? dist / atr_val : 0.0
+    clamped = math.max(-3.0, math.min(3.0, normalized))
+    clamped
+
+sma3 = ta.sma(close, 3)
+atr = ta.atr(3)
+result = analyze(close, sma3, atr)
+plot(result, "R")

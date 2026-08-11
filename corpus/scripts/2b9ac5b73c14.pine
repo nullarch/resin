@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Feature Store")
+var features = map.new<string, float>()
+map.put(features, "returns", nz(ta.change(close, 1), 0.0))
+map.put(features, "volatility", ta.atr(3))
+map.put(features, "momentum", nz(ta.rsi(close, 3), 50.0))
+map.put(features, "trend", close > ta.sma(close, 3) ? 1.0 : 0.0)
+featureSum = map.get(features, "trend", 0.0) + (map.get(features, "momentum", 50.0) > 50 ? 1.0 : 0.0)
+plot(featureSum, "FeatSum")

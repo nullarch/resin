@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Large Num")
+large = 1000000.0
+scaled = close * large
+rescaled = scaled / large
+diff = rescaled - close
+var float __obs_plot0 = na
+__obs_plot0 := diff
+plot(diff, "D")

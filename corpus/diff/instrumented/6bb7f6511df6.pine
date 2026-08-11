@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("EMA Num")
+e = ta.ema(close, 5)
+var float __obs_plot0 = na
+__obs_plot0 := e
+plot(e)

@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("ForIn Full")
+var signals = map.new<string, float>()
+var weights = map.new<string, float>()
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+map.put(signals, "trend", close > sma3 ? 1.0 : -1.0)
+map.put(signals, "momentum", (rsi - 50) / 50)
+map.put(signals, "volume", volume > ta.sma(volume, 5) ? 1.0 : 0.0)
+map.put(weights, "trend", 0.4)
+map.put(weights, "momentum", 0.35)
+map.put(weights, "volume", 0.25)
+composite = 0.0
+for [k, s] in signals
+    w = map.get(weights, k, 0.33)
+    composite := composite + s * w
+plot(composite, "C")

@@ -1,0 +1,9 @@
+//@version=5
+indicator("Leading Dot")
+float x = .5
+float y = .25
+var float result = 0.0
+result := x + y
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

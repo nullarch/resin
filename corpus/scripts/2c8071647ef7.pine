@@ -1,0 +1,7 @@
+//@version=5
+indicator("NaN safety")
+sma3 = ta.sma(close, 3)
+safe1 = nz(sma3, 0.0)
+safe2 = fixnan(sma3)
+safe3 = nz(sma3, close)
+isNaN = na(sma3)

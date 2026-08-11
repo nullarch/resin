@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Stat Lbl")
+sma5 = ta.sma(close, 5)
+stdev = nz(ta.stdev(close, 5), 1.0)
+z = stdev > 0 ? (close - sma5) / stdev : 0.0
+zLabel = z > 1 ? "HIGH" : z < -1 ? "LOW" : "MID"
+trend = close > sma5 ? "UP" : "DN"
+label = zLabel + "_" + trend
+isHighUp = label == "HIGH_UP"
+plot(isHighUp ? 1 : 0, "HU")

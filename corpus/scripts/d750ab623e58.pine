@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Trend Map")
+var tm = map.new<string, float>()
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+map.put(tm, "ma_spread", sma3 - sma5)
+map.put(tm, "price_pos", close - sma3)
+map.put(tm, "rsi_trend", rsi - 50)
+total = 0.0
+for [k, v] in tm
+    total := total + v
+plot(total, "T")

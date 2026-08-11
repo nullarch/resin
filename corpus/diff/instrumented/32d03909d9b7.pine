@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Auction Balance")
+type AuctionState
+    float pocPrice = 0.0
+    float vaHigh = 0.0
+    float vaLow = 0.0
+    int tpoCount = 0
+state = AuctionState.new()
+state.pocPrice := (high + low) / 2.0
+state.vaHigh := high
+state.vaLow := low
+state.tpoCount := 5
+spread = state.vaHigh - state.vaLow
+var float __obs_plot0 = na
+__obs_plot0 := spread + float(state.tpoCount)
+plot(spread + float(state.tpoCount), "AB")

@@ -1,0 +1,6 @@
+//@version=5
+indicator("TA implicit")
+var float result = 0.0
+t = ta.tr
+if not na(t)
+    result := t

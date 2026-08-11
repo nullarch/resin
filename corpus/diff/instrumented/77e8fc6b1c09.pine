@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("Div UDT")
+type DivState
+    int bullCount = 0
+    int bearCount = 0
+    float lastRsi = 50.0
+
+var DivState ds = DivState.new()
+rsi = nz(ta.rsi(close, 3), 50.0)
+if close > close[1] and rsi < ds.lastRsi
+    ds.bearCount := ds.bearCount + 1
+if close < close[1] and rsi > ds.lastRsi
+    ds.bullCount := ds.bullCount + 1
+ds.lastRsi := rsi
+var float __obs_plot0 = na
+__obs_plot0 := ds.bullCount - ds.bearCount
+plot(ds.bullCount - ds.bearCount, "Net")

@@ -1,0 +1,9 @@
+//@version=5
+indicator("test")
+maType = "EMA"
+period = 3
+result = switch maType
+    "EMA" => ta.ema(close, period)
+    "SMA" => ta.sma(close, period)
+    => close
+plot(result)

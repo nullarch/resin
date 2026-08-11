@@ -1,0 +1,5 @@
+//@version=5
+indicator("Bgcolor")
+rsi5 = ta.rsi(close, 5)
+bgColor = not na(rsi5) ? (nz(rsi5) > 70 ? color.new(color.red, 90) : nz(rsi5) < 30 ? color.new(color.green, 90) : na) : na
+bgcolor(bgColor)

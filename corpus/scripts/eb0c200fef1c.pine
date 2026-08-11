@@ -1,0 +1,3 @@
+//@version=5
+indicator("ATR")
+x = ta.atr(high, low, close, 5)

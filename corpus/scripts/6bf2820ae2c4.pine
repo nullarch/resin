@@ -1,0 +1,12 @@
+
+//@version=5
+strategy("Enum Strat", overlay=true)
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+bullSignal = close > sma3 and rsi > 50
+bearSignal = close < sma3 and rsi < 50
+if bullSignal
+    strategy.entry("Long", strategy.long)
+if bearSignal
+    strategy.close("Long")
+plot(rsi, "RSI")

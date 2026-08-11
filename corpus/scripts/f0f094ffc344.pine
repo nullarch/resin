@@ -1,0 +1,11 @@
+//@version=5
+indicator("Luminosity Class")
+var int classI = 0
+var int classII = 0
+var int classIII = 0
+if volume > 1300
+    classI := classI + 1
+else if volume > 1000
+    classII := classII + 1
+else
+    classIII := classIII + 1

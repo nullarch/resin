@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Dashboard")
+rsiVal = ta.rsi(close, 3)
+sma3 = ta.sma(close, 3)
+line1 = "RSI: " + str.tostring(rsiVal, "#.#")
+line2 = "SMA: " + str.tostring(sma3, "#.##")
+full = line1 + " | " + line2
+hasBar = str.contains(full, "|")
+length = str.length(full)
+var float __obs_plot0 = na
+__obs_plot0 := length
+plot(length, "Len")

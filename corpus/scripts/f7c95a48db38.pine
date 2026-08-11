@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("BB Squeeze")
+[middle, upper, lower] = ta.bb(close, 5, 2.0)
+bbWidth = middle != 0 ? (upper - lower) / middle : 0.0
+avgWidth = ta.sma(bbWidth, 5)
+squeeze = bbWidth < avgWidth
+plot(bbWidth, "Width")
+plot(squeeze ? 1 : 0, "Squeeze")

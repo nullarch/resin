@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("KV Store")
+var store = map.new<string, float>()
+map.put(store, "last_high", high)
+map.put(store, "last_low", low)
+map.put(store, "last_close", close)
+map.put(store, "bar_range", high - low)
+rng = map.get(store, "bar_range", 0.0)
+plot(rng, "R")

@@ -1,0 +1,5 @@
+//@version=5
+indicator("KC KCW")
+[kcU, kcM, kcL] = ta.kc(close, 5, 1.5)
+kcw5 = ta.kcw(close, 5, 1.5)
+inKC = not na(kcU) and not na(kcL) ? close <= nz(kcU) and close >= nz(kcL) : true

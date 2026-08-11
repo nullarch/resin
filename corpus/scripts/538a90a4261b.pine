@@ -1,0 +1,11 @@
+
+//@version=5
+strategy("RSI Bands", overlay=true)
+rsi = ta.rsi(close, 3)
+if rsi < 30
+    strategy.entry("Long", strategy.long)
+if rsi > 70
+    strategy.entry("Short", strategy.short)
+if rsi > 45 and rsi < 55
+    strategy.close_all()
+plot(rsi, "RSI")

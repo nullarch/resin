@@ -1,0 +1,8 @@
+//@version=5
+indicator("Thalamic Relay")
+var float gateState = 0.5
+sensoryInput = close - open
+arousal = volume > 1100 ? 1.0 : 0.0
+gateState := gateState * 0.8 + arousal * 0.2
+relayedSignal = sensoryInput * gateState
+plot(relayedSignal)

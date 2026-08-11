@@ -1,0 +1,8 @@
+//@version=5
+indicator("sliding window")
+var float maxClose = 0.0
+var float minClose = 99999.0
+if close > maxClose
+    maxClose := close
+if close < minClose
+    minClose := close

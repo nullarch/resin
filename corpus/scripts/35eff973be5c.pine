@@ -1,0 +1,12 @@
+//@version=5
+indicator("multi UDF var")
+var float result = 0.0
+funcA() =>
+    var float x = 0.0
+    x := x + 1.0
+    x
+funcB() =>
+    var float x = 0.0
+    x := x + 10.0
+    x
+result := funcA() + funcB()

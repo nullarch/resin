@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Doji")
+body = math.abs(close - open)
+totalRange = high - low
+isDoji = totalRange > 0 and body / totalRange < 0.1
+plot(isDoji ? 1 : 0, "Doji")

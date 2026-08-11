@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Regime Hist")
+var float[] regimes = array.new_float(0)
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+regime = sma3 > sma5 ? 1.0 : -1.0
+array.push(regimes, regime)
+if array.size(regimes) > 10
+    array.shift(regimes)
+avgRegime = array.size(regimes) > 0 ? array.avg(regimes) : 0.0
+stable = math.abs(avgRegime) > 0.6
+var float __obs_plot0 = na
+__obs_plot0 := stable ? 1 : 0
+plot(stable ? 1 : 0, "S")

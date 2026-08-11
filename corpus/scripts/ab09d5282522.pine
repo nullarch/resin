@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("RSI Stoch Fusion")
+rsi = ta.rsi(close, 3)
+k = ta.stoch(close, high, low, 5)
+fusion = (rsi + k) / 2
+overbought = fusion > 70
+oversold = fusion < 30
+plot(fusion, "Fusion")

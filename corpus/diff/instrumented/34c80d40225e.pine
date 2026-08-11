@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Reg Lbl")
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 5)
+mom = rsi > 55 ? "BULL" : rsi < 45 ? "BEAR" : "FLAT"
+vol = avgATR > 0 and atr / avgATR > 1.2 ? "HV" : "LV"
+label = mom + "_" + vol
+isRiskOn = label == "BULL_LV"
+var float __obs_plot0 = na
+__obs_plot0 := isRiskOn ? 1 : 0
+plot(isRiskOn ? 1 : 0, "RO")

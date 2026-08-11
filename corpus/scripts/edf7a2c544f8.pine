@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Time Score")
+timeScore(int barNum, int period) =>
+    pos = barNum % period
+    earlyPhase = pos <= period / 2
+    earlyPhase ? 1.0 : -1.0
+
+var int barNum = 0
+barNum := barNum + 1
+score = timeScore(barNum, 5)
+plot(score, "TS")

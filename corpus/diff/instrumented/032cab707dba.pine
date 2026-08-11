@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Intermarket")
+type IMMetrics
+    float relStrength = 0.0
+    float spreadZ = 0.0
+    float correlation = 0.0
+
+var IMMetrics im = IMMetrics.new()
+fast = ta.ema(close, 3)
+slow = ta.sma(close, 5)
+spread = fast - slow
+sd = ta.stdev(spread, 5)
+im.relStrength := slow > 0 ? (close - slow) / slow * 100 : 0.0
+im.spreadZ := sd > 0 ? (spread - ta.sma(spread, 3)) / sd : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := im.relStrength
+plot(im.relStrength, "RS")
+var float __obs_plot1 = na
+__obs_plot1 := im.spreadZ
+plot(im.spreadZ, "SZ")

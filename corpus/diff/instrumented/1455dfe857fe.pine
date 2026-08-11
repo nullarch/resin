@@ -1,0 +1,19 @@
+
+//@version=5
+indicator("Sess Ret")
+var float[] sessRets = array.new_float(0)
+var float sessOpen = close
+var int barInSess = 0
+barInSess := barInSess + 1
+if barInSess == 1
+    sessOpen := close
+if barInSess >= 5
+    ret = sessOpen > 0 ? (close - sessOpen) / sessOpen * 100 : 0.0
+    array.push(sessRets, ret)
+    if array.size(sessRets) > 5
+        array.shift(sessRets)
+    barInSess := 0
+avgRet = array.size(sessRets) > 0 ? array.avg(sessRets) : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := avgRet
+plot(avgRet, "AR")

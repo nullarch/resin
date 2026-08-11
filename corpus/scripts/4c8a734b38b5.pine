@@ -1,0 +1,6 @@
+
+//@version=5
+indicator("RSI Zones")
+rsiVal = ta.rsi(close, 3)
+zone = rsiVal > 70 ? "overbought" : rsiVal < 30 ? "oversold" : "neutral"
+plot(rsiVal, "RSI")

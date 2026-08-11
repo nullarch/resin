@@ -1,0 +1,4 @@
+//@version=5
+indicator("valuewhen")
+var float vw = 0.0
+vw := ta.valuewhen(close > open, close, 0)

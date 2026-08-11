@@ -1,0 +1,9 @@
+//@version=5
+indicator("Rule 30 Cell")
+var int cellState = 0
+left = close > open ? 1 : 0
+center = high > nz(ta.sma(high, 3), high) ? 1 : 0
+right = volume > 1000 ? 1 : 0
+neighborhood = left * 4 + center * 2 + right
+ruleNum = 30
+cellState := math.floor(ruleNum / math.pow(2, neighborhood)) % 2 == 1 ? 1 : 0

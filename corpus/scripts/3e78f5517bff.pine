@@ -1,0 +1,5 @@
+//@version=5
+indicator("Empty Array")
+arr = array.new_float(0)
+sz = array.size(arr)
+plot(sz)

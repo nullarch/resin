@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Stoch Div")
+k = ta.stoch(close, high, low, 3)
+kSmooth = ta.sma(k, 3)
+priceUp = not na(close[3]) and close > close[3]
+stochDown = nz(kSmooth, 50.0) < 60
+bearDiv = priceUp and stochDown
+plot(bearDiv ? 1 : 0, "SD")

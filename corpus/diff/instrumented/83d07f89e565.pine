@@ -1,0 +1,11 @@
+//@version=5
+indicator("Blockchain Link")
+var float prevBlockHash = 0.0
+blockData = close + open + high + low + volume * 0.01
+currentHash = blockData * 31.0 + prevBlockHash * 17.0
+currentHash := math.abs(currentHash)
+currentHash := currentHash - math.floor(currentHash / 9973.0) * 9973.0
+prevBlockHash := currentHash
+var float __obs_plot0 = na
+__obs_plot0 := currentHash
+plot(currentHash)

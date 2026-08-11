@@ -1,0 +1,5 @@
+//@version=5
+indicator("Varip")
+varip float cnt = 0.0
+cnt := cnt + 1.0
+plot(cnt)

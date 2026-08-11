@@ -1,0 +1,13 @@
+//@version=5
+indicator("Reflecting Barrier")
+float upper = 112.0
+float lower = 100.0
+var float rPath = 106.0
+float prevC = not na(close[1]) ? close[1] : close
+float step = close - prevC
+rPath := rPath + step
+if rPath > upper
+    rPath := upper - (rPath - upper)
+if rPath < lower
+    rPath := lower + (lower - rPath)
+plot(rPath, "RPath")

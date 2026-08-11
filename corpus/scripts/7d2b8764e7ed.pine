@@ -1,0 +1,6 @@
+//@version=5
+indicator("Neg Func")
+var float val = 0.0
+smaVal = ta.sma(close, 3)
+val := na(smaVal) ? val : -smaVal
+plot(val)

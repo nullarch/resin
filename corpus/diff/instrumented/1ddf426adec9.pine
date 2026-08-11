@@ -1,0 +1,15 @@
+//@version=5
+indicator("OHLCV Access")
+var float last_open = 0.0
+var float last_high = 0.0
+var float last_low = 0.0
+var float last_close = 0.0
+var float last_vol = 0.0
+last_open := open
+last_high := high
+last_low := low
+last_close := close
+last_vol := volume
+var float __obs_plot0 = na
+__obs_plot0 := last_close
+plot(last_close)

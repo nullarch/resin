@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:equity": 1000.0,
+   "var:inTrade": false,
+   "var:__obs_plot0": 1000.0
+  },
+  {
+   "var:equity": 1000.0,
+   "var:inTrade": false,
+   "var:__obs_plot0": 1000.0
+  },
+  {
+   "var:equity": 1000.0,
+   "var:inTrade": false,
+   "var:__obs_plot0": 1000.0
+  },
+  {
+   "var:equity": 1000.0,
+   "var:inTrade": true,
+   "var:__obs_plot0": 1000.0
+  },
+  {
+   "var:equity": 1000.0,
+   "var:inTrade": true,
+   "var:__obs_plot0": 1000.0
+  },
+  {
+   "var:equity": 1000.0,
+   "var:inTrade": true,
+   "var:__obs_plot0": 1000.0
+  },
+  {
+   "var:equity": 1000.0,
+   "var:inTrade": true,
+   "var:__obs_plot0": 1000.0
+  },
+  {
+   "var:equity": 1000.0,
+   "var:inTrade": true,
+   "var:__obs_plot0": 1000.0
+  },
+  {
+   "var:equity": 1000.0,
+   "var:inTrade": true,
+   "var:__obs_plot0": 1000.0
+  },
+  {
+   "var:equity": 1000.0,
+   "var:inTrade": true,
+   "var:__obs_plot0": 1000.0
+  }
+ ],
+ "finalVarState": {
+  "equity": 1000.0,
+  "inTrade": true,
+  "__obs_plot0": 1000.0
+ }
+}

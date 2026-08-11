@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Rise Fall Combo")
+isRising = ta.rising(close, 3)
+isFalling = ta.falling(close, 3)
+rsiVal = ta.rsi(close, 3)
+strongBull = isRising and rsiVal > 60
+strongBear = isFalling and rsiVal < 40
+plot(strongBull ? 2 : strongBear ? -2 : 0, "Strength")

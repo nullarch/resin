@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("RSI Zones")
+rsi = nz(ta.rsi(close, 3), 50.0)
+zone = rsi > 80 ? "extreme_ob" : rsi > 60 ? "ob" : rsi > 40 ? "neutral" : rsi > 20 ? "os" : "extreme_os"
+isExtreme = str.contains(zone, "extreme")
+plot(rsi, "RSI")
+plot(isExtreme ? 1 : 0, "Ext")

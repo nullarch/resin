@@ -1,0 +1,27 @@
+//@version=5
+indicator("Comprehensive 116", overlay=true)
+len = input.int(3, "Length")
+mult = input.float(1.5, "Mult")
+smaVal = ta.sma(close, len)
+emaVal = ta.ema(close, len)
+atrVal = ta.atr(len)
+upper = nz(smaVal) + nz(atrVal) * mult
+lower = nz(smaVal) - nz(atrVal) * mult
+isAbove = close > upper
+isBelow = close < lower
+clr = isAbove ? color.green : isBelow ? color.red : color.gray
+var float __obs_plot0 = na
+__obs_plot0 := smaVal
+plot(smaVal, "SMA", color=clr)
+var float __obs_plot1 = na
+__obs_plot1 := upper
+plot(upper, "Upper", color=color.new(color.green, 70))
+var float __obs_plot2 = na
+__obs_plot2 := lower
+plot(lower, "Lower", color=color.new(color.red, 70))
+if barstate.islast
+    log.info("Last bar close: {0}", close)
+var int crossCount = 0
+if ta.crossover(close, smaVal)
+    crossCount := crossCount + 1
+alertcondition(ta.crossover(close, smaVal), "Cross Up")

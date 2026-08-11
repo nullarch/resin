@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:levyCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:levyCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:levyCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:levyCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:levyCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:levyCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:levyCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:levyCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:levyCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:levyCount": 0,
+   "var:__obs_plot0": 0
+  }
+ ],
+ "finalVarState": {
+  "levyCount": 0,
+  "__obs_plot0": 0
+ }
+}

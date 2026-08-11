@@ -1,0 +1,5 @@
+//@version=5
+indicator("ChainTern")
+var int result = 0
+x = close
+result := x > 110 ? 3 : x > 105 ? 2 : 1

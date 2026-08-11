@@ -1,0 +1,23 @@
+//@version=5
+indicator("CopulaDensity")
+var float jointHigh = 0.0
+var float margCHigh = 0.0
+var float margVHigh = 0.0
+var int bars = 0
+bars := bars + 1
+smaC = nz(ta.sma(close, 3), close)
+smaV = nz(ta.sma(volume, 3), volume)
+cHigh = close > smaC ? 1.0 : 0.0
+vHigh = volume > smaV ? 1.0 : 0.0
+jointHigh := jointHigh + cHigh * vHigh
+margCHigh := margCHigh + cHigh
+margVHigh := margVHigh + vHigh
+n = float(bars)
+pJoint = n > 0 ? jointHigh / n : 0.0
+pC = n > 0 ? margCHigh / n : 0.5
+pV = n > 0 ? margVHigh / n : 0.5
+prodMarg = pC * pV
+ratio = prodMarg > 0.001 ? pJoint / prodMarg : 1.0
+var float __obs_plot0 = na
+__obs_plot0 := ratio
+plot(ratio, "Ratio")

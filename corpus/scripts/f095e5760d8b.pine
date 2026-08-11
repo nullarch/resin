@@ -1,0 +1,13 @@
+//@version=5
+indicator("KalmanProxy")
+var float stateEst = 0.0
+var float stateVar = 10.0
+processVar = 0.5
+measVar = math.max((high - low) * (high - low), 0.01)
+predVar = stateVar + processVar
+kalmanGain = predVar / (predVar + measVar)
+innovation = close - stateEst
+stateEst := stateEst + kalmanGain * innovation
+stateVar := (1.0 - kalmanGain) * predVar
+plot(stateEst, "State")
+plot(kalmanGain, "KGain")

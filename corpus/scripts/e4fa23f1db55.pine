@@ -1,0 +1,20 @@
+//@version=5
+indicator("Switch Stmt/Expr")
+// Switch as statement
+var string label_ = ""
+switch
+    close > 110 =>
+        label_ := "high"
+    close > 105 =>
+        label_ := "mid"
+    =>
+        label_ := "low"
+
+// Switch as expression
+var int level = 0
+level := switch
+    close > 110 => 3
+    close > 105 => 2
+    => 1
+
+plot(close)

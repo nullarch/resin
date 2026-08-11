@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Dedup")
+var float[] unique = array.new_float(0)
+rounded = math.round(close)
+if not array.includes(unique, rounded)
+    array.push(unique, rounded)
+if array.size(unique) > 5
+    array.shift(unique)
+plot(array.size(unique), "Uniq")

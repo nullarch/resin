@@ -1,0 +1,7 @@
+//@version=5
+strategy("ATR Stop")
+atrVal = ta.atr(3)
+longEntry = ta.crossover(close, ta.sma(close, 5))
+if longEntry
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Exit", "Long", stop=close - nz(atrVal) * 2)

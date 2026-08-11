@@ -1,0 +1,28 @@
+//@version=5
+indicator("Comprehensive C84")
+var float result = 0.0
+
+/* Block comment */
+
+// Scientific notation
+float sci = 1.0e2
+
+// Unary
+float neg = -sci
+
+// Ternary chain
+float grade = close > 110 ? 3.0 : close > 105 ? 2.0 : 1.0
+
+// History
+float prev = nz(close[1], close)
+
+// Complex arithmetic
+float calc = (close - open) * grade + sci
+
+// Boolean
+bool valid = not na(close) and grade > 1.0
+
+// String
+string label = str.tostring(close)
+
+result := valid ? calc + prev : 0.0

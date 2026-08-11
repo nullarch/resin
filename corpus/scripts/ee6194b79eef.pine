@@ -1,0 +1,16 @@
+//@version=5
+indicator("Softmax")
+var float qBuy = 0.0
+var float qSell = 0.0
+tau = 1.0
+expBuy = math.exp(math.min(qBuy / tau, 10.0))
+expSell = math.exp(math.min(qSell / tau, 10.0))
+sumExp = expBuy + expSell
+probBuy = sumExp > 0 ? expBuy / sumExp : 0.5
+reward = close > open ? 1.0 : -1.0
+alphaLR = 0.1
+if probBuy > 0.5
+    qBuy := qBuy + alphaLR * (reward - qBuy)
+else
+    qSell := qSell + alphaLR * (reward - qSell)
+plot(probBuy, "PBuy")

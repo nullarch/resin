@@ -1,0 +1,11 @@
+//@version=5
+indicator("ADX DMI Full")
+adxLen = 14
+[diPlus, diMinus, adx] = ta.dmi(adxLen, adxLen)
+strongTrend = adx > 25
+bullish = diPlus > diMinus and strongTrend
+bearish = diMinus > diPlus and strongTrend
+plot(adx)
+plot(diPlus)
+plot(diMinus)
+plot(bullish ? 1.0 : bearish ? -1.0 : 0.0)

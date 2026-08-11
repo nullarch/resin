@@ -1,0 +1,9 @@
+//@version=5
+indicator("Poisson Ratio")
+transverseStrain = (high - low) / 100.0
+axialStrain = math.abs(close - open) / 100.0
+poisson = axialStrain > 0.001 ? -transverseStrain / axialStrain : 0.3
+var float avgPoisson = 0.0
+var int cnt = 0
+cnt := cnt + 1
+avgPoisson := avgPoisson + (poisson - avgPoisson) / cnt

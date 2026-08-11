@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Doji")
+bodySize = math.abs(close - open)
+totalRange = high - low
+isDoji = totalRange > 0 ? bodySize / totalRange < 0.1 : false
+var float __obs_plot0 = na
+__obs_plot0 := isDoji ? 1 : 0
+plot(isDoji ? 1 : 0, "Doji")

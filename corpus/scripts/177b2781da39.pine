@@ -1,0 +1,4 @@
+//@version=5
+indicator("Test")
+var float x = 0
+x := x + 1

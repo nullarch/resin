@@ -1,0 +1,7 @@
+//@version=5
+indicator("Max Bars Back")
+max_bars_back(close, 500)
+sma5 = ta.sma(close, 5)
+var float __obs_plot0 = na
+__obs_plot0 := sma5
+plot(sma5)

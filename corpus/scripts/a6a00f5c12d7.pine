@@ -1,0 +1,19 @@
+//@version=5
+indicator("AllFeat 002")
+scoreLabel(s) =>
+    s > 60.0 ? "bull" : s < 40.0 ? "bear" : "neutral"
+var totals = map.new<string, float>()
+map.put(totals, "bull", 0.0)
+map.put(totals, "bear", 0.0)
+map.put(totals, "neutral", 0.0)
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+lbl = scoreLabel(rsiVal)
+prev = nz(map.get(totals, lbl), 0.0)
+map.put(totals, lbl, prev + 1.0)
+var float grandTotal = 0.0
+cnt = 0
+sumVal = 0.0
+for [key, val] in totals
+    sumVal := sumVal + val
+    cnt := cnt + 1
+grandTotal := sumVal

@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Trade Quality")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+atr = ta.atr(3)
+bullish = close > sma3
+momentum = rsi > 50
+quality = switch
+    bullish and momentum and atr > 0 => "A"
+    bullish and momentum => "B"
+    bullish or momentum => "C"
+    => "D"
+isHighQuality = quality == "A" or quality == "B"
+plot(isHighQuality ? 1 : 0, "HQ")

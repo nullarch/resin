@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Div Wt")
+rsi = nz(ta.rsi(close, 3), 50.0)
+priceChg = nz(close - close[1], 0.0)
+rsiLevel = rsi > 70 or rsi < 30
+weight = rsiLevel ? 2.0 : 1.0
+divSig = priceChg > 0 and rsi < 50 ? -weight : priceChg < 0 and rsi > 50 ? weight : 0.0
+plot(divSig, "DS")

@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Consecutive")
+var int streak = 0
+var string lastDir = ""
+dir = close > open ? "up" : "down"
+if dir == lastDir
+    streak := streak + 1
+else
+    streak := 1
+lastDir := dir
+plot(streak, "Streak")

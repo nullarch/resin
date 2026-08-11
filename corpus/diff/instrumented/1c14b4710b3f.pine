@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Wt Signal")
+var signals = map.new<string, float>()
+map.put(signals, "trend", close > ta.sma(close, 3) ? 1.0 : -1.0)
+map.put(signals, "mom", ta.rsi(close, 3) > 50 ? 1.0 : -1.0)
+total = 0.0
+count = 0
+for [key, val] in signals
+    total := total + val
+    count := count + 1
+avg = count > 0 ? total / count : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := avg
+plot(avg, "AvgSig")

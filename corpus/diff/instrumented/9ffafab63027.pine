@@ -1,0 +1,10 @@
+//@version=5
+indicator("Multiline call")
+sma_val = ta.sma(close,
+    5)
+var float __obs_plot0 = na
+__obs_plot0 := sma_val
+plot(sma_val,
+    "SMA",
+    color=color.blue,
+    linewidth=2)

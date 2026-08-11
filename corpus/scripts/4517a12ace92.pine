@@ -1,0 +1,8 @@
+//@version=5
+indicator("Alert noop")
+sma5 = ta.sma(close, 5)
+alertcondition(close > nz(sma5), "Above SMA", "Price above SMA")
+alertcondition(ta.crossover(close, sma5), "Cross Up")
+alert("test message", alert.freq_once_per_bar)
+var int count = 0
+count := count + 1

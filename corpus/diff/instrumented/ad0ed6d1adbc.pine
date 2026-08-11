@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Osc Hist")
+var float[] rsiHist = array.new_float(0)
+rsi = nz(ta.rsi(close, 3), 50.0)
+array.push(rsiHist, rsi)
+if array.size(rsiHist) > 8
+    array.shift(rsiHist)
+avgRSI = array.avg(rsiHist)
+sdRSI = array.stdev(rsiHist)
+zscore = sdRSI > 0 ? (rsi - avgRSI) / sdRSI : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := zscore
+plot(zscore, "Z")

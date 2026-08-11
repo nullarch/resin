@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Stat Lbl")
+sma5 = ta.sma(close, 5)
+stdev5 = ta.stdev(close, 5)
+z = stdev5 > 0 ? (close - sma5) / stdev5 : 0.0
+zLabel = z > 1 ? "HIGH" : z < -1 ? "LOW" : "NORM"
+trend = close > sma5 ? "BULL" : "BEAR"
+label = zLabel + "_" + trend
+isNormBull = label == "NORM_BULL"
+var float __obs_plot0 = na
+__obs_plot0 := isNormBull ? 1 : 0
+plot(isNormBull ? 1 : 0, "NB")

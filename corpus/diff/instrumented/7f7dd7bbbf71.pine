@@ -1,0 +1,8 @@
+//@version=5
+indicator("Inputs")
+length = input.int(14, "Length")
+mult = input.float(2.0, "Multiplier")
+show = input.bool(true, "Show")
+var float __obs_plot0 = na
+__obs_plot0 := ta.sma(close, length) * mult
+plot(ta.sma(close, length) * mult)

@@ -1,0 +1,13 @@
+//@version=5
+indicator("SpearmanRho")
+var float sumD2 = 0.0
+var int nObs = 0
+nObs := nObs + 1
+rankC = nz(ta.rsi(close, 5), 50.0) / 100.0
+rankV = nz(ta.rsi(volume, 5), 50.0) / 100.0
+diff = rankC - rankV
+sumD2 := sumD2 + diff * diff
+n = float(nObs)
+rho = n > 1 ? 1.0 - (6.0 * sumD2) / (n * (n * n - 1.0)) : 0.0
+rhoClamp = math.max(-1.0, math.min(1.0, rho))
+plot(rhoClamp, "Rho")

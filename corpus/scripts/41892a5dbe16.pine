@@ -1,0 +1,11 @@
+//@version=5
+indicator("CVaR Loop")
+var float[] losses = array.new_float(0)
+float prevC = not na(close[1]) ? close[1] : close
+float ret = prevC > 0 ? math.log(close / prevC) : 0.0
+if ret < 0
+    if array.size(losses) >= 5
+        array.shift(losses)
+    array.push(losses, ret)
+float worstLoss = array.size(losses) > 0 ? array.get(losses, 0) : 0.0
+plot(worstLoss, "CVaR")

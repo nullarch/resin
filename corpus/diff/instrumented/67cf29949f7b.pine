@@ -1,0 +1,7 @@
+//@version=5
+indicator("ATR %")
+atrVal = ta.atr(high, low, close, 5)
+atrPct = atrVal / close * 100
+var float __obs_plot0 = na
+__obs_plot0 := atrPct
+plot(atrPct)

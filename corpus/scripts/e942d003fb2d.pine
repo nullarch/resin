@@ -1,0 +1,7 @@
+//@version=5
+indicator("Cross Detect")
+fast = ta.sma(close, 3)
+slow = ta.sma(close, 5)
+bull = ta.crossover(fast, slow)
+bear = ta.crossunder(fast, slow)
+plot(bull ? 1.0 : bear ? -1.0 : 0.0)

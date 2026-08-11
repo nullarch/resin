@@ -1,0 +1,7 @@
+//@version=5
+indicator("Photosynthesis Model")
+tempProxy = (high + low) / 2
+lightIntensity = volume / 100
+photoRate = tempProxy > 100 ? lightIntensity * 0.8 : lightIntensity * 0.5
+var float totalPhoto = 0.0
+totalPhoto := totalPhoto + photoRate

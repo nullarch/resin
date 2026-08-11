@@ -1,0 +1,5 @@
+//@version=5
+indicator("Bin Right")
+a = array.from(10.0, 20.0, 30.0, 40.0, 50.0)
+idx = array.binary_search_rightmost(a, 25.0)
+plot(idx)

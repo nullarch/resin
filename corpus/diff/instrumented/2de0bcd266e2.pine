@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Generic Array")
+array<float> prices = array.new<float>(0)
+array.push(prices, close)
+var float __obs_plot0 = na
+__obs_plot0 := array.size(prices)
+plot(array.size(prices))

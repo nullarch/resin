@@ -1,0 +1,12 @@
+//@version=5
+indicator("Nested UDT Chain")
+type Point
+    float x = 0.0
+    float y = 0.0
+type Line
+    Point start = Point.new()
+    Point end = Point.new()
+method length(Line this) =>
+    math.sqrt(math.pow(this.end.x - this.start.x, 2) + math.pow(this.end.y - this.start.y, 2))
+l = Line.new(Point.new(0.0, 0.0), Point.new(3.0, 4.0))
+plot(l.length())

@@ -1,0 +1,7 @@
+//@version=5
+indicator("Multiline Call")
+x = ta.sma(
+    close,
+    14
+    )
+plot(x)

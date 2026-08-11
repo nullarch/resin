@@ -1,0 +1,5 @@
+//@version=5
+indicator("MACD Full")
+var float result = 0.0
+[macdLine, signalLine, hist] = ta.macd(close, 3, 5, 3)
+result := macdLine

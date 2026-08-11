@@ -1,0 +1,9 @@
+//@version=5
+indicator("Price level search")
+var float level = 0.0
+startLevel = math.floor(close / 10) * 10
+level := startLevel
+count = 0
+while level < close + 50 and count < 20
+    level := level + 5
+    count := count + 1

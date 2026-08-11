@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:sig": "pine_fn.<locals>.TradeSignal(direction=1, strength=0.6112318840579999, price=Series(current=111, length=10))",
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:sig": "pine_fn.<locals>.TradeSignal(direction=1, strength=0.6112318840579999, price=Series(current=111, length=10))",
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:sig": "pine_fn.<locals>.TradeSignal(direction=1, strength=0.6112318840579999, price=Series(current=111, length=10))",
+   "var:__obs_plot0": -1,
+   "var:__obs_plot1": 0.33333333333400006
+  },
+  {
+   "var:sig": "pine_fn.<locals>.TradeSignal(direction=1, strength=0.6112318840579999, price=Series(current=111, length=10))",
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 0.4666666666660001
+  },
+  {
+   "var:sig": "pine_fn.<locals>.TradeSignal(direction=1, strength=0.6112318840579999, price=Series(current=111, length=10))",
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 0.666666666666
+  },
+  {
+   "var:sig": "pine_fn.<locals>.TradeSignal(direction=1, strength=0.6112318840579999, price=Series(current=111, length=10))",
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 0.3008130081300001
+  },
+  {
+   "var:sig": "pine_fn.<locals>.TradeSignal(direction=1, strength=0.6112318840579999, price=Series(current=111, length=10))",
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 0.5784313725499999
+  },
+  {
+   "var:sig": "pine_fn.<locals>.TradeSignal(direction=1, strength=0.6112318840579999, price=Series(current=111, length=10))",
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 0.73579109063
+  },
+  {
+   "var:sig": "pine_fn.<locals>.TradeSignal(direction=1, strength=0.6112318840579999, price=Series(current=111, length=10))",
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 0.35613561356199996
+  },
+  {
+   "var:sig": "pine_fn.<locals>.TradeSignal(direction=1, strength=0.6112318840579999, price=Series(current=111, length=10))",
+   "var:__obs_plot0": 1,
+   "var:__obs_plot1": 0.6112318840579999
+  }
+ ],
+ "finalVarState": {
+  "sig": "pine_fn.<locals>.TradeSignal(direction=1, strength=0.6112318840579999, price=Series(current=111, length=10))",
+  "__obs_plot0": 1,
+  "__obs_plot1": 0.6112318840579999
+ }
+}

@@ -1,0 +1,6 @@
+//@version=5
+indicator("Nested For Matrix")
+var float totalSum = 0.0
+for i = 1 to 3
+    for j = 1 to 3
+        totalSum := totalSum + i * j

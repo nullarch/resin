@@ -1,0 +1,4 @@
+//@version=5
+indicator("nz default")
+sma3 = ta.sma(close, 3)
+val = nz(sma3, -1.0)

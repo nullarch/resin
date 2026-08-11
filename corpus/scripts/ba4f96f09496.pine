@@ -1,0 +1,8 @@
+//@version=5
+indicator("nested if ternary")
+var float result = 0.0
+if close > open
+    x = close > 110 ? 3.0 : 2.0
+    result := x
+else
+    result := 1.0

@@ -1,0 +1,11 @@
+//@version=5
+indicator("UDT Fields")
+type Stats
+    float mean = 0.0
+    float stddev = 0.0
+    int count = 0
+s = Stats.new(close, high - low, 1)
+s.count := s.count + 1
+s.mean := (s.mean + close) / 2
+plot(s.mean)
+plot(s.count)

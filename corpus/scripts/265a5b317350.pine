@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("CountReset")
+var int counter = 0
+counter := counter + 1
+
+if close < open
+    counter := 0
+
+plot(counter, "C")

@@ -1,0 +1,3 @@
+//@version=5
+indicator("SMA")
+sma20 = ta.sma(close, 20)

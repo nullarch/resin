@@ -1,0 +1,40 @@
+//@version=5
+indicator("Comprehensive 64")
+
+// while expression
+int cnt = 0
+float while_val = while cnt < 4
+    cnt := cnt + 1
+    cnt * 5.0
+
+// var state persistence
+var float bar_count = 0.0
+bar_count := bar_count + 1.0
+
+// var lazy init
+var float first_close = close
+
+// Call ID isolation (dual SMA)
+sma_a = ta.sma(close, 3)
+sma_b = ta.sma(close, 3)
+
+// Series access
+float prev = nz(close[1], close)
+
+// UDF
+triple(x) =>
+    x * 3.0
+
+// Nested scope
+float nested_sum = 0.0
+for i = 1 to 3
+    if i % 2 == 1
+        nested_sum := nested_sum + i
+
+// var array
+var prices = array.new<float>(0)
+array.push(prices, close)
+
+var float result = 0.0
+result := while_val + bar_count + triple(2.0) + nested_sum + nz(sma_a, 0.0) + array.size(prices)
+plot(close)

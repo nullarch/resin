@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("OFMomentum")
+var float cumDelta = 0.0
+delta = close > open ? volume : close < open ? -volume : 0.0
+cumDelta := cumDelta + delta
+smoothDelta = ta.ema(cumDelta, 5)
+plot(nz(smoothDelta, 0.0), "OFM")

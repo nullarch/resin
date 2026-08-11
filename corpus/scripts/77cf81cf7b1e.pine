@@ -1,0 +1,4 @@
+//@version=5
+indicator("round test")
+var float result = 0.0
+result := math.round(3.14159, 2)

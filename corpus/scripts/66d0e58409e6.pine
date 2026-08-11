@@ -1,0 +1,10 @@
+
+//@version=5
+strategy("Breakout", overlay=true)
+hi5 = ta.highest(high, 5)
+lo5 = ta.lowest(low, 5)
+if close > hi5[1] and not na(hi5[1])
+    strategy.entry("Long", strategy.long)
+if close < lo5[1] and not na(lo5[1])
+    strategy.close("Long")
+plot(hi5, "Hi")

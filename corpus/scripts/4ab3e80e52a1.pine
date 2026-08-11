@@ -1,0 +1,6 @@
+//@version=5
+indicator("test")
+var int firstCount = 0
+if session.isfirstbar
+    firstCount := firstCount + 1
+plot(firstCount)

@@ -1,0 +1,7 @@
+//@version=5
+indicator("MultEq")
+var float product = 1.0
+product *= 2.0
+product *= 3.0
+product *= 4.0
+plot(product)

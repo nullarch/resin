@@ -1,0 +1,20 @@
+//@version=5
+indicator("Dashboard")
+ema20 = ta.ema(close, 5)
+sma50 = ta.sma(close, 8)
+trendUp = ema20 > sma50
+rsi = ta.rsi(close, 5)
+atrVal = ta.atr(5)
+volSMA = ta.sma(volume, 5)
+highVol = volume > volSMA * 1.5
+var int score = 0
+score := 0
+if trendUp
+    score := score + 1
+if rsi > 70
+    score := score - 1
+if rsi < 30
+    score := score + 1
+if highVol
+    score := score + 1
+plot(score)

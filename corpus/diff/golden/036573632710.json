@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:trailStop": "NaN",
+   "var:direction": 1,
+   "var:__obs_plot0": 103
+  },
+  {
+   "var:trailStop": "NaN",
+   "var:direction": 1,
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:trailStop": "NaN",
+   "var:direction": 1,
+   "var:__obs_plot0": 102
+  },
+  {
+   "var:trailStop": "NaN",
+   "var:direction": 1,
+   "var:__obs_plot0": 105
+  },
+  {
+   "var:trailStop": "NaN",
+   "var:direction": 1,
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:trailStop": 94.4,
+   "var:direction": 1,
+   "var:__obs_plot0": 94.4
+  },
+  {
+   "var:trailStop": 96.32,
+   "var:direction": 1,
+   "var:__obs_plot0": 96.32
+  },
+  {
+   "var:trailStop": 98.4,
+   "var:direction": 1,
+   "var:__obs_plot0": 98.4
+  },
+  {
+   "var:trailStop": 98.4,
+   "var:direction": 1,
+   "var:__obs_plot0": 98.4
+  },
+  {
+   "var:trailStop": 99.256,
+   "var:direction": 1,
+   "var:__obs_plot0": 99.256
+  }
+ ],
+ "finalVarState": {
+  "trailStop": 99.256,
+  "direction": 1,
+  "__obs_plot0": 99.256
+ }
+}

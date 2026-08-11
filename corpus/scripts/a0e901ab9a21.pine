@@ -1,0 +1,7 @@
+//@version=5
+indicator("D Controller")
+float setpoint = 106.0
+float err = setpoint - close
+float prevErr = not na(close[1]) ? setpoint - close[1] : 0.0
+float kd = 0.2
+float derivative = kd * (err - prevErr)

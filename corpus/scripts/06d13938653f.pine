@@ -1,0 +1,9 @@
+//@version=5
+indicator("Drawing noop")
+if barstate.islast
+    label.new(bar_index, close, "Last")
+    line.new(bar_index - 1, close[1], bar_index, close)
+    box.new(bar_index - 5, high, bar_index, low)
+var t = table.new(position.top_right, 2, 2)
+table.cell(t, 0, 0, "A")
+table.cell(t, 0, 1, "B")

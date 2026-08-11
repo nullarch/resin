@@ -1,0 +1,4 @@
+//@version=5
+indicator("Pivot High")
+ph = ta.pivothigh(high, 2, 2)
+plot(na(ph) ? close : ph)

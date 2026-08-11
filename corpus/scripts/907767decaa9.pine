@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Arr Diff")
+prices = array.from(close, close[1], close[2], close[3])
+var float[] diffs = array.new_float(0)
+array.clear(diffs)
+prevVal = float(na)
+for val in prices
+    fv = float(val)
+    if not na(prevVal)
+        array.push(diffs, fv - prevVal)
+    prevVal := fv
+sumDiff = array.sum(diffs)
+plot(sumDiff, "SumDiff")

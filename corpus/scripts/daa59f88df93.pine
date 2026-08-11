@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Exp Backoff")
+threshold = ta.sma(close, 3) * 1.02
+current = close
+step = 0.5
+iters = 0
+while current < threshold and iters < 15
+    current := current + step
+    step := step * 1.5
+    iters := iters + 1
+plot(current, "Result")
+plot(iters, "Steps")

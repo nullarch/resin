@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Percentile")
+var float[] closeHist = array.new_float(0)
+array.push(closeHist, close)
+if array.size(closeHist) > 10
+    array.shift(closeHist)
+sz = array.size(closeHist)
+below = 0
+for i = 0 to math.max(sz - 1, 0)
+    if i < sz and array.get(closeHist, i) < close
+        below := below + 1
+pctile = sz > 0 ? float(below) / sz * 100 : 50.0
+var float __obs_plot0 = na
+__obs_plot0 := pctile
+plot(pctile, "Pct")

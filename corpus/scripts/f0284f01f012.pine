@@ -1,0 +1,10 @@
+//@version=5
+indicator("RSI Divergence")
+rsi5 = ta.rsi(close, 5)
+priceHigh = ta.highest(close, 5)
+rsiHigh = not na(rsi5) ? nz(rsi5) : 0.0
+var float prevPriceHigh = 0.0
+var float prevRSIHigh = 0.0
+bearDiv = close >= prevPriceHigh and rsiHigh < prevRSIHigh and prevRSIHigh > 0
+prevPriceHigh := nz(priceHigh)
+prevRSIHigh := rsiHigh

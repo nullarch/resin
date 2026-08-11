@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("EMA Stack")
+e3 = ta.ema(close, 3)
+e5 = ta.ema(close, 5)
+e8 = ta.ema(close, 8)
+bullStack = e3 > e5 and e5 > e8
+bearStack = e3 < e5 and e5 < e8
+stackWidth = e3 - e8
+var float __obs_plot0 = na
+__obs_plot0 := stackWidth
+plot(stackWidth, "Width")
+var float __obs_plot1 = na
+__obs_plot1 := bullStack ? 1 : bearStack ? -1 : 0
+plot(bullStack ? 1 : bearStack ? -1 : 0, "Stack")

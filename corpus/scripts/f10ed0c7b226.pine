@@ -1,0 +1,9 @@
+//@version=5
+indicator("NaN Prop")
+x = close[100]  // OOB → NaN
+var bool all_na = false
+a = x + 1
+b = x * 2
+c = x - 3
+all_na := na(a) and na(b) and na(c)
+plot(close)

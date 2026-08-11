@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Map Rebuild")
+var m = map.new<string, float>()
+map.clear(m)
+map.put(m, "h", high)
+map.put(m, "l", low)
+map.put(m, "c", close)
+spread = map.get(m, "h", 0.0) - map.get(m, "l", 0.0)
+var float __obs_plot0 = na
+__obs_plot0 := spread
+plot(spread, "Spread")

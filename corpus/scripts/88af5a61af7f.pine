@@ -1,0 +1,8 @@
+//@version=5
+indicator("Anchoring")
+var float anchor = na
+if na(anchor)
+    anchor := close
+deviation = close - nz(anchor)
+pctDev = nz(anchor) > 0 ? deviation / nz(anchor) * 100.0 : 0.0
+plot(pctDev)

@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Log Ret")
+prevClose = close[1]
+logRet = not na(prevClose) and prevClose > 0 and close > 0 ? math.log(close / prevClose) : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := logRet
+plot(logRet, "LR")

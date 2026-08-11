@@ -1,0 +1,8 @@
+//@version=5
+indicator("Covariance")
+float avgC = ta.sma(close, 5)
+float avgV = ta.sma(volume, 5)
+float devC = close - nz(avgC, close)
+float devV = volume - nz(avgV, volume)
+float covProxy = ta.sma(devC * devV, 3)
+plot(nz(covProxy, 0.0), "Cov")

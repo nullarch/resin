@@ -1,0 +1,9 @@
+//@version=5
+indicator("Str ops")
+s = "hello world"
+sub = str.substring(s, 0, 5)
+parts = str.split(s, " ")
+partsSz = array.size(parts)
+hasH = str.startswith(s, "h")
+endsD = str.endswith(s, "d")
+pos = str.pos(s, "world")

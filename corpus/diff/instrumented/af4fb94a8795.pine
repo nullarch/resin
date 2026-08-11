@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Trade Journal")
+type Journal
+    int totalTrades = 0
+    int wins = 0
+    float totalPnl = 0.0
+
+var Journal j = Journal.new()
+sma3 = ta.sma(close, 3)
+crossed = ta.crossover(close, sma3)
+if crossed
+    j.totalTrades := j.totalTrades + 1
+    pnl = close - open
+    j.totalPnl := j.totalPnl + pnl
+    if pnl > 0
+        j.wins := j.wins + 1
+winRate = j.totalTrades > 0 ? float(j.wins) / float(j.totalTrades) * 100 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := winRate
+plot(winRate, "WinRate")

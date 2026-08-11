@@ -1,0 +1,6 @@
+//@version=5
+indicator("float[] shorthand")
+var float result = 0.0
+float[] arr = array.new<float>(0)
+array.push(arr, close)
+result := array.get(arr, 0)

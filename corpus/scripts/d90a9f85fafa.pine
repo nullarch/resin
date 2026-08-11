@@ -1,0 +1,6 @@
+//@version=5
+indicator("Func Callable Body")
+add(float a, float b) =>
+    a + b
+var float result = 0.0
+result := add(10.0, 25.0)

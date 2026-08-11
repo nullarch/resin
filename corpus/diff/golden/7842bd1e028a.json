@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:m": {
+    "price": 111,
+    "volume": 1600
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:m": {
+    "price": 111,
+    "volume": 1600
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:m": {
+    "price": 111,
+    "volume": 1600
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:m": {
+    "price": 111,
+    "volume": 1600
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:m": {
+    "price": 111,
+    "volume": 1600
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:m": {
+    "price": 111,
+    "volume": 1600
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:m": {
+    "price": 111,
+    "volume": 1600
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:m": {
+    "price": 111,
+    "volume": 1600
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:m": {
+    "price": 111,
+    "volume": 1600
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:m": {
+    "price": 111,
+    "volume": 1600
+   },
+   "var:__obs_plot0": "NaN"
+  }
+ ],
+ "finalVarState": {
+  "m": {
+   "price": 111,
+   "volume": 1600
+  },
+  "__obs_plot0": "NaN"
+ }
+}

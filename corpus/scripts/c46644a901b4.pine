@@ -1,0 +1,11 @@
+//@version=5
+strategy("Quantum Momentum")
+float rsiVal = nz(ta.rsi(close, 5), 50.0)
+float sma3 = nz(ta.sma(close, 3), close)
+float alpha = rsiVal / 100.0
+float beta = math.sqrt(math.max(1.0 - alpha * alpha, 0.0))
+float momentum = alpha * (close - sma3) + beta * (high - low)
+if momentum > 2.0
+    strategy.entry("QMomentum", strategy.long)
+if momentum < -1.0
+    strategy.close("QMomentum")

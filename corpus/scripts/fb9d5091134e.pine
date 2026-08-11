@@ -1,0 +1,11 @@
+//@version=5
+indicator("Multi UDF")
+var float result = 0.0
+
+add_one(x) =>
+    x + 1
+
+times_two(x) =>
+    x * 2
+
+result := add_one(5.0) + times_two(3.0)

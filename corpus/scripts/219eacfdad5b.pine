@@ -1,0 +1,6 @@
+//@version=5
+indicator("Num Float")
+var float x = 3.14159
+var float result = 0.0
+result := x
+plot(result)

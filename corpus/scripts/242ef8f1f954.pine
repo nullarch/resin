@@ -1,0 +1,10 @@
+//@version=5
+indicator("Specific Heat")
+energy = volume / 100.0
+mass = (high + low) / 2.0
+deltaT = math.abs(close - open)
+cp = (mass * deltaT) > 0.01 ? energy / (mass * deltaT) : 0.0
+var float avgCp = 0.0
+var int cnt = 0
+cnt := cnt + 1
+avgCp := avgCp + (cp - avgCp) / cnt

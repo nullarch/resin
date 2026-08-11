@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Wt Sum")
+prices = array.from(close, high, low, open)
+weights = array.from(0.4, 0.2, 0.2, 0.2)
+wSum = 0.0
+for [idx, p] in prices
+    w = array.get(weights, idx)
+    wSum := wSum + float(p) * w
+var float __obs_plot0 = na
+__obs_plot0 := wSum
+plot(wSum, "WtSum")

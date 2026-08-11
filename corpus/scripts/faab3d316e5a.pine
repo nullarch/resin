@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("MinMaxScale")
+var float runMin = 99999.0
+var float runMax = 0.0
+if close < runMin
+    runMin := close
+if close > runMax
+    runMax := close
+range_ = runMax - runMin
+scaled = range_ > 0 ? (close - runMin) / range_ : 0.5
+plot(scaled, "Scaled")

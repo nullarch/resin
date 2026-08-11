@@ -1,0 +1,9 @@
+//@version=5
+indicator("MapFreq08")
+freq = map.new<string, float>()
+spread = high - low
+bucket = spread > 6.0 ? "wide" : spread > 4.0 ? "med" : "narrow"
+prev = nz(map.get(freq, bucket), 0.0)
+map.put(freq, bucket, prev + 1.0)
+totalKeys = float(map.size(freq))
+plot(totalKeys, "tk")

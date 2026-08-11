@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("All Str")
+rsi = nz(ta.rsi(close, 3), 50.0)
+dir = close > open ? "BULL" : "BEAR"
+level = rsi > 60 ? "HIGH" : rsi < 40 ? "LOW" : "MID"
+combined = dir + "_" + level
+upper = str.upper(combined)
+lower = str.lower(combined)
+length = str.length(combined)
+hasBull = str.contains(upper, "BULL")
+sub = str.substring(combined, 0, 4)
+replaced = str.replace_all(combined, "_", "-")
+var float __obs_plot0 = na
+__obs_plot0 := hasBull ? 1 : 0
+plot(hasBull ? 1 : 0, "Bull")

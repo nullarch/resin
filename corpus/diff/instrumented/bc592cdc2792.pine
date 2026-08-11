@@ -1,0 +1,10 @@
+//@version=5
+indicator("Array Stats")
+var arr = array.from(10.0, 20.0, 30.0, 40.0, 50.0)
+var float avg_ = array.avg(arr)
+var float mn = array.min(arr)
+var float mx = array.max(arr)
+var float sm = array.sum(arr)
+var float __obs_plot0 = na
+__obs_plot0 := avg_
+plot(avg_)

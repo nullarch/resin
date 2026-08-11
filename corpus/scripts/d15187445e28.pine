@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Empty Arr")
+var float[] arr = array.new_float(0)
+sz = array.size(arr)
+safeAvg = sz > 0 ? array.avg(arr) : 0.0
+array.push(arr, close)
+afterPush = array.size(arr)
+plot(safeAvg, "Avg")
+plot(afterPush, "Size")

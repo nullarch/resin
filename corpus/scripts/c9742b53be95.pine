@@ -1,0 +1,5 @@
+//@version=5
+indicator("Var Conditional")
+var float highest_close = 0.0
+if close > highest_close
+    highest_close := close

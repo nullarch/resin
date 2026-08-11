@@ -1,0 +1,30 @@
+
+//@version=5
+indicator("Adapt Full")
+ema3 = ta.ema(close, 3)
+sma5 = ta.sma(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = ta.atr(3)
+[m, s, h] = ta.macd(close, 3, 5, 3)
+
+avgATR = ta.sma(atr, 5)
+volRatio = avgATR > 0 ? atr / avgATR : 1.0
+
+var float adaptMA = 0.0
+alpha = volRatio > 1.5 ? 0.5 : 0.3
+adaptMA := alpha * close + (1 - alpha) * adaptMA
+
+trendScore = (close > adaptMA ? 1.0 : 0.0) + (ema3 > sma5 ? 1.0 : 0.0)
+momScore = (rsi > 50 ? 1.0 : 0.0) + (h > 0 ? 1.0 : 0.0)
+composite = trendScore * 0.5 + momScore * 0.5
+norm = composite / 4.0
+
+var int bars = 0
+bars := bars + 1
+
+var float __obs_plot0 = na
+__obs_plot0 := norm
+plot(norm, "Score")
+var float __obs_plot1 = na
+__obs_plot1 := volRatio
+plot(volRatio, "VR")

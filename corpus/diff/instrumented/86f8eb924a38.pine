@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Corr Label")
+priceUp = close > close[1]
+volUp = volume > volume[1]
+rsiUp = nz(ta.rsi(close, 3), 50.0) > 50
+p = priceUp ? "P+" : "P-"
+v = volUp ? "V+" : "V-"
+r = rsiUp ? "R+" : "R-"
+label = p + v + r
+allAligned = label == "P+V+R+" or label == "P-V-R-"
+var float __obs_plot0 = na
+__obs_plot0 := allAligned ? 1 : 0
+plot(allAligned ? 1 : 0, "Aligned")

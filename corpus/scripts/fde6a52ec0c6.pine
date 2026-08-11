@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Sig Hist")
+var sh = map.new<string, float>()
+rsi = nz(ta.rsi(close, 3), 50.0)
+sig = rsi > 55 ? 1.0 : rsi < 45 ? -1.0 : 0.0
+prevSig = map.get(sh, "current", 0.0)
+map.put(sh, "prev2", map.get(sh, "prev1", 0.0))
+map.put(sh, "prev1", prevSig)
+map.put(sh, "current", sig)
+consistent = sig == map.get(sh, "prev1", 0.0) and sig == map.get(sh, "prev2", 0.0) and sig != 0
+plot(consistent ? 1 : 0, "Cons")

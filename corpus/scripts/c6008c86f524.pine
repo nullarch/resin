@@ -1,0 +1,28 @@
+//@version=5
+indicator("NetDash")
+var float avgDensity = 0.0
+var int cnt = 0
+cnt := cnt + 1
+nodes = array.new_float(0)
+array.push(nodes, close)
+array.push(nodes, open)
+array.push(nodes, high)
+array.push(nodes, low)
+thresh = 6.0
+edges = 0.0
+deg0 = 0.0
+for i = 0 to 3
+    for j = i + 1 to 3
+        if math.abs(array.get(nodes, i) - array.get(nodes, j)) < thresh
+            edges := edges + 1.0
+            if i == 0
+                deg0 := deg0 + 1.0
+density = edges / 6.0
+avgDensity := avgDensity + (density - avgDensity) / float(cnt)
+centrality0 = deg0 / 3.0
+capAB = math.abs(close - open)
+capBC = math.abs(open - high)
+flow = math.min(capAB, capBC)
+plot(avgDensity, "AvgDens")
+plot(centrality0, "Cent0")
+plot(flow, "Flow")

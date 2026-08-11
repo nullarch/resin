@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Score Sys")
+type ScoreCard
+    float trendScore = 0.0
+    float momScore = 0.0
+    float volScore = 0.0
+    float total = 0.0
+
+var ScoreCard sc = ScoreCard.new()
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+sc.trendScore := close > sma3 ? 1.0 : -1.0
+sc.momScore := (rsi - 50) / 50
+sc.volScore := avgATR > 0 ? -(atr / avgATR - 1.0) : 0.0
+sc.total := sc.trendScore * 0.4 + sc.momScore * 0.4 + sc.volScore * 0.2
+var float __obs_plot0 = na
+__obs_plot0 := sc.total
+plot(sc.total, "Total")

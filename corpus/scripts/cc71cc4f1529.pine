@@ -1,0 +1,13 @@
+//@version=5
+indicator("BSD1Approx")
+spot = close
+strike = 105.0
+riskFree = 0.05
+vol = nz(ta.stdev(close, 5), 1.0)
+normVol = close > 0 ? vol / close : 0.01
+timeToExp = 0.25
+logRatio = spot > 0 and strike > 0 ? math.log(spot / strike) : 0.0
+sqrtT = math.sqrt(math.max(timeToExp, 0.001))
+denom = normVol * sqrtT
+d1 = denom > 0.001 ? (logRatio + (riskFree + 0.5 * normVol * normVol) * timeToExp) / denom : 0.0
+plot(d1, "D1")

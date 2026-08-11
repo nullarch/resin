@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Risk Scan")
+riskBars = 0
+for i = 0 to 4
+    if not na(high[i]) and not na(low[i])
+        barRange = high[i] - low[i]
+        avgRange = ta.sma(high - low, 5)
+        if barRange > avgRange * 1.5
+            riskBars := riskBars + 1
+plot(riskBars, "RB")

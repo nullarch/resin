@@ -1,0 +1,6 @@
+//@version=5
+indicator("tuple")
+var float result = 0.0
+[macdLine, signalLine, histogram] = ta.macd(close, 3, 6, 3)
+if not na(macdLine) and not na(signalLine)
+    result := macdLine - signalLine

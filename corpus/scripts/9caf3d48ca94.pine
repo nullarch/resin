@@ -1,0 +1,10 @@
+//@version=5
+indicator("Multi Plot")
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+rsi_ = ta.rsi(close, 5)
+plot(sma3, "SMA", color=color.blue)
+plot(ema5, "EMA", color=color.red)
+hline(70, "Overbought")
+hline(30, "Oversold")
+bgcolor(rsi_ > 70 ? color.new(color.red, 90) : na)

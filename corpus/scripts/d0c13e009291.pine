@@ -1,0 +1,7 @@
+//@version=5
+indicator("For Expr")
+var float result = 0.0
+float total = 0.0
+for i = 1 to 5
+    total += i
+result := total

@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Vol Sig")
+volumeSignal(float vol, float avgVol, float price, float prevPrice) =>
+    volRatio = avgVol > 0 ? vol / avgVol : 1.0
+    priceDir = price > prevPrice ? 1.0 : -1.0
+    volRatio * priceDir
+
+avgVol = ta.sma(volume, 5)
+sig = volumeSignal(volume, avgVol, close, close[1])
+plot(sig, "VS")

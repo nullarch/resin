@@ -1,0 +1,11 @@
+//@version=5
+indicator("UDF Tuple")
+f_range(src, len) =>
+    h = ta.highest(src, len)
+    l = ta.lowest(src, len)
+    [h, l]
+
+[hi, lo] = f_range(close, 5)
+var float result = 0.0
+result := hi - lo
+plot(result)

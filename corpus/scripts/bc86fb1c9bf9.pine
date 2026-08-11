@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Reconstruct")
+trend = nz(ta.sma(close, 3), close)
+residual = close - trend
+reconstructed = trend + residual
+diff = math.abs(reconstructed - close)
+isMatch = diff < 0.0001 ? 1.0 : 0.0
+plot(isMatch, "Match")

@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:a_na": true,
+   "var:b_na": true,
+   "var:c_na": true,
+   "var:__obs_plot0": 103
+  },
+  {
+   "var:a_na": true,
+   "var:b_na": true,
+   "var:c_na": true,
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:a_na": true,
+   "var:b_na": true,
+   "var:c_na": true,
+   "var:__obs_plot0": 102
+  },
+  {
+   "var:a_na": true,
+   "var:b_na": true,
+   "var:c_na": true,
+   "var:__obs_plot0": 105
+  },
+  {
+   "var:a_na": true,
+   "var:b_na": true,
+   "var:c_na": true,
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:a_na": true,
+   "var:b_na": true,
+   "var:c_na": true,
+   "var:__obs_plot0": 106
+  },
+  {
+   "var:a_na": true,
+   "var:b_na": true,
+   "var:c_na": true,
+   "var:__obs_plot0": 108
+  },
+  {
+   "var:a_na": true,
+   "var:b_na": true,
+   "var:c_na": true,
+   "var:__obs_plot0": 110
+  },
+  {
+   "var:a_na": true,
+   "var:b_na": true,
+   "var:c_na": true,
+   "var:__obs_plot0": 109
+  },
+  {
+   "var:a_na": true,
+   "var:b_na": true,
+   "var:c_na": true,
+   "var:__obs_plot0": 111
+  }
+ ],
+ "finalVarState": {
+  "a_na": true,
+  "b_na": true,
+  "c_na": true,
+  "__obs_plot0": 111
+ }
+}

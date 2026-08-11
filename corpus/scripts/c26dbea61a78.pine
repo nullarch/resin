@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("DDDuration")
+var float equity = 100.0
+var float peak = 100.0
+var int ddDuration = 0
+pnl = close > open ? 1.5 : -1.0
+equity := equity + pnl
+peak := equity > peak ? equity : peak
+inDD = equity < peak
+ddDuration := inDD ? ddDuration + 1 : 0
+plot(ddDuration, "DDD")

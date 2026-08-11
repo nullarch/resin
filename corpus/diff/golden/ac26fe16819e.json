@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:pos": "pine_fn.<locals>.Position(entryPrice=Series(current=111, length=10), entryBar=4, isLong=True, unrealPnl=0)",
+   "var:barNum": 1,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:pos": "pine_fn.<locals>.Position(entryPrice=Series(current=111, length=10), entryBar=4, isLong=True, unrealPnl=0)",
+   "var:barNum": 2,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:pos": "pine_fn.<locals>.Position(entryPrice=Series(current=111, length=10), entryBar=4, isLong=True, unrealPnl=0)",
+   "var:barNum": 3,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:pos": "pine_fn.<locals>.Position(entryPrice=Series(current=111, length=10), entryBar=4, isLong=True, unrealPnl=0)",
+   "var:barNum": 4,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:pos": "pine_fn.<locals>.Position(entryPrice=Series(current=111, length=10), entryBar=4, isLong=True, unrealPnl=0)",
+   "var:barNum": 5,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:pos": "pine_fn.<locals>.Position(entryPrice=Series(current=111, length=10), entryBar=4, isLong=True, unrealPnl=0)",
+   "var:barNum": 6,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:pos": "pine_fn.<locals>.Position(entryPrice=Series(current=111, length=10), entryBar=4, isLong=True, unrealPnl=0)",
+   "var:barNum": 7,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:pos": "pine_fn.<locals>.Position(entryPrice=Series(current=111, length=10), entryBar=4, isLong=True, unrealPnl=0)",
+   "var:barNum": 8,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:pos": "pine_fn.<locals>.Position(entryPrice=Series(current=111, length=10), entryBar=4, isLong=True, unrealPnl=0)",
+   "var:barNum": 9,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:pos": "pine_fn.<locals>.Position(entryPrice=Series(current=111, length=10), entryBar=4, isLong=True, unrealPnl=0)",
+   "var:barNum": 10,
+   "var:__obs_plot0": 0
+  }
+ ],
+ "finalVarState": {
+  "pos": "pine_fn.<locals>.Position(entryPrice=Series(current=111, length=10), entryBar=4, isLong=True, unrealPnl=0)",
+  "barNum": 10,
+  "__obs_plot0": 0
+ }
+}

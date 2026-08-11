@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Reassign")
+val = close
+val := val - open
+val := math.abs(val)
+val := val / (high - low > 0 ? high - low : 1.0)
+val := math.min(val, 1.0)
+var float __obs_plot0 = na
+__obs_plot0 := val
+plot(val, "Val")

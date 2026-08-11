@@ -1,0 +1,7 @@
+//@version=5
+indicator("For-in index")
+arr = array.from(10.0, 20.0, 30.0, 40.0, 50.0)
+var float weightedSum = 0.0
+weightedSum := 0.0
+for [idx, val] in arr
+    weightedSum := weightedSum + val * float(idx + 1)

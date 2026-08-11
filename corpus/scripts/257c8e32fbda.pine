@@ -1,0 +1,46 @@
+
+//@version=5
+indicator("Signal Engine")
+// Layer 1: Trend
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+ema8 = ta.ema(close, 8)
+trendBull = sma3 > sma5 and sma5 > ema8
+
+// Layer 2: Momentum
+rsiVal = ta.rsi(close, 3)
+[macdLine, sigLine, hist] = ta.macd(close, 3, 5, 3)
+momBull = rsiVal > 50 and hist > 0
+
+// Layer 3: Volatility filter
+atrVal = ta.atr(3)
+[bbMid, bbUp, bbLo] = ta.bb(close, 5, 2.0)
+bbWidth = bbUp - bbLo
+volOk = atrVal > 0
+
+// Signal scoring
+score = (trendBull ? 2 : -2) + (momBull ? 2 : -2) + (volOk ? 1 : 0)
+
+// State management
+var int maxScore = -999
+var int minScore = 999
+var int totalBars = 0
+totalBars := totalBars + 1
+if score > maxScore
+    maxScore := score
+if score < minScore
+    minScore := score
+
+// Map registry
+var m = map.new<string, float>()
+map.put(m, "score", float(score))
+map.put(m, "max", float(maxScore))
+map.put(m, "min", float(minScore))
+
+// Array history
+var float[] hist_ = array.new_float(0)
+array.push(hist_, float(score))
+
+plot(score, "Score")
+plot(maxScore, "Max")
+plot(minScore, "Min")

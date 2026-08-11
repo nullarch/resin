@@ -1,0 +1,13 @@
+//@version=5
+indicator("Math Edge")
+var float log_1 = 0.0
+log_1 := math.log(1.0)  // should be 0.0
+var float exp_0 = 0.0
+exp_0 := math.exp(0.0)  // should be 1.0
+var float sqrt_0 = 0.0
+sqrt_0 := math.sqrt(0.0)  // should be 0.0
+var float sign_neg = 0.0
+sign_neg := math.sign(-5.0)  // should be -1
+var float abs_neg = 0.0
+abs_neg := math.abs(-42.0)  // should be 42.0
+plot(close)

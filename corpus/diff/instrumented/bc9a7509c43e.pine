@@ -1,0 +1,24 @@
+
+//@version=5
+indicator("Strat State")
+type StratState
+    int direction = 0
+    float entryPrice = 0.0
+    int holdBars = 0
+
+var StratState ss = StratState.new()
+sma3 = ta.sma(close, 3)
+if ss.direction == 0 and close > sma3
+    ss.direction := 1
+    ss.entryPrice := close
+    ss.holdBars := 0
+if ss.direction == 1
+    ss.holdBars := ss.holdBars + 1
+    if close < sma3 or ss.holdBars > 5
+        ss.direction := 0
+var float __obs_plot0 = na
+__obs_plot0 := ss.direction
+plot(ss.direction, "Dir")
+var float __obs_plot1 = na
+__obs_plot1 := ss.holdBars
+plot(ss.holdBars, "Hold")

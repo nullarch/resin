@@ -1,0 +1,9 @@
+//@version=5
+indicator("Drawing")
+if barstate.islast
+    lbl = label.new(bar_index, close, "Last")
+    ln = line.new(bar_index - 5, close[5], bar_index, close)
+    bx = box.new(bar_index - 3, high, bar_index, low)
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

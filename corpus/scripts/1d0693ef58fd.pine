@@ -1,0 +1,5 @@
+//@version=5
+indicator("Indent Basic")
+var float result = 0.0
+if close > 100
+    result := 1.0

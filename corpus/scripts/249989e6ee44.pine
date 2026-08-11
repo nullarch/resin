@@ -1,0 +1,9 @@
+//@version=5
+indicator("UDF TA Return")
+var float result = 0.0
+
+get_sma(int len) =>
+    sma_val = ta.sma(close, len)
+    nz(sma_val, 0.0)
+
+result := get_sma(3)

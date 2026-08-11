@@ -1,0 +1,5 @@
+//@version=5
+indicator("Triangular Number")
+n = bar_index + 1.0
+tri = n * (n + 1.0) / 2.0
+plot(tri, "Tri")

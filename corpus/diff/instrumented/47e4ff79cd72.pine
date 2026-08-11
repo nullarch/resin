@@ -1,0 +1,7 @@
+//@version=5
+indicator("Valuewhen")
+cond = close > 106
+val = ta.valuewhen(cond, close, 0)
+var float __obs_plot0 = na
+__obs_plot0 := val
+plot(val)

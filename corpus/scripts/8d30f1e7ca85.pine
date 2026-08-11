@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Micro Sig")
+body = math.abs(close - open)
+rng = high - low
+eff = rng > 0 ? body / rng : 0.0
+volRatio = ta.sma(rng, 5) > 0 ? rng / ta.sma(rng, 5) : 1.0
+sig = eff > 0.7 and volRatio > 1.2 ? (close > open ? 2 : -2) : eff > 0.5 ? (close > open ? 1 : -1) : 0
+plot(sig, "Sig")

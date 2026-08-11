@@ -1,0 +1,13 @@
+//@version=5
+indicator("HA")
+var float haClose = na
+var float haOpen = na
+haClose := (open + high + low + close) / 4
+if na(haOpen)
+    haOpen := (open + close) / 2
+else
+    haOpen := (nz(haOpen[1]) + nz(haClose[1])) / 2
+haHigh = math.max(high, math.max(haOpen, haClose))
+haLow = math.min(low, math.min(haOpen, haClose))
+haUp = haClose > haOpen
+plot(haUp ? 1 : 0)

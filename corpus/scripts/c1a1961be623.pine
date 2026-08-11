@@ -1,0 +1,5 @@
+//@version=5
+indicator("DotAccess Syminfo")
+var float mt = 0.0
+mt := syminfo.mintick
+plot(mt)

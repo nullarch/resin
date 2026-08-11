@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:m": {
+    "open": 109,
+    "close": 111,
+    "spread": 2
+   },
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:m": {
+    "open": 109,
+    "close": 111,
+    "spread": 2
+   },
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:m": {
+    "open": 109,
+    "close": 111,
+    "spread": 2
+   },
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:m": {
+    "open": 109,
+    "close": 111,
+    "spread": 2
+   },
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:m": {
+    "open": 109,
+    "close": 111,
+    "spread": 2
+   },
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:m": {
+    "open": 109,
+    "close": 111,
+    "spread": 2
+   },
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:m": {
+    "open": 109,
+    "close": 111,
+    "spread": 2
+   },
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:m": {
+    "open": 109,
+    "close": 111,
+    "spread": 2
+   },
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:m": {
+    "open": 109,
+    "close": 111,
+    "spread": 2
+   },
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:m": {
+    "open": 109,
+    "close": 111,
+    "spread": 2
+   },
+   "var:__obs_plot0": 3
+  }
+ ],
+ "finalVarState": {
+  "m": {
+   "open": 109,
+   "close": 111,
+   "spread": 2
+  },
+  "__obs_plot0": 3
+ }
+}

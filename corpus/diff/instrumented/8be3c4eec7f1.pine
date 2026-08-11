@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("TA Cum")
+c = ta.cum(close)
+var float __obs_plot0 = na
+__obs_plot0 := c
+plot(c)

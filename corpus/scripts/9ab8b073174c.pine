@@ -1,0 +1,10 @@
+//@version=5
+indicator("triple nested")
+var float result = 0.0
+f1(x) =>
+    x + 1
+f2(x) =>
+    f1(x) * 2
+f3(x) =>
+    f2(x) - 3
+result := f3(10.0)

@@ -1,0 +1,13 @@
+//@version=5
+indicator("Age Stratified Risk")
+var float[] riskFactors = array.new_float(0)
+array.push(riskFactors, 0.01)
+array.push(riskFactors, 0.03)
+array.push(riskFactors, 0.08)
+array.push(riskFactors, 0.15)
+array.push(riskFactors, 0.30)
+float totalRisk = 0.0
+for i = 0 to array.size(riskFactors) - 1
+    totalRisk := totalRisk + array.get(riskFactors, i)
+avgRisk = array.size(riskFactors) > 0 ? totalRisk / array.size(riskFactors) : 0.0
+weightedSeverity = avgRisk * close

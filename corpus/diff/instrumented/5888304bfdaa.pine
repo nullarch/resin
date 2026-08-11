@@ -1,0 +1,7 @@
+//@version=5
+indicator("Overlay Test", overlay=true)
+sma_ = ta.sma(close, 3)
+var float __obs_plot0 = na
+__obs_plot0 := sma_
+plot(sma_, "SMA")
+plotshape(close > sma_, style=shape.triangleup)

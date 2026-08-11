@@ -1,0 +1,12 @@
+//@version=5
+indicator("Huffman Proxy")
+var int upCount = 0
+var int downCount = 0
+var int totalBars = 0
+totalBars := totalBars + 1
+if close > open
+    upCount := upCount + 1
+else
+    downCount := downCount + 1
+float upFreq = totalBars > 0 ? upCount / totalBars : 0.5
+float weight = upFreq > 0.01 ? -math.log(upFreq) / math.log(2.0) : 0.0

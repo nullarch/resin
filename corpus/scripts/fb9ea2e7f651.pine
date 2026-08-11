@@ -1,0 +1,11 @@
+//@version=5
+indicator("ToxicFlow")
+toxicBars = array.new_float(0)
+prevClose = nz(close[1], close)
+absRet = math.abs(close - prevClose)
+midRange = (high - low) / 2.0
+isToxic = absRet > midRange ? 1.0 : 0.0
+array.push(toxicBars, isToxic)
+toxicSum = array.sum(toxicBars)
+toxicPct = array.size(toxicBars) > 0 ? toxicSum / float(array.size(toxicBars)) : 0.0
+plot(toxicPct, "ToxPct")

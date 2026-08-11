@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Mkt Regime")
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+volRatio = avgATR > 0 ? atr / avgATR : 1.0
+regime = switch
+    volRatio > 2.0 => "crisis"
+    volRatio > 1.3 and close < sma3 => "bearish_volatile"
+    volRatio > 1.3 and close > sma3 => "bullish_volatile"
+    close > sma3 and rsi > 55 => "bullish_calm"
+    close < sma3 and rsi < 45 => "bearish_calm"
+    => "ranging"
+isTrending = str.contains(regime, "bullish") or str.contains(regime, "bearish")
+plot(isTrending ? 1 : 0, "Trend")

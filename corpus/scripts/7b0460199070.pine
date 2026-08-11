@@ -1,0 +1,11 @@
+
+//@version=5
+strategy("Str IDs", overlay=true)
+ema3 = ta.ema(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+tradeId = "trade_v1"
+if close > ema3 and rsi > 50
+    strategy.entry(tradeId, strategy.long)
+if rsi < 40
+    strategy.close(tradeId)
+plot(ema3, "EMA")

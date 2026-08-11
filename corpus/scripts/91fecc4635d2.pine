@@ -1,0 +1,7 @@
+//@version=5
+strategy("Cond Strategy", overlay=true)
+s = ta.sma(close, 3)
+if close > s
+    strategy.entry("Long", strategy.long)
+if close < s
+    strategy.close("Long")

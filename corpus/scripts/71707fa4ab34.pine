@@ -1,0 +1,14 @@
+//@version=5
+indicator("UDT TA Field")
+type Signal
+    float sma_val
+    float ema_val
+    bool cross_up
+
+var float last_sma = 0.0
+var float last_ema = 0.0
+s = ta.sma(close, 3)
+e = ta.ema(close, 5)
+last_sma := nz(s, 0.0)
+last_ema := nz(e, 0.0)
+plot(last_sma)

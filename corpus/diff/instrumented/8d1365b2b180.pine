@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Running Stats")
+arr = array.from(close, open, high, low, volume)
+sum = 0.0
+mx = -999999.0
+mn = 999999.0
+for val in arr
+    fv = float(val)
+    sum := sum + fv
+    if fv > mx
+        mx := fv
+    if fv < mn
+        mn := fv
+avg = sum / array.size(arr)
+var float __obs_plot0 = na
+__obs_plot0 := avg
+plot(avg, "Avg")
+var float __obs_plot1 = na
+__obs_plot1 := mx - mn
+plot(mx - mn, "Range")

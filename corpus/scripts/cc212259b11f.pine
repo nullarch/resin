@@ -1,0 +1,5 @@
+
+//@version=5
+indicator("Median Precision")
+m = ta.median(close, 10)
+plot(m)

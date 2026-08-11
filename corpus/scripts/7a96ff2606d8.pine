@@ -1,0 +1,5 @@
+//@version=5
+indicator("SciNotation")
+var float result = 0.0
+x = 1.5e3
+result := x

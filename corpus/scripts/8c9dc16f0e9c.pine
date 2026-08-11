@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("New HL")
+hi5 = ta.highest(high, 5)
+lo5 = ta.lowest(low, 5)
+newHigh = high >= hi5
+newLow = low <= lo5
+plot(newHigh ? 1 : newLow ? -1 : 0, "NHL")

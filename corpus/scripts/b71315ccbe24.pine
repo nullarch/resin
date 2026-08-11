@@ -1,0 +1,7 @@
+//@version=5
+indicator("Bracket Depth")
+var float sum = 0.0
+a = array.from(
+    1.0, 2.0,
+    3.0, 4.0)
+sum := array.sum(a)

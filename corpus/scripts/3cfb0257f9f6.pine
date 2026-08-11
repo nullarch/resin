@@ -1,0 +1,10 @@
+//@version=5
+indicator("Henon Map")
+var float xH = 0.1
+var float yH = 0.1
+float aParam = 1.4
+float bParam = 0.3
+float xNew = 1.0 - aParam * xH * xH + yH
+float yNew = bParam * xH
+xH := math.max(-2.0, math.min(2.0, xNew))
+yH := math.max(-2.0, math.min(2.0, yNew))

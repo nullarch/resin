@@ -1,0 +1,8 @@
+//@version=5
+indicator("While")
+count = 10
+sum = 0.0
+while count > 0
+    sum += count
+    count -= 1
+plot(sum)

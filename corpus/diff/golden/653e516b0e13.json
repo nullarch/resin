@@ -1,0 +1,116 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:ss": {
+    "mean": 108.8,
+    "high": 113,
+    "low": 102,
+    "count": 10.0
+   },
+   "var:n": 1,
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:ss": {
+    "mean": 108.8,
+    "high": 113,
+    "low": 102,
+    "count": 10.0
+   },
+   "var:n": 2,
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:ss": {
+    "mean": 108.8,
+    "high": 113,
+    "low": 102,
+    "count": 10.0
+   },
+   "var:n": 3,
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:ss": {
+    "mean": 108.8,
+    "high": 113,
+    "low": 102,
+    "count": 10.0
+   },
+   "var:n": 4,
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:ss": {
+    "mean": 108.8,
+    "high": 113,
+    "low": 102,
+    "count": 10.0
+   },
+   "var:n": 5,
+   "var:__obs_plot0": 11
+  },
+  {
+   "var:ss": {
+    "mean": 108.8,
+    "high": 113,
+    "low": 102,
+    "count": 10.0
+   },
+   "var:n": 6,
+   "var:__obs_plot0": 10
+  },
+  {
+   "var:ss": {
+    "mean": 108.8,
+    "high": 113,
+    "low": 102,
+    "count": 10.0
+   },
+   "var:n": 7,
+   "var:__obs_plot0": 11
+  },
+  {
+   "var:ss": {
+    "mean": 108.8,
+    "high": 113,
+    "low": 102,
+    "count": 10.0
+   },
+   "var:n": 8,
+   "var:__obs_plot0": 11
+  },
+  {
+   "var:ss": {
+    "mean": 108.8,
+    "high": 113,
+    "low": 102,
+    "count": 10.0
+   },
+   "var:n": 9,
+   "var:__obs_plot0": 10
+  },
+  {
+   "var:ss": {
+    "mean": 108.8,
+    "high": 113,
+    "low": 102,
+    "count": 10.0
+   },
+   "var:n": 10,
+   "var:__obs_plot0": 11
+  }
+ ],
+ "finalVarState": {
+  "ss": {
+   "mean": 108.8,
+   "high": 113,
+   "low": 102,
+   "count": 10.0
+  },
+  "n": 10,
+  "__obs_plot0": 11
+ }
+}

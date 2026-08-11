@@ -1,0 +1,171 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:position": 0,
+   "var:entryPrice": 0.0,
+   "var:totalPnl": 0.0,
+   "var:trades": 0,
+   "var:pnlHistory": [],
+   "var:state": {
+    "position": 1.0,
+    "pnl": 0.0,
+    "trades": 1.0
+   },
+   "var:bars": 1,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:position": 0,
+   "var:entryPrice": 0.0,
+   "var:totalPnl": 0.0,
+   "var:trades": 0,
+   "var:pnlHistory": [],
+   "var:state": {
+    "position": 1.0,
+    "pnl": 0.0,
+    "trades": 1.0
+   },
+   "var:bars": 2,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:position": 0,
+   "var:entryPrice": 0.0,
+   "var:totalPnl": 0.0,
+   "var:trades": 0,
+   "var:pnlHistory": [],
+   "var:state": {
+    "position": 1.0,
+    "pnl": 0.0,
+    "trades": 1.0
+   },
+   "var:bars": 3,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:position": 1,
+   "var:entryPrice": 105,
+   "var:totalPnl": 0.0,
+   "var:trades": 1,
+   "var:pnlHistory": [],
+   "var:state": {
+    "position": 1.0,
+    "pnl": 0.0,
+    "trades": 1.0
+   },
+   "var:bars": 4,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:position": 1,
+   "var:entryPrice": 105,
+   "var:totalPnl": 0.0,
+   "var:trades": 1,
+   "var:pnlHistory": [],
+   "var:state": {
+    "position": 1.0,
+    "pnl": 0.0,
+    "trades": 1.0
+   },
+   "var:bars": 5,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:position": 1,
+   "var:entryPrice": 105,
+   "var:totalPnl": 0.0,
+   "var:trades": 1,
+   "var:pnlHistory": [],
+   "var:state": {
+    "position": 1.0,
+    "pnl": 0.0,
+    "trades": 1.0
+   },
+   "var:bars": 6,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:position": 1,
+   "var:entryPrice": 105,
+   "var:totalPnl": 0.0,
+   "var:trades": 1,
+   "var:pnlHistory": [],
+   "var:state": {
+    "position": 1.0,
+    "pnl": 0.0,
+    "trades": 1.0
+   },
+   "var:bars": 7,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:position": 1,
+   "var:entryPrice": 105,
+   "var:totalPnl": 0.0,
+   "var:trades": 1,
+   "var:pnlHistory": [],
+   "var:state": {
+    "position": 1.0,
+    "pnl": 0.0,
+    "trades": 1.0
+   },
+   "var:bars": 8,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:position": 1,
+   "var:entryPrice": 105,
+   "var:totalPnl": 0.0,
+   "var:trades": 1,
+   "var:pnlHistory": [],
+   "var:state": {
+    "position": 1.0,
+    "pnl": 0.0,
+    "trades": 1.0
+   },
+   "var:bars": 9,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:position": 1,
+   "var:entryPrice": 105,
+   "var:totalPnl": 0.0,
+   "var:trades": 1,
+   "var:pnlHistory": [],
+   "var:state": {
+    "position": 1.0,
+    "pnl": 0.0,
+    "trades": 1.0
+   },
+   "var:bars": 10,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 1
+  }
+ ],
+ "finalVarState": {
+  "position": 1,
+  "entryPrice": 105,
+  "totalPnl": 0.0,
+  "trades": 1,
+  "pnlHistory": [],
+  "state": {
+   "position": 1.0,
+   "pnl": 0.0,
+   "trades": 1.0
+  },
+  "bars": 10,
+  "__obs_plot0": 0.0,
+  "__obs_plot1": 1
+ }
+}

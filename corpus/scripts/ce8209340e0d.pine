@@ -1,0 +1,6 @@
+//@version=5
+indicator("Generic Map")
+var float result = 0.0
+map<string, float> m = map.new<string, float>()
+m.put("val", 99.0)
+result := m.get("val")

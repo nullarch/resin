@@ -1,0 +1,8 @@
+//@version=5
+indicator("Var Step Rev")
+step_ = 3
+var float total = 0.0
+total := 0.0
+for i = 9 to 0 by step_
+    total := total + i
+plot(total)

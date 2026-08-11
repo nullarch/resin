@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("RSI Rel")
+rsi3 = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+relRSI = sma3 > 0 ? rsi3 * (close / sma3) : rsi3
+var float __obs_plot0 = na
+__obs_plot0 := relRSI
+plot(relRSI, "RR")

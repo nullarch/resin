@@ -1,0 +1,12 @@
+//@version=5
+indicator("Multiline bool")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rsi5 = ta.rsi(close, 5)
+longCond = not na(sma3) and
+    not na(sma5) and
+    not na(rsi5) and
+    close > nz(sma3) and
+    nz(sma3) > nz(sma5) and
+    nz(rsi5) > 40 and
+    nz(rsi5) < 80

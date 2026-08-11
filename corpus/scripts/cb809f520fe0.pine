@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Single Print")
+prevHigh = high[1]
+prevLow = low[1]
+gapUp = not na(prevHigh) and low > prevHigh ? 1.0 : 0.0
+gapDn = not na(prevLow) and high < prevLow ? 1.0 : 0.0
+plot(gapUp + gapDn, "SP")

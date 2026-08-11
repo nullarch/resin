@@ -1,0 +1,6 @@
+//@version=5
+indicator("Session Pre/Post")
+isPre = session.ispremarket
+isPost = session.ispostmarket
+plot(isPre ? 1 : 0)
+plot(isPost ? 1 : 0)

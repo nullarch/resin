@@ -1,0 +1,8 @@
+//@version=5
+indicator("MACD")
+ema9 = ta.ema(close, 3)
+ema21 = ta.ema(close, 5)
+macd = ema9 - ema21
+signal = ta.ema(macd, 3)
+histogram = macd - signal
+plot(histogram)

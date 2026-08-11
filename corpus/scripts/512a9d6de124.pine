@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("For Cont")
+sma3 = ta.sma(close, 3)
+validCount = 0
+bullCount = 0
+for i = 0 to 7
+    c = close[i]
+    m = sma3[i]
+    if na(c) or na(m)
+        continue
+    validCount := validCount + 1
+    if c > m
+        bullCount := bullCount + 1
+ratio = validCount > 0 ? float(bullCount) / validCount : 0.0
+plot(ratio, "Ratio")

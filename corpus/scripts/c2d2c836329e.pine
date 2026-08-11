@@ -1,0 +1,4 @@
+//@version=5
+indicator("test")
+val = close[100]
+plot(val)

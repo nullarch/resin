@@ -1,0 +1,8 @@
+//@version=5
+indicator("Type Chain")
+x = int(3.7)
+y = float(x)
+z = bool(y)
+var int w = 0
+w := int(z)
+plot(w)

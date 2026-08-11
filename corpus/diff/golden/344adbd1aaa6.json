@@ -1,0 +1,193 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:m": {
+    "a": 10.0,
+    "b": 20.0
+   },
+   "var:ks": [
+    "a",
+    "b"
+   ],
+   "var:vs": [
+    10.0,
+    20.0
+   ],
+   "var:klen": 2,
+   "var:vsum": 30.0,
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:m": {
+    "a": 10.0,
+    "b": 20.0
+   },
+   "var:ks": [
+    "a",
+    "b"
+   ],
+   "var:vs": [
+    10.0,
+    20.0
+   ],
+   "var:klen": 2,
+   "var:vsum": 30.0,
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:m": {
+    "a": 10.0,
+    "b": 20.0
+   },
+   "var:ks": [
+    "a",
+    "b"
+   ],
+   "var:vs": [
+    10.0,
+    20.0
+   ],
+   "var:klen": 2,
+   "var:vsum": 30.0,
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:m": {
+    "a": 10.0,
+    "b": 20.0
+   },
+   "var:ks": [
+    "a",
+    "b"
+   ],
+   "var:vs": [
+    10.0,
+    20.0
+   ],
+   "var:klen": 2,
+   "var:vsum": 30.0,
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:m": {
+    "a": 10.0,
+    "b": 20.0
+   },
+   "var:ks": [
+    "a",
+    "b"
+   ],
+   "var:vs": [
+    10.0,
+    20.0
+   ],
+   "var:klen": 2,
+   "var:vsum": 30.0,
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:m": {
+    "a": 10.0,
+    "b": 20.0
+   },
+   "var:ks": [
+    "a",
+    "b"
+   ],
+   "var:vs": [
+    10.0,
+    20.0
+   ],
+   "var:klen": 2,
+   "var:vsum": 30.0,
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:m": {
+    "a": 10.0,
+    "b": 20.0
+   },
+   "var:ks": [
+    "a",
+    "b"
+   ],
+   "var:vs": [
+    10.0,
+    20.0
+   ],
+   "var:klen": 2,
+   "var:vsum": 30.0,
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:m": {
+    "a": 10.0,
+    "b": 20.0
+   },
+   "var:ks": [
+    "a",
+    "b"
+   ],
+   "var:vs": [
+    10.0,
+    20.0
+   ],
+   "var:klen": 2,
+   "var:vsum": 30.0,
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:m": {
+    "a": 10.0,
+    "b": 20.0
+   },
+   "var:ks": [
+    "a",
+    "b"
+   ],
+   "var:vs": [
+    10.0,
+    20.0
+   ],
+   "var:klen": 2,
+   "var:vsum": 30.0,
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:m": {
+    "a": 10.0,
+    "b": 20.0
+   },
+   "var:ks": [
+    "a",
+    "b"
+   ],
+   "var:vs": [
+    10.0,
+    20.0
+   ],
+   "var:klen": 2,
+   "var:vsum": 30.0,
+   "var:__obs_plot0": 2
+  }
+ ],
+ "finalVarState": {
+  "m": {
+   "a": 10.0,
+   "b": 20.0
+  },
+  "ks": [
+   "a",
+   "b"
+  ],
+  "vs": [
+   10.0,
+   20.0
+  ],
+  "klen": 2,
+  "vsum": 30.0,
+  "__obs_plot0": 2
+ }
+}

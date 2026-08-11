@@ -1,0 +1,6 @@
+//@version=5
+indicator("Var Div Acc")
+var float sumRatio = 0.0
+ratio = (high - low) / close
+sumRatio := sumRatio + ratio
+plot(sumRatio)

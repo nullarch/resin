@@ -1,0 +1,8 @@
+//@version=5
+indicator("for result var bounds")
+var float last_x = 0.0
+a = 1
+b = 5
+x = for i = a to b
+    float(i)
+last_x := x

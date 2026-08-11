@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("While in For")
+total = 0.0
+for i = 1 to 3
+    val = float(i)
+    j = 0
+    while j < 3
+        total := total + val
+        j := j + 1
+var float __obs_plot0 = na
+__obs_plot0 := total
+plot(total, "Total")

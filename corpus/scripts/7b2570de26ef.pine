@@ -1,0 +1,4 @@
+//@version=5
+indicator("Version")
+var int result = 0
+result := 42

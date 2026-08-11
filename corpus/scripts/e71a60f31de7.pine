@@ -1,0 +1,6 @@
+//@version=5
+indicator("Coral Reef Health")
+tempStress = nz(ta.rsi(close, 3), 50.0)
+healthIndex = 100.0 - math.abs(tempStress - 50.0) * 2
+var float reefHealth = 50.0
+reefHealth := healthIndex

@@ -1,0 +1,9 @@
+//@version=5
+indicator("EMA Cross Vol")
+var int signals = 0
+fastEma = ta.ema(close, 3)
+slowEma = ta.ema(close, 5)
+volSma = ta.sma(volume, 3)
+if not na(fastEma) and not na(slowEma) and not na(volSma)
+    if ta.crossover(fastEma, slowEma) and volume > volSma
+        signals := signals + 1

@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("CSV Build")
+csv = str.tostring(close) + "," + str.tostring(open) + "," + str.tostring(high) + "," + str.tostring(low)
+fieldCount = 4
+totalLen = str.length(csv)
+var float __obs_plot0 = na
+__obs_plot0 := totalLen
+plot(totalLen, "Len")
+var float __obs_plot1 = na
+__obs_plot1 := fieldCount
+plot(fieldCount, "Fields")

@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("Sharpe Sim")
+var float sumRet = 0.0
+var float sumRetSq = 0.0
+var int n = 0
+ret = ta.change(close, 1)
+retVal = nz(ret, 0.0)
+n := n + 1
+sumRet := sumRet + retVal
+sumRetSq := sumRetSq + retVal * retVal
+avgRet = n > 0 ? sumRet / n : 0.0
+variance = n > 1 ? (sumRetSq / n - avgRet * avgRet) : 0.001
+sd = math.sqrt(math.max(variance, 0.0001))
+sharpe = sd > 0 ? avgRet / sd : 0.0
+plot(sharpe, "Sharpe")

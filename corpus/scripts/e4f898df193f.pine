@@ -1,0 +1,42 @@
+
+//@version=5
+indicator("FullPortfolio")
+type Holding
+    float weight = 0.0
+    float score = 0.0
+
+var Holding h1 = Holding.new(0.5, 0.0)
+var Holding h2 = Holding.new(0.5, 0.0)
+var float peak = 0.0
+var float maxDD = 0.0
+var float[] retHist = array.new_float(0)
+var perfMap = map.new<string, float>()
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+atrVal = nz(ta.atr(3), 1.0)
+smaVal = nz(ta.sma(close, 3), close)
+
+h1.score := rsi / 100.0
+h2.score := (100.0 - rsi) / 100.0
+totalScore = h1.weight * h1.score + h2.weight * h2.score
+
+prevC = nz(close[1], close)
+ret = prevC > 0 ? (close - prevC) / prevC : 0.0
+array.push(retHist, ret)
+if array.size(retHist) > 5
+    array.shift(retHist)
+
+avgRet = array.avg(retHist)
+peak := math.max(peak, close)
+dd = peak > 0 ? (peak - close) / peak * 100 : 0.0
+maxDD := math.max(maxDD, dd)
+
+map.put(perfMap, "score", totalScore)
+map.put(perfMap, "avgRet", avgRet * 100)
+map.put(perfMap, "maxDD", maxDD)
+
+summary = 0.0
+for [k, v] in perfMap
+    summary := summary + nz(v, 0.0)
+
+plot(summary, "S")

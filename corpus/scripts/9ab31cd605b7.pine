@@ -1,0 +1,7 @@
+//@version=5
+indicator("Table Merge")
+var t = table.new(position.top_right, 3, 3)
+table.cell(t, 0, 0, "A")
+table.cell(t, 0, 1, "B")
+table.merge_cells(t, 0, 0, 0, 1)
+plot(close)

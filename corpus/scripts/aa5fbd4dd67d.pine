@@ -1,0 +1,15 @@
+//@version=5
+indicator("Array Sort Search")
+var a = array.from(30.0, 10.0, 20.0, 40.0)
+array.sort(a)
+var float first = 0.0
+first := array.get(a, 0)
+var float last_ = 0.0
+last_ := array.get(a, 3)
+var int idx20 = -1
+idx20 := array.indexof(a, 20.0)
+var bool has30 = false
+has30 := array.includes(a, 30.0)
+var bool has99 = true
+has99 := array.includes(a, 99.0)
+plot(close)

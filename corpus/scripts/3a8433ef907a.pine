@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Lvl Search")
+level = close
+step = ta.atr(3) * 0.5
+minLevel = ta.lowest(low, 5)
+iters = 0
+while level > minLevel and iters < 20
+    level := level - step
+    iters := iters + 1
+plot(level, "Support")

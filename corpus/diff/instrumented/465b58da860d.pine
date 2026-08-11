@@ -1,0 +1,24 @@
+
+//@version=5
+indicator("Multi Out")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = nz(ta.atr(3), 1.0)
+spread = sma3 - sma5
+momentum = rsi - 50
+var float __obs_plot0 = na
+__obs_plot0 := spread
+plot(spread, "Spread")
+var float __obs_plot1 = na
+__obs_plot1 := momentum
+plot(momentum, "Momentum")
+var float __obs_plot2 = na
+__obs_plot2 := atr
+plot(atr, "ATR")
+var float __obs_plot3 = na
+__obs_plot3 := close - sma3
+plot(close - sma3, "Dist")
+var float __obs_plot4 = na
+__obs_plot4 := volume
+plot(volume, "Vol")

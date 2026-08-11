@@ -1,0 +1,6 @@
+//@version=5
+indicator("MACD Tuple")
+[macdLine, signalLine, histogram] = ta.macd(close, 3, 5, 3)
+var float h = 0.0
+h := nz(histogram)
+plot(close)

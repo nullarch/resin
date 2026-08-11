@@ -1,0 +1,8 @@
+//@version=5
+indicator("Flock Separation")
+upper = ta.highest(high, 5)
+lower = ta.lowest(low, 5)
+distUpper = upper - close
+distLower = close - lower
+separation = distUpper - distLower
+plot(separation)

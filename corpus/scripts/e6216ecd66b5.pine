@@ -1,0 +1,5 @@
+//@version=5
+indicator("color cond")
+c1 = #FF0000
+c2 = #00FF00
+c = close > open ? c1 : c2

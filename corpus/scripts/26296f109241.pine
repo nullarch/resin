@@ -1,0 +1,7 @@
+//@version=5
+indicator("Multiline Call")
+result = ta.sma(close,
+    3)
+ema_ = ta.ema(close,
+    5)
+diff = result - ema_

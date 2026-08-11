@@ -1,0 +1,25 @@
+
+//@version=5
+indicator("Osc Full")
+rsi = nz(ta.rsi(close, 3), 50.0)
+k = ta.stoch(close, high, low, 5)
+cci = ta.cci(close, 5)
+[mid, upper, lower] = ta.bb(close, 5, 2.0)
+mean = ta.sma(close, 5)
+sd = ta.stdev(close, 5)
+
+zscore = sd > 0 ? (close - mean) / sd : 0.0
+bbPctB = (upper - lower) > 0 ? (close - lower) / (upper - lower) : 0.5
+
+rsiNorm = (rsi - 50) / 50
+kNorm = (k - 50) / 50
+cciNorm = math.max(-1.0, math.min(1.0, cci / 200))
+zNorm = math.max(-1.0, math.min(1.0, zscore / 3))
+
+composite = rsiNorm * 0.3 + kNorm * 0.25 + cciNorm * 0.25 + zNorm * 0.2
+
+var int bars = 0
+bars := bars + 1
+
+plot(composite, "Comp")
+plot(zscore, "Z")

@@ -1,0 +1,9 @@
+//@version=5
+indicator("RLE Direction")
+var int runLen = 0
+bool bullish = close > open
+bool prevBullish = not na(close[1]) ? close[1] > open[1] : bullish
+if bullish == prevBullish
+    runLen := runLen + 1
+else
+    runLen := 1

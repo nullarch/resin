@@ -1,0 +1,7 @@
+//@version=5
+indicator("Multi UDF Chain")
+normalize(val, minVal, maxVal) =>
+    maxVal > minVal ? (val - minVal) / (maxVal - minVal) : 0.5
+scale(val, factor) =>
+    val * factor
+result = scale(normalize(close, 98.0, 113.0), 100.0)

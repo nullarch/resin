@@ -1,0 +1,41 @@
+
+//@version=5
+indicator("Multi Asset")
+// Core
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+rsi = ta.rsi(close, 3)
+atr = ta.atr(3)
+
+// Asset allocation signals
+equitySignal = close > sma3 ? 1.0 : 0.0
+bondSignal = rsi < 40 ? 1.0 : 0.0
+cashSignal = atr > ta.sma(atr, 5) ? 1.0 : 0.0
+
+// Normalize weights
+total = equitySignal + bondSignal + cashSignal
+eqWt = total > 0 ? equitySignal / total : 0.33
+bondWt = total > 0 ? bondSignal / total : 0.33
+cashWt = total > 0 ? cashSignal / total : 0.34
+
+// Portfolio value
+var float portValue = 10000.0
+chg = ta.change(close, 1)
+portValue := portValue + nz(chg, 0.0) * eqWt * 10
+
+// History
+var float[] history = array.new_float(0)
+array.push(history, portValue)
+if array.size(history) > 8
+    array.shift(history)
+
+// Stats
+var state = map.new<string, float>()
+map.put(state, "value", portValue)
+map.put(state, "eqWt", eqWt)
+
+var int bars = 0
+bars := bars + 1
+
+plot(portValue, "Value")
+plot(eqWt, "EqWt")

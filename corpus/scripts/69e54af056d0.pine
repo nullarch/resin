@@ -1,0 +1,6 @@
+//@version=5
+indicator("Alphabet Size")
+spread = high - low
+quantized = math.floor(spread * 10.0)
+alphabetSize = math.min(quantized + 1.0, 10.0)
+plot(alphabetSize, "AlphabetSize")

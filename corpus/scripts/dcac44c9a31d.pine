@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Z-Score")
+mean = ta.sma(close, 5)
+sd = ta.stdev(close, 5)
+zscore = sd != 0 ? (close - mean) / sd : 0.0
+extreme = math.abs(zscore) > 2
+var int extremeCount = 0
+if extreme
+    extremeCount := extremeCount + 1
+plot(zscore, "Z")

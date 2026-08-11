@@ -1,0 +1,5 @@
+//@version=5
+indicator("Entropy")
+sd = ta.stdev(close, 5)
+entropy_proxy = not na(sd) ? sd : 0.0
+high_entropy = entropy_proxy > 2.0 ? 1.0 : 0.0

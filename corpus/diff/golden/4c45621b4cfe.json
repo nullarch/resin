@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:totalBreaks": 0,
+   "var:confirmedBreaks": 0,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:totalBreaks": 0,
+   "var:confirmedBreaks": 0,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:totalBreaks": 0,
+   "var:confirmedBreaks": 0,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:totalBreaks": 0,
+   "var:confirmedBreaks": 0,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:totalBreaks": 0,
+   "var:confirmedBreaks": 0,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:totalBreaks": 0,
+   "var:confirmedBreaks": 0,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:totalBreaks": 0,
+   "var:confirmedBreaks": 0,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:totalBreaks": 0,
+   "var:confirmedBreaks": 0,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:totalBreaks": 0,
+   "var:confirmedBreaks": 0,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:totalBreaks": 0,
+   "var:confirmedBreaks": 0,
+   "var:__obs_plot0": 0,
+   "var:__obs_plot1": 0
+  }
+ ],
+ "finalVarState": {
+  "totalBreaks": 0,
+  "confirmedBreaks": 0,
+  "__obs_plot0": 0,
+  "__obs_plot1": 0
+ }
+}

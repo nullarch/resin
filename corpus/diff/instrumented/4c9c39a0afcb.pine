@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Trend Str")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+trendStr = sma5 > 0 ? (sma3 - sma5) / sma5 * 100 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := trendStr
+plot(trendStr, "TS")

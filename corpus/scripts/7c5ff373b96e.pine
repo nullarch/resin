@@ -1,0 +1,26 @@
+//@version=5
+indicator("Comprehensive Nuclear")
+calcDecay(n0Val, decayC, tStep) =>
+    n0Val * math.exp(-decayC * tStep)
+calcShield(i0Val, muVal, xVal) =>
+    i0Val * math.exp(-muVal * xVal)
+var float[] powerLog = array.new_float(0)
+var float atoms = 50000.0
+var float cumEnergy = 0.0
+float decayLambda = 0.12
+float timeVal = bar_index + 1.0
+atoms := calcDecay(50000.0, decayLambda, timeVal)
+float activity = decayLambda * atoms
+float shieldedDose = calcShield(activity, 0.05, close / 20.0)
+float kEff = 0.99 + activity / 100000.0
+reactorStatus = switch
+    kEff > 1.02 => "SCRAM"
+    kEff > 1.0 => "supercritical"
+    kEff > 0.98 => "critical"
+    => "subcritical"
+float energyRelease = activity * 0.001
+cumEnergy := cumEnergy + energyRelease
+array.push(powerLog, energyRelease)
+var float peakPower = 0.0
+if energyRelease > peakPower
+    peakPower := energyRelease

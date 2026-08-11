@@ -1,0 +1,21 @@
+//@version=5
+indicator("Gibbs Entropy")
+float deviation = math.abs(close - 105.0)
+float bin1 = deviation < 2.0 ? 1.0 : 0.0
+float bin2 = deviation >= 2.0 and deviation < 5.0 ? 1.0 : 0.0
+float bin3 = deviation >= 5.0 ? 1.0 : 0.0
+var float c1 = 0.0
+var float c2 = 0.0
+var float c3 = 0.0
+var int totalN = 0
+totalN := totalN + 1
+c1 := c1 + bin1
+c2 := c2 + bin2
+c3 := c3 + bin3
+float p1 = totalN > 0 ? c1 / totalN : 0.0
+float p2 = totalN > 0 ? c2 / totalN : 0.0
+float p3 = totalN > 0 ? c3 / totalN : 0.0
+float s1 = p1 > 0.001 ? -p1 * math.log(p1) : 0.0
+float s2 = p2 > 0.001 ? -p2 * math.log(p2) : 0.0
+float s3 = p3 > 0.001 ? -p3 * math.log(p3) : 0.0
+float gibbsEntropy = s1 + s2 + s3

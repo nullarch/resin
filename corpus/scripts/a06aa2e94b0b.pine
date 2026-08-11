@@ -1,0 +1,4 @@
+//@version=5
+indicator("color new")
+c = color.new(color.red, 50)
+plot(close)

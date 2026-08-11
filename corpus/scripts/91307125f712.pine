@@ -1,0 +1,8 @@
+//@version=5
+indicator("Method Args")
+var a = array.new_float(0)
+array.push(a, close)
+array.push(a, high)
+var int sz = 0
+sz := array.size(a)
+plot(close)

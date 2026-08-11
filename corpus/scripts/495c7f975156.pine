@@ -1,0 +1,8 @@
+//@version=5
+indicator("Harvest Timing")
+fastGrowth = ta.ema(close, 3)
+slowGrowth = ta.ema(close, 5)
+harvestSignal = ta.crossover(fastGrowth, slowGrowth)
+var int harvestCount = 0
+if harvestSignal
+    harvestCount := harvestCount + 1

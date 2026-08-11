@@ -1,0 +1,6 @@
+//@version=5
+indicator("MA Residual")
+float smaVal = nz(ta.sma(close, 3), close)
+float residual = close - smaVal
+var float sumResidual = 0.0
+sumResidual := sumResidual + math.abs(residual)

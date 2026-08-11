@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Candle Info")
+type CandleInfo
+    float body = 0.0
+    float range_ = 0.0
+    bool isBull = true
+    float bodyPct = 0.0
+
+var CandleInfo ci = CandleInfo.new()
+ci.body := math.abs(close - open)
+ci.range_ := high - low
+ci.isBull := close > open
+ci.bodyPct := ci.range_ > 0 ? ci.body / ci.range_ : 0.0
+plot(ci.bodyPct, "BPct")

@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Mom State")
+var int bullMomBars = 0
+var int bearMomBars = 0
+var float peakRSI = 50.0
+rsi = nz(ta.rsi(close, 3), 50.0)
+peakRSI := math.max(peakRSI, rsi)
+if rsi > 55
+    bullMomBars := bullMomBars + 1
+if rsi < 45
+    bearMomBars := bearMomBars + 1
+plot(bullMomBars - bearMomBars, "Net")

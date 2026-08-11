@@ -1,0 +1,20 @@
+
+//@version=5
+indicator("Risk Map")
+var rp = map.new<string, float>()
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+map.put(rp, "vol_risk", avgATR > 0 ? atr / avgATR : 1.0)
+map.put(rp, "price_risk", close > 0 ? (high - low) / close * 100 : 0.0)
+map.put(rp, "mom_risk", math.abs(nz(ta.rsi(close, 3), 50.0) - 50) / 50)
+totalRisk = 0.0
+maxRisk = 0.0
+for [k, v] in rp
+    totalRisk := totalRisk + v
+    maxRisk := math.max(maxRisk, v)
+var float __obs_plot0 = na
+__obs_plot0 := totalRisk / 3
+plot(totalRisk / 3, "Avg")
+var float __obs_plot1 = na
+__obs_plot1 := maxRisk
+plot(maxRisk, "Max")

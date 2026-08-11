@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Brk Cont")
+firstAbove = -1
+countBelow = 0
+sma3 = ta.sma(close, 3)
+for i = 0 to 7
+    c = close[i]
+    m = sma3[i]
+    if na(c) or na(m)
+        continue
+    if c > m and firstAbove == -1
+        firstAbove := i
+        break
+    countBelow := countBelow + 1
+plot(firstAbove, "First")
+plot(countBelow, "Below")

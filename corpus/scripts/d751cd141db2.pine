@@ -1,0 +1,10 @@
+//@version=5
+indicator("DG-16 Exponential Map")
+var float projected = 0.0
+smaVal = nz(ta.sma(close, 5), close)
+tangent = close - smaVal
+magnitude = math.abs(tangent)
+dampedMag = 1.0 - math.exp(-magnitude * 0.1)
+direction = tangent > 0 ? 1.0 : -1.0
+projected := smaVal + direction * dampedMag * 10.0
+plot(projected)

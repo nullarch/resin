@@ -1,0 +1,6 @@
+//@version=5
+indicator("Func Hoisting")
+var float result = 0.0
+result := double(5.0)
+double(float x) =>
+    x * 2.0

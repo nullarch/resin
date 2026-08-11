@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Switch If")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+result = 0
+if close > sma3
+    result := switch
+        rsi > 70 => 3
+        rsi > 50 => 2
+        => 1
+else
+    result := switch
+        rsi < 30 => -3
+        rsi < 50 => -2
+        => -1
+plot(result, "R")

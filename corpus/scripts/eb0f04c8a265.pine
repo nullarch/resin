@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Event Score")
+eventScore(bool maCross, bool rsiExtreme, bool volSpike) =>
+    score = 0.0
+    if maCross
+        score := score + 1.0
+    if rsiExtreme
+        score := score + 1.5
+    if volSpike
+        score := score + 0.5
+    score
+
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+avgVol = ta.sma(volume, 5)
+maCross = ta.crossover(close, sma3) or ta.crossunder(close, sma3)
+rsiExt = rsi > 70 or rsi < 30
+volSpk = avgVol > 0 and volume > avgVol * 2
+score = eventScore(maCross, rsiExt, volSpk)
+plot(score, "ES")

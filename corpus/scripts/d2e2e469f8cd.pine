@@ -1,0 +1,11 @@
+//@version=5
+indicator("If Elif Expr")
+float val = if close > 110
+    3.0
+else if close > 105
+    2.0
+else
+    1.0
+var float result = 0.0
+result := val
+plot(result)

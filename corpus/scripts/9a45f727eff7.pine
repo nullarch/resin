@@ -1,0 +1,9 @@
+//@version=5
+indicator("Renal Clearance")
+var float concentration = 50.0
+clearanceRate = 0.15
+influx = math.abs(close - open) / 10.0
+concentration := concentration + influx - concentration * clearanceRate
+if concentration < 0
+    concentration := 0.0
+plot(concentration)

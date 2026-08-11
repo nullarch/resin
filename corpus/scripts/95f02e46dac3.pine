@@ -1,0 +1,7 @@
+//@version=5
+indicator("Packet Loss")
+float prevClose = not na(close[1]) ? close[1] : close
+float gap = math.abs(open - prevClose)
+float avgGap = ta.sma(gap, 5)
+float lossRate = nz(avgGap, 0.0) > 0.01 ? gap / nz(avgGap, 1.0) : 0.0
+plot(lossRate, "PktLoss")

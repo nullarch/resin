@@ -1,0 +1,29 @@
+//@version=5
+indicator("AllFeat 019")
+enum Channel
+    Upper
+    Lower
+    Mid
+type Band
+    float upper
+    float lower
+calcBand(src, spread) =>
+    src + spread
+var bandMap = map.new<string, float>()
+map.put(bandMap, "upper", 0.0)
+map.put(bandMap, "lower", 0.0)
+var float totalWidth = 0.0
+spread = high - low
+upperB = calcBand(close, spread / 2.0)
+lowerB = calcBand(close, -spread / 2.0)
+map.put(bandMap, "upper", upperB)
+map.put(bandMap, "lower", lowerB)
+width = upperB - lowerB
+totalWidth := totalWidth + width
+sum = 0.0
+for i = 0 to 3
+    sum := sum + (width > 5 ? 1.0 : 0.5)
+idx = 0
+while idx < 2
+    sum := sum + 0.0
+    idx := idx + 1

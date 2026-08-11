@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Syminfo")
+ticker = syminfo.ticker
+prefix = syminfo.prefix
+minTick = syminfo.mintick
+plot(minTick, "MinTick")

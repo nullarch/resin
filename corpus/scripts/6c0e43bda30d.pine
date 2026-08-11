@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Trend Reg")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+regime = close > sma3 and sma3 > sma5 ? 2 : close > sma3 ? 1 : close < sma3 and sma3 < sma5 ? -2 : -1
+plot(regime, "R")

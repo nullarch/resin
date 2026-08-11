@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:c": "pine_fn.<locals>.Container(price=Series(current=111, length=10), range_=11, text_='P:111.00 R:11.00')",
+   "var:__obs_plot0": 103,
+   "var:__obs_plot1": "NaN"
+  },
+  {
+   "var:c": "pine_fn.<locals>.Container(price=Series(current=111, length=10), range_=11, text_='P:111.00 R:11.00')",
+   "var:__obs_plot0": 104,
+   "var:__obs_plot1": "NaN"
+  },
+  {
+   "var:c": "pine_fn.<locals>.Container(price=Series(current=111, length=10), range_=11, text_='P:111.00 R:11.00')",
+   "var:__obs_plot0": 102,
+   "var:__obs_plot1": "NaN"
+  },
+  {
+   "var:c": "pine_fn.<locals>.Container(price=Series(current=111, length=10), range_=11, text_='P:111.00 R:11.00')",
+   "var:__obs_plot0": 105,
+   "var:__obs_plot1": "NaN"
+  },
+  {
+   "var:c": "pine_fn.<locals>.Container(price=Series(current=111, length=10), range_=11, text_='P:111.00 R:11.00')",
+   "var:__obs_plot0": 107,
+   "var:__obs_plot1": 11
+  },
+  {
+   "var:c": "pine_fn.<locals>.Container(price=Series(current=111, length=10), range_=11, text_='P:111.00 R:11.00')",
+   "var:__obs_plot0": 106,
+   "var:__obs_plot1": 10
+  },
+  {
+   "var:c": "pine_fn.<locals>.Container(price=Series(current=111, length=10), range_=11, text_='P:111.00 R:11.00')",
+   "var:__obs_plot0": 108,
+   "var:__obs_plot1": 11
+  },
+  {
+   "var:c": "pine_fn.<locals>.Container(price=Series(current=111, length=10), range_=11, text_='P:111.00 R:11.00')",
+   "var:__obs_plot0": 110,
+   "var:__obs_plot1": 11
+  },
+  {
+   "var:c": "pine_fn.<locals>.Container(price=Series(current=111, length=10), range_=11, text_='P:111.00 R:11.00')",
+   "var:__obs_plot0": 109,
+   "var:__obs_plot1": 10
+  },
+  {
+   "var:c": "pine_fn.<locals>.Container(price=Series(current=111, length=10), range_=11, text_='P:111.00 R:11.00')",
+   "var:__obs_plot0": 111,
+   "var:__obs_plot1": 11
+  }
+ ],
+ "finalVarState": {
+  "c": "pine_fn.<locals>.Container(price=Series(current=111, length=10), range_=11, text_='P:111.00 R:11.00')",
+  "__obs_plot0": 111,
+  "__obs_plot1": 11
+ }
+}

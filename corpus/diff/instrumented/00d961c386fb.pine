@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("ATR SL")
+atr = nz(ta.atr(3), 1.0)
+stopDist = atr * 2.0
+stopLevel = close - stopDist
+riskPct = close > 0 ? stopDist / close * 100 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := riskPct
+plot(riskPct, "Risk")

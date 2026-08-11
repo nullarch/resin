@@ -1,0 +1,12 @@
+//@version=5
+indicator("Cosine Similarity")
+var float dotProd = 0.0
+var float magA = 0.0
+var float magB = 0.0
+a1 = close - open
+a2 = high - low
+b1 = nz(close[1], close) - nz(open[1], open)
+b2 = nz(high[1], high) - nz(low[1], low)
+dotProd := dotProd + a1 * b1 + a2 * b2
+magA := magA + a1 * a1 + a2 * a2
+magB := magB + b1 * b1 + b2 * b2

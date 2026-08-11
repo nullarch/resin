@@ -1,0 +1,20 @@
+
+//@version=5
+indicator("Candle Class E")
+enum CandleClass
+    StrongBull = 2
+    Bull = 1
+    Doji = 0
+    Bear = -1
+    StrongBear = -2
+
+body = math.abs(close - open)
+totalRange = high - low
+bodyPct = totalRange > 0 ? body / totalRange * 100 : 0.0
+cc = switch
+    bodyPct < 10 => CandleClass.Doji
+    bodyPct > 70 and close > open => CandleClass.StrongBull
+    close > open => CandleClass.Bull
+    bodyPct > 70 => CandleClass.StrongBear
+    => CandleClass.Bear
+plot(int(cc), "CC")

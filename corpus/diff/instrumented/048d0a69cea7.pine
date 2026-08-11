@@ -1,0 +1,13 @@
+//@version=5
+indicator("Michaelis-Menten")
+var float substrate = 80.0
+vmax = 10.0
+km = 20.0
+influx = math.abs(close - open)
+rate = substrate > 0 ? (vmax * substrate) / (km + substrate) : 0.0
+substrate := substrate + influx - rate
+if substrate < 0
+    substrate := 0.0
+var float __obs_plot0 = na
+__obs_plot0 := rate
+plot(rate)

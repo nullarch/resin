@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("OHLCV Inject Generic")
+atr_val = ta.atr(14)
+var float __obs_plot0 = na
+__obs_plot0 := atr_val
+plot(atr_val)

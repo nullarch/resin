@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:ss": "pine_fn.<locals>.SignalState(direction=1, strength=0.4666666666660001, age=7, confirmed=True)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ss": "pine_fn.<locals>.SignalState(direction=1, strength=0.4666666666660001, age=7, confirmed=True)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ss": "pine_fn.<locals>.SignalState(direction=1, strength=0.4666666666660001, age=7, confirmed=True)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ss": "pine_fn.<locals>.SignalState(direction=1, strength=0.4666666666660001, age=7, confirmed=True)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ss": "pine_fn.<locals>.SignalState(direction=1, strength=0.4666666666660001, age=7, confirmed=True)",
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:ss": "pine_fn.<locals>.SignalState(direction=1, strength=0.4666666666660001, age=7, confirmed=True)",
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:ss": "pine_fn.<locals>.SignalState(direction=1, strength=0.4666666666660001, age=7, confirmed=True)",
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:ss": "pine_fn.<locals>.SignalState(direction=1, strength=0.4666666666660001, age=7, confirmed=True)",
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:ss": "pine_fn.<locals>.SignalState(direction=1, strength=0.4666666666660001, age=7, confirmed=True)",
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:ss": "pine_fn.<locals>.SignalState(direction=1, strength=0.4666666666660001, age=7, confirmed=True)",
+   "var:__obs_plot0": 1
+  }
+ ],
+ "finalVarState": {
+  "ss": "pine_fn.<locals>.SignalState(direction=1, strength=0.4666666666660001, age=7, confirmed=True)",
+  "__obs_plot0": 1
+ }
+}

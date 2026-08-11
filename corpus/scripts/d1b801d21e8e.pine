@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Per Reset")
+var int counter = 0
+counter := counter + 1
+if counter >= 5
+    counter := 0
+plot(counter, "C")

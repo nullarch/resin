@@ -1,0 +1,8 @@
+//@version=5
+indicator("For Expr Asc")
+var float result = 0.0
+result := 0.0
+for i = 1 to 5
+    result := result + i
+// 1+2+3+4+5 = 15 each bar, last bar persists
+plot(close)

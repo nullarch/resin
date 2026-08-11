@@ -1,0 +1,11 @@
+//@version=5
+indicator("UDF Scope")
+var float result = 0.0
+float x = 100.0
+
+modify() =>
+    float x = 999.0
+    x
+
+float inner = modify()
+result := x + inner

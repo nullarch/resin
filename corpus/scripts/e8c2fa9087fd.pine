@@ -1,0 +1,8 @@
+//@version=5
+indicator("Fill")
+p1 = plot(close, "Upper")
+p2 = plot(open_, "Lower")
+fill(p1, p2, color=color.new(color.blue, 80))
+var int bars = 0
+bars := bars + 1
+plot(close)

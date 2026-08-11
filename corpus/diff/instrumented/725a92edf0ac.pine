@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Cross Track")
+var int bullCrosses = 0
+var int bearCrosses = 0
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+if ta.crossover(sma3, sma5)
+    bullCrosses := bullCrosses + 1
+if ta.crossunder(sma3, sma5)
+    bearCrosses := bearCrosses + 1
+var float __obs_plot0 = na
+__obs_plot0 := bullCrosses - bearCrosses
+plot(bullCrosses - bearCrosses, "Net")

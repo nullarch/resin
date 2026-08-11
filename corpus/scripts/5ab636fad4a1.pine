@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Stat Sum")
+var ss = map.new<string, float>()
+mean = ta.sma(close, 5)
+sd = ta.stdev(close, 5)
+map.put(ss, "mean", mean)
+map.put(ss, "stdev", sd)
+map.put(ss, "cv", mean > 0 ? sd / mean : 0.0)
+map.put(ss, "zscore", sd > 0 ? (close - mean) / sd : 0.0)
+cv = map.get(ss, "cv", 0.0)
+plot(cv, "CV")

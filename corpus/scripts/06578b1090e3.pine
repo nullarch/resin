@@ -1,0 +1,4 @@
+//@version=5
+indicator("VWAP")
+v = ta.vwap(close, volume)
+plot(v)

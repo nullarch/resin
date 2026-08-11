@@ -1,0 +1,16 @@
+//@version=5
+indicator("method udt ta")
+type Tracker
+    float peak = 0.0
+    float trough = 99999.0
+method track(Tracker t, float price) =>
+    if price > t.peak
+        t.peak := price
+    if price < t.trough
+        t.trough := price
+var float result = 0.0
+t = Tracker.new()
+smaVal = ta.sma(close, 3)
+if not na(smaVal)
+    t.track(smaVal)
+result := t.peak - t.trough

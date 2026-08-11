@@ -1,0 +1,7 @@
+//@version=5
+indicator("Array abs range")
+arr = array.from(-5.0, -3.0, 0.0, 3.0, 5.0)
+absArr = array.abs(arr)
+rng = array.range(arr)
+mn = array.min(arr)
+mx = array.max(arr)

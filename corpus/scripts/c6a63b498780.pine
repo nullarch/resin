@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Bar Info")
+isFirst = barstate.isfirst
+isLast = barstate.islast
+idx = bar_index
+var int firstIdx = -1
+var int lastIdx = -1
+if isFirst
+    firstIdx := idx
+lastIdx := idx
+plot(lastIdx, "Last Idx")

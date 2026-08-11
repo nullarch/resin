@@ -1,0 +1,6 @@
+//@version=5
+indicator("Dot Access")
+t = syminfo.ticker
+p = timeframe.period
+is_first = barstate.isfirst
+result = is_first ? 1.0 : 0.0

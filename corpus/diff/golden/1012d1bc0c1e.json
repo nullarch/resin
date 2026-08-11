@@ -1,0 +1,105 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:sm": {
+    "bar": 10.0,
+    "position": 0.0,
+    "close": 111
+   },
+   "var:barNum": 1,
+   "var:__obs_plot0": 105.0
+  },
+  {
+   "var:sm": {
+    "bar": 10.0,
+    "position": 0.0,
+    "close": 111
+   },
+   "var:barNum": 2,
+   "var:__obs_plot0": 108.0
+  },
+  {
+   "var:sm": {
+    "bar": 10.0,
+    "position": 0.0,
+    "close": 111
+   },
+   "var:barNum": 3,
+   "var:__obs_plot0": 108.0
+  },
+  {
+   "var:sm": {
+    "bar": 10.0,
+    "position": 0.0,
+    "close": 111
+   },
+   "var:barNum": 4,
+   "var:__obs_plot0": 113.0
+  },
+  {
+   "var:sm": {
+    "bar": 10.0,
+    "position": 0.0,
+    "close": 111
+   },
+   "var:barNum": 5,
+   "var:__obs_plot0": 112.0
+  },
+  {
+   "var:sm": {
+    "bar": 10.0,
+    "position": 0.0,
+    "close": 111
+   },
+   "var:barNum": 6,
+   "var:__obs_plot0": 113.0
+  },
+  {
+   "var:sm": {
+    "bar": 10.0,
+    "position": 0.0,
+    "close": 111
+   },
+   "var:barNum": 7,
+   "var:__obs_plot0": 117.0
+  },
+  {
+   "var:sm": {
+    "bar": 10.0,
+    "position": 0.0,
+    "close": 111
+   },
+   "var:barNum": 8,
+   "var:__obs_plot0": 121.0
+  },
+  {
+   "var:sm": {
+    "bar": 10.0,
+    "position": 0.0,
+    "close": 111
+   },
+   "var:barNum": 9,
+   "var:__obs_plot0": 122.0
+  },
+  {
+   "var:sm": {
+    "bar": 10.0,
+    "position": 0.0,
+    "close": 111
+   },
+   "var:barNum": 10,
+   "var:__obs_plot0": 121.0
+  }
+ ],
+ "finalVarState": {
+  "sm": {
+   "bar": 10.0,
+   "position": 0.0,
+   "close": 111
+  },
+  "barNum": 10,
+  "__obs_plot0": 121.0
+ }
+}

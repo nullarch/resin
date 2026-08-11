@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("RSI Divergence")
+rsiVal = ta.rsi(close, 3)
+priceHigher = close > close[2]
+rsiLower = rsiVal < rsiVal[2]
+bearDiv = priceHigher and rsiLower
+var int divCount = 0
+if bearDiv
+    divCount := divCount + 1
+var float __obs_plot0 = na
+__obs_plot0 := divCount
+plot(divCount, "Divergences")

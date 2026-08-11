@@ -1,0 +1,19 @@
+
+//@version=5
+indicator("Period Corr")
+var float[] fastSigs = array.new_float(0)
+var float[] slowSigs = array.new_float(0)
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+array.push(fastSigs, close > sma3 ? 1.0 : -1.0)
+array.push(slowSigs, sma3 > sma5 ? 1.0 : -1.0)
+if array.size(fastSigs) > 8
+    array.shift(fastSigs)
+    array.shift(slowSigs)
+match = 0
+sz = array.size(fastSigs)
+for i = 0 to math.max(sz - 1, 0)
+    if i < sz and array.get(fastSigs, i) == array.get(slowSigs, i)
+        match := match + 1
+corr = sz > 0 ? float(match) / sz * 100 : 50.0
+plot(corr, "Corr")

@@ -1,0 +1,10 @@
+//@version=5
+indicator("udt method")
+type Point
+    float x = 0.0
+    float y = 0.0
+method magnitude(Point p) =>
+    math.sqrt(p.x * p.x + p.y * p.y)
+var float result = 0.0
+pt = Point.new(3.0, 4.0)
+result := pt.magnitude()

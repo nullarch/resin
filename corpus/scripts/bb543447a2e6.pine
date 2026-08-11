@@ -1,0 +1,5 @@
+
+//@version=5
+indicator("Math Sum")
+s = math.sum(close, 5)
+plot(s)

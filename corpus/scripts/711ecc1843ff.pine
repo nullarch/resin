@@ -1,0 +1,14 @@
+//@version=5
+indicator("PredPost")
+var float postMean = 105.0
+var float postPrec = 0.1
+dataPrec = 1.0 / math.max((high - low) * (high - low), 0.01)
+totalPrec = postPrec + dataPrec
+postMean := (postPrec * postMean + dataPrec * close) / totalPrec
+postPrec := totalPrec
+predVar = 1.0 / postPrec + 1.0 / math.max(dataPrec, 0.01)
+predStd = math.sqrt(math.max(predVar, 0.001))
+predHigh = postMean + predStd
+predLow = postMean - predStd
+plot(predHigh, "PredH")
+plot(predLow, "PredL")

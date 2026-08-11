@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Level Type E")
+enum LevelType
+    StrongResist = 2
+    Resist = 1
+    Neutral = 0
+    Support = -1
+    StrongSupport = -2
+
+hi5 = ta.highest(high, 5)
+lo5 = ta.lowest(low, 5)
+rng = hi5 - lo5
+pos = rng > 0 ? (close - lo5) / rng * 100 : 50.0
+lt = switch
+    pos > 90 => LevelType.StrongResist
+    pos > 70 => LevelType.Resist
+    pos < 10 => LevelType.StrongSupport
+    pos < 30 => LevelType.Support
+    => LevelType.Neutral
+plot(int(lt), "LT")

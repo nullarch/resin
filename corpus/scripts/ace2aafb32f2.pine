@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("IQR")
+var float[] data = array.new_float(0)
+array.push(data, close)
+if array.size(data) > 8
+    array.shift(data)
+q25 = array.percentile_nearest_rank(data, 25.0)
+q75 = array.percentile_nearest_rank(data, 75.0)
+iqr = q75 - q25
+plot(iqr, "IQR")

@@ -1,0 +1,5 @@
+
+//@version=5
+indicator("RSI Range")
+r = ta.rsi(close, 14)
+plot(r)

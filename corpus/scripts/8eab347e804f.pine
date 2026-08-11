@@ -1,0 +1,12 @@
+//@version=5
+indicator("Color constants")
+c1 = color.red
+c2 = color.green
+c3 = color.blue
+c4 = color.white
+c5 = color.black
+c6 = color.orange
+c7 = color.purple
+c8 = color.yellow
+c9 = color.aqua
+c10 = color.gray

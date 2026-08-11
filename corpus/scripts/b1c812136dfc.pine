@@ -1,0 +1,22 @@
+//@version=5
+indicator("Mega 15")
+type Metric
+    float value = 0.0
+    float weight = 0.0
+scale(float val, float factor) =>
+    val * factor
+var float bestComposite = 0.0
+float sma3 = nz(ta.sma(close, 3), close)
+float rsiVal = nz(ta.rsi(close, 5), 50.0)
+float atrVal = nz(ta.atr(3), 1.0)
+data = map.new<string, float>()
+data.put("trend", close > sma3 ? 1.0 : -1.0)
+data.put("momentum", scale(rsiVal - 50.0, 0.02))
+data.put("volatility", scale(atrVal, 0.1))
+float composite = 0.0
+for [key, val] in data
+    float adjusted = val > 0.0 ? val * 1.1 : val * 0.9
+    composite := composite + adjusted
+m = Metric.new(composite, 1.0)
+bestComposite := math.max(bestComposite, math.abs(composite))
+float percentile = bestComposite > 0.01 ? composite / bestComposite * 100.0 : 0.0

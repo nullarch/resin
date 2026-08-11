@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("QueuePos")
+enum QueueLevel
+    FRONT
+    MIDDLE
+    BACK
+relVol = ta.sma(volume, 5)
+ratio = nz(relVol, 1.0) > 0 ? volume / nz(relVol, 1.0) : 1.0
+qLevel = ratio > 1.5 ? QueueLevel.FRONT : ratio > 0.8 ? QueueLevel.MIDDLE : QueueLevel.BACK
+output = qLevel == QueueLevel.FRONT ? 3.0 : qLevel == QueueLevel.MIDDLE ? 2.0 : 1.0
+var float __obs_plot0 = na
+__obs_plot0 := output
+plot(output, "QP")

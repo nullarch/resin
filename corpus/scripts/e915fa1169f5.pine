@@ -1,0 +1,9 @@
+//@version=5
+indicator("Thermal Conductivity")
+heatFlow = volume / 100.0
+gradient = math.abs(close - nz(close[1], close))
+kThermal = gradient > 0.1 ? heatFlow / gradient : 0.0
+var float avgK = 0.0
+var int cnt = 0
+cnt := cnt + 1
+avgK := avgK + (kThermal - avgK) / cnt

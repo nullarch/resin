@@ -1,0 +1,12 @@
+//@version=5
+indicator("Multi var")
+var float sumClose = 0.0
+var float sumHigh = 0.0
+var float sumLow = 0.0
+var int count = 0
+sumClose := sumClose + close
+sumHigh := sumHigh + high
+sumLow := sumLow + low
+count := count + 1
+avgClose = sumClose / float(count)
+avgHigh = sumHigh / float(count)

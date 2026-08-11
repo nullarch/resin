@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Range Narr")
+barRange = high - low
+target = barRange * 0.3
+current = barRange
+steps = 0
+while current > target and steps < 15
+    current := current * 0.8
+    steps := steps + 1
+plot(steps, "St")

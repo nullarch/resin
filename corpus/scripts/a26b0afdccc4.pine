@@ -1,0 +1,5 @@
+//@version=5
+indicator("barstate last")
+var int lastCount = 0
+if barstate.islast
+    lastCount := lastCount + 1

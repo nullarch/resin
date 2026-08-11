@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:t": "pine_fn.<locals>.Trade(entry=100.0, stop=95.0, active=True)",
+   "var:e": 100.0,
+   "var:a": true,
+   "var:__obs_plot0": 103
+  },
+  {
+   "var:t": "pine_fn.<locals>.Trade(entry=100.0, stop=95.0, active=True)",
+   "var:e": 100.0,
+   "var:a": true,
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:t": "pine_fn.<locals>.Trade(entry=100.0, stop=95.0, active=True)",
+   "var:e": 100.0,
+   "var:a": true,
+   "var:__obs_plot0": 102
+  },
+  {
+   "var:t": "pine_fn.<locals>.Trade(entry=100.0, stop=95.0, active=True)",
+   "var:e": 100.0,
+   "var:a": true,
+   "var:__obs_plot0": 105
+  },
+  {
+   "var:t": "pine_fn.<locals>.Trade(entry=100.0, stop=95.0, active=True)",
+   "var:e": 100.0,
+   "var:a": true,
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:t": "pine_fn.<locals>.Trade(entry=100.0, stop=95.0, active=True)",
+   "var:e": 100.0,
+   "var:a": true,
+   "var:__obs_plot0": 106
+  },
+  {
+   "var:t": "pine_fn.<locals>.Trade(entry=100.0, stop=95.0, active=True)",
+   "var:e": 100.0,
+   "var:a": true,
+   "var:__obs_plot0": 108
+  },
+  {
+   "var:t": "pine_fn.<locals>.Trade(entry=100.0, stop=95.0, active=True)",
+   "var:e": 100.0,
+   "var:a": true,
+   "var:__obs_plot0": 110
+  },
+  {
+   "var:t": "pine_fn.<locals>.Trade(entry=100.0, stop=95.0, active=True)",
+   "var:e": 100.0,
+   "var:a": true,
+   "var:__obs_plot0": 109
+  },
+  {
+   "var:t": "pine_fn.<locals>.Trade(entry=100.0, stop=95.0, active=True)",
+   "var:e": 100.0,
+   "var:a": true,
+   "var:__obs_plot0": 111
+  }
+ ],
+ "finalVarState": {
+  "t": "pine_fn.<locals>.Trade(entry=100.0, stop=95.0, active=True)",
+  "e": 100.0,
+  "a": true,
+  "__obs_plot0": 111
+ }
+}

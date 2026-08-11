@@ -1,0 +1,7 @@
+
+//@version=5
+library("MyLib")
+export myMA(float src, int len) =>
+    ta.sma(src, len)
+
+plot(myMA(close, 3), "MA")

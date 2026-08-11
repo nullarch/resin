@@ -1,0 +1,13 @@
+//@version=5
+indicator("Deep Integration")
+myMA(src, len) =>
+    ta.sma(src, len)
+var float maxDiff = 0.0
+var int signal = 0
+s = myMA(close, 3)
+e = ta.ema(close, 3)
+r = ta.rsi(close, 3)
+diff = math.abs(s - e)
+if diff > maxDiff
+    maxDiff := diff
+signal := r > 50 ? 1 : -1

@@ -1,0 +1,12 @@
+
+//@version=5
+strategy("Vol Sizing", overlay=true)
+atr = ta.atr(3)
+sma3 = ta.sma(close, 3)
+riskPerUnit = atr * 2
+qty = riskPerUnit > 0 ? math.max(1, int(100 / riskPerUnit)) : 1
+if ta.crossover(close, sma3)
+    strategy.entry("Long", strategy.long, qty=qty)
+if ta.crossunder(close, sma3)
+    strategy.close("Long")
+plot(qty, "Qty")

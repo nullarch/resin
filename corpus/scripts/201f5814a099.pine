@@ -1,0 +1,5 @@
+//@version=5
+indicator("StrCoerce")
+var string lastMsg = ""
+msg = "Price: " + close
+lastMsg := msg

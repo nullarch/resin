@@ -1,0 +1,20 @@
+
+//@version=5
+indicator("Stat Full")
+var float cumSum = 0.0
+var float cumSqSum = 0.0
+var int n = 0
+n := n + 1
+cumSum := cumSum + close
+cumSqSum := cumSqSum + close * close
+mean = cumSum / n
+variance = n > 1 ? (cumSqSum - cumSum * cumSum / n) / (n - 1) : 0.0
+stddev = math.sqrt(math.max(variance, 0))
+zscore = stddev > 0 ? (close - mean) / stddev : 0.0
+
+hi5 = ta.highest(high, 5)
+lo5 = ta.lowest(low, 5)
+normPos = hi5 > lo5 ? (close - lo5) / (hi5 - lo5) : 0.5
+
+plot(zscore, "Z")
+plot(normPos, "Norm")

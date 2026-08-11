@@ -1,0 +1,6 @@
+//@version=5
+indicator("MACD_EMA")
+var float result = 0
+[macdLine, signal, hist] = ta.macd(ta.ema(close, 3), 3, 5, 3)
+if not na(macdLine)
+    result := macdLine

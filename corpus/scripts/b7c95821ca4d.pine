@@ -1,0 +1,9 @@
+//@version=5
+strategy("Orchestral Strategy")
+voice1 = ta.ema(close, 2)
+voice2 = ta.ema(close, 5)
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+if voice1 > voice2 and rsiVal > 50
+    strategy.entry("Forte", strategy.long)
+if voice1 < voice2 or rsiVal < 40
+    strategy.close("Forte")

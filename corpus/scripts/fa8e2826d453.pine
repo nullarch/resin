@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("UDT Def")
+type Defaults
+    float a = 1.0
+    float b = 2.0
+    int c = 3
+
+var Defaults d = Defaults.new()
+total = d.a + d.b + float(d.c)
+d.a := close
+plot(total, "T")

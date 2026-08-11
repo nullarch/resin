@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Sharpe")
+var float[] rets = array.new_float(0)
+prevC = nz(close[1], close)
+ret = prevC > 0 ? (close - prevC) / prevC : 0.0
+array.push(rets, ret)
+if array.size(rets) > 5
+    array.shift(rets)
+avgRet = array.avg(rets)
+variance = 0.0
+for [i, r] in rets
+    variance := variance + math.pow(r - avgRet, 2)
+sz = array.size(rets)
+stdDev = sz > 1 ? math.sqrt(variance / float(sz - 1)) : 1.0
+sharpe = stdDev > 0.0001 ? avgRet / stdDev : 0.0
+plot(sharpe, "S")

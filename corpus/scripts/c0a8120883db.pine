@@ -1,0 +1,9 @@
+//@version=5
+indicator("method chain")
+var float result = 0.0
+arr = array.new_float(0)
+arr.push(3.0)
+arr.push(1.0)
+arr.push(2.0)
+arr.sort(order.ascending)
+result := arr.first()

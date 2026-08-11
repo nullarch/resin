@@ -1,0 +1,105 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:preTreat": 103.0,
+   "var:postTreat": 0.0,
+   "var:preCtrl": 103.0,
+   "var:postCtrl": 0.0,
+   "var:preCnt": 1,
+   "var:postCnt": 0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:preTreat": 103.5,
+   "var:postTreat": 0.0,
+   "var:preCtrl": 103.5,
+   "var:postCtrl": 0.0,
+   "var:preCnt": 2,
+   "var:postCnt": 0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:preTreat": 103.0,
+   "var:postTreat": 0.0,
+   "var:preCtrl": 103.33333333333333,
+   "var:postCtrl": 0.0,
+   "var:preCnt": 3,
+   "var:postCnt": 0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:preTreat": 103.5,
+   "var:postTreat": 0.0,
+   "var:preCtrl": 103.416666666675,
+   "var:postCtrl": 0.0,
+   "var:preCnt": 4,
+   "var:postCnt": 0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:preTreat": 104.2,
+   "var:postTreat": 0.0,
+   "var:preCtrl": 103.66666666668,
+   "var:postCtrl": 0.0,
+   "var:preCnt": 5,
+   "var:postCnt": 0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:preTreat": 104.2,
+   "var:postTreat": 106.0,
+   "var:preCtrl": 103.66666666668,
+   "var:postCtrl": 106.0,
+   "var:preCnt": 5,
+   "var:postCnt": 1,
+   "var:__obs_plot0": -0.5333333333200017
+  },
+  {
+   "var:preTreat": 104.2,
+   "var:postTreat": 107.0,
+   "var:preCtrl": 103.66666666668,
+   "var:postCtrl": 106.5,
+   "var:preCnt": 5,
+   "var:postCnt": 2,
+   "var:__obs_plot0": -0.03333333332000166
+  },
+  {
+   "var:preTreat": 104.2,
+   "var:postTreat": 108.0,
+   "var:preCtrl": 103.66666666668,
+   "var:postCtrl": 107.0,
+   "var:preCnt": 5,
+   "var:postCnt": 3,
+   "var:__obs_plot0": 0.46666666667999834
+  },
+  {
+   "var:preTreat": 104.2,
+   "var:postTreat": 108.25,
+   "var:preCtrl": 103.66666666668,
+   "var:postCtrl": 107.5,
+   "var:preCnt": 5,
+   "var:postCnt": 4,
+   "var:__obs_plot0": 0.21666666667999834
+  },
+  {
+   "var:preTreat": 104.2,
+   "var:postTreat": 108.8,
+   "var:preCtrl": 103.66666666668,
+   "var:postCtrl": 108.0,
+   "var:preCnt": 5,
+   "var:postCnt": 5,
+   "var:__obs_plot0": 0.2666666666799955
+  }
+ ],
+ "finalVarState": {
+  "preTreat": 104.2,
+  "postTreat": 108.8,
+  "preCtrl": 103.66666666668,
+  "postCtrl": 108.0,
+  "preCnt": 5,
+  "postCnt": 5,
+  "__obs_plot0": 0.2666666666799955
+ }
+}

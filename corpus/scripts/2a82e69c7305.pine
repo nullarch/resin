@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Converge")
+target = ta.sma(close, 5)
+estimate = close
+iters = 0
+while math.abs(estimate - target) > 0.01 and iters < 20
+    estimate := (estimate + target) / 2.0
+    iters := iters + 1
+plot(estimate, "Est")
+plot(iters, "Iters")

@@ -1,0 +1,11 @@
+//@version=5
+indicator("Tuple UDF TA")
+f_signals(src, len) =>
+    s = ta.sma(src, len)
+    e = ta.ema(src, len)
+    [s, e]
+
+[sma_val, ema_val] = f_signals(close, 3)
+var float result = 0.0
+result := sma_val + ema_val
+plot(result)

@@ -1,0 +1,7 @@
+//@version=5
+indicator("While Converge")
+var float result = 0.0
+float x = 100.0
+result := while x > 10
+    x := x / 2.0
+    x

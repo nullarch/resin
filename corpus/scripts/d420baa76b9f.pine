@@ -1,0 +1,8 @@
+//@version=5
+indicator("Multi UDF Scope")
+add(float a, float b) =>
+    a + b
+mul(float a, float b) =>
+    a * b
+var float result = 0.0
+result := add(3.0, 4.0) + mul(5.0, 6.0)

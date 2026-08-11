@@ -1,0 +1,8 @@
+//@version=5
+indicator("Chart Point")
+var pt = chart.point.new(0, 0, 50000.0)
+var bool valid = false
+valid := not na(pt)
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

@@ -1,0 +1,5 @@
+//@version=5
+indicator("Fundamental Frequency")
+pitch = ta.sma(close, 3)
+vibrato = close - pitch
+plot(vibrato, title="vibrato")

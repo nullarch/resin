@@ -1,0 +1,10 @@
+//@version=5
+indicator("Switch Condition")
+float rsi = 65.0
+var float result = 0.0
+result := switch
+    rsi > 70 => 3.0
+    rsi > 50 => 2.0
+    rsi > 30 => 1.0
+    => 0.0
+plot(result)

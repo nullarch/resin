@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("EMA Trend")
+ema3 = ta.ema(close, 3)
+ema5 = ta.ema(close, 5)
+trend = ema3 > ema5 ? 1 : ema3 < ema5 ? -1 : 0
+var float __obs_plot0 = na
+__obs_plot0 := trend
+plot(trend, "T")

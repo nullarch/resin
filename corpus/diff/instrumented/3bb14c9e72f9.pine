@@ -1,0 +1,20 @@
+
+//@version=5
+indicator("Multi Var")
+var float peak = 0.0
+var float trough = 99999.0
+var int bullBars = 0
+var int bearBars = 0
+var float cumReturn = 0.0
+peak := math.max(peak, close)
+trough := math.min(trough, close)
+ret = close[1] > 0 ? (close - close[1]) / close[1] * 100 : 0.0
+cumReturn := cumReturn + ret
+sma3 = ta.sma(close, 3)
+if close > sma3
+    bullBars := bullBars + 1
+else
+    bearBars := bearBars + 1
+var float __obs_plot0 = na
+__obs_plot0 := cumReturn
+plot(cumReturn, "CR")

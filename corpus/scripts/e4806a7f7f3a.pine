@@ -1,0 +1,8 @@
+//@version=5
+indicator("Dopamine Reward")
+var float prediction = 103.0
+actual = close
+predError = actual - prediction
+dopamine = predError > 0 ? predError * 1.5 : predError * 0.5
+prediction := prediction + 0.1 * predError
+plot(dopamine)

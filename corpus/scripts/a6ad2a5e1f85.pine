@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("ROC Mom")
+roc1 = ta.roc(close, 1)
+roc3 = ta.roc(close, 3)
+avgRoc = (nz(roc1) + nz(roc3)) / 2.0
+accelerating = nz(roc1) > nz(roc3)
+plot(avgRoc, "AvgROC")
+plot(accelerating ? 1 : 0, "Accel")

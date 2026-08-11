@@ -1,0 +1,12 @@
+//@version=5
+strategy("Full Strategy", overlay=true)
+smaFast = ta.sma(close, 3)
+smaSlow = ta.sma(close, 5)
+rsiVal = ta.rsi(close, 5)
+bullish = ta.crossover(smaFast, smaSlow) and rsiVal < 70
+bearish = ta.crossunder(smaFast, smaSlow) and rsiVal > 30
+if bullish
+    strategy.entry("Long", strategy.long)
+if bearish
+    strategy.close("Long")
+plot(smaFast)

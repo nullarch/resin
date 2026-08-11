@@ -1,0 +1,6 @@
+//@version=5
+indicator("Pivot High")
+ph = ta.pivothigh(high, 2, 2)
+var float __obs_plot0 = na
+__obs_plot0 := na(ph) ? close : ph
+plot(na(ph) ? close : ph)

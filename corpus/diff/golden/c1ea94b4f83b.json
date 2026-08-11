@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:vs": "pine_fn.<locals>.VolState(current=5.9341563786, average=5.8263374486, regime=1)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:vs": "pine_fn.<locals>.VolState(current=5.9341563786, average=5.8263374486, regime=1)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:vs": "pine_fn.<locals>.VolState(current=5.9341563786, average=5.8263374486, regime=1)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:vs": "pine_fn.<locals>.VolState(current=5.9341563786, average=5.8263374486, regime=1)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:vs": "pine_fn.<locals>.VolState(current=5.9341563786, average=5.8263374486, regime=1)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:vs": "pine_fn.<locals>.VolState(current=5.9341563786, average=5.8263374486, regime=1)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:vs": "pine_fn.<locals>.VolState(current=5.9341563786, average=5.8263374486, regime=1)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:vs": "pine_fn.<locals>.VolState(current=5.9341563786, average=5.8263374486, regime=1)",
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:vs": "pine_fn.<locals>.VolState(current=5.9341563786, average=5.8263374486, regime=1)",
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:vs": "pine_fn.<locals>.VolState(current=5.9341563786, average=5.8263374486, regime=1)",
+   "var:__obs_plot0": 1
+  }
+ ],
+ "finalVarState": {
+  "vs": "pine_fn.<locals>.VolState(current=5.9341563786, average=5.8263374486, regime=1)",
+  "__obs_plot0": 1
+ }
+}

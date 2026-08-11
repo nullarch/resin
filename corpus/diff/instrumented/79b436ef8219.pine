@@ -1,0 +1,11 @@
+//@version=5
+indicator("OBV", overlay=false)
+src = input.source(close, title="Source")
+obv_val = ta.cum(math.sign(ta.change(src)) * volume)
+signal = ta.ema(obv_val, 20)
+var float __obs_plot0 = na
+__obs_plot0 := obv_val
+plot(obv_val, title="OBV", color=color.blue)
+var float __obs_plot1 = na
+__obs_plot1 := signal
+plot(signal, title="Signal", color=color.orange)

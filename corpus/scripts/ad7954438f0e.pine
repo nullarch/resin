@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Sys Mode")
+var int barNum = 0
+barNum := barNum + 1
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = ta.atr(3)
+mode = switch
+    barNum < 3 => "warmup"
+    atr > ta.sma(atr, 5) * 2 => "crisis"
+    rsi > 75 or rsi < 25 => "extreme"
+    => "normal"
+isOperational = mode == "normal" or mode == "extreme"
+plot(isOperational ? 1 : 0, "Oper")

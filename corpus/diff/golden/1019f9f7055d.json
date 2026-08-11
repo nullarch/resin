@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:grossProfit": 0.0,
+   "var:grossLoss": 0.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:grossProfit": 1.0,
+   "var:grossLoss": 0.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:grossProfit": 1.0,
+   "var:grossLoss": 2.0,
+   "var:__obs_plot0": 0.5
+  },
+  {
+   "var:grossProfit": 4.0,
+   "var:grossLoss": 2.0,
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:grossProfit": 6.0,
+   "var:grossLoss": 2.0,
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:grossProfit": 6.0,
+   "var:grossLoss": 3.0,
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:grossProfit": 8.0,
+   "var:grossLoss": 3.0,
+   "var:__obs_plot0": 2.6666666666666665
+  },
+  {
+   "var:grossProfit": 10.0,
+   "var:grossLoss": 3.0,
+   "var:__obs_plot0": 3.3333333333333335
+  },
+  {
+   "var:grossProfit": 10.0,
+   "var:grossLoss": 4.0,
+   "var:__obs_plot0": 2.5
+  },
+  {
+   "var:grossProfit": 12.0,
+   "var:grossLoss": 4.0,
+   "var:__obs_plot0": 3.0
+  }
+ ],
+ "finalVarState": {
+  "grossProfit": 12.0,
+  "grossLoss": 4.0,
+  "__obs_plot0": 3.0
+ }
+}

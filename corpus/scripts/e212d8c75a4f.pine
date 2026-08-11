@@ -1,0 +1,5 @@
+//@version=5
+indicator("Var Array Accum")
+var float[] prices = array.new<float>(0)
+prices.push(close)
+plot(prices.size())

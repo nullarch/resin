@@ -1,0 +1,5 @@
+//@version=5
+indicator("Conditional")
+var int bullCount = 0
+if close > open
+    bullCount := bullCount + 1

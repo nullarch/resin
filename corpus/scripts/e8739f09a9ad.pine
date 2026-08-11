@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("MF Score UDF")
+mfScore(float rsiScore, float trendScore, float volScore) =>
+    w1 = 0.4
+    w2 = 0.35
+    w3 = 0.25
+    rsiScore * w1 + trendScore * w2 + volScore * w3
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rs = (rsi - 50) / 50
+ts = sma5 > 0 ? (sma3 - sma5) / sma5 * 100 : 0.0
+vs = volume > ta.sma(volume, 5) ? 1.0 : 0.0
+score = mfScore(rs, ts, vs)
+plot(score, "MF")

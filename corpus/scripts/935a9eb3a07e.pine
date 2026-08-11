@@ -1,0 +1,3 @@
+//@version=5
+strategy("Test")
+cap = strategy.initial_capital

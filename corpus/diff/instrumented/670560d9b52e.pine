@@ -1,0 +1,8 @@
+//@version=5
+indicator("Bottleneck Proxy")
+float smaVal = ta.sma(close, 5)
+float dev = math.abs(close - smaVal)
+float maxDev = ta.highest(dev, 5)
+var float __obs_plot0 = na
+__obs_plot0 := maxDev
+plot(maxDev, "Bottleneck")

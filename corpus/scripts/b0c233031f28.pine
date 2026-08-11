@@ -1,0 +1,8 @@
+//@version=5
+indicator("Bool NA")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rsi = ta.rsi(close, 5)
+valid = not na(sma3) and not na(sma5) and not na(rsi)
+signal = valid and sma3 > sma5 and rsi > 50 and rsi < 80
+plot(signal ? 1.0 : 0.0)

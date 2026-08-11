@@ -1,0 +1,6 @@
+//@version=5
+indicator("Multiline Bool")
+cond = close > open and
+    high > high[1] and
+    low > low[1]
+plot(cond ? 1 : 0)

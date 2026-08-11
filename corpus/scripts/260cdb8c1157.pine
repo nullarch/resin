@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Vol UDT")
+type VolMetrics
+    float historical = 0.0
+    float realized = 0.0
+    float ratio = 0.0
+
+var VolMetrics vm = VolMetrics.new()
+atr = ta.atr(3)
+sd = ta.stdev(close, 5)
+vm.historical := close > 0 ? sd / close * 100 : 0.0
+vm.realized := close > 0 ? atr / close * 100 : 0.0
+vm.ratio := vm.historical > 0 ? vm.realized / vm.historical : 1.0
+plot(vm.ratio, "Ratio")

@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Risk Adj")
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+baseRisk = 1.0
+riskAdj = atr > avgATR * 2 ? baseRisk * 0.25 : atr > avgATR * 1.5 ? baseRisk * 0.5 : atr > avgATR ? baseRisk * 0.75 : baseRisk
+momAdj = rsi > 70 or rsi < 30 ? riskAdj * 0.5 : riskAdj
+var float __obs_plot0 = na
+__obs_plot0 := momAdj
+plot(momAdj, "AdjRisk")

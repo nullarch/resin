@@ -1,0 +1,7 @@
+//@version=5
+indicator("na chain")
+var float result = 0.0
+x = ta.sma(close, 3)
+y = nz(x, 0.0)
+z = fixnan(x)
+result := y + nz(z, 0.0)

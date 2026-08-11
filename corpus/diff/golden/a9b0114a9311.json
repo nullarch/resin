@@ -1,0 +1,105 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:concord": 0,
+   "var:discord": 0,
+   "var:jointAbove": 0.0,
+   "var:margAbove": 0.0,
+   "var:nBars": 1,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:concord": 1,
+   "var:discord": 0,
+   "var:jointAbove": 0.0,
+   "var:margAbove": 0.0,
+   "var:nBars": 2,
+   "var:__obs_plot0": 1.0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:concord": 2,
+   "var:discord": 0,
+   "var:jointAbove": 0.0,
+   "var:margAbove": 0.0,
+   "var:nBars": 3,
+   "var:__obs_plot0": 1.0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:concord": 3,
+   "var:discord": 0,
+   "var:jointAbove": 1.0,
+   "var:margAbove": 1.0,
+   "var:nBars": 4,
+   "var:__obs_plot0": 1.0,
+   "var:__obs_plot1": 1.0
+  },
+  {
+   "var:concord": 3,
+   "var:discord": 1,
+   "var:jointAbove": 2.0,
+   "var:margAbove": 2.0,
+   "var:nBars": 5,
+   "var:__obs_plot0": 0.5,
+   "var:__obs_plot1": 1.0
+  },
+  {
+   "var:concord": 4,
+   "var:discord": 1,
+   "var:jointAbove": 2.0,
+   "var:margAbove": 2.0,
+   "var:nBars": 6,
+   "var:__obs_plot0": 0.6,
+   "var:__obs_plot1": 1.0
+  },
+  {
+   "var:concord": 5,
+   "var:discord": 1,
+   "var:jointAbove": 2.0,
+   "var:margAbove": 3.0,
+   "var:nBars": 7,
+   "var:__obs_plot0": 0.6666666666666666,
+   "var:__obs_plot1": 0.6666666666666666
+  },
+  {
+   "var:concord": 6,
+   "var:discord": 1,
+   "var:jointAbove": 3.0,
+   "var:margAbove": 4.0,
+   "var:nBars": 8,
+   "var:__obs_plot0": 0.7142857142857143,
+   "var:__obs_plot1": 0.75
+  },
+  {
+   "var:concord": 7,
+   "var:discord": 1,
+   "var:jointAbove": 3.0,
+   "var:margAbove": 4.0,
+   "var:nBars": 9,
+   "var:__obs_plot0": 0.75,
+   "var:__obs_plot1": 0.75
+  },
+  {
+   "var:concord": 8,
+   "var:discord": 1,
+   "var:jointAbove": 4.0,
+   "var:margAbove": 5.0,
+   "var:nBars": 10,
+   "var:__obs_plot0": 0.7777777777777778,
+   "var:__obs_plot1": 0.8
+  }
+ ],
+ "finalVarState": {
+  "concord": 8,
+  "discord": 1,
+  "jointAbove": 4.0,
+  "margAbove": 5.0,
+  "nBars": 10,
+  "__obs_plot0": 0.7777777777777778,
+  "__obs_plot1": 0.8
+ }
+}

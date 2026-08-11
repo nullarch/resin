@@ -1,0 +1,11 @@
+//@version=5
+indicator("Sparsity")
+float costVal = math.abs(close - open)
+float threshold = 3.0
+var int sparseCount = 0
+var int totalCount = 0
+totalCount := totalCount + 1
+if costVal < threshold
+    sparseCount := sparseCount + 1
+float sparsity = totalCount > 0 ? sparseCount / totalCount : 0.0
+plot(sparsity, "Sparsity")

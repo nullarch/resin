@@ -1,0 +1,10 @@
+//@version=5
+indicator("SJF Scheduler")
+bursts = array.new<float>(0)
+bursts.push(high - low)
+bursts.push(close - open > 0 ? close - open : open - close)
+bursts.push(math.abs(close - nz(ta.sma(close, 3), close)))
+float minBurst = 999999.0
+for val in bursts
+    minBurst := math.min(minBurst, val)
+float utilization = minBurst > 0.01 ? close / minBurst : 0.0

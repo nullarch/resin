@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Map Arr")
+var float[] prices = array.new_float(0)
+var stats = map.new<string, float>()
+array.push(prices, close)
+if array.size(prices) > 8
+    array.shift(prices)
+map.put(stats, "count", float(array.size(prices)))
+map.put(stats, "avg", array.avg(prices))
+map.put(stats, "stdev", array.stdev(prices))
+cv = map.get(stats, "avg", 0.0) > 0 ? map.get(stats, "stdev", 0.0) / map.get(stats, "avg", 1.0) : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := cv
+plot(cv, "CV")

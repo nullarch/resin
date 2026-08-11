@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Ind Scores")
+var scores = map.new<string, float>()
+rsi = nz(ta.rsi(close, 3), 50.0)
+k = ta.stoch(close, high, low, 5)
+sma3 = ta.sma(close, 3)
+map.put(scores, "rsi", rsi > 50 ? 1.0 : -1.0)
+map.put(scores, "stoch", k > 50 ? 1.0 : -1.0)
+map.put(scores, "trend", close > sma3 ? 1.0 : -1.0)
+total = 0.0
+for [key, val] in scores
+    total := total + val
+plot(total, "Tot")

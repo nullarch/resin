@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("MACD Cross")
+[macdLine, signalLine, hist] = ta.macd(close, 3, 5, 3)
+bullCross = ta.crossover(macdLine, signalLine)
+bearCross = ta.crossunder(macdLine, signalLine)
+var int crosses = 0
+if bullCross or bearCross
+    crosses := crosses + 1
+plot(hist, "Histogram")

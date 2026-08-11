@@ -1,0 +1,226 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:window": [
+    102,
+    105,
+    107,
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:data": {
+    "trend": 1.0,
+    "momentum": 0.6112318840579999,
+    "volatility": 5.9341563786
+   },
+   "var:algoDecisions": 0,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:window": [
+    102,
+    105,
+    107,
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:data": {
+    "trend": 1.0,
+    "momentum": 0.6112318840579999,
+    "volatility": 5.9341563786
+   },
+   "var:algoDecisions": 0,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:window": [
+    102,
+    105,
+    107,
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:data": {
+    "trend": 1.0,
+    "momentum": 0.6112318840579999,
+    "volatility": 5.9341563786
+   },
+   "var:algoDecisions": 0,
+   "var:__obs_plot0": -0.33333333333400006,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:window": [
+    102,
+    105,
+    107,
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:data": {
+    "trend": 1.0,
+    "momentum": 0.6112318840579999,
+    "volatility": 5.9341563786
+   },
+   "var:algoDecisions": 1,
+   "var:__obs_plot0": 5.133333333366,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:window": [
+    102,
+    105,
+    107,
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:data": {
+    "trend": 1.0,
+    "momentum": 0.6112318840579999,
+    "volatility": 5.9341563786
+   },
+   "var:algoDecisions": 2,
+   "var:__obs_plot0": 7.444444444466,
+   "var:__obs_plot1": 2
+  },
+  {
+   "var:window": [
+    102,
+    105,
+    107,
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:data": {
+    "trend": 1.0,
+    "momentum": 0.6112318840579999,
+    "volatility": 5.9341563786
+   },
+   "var:algoDecisions": 3,
+   "var:__obs_plot0": 6.967479674830001,
+   "var:__obs_plot1": 3
+  },
+  {
+   "var:window": [
+    102,
+    105,
+    107,
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:data": {
+    "trend": 1.0,
+    "momentum": 0.6112318840579999,
+    "volatility": 5.9341563786
+   },
+   "var:algoDecisions": 4,
+   "var:__obs_plot0": 7.35620915035,
+   "var:__obs_plot1": 4
+  },
+  {
+   "var:window": [
+    102,
+    105,
+    107,
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:data": {
+    "trend": 1.0,
+    "momentum": 0.6112318840579999,
+    "volatility": 5.9341563786
+   },
+   "var:algoDecisions": 5,
+   "var:__obs_plot0": 7.5876429425300005,
+   "var:__obs_plot1": 5
+  },
+  {
+   "var:window": [
+    102,
+    105,
+    107,
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:data": {
+    "trend": 1.0,
+    "momentum": 0.6112318840579999,
+    "volatility": 5.9341563786
+   },
+   "var:algoDecisions": 6,
+   "var:__obs_plot0": 7.257370181461999,
+   "var:__obs_plot1": 6
+  },
+  {
+   "var:window": [
+    102,
+    105,
+    107,
+    106,
+    108,
+    110,
+    109,
+    111
+   ],
+   "var:data": {
+    "trend": 1.0,
+    "momentum": 0.6112318840579999,
+    "volatility": 5.9341563786
+   },
+   "var:algoDecisions": 7,
+   "var:__obs_plot0": 7.545388262657999,
+   "var:__obs_plot1": 7
+  }
+ ],
+ "finalVarState": {
+  "window": [
+   102,
+   105,
+   107,
+   106,
+   108,
+   110,
+   109,
+   111
+  ],
+  "data": {
+   "trend": 1.0,
+   "momentum": 0.6112318840579999,
+   "volatility": 5.9341563786
+  },
+  "algoDecisions": 7,
+  "__obs_plot0": 7.545388262657999,
+  "__obs_plot1": 7
+ }
+}

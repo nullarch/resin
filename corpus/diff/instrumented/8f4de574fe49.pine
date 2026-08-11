@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("MF")
+typicalPrice = (high + low + close) / 3
+mf = typicalPrice * volume
+avgMF = ta.sma(mf, 3)
+var float __obs_plot0 = na
+__obs_plot0 := avgMF
+plot(avgMF, "AMF")

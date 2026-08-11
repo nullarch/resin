@@ -1,0 +1,4 @@
+//@version=5
+indicator("alertcond test")
+alertcondition(close > open, "Bull", "Price above open")
+var float x = 1.0

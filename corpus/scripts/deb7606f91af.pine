@@ -1,0 +1,8 @@
+//@version=5
+indicator("Half-Life Decay")
+var float drugLevel = 100.0
+halfLife = 3.0
+decayFactor = math.pow(0.5, 1.0 / halfLife)
+boost = volume > 1000 ? 5.0 : 0.0
+drugLevel := drugLevel * decayFactor + boost
+plot(drugLevel)

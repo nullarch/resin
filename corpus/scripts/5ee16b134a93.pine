@@ -1,0 +1,14 @@
+//@version=5
+indicator("Method Decl")
+var float result = 0.0
+
+type Acc
+    float total = 0.0
+
+method add_val(Acc self, float v) =>
+    self.total := self.total + v
+
+a = Acc.new(0.0)
+a.add_val(10.0)
+a.add_val(20.0)
+result := a.total

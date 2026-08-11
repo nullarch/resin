@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Eq Stats")
+var float[] eqCurve = array.new_float(0)
+var float equity = 10000.0
+ret = close - close[1]
+equity := equity + nz(ret, 0.0) * 10
+array.push(eqCurve, equity)
+if array.size(eqCurve) > 8
+    array.shift(eqCurve)
+maxEq = array.max(eqCurve)
+minEq = array.min(eqCurve)
+eqRange = maxEq - minEq
+plot(eqRange, "Range")

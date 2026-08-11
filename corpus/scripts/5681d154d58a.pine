@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Roll Var")
+var float[] window = array.new_float(0)
+array.push(window, close)
+if array.size(window) > 5
+    array.shift(window)
+v = array.variance(window)
+sd = math.sqrt(nz(v, 0.0))
+plot(sd, "SD")

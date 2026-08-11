@@ -1,0 +1,10 @@
+//@version=5
+indicator("Supertrend UDF")
+calcBands(float src, int len, float mult) =>
+    atrVal = ta.atr(len)
+    upper = src + mult * atrVal
+    lower = src - mult * atrVal
+    [upper, lower]
+[up, dn] = calcBands(close, 3, 1.5)
+plot(up)
+plot(dn)

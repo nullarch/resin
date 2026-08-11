@@ -1,0 +1,5 @@
+//@version=5
+indicator("triple TA")
+ema3 = ta.ema(close, 3)
+sma_of_ema = ta.sma(ema3, 3)
+rsi_of_sma = ta.rsi(sma_of_ema, 3)

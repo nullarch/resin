@@ -1,0 +1,2 @@
+//@version=5
+import user/lib/1 as myLib

@@ -1,0 +1,16 @@
+//@version=5
+indicator("Firewall Filter")
+var int accepted = 0
+var int rejected = 0
+atrVal = nz(ta.atr(3), 1.0)
+volumeOk = volume > 900
+rangeOk = (high - low) < atrVal * 3.0
+priceOk = close > 0
+if volumeOk and rangeOk and priceOk
+    accepted := accepted + 1
+else
+    rejected := rejected + 1
+acceptRate = (accepted + rejected) > 0 ? accepted * 100.0 / (accepted + rejected) : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := acceptRate
+plot(acceptRate)

@@ -1,0 +1,5 @@
+//@version=5
+indicator("ternary deep")
+var float result = 0.0
+x = close
+result := x > 115 ? 4.0 : x > 110 ? 3.0 : x > 105 ? 2.0 : 1.0

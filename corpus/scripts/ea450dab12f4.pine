@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("PortItem")
+type Asset
+    string name = "default"
+    float weight = 0.0
+    float score = 0.0
+
+var Asset a1 = Asset.new("equities", 0.6, 0.0)
+var Asset a2 = Asset.new("bonds", 0.4, 0.0)
+rsi = nz(ta.rsi(close, 3), 50.0)
+a1.score := rsi / 100.0
+a2.score := (100.0 - rsi) / 100.0
+combined = a1.weight * a1.score + a2.weight * a2.score
+plot(combined, "C")

@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Chan Width")
+channelWidth(int period) =>
+    hi = ta.highest(high, period)
+    lo = ta.lowest(low, period)
+    hi - lo
+
+w5 = channelWidth(5)
+w3 = channelWidth(3)
+expanding = w5 > w3
+plot(w5, "W5")
+plot(expanding ? 1 : 0, "Exp")

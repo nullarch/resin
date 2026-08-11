@@ -1,0 +1,8 @@
+//@version=5
+indicator("VaR Proxy")
+float prevC = not na(close[1]) ? close[1] : close
+float logRet = prevC > 0 ? math.log(close / prevC) : 0.0
+float mu = ta.sma(logRet, 5)
+float sigma = ta.stdev(logRet, 5)
+float varProxy = mu - 1.65 * sigma
+plot(varProxy, "VaR95")

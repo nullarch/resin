@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Arr Product")
+ratios = array.from(close / open, high / low)
+product = 1.0
+for val in ratios
+    product := product * float(val)
+logProduct = product > 0 ? math.log(product) : 0.0
+plot(logProduct, "LogProd")

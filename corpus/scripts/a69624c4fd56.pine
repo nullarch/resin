@@ -1,0 +1,4 @@
+//@version=5
+indicator("Color")
+col = close > open ? color.green : color.red
+plot(close, color=col)

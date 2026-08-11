@@ -1,0 +1,8 @@
+//@version=5
+indicator("Partition Func")
+float kT = 2.0
+float energy1 = math.abs(close - 105.0)
+float energy2 = math.abs(close - 108.0)
+float energy3 = math.abs(close - 102.0)
+float Z = math.exp(-energy1 / kT) + math.exp(-energy2 / kT) + math.exp(-energy3 / kT)
+float prob1 = math.exp(-energy1 / kT) / Z

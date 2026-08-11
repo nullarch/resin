@@ -1,0 +1,30 @@
+
+//@version=5
+indicator("Ind Chain")
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+rsi = ta.rsi(close, 3)
+atr = ta.atr(3)
+[macd, sig, hist] = ta.macd(close, 3, 5, 3)
+k = ta.stoch(close, high, low, 5)
+
+// Chain: trend → momentum → volatility → composite
+trendScore = (close > sma3 ? 1.0 : -1.0) * 0.4
+momScore = (rsi > 55 ? 1.0 : rsi < 45 ? -1.0 : 0.0) * 0.3
+volScore = (atr > ta.sma(atr, 5) ? 0.5 : -0.5) * 0.3
+composite = trendScore + momScore + volScore
+
+var float[] chain = array.new_float(0)
+array.push(chain, composite)
+if array.size(chain) > 8
+    array.shift(chain)
+
+var m = map.new<string, float>()
+map.put(m, "composite", composite)
+map.put(m, "avg", array.avg(chain))
+
+var int bars = 0
+bars := bars + 1
+
+plot(composite, "Comp")
+plot(array.avg(chain), "Avg")

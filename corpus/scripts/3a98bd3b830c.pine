@@ -1,0 +1,5 @@
+
+//@version=5
+indicator("Stoch Single")
+k = ta.stoch(close, high, low, 14)
+plot(k)

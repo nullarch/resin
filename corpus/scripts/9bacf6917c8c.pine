@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("CCI Zones")
+cci = ta.cci(close, 5)
+zone = cci > 100 ? 2 : cci > 0 ? 1 : cci > -100 ? -1 : -2
+plot(cci, "CCI")
+plot(zone, "Zone")

@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("Band Zone")
+enum BandZone
+    AboveUpper = 2
+    Upper = 1
+    Middle = 0
+    Lower = -1
+    BelowLower = -2
+
+[mid, upper, lower] = ta.bb(close, 5, 2.0)
+bz = switch
+    close > upper => BandZone.AboveUpper
+    close > mid => BandZone.Upper
+    close < lower => BandZone.BelowLower
+    close < mid => BandZone.Lower
+    => BandZone.Middle
+plot(int(bz), "BZ")

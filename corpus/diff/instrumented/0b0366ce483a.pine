@@ -1,0 +1,35 @@
+//@version=5
+indicator("Comprehensive 57")
+
+// DotAccess: syminfo + barstate
+var float mt = syminfo.mintick
+var bool is_first = false
+if barstate.isfirst
+    is_first := true
+
+// IndexAccess: history
+prev = close[1]
+var float last_diff = 0.0
+last_diff := close - nz(prev, close)
+
+// varip persistence
+varip float vcnt = 0.0
+vcnt := vcnt + 1.0
+
+// Type casting
+var int truncated = int(3.99)
+
+// for-in
+var arr = array.from(1.0, 2.0, 3.0)
+float arr_sum = 0.0
+for v in arr
+    arr_sum := arr_sum + v
+
+// TA
+sma3 = ta.sma(close, 3)
+
+var float result = 0.0
+result := vcnt + truncated + arr_sum + nz(sma3, 0.0)
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

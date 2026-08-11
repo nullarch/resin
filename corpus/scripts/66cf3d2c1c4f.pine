@@ -1,0 +1,30 @@
+//@version=5
+indicator("Mega 4")
+type Regime
+    string name = ""
+    float threshold = 0.0
+classify(float rsi) =>
+    rsi > 70.0 ? 3 : rsi > 50.0 ? 2 : rsi > 30.0 ? 1 : 0
+var int prevRegime = 1
+float rsiVal = nz(ta.rsi(close, 5), 50.0)
+int regime = classify(rsiVal)
+regimeInfo = Regime.new("", 0.0)
+switch regime
+    0 =>
+        regimeInfo := Regime.new("oversold", 30.0)
+    1 =>
+        regimeInfo := Regime.new("neutral", 50.0)
+    2 =>
+        regimeInfo := Regime.new("bullish", 70.0)
+    3 =>
+        regimeInfo := Regime.new("overbought", 90.0)
+history = array.new<float>(0)
+for i = 0 to 4
+    float decay = rsiVal * math.pow(0.9, i)
+    history.push(decay)
+float histAvg = 0.0
+for val in history
+    histAvg := histAvg + val
+histAvg := history.size() > 0 ? histAvg / history.size() : 50.0
+bool regimeChange = regime != prevRegime
+prevRegime := regime

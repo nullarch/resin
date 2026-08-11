@@ -1,0 +1,12 @@
+//@version=5
+indicator("Ocean-Biology Model")
+// Oceanography: sea surface temperature
+sst = ta.ema(close, 3)
+sstAnomaly = not na(sst) ? sst - ta.sma(close, 5) : 0.0
+// Marine biology: coral bleaching threshold
+bleachThreshold = 1.0
+var int bleachEvents = 0
+var float coralHealth = 100.0
+if not na(sstAnomaly) and sstAnomaly > bleachThreshold
+    bleachEvents := bleachEvents + 1
+    coralHealth := math.max(0.0, coralHealth - sstAnomaly * 5.0)

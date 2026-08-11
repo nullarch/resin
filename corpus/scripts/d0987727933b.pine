@@ -1,0 +1,24 @@
+
+//@version=5
+indicator("Stress03")
+enum Zone
+    OVERBOUGHT
+    NEUTRAL
+    OVERSOLD
+type Analysis
+    float score = 0.0
+    int zoneCode = 0
+rsi = nz(ta.rsi(close, 5), 50.0)
+zone = rsi > 70 ? Zone.OVERBOUGHT : rsi < 30 ? Zone.OVERSOLD : Zone.NEUTRAL
+result = Analysis.new()
+result.score := rsi
+result.zoneCode := zone == Zone.OVERBOUGHT ? 3 : zone == Zone.OVERSOLD ? 1 : 2
+dataMap = map.new<string, float>()
+map.put(dataMap, "rsi", rsi)
+map.put(dataMap, "zone", float(result.zoneCode))
+map.put(dataMap, "close", close)
+values = array.new_float(0)
+for [key, val] in dataMap
+    array.push(values, val)
+total = array.sum(values)
+plot(total, "S03")

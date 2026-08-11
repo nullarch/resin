@@ -1,0 +1,9 @@
+//@version=5
+indicator("CAP Availability")
+var int total_bars = 0
+var int available_bars = 0
+total_bars := total_bars + 1
+ema5 = ta.ema(close, 5)
+if not na(ema5)
+    available_bars := available_bars + 1
+availability = total_bars > 0 ? available_bars / total_bars : 0.0

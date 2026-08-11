@@ -1,0 +1,9 @@
+//@version=5
+indicator("Switch NoDsc")
+var float val = 50.0
+string label = switch
+    val > 80 => "high"
+    val > 40 => "mid"
+    => "low"
+var string result = label
+plot(close)

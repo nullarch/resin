@@ -1,0 +1,23 @@
+//@version=5
+indicator("Torture 12")
+var float cumSignal = 0.0
+float rsiVal = nz(ta.rsi(close, 5), 50.0)
+float smaVal = nz(ta.sma(close, 3), close)
+buckets = array.new<float>(5, 0.0)
+for idx = 0 to 4 by 1
+    float threshold = 20.0 + idx * 15.0
+    float bucket = rsiVal > threshold ? 1.0 : 0.0
+    buckets.set(idx, bucket)
+float bucketSum = 0.0
+for b in buckets
+    bucketSum := bucketSum + b
+float zone = switch
+    bucketSum >= 4.0 => 2.0
+    bucketSum >= 2.0 => 1.0
+    bucketSum >= 1.0 => 0.0
+    => -1.0
+float weighted = zone * math.abs(close - smaVal)
+cumSignal := cumSignal + weighted
+float dampened = cumSignal > 0.01 ?
+    math.log(cumSignal + 1.0) :
+    -math.log(math.abs(cumSignal) + 1.0)

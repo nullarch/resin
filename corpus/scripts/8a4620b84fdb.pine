@@ -1,0 +1,10 @@
+//@version=5
+indicator("Hippocampal Memory")
+var float shortTerm = 0.0
+var float longTerm = 0.0
+newInfo = close - open
+shortTerm := shortTerm * 0.5 + newInfo
+consolidation = math.abs(shortTerm) > 3.0 ? 0.1 : 0.02
+longTerm := longTerm + consolidation * shortTerm
+longTerm := math.max(-50.0, math.min(50.0, longTerm))
+plot(longTerm)

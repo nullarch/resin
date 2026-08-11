@@ -1,0 +1,9 @@
+//@version=5
+indicator("Combined")
+sma5 = ta.sma(close, 5)
+var float last_sma = 0.0
+if not na(sma5)
+    last_sma := sma5
+var string label_text = str.upper("sma")
+var int tlen = str.length(label_text)
+plot(last_sma)

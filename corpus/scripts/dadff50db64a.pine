@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Rel Perf")
+relPerf(float price, float benchmark) =>
+    benchmark > 0 ? (price - benchmark) / benchmark * 100 : 0.0
+
+sma5 = ta.sma(close, 5)
+rp = relPerf(close, sma5)
+rpMA = ta.sma(rp, 3)
+plot(rp, "RP")
+plot(rpMA, "MA")

@@ -1,0 +1,7 @@
+//@version=5
+indicator("Math Combo")
+logClose = math.log(close)
+sqrtVol = math.sqrt(volume)
+powVal = math.pow(close / 100.0, 2.0)
+maxVal = math.max(logClose, sqrtVol)
+minVal = math.min(logClose, powVal)

@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Factor Score")
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+trendFactor = close > sma3 ? 1 : 0
+momFactor = rsi > 55 ? 1 : 0
+volFactor = volume > ta.sma(volume, 5) ? 1 : 0
+score = trendFactor + momFactor + volFactor
+plot(score, "FS")

@@ -1,0 +1,5 @@
+//@version=5
+indicator("Series OOB")
+float deep = close[100]
+var bool is_nan = na(deep)
+plot(close)

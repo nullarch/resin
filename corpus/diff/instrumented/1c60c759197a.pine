@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Cross Freq")
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+var int crosses = 0
+if ta.crossover(sma3, ema5) or ta.crossunder(sma3, ema5)
+    crosses := crosses + 1
+var float __obs_plot0 = na
+__obs_plot0 := crosses
+plot(crosses, "Crosses")

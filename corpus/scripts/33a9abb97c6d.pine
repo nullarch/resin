@@ -1,0 +1,7 @@
+//@version=5
+indicator("Colony Size")
+colonySize = ta.sma(volume, 3)
+avgColony = ta.sma(volume, 7)
+activity = avgColony > 0 ? colonySize / avgColony : 1.0
+hyperActive = activity > 1.2
+plot(hyperActive ? 1 : 0)

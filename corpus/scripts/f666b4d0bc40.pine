@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("ST Proxy")
+atr = ta.atr(3)
+hl2 = (high + low) / 2
+upperBand = hl2 + atr * 2
+lowerBand = hl2 - atr * 2
+var float st = 0.0
+var bool isUp = true
+if close > st
+    isUp := true
+    st := lowerBand
+else
+    isUp := false
+    st := upperBand
+plot(st, "ST")
+plot(isUp ? 1 : -1, "Dir")

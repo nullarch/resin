@@ -1,0 +1,7 @@
+//@version=5
+indicator("VarTernarySma")
+var float best = 0.0
+smaVal = nz(ta.sma(close, 3), close)
+diff = math.abs(close - smaVal)
+best := diff > best ? diff : best
+plot(best, "Best")

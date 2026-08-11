@@ -1,0 +1,8 @@
+//@version=5
+indicator("UDF ML")
+calc(float a, float b, float c) =>
+    result = a +
+        b +
+        c
+    result / 3
+plot(calc(close, open, high))

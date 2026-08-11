@@ -1,0 +1,8 @@
+//@version=5
+indicator("Availability")
+recentMaxVol = ta.highest(volume, 3)
+volPerception = recentMaxVol > 0 ? volume / recentMaxVol : 0.0
+salient = volPerception > 0.8
+var float __obs_plot0 = na
+__obs_plot0 := salient ? 1 : 0
+plot(salient ? 1 : 0)

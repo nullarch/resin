@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Vol Ratio")
+volSMA = ta.sma(volume, 5)
+volRatio = volSMA > 0 ? volume / volSMA : 1.0
+isHigh = volRatio > 1.5
+var float __obs_plot0 = na
+__obs_plot0 := volRatio
+plot(volRatio, "VR")
+var float __obs_plot1 = na
+__obs_plot1 := isHigh ? 1 : 0
+plot(isHigh ? 1 : 0, "Hi")

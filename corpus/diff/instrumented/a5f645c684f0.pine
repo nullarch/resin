@@ -1,0 +1,7 @@
+//@version=5
+indicator("Not Cont")
+x = not
+    (close < open)
+var float __obs_plot0 = na
+__obs_plot0 := x ? 1 : 0
+plot(x ? 1 : 0)

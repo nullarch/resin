@@ -1,0 +1,56 @@
+
+//@version=5
+indicator("Toward 3000")
+// Full indicator suite
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+rsiVal = ta.rsi(close, 3)
+atrVal = ta.atr(3)
+[macdLine, sigLine, hist] = ta.macd(close, 3, 5, 3)
+[bbMid, bbUp, bbLo] = ta.bb(close, 5, 2.0)
+wma5 = ta.wma(close, 5)
+
+// Multi-layer scoring
+layer1 = (close > sma3 ? 1 : 0) + (close > ema5 ? 1 : 0) + (close > wma5 ? 1 : 0)
+layer2 = (rsiVal > 50 ? 1 : 0) + (hist > 0 ? 1 : 0)
+layer3 = close > bbMid ? 1 : 0
+totalScore = layer1 + layer2 + layer3
+
+// State
+var int bullRun = 0
+var int bearRun = 0
+var float bestScore = 0.0
+if totalScore >= 4
+    bullRun := bullRun + 1
+    bearRun := 0
+else if totalScore <= 2
+    bearRun := bearRun + 1
+    bullRun := 0
+if float(totalScore) > bestScore
+    bestScore := float(totalScore)
+
+// Data structures
+var float[] history = array.new_float(0)
+array.push(history, float(totalScore))
+if array.size(history) > 10
+    array.shift(history)
+avgScore = array.avg(history)
+
+var m = map.new<string, float>()
+map.put(m, "score", float(totalScore))
+map.put(m, "avg", avgScore)
+map.put(m, "best", bestScore)
+
+// Volatility regime
+bbWidth = bbUp - bbLo
+volRegime = atrVal > ta.sma(atrVal, 3) ? "high" : "low"
+
+var float __obs_plot0 = na
+__obs_plot0 := totalScore
+plot(totalScore, "Score")
+var float __obs_plot1 = na
+__obs_plot1 := avgScore
+plot(avgScore, "AvgScore")
+var float __obs_plot2 = na
+__obs_plot2 := bestScore
+plot(bestScore, "Best")

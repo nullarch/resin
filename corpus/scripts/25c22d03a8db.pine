@@ -1,0 +1,6 @@
+//@version=5
+indicator("Filtration Volume")
+var float cumVol = 0.0
+cumVol := cumVol + volume
+float filtLevel = cumVol > 0 ? volume / cumVol : 0.0
+plot(filtLevel, "Filt")

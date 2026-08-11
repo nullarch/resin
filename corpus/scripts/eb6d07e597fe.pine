@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Tern Map")
+var weights = map.new<string, float>()
+map.put(weights, "aggressive", 1.5)
+map.put(weights, "moderate", 1.0)
+map.put(weights, "conservative", 0.5)
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+volR = avgATR > 0 ? atr / avgATR : 1.0
+profile = volR > 1.5 ? "conservative" : volR > 1.0 ? "moderate" : "aggressive"
+weight = map.get(weights, profile, 1.0)
+rsi = nz(ta.rsi(close, 3), 50.0)
+signal = (rsi - 50) / 50 * weight
+plot(signal, "Sig")

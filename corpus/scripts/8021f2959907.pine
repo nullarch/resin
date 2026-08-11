@@ -1,0 +1,14 @@
+//@version=5
+indicator("UDF Nested If")
+f_classify(x, y) =>
+    if x > 0
+        if y > 0
+            1.0
+        else
+            2.0
+    else
+        3.0
+
+var float result = 0.0
+result := f_classify(1.0, -1.0)
+plot(result)

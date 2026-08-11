@@ -1,0 +1,10 @@
+//@version=5
+indicator("Binding Energy")
+float massNumber = close
+float atomicNum = close / 2.1
+float aV = 15.56
+float aS = 17.23
+float volumeTerm = aV * massNumber
+float surfaceTerm = aS * math.pow(massNumber, 2.0 / 3.0)
+float totalBE = volumeTerm - surfaceTerm
+float bePerNucleon = massNumber > 0 ? totalBE / massNumber : 0.0

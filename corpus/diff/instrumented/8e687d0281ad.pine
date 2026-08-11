@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Pivot")
+pivot = (high + low + close) / 3
+r1 = 2 * pivot - low
+s1 = 2 * pivot - high
+var float __obs_plot0 = na
+__obs_plot0 := pivot
+plot(pivot, "P")
+var float __obs_plot1 = na
+__obs_plot1 := r1
+plot(r1, "R1")

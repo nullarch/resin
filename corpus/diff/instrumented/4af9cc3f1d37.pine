@@ -1,0 +1,7 @@
+//@version=5
+indicator("Inline Comment")
+var float result = 0.0 // initial value
+result := close // use close price
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result) // plot it

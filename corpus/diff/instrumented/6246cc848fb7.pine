@@ -1,0 +1,8 @@
+//@version=5
+indicator("Turbulence Intensity")
+meanFlow = ta.sma(close, 5)
+fluctuation = not na(meanFlow) ? math.abs(close - meanFlow) : 0.0
+intensity = not na(meanFlow) and meanFlow > 0 ? fluctuation / meanFlow * 100.0 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := intensity
+plot(intensity)

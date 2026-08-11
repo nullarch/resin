@@ -1,0 +1,31 @@
+//@version=5
+strategy("Comprehensive Farm Model")
+// Weather proxy
+avgTemp = (high + low) / 2
+rainfall = volume / 200.0
+// Crop health
+biomass = ta.ema(close, 3)
+growthTrend = ta.sma(close, 5)
+// Soil moisture
+var float soilMoisture = 50.0
+evap = (high - low) * 0.3
+soilMoisture := math.max(0.0, math.min(100.0, soilMoisture + rainfall - evap))
+// GDD
+baseTemp = 50.0
+gdd = avgTemp > baseTemp ? avgTemp - baseTemp : 0.0
+var float totalGDD = 0.0
+totalGDD := totalGDD + gdd
+// Yield estimation via UDF
+estimateYield(bio, moisture, gddAcc) =>
+    bio * (moisture / 100.0) * math.log(gddAcc + 1)
+yieldEst = not na(biomass) ? estimateYield(biomass, soilMoisture, totalGDD) : 0.0
+// Harvest decision
+if not na(growthTrend) and not na(biomass) and biomass < growthTrend and totalGDD > 100
+    strategy.entry("Harvest", strategy.long)
+if not na(growthTrend) and not na(biomass) and biomass >= growthTrend
+    strategy.close("Harvest")
+// Track in map
+var stats = map.new<string, float>()
+map.put(stats, "yield", yieldEst)
+map.put(stats, "moisture", soilMoisture)
+map.put(stats, "gdd", totalGDD)

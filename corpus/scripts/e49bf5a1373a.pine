@@ -1,0 +1,7 @@
+//@version=5
+indicator("Empty Array Safety")
+arr = array.new<float>(0)
+sz = arr.size()
+sumVal = sz > 0 ? arr.sum() : 0.0
+avgVal = sz > 0 ? arr.avg() : 0.0
+plot(sumVal + avgVal)

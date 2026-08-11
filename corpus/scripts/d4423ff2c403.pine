@@ -1,0 +1,8 @@
+//@version=5
+indicator("Multi Var")
+var float maxClose = 0.0
+var float minClose = 999.0
+if close > maxClose
+    maxClose := close
+if close < minClose
+    minClose := close

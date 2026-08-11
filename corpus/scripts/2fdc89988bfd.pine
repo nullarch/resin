@@ -1,0 +1,16 @@
+
+//@version=5
+strategy("Enum Strat2", overlay=true)
+enum Signal
+    Long = 1
+    Short = -1
+    None_ = 0
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+sig = close > sma3 and rsi > 55 ? Signal.Long : close < sma3 and rsi < 45 ? Signal.Short : Signal.None_
+if sig == Signal.Long
+    strategy.entry("Long", strategy.long)
+if sig == Signal.Short
+    strategy.close("Long")
+plot(sma3, "MA")

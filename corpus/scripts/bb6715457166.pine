@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Abs Vals")
+changes = array.from(close - open, high - close, open - low)
+absVals = array.abs(changes)
+maxAbs = array.max(absVals)
+plot(maxAbs, "MaxAbs")

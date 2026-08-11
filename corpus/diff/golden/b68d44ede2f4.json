@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:trendBars": 1,
+   "var:trendDir": -1,
+   "var:__obs_plot0": -1
+  },
+  {
+   "var:trendBars": 2,
+   "var:trendDir": -1,
+   "var:__obs_plot0": -2
+  },
+  {
+   "var:trendBars": 3,
+   "var:trendDir": -1,
+   "var:__obs_plot0": -3
+  },
+  {
+   "var:trendBars": 1,
+   "var:trendDir": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:trendBars": 2,
+   "var:trendDir": 1,
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:trendBars": 1,
+   "var:trendDir": -1,
+   "var:__obs_plot0": -1
+  },
+  {
+   "var:trendBars": 1,
+   "var:trendDir": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:trendBars": 2,
+   "var:trendDir": 1,
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:trendBars": 1,
+   "var:trendDir": -1,
+   "var:__obs_plot0": -1
+  },
+  {
+   "var:trendBars": 1,
+   "var:trendDir": 1,
+   "var:__obs_plot0": 1
+  }
+ ],
+ "finalVarState": {
+  "trendBars": 1,
+  "trendDir": 1,
+  "__obs_plot0": 1
+ }
+}

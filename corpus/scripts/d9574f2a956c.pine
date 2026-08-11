@@ -1,0 +1,11 @@
+//@version=5
+indicator("For In Destructure")
+var arr = array.from(10.0, 20.0, 30.0)
+float idx_sum = 0.0
+float val_sum = 0.0
+for [i, v] in arr
+    idx_sum := idx_sum + i
+    val_sum := val_sum + v
+var float result = 0.0
+result := idx_sum + val_sum
+plot(result)

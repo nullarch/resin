@@ -1,0 +1,31 @@
+
+//@version=5
+strategy("Stress09")
+type TradeSetup
+    float entry = 0.0
+    float stop = 0.0
+    string reason = ""
+setup = TradeSetup.new()
+rsi = nz(ta.rsi(close, 3), 50.0)
+setup.reason := switch
+    rsi > 65 => "RSI_HIGH"
+    rsi < 35 => "RSI_LOW"
+    => "NEUTRAL"
+setup.entry := close
+atr = nz(ta.atr(5), 1.0)
+setup.stop := close - 2.0 * atr
+levels = array.new_float(0)
+for i = 1 to 3
+    array.push(levels, close + float(i) * atr)
+targets = map.new<string, float>()
+for i = 0 to array.size(levels) - 1
+    key = "tp" + str.tostring(i + 1)
+    map.put(targets, key, array.get(levels, i))
+targetSum = 0.0
+for [k, v] in targets
+    targetSum := targetSum + v
+if setup.reason == "RSI_LOW"
+    strategy.entry("Long", strategy.long)
+if setup.reason == "RSI_HIGH"
+    strategy.close("Long")
+plot(targetSum + float(str.length(setup.reason)), "S09")

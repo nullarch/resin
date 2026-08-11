@@ -1,0 +1,5 @@
+//@version=5
+indicator("LEFT JOIN")
+sma5 = ta.sma(close, 5)
+joined_val = not na(sma5) ? sma5 : -1.0
+has_right = not na(sma5) ? 1.0 : 0.0

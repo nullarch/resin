@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Body Hist")
+var float[] bodies = array.new_float(0)
+body = math.abs(close - open)
+array.push(bodies, body)
+if array.size(bodies) > 8
+    array.shift(bodies)
+avgBody = array.size(bodies) > 0 ? array.avg(bodies) : body
+bigBody = body > avgBody * 1.5
+plot(bigBody ? 1 : 0, "BB")

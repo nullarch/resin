@@ -1,0 +1,116 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:arr": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "var:any_true": true,
+   "var:val": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:arr": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "var:any_true": true,
+   "var:val": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:arr": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "var:any_true": true,
+   "var:val": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:arr": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "var:any_true": true,
+   "var:val": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:arr": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "var:any_true": true,
+   "var:val": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:arr": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "var:any_true": true,
+   "var:val": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:arr": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "var:any_true": true,
+   "var:val": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:arr": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "var:any_true": true,
+   "var:val": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:arr": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "var:any_true": true,
+   "var:val": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:arr": [
+    0.0,
+    0.0,
+    1.0
+   ],
+   "var:any_true": true,
+   "var:val": 1.0,
+   "var:__obs_plot0": 1.0
+  }
+ ],
+ "finalVarState": {
+  "arr": [
+   0.0,
+   0.0,
+   1.0
+  ],
+  "any_true": true,
+  "val": 1.0,
+  "__obs_plot0": 1.0
+ }
+}

@@ -1,0 +1,11 @@
+//@version=5
+indicator("test")
+lengths = array.from(3, 5)
+results = array.new_float(2)
+for i = 0 to 1
+    l = array.get(lengths, i)
+    val = ta.sma(close, l)
+    array.set(results, i, val)
+var float __obs_plot0 = na
+__obs_plot0 := array.get(results, 0)
+plot(array.get(results, 0))

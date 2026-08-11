@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Final State")
+var fs = map.new<string, float>()
+map.put(fs, "close", close)
+map.put(fs, "sma", ta.sma(close, 3))
+map.put(fs, "rsi", nz(ta.rsi(close, 3), 50.0))
+map.put(fs, "atr", ta.atr(3))
+map.put(fs, "volume", volume)
+sma = map.get(fs, "sma", close)
+aboveMA = close > sma
+plot(aboveMA ? 1 : 0, "AboveMA")

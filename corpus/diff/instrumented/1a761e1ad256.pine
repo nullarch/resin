@@ -1,0 +1,12 @@
+//@version=5
+indicator("Disposition")
+var float refPrice = na
+var int holdBars = 0
+if na(refPrice)
+    refPrice := close
+isWinner = close > nz(refPrice)
+holdBars := holdBars + 1
+sellSignal = isWinner and holdBars > 3
+var float __obs_plot0 = na
+__obs_plot0 := sellSignal ? 1 : 0
+plot(sellSignal ? 1 : 0)

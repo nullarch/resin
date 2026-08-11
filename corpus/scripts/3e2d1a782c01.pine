@@ -1,0 +1,4 @@
+//@version=5
+indicator("Test")
+ln = line.new(bar_index, high, bar_index, low)
+ln.set_x1(100)

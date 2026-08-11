@@ -1,0 +1,7 @@
+//@version=5
+indicator("Color plot")
+sma5 = ta.sma(close, 5)
+clr = close > nz(sma5) ? color.green : color.red
+bgClr = close > open ? color.new(color.green, 90) : color.new(color.red, 90)
+plot(sma5, "SMA", color=clr)
+bgcolor(bgClr)

@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("MedianProxy")
+var float[] window = array.new_float(0)
+array.push(window, close)
+if array.size(window) > 5
+    array.shift(window)
+sorted = array.copy(window)
+array.sort(sorted, order.ascending)
+sz = array.size(sorted)
+midIdx = math.floor(float(sz) / 2.0)
+median = array.get(sorted, int(midIdx))
+plot(median, "M")

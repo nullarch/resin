@@ -1,0 +1,3 @@
+//@version=5
+indicator("Path\\Test")
+x = close

@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("FI Cond")
+var data = map.new<string, float>()
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+map.put(data, "ma_sig", close > sma3 ? 1.0 : -1.0)
+map.put(data, "rsi_sig", rsi > 55 ? 1.0 : rsi < 45 ? -1.0 : 0.0)
+map.put(data, "vol_sig", volume > ta.sma(volume, 5) ? 1.0 : 0.0)
+bullCount = 0
+bearCount = 0
+for [k, v] in data
+    if v > 0
+        bullCount := bullCount + 1
+    if v < 0
+        bearCount := bearCount + 1
+plot(bullCount - bearCount, "Net")

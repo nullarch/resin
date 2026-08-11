@@ -1,0 +1,10 @@
+//@version=5
+indicator("RSI Signals")
+var int obCount = 0
+var int osCount = 0
+rsiVal = ta.rsi(close, 5)
+if not na(rsiVal)
+    if rsiVal > 70
+        obCount := obCount + 1
+    if rsiVal < 30
+        osCount := osCount + 1

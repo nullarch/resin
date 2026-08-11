@@ -1,0 +1,4 @@
+//@version=5
+indicator("test")
+smoothed = ta.ema(ta.ema(ta.ema(close, 3), 3), 3)
+plot(smoothed)

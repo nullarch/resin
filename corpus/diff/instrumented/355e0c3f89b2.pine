@@ -1,0 +1,16 @@
+//@version=5
+indicator("Long Term Potentiation")
+var float ltpStrength = 1.0
+var int stimCount = 0
+isStim = close > open
+if isStim
+    stimCount := stimCount + 1
+if stimCount >= 3
+    ltpStrength := ltpStrength * 1.05
+    stimCount := 0
+ltpStrength := math.min(ltpStrength, 5.0)
+decay = 0.99
+ltpStrength := ltpStrength * decay
+var float __obs_plot0 = na
+__obs_plot0 := ltpStrength
+plot(ltpStrength)

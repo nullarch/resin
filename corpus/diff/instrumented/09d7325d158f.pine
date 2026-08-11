@@ -1,0 +1,10 @@
+//@version=5
+indicator("Volume of Distribution")
+dose = high - low
+concentration = close - low
+vd = concentration > 0.01 ? dose / concentration : 0.0
+emaVd = ta.ema(close, 5)
+ratio = not na(emaVd) and emaVd > 0 ? vd / emaVd * 100.0 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := ratio
+plot(ratio)

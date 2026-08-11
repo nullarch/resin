@@ -1,0 +1,10 @@
+//@version=5
+indicator("Qualifiers")
+const int PERIOD = 14
+const float MULT = 2.0
+series float x = close > open ? 1.0 : -1.0
+simple int len = 14
+val = ta.sma(close, PERIOD) * MULT + x
+var float __obs_plot0 = na
+__obs_plot0 := val
+plot(val)

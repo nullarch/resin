@@ -1,0 +1,29 @@
+//@version=5
+indicator("Comprehensive Dispatch C76")
+
+// array dispatch
+a = array.from(1.0, 2.0, 3.0)
+a.push(4.0)
+float arr_sum = array.sum(a)
+
+// map dispatch
+m = map.new<string, float>()
+m.put("total", arr_sum)
+float map_val = m.get("total")
+
+// TA
+sma3 = ta.sma(close, 3)
+
+// UDT
+type Result
+    float arr = 0.0
+    float map = 0.0
+    float ta = 0.0
+
+r = Result.new(arr=arr_sum, map=map_val, ta=sma3)
+
+var float result = 0.0
+result := if r.arr > 5
+    r.arr + r.map + nz(r.ta, 0.0)
+else
+    0.0

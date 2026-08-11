@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Enum First")
+enum Status
+    Active = 1
+    Inactive = 0
+
+st = Status.Active
+val = int(st)
+plot(val, "V")

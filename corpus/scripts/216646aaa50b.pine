@@ -1,0 +1,8 @@
+//@version=5
+indicator("TA Backfill")
+sma5 = ta.sma(close, 5)
+var float safe_sma = 0.0
+safe_sma := nz(sma5, close)  // fallback to close when NaN
+var float prev = 0.0
+prev := nz(sma5[1], safe_sma)  // fallback to current if prev NaN
+plot(close)

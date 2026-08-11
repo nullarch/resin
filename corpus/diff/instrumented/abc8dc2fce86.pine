@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Donchian")
+hi5 = ta.highest(high, 5)
+lo5 = ta.lowest(low, 5)
+mid = (hi5 + lo5) / 2
+breakUp = close >= hi5
+breakDown = close <= lo5
+var float __obs_plot0 = na
+__obs_plot0 := hi5
+plot(hi5, "Hi")
+var float __obs_plot1 = na
+__obs_plot1 := lo5
+plot(lo5, "Lo")
+var float __obs_plot2 = na
+__obs_plot2 := mid
+plot(mid, "Mid")

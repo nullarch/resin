@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("DDPhase")
+enum Phase
+    NewHigh = 1
+    Shallow = 2
+    Deep = 3
+
+var float equity = 100.0
+var float peak = 100.0
+pnl = close > open ? 1.0 : -0.6
+equity := equity + pnl
+peak := equity > peak ? equity : peak
+ddPct = peak > 0 ? (peak - equity) / peak * 100.0 : 0.0
+phase = ddPct < 0.01 ? Phase.NewHigh : ddPct < 5.0 ? Phase.Shallow : Phase.Deep
+val = phase == Phase.NewHigh ? 1.0 : phase == Phase.Shallow ? 2.0 : 3.0
+plot(val, "Ph")

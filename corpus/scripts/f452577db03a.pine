@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("KC")
+[kcMid, kcUp, kcLow] = ta.kc(close, 5, 1.5)
+position = kcUp != kcLow ? (close - kcLow) / (kcUp - kcLow) : 0.5
+aboveUpper = close > kcUp
+belowLower = close < kcLow
+plot(position, "Pos")

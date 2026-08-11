@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Map Accum")
+var m = map.new<string, float>()
+m.put("last_close", close)
+m.put("bar_count", bar_index + 1.0)
+result = m.get("last_close", 0.0)
+plot(result)

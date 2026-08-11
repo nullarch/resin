@@ -1,0 +1,15 @@
+//@version=5
+strategy("Combo04")
+var int sigCount = 0
+signals = array.new_float(0)
+for i = 3 to 7
+    rsiVal = nz(ta.rsi(close, i), 50.0)
+    array.push(signals, rsiVal)
+avgSig = array.avg(signals)
+if avgSig > 55.0
+    sigCount := sigCount + 1
+if sigCount >= 3 and avgSig > 60.0
+    strategy.entry("ML", strategy.long)
+else if avgSig < 40.0
+    strategy.close("ML")
+plot(avgSig, "AvgSig")

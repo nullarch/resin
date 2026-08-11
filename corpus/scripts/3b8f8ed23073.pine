@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("ATR Chan")
+basis = ta.ema(close, 5)
+atr = ta.atr(3)
+upper = basis + atr * 1.5
+lower = basis - atr * 1.5
+position = upper != lower ? (close - lower) / (upper - lower) : 0.5
+plot(position, "Pos")

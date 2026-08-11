@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Freq Counter")
+var m = map.new<string, int>()
+direction = close > open ? "up" : "down"
+prev = map.get(m, direction, 0)
+map.put(m, direction, prev + 1)
+ups = map.get(m, "up", 0)
+downs = map.get(m, "down", 0)
+plot(ups, "Up Count")
+plot(downs, "Down Count")

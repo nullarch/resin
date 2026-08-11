@@ -1,0 +1,30 @@
+//@version=5
+indicator("comprehensive 109")
+type Trade
+    float entry = 0.0
+    int bars = 0
+enum Signal
+    Buy = 1
+    Sell = -1
+    Hold = 0
+calcSMA(src, len) =>
+    ta.sma(src, len)
+var float maxSMA = 0.0
+var int tradeCount = 0
+s3 = calcSMA(close, 3)
+e5 = ta.ema(close, 5)
+atrVal = ta.atr(5)
+sig = close > e5 ? Signal.Buy : Signal.Sell
+arr = array.from(1.0, 2.0, 3.0)
+float arrSum = 0.0
+for [i, v] in arr
+    arrSum := arrSum + v
+t = Trade.new(close, 1)
+val = switch sig
+    Signal.Buy => s3
+    Signal.Sell => e5
+    => 0.0
+ratio = close / (close + 1.0)
+if not na(s3) and s3 > maxSMA
+    maxSMA := s3
+tradeCount := tradeCount + 1

@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("ATR Break")
+atr = ta.atr(3)
+sma3 = ta.sma(close, 3)
+breakUp = close > sma3 + nz(atr, 1.0)
+breakDn = close < sma3 - nz(atr, 1.0)
+var float __obs_plot0 = na
+__obs_plot0 := breakUp ? 1 : breakDn ? -1 : 0
+plot(breakUp ? 1 : breakDn ? -1 : 0, "Brk")

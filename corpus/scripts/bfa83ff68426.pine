@@ -1,0 +1,18 @@
+//@version=5
+indicator("Squeeze Momentum")
+var float result = 0.0
+int length = 20
+float bb_mult = 2.0
+float kc_mult = 1.5
+
+sma20 = ta.sma(close, length)
+float stdev20 = nz(ta.stdev(close, length), 0.0)
+float atr20 = nz(ta.atr(length), 0.0)
+
+float bb_upper = nz(sma20, close) + bb_mult * stdev20
+float bb_lower = nz(sma20, close) - bb_mult * stdev20
+float kc_upper = nz(sma20, close) + kc_mult * atr20
+float kc_lower = nz(sma20, close) - kc_mult * atr20
+
+bool squeeze = bb_lower > kc_lower and bb_upper < kc_upper
+result := squeeze ? 1.0 : 0.0

@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:lbl": {
+    "type": "label",
+    "id": 2059559320512
+   },
+   "var:__obs_plot0": 103
+  },
+  {
+   "var:lbl": {
+    "type": "label",
+    "id": 2059559320512
+   },
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:lbl": {
+    "type": "label",
+    "id": 2059559320512
+   },
+   "var:__obs_plot0": 102
+  },
+  {
+   "var:lbl": {
+    "type": "label",
+    "id": 2059559320512
+   },
+   "var:__obs_plot0": 105
+  },
+  {
+   "var:lbl": {
+    "type": "label",
+    "id": 2059559320512
+   },
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:lbl": {
+    "type": "label",
+    "id": 2059559320512
+   },
+   "var:__obs_plot0": 106
+  },
+  {
+   "var:lbl": {
+    "type": "label",
+    "id": 2059559320512
+   },
+   "var:__obs_plot0": 108
+  },
+  {
+   "var:lbl": {
+    "type": "label",
+    "id": 2059559320512
+   },
+   "var:__obs_plot0": 110
+  },
+  {
+   "var:lbl": {
+    "type": "label",
+    "id": 2059559320512
+   },
+   "var:__obs_plot0": 109
+  },
+  {
+   "var:lbl": {
+    "type": "label",
+    "id": 2059559320512
+   },
+   "var:__obs_plot0": 111
+  }
+ ],
+ "finalVarState": {
+  "lbl": {
+   "type": "label",
+   "id": 2059559320512
+  },
+  "__obs_plot0": 111
+ }
+}

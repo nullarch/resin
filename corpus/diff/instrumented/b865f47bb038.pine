@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Mom Reg")
+rsi = nz(ta.rsi(close, 3), 50.0)
+mom = nz(close - close[3], 0.0)
+regime = rsi > 65 and mom > 0 ? 2 : rsi > 50 ? 1 : rsi < 35 and mom < 0 ? -2 : -1
+var float __obs_plot0 = na
+__obs_plot0 := regime
+plot(regime, "R")

@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Score Comb")
+combineScores(float s1, float s2, float s3, float w1, float w2, float w3) =>
+    totalW = w1 + w2 + w3
+    totalW > 0 ? (s1 * w1 + s2 * w2 + s3 * w3) / totalW : 0.0
+
+tScore = close > ta.sma(close, 3) ? 1.0 : -1.0
+mScore = ta.rsi(close, 3) > 50 ? 1.0 : -1.0
+vScore = close > open ? 1.0 : -1.0
+combined = combineScores(tScore, mScore, vScore, 0.5, 0.3, 0.2)
+plot(combined, "Combined")

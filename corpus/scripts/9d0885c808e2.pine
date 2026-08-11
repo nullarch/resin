@@ -1,0 +1,6 @@
+//@version=5
+indicator("nz chain")
+var float result = 0.0
+x = na
+y = nz(x, na)
+result := nz(y, 99.0)

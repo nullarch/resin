@@ -1,0 +1,14 @@
+//@version=5
+indicator("TA Regression")
+sma5 = ta.sma(close, 5)
+ema5 = ta.ema(close, 5)
+rsi5 = ta.rsi(close, 5)
+var float last_sma = 0.0
+last_sma := nz(sma5)
+var float last_ema = 0.0
+last_ema := nz(ema5)
+var float last_rsi = 0.0
+last_rsi := nz(rsi5, 50.0)
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

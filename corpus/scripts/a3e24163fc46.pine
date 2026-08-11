@@ -1,0 +1,5 @@
+//@version=5
+indicator("For Expr Acc")
+var float result = 0.0
+result := for i = 1 to 5
+    i * 2

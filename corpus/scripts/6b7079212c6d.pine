@@ -1,0 +1,7 @@
+//@version=5
+indicator("Var Varip")
+var float counter = 0.0
+varip float tick = 0.0
+counter := counter + 1.0
+tick := tick + 1.0
+plot(counter)

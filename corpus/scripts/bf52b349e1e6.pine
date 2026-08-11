@@ -1,0 +1,12 @@
+//@version=5
+strategy("Flow Momentum Strategy")
+flowVelocity = math.abs(close - open)
+crossSection = high - low
+flowRate = flowVelocity * crossSection
+avgFlow = ta.sma(close, 3)
+strongFlow = not na(avgFlow) and flowRate > avgFlow * 0.05
+weakFlow = not na(avgFlow) and flowRate < avgFlow * 0.01
+if strongFlow
+    strategy.entry("FlowLong", strategy.long)
+if weakFlow
+    strategy.close("FlowLong")

@@ -1,0 +1,7 @@
+//@version=5
+indicator("safe div chain")
+var float result = 0.0
+a = close / open
+b = a / (high - low)
+c = b / 1.0
+result := c

@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("WMA Composite")
+wma3 = ta.wma(close, 3)
+wma5 = ta.wma(close, 5)
+spread = wma3 - wma5
+normalized = wma5 != 0 ? spread / wma5 * 100 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := normalized
+plot(normalized, "WMA Spread%")

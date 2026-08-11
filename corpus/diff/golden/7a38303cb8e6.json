@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:myelinThickness": 0.98,
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:myelinThickness": 0.96,
+   "var:__obs_plot0": 1.96
+  },
+  {
+   "var:myelinThickness": 0.94,
+   "var:__obs_plot0": 0.96
+  },
+  {
+   "var:myelinThickness": 0.9199999999999999,
+   "var:__obs_plot0": 1.88
+  },
+  {
+   "var:myelinThickness": 0.8999999999999999,
+   "var:__obs_plot0": 1.8399999999999999
+  },
+  {
+   "var:myelinThickness": 0.8799999999999999,
+   "var:__obs_plot0": 1.7999999999999998
+  },
+  {
+   "var:myelinThickness": 0.8599999999999999,
+   "var:__obs_plot0": 1.7599999999999998
+  },
+  {
+   "var:myelinThickness": 0.8399999999999999,
+   "var:__obs_plot0": 1.7199999999999998
+  },
+  {
+   "var:myelinThickness": 0.8199999999999998,
+   "var:__obs_plot0": 1.6799999999999997
+  },
+  {
+   "var:myelinThickness": 0.7999999999999998,
+   "var:__obs_plot0": 1.6399999999999997
+  }
+ ],
+ "finalVarState": {
+  "myelinThickness": 0.7999999999999998,
+  "__obs_plot0": 1.6399999999999997
+ }
+}

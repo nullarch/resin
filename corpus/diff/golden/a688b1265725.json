@@ -1,0 +1,127 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:has_20": true,
+   "var:has_50": false,
+   "var:result": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:has_20": true,
+   "var:has_50": false,
+   "var:result": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:has_20": true,
+   "var:has_50": false,
+   "var:result": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:has_20": true,
+   "var:has_50": false,
+   "var:result": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:has_20": true,
+   "var:has_50": false,
+   "var:result": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:has_20": true,
+   "var:has_50": false,
+   "var:result": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:has_20": true,
+   "var:has_50": false,
+   "var:result": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:has_20": true,
+   "var:has_50": false,
+   "var:result": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:has_20": true,
+   "var:has_50": false,
+   "var:result": 1.0,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:arr": [
+    10.0,
+    20.0,
+    30.0
+   ],
+   "var:has_20": true,
+   "var:has_50": false,
+   "var:result": 1.0,
+   "var:__obs_plot0": 1.0
+  }
+ ],
+ "finalVarState": {
+  "arr": [
+   10.0,
+   20.0,
+   30.0
+  ],
+  "has_20": true,
+  "has_50": false,
+  "result": 1.0,
+  "__obs_plot0": 1.0
+ }
+}

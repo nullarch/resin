@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Trend Class")
+classifyTrend(float price, float ma, float atr) =>
+    diff = price - ma
+    normalized = atr > 0 ? diff / atr : 0.0
+    normalized > 1.0 ? 2.0 : normalized > 0 ? 1.0 : normalized > -1.0 ? -1.0 : -2.0
+
+sma3 = ta.sma(close, 3)
+atr = ta.atr(3)
+trendClass = classifyTrend(close, sma3, atr)
+plot(trendClass, "Class")

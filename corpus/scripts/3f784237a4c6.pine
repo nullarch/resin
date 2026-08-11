@@ -1,0 +1,5 @@
+//@version=5
+indicator("barstate hist")
+var int histCount = 0
+if barstate.ishistory
+    histCount := histCount + 1

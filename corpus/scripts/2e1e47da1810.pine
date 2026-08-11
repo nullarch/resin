@@ -1,0 +1,6 @@
+//@version=5
+indicator("ATR Verify")
+var float lastAtr = 0
+a = ta.atr(high, low, close, 3)
+if not na(a)
+    lastAtr := a

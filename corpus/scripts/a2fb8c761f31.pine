@@ -1,0 +1,8 @@
+//@version=5
+indicator("Decoherence")
+float coherence = 1.0
+float decayRate = 0.1
+var float coherenceState = 1.0
+float noise = math.abs(close - open) / math.max(high - low, 0.01)
+coherenceState := coherenceState * (1.0 - decayRate * noise)
+coherenceState := math.max(coherenceState, 0.0)

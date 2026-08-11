@@ -1,0 +1,49 @@
+
+//@version=5
+indicator("Milestone 3900")
+// All TA
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+[m, s, h] = ta.macd(close, 3, 5, 3)
+atr = ta.atr(3)
+k = ta.stoch(close, high, low, 5)
+[bbM, bbU, bbL] = ta.bb(close, 5, 2.0)
+
+// UDT
+type Result
+    float score = 0.0
+    int signals = 0
+var Result res = Result.new()
+
+// Array
+var float[] history = array.new_float(0)
+
+// Map
+var state = map.new<string, float>()
+
+// Compute
+trendPts = close > sma3 ? 1.0 : -1.0
+momPts = (rsi - 50) / 50
+macdPts = h > 0 ? 1.0 : -1.0
+composite = trendPts * 0.4 + momPts * 0.3 + macdPts * 0.3
+
+// Store
+array.push(history, composite)
+if array.size(history) > 8
+    array.shift(history)
+map.put(state, "composite", composite)
+map.put(state, "avg", array.avg(history))
+
+res.score := composite
+res.signals := res.signals + 1
+
+var int bars = 0
+bars := bars + 1
+
+var float __obs_plot0 = na
+__obs_plot0 := composite
+plot(composite, "Comp")
+var float __obs_plot1 = na
+__obs_plot1 := array.avg(history)
+plot(array.avg(history), "Avg")

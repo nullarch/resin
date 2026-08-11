@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Risk Calc")
+type RiskMetrics
+    float volatility = 0.0
+    float drawdown = 0.0
+    float sharpe = 0.0
+
+var RiskMetrics risk = RiskMetrics.new()
+atrVal = ta.atr(3)
+sma5 = ta.sma(close, 5)
+risk.volatility := atrVal
+risk.drawdown := sma5 > 0 ? (sma5 - close) / sma5 * 100 : 0.0
+risk.sharpe := atrVal > 0 ? (close - sma5) / atrVal : 0.0
+plot(risk.sharpe, "Sharpe")

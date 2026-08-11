@@ -1,0 +1,9 @@
+//@version=5
+indicator("UDT Copy")
+type Pair
+    float a = 0.0
+    float b = 0.0
+var float result = 0.0
+p1 = Pair.new(a=10.0, b=20.0)
+p2 = Pair.copy(p1)
+result := p2.a + p2.b

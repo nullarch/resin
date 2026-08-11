@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Dist MA")
+sma5 = ta.sma(close, 5)
+dist = close - sma5
+distPct = sma5 > 0 ? dist / sma5 * 100 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := distPct
+plot(distPct, "D%")

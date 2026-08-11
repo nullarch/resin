@@ -1,0 +1,12 @@
+//@version=5
+indicator("Connection Coeff")
+var float prevFisher = 1.0
+var float prev2Fisher = 1.0
+var float connection = 0.0
+spread = high - low
+fisher = spread > 0.01 ? 1.0 / (spread * spread) : 1.0
+dF1 = fisher - prevFisher
+dF2 = prevFisher - prev2Fisher
+connection := fisher > 0.01 ? 0.5 * (dF1 - dF2) / fisher : 0.0
+prev2Fisher := prevFisher
+prevFisher := fisher

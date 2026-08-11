@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Str Concat")
+a = "hello"
+b = "world"
+c = a + " " + b + "!"
+isHello = str.startswith(c, "hello")
+plot(isHello ? 1 : 0, "Hello")

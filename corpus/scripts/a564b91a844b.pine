@@ -1,0 +1,27 @@
+
+//@version=5
+indicator("Stress08")
+enum Level
+    LOW = 1
+    MED = 2
+    HIGH = 3
+halve(x) =>
+    x / 2.0
+var float accumulated = 0.0
+val = high - low
+count = 0
+while val > 1.0 and count < 20
+    val := halve(val)
+    count := count + 1
+accumulated := accumulated + float(count)
+level = count > 5 ? Level.HIGH : count > 2 ? Level.MED : Level.LOW
+buckets = array.new_float(0)
+array.push(buckets, float(count))
+array.push(buckets, accumulated)
+info = map.new<string, float>()
+map.put(info, "count", float(count))
+map.put(info, "level", level == Level.HIGH ? 3.0 : level == Level.MED ? 2.0 : 1.0)
+total = 0.0
+for [k, v] in info
+    total := total + v
+plot(total + array.sum(buckets), "S08")

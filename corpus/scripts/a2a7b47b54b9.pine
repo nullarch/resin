@@ -1,0 +1,7 @@
+//@version=5
+indicator("Shannon Diversity")
+p1 = 0.4
+p2 = 0.35
+p3 = 0.25
+H = -(p1 * math.log(p1) + p2 * math.log(p2) + p3 * math.log(p3))
+plot(H, "Shannon H")

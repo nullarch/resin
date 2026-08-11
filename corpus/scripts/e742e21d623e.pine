@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("RSI MA")
+rsi = ta.rsi(close, 3)
+rsiSMA = ta.sma(rsi, 5)
+rsiEMA = ta.ema(rsi, 3)
+bullish = rsi > rsiSMA and rsi > 50
+plot(rsi, "RSI")
+plot(rsiSMA, "RSI SMA")
+plot(bullish ? 1 : 0, "Bull")

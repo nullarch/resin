@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Vol Score")
+volScore(float atrVal, float avgATR, float priceRange) =>
+    atrRatio = avgATR > 0 ? atrVal / avgATR : 1.0
+    rangeRatio = atrVal > 0 ? priceRange / atrVal : 1.0
+    (atrRatio + rangeRatio) / 2.0
+
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+rng = high - low
+score = volScore(atr, avgATR, rng)
+plot(score, "Score")

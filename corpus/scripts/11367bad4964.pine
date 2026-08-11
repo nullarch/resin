@@ -1,0 +1,12 @@
+//@version=5
+indicator("Shared Size")
+arr = array.new<float>(0)
+array.push(arr, 1.0)
+array.push(arr, 2.0)
+
+m = map.new<string, float>()
+map.put(m, "a", 1.0)
+
+var float result = 0.0
+result := float(array.size(arr)) + float(map.size(m))
+plot(result)

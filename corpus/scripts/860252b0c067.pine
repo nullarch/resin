@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Pivot Det")
+isHighPivot = true
+isLowPivot = true
+midHigh = high[2]
+midLow = low[2]
+for i = 0 to 4
+    if i != 2
+        h = high[i]
+        l = low[i]
+        if not na(h) and not na(midHigh) and h >= midHigh
+            isHighPivot := false
+        if not na(l) and not na(midLow) and l <= midLow
+            isLowPivot := false
+plot(isHighPivot ? 1 : 0, "HighPivot")
+plot(isLowPivot ? 1 : 0, "LowPivot")

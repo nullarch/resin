@@ -1,0 +1,18 @@
+//@version=5
+indicator("GraphDiam")
+n = array.new_float(0)
+array.push(n, close)
+array.push(n, open)
+array.push(n, high)
+array.push(n, low)
+maxShortest = 0.0
+for i = 0 to 3
+    for j = i + 1 to 3
+        direct = math.abs(array.get(n, i) - array.get(n, j))
+        best = direct
+        for k = 0 to 3
+            if k != i and k != j
+                indirect = math.abs(array.get(n, i) - array.get(n, k)) + math.abs(array.get(n, k) - array.get(n, j))
+                best := math.min(best, indirect)
+        maxShortest := math.max(maxShortest, best)
+plot(maxShortest, "Diameter")

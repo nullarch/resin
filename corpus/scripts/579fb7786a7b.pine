@@ -1,0 +1,9 @@
+//@version=5
+indicator("Closure Test")
+outerFunc(float src, int len) =>
+    innerCalc(float val) =>
+        val * 2.0 + src
+    base = ta.sma(src, len)
+    innerCalc(base)
+result = outerFunc(close, 3)
+plot(result)

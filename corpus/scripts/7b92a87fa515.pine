@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Arr Bound")
+var float[] arr = array.new_float(0)
+array.push(arr, 1.0)
+array.push(arr, 2.0)
+array.push(arr, 3.0)
+first = array.get(arr, 0)
+last = array.get(arr, array.size(arr) - 1)
+plot(first + last, "R")

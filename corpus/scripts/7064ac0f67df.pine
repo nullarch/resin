@@ -1,0 +1,20 @@
+
+//@version=5
+indicator("Break Qual")
+enum BreakQual
+    Strong = 3
+    Moderate = 2
+    Weak = 1
+    None_ = 0
+
+hi5 = ta.highest(high, 5)
+atr = nz(ta.atr(3), 1.0)
+dist = close - hi5[1]
+avgVol = ta.sma(volume, 5)
+volConf = avgVol > 0 and volume > avgVol * 1.5
+bq = switch
+    dist > atr and volConf => BreakQual.Strong
+    dist > 0 and volConf => BreakQual.Moderate
+    dist > 0 => BreakQual.Weak
+    => BreakQual.None_
+plot(int(bq), "BQ")

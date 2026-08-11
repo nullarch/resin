@@ -1,0 +1,5 @@
+
+//@version=5
+indicator("MACD Components")
+[macdLine, signalLine, hist] = ta.macd(close, 12, 26, 9)
+plot(macdLine)

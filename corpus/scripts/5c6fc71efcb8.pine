@@ -1,0 +1,9 @@
+//@version=5
+indicator("Candle Patterns")
+classify(o, h, l, c) =>
+    body = math.abs(c - o)
+    upperWick = h - math.max(c, o)
+    lowerWick = math.min(c, o) - l
+    body > upperWick * 2.0 and body > lowerWick * 2.0 ? 1.0 : upperWick > body * 2.0 ? 2.0 : lowerWick > body * 2.0 ? 3.0 : 0.0
+float pattern = classify(open, high, low, close)
+plot(pattern, "Pattern")

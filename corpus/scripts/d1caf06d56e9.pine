@@ -1,0 +1,12 @@
+//@version=5
+indicator("test")
+var float[] prices = array.new_float(0)
+if barstate.isfirst
+    for i = 0 to 9
+        array.push(prices, 100.0 + i * 5)
+var float weightedSum = 0.0
+weightedSum := 0.0
+for [idx, price] in prices
+    weight = idx + 1.0
+    weightedSum := weightedSum + price * weight
+plot(weightedSum)

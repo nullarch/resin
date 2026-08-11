@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Hammer")
+body = math.abs(close - open)
+totalRange = high - low
+lowerWick = math.min(open, close) - low
+upperWick = high - math.max(open, close)
+isHammer = totalRange > 0 and body / totalRange < 0.3 and lowerWick / totalRange > 0.6 and upperWick / totalRange < 0.1
+plot(isHammer ? 1 : 0, "Ham")

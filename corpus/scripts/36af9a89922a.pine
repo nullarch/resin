@@ -1,0 +1,9 @@
+//@version=5
+indicator("Love Wave Amplitude")
+horizontal = high - low
+vertical = math.abs(close - open)
+loveAmp = horizontal > vertical ? horizontal - vertical : 0.0
+decayed = loveAmp * math.exp(-0.1)
+emaAmp = ta.ema(close, 3)
+normalized = not na(emaAmp) and emaAmp > 0 ? decayed : 0.0
+plot(normalized)

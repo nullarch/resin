@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("StrMapReg")
+var registry = map.new<string, string>()
+map.put(registry, "last_signal", close > open ? "BUY" : "SELL")
+map.put(registry, "volume_state", volume > 1000 ? "HIGH" : "LOW")
+map.put(registry, "trend", close > 105 ? "UP" : "DOWN")
+
+lastSig = map.get(registry, "last_signal", "NONE")
+sigLen = str.length(lastSig)
+plot(sigLen, "SL")

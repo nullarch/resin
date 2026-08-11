@@ -1,0 +1,10 @@
+//@version=5
+indicator("Reynolds Number")
+velocity = math.abs(close - open)
+diameter = high - low
+viscosity = 0.5
+re = diameter > 0 ? velocity * diameter / viscosity : 0.0
+flowType = re > 4.0 ? 1.0 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := re
+plot(re)

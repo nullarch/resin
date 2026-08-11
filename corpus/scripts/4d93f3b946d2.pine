@@ -1,0 +1,6 @@
+//@version=5
+indicator("Test")
+x = calc(close)
+calc(src) =>
+    ta.ema(src, 10)
+plot(x)

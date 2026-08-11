@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:prev": 103,
+   "var:diff": 0,
+   "var:__obs_plot0": 103
+  },
+  {
+   "var:prev": 103,
+   "var:diff": 1,
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:prev": 104,
+   "var:diff": -2,
+   "var:__obs_plot0": 102
+  },
+  {
+   "var:prev": 102,
+   "var:diff": 3,
+   "var:__obs_plot0": 105
+  },
+  {
+   "var:prev": 105,
+   "var:diff": 2,
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:prev": 107,
+   "var:diff": -1,
+   "var:__obs_plot0": 106
+  },
+  {
+   "var:prev": 106,
+   "var:diff": 2,
+   "var:__obs_plot0": 108
+  },
+  {
+   "var:prev": 108,
+   "var:diff": 2,
+   "var:__obs_plot0": 110
+  },
+  {
+   "var:prev": 110,
+   "var:diff": -1,
+   "var:__obs_plot0": 109
+  },
+  {
+   "var:prev": 109,
+   "var:diff": 2,
+   "var:__obs_plot0": 111
+  }
+ ],
+ "finalVarState": {
+  "prev": 109,
+  "diff": 2,
+  "__obs_plot0": 111
+ }
+}

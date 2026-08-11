@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Symmetry")
+mid = (high + low) / 2
+upperDist = high - mid
+lowerDist = mid - low
+symmetry = (upperDist + lowerDist) > 0 ? math.min(upperDist, lowerDist) / math.max(upperDist, lowerDist) : 1.0
+closeBias = mid > 0 ? (close - mid) / (high - low > 0 ? high - low : 1) : 0.0
+plot(symmetry, "Sym")
+plot(closeBias, "Bias")

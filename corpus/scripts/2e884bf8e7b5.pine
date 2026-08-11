@@ -1,0 +1,24 @@
+//@version=5
+indicator("Comprehensive Cycle 74")
+
+// multi-line with parens
+float base = (close +
+    high +
+    low) / 3.0
+
+// bracket: array creation
+a = array.from(
+    1.0, 2.0, 3.0)
+
+// var + for accumulation
+var float total = 0.0
+float sum = 0.0
+for i = 0 to array.size(a) - 1
+    sum += array.get(a, i)
+
+// TA chaining
+sma_val = ta.sma(close, 3)
+
+total := sum + (sma_val > 0 ?
+    1.0 :
+    0.0)

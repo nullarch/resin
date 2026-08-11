@@ -1,0 +1,6 @@
+//@version=5
+indicator("Export Test")
+export myFunc(float src, int len) =>
+    ta.sma(src, len)
+val = myFunc(close, 5)
+plot(val)

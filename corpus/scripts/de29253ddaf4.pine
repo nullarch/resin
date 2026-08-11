@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("EMA Chain")
+ema1 = ta.ema(close, 5)
+ema2 = ta.ema(ema1, 5)
+ema3 = ta.ema(ema2, 5)
+dema = 2 * ema1 - ema2
+tema = 3 * ema1 - 3 * ema2 + ema3
+spread = tema - dema
+plot(spread, "Spread")

@@ -1,0 +1,3 @@
+//@version=5
+indicator("SMA3 accuracy")
+sma3 = ta.sma(close, 3)

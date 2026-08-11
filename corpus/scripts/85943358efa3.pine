@@ -1,0 +1,15 @@
+//@version=5
+indicator("FE09")
+wmaVal = ta.wma(close, 3)
+diffs = array.new_float(0)
+array.push(diffs, close - wmaVal)
+array.push(diffs, high - wmaVal)
+array.push(diffs, low - wmaVal)
+minDiff = 9999.0
+for i = 0 to 2
+    minDiff := math.min(minDiff, math.abs(array.get(diffs, i)))
+zone = switch
+    minDiff > 5 => 3.0
+    minDiff > 2 => 2.0
+    => 1.0
+plot(zone, title="wmazone")

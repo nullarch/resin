@@ -1,0 +1,20 @@
+//@version=5
+indicator("Dashboard")
+// Multiple TA with different periods
+ema_fast = ta.ema(close, 3)
+ema_slow = ta.ema(close, 5)
+rsi_ = ta.rsi(close, 5)
+[macdLine, signalLine, hist] = ta.macd(close, 3, 5, 3)
+atr_ = ta.atr(high, low, close, 3)
+
+// Derived signals
+trend = ema_fast > ema_slow ? 1 : -1
+momentum = not na(hist) ? (hist > 0 ? 1 : -1) : 0
+volatility = not na(atr_) ? atr_ / close * 100 : 0.0
+
+// Composite score
+var float score = 0.0
+score := float(trend + momentum) + volatility
+var float __obs_plot0 = na
+__obs_plot0 := score
+plot(score)

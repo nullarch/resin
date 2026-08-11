@@ -1,0 +1,9 @@
+//@version=5
+indicator("Quorum")
+sig1 = close > ta.sma(close, 3) ? 1 : 0
+sig2 = close > ta.ema(close, 5) ? 1 : 0
+sig3 = nz(ta.rsi(close, 5), 50.0) > 50 ? 1 : 0
+sig4 = close > ta.sma(close, 7) ? 1 : 0
+quorum = sig1 + sig2 + sig3 + sig4
+hasQuorum = quorum >= 3
+plot(hasQuorum ? 1 : 0)

@@ -1,0 +1,11 @@
+//@version=5
+strategy("ATR Size Strategy")
+atrVal = ta.atr(3)
+riskPct = 0.02
+posSize = not na(atrVal) and atrVal > 0 ? (close * riskPct) / atrVal : 1.0
+longCond = ta.crossover(ta.sma(close, 3), ta.sma(close, 5))
+if longCond
+    strategy.entry("L", strategy.long, qty=posSize)
+shortCond = ta.crossunder(ta.sma(close, 3), ta.sma(close, 5))
+if shortCond
+    strategy.close("L")

@@ -1,0 +1,6 @@
+//@version=5
+indicator("Cum")
+var float lastCum = 0
+c = ta.cum(close)
+if not na(c)
+    lastCum := c

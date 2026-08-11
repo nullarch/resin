@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Arr Transform")
+src = array.from(close, open, high, low)
+var float[] transformed = array.new_float(0)
+array.clear(transformed)
+sma3 = ta.sma(close, 3)
+for val in src
+    fv = float(val)
+    normalized = sma3 > 0 ? fv / sma3 : 1.0
+    array.push(transformed, normalized)
+avg = array.avg(transformed)
+plot(avg, "AvgNorm")

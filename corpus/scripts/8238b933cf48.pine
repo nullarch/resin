@@ -1,0 +1,5 @@
+//@version=5
+indicator("Array From OHLCV")
+var float result = 0.0
+float[] arr = array.from(open, high, low, close)
+result := array.size(arr)

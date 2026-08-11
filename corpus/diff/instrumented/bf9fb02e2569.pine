@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Equity")
+var float equity = 1000.0
+var bool inTrade = false
+sma3 = ta.sma(close, 3)
+if not inTrade and close > sma3
+    inTrade := true
+else if inTrade and close < sma3
+    pnl = close - close[1]
+    equity := equity + pnl
+    inTrade := false
+var float __obs_plot0 = na
+__obs_plot0 := equity
+plot(equity, "Eq")

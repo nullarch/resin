@@ -1,0 +1,4 @@
+//@version=5
+indicator("Varip")
+varip float counter = 0.0
+counter += 1.0

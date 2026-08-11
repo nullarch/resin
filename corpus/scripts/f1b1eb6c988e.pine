@@ -1,0 +1,9 @@
+//@version=5
+indicator("Incidence Rate MA")
+float population = 100000.0
+float dailyCases = close
+float incidenceRate = dailyCases / population * 100000.0
+smaIncidence = ta.sma(close, 3)
+var float peakIncidence = 0.0
+if not na(smaIncidence) and incidenceRate > peakIncidence
+    peakIncidence := incidenceRate

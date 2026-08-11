@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:exceedCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:exceedCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:exceedCount": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:exceedCount": 2,
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:exceedCount": 3,
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:exceedCount": 3,
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:exceedCount": 3,
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:exceedCount": 3,
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:exceedCount": 3,
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:exceedCount": 3,
+   "var:__obs_plot0": 3
+  }
+ ],
+ "finalVarState": {
+  "exceedCount": 3,
+  "__obs_plot0": 3
+ }
+}

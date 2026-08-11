@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Comp Evo")
+var float[] composites = array.new_float(0)
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+comp = (close > sma3 ? 1.0 : -1.0) + (rsi - 50) / 50
+array.push(composites, comp)
+if array.size(composites) > 10
+    array.shift(composites)
+improving = array.size(composites) > 1 ? array.get(composites, array.size(composites) - 1) > array.get(composites, 0) : false
+plot(improving ? 1 : 0, "Imp")

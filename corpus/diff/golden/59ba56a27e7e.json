@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:prevAngle": 0.0,
+   "var:winding": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:prevAngle": 0.0,
+   "var:winding": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:prevAngle": 0.0,
+   "var:winding": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:prevAngle": 0.0,
+   "var:winding": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:prevAngle": 0.10673567264913576,
+   "var:winding": 0.10673567264913576,
+   "var:__obs_plot0": 0.10673567264913576
+  },
+  {
+   "var:prevAngle": 0.0,
+   "var:winding": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:prevAngle": 0.04164257909858836,
+   "var:winding": 0.04164257909858836,
+   "var:__obs_plot0": 0.04164257909858836
+  },
+  {
+   "var:prevAngle": 0.14189705460416402,
+   "var:winding": 0.14189705460416402,
+   "var:__obs_plot0": 0.14189705460416402
+  },
+  {
+   "var:prevAngle": 0.0,
+   "var:winding": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:prevAngle": 0.2662520491509251,
+   "var:winding": 0.2662520491509251,
+   "var:__obs_plot0": 0.2662520491509251
+  }
+ ],
+ "finalVarState": {
+  "prevAngle": 0.2662520491509251,
+  "winding": 0.2662520491509251,
+  "__obs_plot0": 0.2662520491509251
+ }
+}

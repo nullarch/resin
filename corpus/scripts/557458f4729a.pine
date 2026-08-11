@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Weights")
+var float[] weights = array.new_float(0)
+if bar_index == 0
+    array.push(weights, 0.4)
+    array.push(weights, 0.3)
+    array.push(weights, 0.2)
+    array.push(weights, 0.1)
+totalW = array.sum(weights)
+isNorm = math.abs(totalW - 1.0) < 0.001
+plot(isNorm ? 1 : 0, "N")

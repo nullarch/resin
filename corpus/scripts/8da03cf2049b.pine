@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Osc Comp")
+var oc = map.new<string, float>()
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+map.put(oc, "rsi_comp", (rsi - 50) / 50)
+map.put(oc, "trend_comp", close > sma3 ? 1.0 : -1.0)
+map.put(oc, "vol_comp", volume > ta.sma(volume, 5) ? 1.0 : 0.0)
+composite = 0.0
+for [k, v] in oc
+    composite := composite + v
+plot(composite, "C")

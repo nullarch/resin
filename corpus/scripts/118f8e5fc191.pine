@@ -1,0 +1,4 @@
+//@version=5
+indicator("tostring volume")
+var string s = ""
+s := str.tostring(1500.0, "volume")

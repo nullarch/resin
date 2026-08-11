@@ -1,0 +1,10 @@
+//@version=5
+indicator("Typed Var")
+float x = 42.5
+int y = 10
+string s = "hello"
+var float result = 0.0
+result := x + float(y)
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

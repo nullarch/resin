@@ -1,0 +1,14 @@
+//@version=5
+indicator("State Entropy")
+var int countA = 0
+var int countB = 0
+isA = close > open
+countA := isA ? countA + 1 : countA
+countB := isA ? countB : countB + 1
+total = countA + countB
+pA = total > 0 ? countA / total : 0.5
+pB = total > 0 ? countB / total : 0.5
+entropyA = pA > 0.0 ? -pA * math.log(pA) : 0.0
+entropyB = pB > 0.0 ? -pB * math.log(pB) : 0.0
+entropy = entropyA + entropyB
+plot(entropy, "Entropy")

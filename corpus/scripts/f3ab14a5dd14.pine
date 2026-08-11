@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Sig UDT")
+type SignalTracker
+    int strongSignals = 0
+    int weakSignals = 0
+    float avgScore = 0.0
+
+var SignalTracker st = SignalTracker.new()
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+score = (close > sma3 ? 1.0 : 0.0) + (rsi > 55 ? 1.0 : 0.0)
+if score >= 2
+    st.strongSignals := st.strongSignals + 1
+else
+    st.weakSignals := st.weakSignals + 1
+plot(st.strongSignals, "SS")

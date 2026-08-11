@@ -1,0 +1,11 @@
+//@version=5
+indicator("UDT+Var+TA")
+type Signal
+    float sma_val = 0.0
+    float rsi_val = 0.0
+var s = Signal.new()
+sma5 = ta.sma(close, 5)
+rsi5 = ta.rsi(close, 5)
+s.sma_val := nz(sma5, 0.0)
+s.rsi_val := nz(rsi5, 50.0)
+plot(s.sma_val)

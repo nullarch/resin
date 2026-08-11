@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("MinMax")
+data = array.from(close, open, high, low, volume)
+mx = -999999.0
+mn = 999999.0
+for val in data
+    fv = float(val)
+    if fv > mx
+        mx := fv
+    if fv < mn
+        mn := fv
+spread = mx - mn
+plot(spread, "Spread")

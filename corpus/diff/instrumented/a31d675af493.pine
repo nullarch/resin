@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Press Hist")
+var float[] pressHist = array.new_float(0)
+totalRange = high - low
+netPress = totalRange > 0 ? (close - low) / totalRange - 0.5 : 0.0
+array.push(pressHist, netPress)
+if array.size(pressHist) > 10
+    array.shift(pressHist)
+avgPress = array.size(pressHist) > 0 ? array.avg(pressHist) : 0.0
+rising = netPress > avgPress
+var float __obs_plot0 = na
+__obs_plot0 := rising ? 1 : 0
+plot(rising ? 1 : 0, "R")

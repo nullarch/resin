@@ -1,0 +1,4 @@
+//@version=5
+indicator("Keyword Dot Enum")
+var float result = 0.0
+result := 42.0

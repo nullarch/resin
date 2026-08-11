@@ -1,0 +1,10 @@
+//@version=5
+indicator("TernPeriod16")
+atrVal = nz(ta.atr(3), 1.0)
+period = atrVal > 5.0 ? 3.0 : atrVal > 3.0 ? 5.0 : 7.0
+var int barN = 0
+barN := barN + 1
+cycleVal = math.sin(2.0 * math.pi * float(barN) / period)
+detrended = close - nz(ta.sma(close, 3), close)
+correlation = cycleVal * detrended
+plot(correlation, "corr")

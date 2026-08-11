@@ -1,0 +1,5 @@
+//@version=5
+indicator("Salted Hash")
+salt = volume / 1000.0
+salted_price = close + salt
+hash_val = math.floor(salted_price * 13.0) % 7

@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Cyc Label")
+var int barNum = 0
+barNum := barNum + 1
+pos = barNum % 4
+label = pos == 0 ? "START" : pos == 1 ? "EARLY" : pos == 2 ? "LATE" : "END"
+rsi = nz(ta.rsi(close, 3), 50.0)
+dir = rsi > 50 ? "BULL" : "BEAR"
+full = label + "_" + dir
+isEarlyBull = full == "EARLY_BULL"
+var float __obs_plot0 = na
+__obs_plot0 := isEarlyBull ? 1 : 0
+plot(isEarlyBull ? 1 : 0, "EB")

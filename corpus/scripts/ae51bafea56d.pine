@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Map Overwrite")
+var m = map.new<string, float>()
+map.put(m, "best", close)
+if close > map.get(m, "best", 0.0)
+    map.put(m, "best", close)
+best = map.get(m, "best", 0.0)
+plot(best, "Best")

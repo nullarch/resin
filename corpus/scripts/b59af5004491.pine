@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("MA UDT")
+type MASystem
+    float fastMA = 0.0
+    float slowMA = 0.0
+    int crossCount = 0
+
+var MASystem ms = MASystem.new()
+ms.fastMA := ta.sma(close, 3)
+ms.slowMA := ta.sma(close, 5)
+if ta.crossover(ms.fastMA, ms.slowMA) or ta.crossunder(ms.fastMA, ms.slowMA)
+    ms.crossCount := ms.crossCount + 1
+plot(ms.crossCount, "CC")

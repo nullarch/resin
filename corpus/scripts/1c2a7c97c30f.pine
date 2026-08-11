@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Compound")
+initial = 1000.0
+rate = 0.01
+periods = 0
+value = initial
+while periods < 5
+    value := value * (1 + rate)
+    periods := periods + 1
+totalReturn = (value - initial) / initial * 100
+plot(totalReturn, "Return%")

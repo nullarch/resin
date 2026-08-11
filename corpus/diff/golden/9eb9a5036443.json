@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:nsIndex": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:nsIndex": 1.2,
+   "var:__obs_plot0": 1.2
+  },
+  {
+   "var:nsIndex": -1.6,
+   "var:__obs_plot0": -1.6
+  },
+  {
+   "var:nsIndex": 4.5,
+   "var:__obs_plot0": 4.5
+  },
+  {
+   "var:nsIndex": -7.340464753016011,
+   "var:__obs_plot0": -7.340464753016011
+  },
+  {
+   "var:nsIndex": -10.649301969324018,
+   "var:__obs_plot0": -10.649301969324018
+  },
+  {
+   "var:nsIndex": -9.697172607423536,
+   "var:__obs_plot0": -9.697172607423536
+  },
+  {
+   "var:nsIndex": -7.2679066088680235,
+   "var:__obs_plot0": -7.2679066088680235
+  },
+  {
+   "var:nsIndex": -9.345605960827884,
+   "var:__obs_plot0": -9.345605960827884
+  },
+  {
+   "var:nsIndex": -7.009508670792001,
+   "var:__obs_plot0": -7.009508670792001
+  }
+ ],
+ "finalVarState": {
+  "nsIndex": -7.009508670792001,
+  "__obs_plot0": -7.009508670792001
+ }
+}

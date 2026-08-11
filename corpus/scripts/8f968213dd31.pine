@@ -1,0 +1,5 @@
+//@version=5
+indicator("Prec CmpAnd")
+var int r = 0
+r := (10 > 5 and 3 < 7) ? 1 : 0
+plot(r)

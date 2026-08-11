@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:ds": "pine_fn.<locals>.DivState(bullCount=0, bearCount=0, lastRsi=80.5615942029)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ds": "pine_fn.<locals>.DivState(bullCount=0, bearCount=0, lastRsi=80.5615942029)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ds": "pine_fn.<locals>.DivState(bullCount=0, bearCount=0, lastRsi=80.5615942029)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ds": "pine_fn.<locals>.DivState(bullCount=0, bearCount=0, lastRsi=80.5615942029)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ds": "pine_fn.<locals>.DivState(bullCount=0, bearCount=0, lastRsi=80.5615942029)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ds": "pine_fn.<locals>.DivState(bullCount=0, bearCount=0, lastRsi=80.5615942029)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ds": "pine_fn.<locals>.DivState(bullCount=0, bearCount=0, lastRsi=80.5615942029)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ds": "pine_fn.<locals>.DivState(bullCount=0, bearCount=0, lastRsi=80.5615942029)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ds": "pine_fn.<locals>.DivState(bullCount=0, bearCount=0, lastRsi=80.5615942029)",
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ds": "pine_fn.<locals>.DivState(bullCount=0, bearCount=0, lastRsi=80.5615942029)",
+   "var:__obs_plot0": 0
+  }
+ ],
+ "finalVarState": {
+  "ds": "pine_fn.<locals>.DivState(bullCount=0, bearCount=0, lastRsi=80.5615942029)",
+  "__obs_plot0": 0
+ }
+}

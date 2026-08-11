@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Trend Search")
+sma3 = ta.sma(close, 3)
+barsBack = 0
+iters = 0
+while iters < 8
+    c = close[iters]
+    if not na(c) and c < sma3
+        barsBack := iters
+        iters := 8
+    iters := iters + 1
+plot(barsBack, "Back")

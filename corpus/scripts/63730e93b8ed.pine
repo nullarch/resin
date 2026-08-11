@@ -1,0 +1,5 @@
+//@version=5
+indicator("DivZero")
+var float result = 0
+x = close / 0
+result := x

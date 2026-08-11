@@ -1,0 +1,10 @@
+//@version=5
+indicator("Str Complex")
+base = "Hello World"
+upper = str.upper(base)
+lower = str.lower(base)
+replaced = str.replace_all(base, "l", "L")
+sub = str.substring(base, 0, 5)
+parts = str.split(base, " ")
+joined = array.join(parts, "-")
+plot(str.length(joined))

@@ -1,0 +1,7 @@
+//@version=5
+indicator("Line Cont Comma")
+sma_val = ta.sma(close,
+    5)
+var float result = 0.0
+result := sma_val
+plot(result)

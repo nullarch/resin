@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Sort Compare")
+var float[] raw = array.new_float(0)
+array.push(raw, close)
+if array.size(raw) > 5
+    array.shift(raw)
+sorted = array.copy(raw)
+array.sort(sorted)
+isOrdered = array.size(raw) > 0 and array.last(sorted) == array.max(raw)
+var float __obs_plot0 = na
+__obs_plot0 := isOrdered ? 1 : 0
+plot(isOrdered ? 1 : 0, "Ordered")

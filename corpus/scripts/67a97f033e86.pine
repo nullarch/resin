@@ -1,0 +1,9 @@
+//@version=5
+indicator("MethodParams")
+type Rect
+    float width = 0.0
+    float height = 0.0
+method scaled(Rect this, float factor) =>
+    this.width * this.height * factor
+r = Rect.new(width=3.0, height=4.0)
+area = r.scaled(2.0)

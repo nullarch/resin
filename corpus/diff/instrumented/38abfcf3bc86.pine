@@ -1,0 +1,11 @@
+//@version=5
+indicator("Inf Div")
+float a = 1.0 / 0.0
+float b = -1.0 / 0.0
+float c = 0.0 / 0.0
+var bool a_na = na(a)
+var bool b_na = na(b)
+var bool c_na = na(c)
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

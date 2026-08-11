@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Bin Search")
+var float[] sorted = array.new_float(0)
+array.push(sorted, close)
+array.sort(sorted)
+if array.size(sorted) > 8
+    array.shift(sorted)
+    array.sort(sorted)
+idx = array.binary_search(sorted, close)
+found = idx >= 0
+plot(found ? 1 : 0, "Found")
+plot(array.size(sorted), "Size")

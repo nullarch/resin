@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Port State")
+var float invested = 10000.0
+var float cash = 0.0
+var bool isInvested = true
+ret = close[1] > 0 ? (close - close[1]) / close[1] : 0.0
+if isInvested
+    invested := invested * (1 + nz(ret, 0.0))
+totalValue = invested + cash
+var float __obs_plot0 = na
+__obs_plot0 := totalValue
+plot(totalValue, "TV")

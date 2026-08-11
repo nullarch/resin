@@ -1,0 +1,9 @@
+//@version=5
+indicator("Resonance")
+basis = ta.sma(close, 5)
+dev = ta.stdev(close, 5)
+bbw = dev > 0 ? dev * 2.0 / basis : 0.0
+squeeze = bbw < 0.02
+var float __obs_plot0 = na
+__obs_plot0 := squeeze ? 1 : 0
+plot(squeeze ? 1 : 0)

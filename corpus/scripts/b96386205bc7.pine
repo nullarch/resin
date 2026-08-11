@@ -1,0 +1,6 @@
+//@version=5
+indicator("Alert")
+var float result = 0.0
+bool bull = close > open and close > close[1]
+alertcondition(bull, "Bullish", "Price is bullish")
+result := bull ? 1.0 : 0.0

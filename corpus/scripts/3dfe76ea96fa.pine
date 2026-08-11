@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Map Config")
+var cfg = map.new<string, float>()
+map.put(cfg, "rsi_ob", 70.0)
+map.put(cfg, "rsi_os", 30.0)
+map.put(cfg, "atr_mult", 2.0)
+rsi = nz(ta.rsi(close, 3), 50.0)
+ob = map.get(cfg, "rsi_ob", 70.0)
+os = map.get(cfg, "rsi_os", 30.0)
+isOB = rsi > ob
+isOS = rsi < os
+plot(isOB ? 1 : isOS ? -1 : 0, "Zone")

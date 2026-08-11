@@ -1,0 +1,19 @@
+//@version=5
+indicator("Torture 2")
+type Metrics
+    float mean = 0.0
+    float variance = 0.0
+method isVolatile(Metrics this) =>
+    this.variance > 2.0
+periods = map.new<string, float>()
+periods.put("fast", 3.0)
+periods.put("slow", 5.0)
+var float bestSpread = 0.0
+float fastMA = nz(ta.sma(close, 3), close)
+float slowMA = nz(ta.sma(close, 5), close)
+float spread = fastMA - slowMA
+float sqSpread = spread * spread
+met = Metrics.new(spread, sqSpread)
+bool vol = met.isVolatile()
+bestSpread := math.abs(spread) > math.abs(bestSpread) ? spread : bestSpread
+float result = vol ? spread * 2.0 : spread * 0.5

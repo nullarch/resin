@@ -1,0 +1,8 @@
+//@version=5
+indicator("El Nino Index")
+shortSma = ta.sma(close, 3)
+longSma = ta.sma(close, 5)
+elNino = longSma > 0 ? shortSma / longSma : 1.0
+var float __obs_plot0 = na
+__obs_plot0 := elNino
+plot(elNino, title="elnino")

@@ -1,0 +1,11 @@
+//@version=5
+indicator("Barstate")
+isFirst = barstate.isfirst
+isLast = barstate.islast
+isHist = barstate.ishistory
+bi = bar_index
+var float firstClose = 0.0
+var float lastClose = 0.0
+if barstate.isfirst
+    firstClose := close
+lastClose := close

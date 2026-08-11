@@ -1,0 +1,18 @@
+//@version=5
+indicator("Two-Compartment PK")
+var float central = 50.0
+var float peripheral = 20.0
+k12 = 0.2
+k21 = 0.1
+ke = 0.15
+input_ = (close - open) > 0 ? (close - open) : 0.0
+transfer_out = central * k12
+transfer_in = peripheral * k21
+elimination = central * ke
+central := central + input_ - transfer_out + transfer_in - elimination
+peripheral := peripheral + transfer_out - transfer_in
+if central < 0
+    central := 0.0
+if peripheral < 0
+    peripheral := 0.0
+plot(central)

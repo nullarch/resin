@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Every Some Adv")
+positive = array.from(1.0, 2.0, 3.0)
+mixed = array.from(1.0, 0.0, 3.0)
+allPos = array.every(positive)
+someZero = array.some(mixed)
+var float __obs_plot0 = na
+__obs_plot0 := allPos ? 1 : 0
+plot(allPos ? 1 : 0, "AllPos")
+var float __obs_plot1 = na
+__obs_plot1 := someZero ? 1 : 0
+plot(someZero ? 1 : 0, "SomeTrue")

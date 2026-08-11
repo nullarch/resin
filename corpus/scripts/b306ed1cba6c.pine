@@ -1,0 +1,10 @@
+//@version=5
+indicator("UDF Scope")
+float x = 100.0
+f_inner() =>
+    float x = 42.0
+    x
+
+var float result = 0.0
+result := x + f_inner()
+plot(result)

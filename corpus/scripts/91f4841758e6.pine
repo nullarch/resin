@@ -1,0 +1,13 @@
+//@version=5
+strategy("Consensus Strategy")
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+rsi_val = nz(ta.rsi(close, 3), 50.0)
+bullish_sma = not na(sma3) ? close > sma3 : false
+bullish_ema = not na(ema5) ? close > ema5 : false
+bullish_rsi = rsi_val > 50.0
+consensus = bullish_sma and bullish_ema and bullish_rsi
+if consensus
+    strategy.entry("ConsensusLong", strategy.long)
+if not consensus
+    strategy.close("ConsensusLong")

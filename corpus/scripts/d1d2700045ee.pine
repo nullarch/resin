@@ -1,0 +1,5 @@
+//@version=5
+indicator("Str Lower")
+var s = str.lower("HELLO")
+var int len_ = str.length(s)
+plot(len_)

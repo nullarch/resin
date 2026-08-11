@@ -1,0 +1,16 @@
+//@version=5
+indicator("Prodrug Activation")
+var float prodrug = 100.0
+var float active = 0.0
+conversionRate = 0.25
+activeDecay = 0.1
+converted = prodrug * conversionRate
+prodrug := prodrug - converted + (volume > 1200 ? 10.0 : 0.0)
+active := active + converted - active * activeDecay
+if prodrug < 0
+    prodrug := 0.0
+if active < 0
+    active := 0.0
+var float __obs_plot0 = na
+__obs_plot0 := active
+plot(active)

@@ -1,0 +1,7 @@
+//@version=5
+indicator("Test")
+x = 0
+if close > open
+    x := 1
+else if close < open
+    x := -1

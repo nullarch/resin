@@ -1,0 +1,10 @@
+//@version=5
+indicator("If Expr Basic")
+var float result = 0.0
+result := if close > 105
+    1.0
+else
+    -1.0
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

@@ -1,0 +1,8 @@
+//@version=5
+indicator("Max Bars Back")
+max_bars_back(close, 500)
+var float result = 0.0
+result := close
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

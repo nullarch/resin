@@ -1,0 +1,19 @@
+
+//@version=5
+indicator("Dashboard")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+atr = ta.atr(3)
+[m, s, h] = ta.macd(close, 3, 5, 3)
+var dm = map.new<string, float>()
+map.put(dm, "trend", close > sma3 ? 1.0 : -1.0)
+map.put(dm, "momentum", (rsi - 50) / 50)
+map.put(dm, "macd", h > 0 ? 1.0 : -1.0)
+map.put(dm, "volatility", atr)
+composite = 0.0
+for [k, v] in dm
+    if k != "volatility"
+        composite := composite + v
+var float __obs_plot0 = na
+__obs_plot0 := composite / 3
+plot(composite / 3, "Comp")

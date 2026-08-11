@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("FeatVec")
+var float[] features = array.new_float(0)
+array.clear(features)
+array.push(features, close - open)
+array.push(features, high - low)
+array.push(features, nz(ta.rsi(close, 3), 50.0))
+array.push(features, volume > 1000 ? 1.0 : 0.0)
+numFeats = array.size(features)
+var float __obs_plot0 = na
+__obs_plot0 := numFeats
+plot(numFeats, "N")

@@ -1,0 +1,10 @@
+//@version=5
+indicator("Semaphore")
+var int semaphore = 3
+bool acquire = close > open
+bool release = close < open
+if acquire and semaphore > 0
+    semaphore := semaphore - 1
+if release and semaphore < 3
+    semaphore := semaphore + 1
+float available = semaphore

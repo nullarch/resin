@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("FI Empty")
+var empty = map.new<string, float>()
+total = 0.0
+for [k, v] in empty
+    total := total + v
+map.put(empty, "a", 1.0)
+map.clear(empty)
+var float __obs_plot0 = na
+__obs_plot0 := total
+plot(total, "T")

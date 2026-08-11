@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Vol Trend")
+vol3 = ta.sma(volume, 3)
+vol5 = ta.sma(volume, 5)
+volTrend = vol5 > 0 ? vol3 / vol5 : 1.0
+expanding = volTrend > 1.1
+var float __obs_plot0 = na
+__obs_plot0 := expanding ? 1 : 0
+plot(expanding ? 1 : 0, "E")

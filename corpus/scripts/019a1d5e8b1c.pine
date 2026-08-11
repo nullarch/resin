@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Decay")
+halfLife = 5.0
+decayRate = math.log(2.0) / halfLife
+decay1 = math.exp(-decayRate * 1)
+decay3 = math.exp(-decayRate * 3)
+decay5 = math.exp(-decayRate * 5)
+plot(decay1, "D1")
+plot(decay5, "D5")

@@ -1,0 +1,7 @@
+//@version=5
+indicator("Brain Entropy")
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+p = rsiVal / 100.0
+p = math.max(0.01, math.min(0.99, p))
+entropy = -(p * math.log(p) + (1.0 - p) * math.log(1.0 - p))
+plot(entropy)

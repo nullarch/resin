@@ -1,0 +1,5 @@
+//@version=5
+indicator("String Escape")
+string s = "hello\nworld"
+var float result = 0.0
+result := str.length(s)

@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:eq": "pine_fn.<locals>.EqCurve(value=10080.0, peak=10080.0, maxDD=0.1998001998001998)",
+   "var:__obs_plot0": 10000.0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:eq": "pine_fn.<locals>.EqCurve(value=10080.0, peak=10080.0, maxDD=0.1998001998001998)",
+   "var:__obs_plot0": 10010.0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:eq": "pine_fn.<locals>.EqCurve(value=10080.0, peak=10080.0, maxDD=0.1998001998001998)",
+   "var:__obs_plot0": 9990.0,
+   "var:__obs_plot1": 0.1998001998001998
+  },
+  {
+   "var:eq": "pine_fn.<locals>.EqCurve(value=10080.0, peak=10080.0, maxDD=0.1998001998001998)",
+   "var:__obs_plot0": 10020.0,
+   "var:__obs_plot1": 0.1998001998001998
+  },
+  {
+   "var:eq": "pine_fn.<locals>.EqCurve(value=10080.0, peak=10080.0, maxDD=0.1998001998001998)",
+   "var:__obs_plot0": 10040.0,
+   "var:__obs_plot1": 0.1998001998001998
+  },
+  {
+   "var:eq": "pine_fn.<locals>.EqCurve(value=10080.0, peak=10080.0, maxDD=0.1998001998001998)",
+   "var:__obs_plot0": 10030.0,
+   "var:__obs_plot1": 0.1998001998001998
+  },
+  {
+   "var:eq": "pine_fn.<locals>.EqCurve(value=10080.0, peak=10080.0, maxDD=0.1998001998001998)",
+   "var:__obs_plot0": 10050.0,
+   "var:__obs_plot1": 0.1998001998001998
+  },
+  {
+   "var:eq": "pine_fn.<locals>.EqCurve(value=10080.0, peak=10080.0, maxDD=0.1998001998001998)",
+   "var:__obs_plot0": 10070.0,
+   "var:__obs_plot1": 0.1998001998001998
+  },
+  {
+   "var:eq": "pine_fn.<locals>.EqCurve(value=10080.0, peak=10080.0, maxDD=0.1998001998001998)",
+   "var:__obs_plot0": 10060.0,
+   "var:__obs_plot1": 0.1998001998001998
+  },
+  {
+   "var:eq": "pine_fn.<locals>.EqCurve(value=10080.0, peak=10080.0, maxDD=0.1998001998001998)",
+   "var:__obs_plot0": 10080.0,
+   "var:__obs_plot1": 0.1998001998001998
+  }
+ ],
+ "finalVarState": {
+  "eq": "pine_fn.<locals>.EqCurve(value=10080.0, peak=10080.0, maxDD=0.1998001998001998)",
+  "__obs_plot0": 10080.0,
+  "__obs_plot1": 0.1998001998001998
+ }
+}

@@ -1,0 +1,12 @@
+
+//@version=5
+strategy("Consensus", overlay=true)
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+bullVotes = (rsi > 50 ? 1 : 0) + (close > sma3 ? 1 : 0) + (sma3 > ema5 ? 1 : 0)
+if bullVotes >= 3
+    strategy.entry("Long", strategy.long)
+if bullVotes <= 1
+    strategy.close("Long")
+plot(sma3, "MA")

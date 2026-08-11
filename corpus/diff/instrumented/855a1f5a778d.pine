@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Small Num")
+tiny = 0.000001
+result = close + tiny - close
+verySmall = result < 0.001
+var float __obs_plot0 = na
+__obs_plot0 := verySmall ? 1 : 0
+plot(verySmall ? 1 : 0, "VS")

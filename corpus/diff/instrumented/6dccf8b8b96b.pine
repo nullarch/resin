@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Num Format")
+rsi = ta.rsi(close, 3)
+formatted = str.tostring(close, "#.##")
+rsiStr = str.tostring(rsi, "#.#")
+combined = "P:" + formatted + " R:" + rsiStr
+var float __obs_plot0 = na
+__obs_plot0 := str.length(combined)
+plot(str.length(combined), "Len")

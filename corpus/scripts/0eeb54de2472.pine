@@ -1,0 +1,5 @@
+
+//@version=5
+indicator("OHLCV Inject Generic")
+atr_val = ta.atr(14)
+plot(atr_val)

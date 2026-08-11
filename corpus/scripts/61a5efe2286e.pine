@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("ST Parts")
+atr = ta.atr(3)
+hl2val = (high + low) / 2.0
+upperBand = hl2val + 2.0 * atr
+lowerBand = hl2val - 2.0 * atr
+var float supertrend = 0.0
+var bool isUp = true
+if close > supertrend
+    isUp := true
+    supertrend := lowerBand
+else
+    isUp := false
+    supertrend := upperBand
+plot(supertrend, "ST")

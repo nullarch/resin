@@ -1,0 +1,8 @@
+//@version=5
+indicator("Tail Ratio")
+float prevC = not na(close[1]) ? close[1] : close
+float ret = close - prevC
+float upTail = ta.highest(ret, 5)
+float downTail = math.abs(ta.lowest(ret, 5))
+float tailRatio = downTail > 0.01 ? upTail / downTail : 1.0
+plot(tailRatio, "TailRatio")

@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Sig Smooth")
+var float[] sigHist = array.new_float(0)
+rsi = nz(ta.rsi(close, 3), 50.0)
+rawSig = rsi > 55 ? 1.0 : rsi < 45 ? -1.0 : 0.0
+array.push(sigHist, rawSig)
+if array.size(sigHist) > 5
+    array.shift(sigHist)
+smoothed = array.avg(sigHist)
+var float __obs_plot0 = na
+__obs_plot0 := smoothed
+plot(smoothed, "Smooth")

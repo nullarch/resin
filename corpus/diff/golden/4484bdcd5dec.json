@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:totalPay": 2.0,
+   "var:rounds": 1,
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:totalPay": 4.0,
+   "var:rounds": 2,
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:totalPay": 6.0,
+   "var:rounds": 3,
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:totalPay": 8.0,
+   "var:rounds": 4,
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:totalPay": 10.0,
+   "var:rounds": 5,
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:totalPay": 12.0,
+   "var:rounds": 6,
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:totalPay": 14.0,
+   "var:rounds": 7,
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:totalPay": 16.0,
+   "var:rounds": 8,
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:totalPay": 18.0,
+   "var:rounds": 9,
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:totalPay": 20.0,
+   "var:rounds": 10,
+   "var:__obs_plot0": 2.0
+  }
+ ],
+ "finalVarState": {
+  "totalPay": 20.0,
+  "rounds": 10,
+  "__obs_plot0": 2.0
+ }
+}

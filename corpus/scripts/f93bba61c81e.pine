@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("OHLC4")
+avgPrice = (open + high + low + close) / 4
+medPrice = (high + low) / 2
+spread = avgPrice - medPrice
+plot(spread, "Spread")

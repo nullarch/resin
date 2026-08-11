@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Cond Arr")
+var float[] bullVals = array.new_float(0)
+var float[] bearVals = array.new_float(0)
+if close > open
+    array.push(bullVals, close - open)
+    if array.size(bullVals) > 5
+        array.shift(bullVals)
+else
+    array.push(bearVals, open - close)
+    if array.size(bearVals) > 5
+        array.shift(bearVals)
+bullAvg = array.size(bullVals) > 0 ? array.avg(bullVals) : 0.0
+bearAvg = array.size(bearVals) > 0 ? array.avg(bearVals) : 0.0
+ratio = (bullAvg + bearAvg) > 0 ? bullAvg / (bullAvg + bearAvg) : 0.5
+plot(ratio, "Ratio")

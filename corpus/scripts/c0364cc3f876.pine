@@ -1,0 +1,10 @@
+//@version=5
+indicator("UDT Import Copy")
+var float result = 0.0
+
+type MyPoint
+    float x = 0.0
+    float y = 0.0
+
+p = MyPoint.new(close, high)
+result := p.x

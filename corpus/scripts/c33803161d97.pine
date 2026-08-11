@@ -1,0 +1,13 @@
+//@version=5
+indicator("UDF Switch Return")
+var float result = 0.0
+
+grade(int score) =>
+    switch score
+        5 => "A"
+        4 => "B"
+        3 => "C"
+        => "F"
+
+string g = grade(5)
+result := g == "A" ? 1.0 : 0.0

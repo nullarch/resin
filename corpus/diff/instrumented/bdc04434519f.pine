@@ -1,0 +1,11 @@
+//@version=5
+indicator("Polyline")
+if barstate.islast
+    pts = array.new<chart.point>(0)
+    array.push(pts, chart.point.from_index(bar_index - 2, high))
+    array.push(pts, chart.point.from_index(bar_index - 1, low))
+    array.push(pts, chart.point.from_index(bar_index, close))
+    polyline.new(pts, line_color=color.blue)
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

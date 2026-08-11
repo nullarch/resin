@@ -1,0 +1,5 @@
+//@version=5
+indicator("Octave Bands")
+rng = high - low
+octave = math.floor(rng)
+plot(octave, title="octave")

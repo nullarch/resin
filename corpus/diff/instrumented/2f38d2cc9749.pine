@@ -1,0 +1,10 @@
+//@version=5
+indicator("Cerebellum Error")
+var float motorCommand = 105.0
+actual = close
+errorSignal = actual - motorCommand
+correction = errorSignal * 0.2
+motorCommand := motorCommand + correction
+var float __obs_plot0 = na
+__obs_plot0 := math.abs(errorSignal)
+plot(math.abs(errorSignal))

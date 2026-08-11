@@ -1,0 +1,8 @@
+//@version=5
+indicator("Syncopation")
+mid = (high + low) / 2.0
+offBeat = close > mid ? 1.0 : -1.0
+smoothOff = ta.sma(offBeat, 3)
+var float __obs_plot0 = na
+__obs_plot0 := smoothOff
+plot(smoothOff, title="syncopation")

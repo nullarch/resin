@@ -1,0 +1,20 @@
+
+//@version=5
+indicator("UDT Arr")
+type Tracker
+    float current = 0.0
+    float average = 0.0
+    int count = 0
+
+var Tracker tr = Tracker.new()
+var float[] data = array.new_float(0)
+array.push(data, close)
+if array.size(data) > 6
+    array.shift(data)
+tr.current := close
+tr.average := array.avg(data)
+tr.count := array.size(data)
+deviation = tr.current - tr.average
+var float __obs_plot0 = na
+__obs_plot0 := deviation
+plot(deviation, "Dev")

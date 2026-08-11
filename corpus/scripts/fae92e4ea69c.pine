@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("MACD Mom")
+[m, s, h] = ta.macd(close, 3, 5, 3)
+hIncreasing = h > h[1] and not na(h[1])
+hPositive = h > 0
+momScore = (hPositive ? 1 : 0) + (hIncreasing ? 1 : 0)
+plot(momScore, "MS")

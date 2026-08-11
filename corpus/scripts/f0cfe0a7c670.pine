@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("UDT Defaults")
+type Config
+    float threshold = 50.0
+    int period = 14
+    bool active = true
+
+cfg = Config.new()
+plot(cfg.threshold)

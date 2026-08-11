@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Body Eff")
+body = math.abs(close - open_)
+barRange = high - low
+efficiency = barRange > 0 ? body / barRange : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := efficiency
+plot(efficiency, "Eff")

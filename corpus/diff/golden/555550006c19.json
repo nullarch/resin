@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:signals": {
+    "trend": 1.0,
+    "mom": 1.0,
+    "vol": 1.0
+   },
+   "var:__obs_plot0": -1.0
+  },
+  {
+   "var:signals": {
+    "trend": 1.0,
+    "mom": 1.0,
+    "vol": 1.0
+   },
+   "var:__obs_plot0": -1.0
+  },
+  {
+   "var:signals": {
+    "trend": 1.0,
+    "mom": 1.0,
+    "vol": 1.0
+   },
+   "var:__obs_plot0": -1.0
+  },
+  {
+   "var:signals": {
+    "trend": 1.0,
+    "mom": 1.0,
+    "vol": 1.0
+   },
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:signals": {
+    "trend": 1.0,
+    "mom": 1.0,
+    "vol": 1.0
+   },
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:signals": {
+    "trend": 1.0,
+    "mom": 1.0,
+    "vol": 1.0
+   },
+   "var:__obs_plot0": -0.3333333333333333
+  },
+  {
+   "var:signals": {
+    "trend": 1.0,
+    "mom": 1.0,
+    "vol": 1.0
+   },
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:signals": {
+    "trend": 1.0,
+    "mom": 1.0,
+    "vol": 1.0
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:signals": {
+    "trend": 1.0,
+    "mom": 1.0,
+    "vol": 1.0
+   },
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:signals": {
+    "trend": 1.0,
+    "mom": 1.0,
+    "vol": 1.0
+   },
+   "var:__obs_plot0": 1.0
+  }
+ ],
+ "finalVarState": {
+  "signals": {
+   "trend": 1.0,
+   "mom": 1.0,
+   "vol": 1.0
+  },
+  "__obs_plot0": 1.0
+ }
+}

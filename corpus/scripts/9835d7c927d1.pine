@@ -1,0 +1,5 @@
+//@version=5
+indicator("na prop")
+float x = na
+result = x + 1.0
+isNaResult = na(result)

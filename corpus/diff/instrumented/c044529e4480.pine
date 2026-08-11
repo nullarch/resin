@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Inputs")
+length = input.int(5, "Length")
+mult = input.float(2.0, "Multiplier")
+src = input.source(close, "Source")
+showPlot = input.bool(true, "Show")
+sma = ta.sma(src, length)
+if showPlot
+    var float __obs_plot0 = na
+    __obs_plot0 := sma * mult
+    plot(sma * mult, "Result")

@@ -1,0 +1,19 @@
+
+//@version=5
+indicator("Outlier")
+var float[] window = array.new_float(0)
+array.push(window, close)
+if array.size(window) > 5
+    array.shift(window)
+sorted = array.copy(window)
+array.sort(sorted, order.ascending)
+sz = array.size(sorted)
+q1Idx = math.max(0, math.floor(float(sz) * 0.25))
+q3Idx = math.min(sz - 1, math.floor(float(sz) * 0.75))
+q1 = array.get(sorted, int(q1Idx))
+q3 = array.get(sorted, int(q3Idx))
+iqr = q3 - q1
+lowerFence = q1 - 1.5 * iqr
+upperFence = q3 + 1.5 * iqr
+isOutlier = close < lowerFence or close > upperFence
+plot(isOutlier ? 1 : 0, "OL")

@@ -1,0 +1,4 @@
+//@version=5
+indicator("TR Inject")
+var float result = 0.0
+result := ta.tr

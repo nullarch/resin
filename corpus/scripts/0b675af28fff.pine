@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Stat Score UDF")
+statScore(float zScore, float sharpe, float winRate) =>
+    zComponent = math.abs(zScore) > 2 ? 2.0 : math.abs(zScore)
+    sharpeComponent = sharpe > 0 ? math.min(sharpe, 3.0) : 0.0
+    winComponent = winRate / 100
+    zComponent * 0.3 + sharpeComponent * 0.4 + winComponent * 0.3
+
+sma5 = ta.sma(close, 5)
+stdev5 = ta.stdev(close, 5)
+z = stdev5 > 0 ? (close - sma5) / stdev5 : 0.0
+score = statScore(z, 1.5, 55.0)
+plot(score, "SS")

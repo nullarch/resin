@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Thresh Filt")
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = nz(ta.atr(3), 1.0)
+threshold = atr * 0.5
+move = close - close[1]
+filtered = math.abs(nz(move, 0.0)) > threshold ? nz(move, 0.0) : 0.0
+plot(filtered, "F")

@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Rising Falling")
+isRising = ta.rising(close, 3)
+isFalling = ta.falling(close, 3)
+var int riseCount = 0
+var int fallCount = 0
+if isRising
+    riseCount := riseCount + 1
+if isFalling
+    fallCount := fallCount + 1
+plot(riseCount, "Rises")
+plot(fallCount, "Falls")

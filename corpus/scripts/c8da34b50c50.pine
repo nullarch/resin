@@ -1,0 +1,15 @@
+//@version=5
+indicator("SwitchWhileUdf")
+countDown(start) =>
+    n = start
+    total = 0.0
+    while n > 0
+        total := total + float(n)
+        n := n - 1
+    total
+rsi = nz(ta.rsi(close, 5), 50.0)
+cat = switch
+    rsi > 70 => countDown(3)
+    rsi > 30 => countDown(2)
+    => countDown(1)
+plot(cat, "Cat")

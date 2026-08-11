@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Osc Smooth")
+rsi = nz(ta.rsi(close, 3), 50.0)
+raw = rsi - 50
+smoothed = raw
+iters = 0
+while math.abs(smoothed) > 1.0 and iters < 10
+    smoothed := smoothed * 0.8
+    iters := iters + 1
+var float __obs_plot0 = na
+__obs_plot0 := smoothed
+plot(smoothed, "S")

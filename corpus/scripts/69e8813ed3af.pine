@@ -1,0 +1,8 @@
+//@version=5
+indicator("History chain")
+c0 = close
+c1 = close[1]
+c2 = close[2]
+diff1 = c0 - nz(c1)
+diff2 = nz(c1) - nz(c2)
+accel = diff1 - diff2

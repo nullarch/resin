@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Osc Zone")
+rsi = nz(ta.rsi(close, 3), 50.0)
+zone = switch
+    rsi > 80 => "extreme_ob"
+    rsi > 70 => "overbought"
+    rsi < 20 => "extreme_os"
+    rsi < 30 => "oversold"
+    => "neutral"
+isExtreme = zone == "extreme_ob" or zone == "extreme_os"
+plot(isExtreme ? 1 : 0, "Ext")

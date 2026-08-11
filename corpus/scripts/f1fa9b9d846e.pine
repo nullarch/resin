@@ -1,0 +1,6 @@
+//@version=5
+indicator("Mode")
+var float lastM = 0
+m = ta.mode(close, 5)
+if not na(m)
+    lastM := m

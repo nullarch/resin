@@ -1,0 +1,17 @@
+//@version=5
+indicator("AllFeat 001")
+classify(val) =>
+    switch
+        val > 70 => "high"
+        val > 30 => "mid"
+        => "low"
+var labels = array.new_string(0)
+var float total = 0.0
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+label = classify(rsiVal)
+array.push(labels, label)
+sum = 0.0
+for i = 0 to array.size(labels) - 1
+    contribution = array.get(labels, i) == "high" ? 3.0 : array.get(labels, i) == "mid" ? 2.0 : 1.0
+    sum := sum + contribution
+total := sum

@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Tick Dir")
+var int upTicks = 0
+var int downTicks = 0
+if close > close[1] and not na(close[1])
+    upTicks := upTicks + 1
+if close < close[1] and not na(close[1])
+    downTicks := downTicks + 1
+tickRatio = (upTicks + downTicks) > 0 ? float(upTicks) / (upTicks + downTicks) : 0.5
+plot(tickRatio, "TR")

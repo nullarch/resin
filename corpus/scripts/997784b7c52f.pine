@@ -1,0 +1,8 @@
+//@version=5
+indicator("UDF OHLCV Defaults")
+myRange(float h = high, float l = low) =>
+    h - l
+r = myRange()
+r2 = myRange(close, open)
+plot(r)
+plot(r2)

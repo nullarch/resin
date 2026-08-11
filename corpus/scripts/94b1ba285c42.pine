@@ -1,0 +1,12 @@
+//@version=5
+indicator("Wolfram Class")
+var int prevState = 0
+var int changeCount = 0
+var int barNum = 0
+curState = close > open ? 1 : 0
+barNum := barNum + 1
+if curState != prevState
+    changeCount := changeCount + 1
+prevState := curState
+changeRate = barNum > 0 ? changeCount * 1.0 / barNum : 0.0
+wolframClass = changeRate < 0.1 ? 1 : changeRate < 0.3 ? 2 : changeRate < 0.6 ? 3 : 4

@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Entry Filter")
+passesFilter(float price, float ma, float rsiVal, float atrVal) =>
+    trendOK = price > ma
+    momOK = rsiVal > 40 and rsiVal < 75
+    volOK = atrVal > 0
+    trendOK and momOK and volOK
+
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = ta.atr(3)
+passes = passesFilter(close, sma3, rsi, atr)
+plot(passes ? 1 : 0, "Passes")

@@ -1,0 +1,9 @@
+//@version=5
+indicator("DG-06 Arc Length")
+var float arcLen = 0.0
+if not na(close[1])
+    dx = 1.0
+    dy = close - close[1]
+    ds = math.sqrt(dx * dx + dy * dy)
+    arcLen := arcLen + ds
+plot(arcLen)

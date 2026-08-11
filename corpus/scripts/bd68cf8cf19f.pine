@@ -1,0 +1,31 @@
+//@version=5
+strategy("Mega 19")
+score(float val, float thresh) =>
+    val > thresh ? 1.0 : val > thresh * 0.5 ? 0.5 : 0.0
+var float maxSignal = 0.0
+float sma3 = nz(ta.sma(close, 3), close)
+float sma5 = nz(ta.sma(close, 5), close)
+float rsiVal = nz(ta.rsi(close, 5), 50.0)
+float atrVal = nz(ta.atr(3), 1.0)
+results = map.new<string, float>()
+results.put("s1", score(close - sma3, atrVal * 0.5))
+results.put("s2", score(rsiVal - 50.0, 10.0))
+results.put("s3", score(sma3 - sma5, atrVal * 0.3))
+keys = array.from("s1", "s2", "s3")
+float total = 0.0
+for k in keys
+    total := total + nz(results.get(k), 0.0)
+float avg = total / 3.0
+float gridLevel = 0.0
+int step = 0
+while gridLevel < 1.0 and step < 10
+    if avg > gridLevel
+        gridLevel := gridLevel + 0.1
+    else
+        break
+    step := step + 1
+maxSignal := math.max(maxSignal, avg)
+if avg > 0.6 and close > sma3
+    strategy.entry("Grid", strategy.long)
+if avg < 0.2
+    strategy.close("Grid")

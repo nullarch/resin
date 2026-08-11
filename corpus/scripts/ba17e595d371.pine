@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("IfChain")
+spread = high - low
+category = 0
+if spread > 10
+    category := 5
+else if spread > 7
+    category := 4
+else if spread > 5
+    category := 3
+else if spread > 3
+    category := 2
+else
+    category := 1
+plot(float(category), "Cat")

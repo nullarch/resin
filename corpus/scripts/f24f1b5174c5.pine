@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("ResidualSum")
+trend = nz(ta.sma(close, 3), close)
+residual = math.abs(close - trend)
+var float cumResidual = 0.0
+cumResidual := cumResidual + residual
+plot(cumResidual, "CR")

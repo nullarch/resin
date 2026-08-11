@@ -1,0 +1,20 @@
+//@version=5
+indicator("Combo03")
+var float cumDev = 0.0
+smaVal = nz(ta.sma(close, 3), close)
+diff = math.abs(close - smaVal)
+cumDev := cumDev + diff
+arr = array.new_float(0)
+idx = 0
+while idx < 5
+    val = nz(close[idx], close)
+    array.push(arr, val)
+    idx := idx + 1
+rangeVal = array.max(arr) - array.min(arr)
+normalized = rangeVal > 0.01 ? cumDev / rangeVal : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := normalized
+plot(normalized, "NormDev")
+var float __obs_plot1 = na
+__obs_plot1 := rangeVal
+plot(rangeVal, "Range")

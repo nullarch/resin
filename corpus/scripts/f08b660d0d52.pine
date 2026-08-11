@@ -1,0 +1,3 @@
+//@version=5
+indicator("Test")
+pr = ta.percentrank(close, 14)

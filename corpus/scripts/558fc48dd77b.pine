@@ -1,0 +1,7 @@
+//@version=5
+indicator("VarInIf")
+var float result = 0
+if close > 100
+    var float tracker = 0
+    tracker := tracker + 1
+    result := tracker

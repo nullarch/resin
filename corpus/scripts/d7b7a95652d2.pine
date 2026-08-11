@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Str Pattern")
+rsiVal = ta.rsi(close, 3)
+bars = rsiVal > 50 ? "+++" : "---"
+label_text = "RSI " + str.tostring(rsiVal, "#.#") + " " + bars
+len = str.length(label_text)
+plot(len, "Len")

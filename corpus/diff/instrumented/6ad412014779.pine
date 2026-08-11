@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Nested3If")
+var int count = 0
+if close > open
+    if high - close < 3
+        if volume > 800
+            count := count + 1
+var float __obs_plot0 = na
+__obs_plot0 := float(count)
+plot(float(count), "C")

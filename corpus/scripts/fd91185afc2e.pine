@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Spread")
+spreadProxy = high - low
+avgSpread = ta.sma(spreadProxy, 5)
+relSpread = avgSpread > 0 ? spreadProxy / avgSpread : 1.0
+isWide = relSpread > 1.5
+plot(relSpread, "Rel")
+plot(isWide ? 1 : 0, "Wide")

@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Smooth ROC")
+roc3 = ta.roc(close, 3)
+smoothROC = ta.ema(roc3, 3)
+above = smoothROC > 0
+var float __obs_plot0 = na
+__obs_plot0 := smoothROC
+plot(smoothROC, "SmoothROC")
+var float __obs_plot1 = na
+__obs_plot1 := above ? 1 : 0
+plot(above ? 1 : 0, "Above")

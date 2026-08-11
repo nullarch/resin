@@ -1,0 +1,6 @@
+//@version=5
+indicator("ATR nonneg")
+atrVal = ta.atr(3)
+var bool allNonNeg = true
+if not na(atrVal) and atrVal < 0
+    allNonNeg := false

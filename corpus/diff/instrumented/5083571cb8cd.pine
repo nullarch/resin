@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Early Break")
+found = -1
+for i = 0 to 9
+    val = close[i]
+    if not na(val) and val < 105
+        found := i
+        break
+var float __obs_plot0 = na
+__obs_plot0 := found
+plot(found, "Found At")

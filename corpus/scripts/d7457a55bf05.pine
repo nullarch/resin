@@ -1,0 +1,9 @@
+//@version=5
+indicator("UDT CompAssign")
+type Counter
+    float total = 0.0
+    int count = 0
+var c = Counter.new()
+c.total += close
+c.count += 1
+plot(c.total)

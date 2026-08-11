@@ -1,0 +1,6 @@
+//@version=5
+indicator("ta cache")
+sma1 = ta.sma(close, 3)
+sma2 = ta.sma(close, 3)
+ema1 = ta.ema(close, 5)
+ema2 = ta.ema(close, 5)

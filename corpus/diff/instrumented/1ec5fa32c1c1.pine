@@ -1,0 +1,14 @@
+//@version=5
+indicator("NA Dual")
+float x = na  // non-var: na each bar before assignment
+var bool check1 = false
+check1 := na(x)  // should be True (x is na)
+x := 42.0
+var bool check2 = true
+check2 := na(x)  // should be False (x is 42.0 now)
+// nz with na fallback
+var float safe = 0.0
+safe := nz(na, 99.0)  // na → 99.0
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

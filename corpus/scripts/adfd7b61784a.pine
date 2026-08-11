@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("WMA RSI")
+rsi = ta.rsi(close, 3)
+wmaRSI = ta.wma(rsi, 3)
+risingMom = wmaRSI > 50 and wmaRSI > wmaRSI[1]
+plot(wmaRSI, "WMARSI")
+plot(risingMom ? 1 : 0, "Rising")

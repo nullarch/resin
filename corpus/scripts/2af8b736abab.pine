@@ -1,0 +1,7 @@
+//@version=5
+indicator("Switch TA")
+int mode = 1
+result = switch mode
+    1 => ta.sma(close, 3)
+    2 => ta.ema(close, 3)
+    => close

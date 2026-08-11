@@ -1,0 +1,8 @@
+//@version=5
+indicator("Log Test")
+if close > open
+    log.info("Bullish bar at {0}", bar_index)
+else
+    log.warning("Bearish bar at {0}", bar_index)
+log.error("Debug: close={0}", close)
+plot(close)

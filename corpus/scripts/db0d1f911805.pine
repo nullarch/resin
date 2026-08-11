@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Ret Anal")
+posCount = 0
+negCount = 0
+for i = 0 to 4
+    if not na(close[i]) and not na(close[i+1])
+        ret = (close[i] - close[i+1]) / close[i+1]
+        if ret > 0
+            posCount := posCount + 1
+        else
+            negCount := negCount + 1
+winRate = posCount + negCount > 0 ? float(posCount) / (posCount + negCount) * 100 : 50.0
+plot(winRate, "WR")

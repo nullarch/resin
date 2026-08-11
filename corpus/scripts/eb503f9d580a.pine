@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("FC Params")
+var fp = map.new<string, float>()
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+slope = sma3 - sma3[1]
+map.put(fp, "level", sma3)
+map.put(fp, "slope", nz(slope, 0.0))
+map.put(fp, "bias", sma3 - sma5)
+forecast = map.get(fp, "level", close) + map.get(fp, "slope", 0.0) * 2
+plot(forecast, "FC")

@@ -1,0 +1,14 @@
+//@version=5
+indicator("State Machine")
+var int state = 0
+var float entryPrice = 0.0
+sma5 = ta.sma(close, 5)
+if state == 0 and close > sma5
+    state := 1
+    entryPrice := close
+if state == 1 and close < sma5
+    state := 0
+    entryPrice := 0.0
+var float __obs_plot0 = na
+__obs_plot0 := state
+plot(state)

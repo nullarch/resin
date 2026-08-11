@@ -1,0 +1,13 @@
+//@version=5
+strategy("Robot Navigator")
+float sma3 = nz(ta.sma(close, 3), close)
+float atrVal = nz(ta.atr(3), 1.0)
+float goalDist = math.abs(110.0 - close)
+float obstacleDist = math.abs(close - 104.0)
+float pathCost = goalDist + atrVal
+float safetyScore = obstacleDist > 0.5 ? 1.0 / obstacleDist : 2.0
+float signal = pathCost > 0.01 ? safetyScore / pathCost : 0.0
+if signal > 0.3 and close > sma3
+    strategy.entry("Navigate", strategy.long)
+if signal < 0.1 or close < sma3
+    strategy.close("Navigate")

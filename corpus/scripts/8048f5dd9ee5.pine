@@ -1,0 +1,6 @@
+//@version=5
+indicator("Str Format")
+msg = str.format("{0} price: {1}", "Current", str.tostring(close))
+var int len_ = 0
+len_ := str.length(msg)
+plot(close)

@@ -1,0 +1,3 @@
+//@version=5
+indicator("Test")
+var labels = array.new_label(0)

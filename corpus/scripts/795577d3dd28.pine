@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Liq State")
+avgVol = ta.sma(volume, 5)
+spread = high - low
+avgSpread = ta.sma(spread, 5)
+volRatio = avgVol > 0 ? volume / avgVol : 1.0
+spRatio = avgSpread > 0 ? spread / avgSpread : 1.0
+state = switch
+    volRatio > 1.5 and spRatio < 0.8 => "deep"
+    volRatio > 1.0 => "liquid"
+    spRatio > 1.5 => "illiquid"
+    => "thin"
+isDeep = state == "deep"
+plot(isDeep ? 1 : 0, "Deep")

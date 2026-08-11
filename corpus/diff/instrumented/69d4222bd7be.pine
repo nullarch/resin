@@ -1,0 +1,9 @@
+//@version=5
+indicator("Timestamp")
+t1 = timestamp(2024, 1, 1)
+t2 = timestamp(2024, 6, 15)
+inRange = time >= t1 and time < t2
+val = inRange ? 1.0 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := val
+plot(val)

@@ -1,0 +1,9 @@
+//@version=5
+indicator("all literals")
+var float result = 0.0
+n = 42.5
+s = "hello"
+b = true
+c = #FF0000
+x = na
+result := b ? n : 0.0

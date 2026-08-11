@@ -1,0 +1,3 @@
+//@version=5
+indicator("ErrorTest")
+x = close

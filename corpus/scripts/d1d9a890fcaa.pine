@@ -1,0 +1,10 @@
+//@version=5
+indicator("Comma Category")
+type IndexedSignal
+    string timeframe = "fast"
+    float value = 0.0
+method weight(IndexedSignal this) =>
+    this.timeframe == "fast" ? 2.0 : 1.0
+fast = IndexedSignal.new("fast", nz(ta.sma(close, 3), close) - close)
+slow = IndexedSignal.new("slow", nz(ta.sma(close, 5), close) - close)
+float combined = fast.value * fast.weight() + slow.value * slow.weight()

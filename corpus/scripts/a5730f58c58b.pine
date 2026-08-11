@@ -1,0 +1,5 @@
+//@version=5
+indicator("Fmt Ext")
+val = 42195.123
+txt = str.format("{0}", val)
+plot(val)

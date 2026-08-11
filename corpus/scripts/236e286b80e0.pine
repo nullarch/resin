@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("BB MACD")
+[mid, upper, lower] = ta.bb(close, 5, 2.0)
+[m, s, h] = ta.macd(close, 3, 5, 3)
+bbPos = mid > 0 ? (close - lower) / (upper - lower) : 0.5
+macdBull = h > 0
+signal = bbPos < 0.2 and macdBull ? 1 : bbPos > 0.8 and not macdBull ? -1 : 0
+plot(signal, "Sig")

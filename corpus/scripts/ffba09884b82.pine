@@ -1,0 +1,7 @@
+//@version=5
+indicator("AmihudRatio")
+prevClose = nz(close[1], close)
+absRet = prevClose > 0 ? math.abs(close - prevClose) / prevClose : 0.0
+dollarVol = close * float(volume)
+amihud = dollarVol > 0.01 ? absRet / dollarVol : 0.0
+plot(amihud * 1e6, "Amihud")

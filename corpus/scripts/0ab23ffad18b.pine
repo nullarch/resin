@@ -1,0 +1,12 @@
+//@version=5
+indicator("TickCluster")
+var int cluster = 0
+prevClose = nz(close[1], close)
+direction = close > prevClose ? 1 : close < prevClose ? -1 : 0
+var int prevDir = 0
+if direction == prevDir and direction != 0
+    cluster := cluster + 1
+else
+    cluster := 1
+prevDir := direction
+plot(float(cluster), "Cluster")

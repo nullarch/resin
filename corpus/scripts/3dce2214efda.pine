@@ -1,0 +1,11 @@
+//@version=5
+indicator("Sinkhorn")
+float costMatrix = math.abs(close - open)
+float epsilon = 1.0
+float kernel = math.exp(-costMatrix / epsilon)
+var float uVec = 1.0
+var float vVec = 1.0
+uVec := 1.0 / math.max(kernel * vVec, 0.001)
+vVec := 1.0 / math.max(kernel * uVec, 0.001)
+float transport = uVec * kernel * vVec * costMatrix
+plot(transport, "Sinkhorn")

@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("MA UDT")
+type MATracker
+    float fastMA = 0.0
+    float slowMA = 0.0
+    int crossCount = 0
+
+var MATracker mt = MATracker.new()
+mt.fastMA := ta.sma(close, 3)
+mt.slowMA := ta.sma(close, 5)
+if ta.crossover(mt.fastMA, mt.slowMA) or ta.crossunder(mt.fastMA, mt.slowMA)
+    mt.crossCount := mt.crossCount + 1
+plot(mt.crossCount, "CC")

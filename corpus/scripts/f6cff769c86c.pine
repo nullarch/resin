@@ -1,0 +1,10 @@
+//@version=5
+indicator("Label builder")
+sma5 = ta.sma(close, 5)
+rsi5 = ta.rsi(close, 5)
+line1 = "Price: " + str.tostring(close, "#.##")
+line2 = "SMA: " + str.tostring(nz(sma5), "#.##")
+line3 = "RSI: " + str.tostring(nz(rsi5), "#.#")
+fullLabel = line1 + "
+" + line2 + "
+" + line3

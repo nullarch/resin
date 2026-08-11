@@ -1,0 +1,16 @@
+
+//@version=5
+indicator("KatzFD")
+var float pathLen = 0.0
+d1 = math.abs(close - close[1])
+if not na(d1)
+    pathLen := pathLen + d1
+n = bar_index + 1
+diameter = ta.highest(close, 5) - ta.lowest(close, 5)
+diam = math.max(nz(diameter, 1.0), 0.001)
+logN = math.log(float(n) + 1.0)
+logRatio = math.log(diam / (pathLen + 0.001))
+kfd = logN / (logN + logRatio + 0.0001)
+var float __obs_plot0 = na
+__obs_plot0 := kfd
+plot(kfd, "KFD")

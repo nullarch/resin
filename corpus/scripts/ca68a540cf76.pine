@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Calmar")
+var float peak = 0.0
+peak := math.max(peak, close)
+dd = peak > 0 ? (peak - close) / peak * 100 : 0.0
+ret5 = close > 0 ? (close - close[5]) / close * 100 : 0.0
+calmar = dd > 0.01 ? nz(ret5, 0.0) / dd : 0.0
+plot(calmar, "Calmar")

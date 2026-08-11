@@ -1,0 +1,11 @@
+//@version=5
+indicator("Emergent SR")
+var float support = na
+var float resistance = na
+if na(support) or low < nz(support)
+    support := low
+if na(resistance) or high > nz(resistance)
+    resistance := high
+rangeVal = nz(resistance) - nz(support)
+position = rangeVal > 0 ? (close - nz(support)) / rangeVal : 0.5
+plot(position)

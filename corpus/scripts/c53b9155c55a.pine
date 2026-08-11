@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Multi Indicator Switch")
+rsiVal = ta.rsi(close, 3)
+sma3 = ta.sma(close, 3)
+atrVal = ta.atr(3)
+regime = switch
+    rsiVal > 70 and close > sma3 => "strong_bull"
+    rsiVal > 50 and close > sma3 => "mild_bull"
+    rsiVal < 30 and close < sma3 => "strong_bear"
+    rsiVal < 50 and close < sma3 => "mild_bear"
+    => "neutral"
+isBull = regime == "strong_bull" or regime == "mild_bull"
+plot(isBull ? 1 : 0, "Bull")

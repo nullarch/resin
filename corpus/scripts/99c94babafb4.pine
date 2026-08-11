@@ -1,0 +1,8 @@
+//@version=5
+indicator("UDF Default Param")
+myMA(float src = close, int len = 5) =>
+    ta.sma(src, len)
+result = myMA()
+result2 = myMA(high, 3)
+plot(result)
+plot(result2)

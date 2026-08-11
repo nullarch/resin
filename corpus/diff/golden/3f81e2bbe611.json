@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:totalImpact": 0.0,
+   "var:totalVol": 1000.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:totalImpact": 1200.0,
+   "var:totalVol": 2200.0,
+   "var:__obs_plot0": 0.5454545454545454
+  },
+  {
+   "var:totalImpact": 2800.0,
+   "var:totalVol": 3000.0,
+   "var:__obs_plot0": 0.9333333333333333
+  },
+  {
+   "var:totalImpact": 7300.0,
+   "var:totalVol": 4500.0,
+   "var:__obs_plot0": 1.6222222222222222
+  },
+  {
+   "var:totalImpact": 9900.0,
+   "var:totalVol": 5800.0,
+   "var:__obs_plot0": 1.706896551724138
+  },
+  {
+   "var:totalImpact": 10800.0,
+   "var:totalVol": 6700.0,
+   "var:__obs_plot0": 1.6119402985074627
+  },
+  {
+   "var:totalImpact": 13000.0,
+   "var:totalVol": 7800.0,
+   "var:__obs_plot0": 1.6666666666666667
+  },
+  {
+   "var:totalImpact": 15800.0,
+   "var:totalVol": 9200.0,
+   "var:__obs_plot0": 1.7173913043478262
+  },
+  {
+   "var:totalImpact": 16800.0,
+   "var:totalVol": 10200.0,
+   "var:__obs_plot0": 1.6470588235294117
+  },
+  {
+   "var:totalImpact": 20000.0,
+   "var:totalVol": 11800.0,
+   "var:__obs_plot0": 1.694915254237288
+  }
+ ],
+ "finalVarState": {
+  "totalImpact": 20000.0,
+  "totalVol": 11800.0,
+  "__obs_plot0": 1.694915254237288
+ }
+}

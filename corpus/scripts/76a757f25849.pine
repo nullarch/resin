@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Trend Map FI")
+var tm = map.new<string, float>()
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+map.put(tm, "spread", sma3 - sma5)
+map.put(tm, "price_dist", close - sma3)
+map.put(tm, "rsi_bias", nz(ta.rsi(close, 3), 50.0) - 50)
+total = 0.0
+for [k, v] in tm
+    total := total + v
+plot(total, "T")

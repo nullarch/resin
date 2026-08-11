@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Regime Tracker")
+var string regime = "unknown"
+var int regimeAge = 0
+var int transitions = 0
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+newRegime = sma3 > sma5 ? "bull" : sma3 < sma5 ? "bear" : "flat"
+if newRegime != regime
+    transitions := transitions + 1
+    regimeAge := 0
+else
+    regimeAge := regimeAge + 1
+regime := newRegime
+var float __obs_plot0 = na
+__obs_plot0 := transitions
+plot(transitions, "Trans")
+var float __obs_plot1 = na
+__obs_plot1 := regimeAge
+plot(regimeAge, "Age")

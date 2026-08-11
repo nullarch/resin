@@ -1,0 +1,8 @@
+//@version=5
+indicator("Gravitational Force")
+var float totalForce = 0.0
+m1 = volume / 100.0
+m2 = nz(volume[1], volume) / 100.0
+dist = math.abs(close - nz(close[1], close))
+force = dist > 0.1 ? (m1 * m2) / (dist * dist) : 0.0
+totalForce := totalForce + force

@@ -1,0 +1,8 @@
+//@version=5
+indicator("For Lookback")
+var float result = 0.0
+float highest = close
+for i = 1 to 3
+    float prev = nz(close[i], close)
+    highest := math.max(highest, prev)
+result := highest

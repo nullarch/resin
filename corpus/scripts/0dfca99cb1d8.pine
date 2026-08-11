@@ -1,0 +1,5 @@
+//@version=5
+indicator("Test")
+a = array.new_float(3, 0)
+for [i, v] in a
+    x = i + v

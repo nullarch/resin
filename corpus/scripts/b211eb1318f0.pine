@@ -1,0 +1,16 @@
+//@version=5
+strategy("BB Squeeze Strat")
+length = 20
+mult = 2.0
+[mid, upper, lower] = ta.bb(close, length, mult)
+bandwidth = (upper - lower) / mid * 100
+sqz = bandwidth < ta.lowest(bandwidth, 50)
+expansion = bandwidth > bandwidth[1]
+if sqz[1] and expansion and close > mid
+    strategy.entry("Long", strategy.long)
+if sqz[1] and expansion and close < mid
+    strategy.entry("Short", strategy.short)
+if close < lower
+    strategy.close("Long")
+if close > upper
+    strategy.close("Short")

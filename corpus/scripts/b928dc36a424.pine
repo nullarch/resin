@@ -1,0 +1,5 @@
+//@version=5
+indicator("NegStep")
+s = -2
+for i = 10 to 0 by s
+    x = i

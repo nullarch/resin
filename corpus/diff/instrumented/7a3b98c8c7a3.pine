@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("SMA Slope")
+sma5 = ta.sma(close, 5)
+slope = sma5 - sma5[1]
+avgSlope = ta.sma(slope, 3)
+strongUp = slope > avgSlope and slope > 0
+var float __obs_plot0 = na
+__obs_plot0 := slope
+plot(slope, "Slope")
+var float __obs_plot1 = na
+__obs_plot1 := strongUp ? 1 : 0
+plot(strongUp ? 1 : 0, "StrongUp")

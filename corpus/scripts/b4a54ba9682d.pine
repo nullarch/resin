@@ -1,0 +1,4 @@
+//@version=5
+indicator("TA Context")
+var float result = 0.0
+result := ta.ema(close, 5)

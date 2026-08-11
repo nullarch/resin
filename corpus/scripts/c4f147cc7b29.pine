@@ -1,0 +1,7 @@
+//@version=5
+indicator("TA chain")
+emaOfClose = ta.ema(close, 5)
+smaOfEma = ta.sma(emaOfClose, 3)
+rsiOfClose = ta.rsi(close, 5)
+smaOfRsi = ta.sma(rsiOfClose, 3)
+smoothRSI = nz(smaOfRsi)

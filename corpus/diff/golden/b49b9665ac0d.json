@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:crossAboveCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:crossAboveCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:crossAboveCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:crossAboveCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:crossAboveCount": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:crossAboveCount": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:crossAboveCount": 2,
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:crossAboveCount": 2,
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:crossAboveCount": 2,
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:crossAboveCount": 2,
+   "var:__obs_plot0": 2
+  }
+ ],
+ "finalVarState": {
+  "crossAboveCount": 2,
+  "__obs_plot0": 2
+ }
+}

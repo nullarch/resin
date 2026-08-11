@@ -1,0 +1,10 @@
+//@version=5
+indicator("Myelin Conduction")
+var float myelinThickness = 1.0
+signalStrength = math.abs(close - open)
+conductionSpeed = signalStrength * myelinThickness
+if conductionSpeed > 5.0
+    myelinThickness := myelinThickness + 0.05
+else
+    myelinThickness := math.max(0.5, myelinThickness - 0.02)
+plot(conductionSpeed)

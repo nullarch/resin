@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Enum Dir")
+enum Direction
+    Long = 1
+    Short = -1
+    Flat = 0
+
+sma3 = ta.sma(close, 3)
+dir = close > sma3 ? Direction.Long : close < sma3 ? Direction.Short : Direction.Flat
+isLong = dir == Direction.Long
+plot(isLong ? 1 : 0, "Long")

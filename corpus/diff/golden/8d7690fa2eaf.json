@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:weight": 0.0,
+   "var:avgReward": 1.0,
+   "var:steps": 1,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:weight": 0.0,
+   "var:avgReward": 1.0,
+   "var:steps": 2,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:weight": 0.0,
+   "var:avgReward": 1.0,
+   "var:steps": 3,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:weight": 0.0,
+   "var:avgReward": 1.0,
+   "var:steps": 4,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:weight": 0.0,
+   "var:avgReward": 1.0,
+   "var:steps": 5,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:weight": 0.0,
+   "var:avgReward": 1.0,
+   "var:steps": 6,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:weight": 0.0,
+   "var:avgReward": 1.0,
+   "var:steps": 7,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:weight": 0.0,
+   "var:avgReward": 1.0,
+   "var:steps": 8,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:weight": 0.0,
+   "var:avgReward": 1.0,
+   "var:steps": 9,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:weight": 0.0,
+   "var:avgReward": 1.0,
+   "var:steps": 10,
+   "var:__obs_plot0": 0.0
+  }
+ ],
+ "finalVarState": {
+  "weight": 0.0,
+  "avgReward": 1.0,
+  "steps": 10,
+  "__obs_plot0": 0.0
+ }
+}

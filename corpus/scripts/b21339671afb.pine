@@ -1,0 +1,9 @@
+//@version=5
+indicator("Multi Assign")
+var float result = 0.0
+float x = 1.0
+x := x + 1.0
+x := x * 2.0
+x := x - 1.0
+x := x / 2.0
+result := x

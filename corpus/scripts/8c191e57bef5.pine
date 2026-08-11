@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Dash Sum")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+trend = close > sma3 ? "BULL" : "BEAR"
+strength = rsi > 65 or rsi < 35 ? "STRONG" : "MILD"
+vol = volume > ta.sma(volume, 5) ? "HV" : "LV"
+summary = trend + "_" + strength + "_" + vol
+isIdeal = summary == "BULL_STRONG_HV"
+plot(isIdeal ? 1 : 0, "I")

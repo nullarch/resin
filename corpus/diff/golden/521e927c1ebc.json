@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:vm": {
+    "current": 1600,
+    "average": 1200.0,
+    "ratio": 1.3333333333333333
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:vm": {
+    "current": 1600,
+    "average": 1200.0,
+    "ratio": 1.3333333333333333
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:vm": {
+    "current": 1600,
+    "average": 1200.0,
+    "ratio": 1.3333333333333333
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:vm": {
+    "current": 1600,
+    "average": 1200.0,
+    "ratio": 1.3333333333333333
+   },
+   "var:__obs_plot0": "NaN"
+  },
+  {
+   "var:vm": {
+    "current": 1600,
+    "average": 1200.0,
+    "ratio": 1.3333333333333333
+   },
+   "var:__obs_plot0": 2461.1206896551726
+  },
+  {
+   "var:vm": {
+    "current": 1600,
+    "average": 1200.0,
+    "ratio": 1.3333333333333333
+   },
+   "var:__obs_plot0": 2040.7894736842106
+  },
+  {
+   "var:vm": {
+    "current": 1600,
+    "average": 1200.0,
+    "ratio": 1.3333333333333333
+   },
+   "var:__obs_plot0": 2220.9821428571427
+  },
+  {
+   "var:vm": {
+    "current": 1600,
+    "average": 1200.0,
+    "ratio": 1.3333333333333333
+   },
+   "var:__obs_plot0": 2641.1290322580644
+  },
+  {
+   "var:vm": {
+    "current": 1600,
+    "average": 1200.0,
+    "ratio": 1.3333333333333333
+   },
+   "var:__obs_plot0": 2140.877192982456
+  },
+  {
+   "var:vm": {
+    "current": 1600,
+    "average": 1200.0,
+    "ratio": 1.3333333333333333
+   },
+   "var:__obs_plot0": 2801.3333333333335
+  }
+ ],
+ "finalVarState": {
+  "vm": {
+   "current": 1600,
+   "average": 1200.0,
+   "ratio": 1.3333333333333333
+  },
+  "__obs_plot0": 2801.3333333333335
+ }
+}

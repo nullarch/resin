@@ -1,0 +1,8 @@
+//@version=5
+indicator("Parseval Energy")
+var float timeEnergy = 0.0
+float chg = close - open
+timeEnergy := timeEnergy + chg * chg
+var float __obs_plot0 = na
+__obs_plot0 := timeEnergy
+plot(timeEnergy, "TimeEnergy")

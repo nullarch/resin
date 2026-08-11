@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Adapt RSI")
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 3)
+volRatio = avgATR > 0 ? atr / avgATR : 1.0
+upperTh = 70 - (volRatio - 1) * 10
+lowerTh = 30 + (volRatio - 1) * 10
+overbought = rsi > upperTh
+oversold = rsi < lowerTh
+plot(upperTh, "Up")

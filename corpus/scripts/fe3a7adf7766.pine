@@ -1,0 +1,4 @@
+//@version=5
+indicator("na neq")
+var float result = 0.0
+result := na != na ? 1.0 : 0.0

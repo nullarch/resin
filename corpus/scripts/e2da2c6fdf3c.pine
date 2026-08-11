@@ -1,0 +1,7 @@
+//@version=5
+indicator("Bracket Depth")
+var int depth = 0
+isOpen = close > open
+depth := isOpen ? depth + 1 : math.max(depth - 1, 0)
+balanced = depth == 0 ? 1.0 : 0.0
+plot(balanced, "Balanced")

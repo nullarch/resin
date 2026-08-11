@@ -1,0 +1,6 @@
+//@version=5
+indicator("Storm Surge Model")
+windEnergy = nz(ta.atr(3), 1.0)
+surgeHeight = windEnergy * 1.5
+var float peakSurge = 0.0
+peakSurge := math.max(peakSurge, surgeHeight)

@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("MktImpact")
+sigma = ta.stdev(close, 5)
+adv = ta.sma(volume, 5)
+impact = nz(sigma, 0.0) * math.sqrt(volume / (nz(adv, 1.0) + 0.001))
+plot(impact, "MI")

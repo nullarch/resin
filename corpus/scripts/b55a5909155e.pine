@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Mom Win")
+var float[] moms = array.new_float(0)
+mom = close - close[1]
+array.push(moms, nz(mom, 0.0))
+if array.size(moms) > 6
+    array.shift(moms)
+avgMom = array.size(moms) > 0 ? array.avg(moms) : 0.0
+maxMom = array.size(moms) > 0 ? array.max(moms) : 0.0
+plot(avgMom, "AM")

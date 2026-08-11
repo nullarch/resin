@@ -1,0 +1,10 @@
+//@version=5
+indicator("Portfolio tracker")
+var portfolio = map.new<string, float>()
+map.put(portfolio, "cash", 10000.0)
+map.put(portfolio, "shares", 0.0)
+map.put(portfolio, "avg_cost", 0.0)
+cash = map.get(portfolio, "cash")
+shares = map.get(portfolio, "shares")
+totalValue = cash + shares * close
+map.put(portfolio, "total", totalValue)

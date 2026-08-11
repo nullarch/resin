@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("StrReplace")
+template = "X_VALUE"
+result = str.replace_all(template, "X", str.tostring(close))
+resLen = str.length(result)
+var float __obs_plot0 = na
+__obs_plot0 := resLen
+plot(resLen, "RL")

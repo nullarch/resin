@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:posCount": 0,
+   "var:negCount": 0,
+   "var:totalBars": 1,
+   "var:__obs_plot0": -1.0
+  },
+  {
+   "var:posCount": 1,
+   "var:negCount": 0,
+   "var:totalBars": 2,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:posCount": 1,
+   "var:negCount": 1,
+   "var:totalBars": 3,
+   "var:__obs_plot0": -0.5773502691896258
+  },
+  {
+   "var:posCount": 2,
+   "var:negCount": 1,
+   "var:totalBars": 4,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:posCount": 3,
+   "var:negCount": 1,
+   "var:totalBars": 5,
+   "var:__obs_plot0": 0.4472135954999579
+  },
+  {
+   "var:posCount": 3,
+   "var:negCount": 2,
+   "var:totalBars": 6,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:posCount": 4,
+   "var:negCount": 2,
+   "var:totalBars": 7,
+   "var:__obs_plot0": 0.3779644730092272
+  },
+  {
+   "var:posCount": 5,
+   "var:negCount": 2,
+   "var:totalBars": 8,
+   "var:__obs_plot0": 0.7071067811865475
+  },
+  {
+   "var:posCount": 5,
+   "var:negCount": 3,
+   "var:totalBars": 9,
+   "var:__obs_plot0": 0.3333333333333333
+  },
+  {
+   "var:posCount": 6,
+   "var:negCount": 3,
+   "var:totalBars": 10,
+   "var:__obs_plot0": 0.6324555320336759
+  }
+ ],
+ "finalVarState": {
+  "posCount": 6,
+  "negCount": 3,
+  "totalBars": 10,
+  "__obs_plot0": 0.6324555320336759
+ }
+}

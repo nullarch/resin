@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Str Repeat")
+count = close > ta.sma(close, 3) ? 3 : 1
+result = ""
+for i = 0 to count - 1
+    result := result + "+"
+total = str.length(result)
+plot(total, "Len")

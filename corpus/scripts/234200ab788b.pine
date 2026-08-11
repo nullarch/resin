@@ -1,0 +1,7 @@
+//@version=5
+indicator("Input Int")
+length = input.int(14, "Length")
+sma_val = ta.sma(close, length)
+var float result = 0.0
+result := nz(sma_val, 0.0)
+plot(result)

@@ -1,0 +1,9 @@
+//@version=5
+indicator("UDF Switch Default")
+f_always() =>
+    switch
+        => 42.0
+
+var float result = 0.0
+result := f_always()
+plot(result)

@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Risk Adj Ret")
+riskAdjReturn(float ret, float vol) =>
+    vol > 0 ? ret / vol : 0.0
+
+retVal = close - close[1]
+atr = ta.atr(3)
+rar = riskAdjReturn(nz(retVal, 0.0), atr)
+plot(rar, "RAR")

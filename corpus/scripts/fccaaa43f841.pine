@@ -1,0 +1,6 @@
+//@version=5
+indicator("Walrus Cont")
+x = 0.0
+x :=
+    close + open
+plot(x)

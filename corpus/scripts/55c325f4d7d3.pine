@@ -1,0 +1,15 @@
+//@version=5
+strategy("GreeksStrat")
+var int state = 0
+c1 = nz(close[1], close)
+deltaP = c1 > 0 ? (close - c1) / c1 : 0.0
+vol = nz(ta.stdev(close, 5), 1.0)
+highDelta = deltaP > 0.01
+lowVol = vol < 3.0
+if state == 0 and highDelta and lowVol
+    strategy.entry("L", strategy.long)
+    state := 1
+else if state == 1 and deltaP < -0.005
+    strategy.close("L")
+    state := 0
+plot(float(state), "S")

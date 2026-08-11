@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:prevRegime": 0,
+   "var:transitions": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:prevRegime": 0,
+   "var:transitions": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:prevRegime": -1,
+   "var:transitions": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:prevRegime": 1,
+   "var:transitions": 2,
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:prevRegime": 1,
+   "var:transitions": 2,
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:prevRegime": 0,
+   "var:transitions": 2,
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:prevRegime": 1,
+   "var:transitions": 3,
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:prevRegime": 1,
+   "var:transitions": 3,
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:prevRegime": 0,
+   "var:transitions": 3,
+   "var:__obs_plot0": 3
+  },
+  {
+   "var:prevRegime": 1,
+   "var:transitions": 4,
+   "var:__obs_plot0": 4
+  }
+ ],
+ "finalVarState": {
+  "prevRegime": 1,
+  "transitions": 4,
+  "__obs_plot0": 4
+ }
+}

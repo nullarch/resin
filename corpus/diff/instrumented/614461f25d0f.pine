@@ -1,0 +1,14 @@
+//@version=5
+indicator("Coulomb Stress Transfer")
+var float faultA = 10.0
+var float faultB = 10.0
+event = (high - low) > 5 ? high - low : 0.0
+transferRatio = 0.3
+if event > 0
+    faultA := faultA - event + event * transferRatio
+    faultB := faultB + event * transferRatio
+frictionCoeff = 0.6
+coulombA = faultA - frictionCoeff * close * 0.1
+var float __obs_plot0 = na
+__obs_plot0 := coulombA
+plot(coulombA)

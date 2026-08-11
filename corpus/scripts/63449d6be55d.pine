@@ -1,0 +1,5 @@
+
+//@version=5
+indicator("Add")
+result = close + 10.0
+plot(result)

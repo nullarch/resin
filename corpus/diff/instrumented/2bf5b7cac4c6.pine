@@ -1,0 +1,10 @@
+//@version=5
+indicator("Wasserstein Proxy")
+float hh = ta.highest(high, 3)
+float ll = ta.lowest(low, 3)
+float rangeNow = hh - ll
+float prevRange = not na(close[1]) ? (ta.highest(high, 3) - ta.lowest(low, 3)) : rangeNow
+float wassDist = math.abs(rangeNow - prevRange)
+var float __obs_plot0 = na
+__obs_plot0 := wassDist
+plot(wassDist, "WassDist")

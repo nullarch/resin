@@ -1,0 +1,10 @@
+//@version=5
+indicator("MinimaxCol")
+a11 = close - open
+a12 = high - close
+a21 = close - low
+a22 = high - low
+maxCol1 = math.max(a11, a21)
+maxCol2 = math.max(a12, a22)
+minimax = math.min(maxCol1, maxCol2)
+plot(minimax, "Minimax")

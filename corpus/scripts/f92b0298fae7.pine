@@ -1,0 +1,6 @@
+//@version=5
+indicator("TAinUDF")
+getSmoothed(src, len) =>
+    ta.ema(ta.sma(src, len), len)
+r1 = getSmoothed(close, 3)
+r2 = getSmoothed(close, 5)

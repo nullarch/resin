@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Lo Close")
+lo5 = ta.lowest(close, 5)
+distFromLow = close - lo5
+distPct = lo5 > 0 ? distFromLow / lo5 * 100 : 0.0
+nearLow = distPct < 1.0
+plot(distPct, "DistPct")
+plot(nearLow ? 1 : 0, "NearLow")

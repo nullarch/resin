@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Norm Osc")
+normalizeOsc(float val, float minRange, float maxRange) =>
+    rng = maxRange - minRange
+    rng > 0 ? (val - minRange) / rng * 2 - 1 : 0.0
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+cci = nz(ta.cci(close, 5), 0.0)
+normRSI = normalizeOsc(rsi, 0.0, 100.0)
+normCCI = normalizeOsc(cci, -200.0, 200.0)
+composite = (normRSI + normCCI) / 2
+plot(composite, "Comp")

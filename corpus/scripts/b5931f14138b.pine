@@ -1,0 +1,6 @@
+//@version=5
+indicator("E-Field Magnitude")
+float prev = not na(close[1]) ? close[1] : close
+float gradient = close - prev
+float eMag = math.abs(gradient)
+float eNorm = eMag / math.max(close, 0.01)

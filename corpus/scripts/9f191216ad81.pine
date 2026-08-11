@@ -1,0 +1,12 @@
+//@version=5
+indicator("GrangerVolPrice")
+var float sumXY = 0.0
+var float sumX2 = 0.0
+var int cnt = 0
+prevVol = nz(volume[1], volume)
+retNow = close - nz(close[1], close)
+cnt := cnt + 1
+sumXY := sumXY + prevVol * retNow
+sumX2 := sumX2 + prevVol * prevVol
+grangerB = sumX2 > 0.01 ? sumXY / sumX2 : 0.0
+plot(grangerB, "GrangerB")

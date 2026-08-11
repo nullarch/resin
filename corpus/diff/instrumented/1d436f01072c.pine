@@ -1,0 +1,19 @@
+//@version=5
+indicator("Vol Profile")
+vwap = ta.vwap(close)
+upperDev = vwap + 2.0 * ta.stdev(close, 20)
+lowerDev = vwap - 2.0 * ta.stdev(close, 20)
+isAbove = close > upperDev
+isBelow = close < lowerDev
+var float __obs_plot0 = na
+__obs_plot0 := vwap
+plot(vwap)
+var float __obs_plot1 = na
+__obs_plot1 := upperDev
+plot(upperDev)
+var float __obs_plot2 = na
+__obs_plot2 := lowerDev
+plot(lowerDev)
+var float __obs_plot3 = na
+__obs_plot3 := isAbove ? 1.0 : isBelow ? -1.0 : 0.0
+plot(isAbove ? 1.0 : isBelow ? -1.0 : 0.0)

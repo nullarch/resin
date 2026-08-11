@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:squeezes": 0,
+   "var:__obs_plot0": 1.0,
+   "var:__obs_plot1": 0.5
+  },
+  {
+   "var:squeezes": 0,
+   "var:__obs_plot0": 1.0,
+   "var:__obs_plot1": 0.5
+  },
+  {
+   "var:squeezes": 0,
+   "var:__obs_plot0": 1.0,
+   "var:__obs_plot1": 0.5
+  },
+  {
+   "var:squeezes": 0,
+   "var:__obs_plot0": 1.0,
+   "var:__obs_plot1": 0.5
+  },
+  {
+   "var:squeezes": 0,
+   "var:__obs_plot0": 2.0,
+   "var:__obs_plot1": 0.9068667356053837
+  },
+  {
+   "var:squeezes": 0,
+   "var:__obs_plot0": 1.4825581395522243,
+   "var:__obs_plot1": 0.6743714581165936
+  },
+  {
+   "var:squeezes": 0,
+   "var:__obs_plot0": 1.2093023255804218,
+   "var:__obs_plot1": 0.7913857587068109
+  },
+  {
+   "var:squeezes": 0,
+   "var:__obs_plot0": 1.0180412371125949,
+   "var:__obs_plot1": 0.9068667356053837
+  },
+  {
+   "var:squeezes": 0,
+   "var:__obs_plot0": 1.0183212611834098,
+   "var:__obs_plot1": 0.6767766952995238
+  },
+  {
+   "var:squeezes": 0,
+   "var:__obs_plot0": 1.0185054386140828,
+   "var:__obs_plot1": 0.8196810065470879
+  }
+ ],
+ "finalVarState": {
+  "squeezes": 0,
+  "__obs_plot0": 1.0185054386140828,
+  "__obs_plot1": 0.8196810065470879
+ }
+}

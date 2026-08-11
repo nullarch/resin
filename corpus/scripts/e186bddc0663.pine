@@ -1,0 +1,10 @@
+//@version=5
+indicator("Gambler Fallacy")
+var int downStreak = 0
+isDown = close < open
+if isDown
+    downStreak := downStreak + 1
+else
+    downStreak := 0
+expectReversal = downStreak >= 3
+plot(expectReversal ? 1 : 0)

@@ -1,0 +1,13 @@
+
+//@version=5
+strategy("Vol Filter", overlay=true)
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 5)
+okVol = avgATR > 0 and atr / avgATR < 2.0
+if close > sma3 and rsi > 50 and okVol
+    strategy.entry("Long", strategy.long)
+if close < sma3
+    strategy.close("Long")
+plot(sma3, "MA")

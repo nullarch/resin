@@ -1,0 +1,6 @@
+//@version=5
+indicator("Departure Rate")
+float prevVol = not na(volume[1]) ? volume[1] : volume
+float departure = prevVol > volume ? prevVol - volume : 0.0
+float avgDep = ta.sma(departure, 3)
+plot(nz(avgDep, 0.0), "DepRate")

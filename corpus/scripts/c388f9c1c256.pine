@@ -1,0 +1,10 @@
+//@version=5
+indicator("For-in map")
+var m = map.new<string, float>()
+map.put(m, "a", 1.0)
+map.put(m, "b", 2.0)
+map.put(m, "c", 3.0)
+var float mapSum = 0.0
+mapSum := 0.0
+for [k, v] in m
+    mapSum := mapSum + v

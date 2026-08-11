@@ -1,0 +1,12 @@
+
+//@version=5
+strategy("Vol BO Strat", overlay=true)
+sma5 = ta.sma(close, 5)
+atr = nz(ta.atr(3), 1.0)
+upper = sma5 + atr * 1.5
+rsi = nz(ta.rsi(close, 3), 50.0)
+if close > upper and rsi > 50
+    strategy.entry("Long", strategy.long)
+if close < sma5
+    strategy.close("Long")
+plot(upper, "UB")

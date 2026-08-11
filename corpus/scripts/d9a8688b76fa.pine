@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Multi Asgn")
+a = close
+b = open
+c = high
+d = low
+mid = (a + b + c + d) / 4
+dev = math.max(c - mid, mid - d)
+ratio = dev > 0 ? (a - mid) / dev : 0.0
+plot(ratio, "R")

@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Normalize Arr")
+raw = array.from(close, open, high, low)
+mx = array.max(raw)
+mn = array.min(raw)
+rng = mx - mn
+var float[] normed = array.new_float(0)
+array.clear(normed)
+for val in raw
+    n = rng > 0 ? (float(val) - mn) / rng : 0.5
+    array.push(normed, n)
+avgNorm = array.avg(normed)
+plot(avgNorm, "AvgNorm")

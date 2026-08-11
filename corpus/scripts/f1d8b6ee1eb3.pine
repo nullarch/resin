@@ -1,0 +1,8 @@
+//@version=5
+indicator("Var Lazy Init")
+var float first_close = close
+var float last_close = 0.0
+last_close := close
+var float result = 0.0
+result := last_close - first_close
+plot(result)

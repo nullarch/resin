@@ -1,0 +1,9 @@
+//@version=5
+indicator("Str Tostring")
+var string s1 = str.tostring(123.456)
+var string s2 = str.tostring(42)
+var float result = 0.0
+result := str.length(s1) + str.length(s2)
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

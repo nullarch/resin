@@ -1,0 +1,10 @@
+//@version=5
+indicator("Method Callable Body")
+type Pair
+    float x = 0.0
+    float y = 0.0
+method total(Pair p) =>
+    p.x + p.y
+Pair myp = Pair.new(x=3.0, y=7.0)
+var float result = 0.0
+result := myp.total()

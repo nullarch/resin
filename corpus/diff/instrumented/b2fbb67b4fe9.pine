@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("MACD HMom")
+[macd, sig, hist] = ta.macd(close, 3, 5, 3)
+histChange = hist - hist[1]
+momentum = histChange > 0 ? 1 : -1
+var int consecutiveMom = 0
+if momentum > 0
+    consecutiveMom := consecutiveMom > 0 ? consecutiveMom + 1 : 1
+else
+    consecutiveMom := consecutiveMom < 0 ? consecutiveMom - 1 : -1
+var float __obs_plot0 = na
+__obs_plot0 := consecutiveMom
+plot(consecutiveMom, "ConsMom")

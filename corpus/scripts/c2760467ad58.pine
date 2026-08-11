@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Attention")
+q1 = (close - 100.0) / 10.0
+q2 = (volume - 1000.0) / 500.0
+k1 = (high - low) / 10.0
+k2 = (close - open) / 5.0
+score = q1 * k1 + q2 * k2
+scaleFactor = math.sqrt(2.0)
+scaledScore = scaleFactor > 0 ? score / scaleFactor : score
+attn = 1.0 / (1.0 + math.exp(-math.max(math.min(scaledScore, 10.0), -10.0)))
+plot(attn, "Attn")

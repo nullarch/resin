@@ -1,0 +1,20 @@
+
+//@version=5
+indicator("Skew")
+var float[] data = array.new_float(0)
+array.push(data, close)
+if array.size(data) > 5
+    array.shift(data)
+mean = array.avg(data)
+sumCube = 0.0
+sumSq = 0.0
+for [i, v] in data
+    d = v - mean
+    sumCube := sumCube + math.pow(d, 3)
+    sumSq := sumSq + math.pow(d, 2)
+sz = array.size(data)
+stdDev = sz > 1 ? math.sqrt(sumSq / float(sz - 1)) : 1.0
+skew = stdDev > 0.001 ? (sumCube / float(sz)) / math.pow(stdDev, 3) : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := skew
+plot(skew, "SK")

@@ -1,0 +1,127 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:sm": {
+    "equity": 10080.0,
+    "max_equity": 10080.0,
+    "drawdown": 0.0,
+    "return_pct": 0.8
+   },
+   "var:equity": 10000.0,
+   "var:maxEquity": 10000.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:sm": {
+    "equity": 10080.0,
+    "max_equity": 10080.0,
+    "drawdown": 0.0,
+    "return_pct": 0.8
+   },
+   "var:equity": 10010.0,
+   "var:maxEquity": 10010.0,
+   "var:__obs_plot0": 0.1
+  },
+  {
+   "var:sm": {
+    "equity": 10080.0,
+    "max_equity": 10080.0,
+    "drawdown": 0.0,
+    "return_pct": 0.8
+   },
+   "var:equity": 9990.0,
+   "var:maxEquity": 10010.0,
+   "var:__obs_plot0": -0.1
+  },
+  {
+   "var:sm": {
+    "equity": 10080.0,
+    "max_equity": 10080.0,
+    "drawdown": 0.0,
+    "return_pct": 0.8
+   },
+   "var:equity": 10020.0,
+   "var:maxEquity": 10020.0,
+   "var:__obs_plot0": 0.2
+  },
+  {
+   "var:sm": {
+    "equity": 10080.0,
+    "max_equity": 10080.0,
+    "drawdown": 0.0,
+    "return_pct": 0.8
+   },
+   "var:equity": 10040.0,
+   "var:maxEquity": 10040.0,
+   "var:__obs_plot0": 0.4
+  },
+  {
+   "var:sm": {
+    "equity": 10080.0,
+    "max_equity": 10080.0,
+    "drawdown": 0.0,
+    "return_pct": 0.8
+   },
+   "var:equity": 10030.0,
+   "var:maxEquity": 10040.0,
+   "var:__obs_plot0": 0.3
+  },
+  {
+   "var:sm": {
+    "equity": 10080.0,
+    "max_equity": 10080.0,
+    "drawdown": 0.0,
+    "return_pct": 0.8
+   },
+   "var:equity": 10050.0,
+   "var:maxEquity": 10050.0,
+   "var:__obs_plot0": 0.5
+  },
+  {
+   "var:sm": {
+    "equity": 10080.0,
+    "max_equity": 10080.0,
+    "drawdown": 0.0,
+    "return_pct": 0.8
+   },
+   "var:equity": 10070.0,
+   "var:maxEquity": 10070.0,
+   "var:__obs_plot0": 0.7000000000000001
+  },
+  {
+   "var:sm": {
+    "equity": 10080.0,
+    "max_equity": 10080.0,
+    "drawdown": 0.0,
+    "return_pct": 0.8
+   },
+   "var:equity": 10060.0,
+   "var:maxEquity": 10070.0,
+   "var:__obs_plot0": 0.6
+  },
+  {
+   "var:sm": {
+    "equity": 10080.0,
+    "max_equity": 10080.0,
+    "drawdown": 0.0,
+    "return_pct": 0.8
+   },
+   "var:equity": 10080.0,
+   "var:maxEquity": 10080.0,
+   "var:__obs_plot0": 0.8
+  }
+ ],
+ "finalVarState": {
+  "sm": {
+   "equity": 10080.0,
+   "max_equity": 10080.0,
+   "drawdown": 0.0,
+   "return_pct": 0.8
+  },
+  "equity": 10080.0,
+  "maxEquity": 10080.0,
+  "__obs_plot0": 0.8
+ }
+}

@@ -1,0 +1,5 @@
+//@version=5
+indicator("Harmony Ratio")
+ratio = open > 0 ? close / open : 1.0
+consonance = math.abs(ratio - 1.0) < 0.02 ? 1.0 : 0.0
+plot(consonance, title="consonance")

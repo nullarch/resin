@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Mul Chain")
+a = close * 2.0 / 3.0
+b = bar_index % 5
+result = a + b
+plot(result)

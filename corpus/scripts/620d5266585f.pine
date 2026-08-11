@@ -1,0 +1,8 @@
+//@version=5
+indicator("UDF Return")
+f_add(a, b) =>
+    a + b
+
+var float result = 0.0
+result := f_add(10.0, 20.0)
+plot(result)

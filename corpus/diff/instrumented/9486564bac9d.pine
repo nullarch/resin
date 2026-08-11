@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Dropout")
+inp = (close - 100.0) / 10.0
+dropRate = 3
+kept = bar_index % dropRate != 0 ? inp : 0.0
+scale = dropRate > 1 ? float(dropRate) / float(dropRate - 1) : 1.0
+out = kept * scale
+var float __obs_plot0 = na
+__obs_plot0 := out
+plot(out, "Dropout")

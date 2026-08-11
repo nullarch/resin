@@ -1,0 +1,9 @@
+//@version=5
+indicator("Automaton Reset")
+var int state = 0
+var int resets = 0
+bull = close > open
+state := state == 0 and bull ? 1 : state == 1 and not bull ? 0 : state
+if state == 0 and not bull
+    resets := resets + 1
+plot(resets, "Resets")

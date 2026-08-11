@@ -1,0 +1,9 @@
+//@version=5
+indicator("Enum Values")
+enum Level
+    High = 3
+    Mid = 2
+    Low = 1
+var float result = 0.0
+l = close > 108 ? Level.High : Level.Low
+result := int(l)

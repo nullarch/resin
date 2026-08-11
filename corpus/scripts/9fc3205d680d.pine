@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Mom Lbl")
+rsi = nz(ta.rsi(close, 3), 50.0)
+momDir = rsi > 55 ? "BULL" : rsi < 45 ? "BEAR" : "FLAT"
+momStr = math.abs(rsi - 50) > 20 ? "STRONG" : "MILD"
+label = momDir + "_" + momStr
+isBullStrong = label == "BULL_STRONG"
+plot(isBullStrong ? 1 : 0, "BS")

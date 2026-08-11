@@ -1,0 +1,12 @@
+//@version=5
+indicator("Nested UDT")
+type Point
+    float x = 0.0
+    float y = 0.0
+type Line_
+    Point start = Point.new()
+    Point end_ = Point.new()
+method length(Line_ this) =>
+    math.sqrt(math.pow(this.end_.x - this.start.x, 2) + math.pow(this.end_.y - this.start.y, 2))
+l = Line_.new(start=Point.new(x=float(bar_index), y=close), end_=Point.new(x=float(bar_index) + 3.0, y=close + 4.0))
+plot(l.length())

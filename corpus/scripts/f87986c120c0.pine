@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Compare")
+var current = map.new<string, float>()
+var previous = map.new<string, float>()
+// Save previous
+map.put(previous, "close", map.get(current, "close", close))
+map.put(previous, "rsi", map.get(current, "rsi", 50.0))
+// Update current
+map.put(current, "close", close)
+map.put(current, "rsi", ta.rsi(close, 3))
+// Compare
+prevClose = map.get(previous, "close", close)
+chg = close - prevClose
+plot(chg, "Chg")

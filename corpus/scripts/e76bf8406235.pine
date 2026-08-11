@@ -1,0 +1,12 @@
+//@version=5
+indicator("A* Open List")
+candidates = array.new<float>(0)
+float f1 = math.abs(110.0 - close)
+float f2 = math.abs(110.0 - open)
+float f3 = math.abs(110.0 - high)
+candidates.push(f1)
+candidates.push(f2)
+candidates.push(f3)
+candidates.sort()
+float bestCandidate = candidates.get(0)
+float worstCandidate = candidates.get(candidates.size() - 1)

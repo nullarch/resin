@@ -1,0 +1,25 @@
+//@version=5
+indicator("Mega 12")
+sigmoid(float x) =>
+    1.0 / (1.0 + math.exp(-x))
+var float runningAvg = 0.0
+float sma3 = nz(ta.sma(close, 3), close)
+float rsiVal = nz(ta.rsi(close, 5), 50.0)
+float atrVal = nz(ta.atr(3), 1.0)
+inputs = array.new<float>(0)
+inputs.push((close - sma3) / (atrVal > 0.01 ? atrVal : 1.0))
+inputs.push((rsiVal - 50.0) / 50.0)
+inputs.push(close > open ? 0.5 : -0.5)
+outputs = array.new<float>(0)
+int idx = 0
+while idx < inputs.size()
+    float raw = inputs.get(idx)
+    float activated = sigmoid(raw)
+    outputs.push(activated)
+    idx := idx + 1
+float prediction = 0.0
+for o in outputs
+    prediction := prediction + o
+prediction := prediction / (outputs.size() > 0 ? outputs.size() : 1.0)
+runningAvg := runningAvg * 0.9 + prediction * 0.1
+float signal = prediction > 0.6 ? 1.0 : prediction < 0.4 ? -1.0 : 0.0

@@ -1,0 +1,8 @@
+//@version=5
+indicator("Global Best")
+var float gBest = na
+if na(gBest) or high > nz(gBest)
+    gBest := high
+attraction = nz(gBest) - close
+normalized = nz(gBest) > 0 ? attraction / nz(gBest) * 100.0 : 0.0
+plot(normalized)

@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Band Wt")
+[mid, upper, lower] = ta.bb(close, 5, 2.0)
+range_ = upper - lower
+pos = range_ > 0 ? (close - lower) / range_ : 0.5
+weight = pos > 0.8 ? 0.5 : pos < 0.2 ? 0.5 : pos > 0.6 ? 0.8 : pos < 0.4 ? 0.8 : 1.0
+rsi = nz(ta.rsi(close, 3), 50.0)
+signal = (rsi - 50) / 50 * weight
+var float __obs_plot0 = na
+__obs_plot0 := signal
+plot(signal, "Sig")

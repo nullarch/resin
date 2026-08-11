@@ -1,0 +1,32 @@
+
+//@version=5
+indicator("Risk Full")
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma5 = ta.sma(close, 5)
+sd = ta.stdev(close, 5)
+
+var float peak = 0.0
+var float maxDD = 0.0
+peak := math.max(peak, close)
+dd = peak > 0 ? (peak - close) / peak * 100 : 0.0
+maxDD := math.max(maxDD, dd)
+
+volRisk = avgATR > 0 ? atr / avgATR : 1.0
+momRisk = math.abs(rsi - 50) / 50
+spreadRisk = close > 0 ? (high - low) / close * 100 : 0.0
+
+var rd = map.new<string, float>()
+map.put(rd, "vol", volRisk)
+map.put(rd, "mom", momRisk)
+map.put(rd, "dd", dd)
+
+compositeRisk = volRisk * 0.4 + momRisk * 0.3 + dd * 0.3
+posSize = compositeRisk > 2 ? 0.25 : compositeRisk > 1 ? 0.5 : 1.0
+
+var int bars = 0
+bars := bars + 1
+
+plot(compositeRisk, "CR")
+plot(posSize, "Size")

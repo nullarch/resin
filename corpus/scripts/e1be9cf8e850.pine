@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Map to Array")
+m = map.new<string, float>()
+map.put(m, "sma", ta.sma(close, 3))
+map.put(m, "ema", ta.ema(close, 3))
+map.put(m, "close", close)
+vals = map.values(m)
+avg = array.avg(vals)
+plot(avg, "Avg Indicators")

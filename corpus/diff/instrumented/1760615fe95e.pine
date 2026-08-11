@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("MapComp")
+var components = map.new<string, float>()
+trend = nz(ta.sma(close, 3), close)
+residual = close - trend
+map.put(components, "trend", trend)
+map.put(components, "residual", residual)
+tVal = map.get(components, "trend")
+var float __obs_plot0 = na
+__obs_plot0 := nz(tVal, 0.0)
+plot(nz(tVal, 0.0), "TV")

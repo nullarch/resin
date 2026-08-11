@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Risk Budget")
+var rb = map.new<string, float>()
+atr = ta.atr(3)
+totalRisk = 100.0
+map.put(rb, "trend", totalRisk * 0.4)
+map.put(rb, "mean_rev", totalRisk * 0.3)
+map.put(rb, "vol", totalRisk * 0.3)
+trendAlloc = map.get(rb, "trend", 0.0)
+adjAlloc = atr > ta.sma(atr, 5) ? trendAlloc * 0.8 : trendAlloc
+plot(adjAlloc, "TrendAlloc")

@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Final Comp")
+finalSignal(float price, float ma, float rsiVal, float atrVal, float avgATR) =>
+    tSig = price > ma ? 1.0 : -1.0
+    mSig = rsiVal > 55 ? 1.0 : rsiVal < 45 ? -1.0 : 0.0
+    vAdj = avgATR > 0 ? math.min(atrVal / avgATR, 2.0) : 1.0
+    (tSig * 0.5 + mSig * 0.5) * (1.0 / vAdj)
+
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+sig = finalSignal(close, sma3, rsi, atr, avgATR)
+plot(sig, "Signal")

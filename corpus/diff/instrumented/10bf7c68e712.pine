@@ -1,0 +1,20 @@
+
+//@version=5
+indicator("Mkt Profile")
+type Profile
+    float poc = 0.0
+    float valueHigh = 0.0
+    float valueLow = 0.0
+
+var Profile p = Profile.new()
+p.poc := (high + low + close) / 3.0
+atr = ta.atr(3)
+p.valueHigh := p.poc + atr * 0.5
+p.valueLow := p.poc - atr * 0.5
+inValue = close >= p.valueLow and close <= p.valueHigh
+var float __obs_plot0 = na
+__obs_plot0 := p.poc
+plot(p.poc, "POC")
+var float __obs_plot1 = na
+__obs_plot1 := inValue ? 1 : 0
+plot(inValue ? 1 : 0, "InValue")

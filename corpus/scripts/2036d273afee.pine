@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("All TA")
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+[m, s, h] = ta.macd(close, 3, 5, 3)
+k = ta.stoch(close, high, low, 5)
+atr = ta.atr(3)
+[bbM, bbU, bbL] = ta.bb(close, 5, 2.0)
+hi5 = ta.highest(high, 5)
+lo5 = ta.lowest(low, 5)
+score = (close > sma3 ? 1 : 0) + (rsi > 50 ? 1 : 0) + (h > 0 ? 1 : 0) + (k > 50 ? 1 : 0)
+plot(score, "Score")

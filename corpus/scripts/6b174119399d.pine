@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Agg Range")
+range3 = ta.highest(high, 3) - ta.lowest(low, 3)
+range5 = ta.highest(high, 5) - ta.lowest(low, 5)
+rangeRatio = range3 > 0 ? range5 / range3 : 1.0
+plot(rangeRatio, "RR")

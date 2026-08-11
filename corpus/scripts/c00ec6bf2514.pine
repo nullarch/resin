@@ -1,0 +1,12 @@
+//@version=5
+indicator("Mutex Contention")
+var bool locked = false
+var int waitCount = 0
+bool wantLock = close > nz(ta.sma(close, 3), close)
+if wantLock and locked
+    waitCount := waitCount + 1
+if wantLock and not locked
+    locked := true
+if not wantLock and locked
+    locked := false
+float contentionRate = waitCount

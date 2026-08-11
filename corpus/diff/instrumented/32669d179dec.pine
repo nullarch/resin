@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Equity Track")
+var float equity = 10000.0
+var float peakEquity = 10000.0
+var float worstDD = 0.0
+var int barNum = 0
+barNum := barNum + 1
+chg = ta.change(close, 1)
+equity := equity + nz(chg, 0.0) * 10
+if equity > peakEquity
+    peakEquity := equity
+dd = (peakEquity - equity) / peakEquity * 100
+if dd > worstDD
+    worstDD := dd
+var float __obs_plot0 = na
+__obs_plot0 := equity
+plot(equity, "Equity")
+var float __obs_plot1 = na
+__obs_plot1 := worstDD
+plot(worstDD, "WorstDD")

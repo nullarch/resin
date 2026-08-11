@@ -1,0 +1,8 @@
+//@version=5
+indicator("test")
+rsi = ta.rsi(close, 3)
+signal = rsi > 70 ? "overbought" : rsi < 30 ? "oversold" : "neutral"
+color_val = signal == "overbought" ? 1 : signal == "oversold" ? -1 : 0
+var float __obs_plot0 = na
+__obs_plot0 := color_val
+plot(color_val)

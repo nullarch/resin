@@ -1,0 +1,16 @@
+//@version=5
+indicator("QTable3x2")
+qBuyArr = array.new_float(3, 0.0)
+qSellArr = array.new_float(3, 0.0)
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+state = rsiVal < 33 ? 0 : rsiVal < 66 ? 1 : 2
+alphaLR = 0.1
+reward = close > open ? 1.0 : -1.0
+qB = array.get(qBuyArr, state)
+qS = array.get(qSellArr, state)
+if qB >= qS
+    array.set(qBuyArr, state, qB + alphaLR * (reward - qB))
+else
+    array.set(qSellArr, state, qS + alphaLR * (reward - qS))
+bestQ = math.max(array.get(qBuyArr, state), array.get(qSellArr, state))
+plot(bestQ, "BestQ")

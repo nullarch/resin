@@ -1,0 +1,8 @@
+//@version=5
+indicator("Tuple UDF")
+calcBB(float src, int length) =>
+    basis = ta.sma(src, length)
+    dev = ta.stdev(src, length)
+    [basis, basis + 2 * dev, basis - 2 * dev]
+[mid, upper, lower] = calcBB(close, 5)
+plot(mid)

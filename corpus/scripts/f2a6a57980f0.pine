@@ -1,0 +1,5 @@
+//@version=5
+indicator("Precipitation")
+avgVol = ta.sma(volume, 3)
+rain = volume > avgVol ? 1.0 : 0.0
+plot(rain, title="rain")

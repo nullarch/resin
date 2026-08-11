@@ -1,0 +1,5 @@
+//@version=5
+indicator("Minus Assign")
+var float x = 100.0
+x -= 3.0
+plot(x)

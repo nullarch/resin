@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:eq": 101.0,
+   "var:pk": 101.0,
+   "var:mdd": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:eq": 102.0,
+   "var:pk": 102.0,
+   "var:mdd": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:eq": 103.0,
+   "var:pk": 103.0,
+   "var:mdd": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:eq": 104.0,
+   "var:pk": 104.0,
+   "var:mdd": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:eq": 105.0,
+   "var:pk": 105.0,
+   "var:mdd": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:eq": 106.0,
+   "var:pk": 106.0,
+   "var:mdd": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:eq": 107.0,
+   "var:pk": 107.0,
+   "var:mdd": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:eq": 108.0,
+   "var:pk": 108.0,
+   "var:mdd": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:eq": 109.0,
+   "var:pk": 109.0,
+   "var:mdd": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:eq": 110.0,
+   "var:pk": 110.0,
+   "var:mdd": 0.0,
+   "var:__obs_plot0": 0.0
+  }
+ ],
+ "finalVarState": {
+  "eq": 110.0,
+  "pk": 110.0,
+  "mdd": 0.0,
+  "__obs_plot0": 0.0
+ }
+}

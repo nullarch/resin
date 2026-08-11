@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:rp": {
+    "max_risk_pct": 2.0,
+    "max_position_pct": 10.0,
+    "stop_atr_mult": 2.0
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:rp": {
+    "max_risk_pct": 2.0,
+    "max_position_pct": 10.0,
+    "stop_atr_mult": 2.0
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:rp": {
+    "max_risk_pct": 2.0,
+    "max_position_pct": 10.0,
+    "stop_atr_mult": 2.0
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:rp": {
+    "max_risk_pct": 2.0,
+    "max_position_pct": 10.0,
+    "stop_atr_mult": 2.0
+   },
+   "var:__obs_plot0": 9
+  },
+  {
+   "var:rp": {
+    "max_risk_pct": 2.0,
+    "max_position_pct": 10.0,
+    "stop_atr_mult": 2.0
+   },
+   "var:__obs_plot0": 9
+  },
+  {
+   "var:rp": {
+    "max_risk_pct": 2.0,
+    "max_position_pct": 10.0,
+    "stop_atr_mult": 2.0
+   },
+   "var:__obs_plot0": 9
+  },
+  {
+   "var:rp": {
+    "max_risk_pct": 2.0,
+    "max_position_pct": 10.0,
+    "stop_atr_mult": 2.0
+   },
+   "var:__obs_plot0": 9
+  },
+  {
+   "var:rp": {
+    "max_risk_pct": 2.0,
+    "max_position_pct": 10.0,
+    "stop_atr_mult": 2.0
+   },
+   "var:__obs_plot0": 9
+  },
+  {
+   "var:rp": {
+    "max_risk_pct": 2.0,
+    "max_position_pct": 10.0,
+    "stop_atr_mult": 2.0
+   },
+   "var:__obs_plot0": 9
+  },
+  {
+   "var:rp": {
+    "max_risk_pct": 2.0,
+    "max_position_pct": 10.0,
+    "stop_atr_mult": 2.0
+   },
+   "var:__obs_plot0": 9
+  }
+ ],
+ "finalVarState": {
+  "rp": {
+   "max_risk_pct": 2.0,
+   "max_position_pct": 10.0,
+   "stop_atr_mult": 2.0
+  },
+  "__obs_plot0": 9
+ }
+}

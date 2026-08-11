@@ -1,0 +1,6 @@
+//@version=5
+indicator("Empty body")
+sma5 = ta.sma(close, 5)
+if close > 999999
+    na
+a = close

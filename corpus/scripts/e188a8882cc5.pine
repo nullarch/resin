@@ -1,0 +1,6 @@
+//@version=5
+indicator("Complex Arith")
+var float result = 0.0
+float x = 2.0 + 3.0 * 4.0
+float y = (2.0 + 3.0) * 4.0
+result := x + y

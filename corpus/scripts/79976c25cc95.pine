@@ -1,0 +1,10 @@
+//@version=5
+indicator("Multi UDF pipeline")
+calcMomentum(src, len) =>
+    src - nz(src[len])
+calcNormalized(val, len) =>
+    h = ta.highest(val, len)
+    l = ta.lowest(val, len)
+    nz(h) != nz(l) ? (val - nz(l)) / (nz(h) - nz(l)) * 100 : 50.0
+mom = calcMomentum(close, 3)
+normMom = calcNormalized(mom, 5)

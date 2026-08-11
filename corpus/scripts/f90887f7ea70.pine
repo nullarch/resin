@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Multi TA Precision")
+dev_val = ta.stdev(close, 10)
+corr = ta.correlation(close, volume, 10)
+cog = ta.cog(close, 10)
+pr = ta.percentrank(close, 10)
+med = ta.median(close, 10)
+result = dev_val + cog + pr + med
+plot(result)

@@ -1,0 +1,6 @@
+//@version=5
+indicator("AD")
+var float lastAD = 0
+ad = ta.accdist
+if not na(ad)
+    lastAD := ad

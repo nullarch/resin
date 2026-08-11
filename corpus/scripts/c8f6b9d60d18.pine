@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("MFI RSI")
+mfi = ta.mfi(close, 5)
+rsi = ta.rsi(close, 3)
+bothBull = mfi > 50 and rsi > 50
+bothBear = mfi < 50 and rsi < 50
+agreement = bothBull or bothBear
+plot(agreement ? 1 : 0, "Agree")

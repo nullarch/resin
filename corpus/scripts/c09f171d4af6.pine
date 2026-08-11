@@ -1,0 +1,9 @@
+//@version=5
+indicator("Method Call")
+type MyType
+    float val = 0.0
+method doubled(MyType this) =>
+    this.val * 2
+var float result = 0.0
+obj = MyType.new(close)
+result := obj.doubled()

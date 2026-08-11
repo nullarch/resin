@@ -1,0 +1,7 @@
+//@version=5
+indicator("Species Richness")
+var int species = 0
+threshold = ta.sma(close, 3)
+if close > nz(threshold, 0.0)
+    species := species + 1
+plot(species, "Richness")

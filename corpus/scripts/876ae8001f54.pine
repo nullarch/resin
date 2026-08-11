@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("WinEff")
+totalChange = 0.0
+for i = 0 to 3
+    c1 = nz(close[i], close)
+    c2 = nz(close[i + 1], close)
+    totalChange := totalChange + math.abs(c1 - c2)
+netChange = math.abs(close - nz(close[4], close))
+eff = totalChange > 0 ? netChange / totalChange : 0.0
+plot(eff, "E")

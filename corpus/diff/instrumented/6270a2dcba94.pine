@@ -1,0 +1,22 @@
+//@version=5
+indicator("SQZMOM")
+length = 5
+src = close
+basis = ta.sma(src, length)
+dev_ = 2.0 * ta.stdev(src, length)
+upperBB = basis + dev_
+lowerBB = basis - dev_
+
+// Keltner Channel
+atr_ = ta.atr(length)
+upperKC = basis + 1.5 * atr_
+lowerKC = basis - 1.5 * atr_
+
+var bool sqzOn = false
+sqzOn := nz(lowerBB) > nz(lowerKC) and nz(upperBB) < nz(upperKC)
+
+var float momentum = 0.0
+momentum := nz(ta.sma(src - nz(basis), length))
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

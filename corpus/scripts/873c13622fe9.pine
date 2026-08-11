@@ -1,0 +1,10 @@
+//@version=5
+indicator("Yoneda Lookup")
+lookups = map.new<string, float>()
+lookups.put("sma3", nz(ta.sma(close, 3), close))
+lookups.put("sma5", nz(ta.sma(close, 5), close))
+lookups.put("ema3", nz(ta.ema(close, 3), close))
+lookups.put("raw", close)
+float smaLookup = lookups.get("sma3")
+float emaLookup = lookups.get("ema3")
+float diff = smaLookup - emaLookup

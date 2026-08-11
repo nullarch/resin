@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Vol Hist")
+var float[] atrHist = array.new_float(0)
+atr = nz(ta.atr(3), 1.0)
+array.push(atrHist, atr)
+if array.size(atrHist) > 10
+    array.shift(atrHist)
+avgATR = array.size(atrHist) > 0 ? array.avg(atrHist) : atr
+maxATR = array.size(atrHist) > 0 ? array.max(atrHist) : atr
+volRange = maxATR - (array.size(atrHist) > 0 ? array.min(atrHist) : atr)
+plot(volRange, "VR")

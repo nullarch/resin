@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("NVI PVI Combined")
+n = ta.nvi()
+p = ta.pvi()
+ratio = n / (p + 0.001)
+plot(ratio)

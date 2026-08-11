@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("DC Break")
+hi5 = ta.highest(high, 5)
+lo5 = ta.lowest(low, 5)
+breakUp = close > hi5[1]
+breakDn = close < lo5[1]
+plot(breakUp ? 1 : breakDn ? -1 : 0, "B")

@@ -1,0 +1,13 @@
+//@version=5
+indicator("Enum UDT Method")
+type Signal
+    string direction = "flat"
+    float strength = 0.0
+method isStrong(Signal this) =>
+    this.strength > 50
+rsi = ta.rsi(close, 5)
+sig = Signal.new(
+    close > open ? "long" : "short",
+    nz(rsi, 50))
+strong = sig.isStrong() ? 1.0 : 0.0
+plot(strong)

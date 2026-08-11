@@ -1,0 +1,7 @@
+//@version=5
+indicator("Humidity Oscillator")
+humidity = nz(ta.rsi(close, 3), 50.0)
+isHumid = humidity > 70
+var float __obs_plot0 = na
+__obs_plot0 := humidity
+plot(humidity, title="humidity")

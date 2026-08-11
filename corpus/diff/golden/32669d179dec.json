@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:equity": 10000.0,
+   "var:peakEquity": 10000.0,
+   "var:worstDD": 0.0,
+   "var:barNum": 1,
+   "var:__obs_plot0": 10000.0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:equity": 10010.0,
+   "var:peakEquity": 10010.0,
+   "var:worstDD": 0.0,
+   "var:barNum": 2,
+   "var:__obs_plot0": 10010.0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:equity": 9990.0,
+   "var:peakEquity": 10010.0,
+   "var:worstDD": 0.1998001998001998,
+   "var:barNum": 3,
+   "var:__obs_plot0": 9990.0,
+   "var:__obs_plot1": 0.1998001998001998
+  },
+  {
+   "var:equity": 10020.0,
+   "var:peakEquity": 10020.0,
+   "var:worstDD": 0.1998001998001998,
+   "var:barNum": 4,
+   "var:__obs_plot0": 10020.0,
+   "var:__obs_plot1": 0.1998001998001998
+  },
+  {
+   "var:equity": 10040.0,
+   "var:peakEquity": 10040.0,
+   "var:worstDD": 0.1998001998001998,
+   "var:barNum": 5,
+   "var:__obs_plot0": 10040.0,
+   "var:__obs_plot1": 0.1998001998001998
+  },
+  {
+   "var:equity": 10030.0,
+   "var:peakEquity": 10040.0,
+   "var:worstDD": 0.1998001998001998,
+   "var:barNum": 6,
+   "var:__obs_plot0": 10030.0,
+   "var:__obs_plot1": 0.1998001998001998
+  },
+  {
+   "var:equity": 10050.0,
+   "var:peakEquity": 10050.0,
+   "var:worstDD": 0.1998001998001998,
+   "var:barNum": 7,
+   "var:__obs_plot0": 10050.0,
+   "var:__obs_plot1": 0.1998001998001998
+  },
+  {
+   "var:equity": 10070.0,
+   "var:peakEquity": 10070.0,
+   "var:worstDD": 0.1998001998001998,
+   "var:barNum": 8,
+   "var:__obs_plot0": 10070.0,
+   "var:__obs_plot1": 0.1998001998001998
+  },
+  {
+   "var:equity": 10060.0,
+   "var:peakEquity": 10070.0,
+   "var:worstDD": 0.1998001998001998,
+   "var:barNum": 9,
+   "var:__obs_plot0": 10060.0,
+   "var:__obs_plot1": 0.1998001998001998
+  },
+  {
+   "var:equity": 10080.0,
+   "var:peakEquity": 10080.0,
+   "var:worstDD": 0.1998001998001998,
+   "var:barNum": 10,
+   "var:__obs_plot0": 10080.0,
+   "var:__obs_plot1": 0.1998001998001998
+  }
+ ],
+ "finalVarState": {
+  "equity": 10080.0,
+  "peakEquity": 10080.0,
+  "worstDD": 0.1998001998001998,
+  "barNum": 10,
+  "__obs_plot0": 10080.0,
+  "__obs_plot1": 0.1998001998001998
+ }
+}

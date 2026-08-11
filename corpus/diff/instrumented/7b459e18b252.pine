@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Noise Red")
+raw = close - ta.sma(close, 3)
+smoothed = raw
+iters = 0
+while math.abs(smoothed) > 0.1 and iters < 10
+    smoothed := smoothed * 0.7
+    iters := iters + 1
+var float __obs_plot0 = na
+__obs_plot0 := iters
+plot(iters, "It")

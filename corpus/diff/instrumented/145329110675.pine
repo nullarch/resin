@@ -1,0 +1,13 @@
+//@version=5
+indicator("UDT Field")
+type Point
+    float x = 0.0
+    float y = 0.0
+var p = Point.new()
+p.x := 42.0
+p.y := 99.0
+var float result = 0.0
+result := p.x + p.y
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

@@ -1,0 +1,9 @@
+//@version=5
+indicator("Multi Var")
+var float sum_ = 0.0
+var int count = 0
+var float max_ = 0.0
+sum_ := sum_ + close
+count := count + 1
+if close > max_
+    max_ := close

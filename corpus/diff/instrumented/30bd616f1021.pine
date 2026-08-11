@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Osc Div")
+rsi = nz(ta.rsi(close, 3), 50.0)
+priceLower = false
+rsiHigher = false
+for i = 1 to 3
+    if not na(close[i]) and close < close[i]
+        priceLower := true
+    if not na(rsi[i]) and rsi > rsi[i]
+        rsiHigher := true
+bullDiv = priceLower and rsiHigher
+var float __obs_plot0 = na
+__obs_plot0 := bullDiv ? 1 : 0
+plot(bullDiv ? 1 : 0, "Div")

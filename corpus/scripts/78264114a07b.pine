@@ -1,0 +1,9 @@
+//@version=5
+strategy("Spectral MR")
+float dc = ta.sma(close, 5)
+float ac = close - nz(dc, close)
+float sigma = nz(ta.stdev(ac, 5), 1.0)
+if ac < -sigma and sigma > 0.01
+    strategy.entry("Long", strategy.long)
+if ac > sigma
+    strategy.close("Long")

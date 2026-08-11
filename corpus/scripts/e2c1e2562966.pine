@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Risk Rpt")
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+volTag = avgATR > 0 and atr > avgATR * 1.5 ? "HI_VOL" : "LO_VOL"
+momTag = rsi > 70 or rsi < 30 ? "EXTREME" : "NORMAL"
+report = volTag + "_" + momTag
+isSafe = report == "LO_VOL_NORMAL"
+plot(isSafe ? 1 : 0, "Safe")

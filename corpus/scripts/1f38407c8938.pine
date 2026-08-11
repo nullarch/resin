@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Stat UDT")
+type StatMetrics
+    float mean = 0.0
+    float stdev = 0.0
+    float zscore = 0.0
+    float percentile = 50.0
+
+var StatMetrics sm = StatMetrics.new()
+sm.mean := ta.sma(close, 5)
+sm.stdev := ta.stdev(close, 5)
+sm.zscore := sm.stdev > 0 ? (close - sm.mean) / sm.stdev : 0.0
+sm.percentile := 50.0 + sm.zscore * 15
+plot(sm.zscore, "Z")

@@ -1,0 +1,3 @@
+//@version=5
+indicator("Bar Index")
+plot(bar_index)

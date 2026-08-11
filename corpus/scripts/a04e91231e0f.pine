@@ -1,0 +1,6 @@
+//@version=5
+indicator("Test")
+arr = array.new_float(10, 0)
+arr.push(5)
+s = arr.size()
+v = arr.sum()

@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Every Some")
+var float[] wins = array.new_float(0)
+win = close > open ? 1.0 : 0.0
+array.push(wins, win)
+if array.size(wins) > 5
+    array.shift(wins)
+allWins = array.every(wins)
+anyWins = array.some(wins)
+var float __obs_plot0 = na
+__obs_plot0 := allWins ? 2 : anyWins ? 1 : 0
+plot(allWins ? 2 : anyWins ? 1 : 0, "WS")

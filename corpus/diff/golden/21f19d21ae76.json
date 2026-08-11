@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:chars": {
+    "bull": 1.0,
+    "efficient": 0.0,
+    "expanding": 0.0
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:chars": {
+    "bull": 1.0,
+    "efficient": 0.0,
+    "expanding": 0.0
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:chars": {
+    "bull": 1.0,
+    "efficient": 0.0,
+    "expanding": 0.0
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:chars": {
+    "bull": 1.0,
+    "efficient": 0.0,
+    "expanding": 0.0
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:chars": {
+    "bull": 1.0,
+    "efficient": 0.0,
+    "expanding": 0.0
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:chars": {
+    "bull": 1.0,
+    "efficient": 0.0,
+    "expanding": 0.0
+   },
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:chars": {
+    "bull": 1.0,
+    "efficient": 0.0,
+    "expanding": 0.0
+   },
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:chars": {
+    "bull": 1.0,
+    "efficient": 0.0,
+    "expanding": 0.0
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:chars": {
+    "bull": 1.0,
+    "efficient": 0.0,
+    "expanding": 0.0
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:chars": {
+    "bull": 1.0,
+    "efficient": 0.0,
+    "expanding": 0.0
+   },
+   "var:__obs_plot0": 1.0
+  }
+ ],
+ "finalVarState": {
+  "chars": {
+   "bull": 1.0,
+   "efficient": 0.0,
+   "expanding": 0.0
+  },
+  "__obs_plot0": 1.0
+ }
+}

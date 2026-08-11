@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Stoch Single")
+k = ta.stoch(close, high, low, 14)
+var float __obs_plot0 = na
+__obs_plot0 := k
+plot(k)

@@ -1,0 +1,4 @@
+//@version=5
+indicator("scope var")
+var float cumSum = 0.0
+cumSum := cumSum + close

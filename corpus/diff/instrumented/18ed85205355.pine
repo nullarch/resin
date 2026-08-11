@@ -1,0 +1,13 @@
+//@version=5
+indicator("test")
+var int found = -1
+for i = 0 to 4
+    for j = 0 to 4
+        if i * j > 6
+            found := i * j
+            break
+    if found > 0
+        break
+var float __obs_plot0 = na
+__obs_plot0 := found
+plot(found)

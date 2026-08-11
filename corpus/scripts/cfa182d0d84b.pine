@@ -1,0 +1,33 @@
+//@version=5
+strategy("Mega 7")
+calcZone(float rsi, float atr, float smaD) =>
+    rsi > 65.0 and smaD > 0.0 ? 2 : rsi < 35.0 and smaD < 0.0 ? -2 : rsi > 50.0 ? 1 : -1
+var int consecutiveBull = 0
+float sma3 = nz(ta.sma(close, 3), close)
+float sma5 = nz(ta.sma(close, 5), close)
+float rsiVal = nz(ta.rsi(close, 5), 50.0)
+float atrVal = nz(ta.atr(3), 1.0)
+float smaDiff = sma3 - sma5
+int zone = calcZone(rsiVal, atrVal, smaDiff)
+signals = array.new<float>(0)
+signals.push(rsiVal > 50.0 ? 1.0 : -1.0)
+signals.push(close > sma3 ? 1.0 : -1.0)
+signals.push(smaDiff > 0.0 ? 1.0 : -1.0)
+float consensus = 0.0
+for s in signals
+    consensus := consensus + s
+switch zone
+    2 =>
+        if consensus > 1.0
+            strategy.entry("StrongLong", strategy.long)
+        consecutiveBull := consecutiveBull + 1
+    1 =>
+        if consensus > 0.0
+            strategy.entry("MildLong", strategy.long)
+    -2 =>
+        strategy.close("StrongLong")
+        strategy.close("MildLong")
+        consecutiveBull := 0
+    =>
+        consecutiveBull := 0
+float posSize = math.min(consecutiveBull * 0.1 + 0.5, 1.0)

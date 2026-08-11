@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Complex Bool")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rsiVal = ta.rsi(close, 3)
+atrVal = ta.atr(3)
+bullish = close > sma3 and
+     sma3 > sma5 and
+     rsiVal > 50 and
+     atrVal > 0
+var int bullCount = 0
+if bullish
+    bullCount := bullCount + 1
+var float __obs_plot0 = na
+__obs_plot0 := bullCount
+plot(bullCount, "Bull Count")

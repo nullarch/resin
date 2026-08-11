@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Break Wt")
+hi5 = ta.highest(high, 5)
+atr = nz(ta.atr(3), 1.0)
+dist = close - hi5[1]
+weight = dist > atr ? 2.0 : dist > 0 ? 1.0 : dist > -atr ? 0.5 : 0.0
+rsi = nz(ta.rsi(close, 3), 50.0)
+signal = (rsi - 50) / 50 * weight
+plot(signal, "Sig")

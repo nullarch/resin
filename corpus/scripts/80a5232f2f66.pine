@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Price Zone")
+hi5 = ta.highest(high, 5)
+lo5 = ta.lowest(low, 5)
+rng = hi5 - lo5
+pos = rng > 0 ? (close - lo5) / rng * 100 : 50.0
+zone = switch
+    pos > 80 => "overbought"
+    pos > 60 => "upper"
+    pos > 40 => "middle"
+    pos > 20 => "lower"
+    => "oversold"
+isOB = zone == "overbought"
+plot(isOB ? 1 : 0, "OB")

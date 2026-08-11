@@ -1,0 +1,22 @@
+
+//@version=5
+indicator("Two UDTs")
+type Trend
+    float slope = 0.0
+    int duration = 0
+
+type Momentum
+    float rsi = 50.0
+    float strength = 0.0
+
+var Trend t = Trend.new()
+var Momentum m = Momentum.new()
+sma3 = ta.sma(close, 3)
+t.slope := close - sma3
+t.duration := t.slope > 0 ? t.duration + 1 : 0
+m.rsi := nz(ta.rsi(close, 3), 50.0)
+m.strength := math.abs(m.rsi - 50) / 50
+combined = t.slope > 0 ? m.strength : -m.strength
+var float __obs_plot0 = na
+__obs_plot0 := combined
+plot(combined, "Comb")

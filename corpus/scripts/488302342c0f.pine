@@ -1,0 +1,10 @@
+
+//@version=5
+strategy("Scale", overlay=true)
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+if close > sma3 and rsi > 55
+    strategy.entry("Long", strategy.long)
+if rsi < 40
+    strategy.close("Long")
+plot(sma3, "MA")

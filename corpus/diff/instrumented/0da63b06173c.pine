@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("BA Spread")
+spread = high - low
+avgSpread = ta.sma(spread, 5)
+relSpread = avgSpread > 0 ? spread / avgSpread : 1.0
+tightSpread = relSpread < 0.7
+var float __obs_plot0 = na
+__obs_plot0 := relSpread
+plot(relSpread, "RelSp")

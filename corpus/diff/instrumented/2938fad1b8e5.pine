@@ -1,0 +1,25 @@
+
+//@version=5
+indicator("Vol Full")
+avgVol = ta.sma(volume, 5)
+vol3 = ta.sma(volume, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+
+volRatio = avgVol > 0 ? volume / avgVol : 1.0
+volTrend = avgVol > 0 ? vol3 / avgVol : 1.0
+priceUp = close > close[1]
+confirmation = priceUp and volRatio > 1.0
+
+weight = volRatio > 1.5 ? 1.5 : 1.0
+signal = (rsi - 50) / 50 * weight * (confirmation ? 1.5 : 1.0)
+
+var int spikes = 0
+if volRatio > 2.0
+    spikes := spikes + 1
+
+var float __obs_plot0 = na
+__obs_plot0 := signal
+plot(signal, "Sig")
+var float __obs_plot1 = na
+__obs_plot1 := spikes
+plot(spikes, "Spk")

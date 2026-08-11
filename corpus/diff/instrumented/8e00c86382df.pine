@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("PA Mom")
+closeChange = close - close[1]
+highChange = high - high[1]
+lowChange = low - low[1]
+paMom = nz(closeChange, 0.0) + nz(highChange, 0.0) + nz(lowChange, 0.0)
+normalized = ta.atr(3) > 0 ? paMom / ta.atr(3) : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := normalized
+plot(normalized, "PAMom")

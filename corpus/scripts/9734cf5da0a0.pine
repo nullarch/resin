@@ -1,0 +1,3 @@
+//@version=5
+indicator("My Indicator", overlay=true)
+plot(close)

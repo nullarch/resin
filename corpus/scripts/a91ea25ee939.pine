@@ -1,0 +1,4 @@
+//@version=5
+indicator("Spread")
+var float totalSpread = 0
+totalSpread := totalSpread + (high - low)

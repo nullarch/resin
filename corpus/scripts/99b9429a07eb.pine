@@ -1,0 +1,19 @@
+
+//@version=5
+indicator("Switch2Lvl")
+direction = close > open ? 1 : -1
+strength = high - low
+outerResult = switch direction
+    1 =>
+        inner = switch
+            strength > 5 => 10.0
+            strength > 3 => 5.0
+            => 1.0
+        inner
+    =>
+        inner = switch
+            strength > 5 => -10.0
+            strength > 3 => -5.0
+            => -1.0
+        inner
+plot(outerResult, "R")

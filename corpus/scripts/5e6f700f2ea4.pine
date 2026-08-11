@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Math Avg Sum")
+a = math.avg(close, open, high, low)
+s = math.sum(close, 5)
+plot(a, "OHLC Avg")
+plot(s, "Sum5")

@@ -1,0 +1,13 @@
+//@version=5
+indicator("Arr Stats")
+var a = array.new<float>(0)
+if array.size(a) >= 5
+    array.shift(a)
+array.push(a, close)
+var float med = 0.0
+var float avg_ = 0.0
+if array.size(a) > 0
+    med := array.median(a)
+    avg_ := array.avg(a)
+plot(med)
+plot(avg_)

@@ -1,0 +1,8 @@
+//@version=5
+indicator("BoolExpr")
+var int count = 0
+sma3 = ta.sma(close, 3)
+ema3 = ta.ema(close, 3)
+if not na(sma3) and not na(ema3)
+    if (close > sma3 and close > ema3) or (close > 110)
+        count := count + 1

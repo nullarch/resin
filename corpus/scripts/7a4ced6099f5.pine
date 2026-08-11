@@ -1,0 +1,8 @@
+//@version=5
+indicator("Strength Reduction Div")
+float inv4 = 0.25
+float a = close * inv4
+float b = open * inv4
+float c = high * inv4
+float d = low * inv4
+float sum = a + b + c + d

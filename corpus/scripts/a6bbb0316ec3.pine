@@ -1,0 +1,8 @@
+//@version=5
+indicator("TA Context")
+sma1 = ta.sma(close, 3)
+sma2 = ta.sma(close, 5)
+ema1 = ta.ema(close, 3)
+var float r = 0.0
+r := nz(sma1) + nz(sma2) + nz(ema1)
+plot(close)

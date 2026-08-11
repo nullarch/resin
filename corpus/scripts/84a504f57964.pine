@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("UDT Complex")
+type Dashboard
+    float score = 0.0
+    int signals = 0
+    float maxScore = 0.0
+
+var Dashboard db = Dashboard.new()
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+db.score := (rsi - 50) / 50 + (sma3 > sma5 ? 1 : -1) + (close > sma3 ? 0.5 : -0.5)
+db.maxScore := math.max(db.maxScore, db.score)
+if db.score > 1.0
+    db.signals := db.signals + 1
+plot(db.signals, "Sig")

@@ -1,0 +1,14 @@
+//@version=5
+indicator("Multi UDF TA")
+getRSI(float src, int len) =>
+    ta.rsi(src, len)
+getMACD(float src) =>
+    [m, s, h] = ta.macd(src, 3, 5, 3)
+    h
+getSMA(float src, int len) =>
+    ta.sma(src, len)
+rsi = getRSI(close, 5)
+macdHist = getMACD(close)
+sma = getSMA(close, 5)
+score = (rsi > 50 ? 1 : 0) + (macdHist > 0 ? 1 : 0) + (close > sma ? 1 : 0)
+plot(score)

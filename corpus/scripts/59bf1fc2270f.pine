@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Barstate")
+isFirst = barstate.isfirst
+isLast = barstate.islast
+var int firstBar = -1
+if isFirst
+    firstBar := bar_index
+plot(firstBar, "First Bar")

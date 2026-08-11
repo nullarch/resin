@@ -1,0 +1,16 @@
+//@version=5
+indicator("LowerTailDep")
+var int jointBelow = 0
+var int closeBelow = 0
+smaC = nz(ta.sma(close, 5), close)
+smaV = nz(ta.sma(volume, 5), volume)
+threshC = smaC - 2.0
+threshV = smaV - 100.0
+cBelow = close < threshC ? true : false
+vBelow = volume < threshV ? true : false
+if cBelow
+    closeBelow := closeBelow + 1
+if cBelow and vBelow
+    jointBelow := jointBelow + 1
+ltd = closeBelow > 0 ? float(jointBelow) / float(closeBelow) : 0.0
+plot(ltd, "LTD")

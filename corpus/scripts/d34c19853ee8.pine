@@ -1,0 +1,15 @@
+//@version=5
+indicator("TimeVarCorr")
+var float ewCov = 0.0
+var float ewVarC = 0.0
+var float ewVarV = 0.0
+decayFactor = 0.8
+dC = close - nz(close[1], close)
+dV = volume - nz(volume[1], volume)
+ewCov := decayFactor * ewCov + (1.0 - decayFactor) * dC * dV
+ewVarC := decayFactor * ewVarC + (1.0 - decayFactor) * dC * dC
+ewVarV := decayFactor * ewVarV + (1.0 - decayFactor) * dV * dV
+denom = math.sqrt(math.max(ewVarC * ewVarV, 0.0001))
+corr = denom > 0.001 ? ewCov / denom : 0.0
+corrClamp = math.max(-1.0, math.min(1.0, corr))
+plot(corrClamp, "Corr")

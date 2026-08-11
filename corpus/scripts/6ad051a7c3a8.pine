@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("RSI Hist")
+var float[] rsiHist = array.new_float(0)
+rsi = nz(ta.rsi(close, 3), 50.0)
+array.push(rsiHist, rsi)
+if array.size(rsiHist) > 10
+    array.shift(rsiHist)
+minRSI = array.size(rsiHist) > 0 ? array.min(rsiHist) : rsi
+maxRSI = array.size(rsiHist) > 0 ? array.max(rsiHist) : rsi
+rsiRange = maxRSI - minRSI
+plot(rsiRange, "RR")

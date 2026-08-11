@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("BE Search")
+entry = close
+atr = ta.atr(3)
+fee = 0.1
+target = entry
+iters = 0
+while target - entry < fee * 2 and iters < 50
+    target := target + atr * 0.1
+    iters := iters + 1
+beDistance = target - entry
+var float __obs_plot0 = na
+__obs_plot0 := beDistance
+plot(beDistance, "BE")

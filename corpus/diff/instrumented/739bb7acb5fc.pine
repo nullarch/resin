@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Risk Lbl")
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 5)
+ratio = avgATR > 0 ? atr / avgATR : 1.0
+volLabel = ratio > 1.3 ? "RISKY" : "SAFE"
+rsi = nz(ta.rsi(close, 3), 50.0)
+momLabel = rsi > 70 or rsi < 30 ? "EXTREME" : "NORMAL"
+combined = volLabel + "_" + momLabel
+isDanger = combined == "RISKY_EXTREME"
+var float __obs_plot0 = na
+__obs_plot0 := isDanger ? 1 : 0
+plot(isDanger ? 1 : 0, "D")

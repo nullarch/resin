@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Vol Spikes")
+var float[] spikes = array.new_float(0)
+avgVol = ta.sma(volume, 5)
+if volume > avgVol * 1.5
+    array.push(spikes, volume)
+if array.size(spikes) > 5
+    array.shift(spikes)
+avgSpike = array.size(spikes) > 0 ? array.avg(spikes) : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := array.size(spikes)
+plot(array.size(spikes), "SC")

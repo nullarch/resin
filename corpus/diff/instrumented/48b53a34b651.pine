@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Clamp Scale")
+rsi = nz(ta.rsi(close, 3), 50.0)
+clamped = math.max(20.0, math.min(80.0, rsi))
+scaled = (clamped - 20.0) / 60.0
+inverted = 1.0 - scaled
+var float __obs_plot0 = na
+__obs_plot0 := scaled
+plot(scaled, "Scaled")
+var float __obs_plot1 = na
+__obs_plot1 := inverted
+plot(inverted, "Inv")

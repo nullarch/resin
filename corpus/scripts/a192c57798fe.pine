@@ -1,0 +1,15 @@
+//@version=5
+indicator("ClaytonProxy")
+var float sumLower = 0.0
+var int nBars = 0
+nBars := nBars + 1
+uC = nz(ta.rsi(close, 5), 50.0) / 100.0
+uV = nz(ta.rsi(volume, 5), 50.0) / 100.0
+safeUc = math.max(uC, 0.01)
+safeUv = math.max(uV, 0.01)
+theta = 2.0
+term = math.pow(safeUc, -theta) + math.pow(safeUv, -theta) - 1.0
+joint = term > 0 ? math.pow(term, -1.0 / theta) : 0.0
+sumLower := sumLower + joint
+avgJoint = nBars > 0 ? sumLower / float(nBars) : 0.0
+plot(avgJoint, "Clayton")

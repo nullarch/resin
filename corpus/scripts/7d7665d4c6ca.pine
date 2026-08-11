@@ -1,0 +1,6 @@
+//@version=5
+indicator("TS Components")
+ts1 = timestamp(2024, 6, 15)
+ts2 = timestamp(2024, 6, 15, 12, 30, 0)
+diff = ts2 - ts1
+plot(diff > 0 ? 1.0 : 0.0)

@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Mov Median")
+var float[] window = array.new_float(0)
+array.push(window, close)
+if array.size(window) > 5
+    array.shift(window)
+med = array.median(window)
+devFromMed = close - med
+plot(med, "Median")
+plot(devFromMed, "Dev")

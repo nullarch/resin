@@ -1,0 +1,8 @@
+//@version=5
+indicator("Timeframe")
+period = timeframe.period
+isDaily = timeframe.isdaily
+isWeekly = timeframe.isweekly
+isMonthly = timeframe.ismonthly
+isIntraday = timeframe.isintraday
+multiplier = timeframe.multiplier

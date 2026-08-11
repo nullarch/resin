@@ -1,0 +1,9 @@
+//@version=5
+indicator("test")
+fastEMA = ta.ema(close, 3)
+slowEMA = ta.ema(close, 5)
+macd = fastEMA - slowEMA
+signal = ta.ema(macd, 3)
+macdRising = macd > macd[1]
+signalRising = signal > signal[1]
+plot(macdRising and signalRising ? 1 : 0)

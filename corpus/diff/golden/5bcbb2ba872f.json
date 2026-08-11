@@ -1,0 +1,105 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:sessVols": [
+    5800.0,
+    6000.0
+   ],
+   "var:cumVol": 1000.0,
+   "var:barInSess": 1,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:sessVols": [
+    5800.0,
+    6000.0
+   ],
+   "var:cumVol": 2200.0,
+   "var:barInSess": 2,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:sessVols": [
+    5800.0,
+    6000.0
+   ],
+   "var:cumVol": 3000.0,
+   "var:barInSess": 3,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:sessVols": [
+    5800.0,
+    6000.0
+   ],
+   "var:cumVol": 4500.0,
+   "var:barInSess": 4,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:sessVols": [
+    5800.0,
+    6000.0
+   ],
+   "var:cumVol": 0.0,
+   "var:barInSess": 0,
+   "var:__obs_plot0": 5800.0
+  },
+  {
+   "var:sessVols": [
+    5800.0,
+    6000.0
+   ],
+   "var:cumVol": 900.0,
+   "var:barInSess": 1,
+   "var:__obs_plot0": 5800.0
+  },
+  {
+   "var:sessVols": [
+    5800.0,
+    6000.0
+   ],
+   "var:cumVol": 2000.0,
+   "var:barInSess": 2,
+   "var:__obs_plot0": 5800.0
+  },
+  {
+   "var:sessVols": [
+    5800.0,
+    6000.0
+   ],
+   "var:cumVol": 3400.0,
+   "var:barInSess": 3,
+   "var:__obs_plot0": 5800.0
+  },
+  {
+   "var:sessVols": [
+    5800.0,
+    6000.0
+   ],
+   "var:cumVol": 4400.0,
+   "var:barInSess": 4,
+   "var:__obs_plot0": 5800.0
+  },
+  {
+   "var:sessVols": [
+    5800.0,
+    6000.0
+   ],
+   "var:cumVol": 0.0,
+   "var:barInSess": 0,
+   "var:__obs_plot0": 5900.0
+  }
+ ],
+ "finalVarState": {
+  "sessVols": [
+   5800.0,
+   6000.0
+  ],
+  "cumVol": 0.0,
+  "barInSess": 0,
+  "__obs_plot0": 5900.0
+ }
+}

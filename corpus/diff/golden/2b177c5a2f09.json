@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:ac": {
+    "above_ma": 1.0,
+    "rsi_ob": 1.0,
+    "rsi_os": 0.0
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ac": {
+    "above_ma": 1.0,
+    "rsi_ob": 1.0,
+    "rsi_os": 0.0
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ac": {
+    "above_ma": 1.0,
+    "rsi_ob": 1.0,
+    "rsi_os": 0.0
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ac": {
+    "above_ma": 1.0,
+    "rsi_ob": 1.0,
+    "rsi_os": 0.0
+   },
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:ac": {
+    "above_ma": 1.0,
+    "rsi_ob": 1.0,
+    "rsi_os": 0.0
+   },
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:ac": {
+    "above_ma": 1.0,
+    "rsi_ob": 1.0,
+    "rsi_os": 0.0
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ac": {
+    "above_ma": 1.0,
+    "rsi_ob": 1.0,
+    "rsi_os": 0.0
+   },
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:ac": {
+    "above_ma": 1.0,
+    "rsi_ob": 1.0,
+    "rsi_os": 0.0
+   },
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:ac": {
+    "above_ma": 1.0,
+    "rsi_ob": 1.0,
+    "rsi_os": 0.0
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ac": {
+    "above_ma": 1.0,
+    "rsi_ob": 1.0,
+    "rsi_os": 0.0
+   },
+   "var:__obs_plot0": 2
+  }
+ ],
+ "finalVarState": {
+  "ac": {
+   "above_ma": 1.0,
+   "rsi_ob": 1.0,
+   "rsi_os": 0.0
+  },
+  "__obs_plot0": 2
+ }
+}

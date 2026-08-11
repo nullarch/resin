@@ -1,0 +1,8 @@
+//@version=5
+indicator("Sign")
+var float pos = 0
+var float neg = 0
+var float zero = 0
+pos := math.sign(42)
+neg := math.sign(-5)
+zero := math.sign(0)

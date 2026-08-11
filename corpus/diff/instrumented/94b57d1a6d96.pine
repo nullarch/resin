@@ -1,0 +1,16 @@
+//@version=5
+indicator("AdaptMutRate")
+var float lastFit = 0.0
+var int stagnCount = 0
+var float mutRate = 0.1
+fit = nz(ta.rsi(close, 5), 50.0)
+improvement = math.abs(fit - lastFit)
+if improvement < 1.0
+    stagnCount := stagnCount + 1
+else
+    stagnCount := 0
+mutRate := stagnCount > 3 ? math.min(mutRate + 0.05, 0.5) : math.max(mutRate - 0.02, 0.05)
+lastFit := fit
+var float __obs_plot0 = na
+__obs_plot0 := mutRate
+plot(mutRate, "MutRate")

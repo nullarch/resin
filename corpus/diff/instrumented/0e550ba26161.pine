@@ -1,0 +1,12 @@
+//@version=5
+indicator("Therapeutic Window")
+var int inWindow = 0
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+mec = 30.0
+mtc = 70.0
+if rsiVal >= mec and rsiVal <= mtc
+    inWindow := inWindow + 1
+fraction = inWindow > 0 ? 1.0 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := inWindow
+plot(inWindow)

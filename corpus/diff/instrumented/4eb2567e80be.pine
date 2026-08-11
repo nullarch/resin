@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Triple Con")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+k = ta.stoch(close, high, low, 5)
+vote1 = rsi > 50 ? 1 : -1
+vote2 = close > sma3 ? 1 : -1
+vote3 = k > 50 ? 1 : -1
+consensus = vote1 + vote2 + vote3
+var float __obs_plot0 = na
+__obs_plot0 := consensus
+plot(consensus, "Con")

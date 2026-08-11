@@ -1,0 +1,13 @@
+//@version=5
+indicator("C300-07")
+var int squeezeCount = 0
+basis = ta.sma(close, 5)
+devVal = nz(ta.stdev(close, 5), 1.0)
+upper = nz(basis, close) + 2 * devVal
+lower = nz(basis, close) - 2 * devVal
+bandwidth = upper - lower
+if bandwidth < 5.0
+    squeezeCount := squeezeCount + 1
+var float __obs_plot0 = na
+__obs_plot0 := squeezeCount
+plot(squeezeCount)

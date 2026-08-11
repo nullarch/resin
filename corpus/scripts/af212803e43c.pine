@@ -1,0 +1,9 @@
+//@version=5
+indicator("Varip Test")
+varip int tickCount = 0
+tickCount += 1
+var float sessionHigh = high
+if high > sessionHigh
+    sessionHigh := high
+plot(tickCount)
+plot(sessionHigh)

@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Switch History")
+chg = ta.change(close, 1)
+chgPrev = ta.change(close[1], 1)
+pattern = switch
+    chg > 0 and not na(chgPrev) and chgPrev > 0 => "continuation_up"
+    chg < 0 and not na(chgPrev) and chgPrev < 0 => "continuation_down"
+    chg > 0 and not na(chgPrev) and chgPrev < 0 => "reversal_up"
+    chg < 0 and not na(chgPrev) and chgPrev > 0 => "reversal_down"
+    => "flat"
+isReversal = pattern == "reversal_up" or pattern == "reversal_down"
+plot(isReversal ? 1 : 0, "Reversal")

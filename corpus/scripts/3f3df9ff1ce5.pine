@@ -1,0 +1,5 @@
+//@version=5
+indicator("Two-State Toggle")
+var int state = 0
+state := state == 0 ? 1 : 0
+plot(state, "State")

@@ -1,0 +1,5 @@
+//@version=5
+indicator("label noop")
+var float result = 1.0
+lbl = label.new(bar_index, close)
+result := close

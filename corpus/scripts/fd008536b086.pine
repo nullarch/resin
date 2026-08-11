@@ -1,0 +1,6 @@
+//@version=5
+indicator("method map")
+var float result = 0.0
+m = map.new<string, float>()
+m.put("x", 42.0)
+result := m.get("x")

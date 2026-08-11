@@ -1,0 +1,8 @@
+//@version=5
+indicator("Modular Cycle")
+period = 4.0
+phase = bar_index - math.floor(bar_index / period) * period
+wave = math.sin(phase * 3.14159 / 2.0)
+var float __obs_plot0 = na
+__obs_plot0 := wave
+plot(wave, "Wave")

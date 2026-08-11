@@ -1,0 +1,22 @@
+//@version=5
+indicator("Combo09")
+var float ewma = 0.0
+weights = map.new<string, float>()
+map.put(weights, "fast", 0.3)
+map.put(weights, "mid", 0.5)
+map.put(weights, "slow", 0.7)
+speed = switch
+    close > 108.0 => "fast"
+    close > 104.0 => "mid"
+    => "slow"
+alpha = map.get(weights, speed)
+ewma := alpha * close + (1.0 - alpha) * ewma
+deviation = math.abs(close - ewma)
+idx = 0
+maxDev = 0.0
+while idx < 3
+    prevDev = math.abs(nz(close[idx], close) - ewma)
+    maxDev := math.max(maxDev, prevDev)
+    idx := idx + 1
+plot(ewma, "EWMA")
+plot(maxDev, "MaxDev")

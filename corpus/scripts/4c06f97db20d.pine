@@ -1,0 +1,10 @@
+//@version=5
+indicator("EMA Ribbon")
+ema3 = ta.ema(close, 3)
+ema5 = ta.ema(close, 5)
+ema8 = ta.ema(close, 8)
+bullish = not na(ema3) and not na(ema5) and not na(ema8) ? ema3 > ema5 and ema5 > ema8 : false
+bearish = not na(ema3) and not na(ema5) and not na(ema8) ? ema3 < ema5 and ema5 < ema8 : false
+plot(ema3, "EMA3")
+plot(ema5, "EMA5")
+plot(ema8, "EMA8")

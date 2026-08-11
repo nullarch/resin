@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Expectancy")
+var float totalWin = 0.0
+var float totalLoss = 0.0
+var int winCount = 0
+var int lossCount = 0
+chg = close - close[1]
+if not na(chg)
+    if chg > 0
+        totalWin := totalWin + chg
+        winCount := winCount + 1
+    else if chg < 0
+        totalLoss := totalLoss + math.abs(chg)
+        lossCount := lossCount + 1
+total = winCount + lossCount
+winRate = total > 0 ? float(winCount) / float(total) : 0.5
+avgWin = winCount > 0 ? totalWin / winCount : 0.0
+avgLoss = lossCount > 0 ? totalLoss / lossCount : 0.001
+expectancy = winRate * avgWin - (1 - winRate) * avgLoss
+plot(expectancy, "Exp")

@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("LinReg")
+lr = ta.linreg(close, 5, 0)
+slope = lr - lr[1]
+rising = slope > 0
+plot(lr, "LinReg")

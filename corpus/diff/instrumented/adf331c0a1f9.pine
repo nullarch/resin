@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("RegPersist")
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+curRegime = rsiVal > 60 ? 1 : rsiVal < 40 ? -1 : 0
+var int prevRegime = 0
+var int duration = 0
+duration := curRegime == prevRegime ? duration + 1 : 1
+prevRegime := curRegime
+var float __obs_plot0 = na
+__obs_plot0 := duration
+plot(duration, "Dur")

@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Range Exp")
+avgRange = ta.sma(high - low, 5)
+threshold = avgRange * 2.5
+steps = 0
+current = avgRange
+while current < threshold and steps < 15
+    current := current * 1.2
+    steps := steps + 1
+var float __obs_plot0 = na
+__obs_plot0 := steps
+plot(steps, "St")

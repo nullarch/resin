@@ -1,0 +1,7 @@
+//@version=5
+indicator("DetailEnergy")
+var float energy = 0.0
+prev = nz(close[1], close)
+detail = (close - prev) / 2.0
+energy := energy + detail * detail
+plot(energy, "Energy")

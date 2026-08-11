@@ -1,0 +1,10 @@
+//@version=5
+indicator("test")
+rsi = ta.rsi(close, 3)
+ema = ta.ema(close, 5)
+bullish = rsi > 50 and close > ema and ta.crossover(close, ema)
+bearish = rsi < 50 and close < ema and ta.crossunder(close, ema)
+signal = bullish ? 1 : bearish ? -1 : 0
+var float __obs_plot0 = na
+__obs_plot0 := signal
+plot(signal)

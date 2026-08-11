@@ -1,0 +1,18 @@
+//@version=5
+indicator("VARProxy")
+var float bPrice = 0.5
+var float bVol = 0.0001
+prevClose = nz(close[1], close)
+prevVol = nz(volume[1], volume)
+predicted = bPrice * prevClose + bVol * prevVol
+actual = close
+err = actual - predicted
+lr = 0.01
+bPrice := bPrice + lr * err * prevClose / math.max(prevClose * prevClose, 0.01)
+bVol := bVol + lr * err * prevVol / math.max(prevVol * prevVol, 0.01)
+var float __obs_plot0 = na
+__obs_plot0 := predicted
+plot(predicted, "Pred")
+var float __obs_plot1 = na
+__obs_plot1 := err
+plot(err, "Err")

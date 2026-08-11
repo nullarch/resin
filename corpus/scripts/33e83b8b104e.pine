@@ -1,0 +1,16 @@
+//@version=5
+indicator("cf expr")
+var float result = 0.0
+a = if close > 100
+    1.0
+else
+    0.0
+b = for i = 0 to 2
+    i
+c = while false
+    0
+d = switch
+    close > 200 => 3.0
+    close > 100 => 2.0
+    => 1.0
+result := a + float(b) + float(d)

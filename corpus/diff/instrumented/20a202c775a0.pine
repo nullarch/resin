@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Lookback")
+avg3 = (close + close[1] + close[2]) / 3.0
+change1 = close - close[1]
+change2 = close[1] - close[2]
+momentum = change1 + change2
+var float __obs_plot0 = na
+__obs_plot0 := momentum
+plot(momentum)

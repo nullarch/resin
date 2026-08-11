@@ -1,0 +1,105 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:fm": {
+    "price_ma": 1.0,
+    "ma_cross": 1.0,
+    "rsi_bull": 1.0,
+    "vol_confirm": 1.0
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:fm": {
+    "price_ma": 1.0,
+    "ma_cross": 1.0,
+    "rsi_bull": 1.0,
+    "vol_confirm": 1.0
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:fm": {
+    "price_ma": 1.0,
+    "ma_cross": 1.0,
+    "rsi_bull": 1.0,
+    "vol_confirm": 1.0
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:fm": {
+    "price_ma": 1.0,
+    "ma_cross": 1.0,
+    "rsi_bull": 1.0,
+    "vol_confirm": 1.0
+   },
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:fm": {
+    "price_ma": 1.0,
+    "ma_cross": 1.0,
+    "rsi_bull": 1.0,
+    "vol_confirm": 1.0
+   },
+   "var:__obs_plot0": 4.0
+  },
+  {
+   "var:fm": {
+    "price_ma": 1.0,
+    "ma_cross": 1.0,
+    "rsi_bull": 1.0,
+    "vol_confirm": 1.0
+   },
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:fm": {
+    "price_ma": 1.0,
+    "ma_cross": 1.0,
+    "rsi_bull": 1.0,
+    "vol_confirm": 1.0
+   },
+   "var:__obs_plot0": 3.0
+  },
+  {
+   "var:fm": {
+    "price_ma": 1.0,
+    "ma_cross": 1.0,
+    "rsi_bull": 1.0,
+    "vol_confirm": 1.0
+   },
+   "var:__obs_plot0": 4.0
+  },
+  {
+   "var:fm": {
+    "price_ma": 1.0,
+    "ma_cross": 1.0,
+    "rsi_bull": 1.0,
+    "vol_confirm": 1.0
+   },
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:fm": {
+    "price_ma": 1.0,
+    "ma_cross": 1.0,
+    "rsi_bull": 1.0,
+    "vol_confirm": 1.0
+   },
+   "var:__obs_plot0": 4.0
+  }
+ ],
+ "finalVarState": {
+  "fm": {
+   "price_ma": 1.0,
+   "ma_cross": 1.0,
+   "rsi_bull": 1.0,
+   "vol_confirm": 1.0
+  },
+  "__obs_plot0": 4.0
+ }
+}

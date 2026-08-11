@@ -1,0 +1,6 @@
+//@version=5
+indicator("Labels")
+var string lastLabel = ""
+smaVal = ta.sma(close, 3)
+if not na(smaVal)
+    lastLabel := "SMA: " + str.tostring(smaVal)

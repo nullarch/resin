@@ -1,0 +1,6 @@
+//@version=5
+indicator("Grain Size")
+var float[] grains = array.new_float(0)
+grainSize = high - low
+array.push(grains, grainSize)
+nGrains = array.size(grains)

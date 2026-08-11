@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("MR Size")
+sma5 = ta.sma(close, 5)
+sd = ta.stdev(close, 5)
+z = sd > 0 ? (close - sma5) / sd : 0.0
+size = math.abs(z) > 3 ? 3.0 : math.abs(z) > 2 ? 2.0 : math.abs(z) > 1 ? 1.0 : 0.0
+direction = z < 0 ? 1.0 : z > 0 ? -1.0 : 0.0
+position = size * direction
+plot(position, "Pos")

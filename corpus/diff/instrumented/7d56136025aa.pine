@@ -1,0 +1,13 @@
+//@version=5
+indicator("Protein Binding")
+totalDrug = high - low
+freeRange = close - open
+bound = totalDrug - math.abs(freeRange)
+bindingPct = totalDrug > 0 ? bound / totalDrug * 100.0 : 0.0
+if bindingPct < 0
+    bindingPct := 0.0
+if bindingPct > 100
+    bindingPct := 100.0
+var float __obs_plot0 = na
+__obs_plot0 := bindingPct
+plot(bindingPct)

@@ -1,0 +1,12 @@
+//@version=5
+indicator("Enum Decl")
+enum Direction
+    Up = 1
+    Down = 2
+    Flat = 0
+
+var float result = 0.0
+result := Direction.Up == Direction.Up ? 1.0 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

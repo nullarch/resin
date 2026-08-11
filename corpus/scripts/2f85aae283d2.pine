@@ -1,0 +1,19 @@
+
+//@version=5
+indicator("Enum Arr")
+enum Signal
+    Buy = 1
+    Sell = -1
+    Hold = 0
+
+var int[] sigHist = array.new_int(0)
+rsi = nz(ta.rsi(close, 3), 50.0)
+sig = rsi > 60 ? Signal.Buy : rsi < 40 ? Signal.Sell : Signal.Hold
+array.push(sigHist, int(sig))
+if array.size(sigHist) > 5
+    array.shift(sigHist)
+buyCount = 0
+for v in sigHist
+    if v == int(Signal.Buy)
+        buyCount := buyCount + 1
+plot(buyCount, "Buys")

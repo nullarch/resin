@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("RSI EMA")
+rsi = ta.rsi(close, 3)
+smoothRsi = ta.ema(rsi, 3)
+overbought = smoothRsi > 70
+oversold = smoothRsi < 30
+plot(smoothRsi, "SmRSI")

@@ -1,0 +1,4 @@
+//@version=5
+indicator("Test")
+arr = array.from(0, 0, 1)
+anyTrue = array.some(arr)

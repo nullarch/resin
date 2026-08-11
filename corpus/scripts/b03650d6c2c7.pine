@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Dashboard")
+rsi_val = ta.rsi(close, 14)
+sma_fast = ta.sma(close, 5)
+sma_slow = ta.sma(close, 10)
+[macdLine, signalLine, histLine] = ta.macd(close, 12, 26, 9)
+
+trend = sma_fast > sma_slow
+momentum = rsi_val > 50
+macd_bull = macdLine > signalLine
+
+score = (trend ? 1.0 : 0.0) + (momentum ? 1.0 : 0.0) + (macd_bull ? 1.0 : 0.0)
+plot(score)

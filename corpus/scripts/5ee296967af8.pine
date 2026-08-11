@@ -1,0 +1,6 @@
+//@version=5
+indicator("Pest Pressure Index")
+volatility = nz(ta.atr(3), 1.0)
+pestIndex = volatility / close * 100
+var float peakPest = 0.0
+peakPest := math.max(peakPest, pestIndex)

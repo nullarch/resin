@@ -1,0 +1,8 @@
+//@version=5
+indicator("Wave Period")
+var int zeroCrossings = 0
+detrended = close - ta.sma(close, 5)
+prevDetrended = close[1] - ta.sma(close, 5)
+if not na(detrended) and not na(prevDetrended) and not na(close[1])
+    if (detrended > 0 and prevDetrended <= 0) or (detrended <= 0 and prevDetrended > 0)
+        zeroCrossings := zeroCrossings + 1

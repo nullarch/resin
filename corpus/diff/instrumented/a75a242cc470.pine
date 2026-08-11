@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("OHLC Stats")
+var stats = map.new<string, float>()
+map.put(stats, "body", math.abs(close - open))
+map.put(stats, "range", high - low)
+map.put(stats, "upper_wick", high - math.max(open, close))
+map.put(stats, "lower_wick", math.min(open, close) - low)
+body = map.get(stats, "body", 0.0)
+rng = map.get(stats, "range", 0.0)
+bodyRatio = rng > 0 ? body / rng : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := bodyRatio
+plot(bodyRatio, "BodyR")

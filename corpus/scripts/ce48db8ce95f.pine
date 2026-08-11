@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Break Lbl")
+hi5 = ta.highest(high, 5)
+lo5 = ta.lowest(low, 5)
+dir = close > hi5[1] ? "UP" : close < lo5[1] ? "DN" : "NONE"
+avgVol = ta.sma(volume, 5)
+vol = avgVol > 0 and volume > avgVol * 1.5 ? "HV" : "LV"
+label = dir + "_" + vol
+isGoodBreak = label == "UP_HV"
+plot(isGoodBreak ? 1 : 0, "GB")

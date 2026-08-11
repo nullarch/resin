@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:sectors": {
+    "strong": 1.0,
+    "mild": 9.0
+   },
+   "var:__obs_plot0": 0.9900990099009901
+  },
+  {
+   "var:sectors": {
+    "strong": 1.0,
+    "mild": 9.0
+   },
+   "var:__obs_plot0": 0.49751243781094534
+  },
+  {
+   "var:sectors": {
+    "strong": 1.0,
+    "mild": 9.0
+   },
+   "var:__obs_plot0": 0.33222591362126247
+  },
+  {
+   "var:sectors": {
+    "strong": 1.0,
+    "mild": 9.0
+   },
+   "var:__obs_plot0": 0.24937655860349128
+  },
+  {
+   "var:sectors": {
+    "strong": 1.0,
+    "mild": 9.0
+   },
+   "var:__obs_plot0": 0.1996007984031936
+  },
+  {
+   "var:sectors": {
+    "strong": 1.0,
+    "mild": 9.0
+   },
+   "var:__obs_plot0": 0.1663893510815308
+  },
+  {
+   "var:sectors": {
+    "strong": 1.0,
+    "mild": 9.0
+   },
+   "var:__obs_plot0": 0.14265335235378032
+  },
+  {
+   "var:sectors": {
+    "strong": 1.0,
+    "mild": 9.0
+   },
+   "var:__obs_plot0": 0.12484394506866417
+  },
+  {
+   "var:sectors": {
+    "strong": 1.0,
+    "mild": 9.0
+   },
+   "var:__obs_plot0": 0.11098779134295228
+  },
+  {
+   "var:sectors": {
+    "strong": 1.0,
+    "mild": 9.0
+   },
+   "var:__obs_plot0": 0.0999000999000999
+  }
+ ],
+ "finalVarState": {
+  "sectors": {
+   "strong": 1.0,
+   "mild": 9.0
+  },
+  "__obs_plot0": 0.0999000999000999
+ }
+}

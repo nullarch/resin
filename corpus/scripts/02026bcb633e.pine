@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("StochRSI")
+rsiVal = ta.rsi(close, 3)
+k = ta.stoch(rsiVal, rsiVal, rsiVal, 3)
+d = ta.sma(k, 3)
+overbought = k > 80 and d > 80
+oversold = k < 20 and d < 20
+plot(k, "K")
+plot(d, "D")

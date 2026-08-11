@@ -1,0 +1,6 @@
+//@version=5
+indicator("Modular BarIndex")
+modVal = bar_index - math.floor(bar_index / 3) * 3
+var float __obs_plot0 = na
+__obs_plot0 := modVal
+plot(modVal, "Mod3")

@@ -1,0 +1,6 @@
+//@version=5
+indicator("Damping")
+float dampFactor = 0.9
+var float state = 0.0
+float excitation = close - open
+state := dampFactor * state + (1.0 - dampFactor) * excitation

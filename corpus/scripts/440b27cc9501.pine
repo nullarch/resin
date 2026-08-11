@@ -1,0 +1,11 @@
+//@version=5
+indicator("Test")
+x = 0
+if close > 100
+    x := 3
+else if close > 50
+    x := 2
+else if close > 10
+    x := 1
+else
+    x := 0

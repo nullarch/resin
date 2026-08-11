@@ -1,0 +1,13 @@
+//@version=5
+indicator("While Expr")
+float acc = 0.0
+int idx = 0
+while idx < 5
+    acc := acc + idx
+    idx := idx + 1
+// acc = 0+1+2+3+4 = 10
+var float result = 0.0
+result := acc
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("ATR SL")
+atr = nz(ta.atr(3), 1.0)
+stopDist = atr * 2.0
+stopLevel = close - stopDist
+riskPct = close > 0 ? stopDist / close * 100 : 0.0
+plot(riskPct, "Risk")

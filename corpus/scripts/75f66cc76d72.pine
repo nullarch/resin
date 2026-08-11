@@ -1,0 +1,9 @@
+//@version=5
+indicator("Different TA Keys")
+sma_val = ta.sma(close, 5)
+ema_val = ta.ema(close, 5)
+rsi_val = ta.rsi(close, 14)
+// All should compute independently
+var float result = 0.0
+result := nz(sma_val, 0.0) + nz(ema_val, 0.0) + nz(rsi_val, 50.0)
+plot(result)

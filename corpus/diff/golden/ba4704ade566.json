@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:isNa": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:isNa": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:isNa": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:isNa": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:isNa": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:isNa": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:isNa": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:isNa": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:isNa": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:isNa": 1,
+   "var:__obs_plot0": 1
+  }
+ ],
+ "finalVarState": {
+  "isNa": 1,
+  "__obs_plot0": 1
+ }
+}

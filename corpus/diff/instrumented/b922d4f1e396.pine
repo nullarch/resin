@@ -1,0 +1,26 @@
+
+//@version=5
+indicator("Beta")
+var float[] assetRets = array.new_float(0)
+var float[] mktRets = array.new_float(0)
+prevC = nz(close[1], close)
+assetRet = prevC > 0 ? (close - prevC) / prevC : 0.0
+mktRet = prevC > 0 ? (high - nz(high[1], high)) / nz(high[1], high) : 0.0
+array.push(assetRets, assetRet)
+array.push(mktRets, mktRet)
+if array.size(assetRets) > 5
+    array.shift(assetRets)
+    array.shift(mktRets)
+mktVar = 0.0
+covar = 0.0
+avgA = array.avg(assetRets)
+avgM = array.avg(mktRets)
+for i = 0 to array.size(assetRets) - 1
+    da = array.get(assetRets, i) - avgA
+    dm = array.get(mktRets, i) - avgM
+    covar := covar + da * dm
+    mktVar := mktVar + dm * dm
+beta = mktVar > 0.0001 ? covar / mktVar : 1.0
+var float __obs_plot0 = na
+__obs_plot0 := beta
+plot(beta, "B")

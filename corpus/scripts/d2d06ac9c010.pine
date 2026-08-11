@@ -1,0 +1,6 @@
+//@version=5
+indicator("RSI Div")
+rsiVal = ta.rsi(close, 5)
+priceHigher = close > close[1]
+rsiLower = not na(rsiVal) and not na(rsiVal[1]) and rsiVal < rsiVal[1]
+bearDiv = priceHigher and rsiLower

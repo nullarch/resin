@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Osc Lbl")
+rsi = nz(ta.rsi(close, 3), 50.0)
+rsiZone = rsi > 70 ? "OB" : rsi < 30 ? "OS" : "MID"
+trend = close > ta.sma(close, 5) ? "UP" : "DN"
+label = rsiZone + "_" + trend
+isBullishSetup = label == "OS_DN"
+var float __obs_plot0 = na
+__obs_plot0 := isBullishSetup ? 1 : 0
+plot(isBullishSetup ? 1 : 0, "BS")

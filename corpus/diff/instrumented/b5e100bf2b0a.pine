@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Ind Label")
+rsi = ta.rsi(close, 3)
+sma3 = ta.sma(close, 3)
+direction = close > sma3 ? "LONG" : "SHORT"
+rsiStr = rsi > 70 ? "OB" : rsi < 30 ? "OS" : "MID"
+label = direction + "|" + rsiStr
+labelLen = str.length(label)
+var float __obs_plot0 = na
+__obs_plot0 := labelLen
+plot(labelLen, "LabelLen")

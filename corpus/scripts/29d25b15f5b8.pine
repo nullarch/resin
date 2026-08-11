@@ -1,0 +1,6 @@
+//@version=5
+indicator("ValueWhen")
+var float lastV = 0
+v = ta.valuewhen(close > 108, close, 0)
+if not na(v)
+    lastV := v

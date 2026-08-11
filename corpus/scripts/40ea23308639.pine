@@ -1,0 +1,5 @@
+//@version=5
+indicator("MinClose")
+var float minClose = 99999
+if close < minClose
+    minClose := close

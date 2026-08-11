@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("BB Pos")
+[mid, upper, lower] = ta.bb(close, 5, 2.0)
+bbWidth = upper - lower
+bbPos = bbWidth > 0 ? (close - lower) / bbWidth : 0.5
+var float __obs_plot0 = na
+__obs_plot0 := bbPos
+plot(bbPos, "Pos")
+var float __obs_plot1 = na
+__obs_plot1 := bbWidth
+plot(bbWidth, "Width")

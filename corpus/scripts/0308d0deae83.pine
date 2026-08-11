@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("BBWidth")
+basis = nz(ta.sma(close, 5), close)
+dev = nz(ta.stdev(close, 5), 1.0)
+upperBand = basis + 2.0 * dev
+lowerBand = basis - 2.0 * dev
+width = basis > 0.01 ? (upperBand - lowerBand) / basis : 0.0
+isWide = width > 0.05 ? 1.0 : 0.0
+plot(isWide, "Wide")

@@ -1,0 +1,7 @@
+//@version=5
+indicator("str dashboard")
+var float result = 0.0
+priceStr = str.tostring(close)
+dirStr = close > open ? "UP" : "DOWN"
+label_ = priceStr + " " + dirStr
+result := str.length(label_)

@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Mom Map")
+var mm = map.new<string, float>()
+rsi = nz(ta.rsi(close, 3), 50.0)
+map.put(mm, "rsi", rsi)
+map.put(mm, "mom", nz(close - close[1], 0.0))
+map.put(mm, "vol", volume)
+bullCount = 0
+for [k, v] in mm
+    if (k == "rsi" and v > 50) or (k == "mom" and v > 0)
+        bullCount := bullCount + 1
+plot(bullCount, "BC")

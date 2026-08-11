@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Risk Scale")
+atr = ta.atr(3)
+targetRisk = 2.0
+posSize = 100.0
+iters = 0
+currentRisk = atr > 0 ? posSize * atr / close : 0.0
+while currentRisk > targetRisk and iters < 20
+    posSize := posSize * 0.9
+    currentRisk := atr > 0 ? posSize * atr / close : 0.0
+    iters := iters + 1
+var float __obs_plot0 = na
+__obs_plot0 := posSize
+plot(posSize, "Size")

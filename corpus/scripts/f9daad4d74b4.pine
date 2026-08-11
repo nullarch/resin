@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Roll HL")
+hi5 = ta.highest(high, 5)
+lo5 = ta.lowest(low, 5)
+mid = (hi5 + lo5) / 2
+plot(hi5, "Hi")
+plot(lo5, "Lo")

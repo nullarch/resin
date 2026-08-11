@@ -1,0 +1,5 @@
+
+//@version=5
+indicator("Input TF")
+tf = input.timeframe("D", title="Timeframe")
+plot(close)

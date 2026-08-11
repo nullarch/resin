@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("FC Error")
+fcError(float actual, float forecast) =>
+    math.abs(actual - forecast)
+
+sma3 = ta.sma(close, 3)
+err = fcError(close, sma3)
+mape = close > 0 ? err / close * 100 : 0.0
+plot(mape, "MAPE")

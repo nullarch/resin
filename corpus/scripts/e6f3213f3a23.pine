@@ -1,0 +1,7 @@
+//@version=5
+indicator("Syminfo")
+ticker = syminfo.ticker
+tickerid = syminfo.tickerid
+mintick = syminfo.mintick
+currency = syminfo.currency
+tz = syminfo.timezone

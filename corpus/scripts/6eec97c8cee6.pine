@@ -1,0 +1,9 @@
+//@version=5
+indicator("Bloch Sphere")
+float rsiVal = nz(ta.rsi(close, 5), 50.0)
+float theta = rsiVal / 100.0 * 3.14159
+float rawPhi = not na(close[1]) ? math.atan((close - close[1]) / (math.abs(high - low) + 0.001)) : 0.0
+float phi = rawPhi
+float blochX = math.sin(theta) * math.cos(phi)
+float blochY = math.sin(theta) * math.sin(phi)
+float blochZ = math.cos(theta)

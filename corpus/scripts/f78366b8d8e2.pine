@@ -1,0 +1,27 @@
+//@version=5
+indicator("Torture 15")
+type Accumulator
+    float total = 0.0
+    int steps = 0
+method average(Accumulator this) =>
+    this.steps > 0 ? this.total / this.steps : 0.0
+var float bestAvg = 0.0
+float smaVal = nz(ta.sma(close, 3), close)
+float deviation = math.abs(close - smaVal)
+acc = Accumulator.new(0.0, 0)
+float remaining = deviation
+int iter = 0
+while remaining > 0.1 and iter < 20
+    float chunk = remaining * 0.3
+    acc.total := acc.total + chunk
+    acc.steps := acc.steps + 1
+    remaining := remaining - chunk
+    iter := iter + 1
+float avg = acc.average()
+float category = switch
+    avg > 2.0 => 3.0
+    avg > 1.0 => 2.0
+    avg > 0.5 => 1.0
+    => 0.0
+bestAvg := math.max(bestAvg, avg)
+float relativeAvg = bestAvg > 0.01 ? avg / bestAvg : 0.0

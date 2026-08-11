@@ -1,0 +1,12 @@
+//@version=5
+indicator("Runtime Error Switch")
+maType = "SMA"
+ma = switch maType
+    "EMA" => ta.ema(close, 5)
+    "SMA" => ta.sma(close, 5)
+    =>
+        runtime.error("Unknown MA type")
+        float(na)
+var float last = 0.0
+last := nz(ma)
+plot(close)

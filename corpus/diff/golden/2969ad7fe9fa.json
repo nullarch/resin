@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:rb": {
+    "trend": 40.0,
+    "mean_rev": 30.0,
+    "vol": 30.0
+   },
+   "var:__obs_plot0": 40.0
+  },
+  {
+   "var:rb": {
+    "trend": 40.0,
+    "mean_rev": 30.0,
+    "vol": 30.0
+   },
+   "var:__obs_plot0": 40.0
+  },
+  {
+   "var:rb": {
+    "trend": 40.0,
+    "mean_rev": 30.0,
+    "vol": 30.0
+   },
+   "var:__obs_plot0": 40.0
+  },
+  {
+   "var:rb": {
+    "trend": 40.0,
+    "mean_rev": 30.0,
+    "vol": 30.0
+   },
+   "var:__obs_plot0": 40.0
+  },
+  {
+   "var:rb": {
+    "trend": 40.0,
+    "mean_rev": 30.0,
+    "vol": 30.0
+   },
+   "var:__obs_plot0": 40.0
+  },
+  {
+   "var:rb": {
+    "trend": 40.0,
+    "mean_rev": 30.0,
+    "vol": 30.0
+   },
+   "var:__obs_plot0": 40.0
+  },
+  {
+   "var:rb": {
+    "trend": 40.0,
+    "mean_rev": 30.0,
+    "vol": 30.0
+   },
+   "var:__obs_plot0": 40.0
+  },
+  {
+   "var:rb": {
+    "trend": 40.0,
+    "mean_rev": 30.0,
+    "vol": 30.0
+   },
+   "var:__obs_plot0": 32.0
+  },
+  {
+   "var:rb": {
+    "trend": 40.0,
+    "mean_rev": 30.0,
+    "vol": 30.0
+   },
+   "var:__obs_plot0": 32.0
+  },
+  {
+   "var:rb": {
+    "trend": 40.0,
+    "mean_rev": 30.0,
+    "vol": 30.0
+   },
+   "var:__obs_plot0": 32.0
+  }
+ ],
+ "finalVarState": {
+  "rb": {
+   "trend": 40.0,
+   "mean_rev": 30.0,
+   "vol": 30.0
+  },
+  "__obs_plot0": 32.0
+ }
+}

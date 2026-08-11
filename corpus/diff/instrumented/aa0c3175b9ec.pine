@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Cum Vol")
+var float cumUpVol = 0.0
+var float cumDnVol = 0.0
+if close > open
+    cumUpVol := cumUpVol + volume
+else
+    cumDnVol := cumDnVol + volume
+totalCum = cumUpVol + cumDnVol
+upPct = totalCum > 0 ? cumUpVol / totalCum : 0.5
+var float __obs_plot0 = na
+__obs_plot0 := upPct
+plot(upPct, "UpPct")

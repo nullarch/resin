@@ -1,0 +1,6 @@
+
+//@version=5
+indicator("Str Match")
+s = "hello 123 world"
+has_digits = not na(str.match(s, "\d+"))
+plot(has_digits ? 1.0 : 0.0)

@@ -1,0 +1,12 @@
+//@version=5
+indicator("CounterMono")
+var int counterCount = 0
+var int totalBars = 0
+totalBars := totalBars + 1
+dC = close - nz(close[1], close)
+dV = volume - nz(volume[1], volume)
+opposite = (dC > 0 and dV < 0) or (dC < 0 and dV > 0)
+if opposite
+    counterCount := counterCount + 1
+counterRatio = totalBars > 0 ? float(counterCount) / float(totalBars) : 0.0
+plot(counterRatio, "Counter")

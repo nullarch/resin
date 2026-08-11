@@ -1,0 +1,9 @@
+//@version=5
+indicator("ArrOps")
+var float result = 0
+a = array.new_float(0)
+a.push(close)
+a.push(high)
+a.push(low)
+if array.size(a) > 0
+    result := array.avg(a)

@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("SeasonProxy")
+cycle = bar_index % 5
+weight = cycle == 0 ? 1.0 : cycle == 1 ? 0.8 : cycle == 2 ? 0.6 : cycle == 3 ? 0.4 : 0.2
+adjusted = close * weight
+plot(adjusted, "Adj")

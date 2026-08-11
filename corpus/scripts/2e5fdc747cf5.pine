@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Vol Target")
+atr = ta.atr(3)
+targetVol = 2.0
+posSize = 1.0
+iters = 0
+while atr * posSize > targetVol and iters < 20 and posSize > 0.1
+    posSize := posSize * 0.8
+    iters := iters + 1
+plot(posSize, "Size")
+plot(iters, "Its")

@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("Vol UDT")
+type VolTracker
+    float maxATR = 0.0
+    float minATR = 99999.0
+    int expandBars = 0
+
+var VolTracker vt = VolTracker.new()
+atr = nz(ta.atr(3), 1.0)
+vt.maxATR := math.max(vt.maxATR, atr)
+vt.minATR := math.min(vt.minATR, atr)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 5)
+if avgATR > 0 and atr > avgATR
+    vt.expandBars := vt.expandBars + 1
+var float __obs_plot0 = na
+__obs_plot0 := vt.expandBars
+plot(vt.expandBars, "EB")

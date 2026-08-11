@@ -1,0 +1,12 @@
+//@version=5
+indicator("Sliced W")
+float proj1 = 0.707 * close + 0.707 * volume
+float proj2 = 0.707 * open + 0.707 * volume
+float slicedW = math.abs(proj1 - proj2)
+var float avgSliced = 0.0
+var int cnt = 0
+cnt := cnt + 1
+avgSliced := avgSliced + (slicedW - avgSliced) / cnt
+var float __obs_plot0 = na
+__obs_plot0 := avgSliced
+plot(avgSliced, "SlicedW")

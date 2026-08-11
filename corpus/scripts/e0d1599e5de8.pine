@@ -1,0 +1,6 @@
+//@version=5
+indicator("BB Width")
+[middle, upper, lower] = ta.bb(close, 5, 2)
+var float lastWidth = 0
+if not na(middle) and middle != 0
+    lastWidth := (upper - lower) / middle

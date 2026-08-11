@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:c1": "#ff00007F",
+   "var:c2": "#2196F332",
+   "var:c3": "#FF000000",
+   "var:valid": true,
+   "var:__obs_plot0": 103
+  },
+  {
+   "var:c1": "#ff00007F",
+   "var:c2": "#2196F332",
+   "var:c3": "#FF000000",
+   "var:valid": true,
+   "var:__obs_plot0": 104
+  },
+  {
+   "var:c1": "#ff00007F",
+   "var:c2": "#2196F332",
+   "var:c3": "#FF000000",
+   "var:valid": true,
+   "var:__obs_plot0": 102
+  },
+  {
+   "var:c1": "#ff00007F",
+   "var:c2": "#2196F332",
+   "var:c3": "#FF000000",
+   "var:valid": true,
+   "var:__obs_plot0": 105
+  },
+  {
+   "var:c1": "#ff00007F",
+   "var:c2": "#2196F332",
+   "var:c3": "#FF000000",
+   "var:valid": true,
+   "var:__obs_plot0": 107
+  },
+  {
+   "var:c1": "#ff00007F",
+   "var:c2": "#2196F332",
+   "var:c3": "#FF000000",
+   "var:valid": true,
+   "var:__obs_plot0": 106
+  },
+  {
+   "var:c1": "#ff00007F",
+   "var:c2": "#2196F332",
+   "var:c3": "#FF000000",
+   "var:valid": true,
+   "var:__obs_plot0": 108
+  },
+  {
+   "var:c1": "#ff00007F",
+   "var:c2": "#2196F332",
+   "var:c3": "#FF000000",
+   "var:valid": true,
+   "var:__obs_plot0": 110
+  },
+  {
+   "var:c1": "#ff00007F",
+   "var:c2": "#2196F332",
+   "var:c3": "#FF000000",
+   "var:valid": true,
+   "var:__obs_plot0": 109
+  },
+  {
+   "var:c1": "#ff00007F",
+   "var:c2": "#2196F332",
+   "var:c3": "#FF000000",
+   "var:valid": true,
+   "var:__obs_plot0": 111
+  }
+ ],
+ "finalVarState": {
+  "c1": "#ff00007F",
+  "c2": "#2196F332",
+  "c3": "#FF000000",
+  "valid": true,
+  "__obs_plot0": 111
+ }
+}

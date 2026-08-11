@@ -1,0 +1,24 @@
+
+//@version=5
+indicator("Pos UDT")
+type Position
+    float entryPrice = 0.0
+    int entryBar = 0
+    bool isLong = false
+    float unrealPnl = 0.0
+
+var Position pos = Position.new()
+sma3 = ta.sma(close, 3)
+var int barNum = 0
+barNum := barNum + 1
+if not pos.isLong and close > sma3
+    pos.entryPrice := close
+    pos.entryBar := barNum
+    pos.isLong := true
+if pos.isLong
+    pos.unrealPnl := close - pos.entryPrice
+    if close < sma3
+        pos.isLong := false
+var float __obs_plot0 = na
+__obs_plot0 := pos.unrealPnl
+plot(pos.unrealPnl, "PnL")

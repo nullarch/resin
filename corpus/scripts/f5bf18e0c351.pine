@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Ind State")
+type IndState
+    float rsiVal = 50.0
+    float maVal = 0.0
+    int score = 0
+
+var IndState st = IndState.new()
+st.rsiVal := nz(ta.rsi(close, 3), 50.0)
+st.maVal := ta.sma(close, 3)
+rsiPt = st.rsiVal > 55 ? 1 : st.rsiVal < 45 ? -1 : 0
+maPt = close > st.maVal ? 1 : -1
+st.score := rsiPt + maPt
+plot(st.score, "Sc")

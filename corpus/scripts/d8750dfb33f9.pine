@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Min Param")
+getSpread() =>
+    high - low
+
+spread = getSpread()
+avgSpread = ta.sma(spread, 5)
+plot(spread, "Sp")
+plot(avgSpread, "Avg")

@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("ROC Mom")
+roc1 = ta.roc(close, 1)
+roc3 = ta.roc(close, 3)
+avgRoc = (nz(roc1) + nz(roc3)) / 2.0
+accelerating = nz(roc1) > nz(roc3)
+var float __obs_plot0 = na
+__obs_plot0 := avgRoc
+plot(avgRoc, "AvgROC")
+var float __obs_plot1 = na
+__obs_plot1 := accelerating ? 1 : 0
+plot(accelerating ? 1 : 0, "Accel")

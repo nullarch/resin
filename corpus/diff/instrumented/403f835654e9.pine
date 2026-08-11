@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("ROC")
+roc3 = close[3] > 0 ? (close - close[3]) / close[3] * 100 : 0.0
+roc5 = close[5] > 0 ? (close - close[5]) / close[5] * 100 : 0.0
+avgROC = (nz(roc3, 0.0) + nz(roc5, 0.0)) / 2
+var float __obs_plot0 = na
+__obs_plot0 := avgROC
+plot(avgROC, "ROC")

@@ -1,0 +1,8 @@
+//@version=5
+indicator("VolTermStruct")
+shortVol = nz(ta.stdev(close, 3), 1.0)
+longVol = nz(ta.stdev(close, 7), 1.0)
+termSlope = longVol > 0.001 ? shortVol / longVol : 1.0
+contango = termSlope < 1.0 ? 1.0 : 0.0
+plot(termSlope, "Slope")
+plot(contango, "Cont")

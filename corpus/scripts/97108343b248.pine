@@ -1,0 +1,8 @@
+//@version=5
+indicator("Series OOB")
+float far = close[50]
+float near = close[0]
+var bool far_nan = na(far)
+var float result = 0.0
+result := near
+plot(result)

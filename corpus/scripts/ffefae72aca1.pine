@@ -1,0 +1,6 @@
+//@version=5
+indicator("Throughput")
+float dollarVol = close * volume
+float spread = high - low + 0.01
+float throughput = dollarVol / spread
+plot(throughput, "Throughput")

@@ -1,0 +1,18 @@
+//@version=5
+indicator("FE03")
+var float lastAvg = 0.0
+calcAvg(arr) =>
+    sz = array.size(arr)
+    total = 0.0
+    for i = 0 to sz - 1
+        total := total + array.get(arr, i)
+    sz > 0 ? total / sz : 0.0
+prices = array.new_float(0)
+array.push(prices, close)
+array.push(prices, open)
+array.push(prices, high)
+avg = calcAvg(prices)
+if avg > 100
+    lastAvg := math.floor(avg)
+else
+    lastAvg := 0.0

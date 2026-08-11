@@ -1,0 +1,17 @@
+//@version=5
+indicator("SwitchComplex19")
+spread = high - low
+volNorm = volume > 0 ? float(volume) / 1000.0 : 1.0
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+score = spread * volNorm
+complexClass = switch
+    score > 10.0 => "chaotic"
+    score > 5.0 => "complex"
+    score > 2.0 => "moderate"
+    => "simple"
+numericClass = switch complexClass
+    "chaotic" => 4.0
+    "complex" => 3.0
+    "moderate" => 2.0
+    => 1.0
+plot(numericClass, "cc")

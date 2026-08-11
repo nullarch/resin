@@ -1,0 +1,9 @@
+//@version=5
+indicator("POT Count")
+float prevC = not na(close[1]) ? close[1] : close
+float retAbs = math.abs(close - prevC)
+float threshold = nz(ta.atr(5), 1.0) * 1.5
+var int exceedCount = 0
+if retAbs > threshold
+    exceedCount := exceedCount + 1
+plot(exceedCount, "ExcCount")

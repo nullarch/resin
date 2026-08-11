@@ -1,0 +1,6 @@
+//@version=5
+indicator("test")
+x = ta.sma(close, 3)
+y = ta.sma(close, 3)
+diff = x - y
+plot(diff)

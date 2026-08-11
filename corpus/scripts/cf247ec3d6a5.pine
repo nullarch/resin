@@ -1,0 +1,14 @@
+//@version=5
+indicator("FE11")
+var float entropy = 0.0
+safelog(x) =>
+    x > 0 ? math.log(x) : 0.0
+mfiVal = nz(ta.mfi(close, 3), 50.0)
+vals = array.new_float(0)
+array.push(vals, mfiVal)
+array.push(vals, close)
+array.push(vals, volume)
+total = 0.0
+for [idx, v] in vals
+    total := total + safelog(v)
+entropy := total

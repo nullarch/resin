@@ -1,0 +1,11 @@
+//@version=5
+indicator("DG-17 Holonomy")
+var float totalAngle = 0.0
+if not na(close[2])
+    dp1 = close - close[1]
+    dp0 = close[1] - close[2]
+    angle1 = math.atan(dp1)
+    angle0 = math.atan(dp0)
+    totalAngle := totalAngle + (angle1 - angle0)
+holonomy = math.abs(totalAngle)
+plot(holonomy)

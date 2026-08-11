@@ -1,0 +1,14 @@
+//@version=5
+indicator("PostUpdate")
+var float priorUp = 0.5
+mu = nz(ta.sma(close, 3), close)
+sigma = math.max(high - low, 0.01)
+diffUp = close - (mu + 1.0)
+diffDn = close - (mu - 1.0)
+lhoodUp = math.exp(math.max(-(diffUp * diffUp) / (2.0 * sigma * sigma), -20.0))
+lhoodDn = math.exp(math.max(-(diffDn * diffDn) / (2.0 * sigma * sigma), -20.0))
+numUp = priorUp * lhoodUp
+numDn = (1.0 - priorUp) * lhoodDn
+evidence = numUp + numDn
+priorUp := evidence > 0.0001 ? numUp / evidence : 0.5
+plot(priorUp, "PostUp")

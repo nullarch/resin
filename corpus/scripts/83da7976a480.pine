@@ -1,0 +1,9 @@
+//@version=5
+indicator("UDF Multi TA")
+getSignal(int len) =>
+    rsi_ = ta.rsi(close, len)
+    sma_ = ta.sma(close, len)
+    ema_ = ta.ema(close, len)
+    rsi_ > 50 and sma_ < ema_ ? 1 : -1
+sig = getSignal(5)
+plot(sig)

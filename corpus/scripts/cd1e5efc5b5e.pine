@@ -1,0 +1,10 @@
+//@version=5
+indicator("Pattern History")
+var history = array.new_int(0)
+cellVal = close > open ? 1 : 0
+array.push(history, cellVal)
+patLen = array.size(history)
+lastThree = 0
+if patLen >= 3
+    for i = patLen - 3 to patLen - 1
+        lastThree := lastThree * 2 + array.get(history, i)

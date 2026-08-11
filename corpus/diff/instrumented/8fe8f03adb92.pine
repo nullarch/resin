@@ -1,0 +1,10 @@
+//@version=5
+indicator("Covariance")
+float avgC = ta.sma(close, 5)
+float avgV = ta.sma(volume, 5)
+float devC = close - nz(avgC, close)
+float devV = volume - nz(avgV, volume)
+float covProxy = ta.sma(devC * devV, 3)
+var float __obs_plot0 = na
+__obs_plot0 := nz(covProxy, 0.0)
+plot(nz(covProxy, 0.0), "Cov")

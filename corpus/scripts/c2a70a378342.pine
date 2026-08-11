@@ -1,0 +1,6 @@
+//@version=5
+indicator("test")
+a = 10
+b = 20
+s = str.format("{0} + {1} = {2}", a, b, a + b)
+plot(a)

@@ -1,0 +1,10 @@
+
+//@version=5
+strategy("Mom Break", overlay=true)
+rsi = ta.rsi(close, 3)
+hi5 = ta.highest(high, 5)
+if close > hi5[1] and rsi > 50
+    strategy.entry("Long", strategy.long)
+if rsi < 40
+    strategy.close("Long")
+plot(hi5, "Hi5")

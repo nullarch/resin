@@ -1,0 +1,8 @@
+//@version=5
+indicator("UDF Defaults")
+f_calc(a, b = 10.0) =>
+    a + b
+
+var float result = 0.0
+result := f_calc(5.0) + f_calc(5.0, 20.0)
+plot(result)

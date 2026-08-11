@@ -1,0 +1,4 @@
+//@version=5
+indicator("Str Format")
+txt = str.tostring(close, "#.##")
+plot(close)

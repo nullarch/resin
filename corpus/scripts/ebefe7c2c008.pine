@@ -1,0 +1,8 @@
+//@version=5
+indicator("Page Table")
+int pageSize = 4
+float virtualAddr = close
+int pageNumber = math.floor(virtualAddr / pageSize)
+int offset = math.floor(virtualAddr) % pageSize
+int frameNumber = pageNumber % 8
+float physAddr = frameNumber * pageSize + offset

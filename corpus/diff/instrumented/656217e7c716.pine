@@ -1,0 +1,11 @@
+//@version=5
+indicator("Hepatic Extraction")
+var float incoming = 0.0
+var float outgoing = 0.0
+incoming := incoming + math.abs(close - open)
+extracted = incoming * 0.3
+outgoing := outgoing + (incoming - extracted) * 0.1
+extractionRatio = incoming > 0 ? extracted / incoming : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := extractionRatio
+plot(extractionRatio)

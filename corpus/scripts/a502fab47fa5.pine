@@ -1,0 +1,4 @@
+//@version=5
+indicator("RoundHalf")
+var float r = 0
+r := math.round(2.5)

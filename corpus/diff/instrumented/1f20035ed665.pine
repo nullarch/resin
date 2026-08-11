@@ -1,0 +1,11 @@
+//@version=5
+indicator("Array Methods")
+arr = array.new_float(0)
+arr.push(1.0)
+arr.push(2.0)
+arr.push(3.0)
+sz = arr.size()
+avg = arr.avg()
+var float __obs_plot0 = na
+__obs_plot0 := avg
+plot(avg)

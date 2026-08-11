@@ -1,0 +1,7 @@
+//@version=5
+indicator("Water Balance")
+rainfall = volume / 200.0
+evaporation = (high - low) * 0.5
+var float reservoir = 50.0
+netFlow = rainfall - evaporation
+reservoir := math.max(0.0, reservoir + netFlow)

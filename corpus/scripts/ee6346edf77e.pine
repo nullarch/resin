@@ -1,0 +1,4 @@
+//@version=5
+indicator("StrLen")
+var int len = 0
+len := str.length("pine")

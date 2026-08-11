@@ -1,0 +1,11 @@
+//@version=5
+indicator("Pivots")
+var pivotHigh = array.new_float(0)
+ph = ta.pivothigh(3, 3)
+if not na(ph)
+    array.push(pivotHigh, ph)
+    if array.size(pivotHigh) > 5
+        array.shift(pivotHigh)
+var float __obs_plot0 = na
+__obs_plot0 := array.size(pivotHigh)
+plot(array.size(pivotHigh))

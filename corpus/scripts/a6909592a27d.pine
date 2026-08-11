@@ -1,0 +1,8 @@
+//@version=5
+indicator("test")
+var float[] highs = array.new_float(0)
+if close > open
+    array.push(highs, high)
+    if array.size(highs) > 5
+        array.shift(highs)
+plot(array.size(highs))

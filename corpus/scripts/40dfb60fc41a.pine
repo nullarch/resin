@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("Pct Rank")
+hi5 = ta.highest(close, 5)
+lo5 = ta.lowest(close, 5)
+pctRank = hi5 > lo5 ? (close - lo5) / (hi5 - lo5) * 100 : 50.0
+plot(pctRank, "PR")

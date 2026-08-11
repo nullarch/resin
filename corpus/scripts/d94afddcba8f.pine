@@ -1,0 +1,12 @@
+//@version=5
+indicator("ForIn Map TA Accum")
+periods = map.new<string, int>()
+periods.put("fast", 3)
+periods.put("slow", 5)
+total = 0.0
+count = 0
+for [name, len] in periods
+    total := total + ta.sma(close, len)
+    count := count + 1
+avg = count > 0 ? total / count : close
+plot(avg)

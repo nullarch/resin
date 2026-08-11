@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:jointUp": 0.0,
+   "var:jointDown": 0.0,
+   "var:totalN": 1.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:jointUp": 1.0,
+   "var:jointDown": 0.0,
+   "var:totalN": 2.0,
+   "var:__obs_plot0": 0.34657359027997264
+  },
+  {
+   "var:jointUp": 1.0,
+   "var:jointDown": 0.0,
+   "var:totalN": 3.0,
+   "var:__obs_plot0": 0.3662040962227032
+  },
+  {
+   "var:jointUp": 2.0,
+   "var:jointDown": 0.0,
+   "var:totalN": 4.0,
+   "var:__obs_plot0": 0.34657359027997264
+  },
+  {
+   "var:jointUp": 3.0,
+   "var:jointDown": 0.0,
+   "var:totalN": 5.0,
+   "var:__obs_plot0": 0.30649537425959444
+  },
+  {
+   "var:jointUp": 3.0,
+   "var:jointDown": 0.0,
+   "var:totalN": 6.0,
+   "var:__obs_plot0": 0.34657359027997264
+  },
+  {
+   "var:jointUp": 4.0,
+   "var:jointDown": 0.0,
+   "var:totalN": 7.0,
+   "var:__obs_plot0": 0.319780450248813
+  },
+  {
+   "var:jointUp": 5.0,
+   "var:jointDown": 0.0,
+   "var:totalN": 8.0,
+   "var:__obs_plot0": 0.29375226827858475
+  },
+  {
+   "var:jointUp": 5.0,
+   "var:jointDown": 0.0,
+   "var:totalN": 9.0,
+   "var:__obs_plot0": 0.32654814716784386
+  },
+  {
+   "var:jointUp": 6.0,
+   "var:jointDown": 0.0,
+   "var:totalN": 10.0,
+   "var:__obs_plot0": 0.30649537425959444
+  }
+ ],
+ "finalVarState": {
+  "jointUp": 6.0,
+  "jointDown": 0.0,
+  "totalN": 10.0,
+  "__obs_plot0": 0.30649537425959444
+ }
+}

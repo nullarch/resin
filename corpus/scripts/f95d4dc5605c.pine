@@ -1,0 +1,9 @@
+//@version=5
+indicator("Table Update")
+var t = table.new(position.top_right, 2, 2)
+if barstate.islast
+    table.cell(t, 0, 0, "RSI")
+    table.cell(t, 0, 1, str.tostring(ta.rsi(close, 5), "#.#"))
+    table.cell(t, 1, 0, "SMA")
+    table.cell(t, 1, 1, str.tostring(ta.sma(close, 5), "#.#"))
+plot(close)

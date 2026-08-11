@@ -1,0 +1,18 @@
+
+//@version=5
+indicator("Risk Params")
+var rp = map.new<string, float>()
+atr = ta.atr(3)
+map.put(rp, "max_risk_pct", 2.0)
+map.put(rp, "max_position_pct", 10.0)
+map.put(rp, "stop_atr_mult", 2.0)
+stopDist = atr * map.get(rp, "stop_atr_mult", 2.0)
+riskAmt = 10000.0 * map.get(rp, "max_risk_pct", 2.0) / 100
+shares = stopDist > 0 ? math.floor(riskAmt / stopDist) : 0
+posValue = shares * close
+posPct = posValue / 10000 * 100
+maxPos = map.get(rp, "max_position_pct", 10.0)
+finalShares = posPct > maxPos ? math.floor(shares * maxPos / posPct) : shares
+var float __obs_plot0 = na
+__obs_plot0 := finalShares
+plot(finalShares, "Shares")

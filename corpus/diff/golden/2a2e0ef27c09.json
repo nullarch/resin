@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:params": {
+    "stop_mult": 2.0,
+    "target_mult": 3.0,
+    "position_pct": 1.0
+   },
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:params": {
+    "stop_mult": 2.0,
+    "target_mult": 3.0,
+    "position_pct": 1.0
+   },
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:params": {
+    "stop_mult": 2.0,
+    "target_mult": 3.0,
+    "position_pct": 1.0
+   },
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:params": {
+    "stop_mult": 2.0,
+    "target_mult": 3.0,
+    "position_pct": 1.0
+   },
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:params": {
+    "stop_mult": 2.0,
+    "target_mult": 3.0,
+    "position_pct": 1.0
+   },
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:params": {
+    "stop_mult": 2.0,
+    "target_mult": 3.0,
+    "position_pct": 1.0
+   },
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:params": {
+    "stop_mult": 2.0,
+    "target_mult": 3.0,
+    "position_pct": 1.0
+   },
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:params": {
+    "stop_mult": 2.0,
+    "target_mult": 3.0,
+    "position_pct": 1.0
+   },
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:params": {
+    "stop_mult": 2.0,
+    "target_mult": 3.0,
+    "position_pct": 1.0
+   },
+   "var:__obs_plot0": 2.0
+  },
+  {
+   "var:params": {
+    "stop_mult": 2.0,
+    "target_mult": 3.0,
+    "position_pct": 1.0
+   },
+   "var:__obs_plot0": 2.0
+  }
+ ],
+ "finalVarState": {
+  "params": {
+   "stop_mult": 2.0,
+   "target_mult": 3.0,
+   "position_pct": 1.0
+  },
+  "__obs_plot0": 2.0
+ }
+}

@@ -1,0 +1,105 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:sumXY": 103000.0,
+   "var:sumX": 103.0,
+   "var:sumY": 1000.0,
+   "var:sumX2": 10609.0,
+   "var:sumY2": 1000000.0,
+   "var:n": 1,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:sumXY": 227800.0,
+   "var:sumX": 207.0,
+   "var:sumY": 2200.0,
+   "var:sumX2": 21425.0,
+   "var:sumY2": 2440000.0,
+   "var:n": 2,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:sumXY": 309400.0,
+   "var:sumX": 309.0,
+   "var:sumY": 3000.0,
+   "var:sumX2": 31829.0,
+   "var:sumY2": 3080000.0,
+   "var:n": 3,
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:sumXY": 466900.0,
+   "var:sumX": 414.0,
+   "var:sumY": 4500.0,
+   "var:sumX2": 42854.0,
+   "var:sumY2": 5330000.0,
+   "var:n": 4,
+   "var:__obs_plot0": 0.994376712684369
+  },
+  {
+   "var:sumXY": 606000.0,
+   "var:sumX": 521.0,
+   "var:sumY": 5800.0,
+   "var:sumX2": 54303.0,
+   "var:sumY2": 7020000.0,
+   "var:n": 5,
+   "var:__obs_plot0": 0.788899288956146
+  },
+  {
+   "var:sumXY": 701400.0,
+   "var:sumX": 627.0,
+   "var:sumY": 6700.0,
+   "var:sumX2": 65539.0,
+   "var:sumY2": 7830000.0,
+   "var:n": 6,
+   "var:__obs_plot0": 0.5062831468098433
+  },
+  {
+   "var:sumXY": 820200.0,
+   "var:sumX": 735.0,
+   "var:sumY": 7800.0,
+   "var:sumX2": 77203.0,
+   "var:sumY2": 9040000.0,
+   "var:n": 7,
+   "var:__obs_plot0": 0.3841106397986879
+  },
+  {
+   "var:sumXY": 974200.0,
+   "var:sumX": 845.0,
+   "var:sumY": 9200.0,
+   "var:sumX2": 89303.0,
+   "var:sumY2": 11000000.0,
+   "var:n": 8,
+   "var:__obs_plot0": 0.5353033790313109
+  },
+  {
+   "var:sumXY": 1083200.0,
+   "var:sumX": 954.0,
+   "var:sumY": 10200.0,
+   "var:sumX2": 101184.0,
+   "var:sumY2": 12000000.0,
+   "var:n": 9,
+   "var:__obs_plot0": 0.3892494720807615
+  },
+  {
+   "var:sumXY": 1260800.0,
+   "var:sumX": 1065.0,
+   "var:sumY": 11800.0,
+   "var:sumX2": 113505.0,
+   "var:sumY2": 14560000.0,
+   "var:n": 10,
+   "var:__obs_plot0": 0.5660155004844312
+  }
+ ],
+ "finalVarState": {
+  "sumXY": 1260800.0,
+  "sumX": 1065.0,
+  "sumY": 11800.0,
+  "sumX2": 113505.0,
+  "sumY2": 14560000.0,
+  "n": 10,
+  "__obs_plot0": 0.5660155004844312
+ }
+}

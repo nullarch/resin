@@ -1,0 +1,9 @@
+//@version=5
+indicator("Avalanche Effect")
+hash1 = close * 31.0 + 17.0
+hash1 := hash1 - math.floor(hash1 / 997.0) * 997.0
+hash2 = (close + 0.01) * 31.0 + 17.0
+hash2 := hash2 - math.floor(hash2 / 997.0) * 997.0
+bitDiff = math.abs(hash1 - hash2)
+avalancheRatio = bitDiff / 997.0 * 100.0
+plot(avalancheRatio)

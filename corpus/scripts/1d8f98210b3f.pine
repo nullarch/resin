@@ -1,0 +1,3 @@
+//@version=5
+indicator("Test")
+max_bars_back(close, 500)

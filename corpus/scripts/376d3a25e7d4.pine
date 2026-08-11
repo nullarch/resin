@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Slide Corr")
+var float[] closeWin = array.new_float(0)
+var float[] volWin = array.new_float(0)
+array.push(closeWin, close)
+array.push(volWin, volume)
+if array.size(closeWin) > 5
+    array.shift(closeWin)
+    array.shift(volWin)
+closeMean = array.avg(closeWin)
+volMean = array.avg(volWin)
+sameAbove = (close > closeMean and volume > volMean) or (close < closeMean and volume < volMean)
+plot(sameAbove ? 1 : 0, "SameDir")

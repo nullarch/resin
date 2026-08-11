@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Exp State")
+var float smoothed = 0.0
+alpha = 0.3
+smoothed := barstate.isfirst ? close : smoothed * (1 - alpha) + close * alpha
+deviation = close - smoothed
+var float __obs_plot0 = na
+__obs_plot0 := smoothed
+plot(smoothed, "Smooth")
+var float __obs_plot1 = na
+__obs_plot1 := deviation
+plot(deviation, "Dev")

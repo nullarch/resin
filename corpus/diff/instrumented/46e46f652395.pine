@@ -1,0 +1,25 @@
+
+//@version=5
+indicator("Full Combo")
+type State
+    float score = 0.0
+    int count = 0
+
+var State state = State.new()
+var data = map.new<string, float>()
+var float[] scores = array.new_float(0)
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+map.put(data, "rsi", (rsi - 50) / 50)
+map.put(data, "trend", close > sma3 ? 1.0 : -1.0)
+total = 0.0
+for [k, v] in data
+    total := total + v
+array.push(scores, total)
+if array.size(scores) > 5
+    array.shift(scores)
+state.score := array.size(scores) > 0 ? array.avg(scores) : 0.0
+state.count := state.count + 1
+var float __obs_plot0 = na
+__obs_plot0 := state.score
+plot(state.score, "S")

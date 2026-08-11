@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("MinMax")
+val = close
+val := math.max(val, ta.sma(close, 3))
+val := math.min(val, ta.highest(high, 5))
+normalized = ta.highest(high, 5) - ta.lowest(low, 5)
+pos = normalized > 0 ? (val - ta.lowest(low, 5)) / normalized : 0.5
+plot(pos, "Pos")

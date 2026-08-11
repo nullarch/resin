@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("TW Avg")
+var int barNum = 0
+barNum := barNum + 1
+weight = float(barNum)
+weightedPrice = close * weight
+avgWeight = ta.sma(weightedPrice, 3)
+var float __obs_plot0 = na
+__obs_plot0 := avgWeight
+plot(avgWeight, "TWA")

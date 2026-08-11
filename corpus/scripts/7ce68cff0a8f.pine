@@ -1,0 +1,6 @@
+//@version=5
+indicator("Na Compare Left")
+var float x = 42.0
+var bool check = true
+check := na != x
+plot(close)

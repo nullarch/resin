@@ -1,0 +1,5 @@
+//@version=5
+indicator("Color RSI")
+rsi_ = ta.rsi(close, 5)
+c = rsi_ > 70 ? color.red : rsi_ < 30 ? color.green : color.gray
+plot(rsi_, color=c)

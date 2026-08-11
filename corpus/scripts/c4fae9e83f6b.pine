@@ -1,0 +1,9 @@
+//@version=5
+indicator("Peephole Identity")
+float a = close + 0.0
+float b = close * 1.0
+float c = close - 0.0
+float d = close / 1.0
+float sum = a + b + c + d
+float expected = close * 4.0
+float diff = math.abs(sum - expected)

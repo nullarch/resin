@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:w": {
+    "equity": 0.7,
+    "bond": 0.3
+   },
+   "var:__obs_plot0": 0.5
+  },
+  {
+   "var:w": {
+    "equity": 0.7,
+    "bond": 0.3
+   },
+   "var:__obs_plot0": 0.5
+  },
+  {
+   "var:w": {
+    "equity": 0.7,
+    "bond": 0.3
+   },
+   "var:__obs_plot0": 0.3
+  },
+  {
+   "var:w": {
+    "equity": 0.7,
+    "bond": 0.3
+   },
+   "var:__obs_plot0": 0.7
+  },
+  {
+   "var:w": {
+    "equity": 0.7,
+    "bond": 0.3
+   },
+   "var:__obs_plot0": 0.7
+  },
+  {
+   "var:w": {
+    "equity": 0.7,
+    "bond": 0.3
+   },
+   "var:__obs_plot0": 0.7
+  },
+  {
+   "var:w": {
+    "equity": 0.7,
+    "bond": 0.3
+   },
+   "var:__obs_plot0": 0.7
+  },
+  {
+   "var:w": {
+    "equity": 0.7,
+    "bond": 0.3
+   },
+   "var:__obs_plot0": 0.7
+  },
+  {
+   "var:w": {
+    "equity": 0.7,
+    "bond": 0.3
+   },
+   "var:__obs_plot0": 0.7
+  },
+  {
+   "var:w": {
+    "equity": 0.7,
+    "bond": 0.3
+   },
+   "var:__obs_plot0": 0.7
+  }
+ ],
+ "finalVarState": {
+  "w": {
+   "equity": 0.7,
+   "bond": 0.3
+  },
+  "__obs_plot0": 0.7
+ }
+}

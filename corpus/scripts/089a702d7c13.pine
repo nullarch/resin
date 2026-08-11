@@ -1,0 +1,13 @@
+//@version=5
+indicator("Two Char Ops")
+var float result = 0.0
+a = 10.0
+b = 10.0
+if a == b
+    result := 1.0
+if a != 5.0
+    result := result + 1.0
+if a >= 10.0
+    result := result + 1.0
+if a <= 10.0
+    result := result + 1.0

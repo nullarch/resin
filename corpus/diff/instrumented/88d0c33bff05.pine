@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Sort Indices")
+arr = array.from(30.0, 10.0, 50.0, 20.0, 40.0)
+indices = array.sort_indices(arr)
+firstIdx = array.get(indices, 0)
+var float __obs_plot0 = na
+__obs_plot0 := firstIdx
+plot(firstIdx, "SmallestIdx")

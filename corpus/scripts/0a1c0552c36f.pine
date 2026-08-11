@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Flow Hist")
+var float[] flows = array.new_float(0)
+totalRange = high - low
+netFlow = totalRange > 0 ? (close - low) / totalRange - 0.5 : 0.0
+array.push(flows, netFlow)
+if array.size(flows) > 8
+    array.shift(flows)
+avgFlow = array.size(flows) > 0 ? array.avg(flows) : 0.0
+bullFlow = avgFlow > 0.1
+plot(bullFlow ? 1 : 0, "BF")

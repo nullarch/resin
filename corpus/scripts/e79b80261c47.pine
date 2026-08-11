@@ -1,0 +1,8 @@
+//@version=5
+indicator("for-in enum")
+var float result = 0.0
+arr = array.from(10.0, 20.0, 30.0)
+float total = 0.0
+for [i, v] in arr
+    total := total + v + i
+result := total

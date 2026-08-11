@@ -1,0 +1,8 @@
+//@version=5
+indicator("Entropic OT")
+float cost = math.abs(close - open)
+float epsilon = 2.0
+float regCost = cost - epsilon * math.log(math.max(cost, 0.001))
+var float cumReg = 0.0
+cumReg := cumReg + regCost
+plot(cumReg, "EntropicOT")

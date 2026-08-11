@@ -1,0 +1,11 @@
+//@version=5
+indicator("While Complex")
+findSupport() =>
+    level = close
+    lookback = 1
+    while lookback < 10 and not na(close[lookback]) and close[lookback] < level
+        level := close[lookback]
+        lookback += 1
+    level
+sup = findSupport()
+plot(sup)

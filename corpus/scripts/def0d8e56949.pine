@@ -1,0 +1,6 @@
+
+//@version=5
+indicator("VolRegime")
+atrVal = nz(ta.atr(3), 1.0)
+regime = atrVal > 2.0 ? 2.0 : atrVal > 1.0 ? 1.0 : 0.0
+plot(regime, "VR")

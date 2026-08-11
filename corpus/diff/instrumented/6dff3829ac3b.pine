@@ -1,0 +1,11 @@
+//@version=5
+indicator("Bernoulli Pressure")
+velocity = math.abs(close - open)
+height = close - low
+density = 1.0
+staticPressure = 100.0 - 0.5 * density * velocity * velocity
+dynamicPressure = 0.5 * density * velocity * velocity
+totalEnergy = staticPressure + dynamicPressure + density * 9.81 * height * 0.01
+var float __obs_plot0 = na
+__obs_plot0 := totalEnergy
+plot(totalEnergy)

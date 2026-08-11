@@ -1,0 +1,7 @@
+//@version=5
+indicator("Jitter")
+float chg = math.abs(close - open)
+float jitter = ta.stdev(chg, 5)
+var float __obs_plot0 = na
+__obs_plot0 := nz(jitter, 0.0)
+plot(nz(jitter, 0.0), "Jitter")

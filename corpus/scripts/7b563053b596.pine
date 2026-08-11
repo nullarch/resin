@@ -1,0 +1,4 @@
+//@version=5
+indicator("dot chain")
+var float result = 0.0
+result := barstate.isfirst ? 1.0 : 0.0

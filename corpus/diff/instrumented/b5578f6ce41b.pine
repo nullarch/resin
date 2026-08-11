@@ -1,0 +1,12 @@
+//@version=5
+indicator("Inhibitory Interneuron")
+var float excitation = 0.0
+var float inhibition = 0.0
+stimulus = close - open
+excitation := excitation + stimulus * 0.8
+inhibition := excitation * 0.4
+netOutput = excitation - inhibition
+excitation := excitation * 0.7
+var float __obs_plot0 = na
+__obs_plot0 := netOutput
+plot(netOutput)

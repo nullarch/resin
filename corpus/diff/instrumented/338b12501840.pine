@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("RiskMap")
+var metrics = map.new<string, float>()
+var float equity = 100.0
+var float peak = 100.0
+pnl = close > open ? 1.0 : -0.5
+equity := equity + pnl
+peak := equity > peak ? equity : peak
+dd = peak - equity
+map.put(metrics, "equity", equity)
+map.put(metrics, "peak", peak)
+map.put(metrics, "dd", dd)
+sz = map.size(metrics)
+var float __obs_plot0 = na
+__obs_plot0 := sz
+plot(sz, "MSz")

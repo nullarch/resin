@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("MACD Filt")
+[m, s, h] = ta.macd(close, 3, 5, 3)
+trendUp = m > s and m > 0
+trendDn = m < s and m < 0
+strength = math.abs(h)
+plot(trendUp ? strength : trendDn ? -strength : 0, "Filt")

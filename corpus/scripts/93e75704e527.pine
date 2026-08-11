@@ -1,0 +1,5 @@
+//@version=5
+indicator("MACD Hist")
+var float result = 0.0
+[m, s, h] = ta.macd(close, 3, 5, 2)
+result := math.abs(h - (m - s))

@@ -1,0 +1,44 @@
+
+//@version=5
+indicator("Alpha Model")
+// Feature extraction
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+rsi = ta.rsi(close, 3)
+atr = ta.atr(3)
+[macd, sig, hist] = ta.macd(close, 3, 5, 3)
+
+// Alpha signals
+alpha_trend = close > sma3 ? 1.0 : -1.0
+alpha_mom = rsi > 55 ? 1.0 : rsi < 45 ? -1.0 : 0.0
+alpha_macd = hist > 0 ? 1.0 : -1.0
+alpha_vol = atr > ta.sma(atr, 5) ? 0.5 : -0.5
+
+// Weighted composite
+composite = alpha_trend * 0.3 + alpha_mom * 0.3 + alpha_macd * 0.2 + alpha_vol * 0.2
+
+// Risk adjustment
+var float peak = 0.0
+if close > peak
+    peak := close
+drawdown = peak > 0 ? (peak - close) / peak : 0.0
+riskAdj = drawdown > 0.05 ? composite * 0.5 : composite
+
+// History tracking
+var float[] alphaHist = array.new_float(0)
+array.push(alphaHist, riskAdj)
+if array.size(alphaHist) > 8
+    array.shift(alphaHist)
+avgAlpha = array.avg(alphaHist)
+
+// State
+var m = map.new<string, float>()
+map.put(m, "alpha", riskAdj)
+map.put(m, "avg", avgAlpha)
+map.put(m, "dd", drawdown * 100)
+
+var int bars = 0
+bars := bars + 1
+
+plot(riskAdj, "Alpha")
+plot(avgAlpha, "AvgAlpha")

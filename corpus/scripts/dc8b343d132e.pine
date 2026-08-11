@@ -1,0 +1,8 @@
+//@version=5
+indicator("Miller Indices")
+h = math.floor(close) % 4
+k = math.floor(high) % 4
+l = math.floor(low) % 4
+millerSum = h + k + l
+var float cumMiller = 0.0
+cumMiller := cumMiller + millerSum

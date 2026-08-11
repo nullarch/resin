@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Port Mode")
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+mode = switch
+    rsi > 70 and atr > avgATR => "defensive"
+    rsi < 30 and atr > avgATR => "opportunistic"
+    atr < avgATR * 0.5 => "passive"
+    => "active"
+isActive = mode == "active" or mode == "opportunistic"
+plot(isActive ? 1 : 0, "Active")

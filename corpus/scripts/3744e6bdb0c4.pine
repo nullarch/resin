@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Max GL")
+var float maxGain = 0.0
+var float maxLoss = 0.0
+chg = close - close[1]
+if not na(chg)
+    if chg > maxGain
+        maxGain := chg
+    if chg < maxLoss
+        maxLoss := chg
+plot(maxGain, "MaxGain")
+plot(maxLoss, "MaxLoss")

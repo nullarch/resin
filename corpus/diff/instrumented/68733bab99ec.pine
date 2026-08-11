@@ -1,0 +1,10 @@
+//@version=5
+indicator("HA Calc")
+haClose = (open + high + low + close) / 4
+var float haOpen = na
+haOpen := na(haOpen) ? (open + close) / 2 : (nz(haOpen[1]) + nz(haClose[1])) / 2
+haHigh = math.max(high, math.max(haOpen, haClose))
+haLow = math.min(low, math.min(haOpen, haClose))
+var float __obs_plot0 = na
+__obs_plot0 := haClose
+plot(haClose)

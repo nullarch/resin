@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("LR Channel")
+lr = ta.linreg(close, 5, 0)
+dev = ta.stdev(close, 5)
+upper = lr + dev
+lower = lr - dev
+position = upper != lower ? (close - lower) / (upper - lower) : 0.5
+plot(lr, "LR")
+plot(position, "Pos")

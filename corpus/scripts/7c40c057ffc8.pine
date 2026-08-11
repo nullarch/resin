@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Stoch")
+k = ta.stoch(close, high, low, 5)
+d = ta.sma(k, 3)
+cross = ta.crossover(k, d)
+var int crossCount = 0
+if cross
+    crossCount := crossCount + 1
+plot(k, "K")
+plot(d, "D")

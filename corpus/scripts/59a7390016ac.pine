@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Vol Hist")
+var float[] volHist = array.new_float(0)
+array.push(volHist, volume)
+if array.size(volHist) > 10
+    array.shift(volHist)
+avgVol = array.size(volHist) > 0 ? array.avg(volHist) : volume
+maxVol = array.size(volHist) > 0 ? array.max(volHist) : volume
+plot(maxVol > 0 ? volume / maxVol * 100 : 0, "VP")

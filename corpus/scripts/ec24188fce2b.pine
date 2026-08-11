@@ -1,0 +1,13 @@
+//@version=5
+indicator("UDF Compose")
+normalize(float val, float lo, float hi) =>
+    hi > lo ? (val - lo) / (hi - lo) * 100 : 50
+getRSI(int len) =>
+    ta.rsi(close, len)
+getNormRSI(int len, int lookback) =>
+    rsi = getRSI(len)
+    lo = ta.lowest(rsi, lookback)
+    hi = ta.highest(rsi, lookback)
+    normalize(rsi, lo, hi)
+result = getNormRSI(5, 5)
+plot(result)

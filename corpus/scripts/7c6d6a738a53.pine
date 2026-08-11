@@ -1,0 +1,11 @@
+
+//@version=5
+strategy("MR Strat", overlay=true)
+mean = ta.sma(close, 5)
+sd = ta.stdev(close, 5)
+zscore = sd > 0 ? (close - mean) / sd : 0.0
+if zscore < -1.5
+    strategy.entry("Long", strategy.long)
+if zscore > 0 or close > mean
+    strategy.close("Long")
+plot(mean, "Mean")

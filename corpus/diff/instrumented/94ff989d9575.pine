@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("OB Levels")
+var ob = map.new<string, float>()
+atr = ta.atr(3)
+map.put(ob, "bid1", close - atr * 0.3)
+map.put(ob, "bid2", close - atr * 0.6)
+map.put(ob, "ask1", close + atr * 0.3)
+map.put(ob, "ask2", close + atr * 0.6)
+spread = map.get(ob, "ask1", 0.0) - map.get(ob, "bid1", 0.0)
+var float __obs_plot0 = na
+__obs_plot0 := spread
+plot(spread, "Spread")

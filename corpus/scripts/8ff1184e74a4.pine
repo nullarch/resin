@@ -1,0 +1,7 @@
+
+//@version=5
+indicator("While Exit")
+count = 0
+while false
+    count := count + 1
+plot(count, "C")

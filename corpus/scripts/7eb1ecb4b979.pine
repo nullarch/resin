@@ -1,0 +1,15 @@
+//@version=5
+indicator("Aerospace-Thermo")
+// Aerospace: orbital velocity proxy
+altitude = close * 10
+orbitalSpeed = math.sqrt(398600.0 / (altitude + 6371.0))
+// Thermodynamics: heat dissipation
+solarFlux = 1361.0
+absorptivity = 0.3
+surfaceArea = volume / 100.0
+heatAbsorbed = solarFlux * absorptivity * surfaceArea / 10000.0
+emissivity = 0.8
+heatRadiated = emissivity * surfaceArea * 0.001
+thermalBalance = heatAbsorbed - heatRadiated
+var float maxThermalLoad = 0.0
+maxThermalLoad := math.max(maxThermalLoad, thermalBalance)

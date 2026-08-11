@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Log Ret")
+prev = close[1]
+logRet = not na(prev) and prev > 0 and close > 0 ? math.log(close / prev) : 0.0
+cumLogRet = ta.cum(logRet)
+var float __obs_plot0 = na
+__obs_plot0 := logRet
+plot(logRet, "LogRet")
+var float __obs_plot1 = na
+__obs_plot1 := cumLogRet
+plot(cumLogRet, "CumLogRet")

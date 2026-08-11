@@ -1,0 +1,11 @@
+
+//@version=5
+strategy("RegimeStrat", overlay=true)
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = nz(ta.atr(3), 1.0)
+favorable = rsi > 45 and rsi < 65 and atr < 3.0
+if favorable and close > open
+    strategy.entry("Long", strategy.long)
+if not favorable
+    strategy.close("Long")
+plot(favorable ? 1 : 0, "Fav")

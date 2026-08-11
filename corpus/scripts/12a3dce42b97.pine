@@ -1,0 +1,5 @@
+//@version=5
+indicator("Barssince")
+bullish = close > open
+bars = ta.barssince(bullish)
+plot(bars)

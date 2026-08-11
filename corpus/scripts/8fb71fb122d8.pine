@@ -1,0 +1,9 @@
+//@version=5
+indicator("Array Sort Stats")
+a = array.from(50.0, 10.0, 30.0, 40.0, 20.0)
+array.sort(a)
+var float first_ = 0.0
+first_ := array.get(a, 0)  // should be 10.0 after sort
+var float med = 0.0
+med := array.median(a)  // median of sorted [10,20,30,40,50] = 30
+plot(close)

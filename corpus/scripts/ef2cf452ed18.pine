@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("StartEnd")
+trend = close > ta.sma(close, 3) ? "BULL_TREND" : "BEAR_TREND"
+isBull = str.startswith(trend, "BULL")
+isTrend = str.endswith(trend, "TREND")
+both = isBull and isTrend
+plot(both ? 1 : 0, "BullTrend")

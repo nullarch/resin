@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:weights": [
+    0.5,
+    0.3,
+    0.2
+   ],
+   "var:__obs_plot0": 103.0
+  },
+  {
+   "var:weights": [
+    0.5,
+    0.3,
+    0.2
+   ],
+   "var:__obs_plot0": 103.7
+  },
+  {
+   "var:weights": [
+    0.5,
+    0.3,
+    0.2
+   ],
+   "var:__obs_plot0": 102.80000000000001
+  },
+  {
+   "var:weights": [
+    0.5,
+    0.3,
+    0.2
+   ],
+   "var:__obs_plot0": 103.89999999999999
+  },
+  {
+   "var:weights": [
+    0.5,
+    0.3,
+    0.2
+   ],
+   "var:__obs_plot0": 105.4
+  },
+  {
+   "var:weights": [
+    0.5,
+    0.3,
+    0.2
+   ],
+   "var:__obs_plot0": 106.1
+  },
+  {
+   "var:weights": [
+    0.5,
+    0.3,
+    0.2
+   ],
+   "var:__obs_plot0": 107.2
+  },
+  {
+   "var:weights": [
+    0.5,
+    0.3,
+    0.2
+   ],
+   "var:__obs_plot0": 108.60000000000001
+  },
+  {
+   "var:weights": [
+    0.5,
+    0.3,
+    0.2
+   ],
+   "var:__obs_plot0": 109.1
+  },
+  {
+   "var:weights": [
+    0.5,
+    0.3,
+    0.2
+   ],
+   "var:__obs_plot0": 110.19999999999999
+  }
+ ],
+ "finalVarState": {
+  "weights": [
+   0.5,
+   0.3,
+   0.2
+  ],
+  "__obs_plot0": 110.19999999999999
+ }
+}

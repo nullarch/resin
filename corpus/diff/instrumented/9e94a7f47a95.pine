@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("VarRatio")
+var float sumSq = 0.0
+var float sumResSq = 0.0
+var int cnt = 0
+trend = nz(ta.sma(close, 3), close)
+residual = close - trend
+sumSq := sumSq + close * close
+sumResSq := sumResSq + residual * residual
+cnt := cnt + 1
+ratio = sumSq > 0 ? sumResSq / sumSq : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := ratio
+plot(ratio, "VR")

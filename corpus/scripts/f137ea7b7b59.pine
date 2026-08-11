@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Sig Filter")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+atr = ta.atr(3)
+rawSig = rsi > 55 ? 1.0 : rsi < 45 ? -1.0 : 0.0
+trendConf = close > sma3 ? true : false
+volOK = atr > 0 and atr < ta.sma(atr, 5) * 2
+filtered = rawSig != 0 and trendConf and volOK ? rawSig : 0.0
+plot(filtered, "Filt")

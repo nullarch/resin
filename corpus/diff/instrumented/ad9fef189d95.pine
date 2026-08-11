@@ -1,0 +1,13 @@
+//@version=5
+indicator("Map Overwrite")
+var m = map.new<string, float>()
+m.put("key", 1.0)
+m.put("key", 2.0)
+m.put("key", 3.0)
+var float val = 0.0
+val := m.get("key")
+var int sz = 0
+sz := m.size()
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

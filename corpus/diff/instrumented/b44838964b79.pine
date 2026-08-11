@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Risk Size")
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+volR = avgATR > 0 ? atr / avgATR : 1.0
+volSize = volR > 2.0 ? 0.25 : volR > 1.5 ? 0.5 : volR > 1.0 ? 0.75 : 1.0
+momSize = rsi > 70 ? 0.5 : rsi < 30 ? 0.5 : 1.0
+finalSize = math.min(volSize, momSize)
+var float __obs_plot0 = na
+__obs_plot0 := finalSize
+plot(finalSize, "Size")

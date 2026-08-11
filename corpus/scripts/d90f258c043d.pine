@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Adapt Band")
+adaptBand(float price, float ma, float vol, float sensitivity) =>
+    width = vol * sensitivity
+    upper = ma + width
+    lower = ma - width
+    price > upper ? 1.0 : price < lower ? -1.0 : 0.0
+
+sma5 = ta.sma(close, 5)
+atr = ta.atr(3)
+signal = adaptBand(close, sma5, atr, 1.5)
+plot(signal, "Sig")

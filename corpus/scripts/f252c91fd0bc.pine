@@ -1,0 +1,11 @@
+
+//@version=5
+strategy("Comprehensive", overlay=true)
+sma3 = ta.sma(close, 3)
+rsi = ta.rsi(close, 3)
+atr = ta.atr(3)
+if close > sma3 and rsi > 45 and rsi < 70
+    strategy.entry("Long", strategy.long)
+if close < sma3 or rsi > 75
+    strategy.close("Long")
+plot(sma3, "SMA")

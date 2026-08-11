@@ -1,0 +1,3 @@
+//@version=5
+indicator("Test")
+[basis, upper, lower] = ta.kc(close, 20, 1.5)

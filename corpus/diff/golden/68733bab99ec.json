@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:haOpen": 101.5,
+   "var:__obs_plot0": 101.5
+  },
+  {
+   "var:haOpen": 0.0,
+   "var:__obs_plot0": 103.0
+  },
+  {
+   "var:haOpen": 102.25,
+   "var:__obs_plot0": 101.5
+  },
+  {
+   "var:haOpen": 50.75,
+   "var:__obs_plot0": 104.0
+  },
+  {
+   "var:haOpen": 103.125,
+   "var:__obs_plot0": 106.0
+  },
+  {
+   "var:haOpen": 78.375,
+   "var:__obs_plot0": 105.0
+  },
+  {
+   "var:haOpen": 104.0625,
+   "var:__obs_plot0": 107.0
+  },
+  {
+   "var:haOpen": 92.6875,
+   "var:__obs_plot0": 109.0
+  },
+  {
+   "var:haOpen": 106.53125,
+   "var:__obs_plot0": 108.0
+  },
+  {
+   "var:haOpen": 100.34375,
+   "var:__obs_plot0": 110.0
+  }
+ ],
+ "finalVarState": {
+  "haOpen": 100.34375,
+  "__obs_plot0": 110.0
+ }
+}

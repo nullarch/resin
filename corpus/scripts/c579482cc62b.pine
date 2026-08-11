@@ -1,0 +1,6 @@
+//@version=5
+indicator("Predator Prey Ratio")
+prey = close
+predator = close * 0.3
+ratio = predator > 0.0 ? prey / predator : 0.0
+plot(ratio, "Ratio")

@@ -1,0 +1,14 @@
+
+//@version=5
+strategy("PosSizing", overlay=true)
+atrVal = nz(ta.atr(3), 1.0)
+riskPct = 0.02
+capital = 10000.0
+riskAmt = capital * riskPct
+qty = atrVal > 0 ? math.floor(riskAmt / atrVal) : 1
+smaVal = nz(ta.sma(close, 3), close)
+if close > smaVal and qty > 0
+    strategy.entry("Long", strategy.long)
+if close < smaVal
+    strategy.close("Long")
+plot(float(qty), "Q")

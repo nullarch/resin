@@ -1,0 +1,9 @@
+//@version=5
+indicator("Fermat Primality Proxy")
+n = math.floor(math.abs(close))
+base = 2.0
+fermatVal = math.pow(base, n - 1.0)
+modulus = math.max(n, 1.0)
+remainder = fermatVal - math.floor(fermatVal / modulus) * modulus
+isPrimeProxy = math.abs(remainder - 1.0) < 0.5 ? 1.0 : 0.0
+plot(isPrimeProxy, "PrimeProxy")

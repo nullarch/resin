@@ -1,0 +1,7 @@
+//@version=5
+indicator("Alert")
+crossUp = ta.crossover(ta.sma(close, 3), ta.sma(close, 5))
+alertcondition(crossUp, "Cross Up", "SMA cross up")
+var float __obs_plot0 = na
+__obs_plot0 := crossUp ? 1 : 0
+plot(crossUp ? 1 : 0)

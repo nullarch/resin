@@ -1,0 +1,4 @@
+//@version=5
+indicator("Key Signature")
+noteVal = math.floor(close) % 12
+plot(noteVal, title="key")

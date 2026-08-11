@@ -1,0 +1,20 @@
+
+//@version=5
+indicator("DD Track")
+type DDTracker
+    float currentDD = 0.0
+    float maxDD = 0.0
+    int ddBars = 0
+
+var DDTracker dd = DDTracker.new()
+var float peak = 0.0
+if close > peak
+    peak := close
+    dd.ddBars := 0
+else
+    dd.ddBars := dd.ddBars + 1
+dd.currentDD := peak > 0 ? (peak - close) / peak * 100 : 0.0
+if dd.currentDD > dd.maxDD
+    dd.maxDD := dd.currentDD
+plot(dd.currentDD, "CurrDD")
+plot(dd.maxDD, "MaxDD")

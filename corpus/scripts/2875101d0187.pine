@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("RegCounts")
+var regMap = map.new<string, float>()
+rsiVal = nz(ta.rsi(close, 3), 50.0)
+key = rsiVal > 60 ? "bull" : rsiVal < 40 ? "bear" : "neutral"
+prev = nz(map.get(regMap, key), 0.0)
+map.put(regMap, key, prev + 1.0)
+total = nz(map.get(regMap, "bull"), 0.0) + nz(map.get(regMap, "bear"), 0.0) + nz(map.get(regMap, "neutral"), 0.0)
+plot(total, "Tot")

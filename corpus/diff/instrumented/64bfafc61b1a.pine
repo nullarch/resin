@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Ret Dist")
+var float[] returns = array.new_float(0)
+ret = close[1] > 0 ? (close - close[1]) / close[1] * 100 : 0.0
+if not na(ret)
+    array.push(returns, ret)
+if array.size(returns) > 10
+    array.shift(returns)
+avgRet = array.size(returns) > 0 ? array.avg(returns) : 0.0
+maxRet = array.size(returns) > 0 ? array.max(returns) : 0.0
+minRet = array.size(returns) > 0 ? array.min(returns) : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := avgRet
+plot(avgRet, "Avg")

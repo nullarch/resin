@@ -1,0 +1,14 @@
+//@version=5
+indicator("TA Regression 2")
+atr5 = ta.atr(5)
+sd5 = ta.stdev(close, 5)
+cci5 = ta.cci(close, 5)
+var float last_atr = 0.0
+last_atr := nz(atr5)
+var float last_sd = 0.0
+last_sd := nz(sd5)
+var float last_cci = 0.0
+last_cci := nz(cci5)
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

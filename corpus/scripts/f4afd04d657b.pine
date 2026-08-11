@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Early Break")
+foundIdx = -1
+sma3 = ta.sma(close, 3)
+for i = 0 to 8
+    c = close[i]
+    if not na(c) and c < sma3
+        foundIdx := i
+        break
+plot(foundIdx, "Idx")

@@ -1,0 +1,22 @@
+//@version=5
+indicator("AllFeat 015")
+categorize(spread) =>
+    switch
+        spread > 8 => "wide"
+        spread > 4 => "medium"
+        => "narrow"
+var widths = array.new_string(0)
+var summary = map.new<string, int>()
+map.put(summary, "wide", 0)
+map.put(summary, "medium", 0)
+map.put(summary, "narrow", 0)
+spread = high - low
+cat = categorize(spread)
+array.push(widths, cat)
+prev = nz(map.get(summary, cat), 0)
+map.put(summary, cat, prev + 1)
+var float reportVal = 0.0
+total = 0.0
+for [key, val] in summary
+    total := total + val * 1.0
+reportVal := total

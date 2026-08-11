@@ -1,0 +1,10 @@
+//@version=5
+indicator("For-In Accum")
+var arr = array.from(10.0, 20.0, 30.0, 40.0)
+float total = 0.0
+for val in arr
+    total := total + val
+// 10+20+30+40 = 100
+var float result = 0.0
+result := total
+plot(result)

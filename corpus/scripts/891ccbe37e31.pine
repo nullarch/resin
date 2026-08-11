@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Adapt Wt")
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = nz(ta.atr(3), 1.0)
+avgATR = ta.sma(nz(ta.atr(3), 1.0), 3)
+volHigh = avgATR > 0 ? atr / avgATR > 1.2 : false
+rsiWt = volHigh ? 0.3 : 0.5
+maWt = volHigh ? 0.5 : 0.3
+volWt = 1.0 - rsiWt - maWt
+sma3 = ta.sma(close, 3)
+score = (rsi - 50) / 50 * rsiWt + (close > sma3 ? 1 : -1) * maWt
+plot(score, "Sc")

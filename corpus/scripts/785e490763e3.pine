@@ -1,0 +1,12 @@
+//@version=5
+indicator("Return Switch No Disc")
+var float result = 0.0
+
+classify_price() =>
+    switch
+        close > 110 => "very high"
+        close > 105 => "high"
+        => "normal"
+
+string label = classify_price()
+result := label == "very high" ? 1.0 : 0.0

@@ -1,0 +1,3 @@
+//@version=5
+indicator("str concat")
+x = "Price: " + str.tostring(close)

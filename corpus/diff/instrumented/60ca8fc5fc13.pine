@@ -1,0 +1,10 @@
+//@version=5
+indicator("NoiseRatio")
+prevClose = nz(close[1], close)
+prevClose2 = nz(close[2], close)
+fineVar = math.pow(close - prevClose, 2)
+coarseVar = math.pow(close - prevClose2, 2)
+noiseR = coarseVar > 0.001 ? fineVar / coarseVar : 1.0
+var float __obs_plot0 = na
+__obs_plot0 := noiseR
+plot(noiseR, "NR")

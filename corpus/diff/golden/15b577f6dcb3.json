@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:vesiclePool": 95.0,
+   "var:released": 10.0,
+   "var:__obs_plot0": 95.0
+  },
+  {
+   "var:vesiclePool": 97.0,
+   "var:released": 3.0,
+   "var:__obs_plot0": 97.0
+  },
+  {
+   "var:vesiclePool": 99.0,
+   "var:released": 3.0,
+   "var:__obs_plot0": 99.0
+  },
+  {
+   "var:vesiclePool": 100.0,
+   "var:released": 3.0,
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:vesiclePool": 100.0,
+   "var:released": 3.0,
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:vesiclePool": 100.0,
+   "var:released": 3.0,
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:vesiclePool": 100.0,
+   "var:released": 3.0,
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:vesiclePool": 100.0,
+   "var:released": 3.0,
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:vesiclePool": 100.0,
+   "var:released": 3.0,
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:vesiclePool": 100.0,
+   "var:released": 3.0,
+   "var:__obs_plot0": 100.0
+  }
+ ],
+ "finalVarState": {
+  "vesiclePool": 100.0,
+  "released": 3.0,
+  "__obs_plot0": 100.0
+ }
+}

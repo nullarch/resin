@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("TA Suite")
+sma3 = ta.sma(close, 3)
+ema3 = ta.ema(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = nz(ta.atr(3), 1.0)
+[macd, sig, hist] = ta.macd(close, 3, 5, 3)
+stoch = ta.stoch(close, high, low, 5)
+composite = (rsi - 50) / 50 + (close > sma3 ? 1 : -1) + (hist > 0 ? 1 : -1)
+var float __obs_plot0 = na
+__obs_plot0 := composite
+plot(composite, "C")

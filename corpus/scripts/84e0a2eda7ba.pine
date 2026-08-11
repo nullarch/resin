@@ -1,0 +1,4 @@
+//@version=5
+strategy("exit test")
+strategy.entry("Long", strategy.long)
+strategy.exit("Exit", "Long", profit=100, loss=50)

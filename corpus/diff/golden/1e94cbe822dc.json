@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:m": {
+    "fast": 3.0,
+    "slow": 5.0
+   },
+   "var:lastSma": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:m": {
+    "fast": 3.0,
+    "slow": 5.0
+   },
+   "var:lastSma": 0.0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:m": {
+    "fast": 3.0,
+    "slow": 5.0
+   },
+   "var:lastSma": 103.0,
+   "var:__obs_plot0": 103.0
+  },
+  {
+   "var:m": {
+    "fast": 3.0,
+    "slow": 5.0
+   },
+   "var:lastSma": 103.6666666667,
+   "var:__obs_plot0": 103.6666666667
+  },
+  {
+   "var:m": {
+    "fast": 3.0,
+    "slow": 5.0
+   },
+   "var:lastSma": 63.8,
+   "var:__obs_plot0": 63.8
+  },
+  {
+   "var:m": {
+    "fast": 3.0,
+    "slow": 5.0
+   },
+   "var:lastSma": 63.8,
+   "var:__obs_plot0": 63.8
+  },
+  {
+   "var:m": {
+    "fast": 3.0,
+    "slow": 5.0
+   },
+   "var:lastSma": 64.4,
+   "var:__obs_plot0": 64.4
+  },
+  {
+   "var:m": {
+    "fast": 3.0,
+    "slow": 5.0
+   },
+   "var:lastSma": 65.6,
+   "var:__obs_plot0": 65.6
+  },
+  {
+   "var:m": {
+    "fast": 3.0,
+    "slow": 5.0
+   },
+   "var:lastSma": 65.6,
+   "var:__obs_plot0": 65.6
+  },
+  {
+   "var:m": {
+    "fast": 3.0,
+    "slow": 5.0
+   },
+   "var:lastSma": 66.2,
+   "var:__obs_plot0": 66.2
+  }
+ ],
+ "finalVarState": {
+  "m": {
+   "fast": 3.0,
+   "slow": 5.0
+  },
+  "lastSma": 66.2,
+  "__obs_plot0": 66.2
+ }
+}

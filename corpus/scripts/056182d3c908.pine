@@ -1,0 +1,8 @@
+//@version=5
+indicator("rsi div")
+var int divCount = 0
+rsiVal = ta.rsi(close, 5)
+priceUp = close > close[1]
+rsiDn = not na(rsiVal) and bar_index > 1 ? rsiVal < rsiVal[1] : false
+if priceUp and rsiDn
+    divCount := divCount + 1

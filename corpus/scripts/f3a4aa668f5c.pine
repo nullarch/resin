@@ -1,0 +1,11 @@
+//@version=5
+indicator("test")
+var m = map.new<string, int>()
+if barstate.isfirst
+    map.put(m, "bulls", 0)
+    map.put(m, "bears", 0)
+if close > open
+    map.put(m, "bulls", map.get(m, "bulls") + 1)
+else
+    map.put(m, "bears", map.get(m, "bears") + 1)
+plot(map.get(m, "bulls"))

@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Trend Mdl")
+var float trendEst = 0.0
+var float momentum = 0.0
+alpha = 0.2
+newMom = close - close[1]
+momentum := alpha * nz(newMom, 0.0) + (1 - alpha) * momentum
+trendEst := trendEst + momentum
+plot(trendEst, "TE")
+plot(momentum, "Mom")

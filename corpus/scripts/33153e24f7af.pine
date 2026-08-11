@@ -1,0 +1,7 @@
+//@version=5
+indicator("safe div zero")
+a = 10.0 / 0.0
+b = 10.0 % 0.0
+c = close / (close - close)
+isNa_a = na(a)
+isNa_b = na(b)

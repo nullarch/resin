@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Pctl Rank")
+var float[] prices = array.new_float(0)
+array.push(prices, close)
+if array.size(prices) > 8
+    array.shift(prices)
+belowCount = 0
+total = array.size(prices)
+for i = 0 to math.max(total - 1, 0)
+    if i < total and array.get(prices, i) < close
+        belowCount := belowCount + 1
+pctlRank = total > 0 ? float(belowCount) / total * 100 : 50.0
+plot(pctlRank, "PR")

@@ -1,0 +1,7 @@
+//@version=5
+indicator("Left Assoc")
+var float r = 0.0
+r := 100.0 - 30.0 - 20.0
+var float __obs_plot0 = na
+__obs_plot0 := r
+plot(r)

@@ -1,0 +1,5 @@
+//@version=5
+indicator("TR implicit")
+trVal = ta.tr
+atr3 = ta.atr(3)
+trRatio = not na(atr3) and nz(atr3) != 0 ? nz(trVal) / nz(atr3) : 1.0

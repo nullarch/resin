@@ -1,0 +1,39 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:__obs_plot0": 1.0261191738963533
+  },
+  {
+   "var:__obs_plot0": 1.0105600000000001
+  },
+  {
+   "var:__obs_plot0": 1.0220910545454545
+  },
+  {
+   "var:__obs_plot0": 1.0253882268656718
+  },
+  {
+   "var:__obs_plot0": 1.0085392592592592
+  },
+  {
+   "var:__obs_plot0": 1.0192771764705884
+  }
+ ],
+ "finalVarState": {
+  "__obs_plot0": 1.0192771764705884
+ }
+}

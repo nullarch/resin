@@ -1,0 +1,3 @@
+//@version=5
+indicator("Test")
+log.info("price: {0}", close)

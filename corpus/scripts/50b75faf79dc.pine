@@ -1,0 +1,12 @@
+
+//@version=5
+strategy("Mean Rev", overlay=true)
+sma5 = ta.sma(close, 5)
+dev = ta.stdev(close, 5)
+lowerBand = sma5 - dev * 1.5
+upperBand = sma5 + dev * 1.5
+if close < lowerBand
+    strategy.entry("Long", strategy.long)
+if close > upperBand
+    strategy.close("Long")
+plot(sma5, "SMA")

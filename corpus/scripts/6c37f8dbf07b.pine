@@ -1,0 +1,38 @@
+//@version=5
+indicator("comprehensive 110")
+type State
+    float maxPrice = 0.0
+    int count = 0
+enum Signal
+    Buy = 1
+    Sell = -1
+calcAvg(src, len) =>
+    ta.sma(src, len)
+method update(State s, float price) =>
+    if price > s.maxPrice
+        s.maxPrice := price
+    s.count := s.count + 1
+var float maxClose = 0.0
+var int totalBars = 0
+st = State.new()
+avg3 = calcAvg(close, 3)
+avg5 = ta.ema(close, 5)
+atrVal = ta.atr(5)
+sig = close > avg5 ? Signal.Buy : Signal.Sell
+arr = array.from(1.0, 2.0, 3.0)
+float arrTotal = 0.0
+for [i, v] in arr
+    arrTotal := arrTotal + v
+x = if close > 108
+    avg3
+else
+    avg5
+val = switch sig
+    Signal.Buy => 1.0
+    Signal.Sell => -1.0
+    => 0.0
+ratio = close / (close + 1.0)
+st.update(close)
+if not na(avg3) and avg3 > maxClose
+    maxClose := avg3
+totalBars := totalBars + 1

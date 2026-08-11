@@ -1,0 +1,5 @@
+//@version=5
+indicator("EmptyArr")
+var a = array.new<float>(0)
+var int sz = 0
+sz := array.size(a)

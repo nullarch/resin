@@ -1,0 +1,5 @@
+//@version=5
+indicator("Prec DivSub")
+var float r = 0.0
+r := 20.0 - 15.0 / 3.0
+plot(r)

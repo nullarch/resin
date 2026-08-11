@@ -1,0 +1,15 @@
+//@version=5
+indicator("Butterfly")
+k1 = 100.0
+k2 = 106.0
+k3 = 112.0
+longCall1 = math.max(close - k1, 0.0)
+shortCall2 = -2.0 * math.max(close - k2, 0.0)
+longCall3 = math.max(close - k3, 0.0)
+payoff = longCall1 + shortCall2 + longCall3
+debit = 2.0
+arr = array.new_float(0)
+array.push(arr, payoff)
+array.push(arr, -debit)
+net = array.sum(arr)
+plot(net, "Bfly")

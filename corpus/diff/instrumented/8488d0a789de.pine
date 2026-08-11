@@ -1,0 +1,11 @@
+//@version=5
+indicator("Na Coalesce")
+float a = na
+float b = na
+float c = 42.0
+float result = nz(a, nz(b, c))
+var float out = 0.0
+out := result
+var float __obs_plot0 = na
+__obs_plot0 := out
+plot(out)

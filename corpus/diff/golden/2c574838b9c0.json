@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:preMean": 103.0,
+   "var:postMean": 0.0,
+   "var:preCnt": 1,
+   "var:postCnt": 0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:preMean": 103.5,
+   "var:postMean": 0.0,
+   "var:preCnt": 2,
+   "var:postCnt": 0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:preMean": 103.0,
+   "var:postMean": 0.0,
+   "var:preCnt": 3,
+   "var:postCnt": 0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:preMean": 103.5,
+   "var:postMean": 0.0,
+   "var:preCnt": 4,
+   "var:postCnt": 0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:preMean": 104.2,
+   "var:postMean": 0.0,
+   "var:preCnt": 5,
+   "var:postCnt": 0,
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:preMean": 104.2,
+   "var:postMean": 106.0,
+   "var:preCnt": 5,
+   "var:postCnt": 1,
+   "var:__obs_plot0": 1.7999999999999972
+  },
+  {
+   "var:preMean": 104.2,
+   "var:postMean": 107.0,
+   "var:preCnt": 5,
+   "var:postCnt": 2,
+   "var:__obs_plot0": 2.799999999999997
+  },
+  {
+   "var:preMean": 104.2,
+   "var:postMean": 108.0,
+   "var:preCnt": 5,
+   "var:postCnt": 3,
+   "var:__obs_plot0": 3.799999999999997
+  },
+  {
+   "var:preMean": 104.2,
+   "var:postMean": 108.25,
+   "var:preCnt": 5,
+   "var:postCnt": 4,
+   "var:__obs_plot0": 4.049999999999997
+  },
+  {
+   "var:preMean": 104.2,
+   "var:postMean": 108.8,
+   "var:preCnt": 5,
+   "var:postCnt": 5,
+   "var:__obs_plot0": 4.599999999999994
+  }
+ ],
+ "finalVarState": {
+  "preMean": 104.2,
+  "postMean": 108.8,
+  "preCnt": 5,
+  "postCnt": 5,
+  "__obs_plot0": 4.599999999999994
+ }
+}

@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Newton")
+target = ta.sma(close, 5)
+guess = close
+iters = 0
+while math.abs(guess - target) > 0.001 and iters < 50
+    error = guess - target
+    guess := guess - error * 0.5
+    iters := iters + 1
+plot(iters, "Its")

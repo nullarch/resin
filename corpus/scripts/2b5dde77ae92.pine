@@ -1,0 +1,10 @@
+//@version=5
+indicator("HarmRatio04")
+highVal = nz(ta.highest(high, 5), high)
+lowVal = nz(ta.lowest(low, 5), low)
+range_ = highVal - lowVal
+fib382 = lowVal + range_ * 0.382
+fib618 = lowVal + range_ * 0.618
+fib786 = lowVal + range_ * 0.786
+harmRatio = range_ > 0 ? (close - lowVal) / range_ : 0.5
+plot(harmRatio, "hr")

@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Typed Arrays")
+bools = array.new_bool(3, true)
+strings = array.new_string(3, "test")
+szB = array.size(bools)
+szS = array.size(strings)
+var float __obs_plot0 = na
+__obs_plot0 := szB + szS
+plot(szB + szS, "Total")

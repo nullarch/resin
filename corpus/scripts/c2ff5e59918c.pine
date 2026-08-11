@@ -1,0 +1,11 @@
+//@version=5
+indicator("Nerve Cover")
+float band1Low = nz(ta.sma(close, 3), close) - 3.0
+float band1High = nz(ta.sma(close, 3), close) + 3.0
+float band2Low = nz(ta.sma(close, 5), close) - 5.0
+float band2High = nz(ta.sma(close, 5), close) + 5.0
+bool overlap = band1Low < band2High and band2Low < band1High
+var int overlapCount = 0
+if overlap
+    overlapCount := overlapCount + 1
+plot(overlapCount, "NerveOverlap")

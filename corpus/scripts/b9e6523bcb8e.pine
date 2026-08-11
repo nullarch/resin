@@ -1,0 +1,12 @@
+//@version=5
+indicator("SynthControl")
+donor1 = nz(ta.sma(close, 3), close)
+donor2 = nz(ta.ema(close, 3), close)
+donor3 = (high + low) / 2.0
+w1 = 0.4
+w2 = 0.35
+w3 = 0.25
+synthCtrl = w1 * donor1 + w2 * donor2 + w3 * donor3
+gap = close - synthCtrl
+plot(synthCtrl, "Synth")
+plot(gap, "Gap")

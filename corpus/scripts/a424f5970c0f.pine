@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("UDF Chain")
+normalize(float val, float mn, float mx) =>
+    rng = mx - mn
+    rng > 0 ? (val - mn) / rng : 0.5
+
+score(float norm) =>
+    norm > 0.7 ? 2.0 : norm > 0.3 ? 1.0 : 0.0
+
+combine(float s1, float s2, float w1, float w2) =>
+    (s1 * w1 + s2 * w2) / (w1 + w2)
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+k = ta.stoch(close, high, low, 5)
+nRSI = normalize(rsi, 0.0, 100.0)
+nK = normalize(k, 0.0, 100.0)
+sRSI = score(nRSI)
+sK = score(nK)
+final = combine(sRSI, sK, 0.6, 0.4)
+plot(final, "Final")

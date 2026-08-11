@@ -1,0 +1,15 @@
+//@version=5
+indicator("UDT Fields")
+type Stats
+    float mean = 0.0
+    float stddev = 0.0
+    int count = 0
+s = Stats.new(close, high - low, 1)
+s.count := s.count + 1
+s.mean := (s.mean + close) / 2
+var float __obs_plot0 = na
+__obs_plot0 := s.mean
+plot(s.mean)
+var float __obs_plot1 = na
+__obs_plot1 := s.count
+plot(s.count)

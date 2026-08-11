@@ -1,0 +1,11 @@
+//@version=5
+indicator("Str Format Pos")
+var string msg = ""
+msg := str.format("{0} is {1}", "Price", str.tostring(close))
+var int msg_len = 0
+msg_len := str.length(msg)
+var bool has_price = false
+has_price := str.contains(msg, "Price")
+var float __obs_plot0 = na
+__obs_plot0 := close
+plot(close)

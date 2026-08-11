@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Bisection")
+lo = 0.0
+hi = close
+target = close / 3
+iterations = 0
+while hi - lo > 0.01 and iterations < 100
+    mid = (lo + hi) / 2
+    if mid < target
+        lo := mid
+    else
+        hi := mid
+    iterations := iterations + 1
+var float __obs_plot0 = na
+__obs_plot0 := lo
+plot(lo, "Result")

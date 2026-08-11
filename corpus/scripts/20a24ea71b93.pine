@@ -1,0 +1,5 @@
+//@version=5
+indicator("Chomsky Level")
+complexity = nz(ta.rsi(close, 3), 50.0)
+level = complexity < 25.0 ? 3.0 : complexity < 50.0 ? 2.0 : complexity < 75.0 ? 1.0 : 0.0
+plot(level, "ChomskyLevel")

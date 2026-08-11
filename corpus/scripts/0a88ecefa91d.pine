@@ -1,0 +1,7 @@
+//@version=5
+indicator("Doppler Shift")
+velocity = close - nz(close[1], close)
+cLight = 100.0
+freqShift = cLight > 0 ? velocity / cLight : 0.0
+var float totalShift = 0.0
+totalShift := totalShift + freqShift

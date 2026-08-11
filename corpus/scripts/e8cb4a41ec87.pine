@@ -1,0 +1,17 @@
+
+//@version=5
+indicator("Enum Cmp")
+enum Priority
+    Critical = 4
+    High = 3
+    Medium = 2
+    Low = 1
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+volHigh = atr > avgATR * 1.5
+momExtreme = rsi > 75 or rsi < 25
+priority = volHigh and momExtreme ? Priority.Critical : volHigh ? Priority.High : momExtreme ? Priority.Medium : Priority.Low
+isUrgent = priority == Priority.Critical or priority == Priority.High
+plot(isUrgent ? 1 : 0, "Urgent")

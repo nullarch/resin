@@ -1,0 +1,10 @@
+//@version=5
+indicator("NS-12 Couette")
+hiVal = nz(ta.highest(high, 5), high)
+loVal = nz(ta.lowest(low, 5), low)
+rangeVal = hiVal - loVal
+layerPos = rangeVal > 0 ? (close - loVal) / rangeVal : 0.5
+flowVel = layerPos * 2.0 - 1.0
+var float __obs_plot0 = na
+__obs_plot0 := flowVel
+plot(flowVel)

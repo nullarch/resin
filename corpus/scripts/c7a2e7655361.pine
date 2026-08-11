@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Down Dev")
+ret = close - close[1]
+downRet = not na(ret) and ret < 0 ? ret : 0.0
+downSq = math.pow(downRet, 2)
+avgDownSq = ta.sma(downSq, 5)
+downsideDev = math.sqrt(math.abs(avgDownSq))
+plot(downsideDev, "DD")

@@ -1,0 +1,10 @@
+//@version=5
+indicator("Walk Defaults")
+myEMA(float src = close, int len = 5) =>
+    ta.ema(src, len)
+myRange(float h = high, float l = low, float v = volume) =>
+    (h - l) * v
+e = myEMA()
+r = myRange()
+plot(e)
+plot(r)

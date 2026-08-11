@@ -1,0 +1,10 @@
+//@version=5
+indicator("VQE Proxy")
+float target = nz(ta.sma(close, 5), close)
+var float param = 0.5
+float prediction = param * close + (1.0 - param) * open
+float cost = math.pow(prediction - target, 2)
+float gradient = 2.0 * (prediction - target) * (close - open)
+float learnRate = 0.01
+param := param - learnRate * gradient
+param := math.max(0.0, math.min(1.0, param))

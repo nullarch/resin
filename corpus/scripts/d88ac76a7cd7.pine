@@ -1,0 +1,8 @@
+//@version=5
+indicator("Gamma Shielding HVL")
+float initialIntensity = 10000.0
+float hvl = 2.5
+float shieldThickness = close / 20.0
+float numHVL = shieldThickness / hvl
+float transmittedIntensity = initialIntensity * math.pow(0.5, numHVL)
+float reductionPct = (1.0 - transmittedIntensity / initialIntensity) * 100.0

@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Outlook")
+enum Outlook
+    VeryBullish = 2
+    Bullish = 1
+    Neutral = 0
+    Bearish = -1
+    VeryBearish = -2
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+score = (close > sma3 ? 1 : -1) + (sma3 > sma5 ? 1 : -1) + (rsi > 55 ? 1 : rsi < 45 ? -1 : 0)
+ol = switch
+    score >= 2 => Outlook.VeryBullish
+    score == 1 => Outlook.Bullish
+    score <= -2 => Outlook.VeryBearish
+    score == -1 => Outlook.Bearish
+    => Outlook.Neutral
+plot(int(ol), "OL")

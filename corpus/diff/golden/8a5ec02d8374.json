@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:avgDensity": 0.5,
+   "var:cnt": 1,
+   "var:__obs_plot0": 0.5,
+   "var:__obs_plot1": 0.5
+  },
+  {
+   "var:avgDensity": 0.6666666666666667,
+   "var:cnt": 2,
+   "var:__obs_plot0": 0.8333333333333334,
+   "var:__obs_plot1": 0.6666666666666667
+  },
+  {
+   "var:avgDensity": 0.7222222222222223,
+   "var:cnt": 3,
+   "var:__obs_plot0": 0.8333333333333334,
+   "var:__obs_plot1": 0.7222222222222223
+  },
+  {
+   "var:avgDensity": 0.7500000000000001,
+   "var:cnt": 4,
+   "var:__obs_plot0": 0.8333333333333334,
+   "var:__obs_plot1": 0.7500000000000001
+  },
+  {
+   "var:avgDensity": 0.7666666666666667,
+   "var:cnt": 5,
+   "var:__obs_plot0": 0.8333333333333334,
+   "var:__obs_plot1": 0.7666666666666667
+  },
+  {
+   "var:avgDensity": 0.7777777777777778,
+   "var:cnt": 6,
+   "var:__obs_plot0": 0.8333333333333334,
+   "var:__obs_plot1": 0.7777777777777778
+  },
+  {
+   "var:avgDensity": 0.7857142857142857,
+   "var:cnt": 7,
+   "var:__obs_plot0": 0.8333333333333334,
+   "var:__obs_plot1": 0.7857142857142857
+  },
+  {
+   "var:avgDensity": 0.7916666666666666,
+   "var:cnt": 8,
+   "var:__obs_plot0": 0.8333333333333334,
+   "var:__obs_plot1": 0.7916666666666666
+  },
+  {
+   "var:avgDensity": 0.7962962962962963,
+   "var:cnt": 9,
+   "var:__obs_plot0": 0.8333333333333334,
+   "var:__obs_plot1": 0.7962962962962963
+  },
+  {
+   "var:avgDensity": 0.8,
+   "var:cnt": 10,
+   "var:__obs_plot0": 0.8333333333333334,
+   "var:__obs_plot1": 0.8
+  }
+ ],
+ "finalVarState": {
+  "avgDensity": 0.8,
+  "cnt": 10,
+  "__obs_plot0": 0.8333333333333334,
+  "__obs_plot1": 0.8
+ }
+}

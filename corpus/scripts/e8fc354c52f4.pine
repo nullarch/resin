@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Dash View")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+outlook = switch
+    close > sma3 and sma3 > sma5 and rsi > 60 => "very_bullish"
+    close > sma3 and rsi > 50 => "bullish"
+    close < sma3 and sma3 < sma5 and rsi < 40 => "very_bearish"
+    close < sma3 => "bearish"
+    => "neutral"
+score = outlook == "very_bullish" ? 2 : outlook == "bullish" ? 1 : outlook == "very_bearish" ? -2 : outlook == "bearish" ? -1 : 0
+plot(score, "S")

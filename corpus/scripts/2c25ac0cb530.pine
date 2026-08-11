@@ -1,0 +1,13 @@
+//@version=5
+indicator("User Method")
+type Signal
+    float value
+    string label_text
+
+method strength(Signal s) =>
+    s.value * 2.0
+
+sig = Signal.new(25.0, "buy")
+var float result = 0.0
+result := sig.strength()
+plot(result)

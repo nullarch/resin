@@ -1,0 +1,8 @@
+//@version=5
+indicator("Type Hoisting")
+Point p = Point.new(x=3.0, y=4.0)
+var float result = 0.0
+result := p.x + p.y
+type Point
+    float x = 0.0
+    float y = 0.0

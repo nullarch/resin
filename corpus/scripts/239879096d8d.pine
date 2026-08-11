@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("All Pos")
+changes = array.from(close - open, high - low, close - low)
+allPos = array.every(changes)
+anyPos = array.some(changes)
+plot(allPos ? 1 : 0, "AllPos")
+plot(anyPos ? 1 : 0, "AnyPos")

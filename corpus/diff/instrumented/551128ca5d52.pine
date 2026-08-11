@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("NZ Fixnan")
+val = close[15]
+safe1 = nz(val, 0.0)
+safe2 = na(val) ? close : val
+diff = close - safe2
+var float __obs_plot0 = na
+__obs_plot0 := diff
+plot(diff, "Diff")

@@ -1,0 +1,5 @@
+//@version=5
+indicator("TA cum")
+cumVol = ta.cum(volume)
+cumClose = ta.cum(close)
+avgPrice = cumClose / cumVol

@@ -1,0 +1,14 @@
+
+//@version=5
+strategy("RiskMgmt", overlay=true)
+var float equity = 100.0
+var float peak = 100.0
+pnl = close > open ? 1.0 : -0.5
+equity := equity + pnl
+peak := equity > peak ? equity : peak
+ddPct = peak > 0 ? (peak - equity) / peak * 100.0 : 0.0
+if ddPct < 5.0 and close > open
+    strategy.entry("Long", strategy.long)
+if ddPct >= 5.0
+    strategy.close("Long")
+plot(ddPct, "DDP")

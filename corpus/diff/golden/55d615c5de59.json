@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:gen": 1,
+   "var:prevAvgFit": 0.2191526660519585,
+   "var:__obs_plot0": 0.32355102968479693,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:gen": 2,
+   "var:prevAvgFit": 0.8045479686697509,
+   "var:__obs_plot0": 3.509597071882465,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:gen": 3,
+   "var:prevAvgFit": 3.3175027512658257,
+   "var:__obs_plot0": 18.793895415716484,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:gen": 4,
+   "var:prevAvgFit": 8.7797283473448,
+   "var:__obs_plot0": 34.43501999450194,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:gen": 5,
+   "var:prevAvgFit": 17.60852054517814,
+   "var:__obs_plot0": 100.0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:gen": 6,
+   "var:prevAvgFit": 1.6082535194435146,
+   "var:__obs_plot0": 4.230915664423428,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:gen": 7,
+   "var:prevAvgFit": 0.7600885939652523,
+   "var:__obs_plot0": 1.5821199369036791,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:gen": 8,
+   "var:prevAvgFit": 17.086139511602074,
+   "var:__obs_plot0": 100.0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:gen": 9,
+   "var:prevAvgFit": 17.360764967866185,
+   "var:__obs_plot0": 100.0,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:gen": 10,
+   "var:prevAvgFit": 0.2297642388937299,
+   "var:__obs_plot0": 0.3416637604634336,
+   "var:__obs_plot1": 0.0
+  }
+ ],
+ "finalVarState": {
+  "gen": 10,
+  "prevAvgFit": 0.2297642388937299,
+  "__obs_plot0": 0.3416637604634336,
+  "__obs_plot1": 0.0
+ }
+}

@@ -1,0 +1,11 @@
+//@version=5
+indicator("Info Length")
+var float infoLen = 0.0
+var float prevParam = 0.0
+paramVal = nz(ta.ema(close, 3), close)
+dParam = paramVal - prevParam
+spread = high - low
+fisher = spread > 0.01 ? 1.0 / (spread * spread) : 1.0
+ds = math.sqrt(math.abs(fisher * dParam * dParam))
+infoLen := infoLen + ds
+prevParam := paramVal

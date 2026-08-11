@@ -1,0 +1,13 @@
+//@version=5
+indicator("EM Energy Density")
+type EMField
+    float eField = 0.0
+    float bField = 0.0
+method energyDensity(EMField this) =>
+    0.5 * (this.eField * this.eField + this.bField * this.bField)
+float eVal = close - (not na(close[1]) ? close[1] : close)
+float bVal = nz(ta.sma(close, 3), close) - close
+field = EMField.new(eVal, bVal)
+float density = field.energyDensity()
+var float totalEnergy = 0.0
+totalEnergy := totalEnergy + density

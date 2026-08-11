@@ -1,0 +1,41 @@
+
+//@version=5
+indicator("Integ Full")
+type SystemState
+    float score = 0.0
+    int regime = 0
+enum Level
+    High = 2
+    Mid = 1
+    Low = 0
+
+var SystemState ss = SystemState.new()
+var float[] history = array.new_float(0)
+var dashboard = map.new<string, float>()
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+atr = ta.atr(3)
+[m, s, h] = ta.macd(close, 3, 5, 3)
+
+trendPt = close > sma3 ? 1.0 : -1.0
+momPt = (rsi - 50) / 50
+macdPt = h > 0 ? 0.5 : -0.5
+ss.score := trendPt * 0.4 + momPt * 0.3 + macdPt * 0.3
+ss.regime := ss.score > 0.3 ? 1 : ss.score < -0.3 ? -1 : 0
+
+lvl = rsi > 65 ? Level.High : rsi > 35 ? Level.Mid : Level.Low
+
+array.push(history, ss.score)
+if array.size(history) > 8
+    array.shift(history)
+
+map.put(dashboard, "score", ss.score)
+map.put(dashboard, "regime", float(ss.regime))
+map.put(dashboard, "avg", array.avg(history))
+
+var int bars = 0
+bars := bars + 1
+
+plot(ss.score, "Score")
+plot(float(ss.regime), "Reg")

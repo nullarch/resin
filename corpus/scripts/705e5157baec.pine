@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("SubStr")
+full = "SIGNAL:BUY:STRONG"
+colonPos = str.pos(full, ":")
+prefix = str.substring(full, 0, 6)
+prefixLen = str.length(prefix)
+hasColon = str.contains(full, ":")
+plot(prefixLen + (hasColon ? 1 : 0), "R")

@@ -1,0 +1,23 @@
+//@version=5
+strategy("ATR Trail Strategy", overlay=true)
+atr_ = ta.atr(high, low, close, 3)
+var float trailStop = 0.0
+var int direction = 0
+if not na(atr_)
+    newStop = close - atr_ * 2
+    if direction == 0
+        trailStop := newStop
+        direction := 1
+    else if direction == 1
+        trailStop := math.max(trailStop, newStop)
+        if close < trailStop
+            direction := -1
+    else
+        trailStop := close + atr_ * 2
+        if close > trailStop
+            direction := 1
+if direction == 1
+    strategy.entry("Long", strategy.long)
+else if direction == -1
+    strategy.entry("Short", strategy.short)
+plot(trailStop)

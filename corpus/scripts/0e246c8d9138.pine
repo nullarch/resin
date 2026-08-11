@@ -1,0 +1,4 @@
+//@version=5
+indicator("MinusEq")
+var float result = 100
+result -= 1

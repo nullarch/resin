@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Band Squeeze")
+isSqueeze(int period, float bbMult, float kcMult) =>
+    [bbM, bbU, bbL] = ta.bb(close, period, bbMult)
+    [kcM, kcU, kcL] = ta.kc(close, period, kcMult)
+    bbU < kcU and bbL > kcL
+
+sq = isSqueeze(5, 2.0, 1.5)
+plot(sq ? 1 : 0, "Squeeze")

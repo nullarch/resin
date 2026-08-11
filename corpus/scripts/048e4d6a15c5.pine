@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("SR")
+hi5 = ta.highest(high, 5)
+lo5 = ta.lowest(low, 5)
+mid = (hi5 + lo5) / 2
+nearResist = hi5 > 0 ? (hi5 - close) / hi5 * 100 < 1 : false
+nearSupport = lo5 > 0 ? (close - lo5) / lo5 * 100 < 1 : false
+plot(nearResist ? 1 : nearSupport ? -1 : 0, "SR")

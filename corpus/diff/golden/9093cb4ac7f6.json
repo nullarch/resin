@@ -1,0 +1,105 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:m": {
+    "open": 109,
+    "high": 113,
+    "low": 107,
+    "close": 111
+   },
+   "var:__obs_plot0": 101.5
+  },
+  {
+   "var:m": {
+    "open": 109,
+    "high": 113,
+    "low": 107,
+    "close": 111
+   },
+   "var:__obs_plot0": 103.0
+  },
+  {
+   "var:m": {
+    "open": 109,
+    "high": 113,
+    "low": 107,
+    "close": 111
+   },
+   "var:__obs_plot0": 101.5
+  },
+  {
+   "var:m": {
+    "open": 109,
+    "high": 113,
+    "low": 107,
+    "close": 111
+   },
+   "var:__obs_plot0": 104.0
+  },
+  {
+   "var:m": {
+    "open": 109,
+    "high": 113,
+    "low": 107,
+    "close": 111
+   },
+   "var:__obs_plot0": 106.0
+  },
+  {
+   "var:m": {
+    "open": 109,
+    "high": 113,
+    "low": 107,
+    "close": 111
+   },
+   "var:__obs_plot0": 105.0
+  },
+  {
+   "var:m": {
+    "open": 109,
+    "high": 113,
+    "low": 107,
+    "close": 111
+   },
+   "var:__obs_plot0": 107.0
+  },
+  {
+   "var:m": {
+    "open": 109,
+    "high": 113,
+    "low": 107,
+    "close": 111
+   },
+   "var:__obs_plot0": 109.0
+  },
+  {
+   "var:m": {
+    "open": 109,
+    "high": 113,
+    "low": 107,
+    "close": 111
+   },
+   "var:__obs_plot0": 108.0
+  },
+  {
+   "var:m": {
+    "open": 109,
+    "high": 113,
+    "low": 107,
+    "close": 111
+   },
+   "var:__obs_plot0": 110.0
+  }
+ ],
+ "finalVarState": {
+  "m": {
+   "open": 109,
+   "high": 113,
+   "low": 107,
+   "close": 111
+  },
+  "__obs_plot0": 110.0
+ }
+}

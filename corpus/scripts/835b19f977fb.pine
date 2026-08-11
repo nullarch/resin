@@ -1,0 +1,4 @@
+//@version=5
+indicator("Input")
+length = input.int(defval=14, title="RSI Length", minval=1)
+x = close

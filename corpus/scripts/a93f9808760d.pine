@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Sig Qual")
+signalQuality(float rsi, float vol, float avgVol, float eff) =>
+    rsiConf = math.abs(rsi - 50) / 50
+    volConf = avgVol > 0 ? math.min(vol / avgVol, 2.0) / 2.0 : 0.5
+    rsiConf * 0.4 + volConf * 0.3 + eff * 0.3
+
+body = math.abs(close - open_)
+barRange = high - low
+eff = barRange > 0 ? body / barRange : 0.0
+rsi = nz(ta.rsi(close, 3), 50.0)
+avgVol = ta.sma(volume, 5)
+qual = signalQuality(rsi, volume, avgVol, eff)
+plot(qual, "Q")

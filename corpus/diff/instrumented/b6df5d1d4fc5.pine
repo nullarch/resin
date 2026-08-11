@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Newton Sqrt")
+target = close
+guess = target / 2
+iterations = 0
+while math.abs(guess * guess - target) > 0.001 and iterations < 50
+    guess := (guess + target / guess) / 2
+    iterations := iterations + 1
+var float __obs_plot0 = na
+__obs_plot0 := guess
+plot(guess, "Sqrt")

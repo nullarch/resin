@@ -120,9 +120,7 @@ and came close to discarding about 1,200 perfectly valid scripts.
 **The corpus is not in this repository.** It is thousands of third-party scripts
 under mixed and often absent licenses, and redistributing it is not ours to do.
 So you cannot reproduce that specific number here — you can only reproduce the
-method, by running `resin check` over scripts you already have. Source comments
-cite corpus paths (`corpus/...`) as the evidence behind a decision; those point
-into the development repository and do not resolve in this snapshot.
+method, by running `resin check` over scripts you already have.
 
 ## How it is verified
 

@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Trend Score UDF")
+trendScore(float price, float fastMA, float slowMA, float rsi) =>
+    maScore = slowMA > 0 ? (fastMA - slowMA) / slowMA * 100 : 0.0
+    priceScore = fastMA > 0 ? (price - fastMA) / fastMA * 100 : 0.0
+    rsiScore = (rsi - 50) / 50
+    maScore * 0.4 + priceScore * 0.3 + rsiScore * 30 * 0.3
+
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+score = trendScore(close, sma3, sma5, rsi)
+plot(score, "TS")

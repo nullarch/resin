@@ -1,0 +1,10 @@
+//@version=5
+indicator("2nd Order")
+var float pos = 100.0
+var float vel = 0.0
+float target = close
+float stiffness = 0.1
+float damping = 0.3
+float force = stiffness * (target - pos) - damping * vel
+vel := vel + force
+pos := pos + vel

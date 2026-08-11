@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Sig Label")
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+trend = close > sma3 ? "UP" : "DN"
+mom = rsi > 55 ? "BULL" : rsi < 45 ? "BEAR" : "FLAT"
+label = trend + "_" + mom
+isBullUp = label == "UP_BULL"
+plot(isBullUp ? 1 : 0, "BU")

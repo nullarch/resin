@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Order Type")
+rsi = nz(ta.rsi(close, 3), 50.0)
+atr = ta.atr(3)
+sma3 = ta.sma(close, 3)
+orderType = switch
+    rsi < 25 => "limit_buy"
+    rsi > 75 => "limit_sell"
+    close > sma3 + atr => "market_buy"
+    close < sma3 - atr => "market_sell"
+    => "no_order"
+hasOrder = orderType != "no_order"
+plot(hasOrder ? 1 : 0, "HasOrder")

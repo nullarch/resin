@@ -1,0 +1,5 @@
+//@version=5
+indicator("Checksum")
+var float checksum = 0.0
+delta = close - open
+checksum := checksum + math.abs(delta)

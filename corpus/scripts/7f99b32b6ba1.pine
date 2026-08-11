@@ -1,0 +1,7 @@
+//@version=5
+indicator("Winding Number")
+float dx = not na(close[1]) ? close - close[1] : 0.001
+float dy = not na(close[2]) ? close[1] - close[2] : 0.001
+float angle = math.atan(dy / (math.abs(dx) + 0.001))
+var float windingSum = 0.0
+windingSum := windingSum + angle

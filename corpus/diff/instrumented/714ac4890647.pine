@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Rev Copy")
+var float[] data = array.new_float(0)
+array.push(data, close)
+if array.size(data) > 5
+    array.shift(data)
+copied = array.copy(data)
+array.reverse(copied)
+firstOrig = array.size(data) > 0 ? array.first(data) : na
+lastCopy = array.size(copied) > 0 ? array.last(copied) : na
+same = not na(firstOrig) and not na(lastCopy)
+var float __obs_plot0 = na
+__obs_plot0 := same ? 1 : 0
+plot(same ? 1 : 0, "Same")

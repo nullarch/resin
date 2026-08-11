@@ -1,0 +1,10 @@
+//@version=5
+indicator("VPIN_Proxy")
+prevClose = nz(close[1], close)
+buyVol = close >= prevClose ? float(volume) : 0.0
+sellVol = close < prevClose ? float(volume) : 0.0
+imbalance = math.abs(buyVol - sellVol)
+vpin = volume > 0 ? imbalance / float(volume) : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := vpin
+plot(vpin, "VPIN")

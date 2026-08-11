@@ -1,0 +1,5 @@
+
+//@version=5
+indicator("Input Session")
+sess = input.session("0930-1600", title="Session")
+plot(close)

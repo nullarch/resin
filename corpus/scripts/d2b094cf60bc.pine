@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Accumulator")
+sum = 0.0
+n = 1
+while n <= 10
+    sum := sum + 1.0 / n
+    n := n + 1
+plot(sum, "Harmonic")

@@ -1,0 +1,5 @@
+//@version=5
+indicator("Bin Search")
+a = array.from(10.0, 20.0, 30.0, 40.0, 50.0)
+idx = array.binary_search(a, 30.0)
+plot(idx)

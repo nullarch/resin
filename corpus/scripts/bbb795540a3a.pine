@@ -1,0 +1,6 @@
+
+//@version=5
+indicator("BB Width %")
+[mid, upper, lower] = ta.bb(close, 5, 2.0)
+bbw = (upper - lower) / mid * 100
+plot(bbw, "BBW%")

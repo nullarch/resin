@@ -1,0 +1,9 @@
+//@version=5
+indicator("ReconErrTrack")
+var float cumErr = 0.0
+s2 = nz(ta.sma(close, 2), close)
+d = close - s2
+recon = s2 + d
+err = math.abs(recon - close)
+cumErr := cumErr + err
+plot(cumErr, "CumErr")

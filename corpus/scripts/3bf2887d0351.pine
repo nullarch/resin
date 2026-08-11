@@ -1,0 +1,10 @@
+//@version=5
+indicator("Transaction Rollback")
+var float balance = 1000.0
+var float checkpoint = 1000.0
+change = close - open
+balance := balance + change
+if balance < 990.0
+    balance := checkpoint
+else
+    checkpoint := balance

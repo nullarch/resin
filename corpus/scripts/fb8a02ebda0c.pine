@@ -1,0 +1,6 @@
+//@version=5
+indicator("MR_SMA")
+level1 = nz(ta.sma(close, 2), close)
+level2 = nz(ta.sma(close, 4), close)
+spread = level1 - level2
+plot(spread, "MRSpread")

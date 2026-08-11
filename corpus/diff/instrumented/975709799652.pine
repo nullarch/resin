@@ -1,0 +1,15 @@
+//@version=5
+indicator("VWAP", overlay=true)
+src = input.source(hlc3, title="Source")
+vwap_val = ta.vwap(src)
+upper_band = vwap_val + ta.stdev(src, 20)
+lower_band = vwap_val - ta.stdev(src, 20)
+var float __obs_plot0 = na
+__obs_plot0 := vwap_val
+plot(vwap_val, title="VWAP", color=color.blue)
+var float __obs_plot1 = na
+__obs_plot1 := upper_band
+plot(upper_band, title="Upper", color=color.green)
+var float __obs_plot2 = na
+__obs_plot2 := lower_band
+plot(lower_band, title="Lower", color=color.red)

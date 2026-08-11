@@ -1,0 +1,4 @@
+//@version=5
+indicator("switch default only")
+result = switch
+    => close

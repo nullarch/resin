@@ -1,0 +1,3 @@
+//@version=5
+indicator("Test")
+x = nz(close[1], 0)

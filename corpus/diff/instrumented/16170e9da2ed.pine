@@ -1,0 +1,8 @@
+//@version=5
+indicator("test")
+x = close > open ? 1 : close < open ? -1 : 0
+smaLen = x > 0 ? 3 : x < 0 ? 5 : 4
+result = ta.sma(close, smaLen)
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

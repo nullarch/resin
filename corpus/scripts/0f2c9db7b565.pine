@@ -1,0 +1,3 @@
+//@version=5
+indicator("Test")
+c = ta.cog(close, 14)

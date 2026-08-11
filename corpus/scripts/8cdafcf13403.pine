@@ -1,0 +1,6 @@
+//@version=5
+indicator("ADX", overlay=false)
+adx_length = input.int(14, title="ADX Smoothing")
+di_length = input.int(14, title="DI Length")
+dmi_plus = ta.dmi(di_length, adx_length)
+plot(dmi_plus, title="ADX", color=color.blue)

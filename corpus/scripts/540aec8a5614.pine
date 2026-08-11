@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Dynamic Array")
+arr = array.from(close, open, high, low)
+sz = array.size(arr)
+mx = array.max(arr)
+mn = array.min(arr)
+plot(mx - mn, "Range")

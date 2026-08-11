@@ -1,0 +1,5 @@
+//@version=5
+indicator("Import Test")
+import user/lib/1 as mylib
+sma3 = ta.sma(close, 3)
+plot(sma3)

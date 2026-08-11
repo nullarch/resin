@@ -1,0 +1,7 @@
+//@version=5
+indicator("Test")
+lbl = label.new(bar_index, close, "Hi")
+label.set_text(lbl, "Updated")
+label.set_color(lbl, color.red)
+label.set_style(lbl, label.style_label_up)
+label.set_tooltip(lbl, "Tooltip")

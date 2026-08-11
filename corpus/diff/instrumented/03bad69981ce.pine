@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("PRO")
+roc3 = close[3] > 0 ? (close - close[3]) / close[3] * 100 : 0.0
+smoothROC = ta.sma(roc3, 3)
+var float __obs_plot0 = na
+__obs_plot0 := smoothROC
+plot(smoothROC, "PRO")

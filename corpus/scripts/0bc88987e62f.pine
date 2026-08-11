@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Level Search")
+sma5 = ta.sma(close, 5)
+dist = math.abs(close - sma5)
+threshold = 10.0
+steps = 0
+while threshold > dist and steps < 15
+    threshold := threshold * 0.6
+    steps := steps + 1
+plot(steps, "St")

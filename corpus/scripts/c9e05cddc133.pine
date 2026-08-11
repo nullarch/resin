@@ -1,0 +1,7 @@
+//@version=5
+indicator("I Controller")
+float setpoint = 106.0
+float err = setpoint - close
+var float integral = 0.0
+float ki = 0.1
+integral := integral + ki * err

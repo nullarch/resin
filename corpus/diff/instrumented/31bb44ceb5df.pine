@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Hidden Div")
+rsi = nz(ta.rsi(close, 3), 50.0)
+priceLowerHigh = not na(close[3]) and close < close[3]
+rsiHigherHigh = rsi > 55
+hiddenBear = priceLowerHigh and rsiHigherHigh
+var float __obs_plot0 = na
+__obs_plot0 := hiddenBear ? 1 : 0
+plot(hiddenBear ? 1 : 0, "HB")

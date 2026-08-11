@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Vol Regime")
+var vm = map.new<string, float>()
+atr = ta.atr(3)
+avgATR = ta.sma(atr, 5)
+ratio = avgATR > 0 ? atr / avgATR : 1.0
+map.put(vm, "current_vol", atr)
+map.put(vm, "avg_vol", avgATR)
+map.put(vm, "vol_ratio", ratio)
+regime = ratio > 1.5 ? 2.0 : ratio > 1.0 ? 1.0 : 0.0
+map.put(vm, "regime", regime)
+plot(map.get(vm, "regime", 0.0), "Reg")

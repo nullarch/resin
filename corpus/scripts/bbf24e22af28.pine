@@ -1,0 +1,8 @@
+//@version=5
+indicator("Sort NaN")
+arr = array.from(3.0, 1.0, 2.0)
+arr.sort()
+first = arr.get(0)
+last = arr.get(arr.size() - 1)
+plot(first)
+plot(last)

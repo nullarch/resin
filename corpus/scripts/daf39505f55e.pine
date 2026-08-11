@@ -1,0 +1,7 @@
+//@version=5
+indicator("Trail Decay")
+var float trail = 1.0
+decayFactor = 0.85
+reinforcement = close > open ? 0.5 : 0.1
+trail := trail * decayFactor + reinforcement
+plot(trail)

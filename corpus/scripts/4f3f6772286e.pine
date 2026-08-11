@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("FilterHist")
+var float[] filterHist = array.new_float(0)
+smaVal = nz(ta.sma(close, 3), close)
+array.push(filterHist, smaVal)
+if array.size(filterHist) > 5
+    array.shift(filterHist)
+avg = array.avg(filterHist)
+maxF = array.max(filterHist)
+minF = array.min(filterHist)
+spread = maxF - minF
+plot(spread, "S")

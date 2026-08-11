@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:pm": {
+    "avg_return": 0.8,
+    "volatility": 1.4696938457,
+    "sharpe": 0.5443310539406718
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:pm": {
+    "avg_return": 0.8,
+    "volatility": 1.4696938457,
+    "sharpe": 0.5443310539406718
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:pm": {
+    "avg_return": 0.8,
+    "volatility": 1.4696938457,
+    "sharpe": 0.5443310539406718
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:pm": {
+    "avg_return": 0.8,
+    "volatility": 1.4696938457,
+    "sharpe": 0.5443310539406718
+   },
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:pm": {
+    "avg_return": 0.8,
+    "volatility": 1.4696938457,
+    "sharpe": 0.5443310539406718
+   },
+   "var:__obs_plot0": 1.7204650534
+  },
+  {
+   "var:pm": {
+    "avg_return": 0.8,
+    "volatility": 1.4696938457,
+    "sharpe": 0.5443310539406718
+   },
+   "var:__obs_plot0": 1.8547236991
+  },
+  {
+   "var:pm": {
+    "avg_return": 0.8,
+    "volatility": 1.4696938457,
+    "sharpe": 0.5443310539406718
+   },
+   "var:__obs_plot0": 1.939071943
+  },
+  {
+   "var:pm": {
+    "avg_return": 0.8,
+    "volatility": 1.4696938457,
+    "sharpe": 0.5443310539406718
+   },
+   "var:__obs_plot0": 1.6
+  },
+  {
+   "var:pm": {
+    "avg_return": 0.8,
+    "volatility": 1.4696938457,
+    "sharpe": 0.5443310539406718
+   },
+   "var:__obs_plot0": 1.4696938457
+  },
+  {
+   "var:pm": {
+    "avg_return": 0.8,
+    "volatility": 1.4696938457,
+    "sharpe": 0.5443310539406718
+   },
+   "var:__obs_plot0": 1.4696938457
+  }
+ ],
+ "finalVarState": {
+  "pm": {
+   "avg_return": 0.8,
+   "volatility": 1.4696938457,
+   "sharpe": 0.5443310539406718
+  },
+  "__obs_plot0": 1.4696938457
+ }
+}

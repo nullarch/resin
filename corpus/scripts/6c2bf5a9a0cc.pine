@@ -1,0 +1,6 @@
+//@version=5
+indicator("test")
+var float maxClose = 0.0
+if close > maxClose
+    maxClose := close
+plot(maxClose)

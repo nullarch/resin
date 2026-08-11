@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("ATR Bands")
+sma5 = ta.sma(close, 5)
+atr = ta.atr(3)
+mult = 2.0
+upperBand = sma5 + atr * mult
+lowerBand = sma5 - atr * mult
+position = (upperBand - lowerBand) > 0 ? (close - lowerBand) / (upperBand - lowerBand) : 0.5
+var float __obs_plot0 = na
+__obs_plot0 := position
+plot(position, "Pos")

@@ -1,0 +1,105 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:ps": {
+    "bull_count": 10.0,
+    "bear_count": 0.0,
+    "total": 10.0
+   },
+   "var:bars": 1,
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:ps": {
+    "bull_count": 10.0,
+    "bear_count": 0.0,
+    "total": 10.0
+   },
+   "var:bars": 2,
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:ps": {
+    "bull_count": 10.0,
+    "bear_count": 0.0,
+    "total": 10.0
+   },
+   "var:bars": 3,
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:ps": {
+    "bull_count": 10.0,
+    "bear_count": 0.0,
+    "total": 10.0
+   },
+   "var:bars": 4,
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:ps": {
+    "bull_count": 10.0,
+    "bear_count": 0.0,
+    "total": 10.0
+   },
+   "var:bars": 5,
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:ps": {
+    "bull_count": 10.0,
+    "bear_count": 0.0,
+    "total": 10.0
+   },
+   "var:bars": 6,
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:ps": {
+    "bull_count": 10.0,
+    "bear_count": 0.0,
+    "total": 10.0
+   },
+   "var:bars": 7,
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:ps": {
+    "bull_count": 10.0,
+    "bear_count": 0.0,
+    "total": 10.0
+   },
+   "var:bars": 8,
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:ps": {
+    "bull_count": 10.0,
+    "bear_count": 0.0,
+    "total": 10.0
+   },
+   "var:bars": 9,
+   "var:__obs_plot0": 100.0
+  },
+  {
+   "var:ps": {
+    "bull_count": 10.0,
+    "bear_count": 0.0,
+    "total": 10.0
+   },
+   "var:bars": 10,
+   "var:__obs_plot0": 100.0
+  }
+ ],
+ "finalVarState": {
+  "ps": {
+   "bull_count": 10.0,
+   "bear_count": 0.0,
+   "total": 10.0
+  },
+  "bars": 10,
+  "__obs_plot0": 100.0
+ }
+}

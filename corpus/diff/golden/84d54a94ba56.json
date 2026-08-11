@@ -1,0 +1,127 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:ssePre": 0.0,
+   "var:ssePost": 0.0,
+   "var:preMean": 103.0,
+   "var:postMean": 0.0,
+   "var:preCnt": 1,
+   "var:postCnt": 0,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 103.0,
+   "var:__obs_plot2": 0.0
+  },
+  {
+   "var:ssePre": 0.25,
+   "var:ssePost": 0.0,
+   "var:preMean": 103.5,
+   "var:postMean": 0.0,
+   "var:preCnt": 2,
+   "var:postCnt": 0,
+   "var:__obs_plot0": 0.25,
+   "var:__obs_plot1": 103.5,
+   "var:__obs_plot2": 0.0
+  },
+  {
+   "var:ssePre": 1.25,
+   "var:ssePost": 0.0,
+   "var:preMean": 103.0,
+   "var:postMean": 0.0,
+   "var:preCnt": 3,
+   "var:postCnt": 0,
+   "var:__obs_plot0": 1.25,
+   "var:__obs_plot1": 103.0,
+   "var:__obs_plot2": 0.0
+  },
+  {
+   "var:ssePre": 3.5,
+   "var:ssePost": 0.0,
+   "var:preMean": 103.5,
+   "var:postMean": 0.0,
+   "var:preCnt": 4,
+   "var:postCnt": 0,
+   "var:__obs_plot0": 3.5,
+   "var:__obs_plot1": 103.5,
+   "var:__obs_plot2": 0.0
+  },
+  {
+   "var:ssePre": 11.339999999999984,
+   "var:ssePost": 0.0,
+   "var:preMean": 104.2,
+   "var:postMean": 0.0,
+   "var:preCnt": 5,
+   "var:postCnt": 0,
+   "var:__obs_plot0": 11.339999999999984,
+   "var:__obs_plot1": 104.2,
+   "var:__obs_plot2": 0.0
+  },
+  {
+   "var:ssePre": 11.339999999999984,
+   "var:ssePost": 0.0,
+   "var:preMean": 104.2,
+   "var:postMean": 106.0,
+   "var:preCnt": 5,
+   "var:postCnt": 1,
+   "var:__obs_plot0": 11.339999999999984,
+   "var:__obs_plot1": 104.2,
+   "var:__obs_plot2": 106.0
+  },
+  {
+   "var:ssePre": 11.339999999999984,
+   "var:ssePost": 1.0,
+   "var:preMean": 104.2,
+   "var:postMean": 107.0,
+   "var:preCnt": 5,
+   "var:postCnt": 2,
+   "var:__obs_plot0": 12.339999999999984,
+   "var:__obs_plot1": 104.2,
+   "var:__obs_plot2": 107.0
+  },
+  {
+   "var:ssePre": 11.339999999999984,
+   "var:ssePost": 5.0,
+   "var:preMean": 104.2,
+   "var:postMean": 108.0,
+   "var:preCnt": 5,
+   "var:postCnt": 3,
+   "var:__obs_plot0": 16.339999999999982,
+   "var:__obs_plot1": 104.2,
+   "var:__obs_plot2": 108.0
+  },
+  {
+   "var:ssePre": 11.339999999999984,
+   "var:ssePost": 5.5625,
+   "var:preMean": 104.2,
+   "var:postMean": 108.25,
+   "var:preCnt": 5,
+   "var:postCnt": 4,
+   "var:__obs_plot0": 16.902499999999982,
+   "var:__obs_plot1": 104.2,
+   "var:__obs_plot2": 108.25
+  },
+  {
+   "var:ssePre": 11.339999999999984,
+   "var:ssePost": 10.402500000000012,
+   "var:preMean": 104.2,
+   "var:postMean": 108.8,
+   "var:preCnt": 5,
+   "var:postCnt": 5,
+   "var:__obs_plot0": 21.742499999999996,
+   "var:__obs_plot1": 104.2,
+   "var:__obs_plot2": 108.8
+  }
+ ],
+ "finalVarState": {
+  "ssePre": 11.339999999999984,
+  "ssePost": 10.402500000000012,
+  "preMean": 104.2,
+  "postMean": 108.8,
+  "preCnt": 5,
+  "postCnt": 5,
+  "__obs_plot0": 21.742499999999996,
+  "__obs_plot1": 104.2,
+  "__obs_plot2": 108.8
+ }
+}

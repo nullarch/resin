@@ -1,0 +1,5 @@
+//@version=5
+indicator("Quantize")
+float stepSize = 2.0
+float quantized = math.floor(close / stepSize) * stepSize
+float quantErr = close - quantized

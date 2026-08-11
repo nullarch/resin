@@ -1,0 +1,23 @@
+
+//@version=5
+indicator("CorrProxy")
+var float sumXY = 0.0
+var float sumX = 0.0
+var float sumY = 0.0
+var float sumX2 = 0.0
+var float sumY2 = 0.0
+var int n = 0
+
+n := n + 1
+x = close
+y = float(volume)
+sumX := sumX + x
+sumY := sumY + y
+sumXY := sumXY + x * y
+sumX2 := sumX2 + x * x
+sumY2 := sumY2 + y * y
+
+num = n * sumXY - sumX * sumY
+den = math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY))
+corr = den > 0 ? num / den : 0.0
+plot(corr, "C")

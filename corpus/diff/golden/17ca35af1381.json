@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:barNum": 1,
+   "var:sessHi": 105,
+   "var:sessLo": 98,
+   "var:__obs_plot0": 7,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:barNum": 2,
+   "var:sessHi": 106,
+   "var:sessLo": 98,
+   "var:__obs_plot0": 8,
+   "var:__obs_plot1": 0.0
+  },
+  {
+   "var:barNum": 3,
+   "var:sessHi": 106,
+   "var:sessLo": 98,
+   "var:__obs_plot0": 8,
+   "var:__obs_plot1": -0.33333333333400006
+  },
+  {
+   "var:barNum": 4,
+   "var:sessHi": 107,
+   "var:sessLo": 98,
+   "var:__obs_plot0": 9,
+   "var:__obs_plot1": 0.23333333333300005
+  },
+  {
+   "var:barNum": 5,
+   "var:sessHi": 109,
+   "var:sessLo": 103,
+   "var:__obs_plot0": 6,
+   "var:__obs_plot1": 0.9999999999990001
+  },
+  {
+   "var:barNum": 6,
+   "var:sessHi": 109,
+   "var:sessLo": 102,
+   "var:__obs_plot0": 7,
+   "var:__obs_plot1": 0.45121951219500017
+  },
+  {
+   "var:barNum": 7,
+   "var:sessHi": 110,
+   "var:sessLo": 102,
+   "var:__obs_plot0": 8,
+   "var:__obs_plot1": 0.5784313725499999
+  },
+  {
+   "var:barNum": 8,
+   "var:sessHi": 112,
+   "var:sessLo": 102,
+   "var:__obs_plot0": 10,
+   "var:__obs_plot1": 0.73579109063
+  },
+  {
+   "var:barNum": 9,
+   "var:sessHi": 112,
+   "var:sessLo": 102,
+   "var:__obs_plot0": 10,
+   "var:__obs_plot1": 0.17806780678099998
+  },
+  {
+   "var:barNum": 10,
+   "var:sessHi": 113,
+   "var:sessLo": 107,
+   "var:__obs_plot0": 6,
+   "var:__obs_plot1": 0.9168478260869999
+  }
+ ],
+ "finalVarState": {
+  "barNum": 10,
+  "sessHi": 113,
+  "sessLo": 107,
+  "__obs_plot0": 6,
+  "__obs_plot1": 0.9168478260869999
+ }
+}

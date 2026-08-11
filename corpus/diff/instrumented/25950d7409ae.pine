@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Mom Comp")
+rsi = nz(ta.rsi(close, 3), 50.0)
+k = ta.stoch(close, high, low, 5)
+cci = ta.cci(close, 5)
+[m, s, h] = ta.macd(close, 3, 5, 3)
+rsiScore = rsi > 50 ? 1 : 0
+kScore = k > 50 ? 1 : 0
+cciScore = cci > 0 ? 1 : 0
+macdScore = h > 0 ? 1 : 0
+composite = rsiScore + kScore + cciScore + macdScore
+var float __obs_plot0 = na
+__obs_plot0 := composite
+plot(composite, "Comp")

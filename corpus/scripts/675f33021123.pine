@@ -1,0 +1,6 @@
+//@version=5
+indicator("P Controller")
+float setpoint = 106.0
+float err = setpoint - close
+float kp = 0.5
+float output = kp * err

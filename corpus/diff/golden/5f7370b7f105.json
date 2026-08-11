@@ -1,0 +1,50 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:lastTrade": "pine_fn.<locals>.TradeResult(entryPrice=Series(current=111, length=10), exitPrice=0.0, pnl=0.0, isWin=False)",
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:lastTrade": "pine_fn.<locals>.TradeResult(entryPrice=Series(current=111, length=10), exitPrice=0.0, pnl=0.0, isWin=False)",
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:lastTrade": "pine_fn.<locals>.TradeResult(entryPrice=Series(current=111, length=10), exitPrice=0.0, pnl=0.0, isWin=False)",
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:lastTrade": "pine_fn.<locals>.TradeResult(entryPrice=Series(current=111, length=10), exitPrice=0.0, pnl=0.0, isWin=False)",
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:lastTrade": "pine_fn.<locals>.TradeResult(entryPrice=Series(current=111, length=10), exitPrice=0.0, pnl=0.0, isWin=False)",
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:lastTrade": "pine_fn.<locals>.TradeResult(entryPrice=Series(current=111, length=10), exitPrice=0.0, pnl=0.0, isWin=False)",
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:lastTrade": "pine_fn.<locals>.TradeResult(entryPrice=Series(current=111, length=10), exitPrice=0.0, pnl=0.0, isWin=False)",
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:lastTrade": "pine_fn.<locals>.TradeResult(entryPrice=Series(current=111, length=10), exitPrice=0.0, pnl=0.0, isWin=False)",
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:lastTrade": "pine_fn.<locals>.TradeResult(entryPrice=Series(current=111, length=10), exitPrice=0.0, pnl=0.0, isWin=False)",
+   "var:__obs_plot0": 0.0
+  },
+  {
+   "var:lastTrade": "pine_fn.<locals>.TradeResult(entryPrice=Series(current=111, length=10), exitPrice=0.0, pnl=0.0, isWin=False)",
+   "var:__obs_plot0": 0.0
+  }
+ ],
+ "finalVarState": {
+  "lastTrade": "pine_fn.<locals>.TradeResult(entryPrice=Series(current=111, length=10), exitPrice=0.0, pnl=0.0, isWin=False)",
+  "__obs_plot0": 0.0
+ }
+}

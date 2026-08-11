@@ -1,0 +1,7 @@
+//@version=5
+indicator("Doppler Shift")
+float target = nz(ta.sma(close, 5), close)
+float velocity = close - (not na(close[1]) ? close[1] : close)
+float approaching = close < target and velocity > 0.0 ? 1.0 : 0.0
+float receding = close > target and velocity > 0.0 ? 1.0 : 0.0
+float dopplerFactor = approaching > 0.5 ? 1.0 + math.abs(velocity) / math.max(math.abs(target), 0.01) : 1.0 - math.abs(velocity) / math.max(math.abs(target), 0.01)

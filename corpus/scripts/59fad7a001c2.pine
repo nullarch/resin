@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Str Join")
+var string[] conds = array.new_string(0)
+array.clear(conds)
+sma3 = ta.sma(close, 3)
+if close > sma3
+    array.push(conds, "ABOVE_MA")
+if close > open
+    array.push(conds, "GREEN")
+if volume > ta.sma(volume, 5)
+    array.push(conds, "HIGH_VOL")
+joined = array.join(conds, ",")
+plot(str.length(joined), "Len")

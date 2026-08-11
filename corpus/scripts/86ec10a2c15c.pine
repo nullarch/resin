@@ -1,0 +1,8 @@
+//@version=5
+indicator("If-Else")
+var int ups = 0
+var int downs = 0
+if close > open
+    ups := ups + 1
+else
+    downs := downs + 1

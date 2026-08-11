@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("For While")
+totalScore = 0.0
+for i = 0 to 3
+    c = close[i]
+    if not na(c)
+        estimate = c
+        iters = 0
+        target = ta.sma(close, 3)
+        while math.abs(estimate - target) > 0.1 and iters < 10
+            estimate := estimate + (target - estimate) * 0.5
+            iters := iters + 1
+        totalScore := totalScore + float(iters)
+plot(totalScore, "Tot")

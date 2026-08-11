@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Case Conv")
+base = "Hello World"
+lower = str.lower(base)
+upper = str.upper(base)
+isLower = lower == "hello world"
+isUpper = upper == "HELLO WORLD"
+plot(isLower and isUpper ? 1 : 0, "Match")

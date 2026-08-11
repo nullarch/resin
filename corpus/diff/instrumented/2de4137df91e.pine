@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Precision Chain")
+sma1 = ta.sma(close, 3)
+ema1 = ta.ema(sma1, 5)
+rsi1 = ta.rsi(close, 14)
+[mid, up, lo] = ta.bb(close, 10, 2.0)
+result = sma1 + ema1 + rsi1 + mid
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

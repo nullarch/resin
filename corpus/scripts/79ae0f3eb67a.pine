@@ -1,0 +1,20 @@
+
+//@version=5
+indicator("Event UDT")
+type EventTracker
+    int totalEvents = 0
+    int highPrio = 0
+    float lastEventBar = 0.0
+
+var EventTracker et = EventTracker.new()
+var int barNum = 0
+barNum := barNum + 1
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+isEvent = ta.crossover(close, sma3) or rsi > 70 or rsi < 30
+if isEvent
+    et.totalEvents := et.totalEvents + 1
+    et.lastEventBar := float(barNum)
+    if rsi > 70 or rsi < 30
+        et.highPrio := et.highPrio + 1
+plot(et.totalEvents, "TE")

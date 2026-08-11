@@ -1,0 +1,5 @@
+//@version=5
+indicator("BB")
+var float result = 0.0
+[middle, upper, lower] = ta.bb(close, 5, 2.0)
+result := upper - lower

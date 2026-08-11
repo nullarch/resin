@@ -1,0 +1,3 @@
+//@version=5
+indicator("Test")
+a = text.align_center

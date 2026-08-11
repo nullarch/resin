@@ -1,0 +1,8 @@
+//@version=5
+indicator("Shadow")
+var float total = 0.0
+total := 0.0
+for i = 0 to 4
+    x = float(i) * 2.0
+    total := total + x
+plot(total)

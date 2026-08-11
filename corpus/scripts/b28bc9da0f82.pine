@@ -1,0 +1,13 @@
+//@version=5
+strategy("Supertrend Strategy")
+atrPeriod = input.int(10)
+factor = input.float(3.0)
+[supertrend, direction] = ta.supertrend(factor, atrPeriod)
+bodyMiddle = (open + close) / 2
+upTrend = direction < 0
+downTrend = direction > 0
+if upTrend
+    strategy.entry("Long", strategy.long)
+if downTrend
+    strategy.entry("Short", strategy.short)
+plot(supertrend, color=upTrend ? color.green : color.red)

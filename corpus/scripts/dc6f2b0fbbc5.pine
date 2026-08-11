@@ -1,0 +1,14 @@
+//@version=5
+indicator("HierBayes")
+var float groupMean = 105.0
+var float groupPrec = 0.1
+var float indivMean = 105.0
+var float indivPrec = 0.5
+dataPrec = 1.0 / math.max((high - low) * (high - low), 0.01)
+totalIndiv = indivPrec + dataPrec
+indivMean := (indivPrec * groupMean + dataPrec * close) / totalIndiv
+indivPrec := totalIndiv
+groupPrec := groupPrec + 0.01
+groupMean := (groupPrec * groupMean + 0.1 * indivMean) / (groupPrec + 0.1)
+plot(indivMean, "Indiv")
+plot(groupMean, "Group")

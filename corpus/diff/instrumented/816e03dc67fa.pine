@@ -1,0 +1,12 @@
+//@version=5
+indicator("Multi Compound")
+float x = 10.0
+x += 5.0
+x *= 2.0
+x -= 3.0
+x /= 3.0
+var float result = 0.0
+result := x
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

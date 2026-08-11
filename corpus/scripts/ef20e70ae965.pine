@@ -1,0 +1,20 @@
+
+//@version=5
+indicator("Multi If")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rsi = ta.rsi(close, 3)
+atr = ta.atr(3)
+score = 0.0
+if close > sma3
+    score := score + 1.0
+if sma3 > sma5
+    score := score + 1.0
+if rsi > 50
+    score := score + 0.5
+if rsi < 70
+    score := score + 0.5
+if atr > 0
+    score := score + 0.5
+normalizedScore = score / 3.5
+plot(normalizedScore, "Score")

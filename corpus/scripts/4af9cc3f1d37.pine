@@ -1,0 +1,5 @@
+//@version=5
+indicator("Inline Comment")
+var float result = 0.0 // initial value
+result := close // use close price
+plot(result) // plot it

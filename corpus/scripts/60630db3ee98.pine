@@ -1,0 +1,7 @@
+//@version=5
+indicator("SameTA")
+var float diff = 0
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+if not na(sma3) and not na(sma5)
+    diff := sma3 - sma5

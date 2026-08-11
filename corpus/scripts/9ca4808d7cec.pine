@@ -1,0 +1,54 @@
+
+//@version=5
+indicator("FullStat")
+type StatResult
+    float mean = 0.0
+    float stdDev = 0.0
+    float zScore = 0.0
+
+var StatResult result = StatResult.new()
+var float[] window = array.new_float(0)
+var statMap = map.new<string, float>()
+
+array.push(window, close)
+if array.size(window) > 5
+    array.shift(window)
+
+mean = array.avg(window)
+sumSq = 0.0
+for [i, v] in window
+    sumSq := sumSq + math.pow(v - mean, 2)
+
+sz = array.size(window)
+stdDev = sz > 1 ? math.sqrt(sumSq / float(sz - 1)) : 1.0
+zScore = stdDev > 0.001 ? (close - mean) / stdDev : 0.0
+
+result.mean := mean
+result.stdDev := stdDev
+result.zScore := zScore
+
+sorted = array.copy(window)
+array.sort(sorted, order.ascending)
+midIdx = math.floor(float(sz) / 2.0)
+median = array.get(sorted, int(midIdx))
+q1Idx = math.max(0, math.floor(float(sz) * 0.25))
+q3Idx = math.min(sz - 1, math.floor(float(sz) * 0.75))
+iqr = array.get(sorted, int(q3Idx)) - array.get(sorted, int(q1Idx))
+
+belowCount = 0
+for [j, p] in window
+    if p <= close
+        belowCount := belowCount + 1
+pctRank = sz > 0 ? float(belowCount) / float(sz) * 100 : 50.0
+
+map.put(statMap, "mean", result.mean)
+map.put(statMap, "std", result.stdDev)
+map.put(statMap, "z", result.zScore)
+map.put(statMap, "iqr", iqr)
+map.put(statMap, "pctRank", pctRank)
+
+summary = 0.0
+for [k, val] in statMap
+    summary := summary + nz(val, 0.0)
+
+plot(summary, "S")

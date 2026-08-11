@@ -1,0 +1,8 @@
+//@version=5
+indicator("mixed alerts")
+sma5 = ta.sma(close, 5)
+alertcondition(close > sma5, "Above SMA", "Price crossed above SMA5")
+if close < sma5
+    alert("Below SMA")
+var float val = 0.0
+val := sma5

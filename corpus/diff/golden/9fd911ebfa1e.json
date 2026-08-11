@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:consecBull": 1,
+   "var:debouncedSignal": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:consecBull": 2,
+   "var:debouncedSignal": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:consecBull": 3,
+   "var:debouncedSignal": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:consecBull": 4,
+   "var:debouncedSignal": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:consecBull": 5,
+   "var:debouncedSignal": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:consecBull": 6,
+   "var:debouncedSignal": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:consecBull": 7,
+   "var:debouncedSignal": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:consecBull": 8,
+   "var:debouncedSignal": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:consecBull": 9,
+   "var:debouncedSignal": 1,
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:consecBull": 10,
+   "var:debouncedSignal": 1,
+   "var:__obs_plot0": 1
+  }
+ ],
+ "finalVarState": {
+  "consecBull": 10,
+  "debouncedSignal": 1,
+  "__obs_plot0": 1
+ }
+}

@@ -1,0 +1,8 @@
+//@version=5
+strategy("ATR Stop Strategy")
+atrVal = nz(ta.atr(3), 1.0)
+smaVal = ta.sma(close, 3)
+if not na(smaVal) and close > smaVal
+    strategy.entry("Long", strategy.long)
+if not na(smaVal) and close < smaVal - atrVal
+    strategy.close("Long")

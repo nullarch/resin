@@ -1,0 +1,4 @@
+//@version=5
+indicator("MathPipe")
+var float result = 0
+result := math.sqrt(math.pow(3, 2) + math.pow(4, 2))

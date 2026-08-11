@@ -1,0 +1,11 @@
+//@version=5
+indicator("Tangent Vector")
+var float prevMu = 0.0
+var float prevSigma = 1.0
+mu = nz(ta.sma(close, 3), close)
+sigma = high - low > 0.01 ? high - low : 1.0
+dMu = mu - prevMu
+dSigma = sigma - prevSigma
+tangentNorm = math.sqrt(dMu * dMu + dSigma * dSigma)
+prevMu := mu
+prevSigma := sigma

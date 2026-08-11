@@ -1,0 +1,13 @@
+//@version=5
+indicator("UDT New")
+type Trade
+    float entry = 0.0
+    float stop = 0.0
+    bool active = false
+
+var Trade t = Trade.new(100.0, 95.0, true)
+var float e = 0.0
+e := t.entry
+var bool a = false
+a := t.active
+plot(close)

@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Distance")
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+d1 = math.abs(close - sma3)
+d2 = math.abs(close - ema5)
+euclidean = math.sqrt(d1 * d1 + d2 * d2)
+plot(euclidean, "Dist")

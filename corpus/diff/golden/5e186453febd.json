@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:obCount": 0,
+   "var:osCount": 0,
+   "var:crossCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:obCount": 0,
+   "var:osCount": 0,
+   "var:crossCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:obCount": 0,
+   "var:osCount": 0,
+   "var:crossCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:obCount": 1,
+   "var:osCount": 0,
+   "var:crossCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:obCount": 2,
+   "var:osCount": 0,
+   "var:crossCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:obCount": 2,
+   "var:osCount": 0,
+   "var:crossCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:obCount": 3,
+   "var:osCount": 0,
+   "var:crossCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:obCount": 4,
+   "var:osCount": 0,
+   "var:crossCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:obCount": 4,
+   "var:osCount": 0,
+   "var:crossCount": 0,
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:obCount": 5,
+   "var:osCount": 0,
+   "var:crossCount": 0,
+   "var:__obs_plot0": 0
+  }
+ ],
+ "finalVarState": {
+  "obCount": 5,
+  "osCount": 0,
+  "crossCount": 0,
+  "__obs_plot0": 0
+ }
+}

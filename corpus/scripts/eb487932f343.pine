@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Fmt Price")
+hi = ta.highest(high, 5)
+lo = ta.lowest(low, 5)
+hiStr = str.tostring(hi, "#.##")
+loStr = str.tostring(lo, "#.##")
+range_str = hiStr + "-" + loStr
+plot(str.length(range_str), "Len")

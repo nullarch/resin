@@ -1,0 +1,11 @@
+//@version=5
+indicator("Exp Decay")
+var float decayed = na
+alpha = 0.3
+if na(decayed)
+    decayed := close
+else
+    decayed := alpha * close + (1.0 - alpha) * nz(decayed[1])
+var float __obs_plot0 = na
+__obs_plot0 := decayed
+plot(decayed)

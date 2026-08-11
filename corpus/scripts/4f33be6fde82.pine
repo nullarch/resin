@@ -1,0 +1,10 @@
+//@version=5
+indicator("Normalize")
+var float hMin = 10e10
+var float hMax = -10e10
+rsi = ta.rsi(close, 5)
+if not na(rsi)
+    hMin := math.min(nz(rsi, hMin), hMin)
+    hMax := math.max(nz(rsi, hMax), hMax)
+normalized = hMax > hMin ? (rsi - hMin) / (hMax - hMin) * 100 : 50
+plot(normalized)

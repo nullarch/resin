@@ -1,0 +1,13 @@
+
+//@version=5
+strategy("SR Strat", overlay=true)
+hi5 = ta.highest(high, 5)
+lo5 = ta.lowest(low, 5)
+rng = hi5 - lo5
+pos = rng > 0 ? (close - lo5) / rng * 100 : 50.0
+rsi = nz(ta.rsi(close, 3), 50.0)
+if pos < 30 and rsi > 40
+    strategy.entry("Long", strategy.long)
+if pos > 80 or rsi < 35
+    strategy.close("Long")
+plot(hi5, "Res")

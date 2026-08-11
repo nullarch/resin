@@ -1,0 +1,19 @@
+
+//@version=5
+indicator("Trend UDT")
+type TrendState
+    int direction = 0
+    int duration = 0
+    float strength = 0.0
+
+var TrendState ts = TrendState.new()
+sma3 = ta.sma(close, 3)
+newDir = close > sma3 ? 1 : -1
+if newDir == ts.direction
+    ts.duration := ts.duration + 1
+else
+    ts.direction := newDir
+    ts.duration := 1
+rsi = nz(ta.rsi(close, 3), 50.0)
+ts.strength := math.abs(rsi - 50) / 50
+plot(ts.duration, "Dur")

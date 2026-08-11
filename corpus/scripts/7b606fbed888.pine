@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Hoist Type")
+s = Signal.new()
+s.value := ta.rsi(close, 14)
+
+type Signal
+    float value = 0.0
+
+plot(s.value)

@@ -1,0 +1,9 @@
+//@version=5
+indicator("BayesVar")
+var float priorVar = 25.0
+var int nObs = 0
+nObs := nObs + 1
+dataVar = math.max((high - low) * (high - low), 0.01)
+postVar = priorVar > 0 and dataVar > 0 ? 1.0 / (1.0 / priorVar + 1.0 / dataVar) : priorVar
+priorVar := postVar
+plot(postVar, "PostVar")

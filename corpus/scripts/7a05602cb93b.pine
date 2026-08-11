@@ -1,0 +1,7 @@
+//@version=5
+indicator("while conv")
+var float result = 0.0
+float val = 1000.0
+while val > 1.0
+    val := val / 2.0
+result := val

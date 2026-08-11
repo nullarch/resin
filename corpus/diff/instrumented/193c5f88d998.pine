@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Risk Map")
+var rm = map.new<string, float>()
+atr = nz(ta.atr(3), 1.0)
+ret = close[1] > 0 ? (close - close[1]) / close[1] * 100 : 0.0
+map.put(rm, "atr", atr)
+map.put(rm, "return", ret)
+map.put(rm, "abs_return", math.abs(ret))
+total = 0.0
+for [k, v] in rm
+    total := total + v
+var float __obs_plot0 = na
+__obs_plot0 := total
+plot(total, "T")

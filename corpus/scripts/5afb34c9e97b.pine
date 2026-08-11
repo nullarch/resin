@@ -1,0 +1,3 @@
+//@version=5
+indicator("Test")
+plotcandle(open, high, low, close)

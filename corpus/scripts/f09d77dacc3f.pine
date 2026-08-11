@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Accumulator")
+var float peak = 0.0
+var float valley = 99999.0
+if close > peak
+    peak := close
+if close < valley
+    valley := close
+spread = peak - valley
+plot(spread)

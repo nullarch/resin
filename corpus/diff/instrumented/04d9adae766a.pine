@@ -1,0 +1,10 @@
+//@version=5
+indicator("UDT Generic")
+type Container
+    array<float> values
+var c = Container.new()
+c.values := array.from(1.0, 2.0, 3.0)
+var int sz = array.size(c.values)
+var float __obs_plot0 = na
+__obs_plot0 := sz
+plot(sz)

@@ -1,0 +1,4 @@
+//@version=5
+indicator("No Dup KW")
+sma_ = ta.sma(close, 3)
+plot(nz(sma_))

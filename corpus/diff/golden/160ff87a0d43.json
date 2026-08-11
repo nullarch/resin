@@ -1,0 +1,83 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:s": "  Hello  ",
+   "var:s2": "Hello",
+   "var:s3": "hello",
+   "var:len_": 5,
+   "var:__obs_plot0": 5
+  },
+  {
+   "var:s": "  Hello  ",
+   "var:s2": "Hello",
+   "var:s3": "hello",
+   "var:len_": 5,
+   "var:__obs_plot0": 5
+  },
+  {
+   "var:s": "  Hello  ",
+   "var:s2": "Hello",
+   "var:s3": "hello",
+   "var:len_": 5,
+   "var:__obs_plot0": 5
+  },
+  {
+   "var:s": "  Hello  ",
+   "var:s2": "Hello",
+   "var:s3": "hello",
+   "var:len_": 5,
+   "var:__obs_plot0": 5
+  },
+  {
+   "var:s": "  Hello  ",
+   "var:s2": "Hello",
+   "var:s3": "hello",
+   "var:len_": 5,
+   "var:__obs_plot0": 5
+  },
+  {
+   "var:s": "  Hello  ",
+   "var:s2": "Hello",
+   "var:s3": "hello",
+   "var:len_": 5,
+   "var:__obs_plot0": 5
+  },
+  {
+   "var:s": "  Hello  ",
+   "var:s2": "Hello",
+   "var:s3": "hello",
+   "var:len_": 5,
+   "var:__obs_plot0": 5
+  },
+  {
+   "var:s": "  Hello  ",
+   "var:s2": "Hello",
+   "var:s3": "hello",
+   "var:len_": 5,
+   "var:__obs_plot0": 5
+  },
+  {
+   "var:s": "  Hello  ",
+   "var:s2": "Hello",
+   "var:s3": "hello",
+   "var:len_": 5,
+   "var:__obs_plot0": 5
+  },
+  {
+   "var:s": "  Hello  ",
+   "var:s2": "Hello",
+   "var:s3": "hello",
+   "var:len_": 5,
+   "var:__obs_plot0": 5
+  }
+ ],
+ "finalVarState": {
+  "s": "  Hello  ",
+  "s2": "Hello",
+  "s3": "hello",
+  "len_": 5,
+  "__obs_plot0": 5
+ }
+}

@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:vm": {
+    "vol_ratio": 1.3333333333333333,
+    "price_vol": 1.0,
+    "vol_trend": 1.0
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:vm": {
+    "vol_ratio": 1.3333333333333333,
+    "price_vol": 1.0,
+    "vol_trend": 1.0
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:vm": {
+    "vol_ratio": 1.3333333333333333,
+    "price_vol": 1.0,
+    "vol_trend": 1.0
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:vm": {
+    "vol_ratio": 1.3333333333333333,
+    "price_vol": 1.0,
+    "vol_trend": 1.0
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:vm": {
+    "vol_ratio": 1.3333333333333333,
+    "price_vol": 1.0,
+    "vol_trend": 1.0
+   },
+   "var:__obs_plot0": 3.1206896551724137
+  },
+  {
+   "var:vm": {
+    "vol_ratio": 1.3333333333333333,
+    "price_vol": 1.0,
+    "vol_trend": 1.0
+   },
+   "var:__obs_plot0": 1.7894736842105263
+  },
+  {
+   "var:vm": {
+    "vol_ratio": 1.3333333333333333,
+    "price_vol": 1.0,
+    "vol_trend": 1.0
+   },
+   "var:__obs_plot0": 0.9821428571428571
+  },
+  {
+   "var:vm": {
+    "vol_ratio": 1.3333333333333333,
+    "price_vol": 1.0,
+    "vol_trend": 1.0
+   },
+   "var:__obs_plot0": 2.129032258064516
+  },
+  {
+   "var:vm": {
+    "vol_ratio": 1.3333333333333333,
+    "price_vol": 1.0,
+    "vol_trend": 1.0
+   },
+   "var:__obs_plot0": 1.8771929824561404
+  },
+  {
+   "var:vm": {
+    "vol_ratio": 1.3333333333333333,
+    "price_vol": 1.0,
+    "vol_trend": 1.0
+   },
+   "var:__obs_plot0": 3.333333333333333
+  }
+ ],
+ "finalVarState": {
+  "vm": {
+   "vol_ratio": 1.3333333333333333,
+   "price_vol": 1.0,
+   "vol_trend": 1.0
+  },
+  "__obs_plot0": 3.333333333333333
+ }
+}

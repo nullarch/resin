@@ -1,0 +1,40 @@
+
+//@version=5
+indicator("Stress17")
+enum SimResult
+    WIN
+    LOSS
+    DRAW
+type SimRun
+    float finalVal = 0.0
+    int steps = 0
+    string outcome = ""
+perturbation(base, factor) =>
+    base * (1.0 + factor * 0.01)
+var float bestRun = 0.0
+runs = array.new_float(0)
+for trial = 1 to 3
+    val = close
+    step = 0
+    while step < 5
+        direction = val > open ? 0.5 : -0.5
+        val := perturbation(val, direction * float(trial))
+        step := step + 1
+    array.push(runs, val)
+sim = SimRun.new()
+sim.finalVal := array.avg(runs)
+sim.steps := 3 * 5
+simResult = switch
+    sim.finalVal > close + 1 => SimResult.WIN
+    sim.finalVal < close - 1 => SimResult.LOSS
+    => SimResult.DRAW
+sim.outcome := simResult == SimResult.WIN ? "WIN" : simResult == SimResult.LOSS ? "LOSS" : "DRAW"
+bestRun := math.max(bestRun, nz(sim.finalVal, 0.0))
+summary = map.new<string, float>()
+map.put(summary, "best", bestRun)
+map.put(summary, "avg", nz(sim.finalVal, 0.0))
+map.put(summary, "steps", float(sim.steps))
+total = 0.0
+for [k, v] in summary
+    total := total + v
+plot(total + float(str.length(sim.outcome)), "S17")

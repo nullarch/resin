@@ -1,0 +1,10 @@
+//@version=5
+indicator("nested udf")
+var float result = 0.0
+double(x) =>
+    x * 2.0
+addTen(x) =>
+    x + 10.0
+half(x) =>
+    x / 2.0
+result := half(addTen(double(5.0)))

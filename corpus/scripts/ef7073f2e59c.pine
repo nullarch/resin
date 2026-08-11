@@ -1,0 +1,6 @@
+//@version=5
+indicator("highest lowest")
+var float h = 0.0
+var float l = 0.0
+h := ta.highest(high, 5)
+l := ta.lowest(low, 5)

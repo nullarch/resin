@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("VPIN")
+var float cumBuyVol = 0.0
+var float cumSellVol = 0.0
+var float cumTotalVol = 0.0
+buyV = close >= open ? volume : 0.0
+sellV = close < open ? volume : 0.0
+cumBuyVol := cumBuyVol + buyV
+cumSellVol := cumSellVol + sellV
+cumTotalVol := cumTotalVol + volume
+vpin = cumTotalVol > 0 ? math.abs(cumBuyVol - cumSellVol) / cumTotalVol : 0.0
+plot(vpin, "VPIN")

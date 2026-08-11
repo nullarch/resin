@@ -1,0 +1,21 @@
+//@version=5
+indicator("MACD", overlay=false)
+fast_length = input.int(12, title="Fast Length")
+slow_length = input.int(26, title="Slow Length")
+signal_length = input.int(9, title="Signal Smoothing")
+macd_type = input.string("EMA", title="MA Type", options=["EMA", "SMA"])
+fast_ma = macd_type == "EMA" ? ta.ema(close, fast_length) : ta.sma(close, fast_length)
+slow_ma = macd_type == "EMA" ? ta.ema(close, slow_length) : ta.sma(close, slow_length)
+macd_line = fast_ma - slow_ma
+signal_line = ta.ema(macd_line, signal_length)
+hist = macd_line - signal_line
+hist_color = hist >= 0 ? (hist > hist[1] ? color.green : color.lime) : (hist < hist[1] ? color.red : color.orange)
+var float __obs_plot0 = na
+__obs_plot0 := macd_line
+plot(macd_line, title="MACD", color=color.blue)
+var float __obs_plot1 = na
+__obs_plot1 := signal_line
+plot(signal_line, title="Signal", color=color.orange)
+var float __obs_plot2 = na
+__obs_plot2 := hist
+plot(hist, title="Histogram", style=plot.style_histogram, color=hist_color)

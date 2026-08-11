@@ -1,0 +1,11 @@
+//@version=5
+indicator("Dual Convergence")
+var float phi = 0.0
+var float psi = 0.0
+float cost = math.abs(close - open)
+float phiNew = math.max(phi, cost - psi)
+float psiNew = math.max(psi, cost - phi)
+float delta = math.abs(phiNew - phi) + math.abs(psiNew - psi)
+phi := phiNew
+psi := psiNew
+plot(delta, "DualDelta")

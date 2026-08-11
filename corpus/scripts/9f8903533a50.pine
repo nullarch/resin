@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("Reg Map")
+var rm = map.new<string, float>()
+sma3 = ta.sma(close, 3)
+rsi = nz(ta.rsi(close, 3), 50.0)
+map.put(rm, "trend", close > sma3 ? 1.0 : -1.0)
+map.put(rm, "momentum", (rsi - 50) / 50)
+map.put(rm, "volatility", nz(ta.atr(3), 1.0))
+bullMetrics = 0
+for [k, v] in rm
+    if k != "volatility" and v > 0
+        bullMetrics := bullMetrics + 1
+plot(bullMetrics, "BM")

@@ -1,0 +1,7 @@
+//@version=5
+indicator("Seismic Moment")
+displacement = math.abs(close - open)
+area = high - low
+moment = displacement * area * volume / 10000.0
+logMoment = moment > 0 ? math.log(moment + 1) : 0.0
+plot(logMoment)

@@ -1,0 +1,4 @@
+//@version=5
+indicator("Var Test")
+var float cumSum = 0
+cumSum := cumSum + close

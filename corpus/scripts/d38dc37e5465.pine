@@ -1,0 +1,9 @@
+
+//@version=5
+strategy("MACD Sys", overlay=true)
+[macd, sig, hist] = ta.macd(close, 3, 5, 3)
+if ta.crossover(macd, sig)
+    strategy.entry("Long", strategy.long)
+if ta.crossunder(macd, sig)
+    strategy.close("Long")
+plot(macd, "MACD")

@@ -1,0 +1,10 @@
+
+//@version=5
+indicator("Normalize")
+normalize(src, len) =>
+    hi = ta.highest(src, len)
+    lo = ta.lowest(src, len)
+    hi == lo ? 50.0 : 100.0 * (src - lo) / (hi - lo)
+
+norm_close = normalize(close, 10)
+plot(norm_close)

@@ -1,0 +1,5 @@
+//@version=5
+indicator("ForByNeg")
+var int result = 0
+for i = 10 to 0 by 2
+    result := result + i

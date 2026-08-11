@@ -1,0 +1,6 @@
+//@version=5
+indicator("ForIn")
+var int totalIdx = 0
+arr = array.from(10, 20, 30)
+for [idx, val] in arr
+    totalIdx := totalIdx + idx

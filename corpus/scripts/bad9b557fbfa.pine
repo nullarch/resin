@@ -1,0 +1,10 @@
+//@version=5
+indicator("UDT Field")
+var float result = 0.0
+
+type Signal
+    float price = 0.0
+    bool is_buy = false
+
+s = Signal.new(close, close > open)
+result := s.is_buy ? s.price : -s.price

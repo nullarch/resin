@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Map UDF")
+var m = map.new<string, float>()
+
+rsi = nz(ta.rsi(close, 3), 50.0)
+sma3 = ta.sma(close, 3)
+map.put(m, "rsi", rsi)
+map.put(m, "trend", close > sma3 ? 1.0 : -1.0)
+rsiVal = map.get(m, "rsi", 50.0)
+trendVal = map.get(m, "trend", 0.0)
+composite = rsiVal / 100 * trendVal
+plot(composite, "Comp")

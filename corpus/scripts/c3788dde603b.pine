@@ -1,0 +1,8 @@
+//@version=5
+indicator("Flow Rate")
+crossSection = high - low
+velocity = math.abs(close - open)
+flowRate = crossSection * velocity
+smaFlow = ta.sma(close, 3)
+normalizedFlow = not na(smaFlow) and smaFlow > 0 ? flowRate / smaFlow * 100.0 : flowRate
+plot(normalizedFlow)

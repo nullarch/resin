@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("StateDur")
+var int bullDuration = 0
+var int bearDuration = 0
+
+if close > open
+    bullDuration := bullDuration + 1
+    bearDuration := 0
+else
+    bearDuration := bearDuration + 1
+    bullDuration := 0
+
+maxDur = math.max(bullDuration, bearDuration)
+plot(maxDur, "MD")

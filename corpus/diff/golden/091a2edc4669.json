@@ -1,0 +1,61 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:sig": "pine_fn.<locals>.Signal(value=1.0, age=2, active=True)",
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(value=1.0, age=2, active=True)",
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(value=1.0, age=2, active=True)",
+   "var:__obs_plot0": -1.0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(value=1.0, age=2, active=True)",
+   "var:__obs_plot0": -1.0,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(value=1.0, age=2, active=True)",
+   "var:__obs_plot0": -1.0,
+   "var:__obs_plot1": 2
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(value=1.0, age=2, active=True)",
+   "var:__obs_plot0": -1.0,
+   "var:__obs_plot1": 3
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(value=1.0, age=2, active=True)",
+   "var:__obs_plot0": -1.0,
+   "var:__obs_plot1": 4
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(value=1.0, age=2, active=True)",
+   "var:__obs_plot0": 1.0,
+   "var:__obs_plot1": 0
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(value=1.0, age=2, active=True)",
+   "var:__obs_plot0": 1.0,
+   "var:__obs_plot1": 1
+  },
+  {
+   "var:sig": "pine_fn.<locals>.Signal(value=1.0, age=2, active=True)",
+   "var:__obs_plot0": 1.0,
+   "var:__obs_plot1": 2
+  }
+ ],
+ "finalVarState": {
+  "sig": "pine_fn.<locals>.Signal(value=1.0, age=2, active=True)",
+  "__obs_plot0": 1.0,
+  "__obs_plot1": 2
+ }
+}

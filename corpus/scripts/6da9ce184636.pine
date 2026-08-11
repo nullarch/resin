@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Fibonacci")
+a = 0
+b = 1
+count = 0
+while b < 100
+    temp = b
+    b := a + b
+    a := temp
+    count := count + 1
+plot(count, "Steps")
+plot(b, "Fib")

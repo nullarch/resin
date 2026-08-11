@@ -1,0 +1,6 @@
+//@version=5
+indicator("StdevRSI")
+var float result = 0
+rsiVol = ta.stdev(ta.rsi(close, 5), 3)
+if not na(rsiVol)
+    result := rsiVol

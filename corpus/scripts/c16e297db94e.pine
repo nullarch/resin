@@ -1,0 +1,11 @@
+//@version=5
+strategy("Query Strategy")
+sma5 = ta.sma(close, 5)
+vol_avg = ta.sma(volume, 5)
+price_filter = not na(sma5) and close > sma5
+vol_filter = not na(vol_avg) and volume > vol_avg
+query_result = price_filter and vol_filter
+if query_result
+    strategy.entry("QueryLong", strategy.long)
+if not query_result
+    strategy.close("QueryLong")

@@ -1,0 +1,4 @@
+//@version=5
+indicator("MTF")
+htfClose = request.security(syminfo.tickerid, "D", close)
+plot(htfClose)

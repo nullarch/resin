@@ -1,0 +1,9 @@
+//@version=5
+indicator("For In Array")
+var arr = array.from(10.0, 20.0, 30.0)
+float total = 0.0
+for val in arr
+    total := total + val
+var float result = 0.0
+result := total
+plot(result)

@@ -1,0 +1,8 @@
+//@version=5
+indicator("Antiwindup")
+float err = 106.0 - close
+var float integral = 0.0
+integral := integral + 0.1 * err
+float maxInt = 10.0
+integral := math.max(-maxInt, math.min(maxInt, integral))
+float output = 0.5 * err + integral

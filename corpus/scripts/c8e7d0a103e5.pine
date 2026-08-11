@@ -1,0 +1,11 @@
+
+//@version=5
+indicator("Vol Map It")
+var vm = map.new<string, float>()
+map.put(vm, "vol_ratio", ta.sma(volume, 5) > 0 ? volume / ta.sma(volume, 5) : 1.0)
+map.put(vm, "price_change", close - open)
+map.put(vm, "body_ratio", (high - low) > 0 ? math.abs(close - open) / (high - low) : 0.0)
+weightedSum = 0.0
+for [k, v] in vm
+    weightedSum := weightedSum + v
+plot(weightedSum, "WS")

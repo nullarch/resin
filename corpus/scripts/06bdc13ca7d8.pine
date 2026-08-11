@@ -1,0 +1,6 @@
+//@version=5
+indicator("DG-07 Geodesic Deviation")
+smaVal = nz(ta.sma(close, 5), close)
+deviation = close - smaVal
+cumDev = ta.sma(close, 3)
+plot(deviation)

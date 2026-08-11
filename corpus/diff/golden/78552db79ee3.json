@@ -1,0 +1,72 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:p1Prob": 0.4,
+   "var:p2Prob": 0.4,
+   "var:__obs_plot0": 0.4,
+   "var:__obs_plot1": 0.4
+  },
+  {
+   "var:p1Prob": 0.30000000000000004,
+   "var:p2Prob": 0.52,
+   "var:__obs_plot0": 0.30000000000000004,
+   "var:__obs_plot1": 0.52
+  },
+  {
+   "var:p1Prob": 0.20000000000000004,
+   "var:p2Prob": 0.41600000000000004,
+   "var:__obs_plot0": 0.20000000000000004,
+   "var:__obs_plot1": 0.41600000000000004
+  },
+  {
+   "var:p1Prob": 0.10000000000000003,
+   "var:p2Prob": 0.5328,
+   "var:__obs_plot0": 0.10000000000000003,
+   "var:__obs_plot1": 0.5328
+  },
+  {
+   "var:p1Prob": 2.7755575615628914e-17,
+   "var:p2Prob": 0.6262400000000001,
+   "var:__obs_plot0": 2.7755575615628914e-17,
+   "var:__obs_plot1": 0.6262400000000001
+  },
+  {
+   "var:p1Prob": 0.0,
+   "var:p2Prob": 0.5009920000000001,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 0.5009920000000001
+  },
+  {
+   "var:p1Prob": 0.0,
+   "var:p2Prob": 0.6007936,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 0.6007936
+  },
+  {
+   "var:p1Prob": 0.0,
+   "var:p2Prob": 0.68063488,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 0.68063488
+  },
+  {
+   "var:p1Prob": 0.0,
+   "var:p2Prob": 0.544507904,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 0.544507904
+  },
+  {
+   "var:p1Prob": 0.0,
+   "var:p2Prob": 0.6356063232,
+   "var:__obs_plot0": 0.0,
+   "var:__obs_plot1": 0.6356063232
+  }
+ ],
+ "finalVarState": {
+  "p1Prob": 0.0,
+  "p2Prob": 0.6356063232,
+  "__obs_plot0": 0.0,
+  "__obs_plot1": 0.6356063232
+ }
+}

@@ -1,0 +1,6 @@
+
+//@version=5
+indicator("Ret Stats")
+ret = not na(close[1]) and close[1] > 0 ? (close - close[1]) / close[1] * 100 : 0.0
+avgRet = ta.sma(ret, 5)
+plot(avgRet, "AvgR")

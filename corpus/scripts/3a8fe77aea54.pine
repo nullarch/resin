@@ -1,0 +1,6 @@
+//@version=5
+indicator("Div Mod")
+var float result = 0.0
+float d = 10.0 / 3.0
+float m = 10.0 % 3.0
+result := d + m

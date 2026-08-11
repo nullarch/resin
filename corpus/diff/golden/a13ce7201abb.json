@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:ms": {
+    "trend": 1.0,
+    "momentum": 1.0,
+    "macd": -1.0
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ms": {
+    "trend": 1.0,
+    "momentum": 1.0,
+    "macd": -1.0
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ms": {
+    "trend": 1.0,
+    "momentum": 1.0,
+    "macd": -1.0
+   },
+   "var:__obs_plot0": -1.0
+  },
+  {
+   "var:ms": {
+    "trend": 1.0,
+    "momentum": 1.0,
+    "macd": -1.0
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ms": {
+    "trend": 1.0,
+    "momentum": 1.0,
+    "macd": -1.0
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ms": {
+    "trend": 1.0,
+    "momentum": 1.0,
+    "macd": -1.0
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ms": {
+    "trend": 1.0,
+    "momentum": 1.0,
+    "macd": -1.0
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ms": {
+    "trend": 1.0,
+    "momentum": 1.0,
+    "macd": -1.0
+   },
+   "var:__obs_plot0": 1.0
+  },
+  {
+   "var:ms": {
+    "trend": 1.0,
+    "momentum": 1.0,
+    "macd": -1.0
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:ms": {
+    "trend": 1.0,
+    "momentum": 1.0,
+    "macd": -1.0
+   },
+   "var:__obs_plot0": 0
+  }
+ ],
+ "finalVarState": {
+  "ms": {
+   "trend": 1.0,
+   "momentum": 1.0,
+   "macd": -1.0
+  },
+  "__obs_plot0": 0
+ }
+}

@@ -1,0 +1,15 @@
+
+//@version=5
+indicator("Trend Qual")
+sma3 = ta.sma(close, 3)
+ema5 = ta.ema(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+aligned = close > sma3 and sma3 > ema5
+strongMom = rsi > 60
+quality = switch
+    aligned and strongMom => "excellent"
+    aligned => "good"
+    strongMom => "moderate"
+    => "poor"
+isGood = quality == "excellent" or quality == "good"
+plot(isGood ? 1 : 0, "Good")

@@ -1,0 +1,8 @@
+//@version=5
+indicator("Not Chain")
+var float result = 0.0
+bool a = true
+bool b = false
+bool c = not a and not b
+bool d = not (a and b)
+result := (c ? 1.0 : 0.0) + (d ? 10.0 : 0.0)

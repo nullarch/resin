@@ -1,0 +1,9 @@
+//@version=5
+indicator("method test")
+type Calc
+    float value = 0.0
+method doubled(Calc c) =>
+    c.value * 2
+var float result = 0.0
+obj = Calc.new(close)
+result := obj.doubled()

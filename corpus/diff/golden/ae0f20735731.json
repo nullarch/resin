@@ -1,0 +1,94 @@
+{
+ "ok": true,
+ "data": "data.json",
+ "bars": [
+  {
+   "var:tm": {
+    "rsi_ob": 70.0,
+    "rsi_os": 30.0,
+    "atr_hi": 2.5
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:tm": {
+    "rsi_ob": 70.0,
+    "rsi_os": 30.0,
+    "atr_hi": 2.5
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:tm": {
+    "rsi_ob": 70.0,
+    "rsi_os": 30.0,
+    "atr_hi": 2.5
+   },
+   "var:__obs_plot0": 0
+  },
+  {
+   "var:tm": {
+    "rsi_ob": 70.0,
+    "rsi_os": 30.0,
+    "atr_hi": 2.5
+   },
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:tm": {
+    "rsi_ob": 70.0,
+    "rsi_os": 30.0,
+    "atr_hi": 2.5
+   },
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:tm": {
+    "rsi_ob": 70.0,
+    "rsi_os": 30.0,
+    "atr_hi": 2.5
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:tm": {
+    "rsi_ob": 70.0,
+    "rsi_os": 30.0,
+    "atr_hi": 2.5
+   },
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:tm": {
+    "rsi_ob": 70.0,
+    "rsi_os": 30.0,
+    "atr_hi": 2.5
+   },
+   "var:__obs_plot0": 2
+  },
+  {
+   "var:tm": {
+    "rsi_ob": 70.0,
+    "rsi_os": 30.0,
+    "atr_hi": 2.5
+   },
+   "var:__obs_plot0": 1
+  },
+  {
+   "var:tm": {
+    "rsi_ob": 70.0,
+    "rsi_os": 30.0,
+    "atr_hi": 2.5
+   },
+   "var:__obs_plot0": 2
+  }
+ ],
+ "finalVarState": {
+  "tm": {
+   "rsi_ob": 70.0,
+   "rsi_os": 30.0,
+   "atr_hi": 2.5
+  },
+  "__obs_plot0": 2
+ }
+}

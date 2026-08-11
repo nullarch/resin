@@ -1,0 +1,15 @@
+//@version=5
+indicator("Enum Switch")
+LONG = 1
+SHORT = -1
+FLAT = 0
+
+var int signal = 0
+signal := close > close[1] ? LONG : close < close[1] ? SHORT : FLAT
+
+label_ = switch signal
+    1 => "long"
+    -1 => "short"
+    => "flat"
+
+plot(close)

@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Round Level")
+level = math.floor(close)
+steps = 0
+while level > 0 and math.round(level / 5) * 5 != level
+    level := level - 1
+    steps := steps + 1
+    if steps > 20
+        break
+var float __obs_plot0 = na
+__obs_plot0 := level
+plot(level, "Level")

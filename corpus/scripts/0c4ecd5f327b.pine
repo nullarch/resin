@@ -1,0 +1,9 @@
+//@version=5
+indicator("KalmanGain01")
+var float estimate = 0.0
+var float errEst = 1.0
+errMeas = 2.0
+gain = errEst > 0 ? errEst / (errEst + errMeas) : 0.0
+estimate := estimate + gain * (close - estimate)
+errEst := (1.0 - gain) * errEst + 0.01
+plot(estimate, "est")

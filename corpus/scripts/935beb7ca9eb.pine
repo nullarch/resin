@@ -1,0 +1,6 @@
+//@version=5
+indicator("Series History")
+prev = close[1]
+var float diff = 0.0
+diff := close - nz(prev, close)
+plot(diff)

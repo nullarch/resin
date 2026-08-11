@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("DES")
+var float level = 0.0
+var float trend = 0.0
+alpha = 0.3
+beta = 0.1
+prevLevel = level
+level := alpha * close + (1 - alpha) * (level + trend)
+trend := beta * (level - prevLevel) + (1 - beta) * trend
+forecast = level + trend
+plot(forecast, "FC")

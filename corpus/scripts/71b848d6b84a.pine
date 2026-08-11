@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("Pat Search")
+body = math.abs(close - open)
+totalRange = high - low
+bodyPct = totalRange > 0 ? body / totalRange * 100 : 0.0
+threshold = 80.0
+steps = 0
+while threshold > bodyPct and steps < 10
+    threshold := threshold - 10
+    steps := steps + 1
+plot(steps, "St")

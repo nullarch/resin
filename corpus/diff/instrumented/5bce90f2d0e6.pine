@@ -1,0 +1,8 @@
+//@version=5
+indicator("Server Count")
+float spread = high - low
+float tickSize = 0.5
+float servers = spread > 0 ? math.floor(spread / tickSize) : 1.0
+var float __obs_plot0 = na
+__obs_plot0 := servers
+plot(servers, "Servers")

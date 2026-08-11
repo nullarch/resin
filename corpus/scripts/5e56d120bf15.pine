@@ -1,0 +1,12 @@
+//@version=5
+indicator("Nested For Break")
+arr1 = array.from(1.0, 2.0, 3.0)
+arr2 = array.from(10.0, 20.0, 30.0)
+var float total = 0.0
+total := 0.0
+for v1 in arr1
+    for v2 in arr2
+        total := total + v1 * v2
+        if v2 == 20.0
+            break
+plot(total)

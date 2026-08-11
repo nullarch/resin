@@ -1,0 +1,8 @@
+//@version=5
+indicator("BB Squeeze")
+[middle, upper, lower] = ta.bb(close, 5, 2.0)
+var float bandwidth = 0.0
+bandwidth := nz(upper) - nz(lower)
+var bool narrow = false
+narrow := bandwidth < 10  // arbitrary threshold
+plot(close)

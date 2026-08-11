@@ -1,0 +1,19 @@
+
+//@version=5
+indicator("DD Duration")
+var float peak = 0.0
+var int ddDuration = 0
+var int maxDDDuration = 0
+if close > peak
+    peak := close
+    ddDuration := 0
+else
+    ddDuration := ddDuration + 1
+if ddDuration > maxDDDuration
+    maxDDDuration := ddDuration
+var float __obs_plot0 = na
+__obs_plot0 := ddDuration
+plot(ddDuration, "DDDur")
+var float __obs_plot1 = na
+__obs_plot1 := maxDDDuration
+plot(maxDDDuration, "MaxDDDur")

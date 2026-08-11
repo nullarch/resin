@@ -1,0 +1,12 @@
+//@version=5
+indicator("PSD Proxy")
+float fast = nz(ta.ema(close, 2), close)
+float slow = nz(ta.ema(close, 5), close)
+float mid = nz(ta.ema(close, 3), close)
+float psdFast = (close - fast) * (close - fast)
+float psdSlow = (close - slow) * (close - slow)
+float psdMid = (close - mid) * (close - mid)
+float totalPsd = psdFast + psdMid + psdSlow
+var float __obs_plot0 = na
+__obs_plot0 := totalPsd
+plot(totalPsd, "PSD")

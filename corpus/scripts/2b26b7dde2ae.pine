@@ -1,0 +1,8 @@
+
+//@version=5
+indicator("Enumerate")
+arr = array.from(10.0, 20.0, 30.0)
+weightedSum = 0.0
+for [i, val] in arr
+    weightedSum := weightedSum + val * (i + 1)
+plot(weightedSum, "WSum")

@@ -1,0 +1,15 @@
+//@version=5
+indicator("EvidAccum")
+var float logLR = 0.0
+mu0 = nz(ta.sma(close, 5), close)
+mu1 = mu0 + 2.0
+sigma = math.max(high - low, 0.01)
+diff0 = close - mu0
+diff1 = close - mu1
+ll0 = -(diff0 * diff0) / (2.0 * sigma * sigma)
+ll1 = -(diff1 * diff1) / (2.0 * sigma * sigma)
+logLR := logLR + (ll1 - ll0)
+logLRClamp = math.max(-50.0, math.min(50.0, logLR))
+var float __obs_plot0 = na
+__obs_plot0 := logLRClamp
+plot(logLRClamp, "LogLR")

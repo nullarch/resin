@@ -1,0 +1,17 @@
+//@version=5
+indicator("WhileConv18")
+var float est = 100.0
+target = close
+step = 0.1
+iter = 0
+tempEst = est
+while math.abs(tempEst - target) > 1.0 and iter < 20
+    tempEst := tempEst + step * (target - tempEst)
+    iter := iter + 1
+est := tempEst
+var float __obs_plot0 = na
+__obs_plot0 := est
+plot(est, "e")
+var float __obs_plot1 = na
+__obs_plot1 := float(iter)
+plot(float(iter), "it")

@@ -1,0 +1,5 @@
+//@version=5
+indicator("nz fallback")
+var float result = 0.0
+x = na
+result := nz(x, 99.0)

@@ -1,0 +1,5 @@
+//@version=5
+indicator("Str Match")
+var bool m = str.match("hello123", "\d+")
+var float val = m ? 1.0 : 0.0
+plot(val)

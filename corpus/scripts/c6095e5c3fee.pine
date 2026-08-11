@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("MR Score")
+mean = ta.sma(close, 5)
+sd = ta.stdev(close, 5)
+zscore = sd > 0 ? (close - mean) / sd : 0.0
+rsi = nz(ta.rsi(close, 3), 50.0)
+mrScore = -zscore * 0.5 + (50 - rsi) / 50 * 0.5
+plot(mrScore, "MR")

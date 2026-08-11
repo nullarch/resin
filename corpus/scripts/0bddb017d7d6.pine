@@ -1,0 +1,8 @@
+//@version=5
+indicator("Switch Expr")
+var int result = 0
+val = switch
+    close > 110 => 3
+    close > 105 => 2
+    => 1
+result := val

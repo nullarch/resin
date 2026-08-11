@@ -1,0 +1,4 @@
+//@version=5
+indicator("Chart point")
+p = chart.point.now(close)
+p2 = chart.point.from_index(bar_index, close)

@@ -1,0 +1,11 @@
+//@version=5
+indicator("Expr Prec")
+// (close - open) / (high - low) * 100 + 50
+var float body_pct = 0.0
+diff = close - open_
+range_ = high - low
+body_pct := nz(range_) > 0 ? (nz(diff) / nz(range_)) * 100.0 + 50.0 : 50.0
+// negation
+var float neg = 0.0
+neg := -math.abs(close)
+plot(close)

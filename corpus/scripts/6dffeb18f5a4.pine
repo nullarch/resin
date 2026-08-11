@@ -1,0 +1,8 @@
+//@version=5
+indicator("Map TA")
+m = map.new<string, float>()
+m.put("sma", ta.sma(close, 3))
+m.put("ema", ta.ema(close, 3))
+m.put("rsi", ta.rsi(close, 5))
+spread = m.get("sma") - m.get("ema")
+plot(spread)

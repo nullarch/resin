@@ -1,0 +1,14 @@
+
+//@version=5
+indicator("NZ Defaults")
+val1 = close[20]
+val2 = close[1]
+safe1 = nz(val1, -1.0)
+safe2 = nz(val2, 0.0)
+safe3 = nz(val1)
+var float __obs_plot0 = na
+__obs_plot0 := safe1
+plot(safe1, "Safe1")
+var float __obs_plot1 = na
+__obs_plot1 := safe2
+plot(safe2, "Safe2")

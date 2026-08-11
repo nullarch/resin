@@ -1,0 +1,5 @@
+//@version=5
+indicator("String Dashboard")
+trend = close > open ? "BULL" : "BEAR"
+strength = close > 108 ? "STRONG" : "WEAK"
+label_text = trend + " | " + strength

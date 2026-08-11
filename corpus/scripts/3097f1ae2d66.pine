@@ -1,0 +1,21 @@
+
+//@version=5
+indicator("Event Full")
+sma3 = ta.sma(close, 3)
+sma5 = ta.sma(close, 5)
+rsi = nz(ta.rsi(close, 3), 50.0)
+avgVol = ta.sma(volume, 5)
+
+maCross = ta.crossover(sma3, sma5) or ta.crossunder(sma3, sma5)
+rsiExtreme = rsi > 70 or rsi < 30
+volSpike = avgVol > 0 and volume > avgVol * 2
+
+var int totalEvents = 0
+var int highPrioEvents = 0
+if maCross or rsiExtreme or volSpike
+    totalEvents := totalEvents + 1
+if (maCross and volSpike) or (rsiExtreme and volSpike)
+    highPrioEvents := highPrioEvents + 1
+
+plot(totalEvents, "TE")
+plot(highPrioEvents, "HP")

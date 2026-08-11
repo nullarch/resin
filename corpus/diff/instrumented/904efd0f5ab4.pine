@@ -1,0 +1,9 @@
+//@version=5
+indicator("Var Array Persist")
+var prices = array.new<float>(0)
+array.push(prices, close)
+var int result = 0
+result := array.size(prices)
+var float __obs_plot0 = na
+__obs_plot0 := result
+plot(result)

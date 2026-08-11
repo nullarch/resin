@@ -1,0 +1,12 @@
+
+//@version=5
+indicator("MA LB")
+sma3 = ta.sma(close, 3)
+aboveCount = 0
+for i = 0 to 4
+    if not na(close[i])
+        if close[i] > sma3
+            aboveCount := aboveCount + 1
+var float __obs_plot0 = na
+__obs_plot0 := aboveCount
+plot(aboveCount, "AC")

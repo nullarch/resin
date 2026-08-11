@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Win Stats")
+var float[] win = array.new_float(0)
+array.push(win, close)
+if array.size(win) > 5
+    array.shift(win)
+avg = array.avg(win)
+sd = array.stdev(win)
+med = array.median(win)
+rng = array.range(win)
+plot(avg, "Avg")
+plot(rng, "Range")

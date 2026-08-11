@@ -1,0 +1,13 @@
+
+//@version=5
+indicator("Cum Ret")
+var float cumRet = 0.0
+var float firstPrice = 0.0
+var bool started = false
+if not started
+    firstPrice := close
+    started := true
+cumRet := firstPrice > 0 ? (close - firstPrice) / firstPrice * 100 : 0.0
+var float __obs_plot0 = na
+__obs_plot0 := cumRet
+plot(cumRet, "CumR")

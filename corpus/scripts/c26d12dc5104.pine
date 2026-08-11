@@ -1,0 +1,9 @@
+
+//@version=5
+indicator("Str Trim")
+raw = "  BULL  "
+trimmed = str.trim(raw)
+lower = str.lower(trimmed)
+isBull = lower == "bull"
+plot(isBull ? 1 : 0, "IsBull")
+plot(str.length(trimmed), "TrimLen")
