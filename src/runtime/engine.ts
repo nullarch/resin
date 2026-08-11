@@ -24,7 +24,7 @@ export interface RunResult {
   bars: BarSnapshot[];
   finalVarState: BarSnapshot;
   plots: PlotResult[];
-  // viz S1 — present only when run() was given the TranspileOk object form; the
+  // viz S1/S2 — present only when run() was given the TranspileOk object form; the
   // positional spelling has no access to the metadata and leaves this undefined.
   viz?: {
     overlay: boolean;
@@ -38,6 +38,26 @@ export interface RunResult {
       forceOverlay: boolean;
       color: string | null; // compile-time color, when statically known
       colors: (string | null)[] | null; // per-bar colors when computed at runtime, else null
+    }>;
+    bgcolors: Array<{
+      title: string | null;
+      offset: number;
+      forceOverlay: boolean;
+      color: string | null;
+      colors: (string | null)[] | null;
+    }>;
+    barcolors: Array<{
+      title: string | null;
+      offset: number;
+      color: string | null;
+      colors: (string | null)[] | null;
+    }>;
+    hlines: Array<{
+      title: string | null;
+      price: number | null;
+      color: string | null;
+      linestyle: string;
+      linewidth: number;
     }>;
   };
 }
@@ -111,6 +131,20 @@ export function run(
         color: m.color,
         colors: m.colorSlot !== null ? ctx.plotColors[m.colorSlot]! : null,
       })),
+      bgcolors: r.viz.bgcolors.map((m) => ({
+        title: m.title,
+        offset: m.offset,
+        forceOverlay: m.forceOverlay,
+        color: m.color,
+        colors: m.colorSlot !== null ? ctx.plotColors[m.colorSlot]! : null,
+      })),
+      barcolors: r.viz.barcolors.map((m) => ({
+        title: m.title,
+        offset: m.offset,
+        color: m.color,
+        colors: m.colorSlot !== null ? ctx.plotColors[m.colorSlot]! : null,
+      })),
+      hlines: r.viz.hlines.map((m) => ({ ...m })),
     };
     return base;
   }

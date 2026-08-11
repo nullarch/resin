@@ -1938,6 +1938,30 @@ export interface PlotMeta {
   colorSlot: number | null; // 런타임 색일 때 $.plotColors 채널 인덱스, 아니면 null
 }
 
+// viz S2 — bgcolor()/barcolor()/hline() 콜사이트 메타데이터. plot의 PlotMeta와 동일한
+// best-effort 원칙(리터럴이 아니면 TV 기본값/null, 에러 없음). bgcolor/barcolor의 런타임
+// 색은 plot과 같은 $.plotColors 채널 풀에서 슬롯을 받는다.
+export interface BgcolorMeta {
+  title: string | null;
+  offset: number;
+  forceOverlay: boolean;
+  color: string | null;
+  colorSlot: number | null;
+}
+export interface BarcolorMeta {
+  title: string | null;
+  offset: number;
+  color: string | null;
+  colorSlot: number | null;
+}
+export interface HlineMeta {
+  title: string | null;
+  price: number | null; // 리터럴로 확정 못 하면 null (input.* 변수 등)
+  color: string | null;
+  linestyle: string; // "solid" | "dotted" | "dashed"
+  linewidth: number;
+}
+
 export interface AnalyzedProgram {
   script: Script;
   // 배치30 (1), C591: analyze(script, {chartTf}) options.chartTf 그대로(기본 DEFAULT_CHART_TF="D") —
@@ -2065,6 +2089,12 @@ export interface AnalyzedProgram {
   plotColorSlotCount: number;
   // 동적 색 콜사이트 → { $.plotColors 슬롯, 색 표현식 }. codegen plot 분기가 record와 함께 방출.
   plotColorExprs: Map<CallExpr, { slot: number; expr: Expr }>;
+  // viz S2 — bgcolor/barcolor/hline 콜사이트 메타(소스 순서 배열)와, 그중 런타임 색을 가진
+  // 콜사이트의 색 기록 지시. codegen의 noop 분기가 문장 제거 대신 색 기록만 방출한다.
+  bgcolorMeta: BgcolorMeta[];
+  barcolorMeta: BarcolorMeta[];
+  hlineMeta: HlineMeta[];
+  noopColorWrites: Map<CallExpr, { slot: number; expr: Expr }>;
   // strategy(default_qty_type=strategy.cash) 지정 여부(C330) — default_qty_value를 계약 수가 아니라
   // **통화 금액**으로 해석(qty = 금액/체결가, equity 무관 — percent_of_equity의 "잔고 비율"과 다른 축).
   // true면 codegen이 configure 다섯 번째 인자(true)를 방출하고 네 번째(percent) 슬롯도 명시적으로
@@ -3289,6 +3319,10 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
     plotMeta: [],
     plotColorSlotCount: 0,
     plotColorExprs: new Map(),
+    bgcolorMeta: [],
+    barcolorMeta: [],
+    hlineMeta: [],
+    noopColorWrites: new Map(),
     strategyQtyIsCash: false,
     strategyCurrency: SYMINFO_STRING_PROPS.get("currency")!,
     stmtCalls: new Set(),

@@ -7,7 +7,7 @@ import * as matrixFns from "./matrix";
 import { na, pineNot, pineLt, pineGt, pineLe, pineGe, pineAnd, pineOr, pineEq, pineNeq, pineDiv, pineMod, idiv, round, round_to_mintick, abs, max, min, clamp, avg, floor, ceil, sqrt, pow, log, log10, exp, sign, sin, cos, tan, asin, acos, atan, atan2, todegrees, toradians, nz, concat, udtCopy, int, float, bool, timestamp, barIndexHistory, histConst } from "./numeric";
 import { histGet, secHistGet, refHistGet } from "./series";
 import { length, contains, startswith, endswith, pos, lower, upper, trim, replace_all, replace, substring, repeat, tostring, tonumber, split, match, format, format_number, format_time } from "./str";
-import { rgb, colorNew, from_gradient, colorR, colorG, colorB, colorT } from "./color";
+import { rgb, colorNew, from_gradient, colorR, colorG, colorB, colorT, vizColor } from "./color";
 import * as inputFns from "./input";
 import { in_seconds, from_seconds, change as timeframeChange } from "./timeframe";
 import * as tickerFns from "./ticker";
@@ -64,6 +64,9 @@ import * as timeFns from "./time";
 import * as syminfoFns from "./syminfo";
 
 export const rt = {
+  // viz S1/S2 — 동적 색 채널 기록 직전 정규화(na/NaN → null). codegen이
+  // `$.plotColors[k][$.idx] = rt.vizColor(<expr>)` 형태로만 소비한다.
+  vizColor,
   ta,
   // array.*는 str.*류 flat export가 아니라 rt.ta처럼 중첩 네임스페이스로 조립한다(C79) —
   // get/set/size 같은 범용 이름이 향후 map.*/matrix.*의 동명 메서드와 flat 네임스페이스에서

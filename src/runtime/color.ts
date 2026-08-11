@@ -115,6 +115,13 @@ export function colorB(colorVal: unknown): number {
   return parsed === null ? NaN : parsed[2];
 }
 
+// viz S1/S2 — 색 채널 기록 직전의 정규화. Pine에서 na 색(조건부 색의 na 분기)은 "색 없음"이고
+// 채널 타입은 (string|null)[]이다 — 문자열이 아닌 모든 것(na의 NaN, null, undefined)을 null로
+// 낮춰 채널 타입 불변식을 지킨다.
+export function vizColor(v: unknown): string | null {
+  return typeof v === "string" ? v : null;
+}
+
 export function colorT(colorVal: unknown): number {
   const parsed = parseColorChannels(colorVal);
   return parsed === null ? NaN : Math.round((1 - parsed[3] / 255) * 100);

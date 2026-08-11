@@ -399,6 +399,22 @@ import { lookupMethodOverload, mangleMethodName, resolveMethodReceiverTypeName, 
 // viz S1 — plot.style_* 컴파일타임 상수 → 계약 스타일 문자열. TV의 10종 전부이며 이름은
 // docs의 pine-viz 계약(v1)과 동일하다. 여기 없는 표현식이 style=로 오면 하드 에러 대신
 // 기본 "line"으로 둔다 — 렌더링 메타데이터 때문에 컴파일이 실패하는 커버리지 회귀 금지.
+// viz S2 — 캡처 대상 no-op 빌트인의 위치 인자 순서(TV v5 공식 시그니처 기준 — NOOP_BUILTIN_ARITY는
+// 개수만 검증하므로 위치→이름 매핑의 소유자는 이 표다). hline은 TV 공식이 editable을 linewidth보다
+// 앞에 둔다(NOOP_BUILTIN_ARITY 주석의 관례 표기와 다름) — linestyle 이후의 위치 인자 실사용은
+// 사실상 없어 best-effort 추출에는 어느 쪽이든 실해가 없지만 공식 순서를 따른다.
+const NOOP_POSITIONAL_ORDER: Readonly<Record<string, readonly string[]>> = {
+  bgcolor: ["color", "offset", "editable", "show_last", "title", "force_overlay"],
+  barcolor: ["color", "offset", "editable", "show_last", "title", "display"],
+  hline: ["price", "title", "color", "linestyle", "editable", "linewidth", "display"],
+};
+
+const HLINE_STYLE_NAMES: ReadonlyMap<string, string> = new Map([
+  ["style_solid", "solid"],
+  ["style_dotted", "dotted"],
+  ["style_dashed", "dashed"],
+]);
+
 const PLOT_STYLE_NAMES: ReadonlyMap<string, string> = new Map([
   ["style_line", "line"],
   ["style_stepline", "stepline"],
@@ -5215,6 +5231,69 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         );
       }
       prog.noopStmtCalls.add(expr);
+      // viz S2 — bgcolor/barcolor/hline은 더 이상 순수 no-op이 아니다: 정적 인자는 메타데이터로
+      // 승격하고, bgcolor/barcolor의 런타임 색은 plot(S1)과 같은 $.plotColors 채널에서 슬롯을
+      // 받아 codegen의 noop 분기가 "문장 제거 + 색 기록만 방출"한다. 추출은 전부 best-effort
+      // (리터럴이 아니면 TV 기본값/null — 커버리지 회귀 금지). 인자 분석은 기존 그대로(공통
+      // kwargs 루프 + 아래 args 루프가 원래부터 분석) — 새로 시작되는 것은 색 표현식의 **실행**
+      // 뿐이다(S1과 동일 클래스, corpus_diff 재실측 프로토콜 적용).
+      if ((callee.name === "bgcolor" || callee.name === "barcolor" || callee.name === "hline") && topLevel) {
+        const order = NOOP_POSITIONAL_ORDER[callee.name]!;
+        const argOf = (name: string): Expr | undefined => {
+          const idx = order.indexOf(name);
+          if (idx >= 0 && idx < expr.args.length) return expr.args[idx];
+          return expr.kwargs.find((k) => k.name === name)?.value;
+        };
+        const litNum = (name: string, dflt: number): number => {
+          const a = argOf(name);
+          return a !== undefined && a.kind === "NumberLiteral" ? a.value : dflt;
+        };
+        const litTitle = (): string | null => {
+          const a = argOf("title");
+          return a !== undefined && a.kind === "StringLiteral" ? a.value : null;
+        };
+        const litBool = (name: string): boolean => {
+          const a = argOf(name);
+          return a !== undefined && a.kind === "BoolLiteral" ? a.value : false;
+        };
+        const colorOf = (): { color: string | null; slot: number | null } => {
+          const c = argOf("color");
+          if (c === undefined) return { color: null, slot: null };
+          if (c.kind === "ColorLiteral") return { color: c.value, slot: null };
+          if (c.kind === "DotAccess" && c.obj.kind === "Identifier" && c.obj.name === "color" && COLOR_CONSTANTS.has(c.attr)) {
+            return { color: COLOR_CONSTANTS.get(c.attr)!, slot: null };
+          }
+          // hline의 색은 TV상 const input — 런타임 채널을 열지 않고 정적 확정 실패 시 null.
+          if (callee.name === "hline") return { color: null, slot: null };
+          const slot = prog.plotColorSlotCount;
+          prog.plotColorSlotCount += 1;
+          prog.noopColorWrites.set(expr, { slot, expr: c });
+          return { color: null, slot };
+        };
+        if (callee.name === "bgcolor") {
+          const { color, slot } = colorOf();
+          prog.bgcolorMeta.push({
+            title: litTitle(), offset: litNum("offset", 0), forceOverlay: litBool("force_overlay"),
+            color, colorSlot: slot,
+          });
+        } else if (callee.name === "barcolor") {
+          const { color, slot } = colorOf();
+          prog.barcolorMeta.push({ title: litTitle(), offset: litNum("offset", 0), color, colorSlot: slot });
+        } else {
+          const { color } = colorOf();
+          const ls = argOf("linestyle");
+          const linestyle =
+            ls !== undefined && ls.kind === "DotAccess" && ls.obj.kind === "Identifier" && ls.obj.name === "hline"
+              ? (HLINE_STYLE_NAMES.get(ls.attr) ?? "solid")
+              : "solid";
+          const priceArg = argOf("price");
+          prog.hlineMeta.push({
+            title: litTitle(),
+            price: priceArg !== undefined && priceArg.kind === "NumberLiteral" ? priceArg.value : null,
+            color, linestyle, linewidth: litNum("linewidth", 1),
+          });
+        }
+      }
       // fill(plot(...), plot(...))/fill(hline(...), hline(...))(C346, wild 최다빈도 서브패턴 —
       // TV 공식 fill(plot1, plot2, ...) 시그니처가 두 plot/hline 핸들 위치 인자를 bare 콜로 직접
       // 받는 관용구, 위 kwargs 루프의 plot1=/plot2= 자매 예외와 동일 원칙) — args[0]/args[1]이
@@ -5372,11 +5451,11 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             colorSlot = prog.plotColorSlotCount;
             prog.plotColorSlotCount += 1;
             prog.plotColorExprs.set(expr, { slot: colorSlot, expr: c });
-            // 위치 인자로 온 색은 아래 공통 루프가 이미 분석한다 — kwarg로 온 색만 여기서
-            // 분석해 이중 분석(ta.* 슬롯 이중 할당)을 피한다. 이 분석 자체가 S1의 시맨틱
-            // 이동이다: 지금까지 평가되지 않던 색 표현식이 평가되기 시작한다(TV 정합 방향,
-            // corpus_diff 재실측 프로토콜은 resin-viz-plan.md §4).
-            if (colorArg.fromKwarg) analyzeExpr(c, prog, scope, false);
+            // 분석은 여기서 하지 않는다: kwarg 값은 analyzeCallExpr 최상단 공통 kwargs 루프가,
+            // 위치 인자는 이 분기 끝의 args 루프가 이미 analyzeExpr한다(둘 다 S1 이전부터 —
+            // 슬롯은 원래 할당돼 있었고 실행만 없었다). S1의 시맨틱 이동은 분석이 아니라
+            // **실행**이다: codegen이 이 표현식을 바마다 평가하기 시작한다(TV 정합 방향,
+            // corpus_diff 재실측 프로토콜은 resin-viz-plan.md §4 — 실측 이동 0건).
           }
         }
         prog.plotMeta.push({

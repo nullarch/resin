@@ -2,7 +2,7 @@
 // (hoisting) -> CodeGen. The five stages are fixed; this file is just the
 // sequence.
 
-import { analyze, type AnalyzeOptions, type PlotMeta } from "./analyzer";
+import { analyze, type AnalyzeOptions, type BarcolorMeta, type BgcolorMeta, type HlineMeta, type PlotMeta } from "./analyzer";
 import { generateCode } from "./codegen";
 import { hoist } from "./passes/hoisting";
 import { ParseError, parse } from "./parser";
@@ -29,6 +29,12 @@ export interface TranspileOk {
     // compile-time color when statically known; `colorSlot` indexes the per-bar
     // Context.plotColors channel when the script computes the color at runtime.
     plots: Array<{ title: string } & PlotMeta>;
+    // viz S2 — one entry per call site, in source order. bgcolor/barcolor share the
+    // same runtime color channel pool as plots (colorSlot indexes Context.plotColors);
+    // hline is compile-time metadata only.
+    bgcolors: BgcolorMeta[];
+    barcolors: BarcolorMeta[];
+    hlines: HlineMeta[];
   };
 }
 
@@ -71,6 +77,9 @@ export function transpile(source: string, options?: AnalyzeOptions): TranspileRe
     viz: {
       overlay: analyzed.overlay,
       plots: analyzed.plotMeta.map((m, i) => ({ title: analyzed.plotTitles[i]!, ...m })),
+      bgcolors: analyzed.bgcolorMeta,
+      barcolors: analyzed.barcolorMeta,
+      hlines: analyzed.hlineMeta,
     },
   };
 }

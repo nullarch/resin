@@ -1746,8 +1746,17 @@ function genStmt(
         const nestedPlotArgs = [...stmt.expr.args, ...stmt.expr.kwargs.map((kw) => kw.value)].filter(
           (arg): arg is CallExpr => arg.kind === "CallExpr" && program.plotCallSlots.has(arg),
         );
-        if (nestedPlotArgs.length === 0) return null;
-        return nestedPlotArgs.map((arg) => `${genExpr(arg, program, funcCtx)};`).join("\n");
+        const noopParts = nestedPlotArgs.map((arg) => `${genExpr(arg, program, funcCtx)};`);
+        // viz S2 — bgcolor/barcolor의 런타임 색: 문장 자체는 여전히 제거하되 색 기록만 방출한다
+        // (plot S1과 같은 채널·같은 rt.vizColor 정규화 — na 색 분기는 null로 낮아진다).
+        const noopColorWrite = program.noopColorWrites.get(stmt.expr);
+        if (noopColorWrite !== undefined) {
+          noopParts.push(
+            `$.plotColors[${noopColorWrite.slot}][$.idx] = rt.vizColor(${genExpr(noopColorWrite.expr, program, funcCtx)});`,
+          );
+        }
+        if (noopParts.length === 0) return null;
+        return noopParts.join("\n");
       }
       // C610(배치32(2)): 문장 위치(값 폐기) bare 튜플 리터럴 — analyzer(analyzeStmt ExprStmt
       // 분기)가 원소별 값 위치로 수용한 노드. TV/pine2py 동일하게 원소를 평가만 하고 값은
@@ -4039,7 +4048,7 @@ function genCallExpr(
       // 문자열(na 색은 null)을 직접 인덱스로 기록한다. plot은 v5 제약상 항상 top-level이라
       // 매 바 실행이 보장되고, 쉼표식은 이 반환값이 ExprStmt/fill-구제 어느 위치에 놓여도
       // 단일 표현식으로 안전하다.
-      return `(${record}, void ($.plotColors[${colorEntry.slot}][$.idx] = ${genExpr(colorEntry.expr, program, funcCtx)}))`;
+      return `(${record}, void ($.plotColors[${colorEntry.slot}][$.idx] = rt.vizColor(${genExpr(colorEntry.expr, program, funcCtx)})))`;
     }
     return record;
   }
