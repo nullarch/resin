@@ -39,6 +39,9 @@ export interface RunResult {
       forceOverlay: boolean;
       color: string | null; // compile-time color, when statically known
       colors: (string | null)[] | null; // per-bar colors when computed at runtime, else null
+      // The value series itself (same array as RunResult.plots[i].values), so viz is
+      // self-contained — a `resin run --viz` dump alone can drive a renderer.
+      values: number[];
     }>;
     bgcolors: Array<{
       title: string | null;
@@ -203,7 +206,7 @@ export function run(
     // TranspileOk, which the positional spelling never sees.
     base.viz = {
       overlay: r.viz.overlay,
-      plots: r.viz.plots.map((m) => ({
+      plots: r.viz.plots.map((m, i) => ({
         title: m.title,
         style: m.style,
         linewidth: m.linewidth,
@@ -213,6 +216,7 @@ export function run(
         forceOverlay: m.forceOverlay,
         color: m.color,
         colors: m.colorSlot !== null ? ctx.plotColors[m.colorSlot]! : null,
+        values: base.plots[i]!.values,
       })),
       bgcolors: r.viz.bgcolors.map((m) => ({
         title: m.title,
