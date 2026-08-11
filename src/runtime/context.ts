@@ -77,6 +77,10 @@ export class Context {
   // generated code itself carries the slot count, so neither constructor spelling
   // widens — and written as $.plotColors[k][$.idx] = "#rrggbb" (null = na color).
   plotColors: (string | null)[][] = [];
+  // viz S3 — per-bar numeric viz channels (plotshape/plotchar conditions as 0/1,
+  // plotarrow values, plotcandle/plotbar OHLC). Same lifecycle as plotColors: the
+  // generated preamble calls $.initVizSeries(N), the bar loop writes by index.
+  vizSeries: number[][] = [];
   // Plot collection channel, one preallocated Series per plot call site.
   // Generated code fills them with `$.plots[N].record(value)` each bar; once
   // the loop finishes, run() converts them to plain arrays.
@@ -132,6 +136,11 @@ export class Context {
   // plot colors. Sized bar-count × slot so the bar loop writes by index, never pushes.
   initPlotColors(count: number): void {
     this.plotColors = Array.from({ length: count }, () => new Array<string | null>(this.barCount).fill(null));
+  }
+
+  // viz S3 — sibling of initPlotColors for the numeric channels. NaN prefill = na.
+  initVizSeries(count: number): void {
+    this.vizSeries = Array.from({ length: count }, () => new Array<number>(this.barCount).fill(NaN));
   }
 
   constructor(

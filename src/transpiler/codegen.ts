@@ -386,6 +386,10 @@ export function generateCode(program: AnalyzedProgram): string {
   if (program.plotColorSlotCount > 0) {
     lines.push(`$.initPlotColors(${program.plotColorSlotCount});`);
   }
+  // viz S3 — 마커 계열 수치/조건 채널 preallocate. initPlotColors와 동일 원칙.
+  if (program.vizSeriesSlotCount > 0) {
+    lines.push(`$.initVizSeries(${program.vizSeriesSlotCount});`);
+  }
   // request.security 셋째 슬라이스 3b(ROADMAP [hard->분할], C181) — securityExprCallSlots(3a)
   // 콜사이트마다 HTF 프리패스 함수를 프리앰블에 심는다. UDF/type/method 선언과 동일 층(ctx당 1회
   // 실행)에 두는 이유도 동일(GOAL.md "bar loop 안 할당 제로") — 결과 Float64Array는 바 루프
@@ -1754,6 +1758,16 @@ function genStmt(
           noopParts.push(
             `$.plotColors[${noopColorWrite.slot}][$.idx] = rt.vizColor(${genExpr(noopColorWrite.expr, program, funcCtx)});`,
           );
+        }
+        // viz S3 — 마커 계열의 조건/수치 기록. 이 방출로 마커 인자 표현식이 처음으로 매 바
+        // 실행된다(TV 정합 방향의 시맨틱 이동 — resin-viz-plan.md §4 재실측 프로토콜 적용).
+        const noopSeriesWrites = program.noopSeriesWrites.get(stmt.expr);
+        if (noopSeriesWrites !== undefined) {
+          for (const w of noopSeriesWrites) {
+            noopParts.push(
+              `$.vizSeries[${w.slot}][$.idx] = rt.${w.kind === "flag" ? "vizFlag" : "vizNum"}(${genExpr(w.expr, program, funcCtx)});`,
+            );
+          }
         }
         if (noopParts.length === 0) return null;
         return noopParts.join("\n");

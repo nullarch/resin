@@ -66,6 +66,67 @@ export interface RunResult {
       color: string | null;
       colors: (string | null)[] | null;
     }>;
+    // viz S3 — marker family. condition is per-bar show/hide; values/OHLC carry NaN for na.
+    shapes: Array<{
+      title: string | null;
+      style: string;
+      location: string;
+      size: string;
+      text: string | null;
+      textcolor: string | null;
+      offset: number;
+      forceOverlay: boolean;
+      color: string | null;
+      colors: (string | null)[] | null;
+      condition: boolean[];
+    }>;
+    chars: Array<{
+      title: string | null;
+      char: string;
+      location: string;
+      size: string;
+      text: string | null;
+      textcolor: string | null;
+      offset: number;
+      forceOverlay: boolean;
+      color: string | null;
+      colors: (string | null)[] | null;
+      condition: boolean[];
+    }>;
+    arrows: Array<{
+      title: string | null;
+      colorup: string | null;
+      colordown: string | null;
+      minheight: number;
+      maxheight: number;
+      offset: number;
+      forceOverlay: boolean;
+      values: number[];
+    }>;
+    candles: Array<{
+      title: string | null;
+      color: string | null;
+      colors: (string | null)[] | null;
+      wickcolor: string | null;
+      bordercolor: string | null;
+      forceOverlay: boolean;
+      open: number[];
+      high: number[];
+      low: number[];
+      close: number[];
+    }>;
+    plotbars: Array<{
+      title: string | null;
+      color: string | null;
+      colors: (string | null)[] | null;
+      wickcolor: string | null;
+      bordercolor: string | null;
+      forceOverlay: boolean;
+      open: number[];
+      high: number[];
+      low: number[];
+      close: number[];
+    }>;
   };
 }
 
@@ -158,6 +219,40 @@ export function run(
         title: m.title,
         color: m.color,
         colors: m.colorSlot !== null ? ctx.plotColors[m.colorSlot]! : null,
+      })),
+      shapes: r.viz.shapes.map((m) => ({
+        title: m.title, style: m.style, location: m.location, size: m.size,
+        text: m.text, textcolor: m.textcolor, offset: m.offset, forceOverlay: m.forceOverlay,
+        color: m.color,
+        colors: m.colorSlot !== null ? ctx.plotColors[m.colorSlot]! : null,
+        condition: ctx.vizSeries[m.conditionSlot]!.map((v) => v === 1),
+      })),
+      chars: r.viz.chars.map((m) => ({
+        title: m.title, char: m.char, location: m.location, size: m.size,
+        text: m.text, textcolor: m.textcolor, offset: m.offset, forceOverlay: m.forceOverlay,
+        color: m.color,
+        colors: m.colorSlot !== null ? ctx.plotColors[m.colorSlot]! : null,
+        condition: ctx.vizSeries[m.conditionSlot]!.map((v) => v === 1),
+      })),
+      arrows: r.viz.arrows.map((m) => ({
+        title: m.title, colorup: m.colorup, colordown: m.colordown,
+        minheight: m.minheight, maxheight: m.maxheight, offset: m.offset,
+        forceOverlay: m.forceOverlay,
+        values: ctx.vizSeries[m.seriesSlot]!,
+      })),
+      candles: r.viz.candles.map((m) => ({
+        title: m.title, color: m.color,
+        colors: m.colorSlot !== null ? ctx.plotColors[m.colorSlot]! : null,
+        wickcolor: m.wickcolor, bordercolor: m.bordercolor, forceOverlay: m.forceOverlay,
+        open: ctx.vizSeries[m.openSlot]!, high: ctx.vizSeries[m.highSlot]!,
+        low: ctx.vizSeries[m.lowSlot]!, close: ctx.vizSeries[m.closeSlot]!,
+      })),
+      plotbars: r.viz.plotbars.map((m) => ({
+        title: m.title, color: m.color,
+        colors: m.colorSlot !== null ? ctx.plotColors[m.colorSlot]! : null,
+        wickcolor: m.wickcolor, bordercolor: m.bordercolor, forceOverlay: m.forceOverlay,
+        open: ctx.vizSeries[m.openSlot]!, high: ctx.vizSeries[m.highSlot]!,
+        low: ctx.vizSeries[m.lowSlot]!, close: ctx.vizSeries[m.closeSlot]!,
       })),
     };
     return base;

@@ -21414,9 +21414,17 @@ describe("CodeGen line/label/box/table() bare drawing type-cast builtin (C301)",
 // 자체가 없다(GOAL.md "drawing 객체는 no-op + 발생 카운트 기록"과 동일 원칙을 시각화/알림 함수군에
 // 확장) — codegen이 statement 전체를 완전히 드롭한다(directives와 동일한 no-op, C160 선례). ──
 describe("CodeGen visualization/alert no-op builtins (C208)", () => {
-  it("drops a bare top-level hline()/bgcolor()/plotshape() statement entirely, emitting nothing", () => {
+  it("drops hline/bgcolor statements; plotshape's condition records into vizSeries (viz S3)", () => {
+    // Pre-S3 all three emitted nothing. hline (pure metadata) and bgcolor with a
+    // static color still do; plotshape's condition argument now executes per bar
+    // into the $.vizSeries channel — that write is the whole statement's residue.
     const code = codegenSource(['hline(70, "OB")', "bgcolor(color.red)", "plotshape(close > open)"].join("\n"));
-    expect(code).toBe("");
+    expect(code).toBe(
+      [
+        "$.initVizSeries(1);",
+        "$.vizSeries[0][$.idx] = rt.vizFlag(rt.pineGt($.close.get(0), $.open.get(0)));",
+      ].join("\n"),
+    );
   });
 
   it("accepts kwargs without registering them anywhere (values fully discarded, no crash)", () => {

@@ -122,6 +122,18 @@ export function vizColor(v: unknown): string | null {
   return typeof v === "string" ? v : null;
 }
 
+// viz S3 — 시리즈 채널 기록 직전의 정규화 2종. vizFlag는 plotshape/plotchar의 조건(Pine
+// truthiness: na/false/0 = 표시 안 함 → 0, 그 외 truthy → 1), vizNum은 plotarrow/plotcandle의
+// 수치(숫자가 아니면 na로 취급 → NaN). 채널 자체는 number[]로 통일하고 boolean 변환은
+// engine 조립부가 담당한다.
+export function vizFlag(v: unknown): number {
+  if (typeof v === "number") return Number.isNaN(v) || v === 0 ? 0 : 1;
+  return v === true ? 1 : 0;
+}
+export function vizNum(v: unknown): number {
+  return typeof v === "number" ? v : NaN;
+}
+
 export function colorT(colorVal: unknown): number {
   const parsed = parseColorChannels(colorVal);
   return parsed === null ? NaN : Math.round((1 - parsed[3] / 255) * 100);

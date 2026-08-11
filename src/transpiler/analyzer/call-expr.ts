@@ -408,7 +408,26 @@ const NOOP_POSITIONAL_ORDER: Readonly<Record<string, readonly string[]>> = {
   barcolor: ["color", "offset", "editable", "show_last", "title", "display"],
   hline: ["price", "title", "color", "linestyle", "editable", "linewidth", "display"],
   fill: ["plot1", "plot2", "color", "title"], // 캡처에 필요한 앞 4개만 — 뒤는 discard 유지
+  // viz S3 — NOOP_BUILTIN_ARITY 주석의 TV 시그니처 나열과 동일 순서.
+  plotshape: ["series", "title", "style", "location", "color", "offset", "text", "textcolor", "editable", "size", "show_last", "display", "force_overlay"],
+  plotchar: ["series", "title", "char", "location", "color", "offset", "text", "textcolor", "editable", "size", "show_last", "display", "force_overlay"],
+  plotarrow: ["series", "title", "colorup", "colordown", "offset", "minheight", "maxheight", "editable", "show_last", "display", "force_overlay"],
+  plotcandle: ["open", "high", "low", "close", "title", "color", "wickcolor", "editable", "show_last", "bordercolor", "display", "force_overlay"],
+  plotbar: ["open", "high", "low", "close", "title", "color", "editable", "show_last", "display", "force_overlay"],
 };
+
+// viz S3 — 마커 계열의 네임스페이스 상수 → 계약 문자열. attr에서 접두 없이 그대로 쓴다.
+// viz S2/S3 — 캡처 대상 no-op 집합(fill은 args 루프 뒤 별도 캡처).
+const VIZ_CAPTURE_NOOPS: ReadonlySet<string> = new Set([
+  "bgcolor", "barcolor", "hline", "plotshape", "plotchar", "plotarrow", "plotcandle", "plotbar",
+]);
+
+const SHAPE_STYLE_NAMES: ReadonlySet<string> = new Set([
+  "xcross", "cross", "triangleup", "triangledown", "flag", "circle",
+  "arrowup", "arrowdown", "labelup", "labeldown", "square", "diamond",
+]);
+const LOCATION_NAMES: ReadonlySet<string> = new Set(["abovebar", "belowbar", "top", "bottom", "absolute"]);
+const SIZE_NAMES: ReadonlySet<string> = new Set(["auto", "tiny", "small", "normal", "large", "huge"]);
 
 const HLINE_STYLE_NAMES: ReadonlyMap<string, string> = new Map([
   ["style_solid", "solid"],
@@ -5238,7 +5257,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // (리터럴이 아니면 TV 기본값/null — 커버리지 회귀 금지). 인자 분석은 기존 그대로(공통
       // kwargs 루프 + 아래 args 루프가 원래부터 분석) — 새로 시작되는 것은 색 표현식의 **실행**
       // 뿐이다(S1과 동일 클래스, corpus_diff 재실측 프로토콜 적용).
-      if ((callee.name === "bgcolor" || callee.name === "barcolor" || callee.name === "hline") && topLevel) {
+      if (VIZ_CAPTURE_NOOPS.has(callee.name) && topLevel) {
         const order = NOOP_POSITIONAL_ORDER[callee.name]!;
         const argOf = (name: string): Expr | undefined => {
           const idx = order.indexOf(name);
@@ -5256,6 +5275,39 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         const litBool = (name: string): boolean => {
           const a = argOf(name);
           return a !== undefined && a.kind === "BoolLiteral" ? a.value : false;
+        };
+        // viz S3 헬퍼 3종 — 문자열 리터럴 / 네임스페이스 상수(attr 그대로) / 정적 색.
+        const litStr = (name: string): string | null => {
+          const a = argOf(name);
+          return a !== undefined && a.kind === "StringLiteral" ? a.value : null;
+        };
+        const nsAttr = (name: string, allowed: ReadonlySet<string>, ns: string, dflt: string): string => {
+          const a = argOf(name);
+          return a !== undefined && a.kind === "DotAccess" && a.obj.kind === "Identifier" && a.obj.name === ns && allowed.has(a.attr)
+            ? a.attr
+            : dflt;
+        };
+        const staticColorOf = (name: string): string | null => {
+          const a = argOf(name);
+          if (a === undefined) return null;
+          if (a.kind === "ColorLiteral") return a.value;
+          if (a.kind === "DotAccess" && a.obj.kind === "Identifier" && a.obj.name === "color" && COLOR_CONSTANTS.has(a.attr)) {
+            return COLOR_CONSTANTS.get(a.attr)!;
+          }
+          return null;
+        };
+        // $.vizSeries 슬롯 배정 + 기록 지시 등록. 인자가 아예 없으면(arity 에러 케이스) 슬롯만
+        // 배정되고 기록이 없어 채널이 NaN으로 남는다 — 무해.
+        const seriesWrite = (name: string, kind: "flag" | "num"): number => {
+          const slot = prog.vizSeriesSlotCount;
+          prog.vizSeriesSlotCount += 1;
+          const a = argOf(name);
+          if (a !== undefined) {
+            const list = prog.noopSeriesWrites.get(expr) ?? [];
+            list.push({ slot, expr: a, kind });
+            prog.noopSeriesWrites.set(expr, list);
+          }
+          return slot;
         };
         const colorOf = (): { color: string | null; slot: number | null } => {
           const c = argOf("color");
@@ -5280,7 +5332,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         } else if (callee.name === "barcolor") {
           const { color, slot } = colorOf();
           prog.barcolorMeta.push({ title: litTitle(), offset: litNum("offset", 0), color, colorSlot: slot });
-        } else {
+        } else if (callee.name === "hline") {
           const { color } = colorOf();
           const ls = argOf("linestyle");
           const linestyle =
@@ -5294,6 +5346,56 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             color, linestyle, linewidth: litNum("linewidth", 1),
           });
           prog.hlineCallSlots.set(expr, prog.hlineMeta.length - 1);
+        } else if (callee.name === "plotshape" || callee.name === "plotchar") {
+          // viz S3 — 조건은 바별 0/1 채널, 색은 공유 색 풀. text/textcolor/size/location은 정적만.
+          const { color, slot } = colorOf();
+          const common = {
+            title: litTitle(),
+            location: nsAttr("location", LOCATION_NAMES, "location", "abovebar"),
+            size: nsAttr("size", SIZE_NAMES, "size", "auto"),
+            text: litStr("text"),
+            textcolor: staticColorOf("textcolor"),
+            offset: litNum("offset", 0),
+            forceOverlay: litBool("force_overlay"),
+            color,
+            colorSlot: slot,
+            conditionSlot: seriesWrite("series", "flag"),
+          };
+          if (callee.name === "plotshape") {
+            prog.plotshapeMeta.push({ ...common, style: nsAttr("style", SHAPE_STYLE_NAMES, "shape", "xcross") });
+          } else {
+            const ch = argOf("char");
+            prog.plotcharMeta.push({
+              ...common,
+              char: ch !== undefined && ch.kind === "StringLiteral" && ch.value !== "" ? ch.value : "★",
+            });
+          }
+        } else if (callee.name === "plotarrow") {
+          prog.plotarrowMeta.push({
+            title: litTitle(),
+            colorup: staticColorOf("colorup"),
+            colordown: staticColorOf("colordown"),
+            minheight: litNum("minheight", 5),
+            maxheight: litNum("maxheight", 100),
+            offset: litNum("offset", 0),
+            forceOverlay: litBool("force_overlay"),
+            seriesSlot: seriesWrite("series", "num"),
+          });
+        } else if (callee.name === "plotcandle" || callee.name === "plotbar") {
+          const { color, slot } = colorOf();
+          const candleMeta = {
+            title: litTitle(),
+            color,
+            colorSlot: slot,
+            wickcolor: callee.name === "plotcandle" ? staticColorOf("wickcolor") : null,
+            bordercolor: callee.name === "plotcandle" ? staticColorOf("bordercolor") : null,
+            forceOverlay: litBool("force_overlay"),
+            openSlot: seriesWrite("open", "num"),
+            highSlot: seriesWrite("high", "num"),
+            lowSlot: seriesWrite("low", "num"),
+            closeSlot: seriesWrite("close", "num"),
+          };
+          (callee.name === "plotcandle" ? prog.plotcandleMeta : prog.plotbarMeta).push(candleMeta);
         }
       }
       // viz S2b — fill() 캡처. 위 3종과 달리 아래 args 루프 **뒤**에서 해야 한다: 중첩

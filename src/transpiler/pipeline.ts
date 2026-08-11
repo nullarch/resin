@@ -2,7 +2,19 @@
 // (hoisting) -> CodeGen. The five stages are fixed; this file is just the
 // sequence.
 
-import { analyze, type AnalyzeOptions, type BarcolorMeta, type BgcolorMeta, type FillMeta, type HlineMeta, type PlotMeta } from "./analyzer";
+import {
+  analyze,
+  type AnalyzeOptions,
+  type BarcolorMeta,
+  type BgcolorMeta,
+  type FillMeta,
+  type HlineMeta,
+  type PlotMeta,
+  type PlotarrowMeta,
+  type PlotcandleMeta,
+  type PlotcharMeta,
+  type PlotshapeMeta,
+} from "./analyzer";
 import { generateCode } from "./codegen";
 import { hoist } from "./passes/hoisting";
 import { ParseError, parse } from "./parser";
@@ -37,6 +49,13 @@ export interface TranspileOk {
     hlines: HlineMeta[];
     // viz S2b — fill() call sites; a/b reference viz.plots / viz.hlines by index.
     fills: FillMeta[];
+    // viz S3 — marker family, source order. conditionSlot/seriesSlot/openSlot…
+    // index the per-bar Context.vizSeries channels; colorSlot the shared color pool.
+    shapes: PlotshapeMeta[];
+    chars: PlotcharMeta[];
+    arrows: PlotarrowMeta[];
+    candles: PlotcandleMeta[];
+    plotbars: PlotcandleMeta[];
   };
 }
 
@@ -83,6 +102,11 @@ export function transpile(source: string, options?: AnalyzeOptions): TranspileRe
       barcolors: analyzed.barcolorMeta,
       hlines: analyzed.hlineMeta,
       fills: analyzed.fillMeta,
+      shapes: analyzed.plotshapeMeta,
+      chars: analyzed.plotcharMeta,
+      arrows: analyzed.plotarrowMeta,
+      candles: analyzed.plotcandleMeta,
+      plotbars: analyzed.plotbarMeta,
     },
   };
 }

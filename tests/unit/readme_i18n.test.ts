@@ -27,7 +27,7 @@ const FIGURES = [
   "719", // unresolvable private imports
   "10,618", // denominator
   "10,100", // compiles
-  "9,870", // tests
+  "9,877", // tests
   "263", // oracle scripts
   "1e-9", // oracle tolerance
   "22.18", // minimum Node

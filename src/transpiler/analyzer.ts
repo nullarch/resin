@@ -1970,6 +1970,57 @@ export interface FillMeta {
   colorSlot: number | null;
   title: string | null;
 }
+// viz S3 — 마커 계열 5종. seriesSlot류는 $.vizSeries 채널 인덱스(조건은 0/1, 수치는 NaN=na),
+// colorSlot은 공유 $.plotColors 채널. 나머지는 전부 best-effort 정적 메타(리터럴/네임스페이스
+// 상수가 아니면 TV 기본값).
+export interface PlotshapeMeta {
+  title: string | null;
+  style: string; // shape.* 12종 중 하나, 기본 "xcross"
+  location: string; // location.* 5종, 기본 "abovebar"
+  size: string; // size.* 6종, 기본 "auto"
+  text: string | null;
+  textcolor: string | null;
+  offset: number;
+  forceOverlay: boolean;
+  color: string | null;
+  colorSlot: number | null;
+  conditionSlot: number; // $.vizSeries — 바별 0/1
+}
+export interface PlotcharMeta {
+  title: string | null;
+  char: string; // 기본 "★"
+  location: string;
+  size: string;
+  text: string | null;
+  textcolor: string | null;
+  offset: number;
+  forceOverlay: boolean;
+  color: string | null;
+  colorSlot: number | null;
+  conditionSlot: number;
+}
+export interface PlotarrowMeta {
+  title: string | null;
+  colorup: string | null; // 정적만 캡처 (동적이면 null)
+  colordown: string | null;
+  minheight: number;
+  maxheight: number;
+  offset: number;
+  forceOverlay: boolean;
+  seriesSlot: number; // $.vizSeries — 바별 수치(양수=위, 음수=아래, NaN=없음)
+}
+export interface PlotcandleMeta {
+  title: string | null;
+  color: string | null;
+  colorSlot: number | null;
+  wickcolor: string | null; // 정적만 캡처
+  bordercolor: string | null; // 정적만 캡처 (plotbar에는 없음 — null 고정)
+  forceOverlay: boolean;
+  openSlot: number; // $.vizSeries × 4
+  highSlot: number;
+  lowSlot: number;
+  closeSlot: number;
+}
 
 export interface AnalyzedProgram {
   script: Script;
@@ -2108,6 +2159,17 @@ export interface AnalyzedProgram {
   // 인덱스로 해석하기 위한 콜사이트 → hlineMeta 인덱스 맵(plotCallSlots의 자매).
   fillMeta: FillMeta[];
   hlineCallSlots: Map<CallExpr, number>;
+  // viz S3 — 마커 계열 메타(소스 순서)와 $.vizSeries 채널. noopSeriesWrites는 콜사이트당
+  // 기록 지시 목록(candle은 4개) — codegen noop 분기가 문장 제거 대신 이것들을 방출한다.
+  // 이 방출이 S3의 시맨틱 이동이다: 마커 인자 표현식(조건식의 ta.* 포함)이 처음으로 매 바
+  // 실행된다(TV 정합 방향 — TV는 plot* 인자를 항상 평가한다).
+  plotshapeMeta: PlotshapeMeta[];
+  plotcharMeta: PlotcharMeta[];
+  plotarrowMeta: PlotarrowMeta[];
+  plotcandleMeta: PlotcandleMeta[];
+  plotbarMeta: PlotcandleMeta[];
+  vizSeriesSlotCount: number;
+  noopSeriesWrites: Map<CallExpr, Array<{ slot: number; expr: Expr; kind: "flag" | "num" }>>;
   // strategy(default_qty_type=strategy.cash) 지정 여부(C330) — default_qty_value를 계약 수가 아니라
   // **통화 금액**으로 해석(qty = 금액/체결가, equity 무관 — percent_of_equity의 "잔고 비율"과 다른 축).
   // true면 codegen이 configure 다섯 번째 인자(true)를 방출하고 네 번째(percent) 슬롯도 명시적으로
@@ -3338,6 +3400,13 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
     noopColorWrites: new Map(),
     fillMeta: [],
     hlineCallSlots: new Map(),
+    plotshapeMeta: [],
+    plotcharMeta: [],
+    plotarrowMeta: [],
+    plotcandleMeta: [],
+    plotbarMeta: [],
+    vizSeriesSlotCount: 0,
+    noopSeriesWrites: new Map(),
     strategyQtyIsCash: false,
     strategyCurrency: SYMINFO_STRING_PROPS.get("currency")!,
     stmtCalls: new Set(),
