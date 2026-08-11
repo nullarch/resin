@@ -2,7 +2,7 @@
 // (hoisting) -> CodeGen. The five stages are fixed; this file is just the
 // sequence.
 
-import { analyze, type AnalyzeOptions, type BarcolorMeta, type BgcolorMeta, type HlineMeta, type PlotMeta } from "./analyzer";
+import { analyze, type AnalyzeOptions, type BarcolorMeta, type BgcolorMeta, type FillMeta, type HlineMeta, type PlotMeta } from "./analyzer";
 import { generateCode } from "./codegen";
 import { hoist } from "./passes/hoisting";
 import { ParseError, parse } from "./parser";
@@ -35,6 +35,8 @@ export interface TranspileOk {
     bgcolors: BgcolorMeta[];
     barcolors: BarcolorMeta[];
     hlines: HlineMeta[];
+    // viz S2b — fill() call sites; a/b reference viz.plots / viz.hlines by index.
+    fills: FillMeta[];
   };
 }
 
@@ -80,6 +82,7 @@ export function transpile(source: string, options?: AnalyzeOptions): TranspileRe
       bgcolors: analyzed.bgcolorMeta,
       barcolors: analyzed.barcolorMeta,
       hlines: analyzed.hlineMeta,
+      fills: analyzed.fillMeta,
     },
   };
 }

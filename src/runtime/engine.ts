@@ -59,6 +59,13 @@ export interface RunResult {
       linestyle: string;
       linewidth: number;
     }>;
+    fills: Array<{
+      a: { kind: "plot" | "hline"; index: number } | null;
+      b: { kind: "plot" | "hline"; index: number } | null;
+      title: string | null;
+      color: string | null;
+      colors: (string | null)[] | null;
+    }>;
   };
 }
 
@@ -145,6 +152,13 @@ export function run(
         colors: m.colorSlot !== null ? ctx.plotColors[m.colorSlot]! : null,
       })),
       hlines: r.viz.hlines.map((m) => ({ ...m })),
+      fills: r.viz.fills.map((m) => ({
+        a: m.a,
+        b: m.b,
+        title: m.title,
+        color: m.color,
+        colors: m.colorSlot !== null ? ctx.plotColors[m.colorSlot]! : null,
+      })),
     };
     return base;
   }

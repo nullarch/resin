@@ -407,6 +407,7 @@ const NOOP_POSITIONAL_ORDER: Readonly<Record<string, readonly string[]>> = {
   bgcolor: ["color", "offset", "editable", "show_last", "title", "force_overlay"],
   barcolor: ["color", "offset", "editable", "show_last", "title", "display"],
   hline: ["price", "title", "color", "linestyle", "editable", "linewidth", "display"],
+  fill: ["plot1", "plot2", "color", "title"], // 캡처에 필요한 앞 4개만 — 뒤는 discard 유지
 };
 
 const HLINE_STYLE_NAMES: ReadonlyMap<string, string> = new Map([
@@ -5292,8 +5293,13 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             price: priceArg !== undefined && priceArg.kind === "NumberLiteral" ? priceArg.value : null,
             color, linestyle, linewidth: litNum("linewidth", 1),
           });
+          prog.hlineCallSlots.set(expr, prog.hlineMeta.length - 1);
         }
       }
+      // viz S2b — fill() 캡처. 위 3종과 달리 아래 args 루프 **뒤**에서 해야 한다: 중첩
+      // `fill(plot(a), plot(b))`의 안쪽 plot은 그 루프(C346 구제)가 분석해야 plotCallSlots에
+      // 슬롯이 생기기 때문. 이 지연을 위해 여기서는 자리만 확보하고 실제 push는 아래에서.
+      const captureFill = callee.name === "fill" && topLevel;
       // fill(plot(...), plot(...))/fill(hline(...), hline(...))(C346, wild 최다빈도 서브패턴 —
       // TV 공식 fill(plot1, plot2, ...) 시그니처가 두 plot/hline 핸들 위치 인자를 bare 콜로 직접
       // 받는 관용구, 위 kwargs 루프의 plot1=/plot2= 자매 예외와 동일 원칙) — args[0]/args[1]이
@@ -5307,6 +5313,53 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           (arg.callee.name === "plot" || arg.callee.name === "hline");
         analyzeExpr(arg, prog, scope, isFillPlotHandleArg);
       });
+      if (captureFill) {
+        // viz S2b — 두 핸들 인자를 정적으로 해석한다: (a) bare 중첩 콜은 방금 위 루프/공통
+        // kwargs 루프가 슬롯을 배정했고, (b) 식별자는 uniqueTopEqVars(top-level 유일 '=' 바인딩,
+        // 재대입 0 — 지시어 상수 치환과 동일한 안전 근거)를 거쳐 그 RHS 콜사이트로 도달한다.
+        // 해석 실패는 null (best-effort — 에러 없음).
+        const resolveRef = (pos: number, names: readonly string[]): { kind: "plot" | "hline"; index: number } | null => {
+          let target: Expr | undefined =
+            pos < expr.args.length ? expr.args[pos] : expr.kwargs.find((k) => names.includes(k.name))?.value;
+          if (target !== undefined && target.kind === "Identifier") {
+            target = prog.uniqueTopEqVars.get(target.name)?.value;
+          }
+          if (target !== undefined && target.kind === "CallExpr") {
+            const p = prog.plotCallSlots.get(target);
+            if (p !== undefined) return { kind: "plot", index: p };
+            const h = prog.hlineCallSlots.get(target);
+            if (h !== undefined) return { kind: "hline", index: h };
+          }
+          return null;
+        };
+        const fillColorArg =
+          2 < expr.args.length ? expr.args[2] : expr.kwargs.find((k) => k.name === "color")?.value;
+        let fillColor: string | null = null;
+        let fillColorSlot: number | null = null;
+        if (fillColorArg !== undefined) {
+          if (fillColorArg.kind === "ColorLiteral") {
+            fillColor = fillColorArg.value;
+          } else if (
+            fillColorArg.kind === "DotAccess" && fillColorArg.obj.kind === "Identifier" &&
+            fillColorArg.obj.name === "color" && COLOR_CONSTANTS.has(fillColorArg.attr)
+          ) {
+            fillColor = COLOR_CONSTANTS.get(fillColorArg.attr)!;
+          } else {
+            fillColorSlot = prog.plotColorSlotCount;
+            prog.plotColorSlotCount += 1;
+            prog.noopColorWrites.set(expr, { slot: fillColorSlot, expr: fillColorArg });
+          }
+        }
+        const fillTitleArg =
+          3 < expr.args.length ? expr.args[3] : expr.kwargs.find((k) => k.name === "title")?.value;
+        prog.fillMeta.push({
+          a: resolveRef(0, ["plot1", "hline1"]),
+          b: resolveRef(1, ["plot2", "hline2"]),
+          color: fillColor,
+          colorSlot: fillColorSlot,
+          title: fillTitleArg !== undefined && fillTitleArg.kind === "StringLiteral" ? fillTitleArg.value : null,
+        });
+      }
       return;
     }
     if (callee.name === "input") {

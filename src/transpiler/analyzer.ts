@@ -1961,6 +1961,15 @@ export interface HlineMeta {
   linestyle: string; // "solid" | "dotted" | "dashed"
   linewidth: number;
 }
+// viz S2b — fill() 콜사이트. a/b는 채울 두 핸들의 정적 해석 결과: plot 슬롯 또는 hline 인덱스,
+// 해석 실패(재대입된 로컬 등) 시 null. 색은 bgcolor와 동일 원칙(정적 → color, 런타임 → colorSlot).
+export interface FillMeta {
+  a: { kind: "plot" | "hline"; index: number } | null;
+  b: { kind: "plot" | "hline"; index: number } | null;
+  color: string | null;
+  colorSlot: number | null;
+  title: string | null;
+}
 
 export interface AnalyzedProgram {
   script: Script;
@@ -2095,6 +2104,10 @@ export interface AnalyzedProgram {
   barcolorMeta: BarcolorMeta[];
   hlineMeta: HlineMeta[];
   noopColorWrites: Map<CallExpr, { slot: number; expr: Expr }>;
+  // viz S2b — fill 캡처. hlineCallSlots는 fill의 핸들 참조(h1 = hline(70) 후 fill(h1, ...))를
+  // 인덱스로 해석하기 위한 콜사이트 → hlineMeta 인덱스 맵(plotCallSlots의 자매).
+  fillMeta: FillMeta[];
+  hlineCallSlots: Map<CallExpr, number>;
   // strategy(default_qty_type=strategy.cash) 지정 여부(C330) — default_qty_value를 계약 수가 아니라
   // **통화 금액**으로 해석(qty = 금액/체결가, equity 무관 — percent_of_equity의 "잔고 비율"과 다른 축).
   // true면 codegen이 configure 다섯 번째 인자(true)를 방출하고 네 번째(percent) 슬롯도 명시적으로
@@ -3323,6 +3336,8 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
     barcolorMeta: [],
     hlineMeta: [],
     noopColorWrites: new Map(),
+    fillMeta: [],
+    hlineCallSlots: new Map(),
     strategyQtyIsCash: false,
     strategyCurrency: SYMINFO_STRING_PROPS.get("currency")!,
     stmtCalls: new Set(),

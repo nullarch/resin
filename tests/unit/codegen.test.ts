@@ -22320,10 +22320,25 @@ describe("CodeGen fill() + plot()/hline() assignment-RHS (C209)", () => {
     expect(code).toBe("var h1 = undefined;");
   });
 
-  it("drops a bare top-level fill(p1, p2, color=...) statement entirely, emitting nothing", () => {
+  it("drops the fill(p1, p2, color=...) statement but keeps its runtime color write (viz S2b)", () => {
+    // Pre-S2b this asserted "emits nothing". A runtime color= (color.new is a call,
+    // not a compile-time constant) now records into the shared $.plotColors channel;
+    // the fill statement itself is still gone.
     const code = codegenSource(
       ['p1 = plot(close)', 'p2 = plot(open)', "fill(p1, p2, color=color.new(color.blue, 90))"].join("\n"),
     );
+    expect(code).toBe(
+      [
+        "$.initPlotColors(1);",
+        "var p1 = $.plots[0].record($.close.get(0));",
+        "var p2 = $.plots[1].record($.open.get(0));",
+        '$.plotColors[0][$.idx] = rt.vizColor(rt.new("#2196F3", 90));',
+      ].join("\n"),
+    );
+  });
+
+  it("drops a bare top-level fill with a static color entirely, emitting nothing (viz S2b)", () => {
+    const code = codegenSource(['p1 = plot(close)', 'p2 = plot(open)', "fill(p1, p2, color=color.blue)"].join("\n"));
     expect(code).toBe("var p1 = $.plots[0].record($.close.get(0));\nvar p2 = $.plots[1].record($.open.get(0));");
   });
 
