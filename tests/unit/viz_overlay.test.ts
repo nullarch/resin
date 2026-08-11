@@ -27,7 +27,7 @@ function ok(source: string): TranspileOk {
 
 describe("viz S0: overlay extraction", () => {
   it("defaults to false when the directive does not mention overlay", () => {
-    expect(ok('//@version=5\nindicator("t")\nplot(close)').viz).toEqual({ overlay: false });
+    expect(ok('//@version=5\nindicator("t")\nplot(close)').viz.overlay).toBe(false);
   });
 
   it("reads overlay=true as a keyword argument", () => {
@@ -60,15 +60,17 @@ acc = ta.cum(close)
 plot(acc, "acc")
 `;
 
-  it("run(transpileOk, data) equals the 13-argument spelling", () => {
+  it("run(transpileOk, data) equals the 13-argument spelling (plus viz, which only it can build)", () => {
     const r = ok(SOURCE);
-    const viaObject = run(r, DATA);
+    const { viz, ...core } = run(r, DATA);
     const viaPositional = run(
       r.code, r.varSlots, r.taSlotCount, DATA, r.fnVarSlotCount, r.historySlotCount,
       r.taScratchSize, {}, r.plotTitles, r.securityTfs, r.refHistorySlotCount,
       r.condCallHistorySlotCount, r.condCallRefHistorySlotCount,
     );
-    expect(viaObject).toEqual(viaPositional);
+    expect(viaPositional.viz).toBeUndefined();
+    expect(core).toEqual(viaPositional);
+    expect(viz?.overlay).toBe(true);
   });
 
   it("Context.from(transpileOk, data) drives the same loop as the positional constructor", () => {
@@ -89,7 +91,7 @@ len = input.int(2, "Len")
 plot(ta.sma(close, len), "s")
 `;
     const r = ok(src);
-    const viaObject = run(r, DATA, { inputs: { Len: 3 } });
+    const { viz: _viz, ...viaObject } = run(r, DATA, { inputs: { Len: 3 } });
     const viaPositional = run(
       r.code, r.varSlots, r.taSlotCount, DATA, r.fnVarSlotCount, r.historySlotCount,
       r.taScratchSize, { Len: 3 }, r.plotTitles, r.securityTfs, r.refHistorySlotCount,

@@ -24,6 +24,22 @@ export interface RunResult {
   bars: BarSnapshot[];
   finalVarState: BarSnapshot;
   plots: PlotResult[];
+  // viz S1 — present only when run() was given the TranspileOk object form; the
+  // positional spelling has no access to the metadata and leaves this undefined.
+  viz?: {
+    overlay: boolean;
+    plots: Array<{
+      title: string;
+      style: string;
+      linewidth: number;
+      offset: number;
+      histbase: number;
+      trackprice: boolean;
+      forceOverlay: boolean;
+      color: string | null; // compile-time color, when statically known
+      colors: (string | null)[] | null; // per-bar colors when computed at runtime, else null
+    }>;
+  };
 }
 
 // Compile module code into a factory: give it a context, get back the per-bar
@@ -78,12 +94,25 @@ export function run(
   if (typeof codeOrResult !== "string") {
     const r = codeOrResult;
     const opts = (taSlotCountOrOpts as { inputs?: Record<string, unknown> } | undefined) ?? {};
-    return run(
-      r.code, r.varSlots, r.taSlotCount, varSlotsOrData as OHLCVData,
-      r.fnVarSlotCount, r.historySlotCount, r.taScratchSize, opts.inputs ?? {},
-      r.plotTitles, r.securityTfs, r.refHistorySlotCount,
-      r.condCallHistorySlotCount, r.condCallRefHistorySlotCount,
-    );
+    const ctx = Context.from(r, varSlotsOrData as OHLCVData, opts);
+    const base = collect(r.code, r.varSlots, r.plotTitles, ctx);
+    // viz S1 — only the object form can assemble this: the metadata lives on
+    // TranspileOk, which the positional spelling never sees.
+    base.viz = {
+      overlay: r.viz.overlay,
+      plots: r.viz.plots.map((m) => ({
+        title: m.title,
+        style: m.style,
+        linewidth: m.linewidth,
+        offset: m.offset,
+        histbase: m.histbase,
+        trackprice: m.trackprice,
+        forceOverlay: m.forceOverlay,
+        color: m.color,
+        colors: m.colorSlot !== null ? ctx.plotColors[m.colorSlot]! : null,
+      })),
+    };
+    return base;
   }
   const code = codeOrResult;
   const varSlots = varSlotsOrData as string[];
@@ -103,6 +132,12 @@ export function run(
     condCallHistorySlotCount,
     condCallRefHistorySlotCount,
   );
+  return collect(code, varSlots, plotTitles, ctx);
+}
+
+// The shared bar loop both run() spellings drive: execute every bar, snapshot the
+// var slots per bar (the differential oracle's comparison format), collect plots.
+function collect(code: string, varSlots: string[], plotTitles: string[], ctx: Context): RunResult {
   const barFn = compile(code)(ctx);
   const bars: BarSnapshot[] = [];
 

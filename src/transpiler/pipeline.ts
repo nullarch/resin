@@ -2,7 +2,7 @@
 // (hoisting) -> CodeGen. The five stages are fixed; this file is just the
 // sequence.
 
-import { analyze, type AnalyzeOptions } from "./analyzer";
+import { analyze, type AnalyzeOptions, type PlotMeta } from "./analyzer";
 import { generateCode } from "./codegen";
 import { hoist } from "./passes/hoisting";
 import { ParseError, parse } from "./parser";
@@ -21,10 +21,14 @@ export interface TranspileOk {
   condCallHistorySlotCount: number; // size of $.condCallHistSlots — call-count history for stateful calls inside a conditional
   condCallRefHistorySlotCount: number; // size of $.condCallRefHistSlots — the same, for drawing-constructor results
   isStrategy: boolean; // whether the script declares strategy() at top level
-  // Visualization metadata (viz S0). Grows slice by slice; consumers should treat
+  // Visualization metadata (viz S0/S1). Grows slice by slice; consumers should treat
   // unknown future fields as additive.
   viz: {
     overlay: boolean; // indicator()/strategy() overlay= — true puts plots on the main chart pane
+    // One entry per plot() call site, same order as plotTitles. `color` is the
+    // compile-time color when statically known; `colorSlot` indexes the per-bar
+    // Context.plotColors channel when the script computes the color at runtime.
+    plots: Array<{ title: string } & PlotMeta>;
   };
 }
 
@@ -64,6 +68,9 @@ export function transpile(source: string, options?: AnalyzeOptions): TranspileRe
     condCallHistorySlotCount: analyzed.condCallHistorySlotCount,
     condCallRefHistorySlotCount: analyzed.condCallRefHistorySlotCount,
     isStrategy: analyzed.isStrategy,
-    viz: { overlay: analyzed.overlay },
+    viz: {
+      overlay: analyzed.overlay,
+      plots: analyzed.plotMeta.map((m, i) => ({ title: analyzed.plotTitles[i]!, ...m })),
+    },
   };
 }

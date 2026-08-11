@@ -72,6 +72,11 @@ export class Context {
   // Overrides for input.*, keyed by the input's title. An absent key falls back
   // to the declared default, so passing nothing runs the script as authored.
   inputs: Record<string, unknown>;
+  // viz S1 — per-bar colors for plot() call sites whose color= is a runtime
+  // expression. Allocated by the generated preamble's $.initPlotColors(N) — the
+  // generated code itself carries the slot count, so neither constructor spelling
+  // widens — and written as $.plotColors[k][$.idx] = "#rrggbb" (null = na color).
+  plotColors: (string | null)[][] = [];
   // Plot collection channel, one preallocated Series per plot call site.
   // Generated code fills them with `$.plots[N].record(value)` each bar; once
   // the loop finishes, run() converts them to plain arrays.
@@ -121,6 +126,12 @@ export class Context {
       result.plotTitles.length, result.securityTfs, result.refHistorySlotCount,
       result.condCallHistorySlotCount, result.condCallRefHistorySlotCount,
     );
+  }
+
+  // viz S1 — called once from the generated preamble when the script has runtime
+  // plot colors. Sized bar-count × slot so the bar loop writes by index, never pushes.
+  initPlotColors(count: number): void {
+    this.plotColors = Array.from({ length: count }, () => new Array<string | null>(this.barCount).fill(null));
   }
 
   constructor(

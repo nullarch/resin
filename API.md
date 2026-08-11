@@ -39,11 +39,11 @@ script stopped itself on purpose" from "the engine broke".
 | `BarSnapshot` | `src/runtime/engine` | `Record<string, number>`, keyed `var:<name>` |
 | `OHLCVData` | `src/runtime/context` | `Context` input: `open/high/low/close/volume: ArrayLike<number>`, optional `time` |
 | `PlotResult` | `src/runtime/engine` | `{ title, values }` |
-| `RunResult` | `src/runtime/engine` | `run()` return: `bars` / `finalVarState` / `plots` |
+| `RunResult` | `src/runtime/engine` | `run()` return: `bars` / `finalVarState` / `plots`, plus `viz` (styles, per-bar colors) on the object form |
 | `Series` | `src/runtime/series` | read type for `ctx.close.get(0)` and friends; never constructed by a caller |
 | `StrategyState` | `src/runtime/strategy` | read type for `ctx.strategy.posSize` and friends |
 | `TranspileErr` | `src/transpiler/pipeline` | `ok: false` plus `errors: string[]` |
-| `TranspileOk` | `src/transpiler/pipeline` | `ok: true` plus `code`, the ten slot-metadata fields `Context` needs, `isStrategy`, and `viz` (`{ overlay }`) |
+| `TranspileOk` | `src/transpiler/pipeline` | `ok: true` plus `code`, the ten slot-metadata fields `Context` needs, `isStrategy`, and `viz` (`{ overlay, plots }`) |
 | `TranspileResult` | `src/transpiler/pipeline` | discriminated union of the two above |
 
 ## Two ways to run

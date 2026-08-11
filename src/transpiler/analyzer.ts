@@ -1925,6 +1925,19 @@ export interface SecurityVarSlice {
   items: SecurityVarSliceItem[]; // line 오름차순 정렬 완료 상태
 }
 
+// viz S1 — plot() 콜사이트 하나의 렌더링 메타데이터. 필드 기본값은 전부 TV 기본값이고,
+// 추출은 best-effort(리터럴이 아니면 기본값)라 이 구조 때문에 컴파일이 실패하는 일은 없다.
+export interface PlotMeta {
+  style: string; // "line" | "stepline" | "stepline_diamond" | "histogram" | "area" | "areabr" | "columns" | "cross" | "circles" | "linebr"
+  linewidth: number;
+  offset: number;
+  histbase: number;
+  trackprice: boolean;
+  forceOverlay: boolean;
+  color: string | null; // 컴파일타임에 확정된 CSS 색 — 미지정이거나 런타임 값이면 null
+  colorSlot: number | null; // 런타임 색일 때 $.plotColors 채널 인덱스, 아니면 null
+}
+
 export interface AnalyzedProgram {
   script: Script;
   // 배치30 (1), C591: analyze(script, {chartTf}) options.chartTf 그대로(기본 DEFAULT_CHART_TF="D") —
@@ -2042,6 +2055,16 @@ export interface AnalyzedProgram {
   // TranspileOk.viz에 실린다. TV 시그니처상 const bool이라 BoolLiteral만 수용, 미지정 시 TV
   // 기본값 false (call-expr.ts 지시어 분기가 추출·검증).
   overlay: boolean;
+  // viz S1 — plot() 콜사이트별 렌더링 메타데이터, plotTitles와 같은 슬롯 순서 배열(둘은 항상
+  // 같은 지점에서 함께 push되므로 길이가 같다). 정적 kwargs(style/linewidth/offset/histbase/
+  // trackprice/force_overlay)와 정적으로 확정된 색은 여기 실리고, 색이 런타임 표현식이면
+  // colorSlot이 $.plotColors 채널 인덱스를 가리킨다 (call-expr.ts plot 분기가 추출).
+  plotMeta: PlotMeta[];
+  // 동적 색 채널 수 — codegen 프리앰블이 $.initPlotColors(N)으로 소비한다. Context/run의
+  // positional 시그니처는 넓히지 않는다(슬롯 수를 생성 코드 자신이 나른다, viz S0 결정).
+  plotColorSlotCount: number;
+  // 동적 색 콜사이트 → { $.plotColors 슬롯, 색 표현식 }. codegen plot 분기가 record와 함께 방출.
+  plotColorExprs: Map<CallExpr, { slot: number; expr: Expr }>;
   // strategy(default_qty_type=strategy.cash) 지정 여부(C330) — default_qty_value를 계약 수가 아니라
   // **통화 금액**으로 해석(qty = 금액/체결가, equity 무관 — percent_of_equity의 "잔고 비율"과 다른 축).
   // true면 codegen이 configure 다섯 번째 인자(true)를 방출하고 네 번째(percent) 슬롯도 명시적으로
@@ -3263,6 +3286,9 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
     strategyInitialCapital: null,
     strategyQtyIsPercent: false,
     overlay: false,
+    plotMeta: [],
+    plotColorSlotCount: 0,
+    plotColorExprs: new Map(),
     strategyQtyIsCash: false,
     strategyCurrency: SYMINFO_STRING_PROPS.get("currency")!,
     stmtCalls: new Set(),

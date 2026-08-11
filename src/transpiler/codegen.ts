@@ -380,6 +380,12 @@ export function generateCode(program: AnalyzedProgram): string {
       `$.strategy.configure(${program.strategyDefaultQty ?? 1}, ${program.strategyPyramiding ?? 1}${capArg}${tailArgs});`,
     );
   }
+  // viz S1 — 동적 plot 색 채널 preallocate(ctx당 1회). 슬롯 수를 생성 코드 자신이 나르므로
+  // Context/run의 positional 시그니처는 그대로다(viz S0 결정). 동적 색이 없는 스크립트는
+  // 아무것도 방출하지 않아 기존 출력이 한 글자도 안 바뀐다(C129 원칙).
+  if (program.plotColorSlotCount > 0) {
+    lines.push(`$.initPlotColors(${program.plotColorSlotCount});`);
+  }
   // request.security 셋째 슬라이스 3b(ROADMAP [hard->분할], C181) — securityExprCallSlots(3a)
   // 콜사이트마다 HTF 프리패스 함수를 프리앰블에 심는다. UDF/type/method 선언과 동일 층(ctx당 1회
   // 실행)에 두는 이유도 동일(GOAL.md "bar loop 안 할당 제로") — 결과 Float64Array는 바 루프
@@ -4026,7 +4032,16 @@ function genCallExpr(
     // series는 위치 인자(args[0]) 또는 `series=` 키워드 인자(C313) 둘 중 하나 — analyzer가
     // 이미 정확히 하나만 존재함을 보장(둘 다/둘 다 없음은 analyzer 에러로 codegen에 안 옴).
     const seriesExpr = expr.args.length > 0 ? expr.args[0]! : expr.kwargs.find((kw) => kw.name === "series")!.value;
-    return `$.plots[${plotSlot}].record(${genExpr(seriesExpr, program, funcCtx)})`;
+    const record = `$.plots[${plotSlot}].record(${genExpr(seriesExpr, program, funcCtx)})`;
+    const colorEntry = program.plotColorExprs.get(expr);
+    if (colorEntry !== undefined) {
+      // viz S1 — 색이 런타임 표현식인 콜사이트: 값 record와 같은 바에서 색을 평가해 CSS
+      // 문자열(na 색은 null)을 직접 인덱스로 기록한다. plot은 v5 제약상 항상 top-level이라
+      // 매 바 실행이 보장되고, 쉼표식은 이 반환값이 ExprStmt/fill-구제 어느 위치에 놓여도
+      // 단일 표현식으로 안전하다.
+      return `(${record}, void ($.plotColors[${colorEntry.slot}][$.idx] = ${genExpr(colorEntry.expr, program, funcCtx)}))`;
+    }
+    return record;
   }
   const securityCall = program.securityCallSlots.get(expr);
   if (securityCall !== undefined) {

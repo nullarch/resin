@@ -14,6 +14,7 @@ import type { AnalyzedProgram, FuncInfo, LexScope, SecurityVarSlice, SecurityVar
 import type { DrawingKind } from "./constructors";
 import {
   analyzeExpr,
+  COLOR_CONSTANTS,
   resolveUdtObjectType,
   resolveArrayElemDrawingKind,
   resolveContainerExprKind,
@@ -395,6 +396,22 @@ import { lookupMethodOverload, mangleMethodName, resolveMethodReceiverTypeName, 
 // Float64Array 수집 채널" 원칙대로 title을 제외한 나머지는 렌더링 전용 no-op — analyzer가
 // 검증(개수/이름/중복/위치-키워드 충돌)만 하고 codegen은 여전히 series 인자 하나만 record()한다
 // (title도 이미 analyze-time에 prog.plotTitles로 소비되는 순수 메타데이터라 codegen에 안 감).
+// viz S1 — plot.style_* 컴파일타임 상수 → 계약 스타일 문자열. TV의 10종 전부이며 이름은
+// docs의 pine-viz 계약(v1)과 동일하다. 여기 없는 표현식이 style=로 오면 하드 에러 대신
+// 기본 "line"으로 둔다 — 렌더링 메타데이터 때문에 컴파일이 실패하는 커버리지 회귀 금지.
+const PLOT_STYLE_NAMES: ReadonlyMap<string, string> = new Map([
+  ["style_line", "line"],
+  ["style_stepline", "stepline"],
+  ["style_stepline_diamond", "stepline_diamond"],
+  ["style_histogram", "histogram"],
+  ["style_area", "area"],
+  ["style_areabr", "areabr"],
+  ["style_columns", "columns"],
+  ["style_cross", "cross"],
+  ["style_circles", "circles"],
+  ["style_linebr", "linebr"],
+]);
+
 export const PLOT_PARAM_NAMES: readonly string[] = [
   "title",
   "color",
@@ -5315,6 +5332,63 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             : `Plot ${slot}`;
         prog.plotTitles.push(title);
         prog.plotCallSlots.set(expr, slot);
+        // viz S1 — 렌더링 kwargs를 더 이상 버리지 않는다. 정적(리터럴/plot.style_*/색 상수)은
+        // PlotMeta로 승격하고, 색이 런타임 표현식이면 $.plotColors 슬롯을 배정해 codegen이
+        // 바마다 기록하게 한다. 추출은 전부 best-effort: 리터럴이 아니면 에러 대신 TV 기본값 —
+        // 지금까지 통과하던 스크립트가 메타데이터 때문에 떨어지는 커버리지 회귀는 금지
+        // (S1 수용 기준: corpus/scripts 6669/6926 불변, 커밋 메시지에 재실측 기록).
+        const plotArg = (name: string): { value: Expr; fromKwarg: boolean } | undefined => {
+          const idx = PLOT_PARAM_NAMES.indexOf(name) + 1; // +1: 위치 0은 series
+          if (idx >= 1 && idx < expr.args.length) return { value: expr.args[idx]!, fromKwarg: false };
+          const kw = expr.kwargs.find((k) => k.name === name);
+          return kw ? { value: kw.value, fromKwarg: true } : undefined;
+        };
+        const numOr = (name: string, dflt: number): number => {
+          const a = plotArg(name);
+          return a !== undefined && a.value.kind === "NumberLiteral" ? a.value.value : dflt;
+        };
+        const boolOr = (name: string, dflt: boolean): boolean => {
+          const a = plotArg(name);
+          return a !== undefined && a.value.kind === "BoolLiteral" ? a.value.value : dflt;
+        };
+        const styleArg = plotArg("style");
+        const style =
+          styleArg !== undefined &&
+          styleArg.value.kind === "DotAccess" &&
+          styleArg.value.obj.kind === "Identifier" &&
+          styleArg.value.obj.name === "plot"
+            ? (PLOT_STYLE_NAMES.get(styleArg.value.attr) ?? "line")
+            : "line";
+        const colorArg = plotArg("color");
+        let staticColor: string | null = null;
+        let colorSlot: number | null = null;
+        if (colorArg !== undefined) {
+          const c = colorArg.value;
+          if (c.kind === "ColorLiteral") {
+            staticColor = c.value;
+          } else if (c.kind === "DotAccess" && c.obj.kind === "Identifier" && c.obj.name === "color" && COLOR_CONSTANTS.has(c.attr)) {
+            staticColor = COLOR_CONSTANTS.get(c.attr)!;
+          } else {
+            colorSlot = prog.plotColorSlotCount;
+            prog.plotColorSlotCount += 1;
+            prog.plotColorExprs.set(expr, { slot: colorSlot, expr: c });
+            // 위치 인자로 온 색은 아래 공통 루프가 이미 분석한다 — kwarg로 온 색만 여기서
+            // 분석해 이중 분석(ta.* 슬롯 이중 할당)을 피한다. 이 분석 자체가 S1의 시맨틱
+            // 이동이다: 지금까지 평가되지 않던 색 표현식이 평가되기 시작한다(TV 정합 방향,
+            // corpus_diff 재실측 프로토콜은 resin-viz-plan.md §4).
+            if (colorArg.fromKwarg) analyzeExpr(c, prog, scope, false);
+          }
+        }
+        prog.plotMeta.push({
+          style,
+          linewidth: numOr("linewidth", 1),
+          offset: numOr("offset", 0),
+          histbase: numOr("histbase", 0),
+          trackprice: boolOr("trackprice", false),
+          forceOverlay: boolOr("force_overlay", false),
+          color: staticColor,
+          colorSlot,
+        });
       }
       for (const arg of expr.args) analyzeExpr(arg, prog, scope, false);
       return;
