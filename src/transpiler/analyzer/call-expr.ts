@@ -253,8 +253,12 @@ const DRAWING_METHODS: Readonly<Record<string, ReadonlySet<string>>> = {
 //   전부 drawingNoop) 등재 대상이 없다. label.new(point=)/line.new(first_point=)/box.new(top_left=)
 //   같은 chart.point 오버로드도 제외 — runtime이 ChartPoint 객체를 숫자 필드로 읽을 수 없어
 //   낮춰봐야 NaN이라 이득이 없다(현행 유지).
+// viz S4 — .new 행들은 C813 당시 "state 파라미터만"에서 표시용 파라미터(TV 공식 시그니처
+// 순서)까지 확장됐다: 드로잉이 더 이상 순수 no-op이 아니라 생성 로그로 캡처되므로 색/스타일도
+// 이제 state다. chart.point 오버로드(label.new(point, ...))는 여전히 제외 — 위치가 한 칸씩
+// 밀려 best-effort 캡처가 어긋날 수 있으나 기존(수치 NaN)과 동급의 열화라 현행 유지.
 export const DRAWING_STATE_PARAM_NAMES: Readonly<Record<string, readonly string[]>> = {
-  "label.new": ["x", "y", "text"],
+  "label.new": ["x", "y", "text", "xloc", "yloc", "color", "style", "textcolor", "size", "textalign", "tooltip"],
   "label.set_x": ["id", "x"],
   "label.set_y": ["id", "y"],
   "label.set_xy": ["id", "x", "y"],
@@ -262,7 +266,7 @@ export const DRAWING_STATE_PARAM_NAMES: Readonly<Record<string, readonly string[
   "label.get_x": ["id"],
   "label.get_y": ["id"],
   "label.get_text": ["id"],
-  "line.new": ["x1", "y1", "x2", "y2"],
+  "line.new": ["x1", "y1", "x2", "y2", "xloc", "extend", "color", "style", "width"],
   "line.set_x1": ["id", "x"],
   "line.set_y1": ["id", "y"],
   "line.set_x2": ["id", "x"],
@@ -274,7 +278,8 @@ export const DRAWING_STATE_PARAM_NAMES: Readonly<Record<string, readonly string[
   "line.get_x2": ["id"],
   "line.get_y2": ["id"],
   "line.get_price": ["id", "x"],
-  "box.new": ["left", "top", "right", "bottom"],
+  "box.new": ["left", "top", "right", "bottom", "border_color", "border_width", "border_style", "extend", "xloc", "bgcolor", "text"],
+  "table.new": ["position", "columns", "rows", "bgcolor", "frame_color", "frame_width", "border_color", "border_width"],
   "box.set_left": ["id", "left"],
   "box.set_right": ["id", "right"],
   "box.set_top": ["id", "top"],

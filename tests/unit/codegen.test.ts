@@ -22641,11 +22641,16 @@ describe("CodeGen label/line/box/table/polyline drawing objects (C211)", () => {
   // C813(C572 수정): state kwarg(label.new의 x/y/text)는 위치 슬롯으로 낮추고, 표시용 kwarg
   // (color/style/size — GOAL.md "drawing = no-op")는 예전 그대로 전부 버린다. 이전 기대값은
   // `rt.label.new($.idx, $.high.get(0))`로 text= 까지 버리는 결함 동작을 고정하고 있었다.
-  it("lowers state kwargs to positional slots but still drops display-only kwargs (values discarded — same principle as hline/fill, no crash)", () => {
+  it("lowers state AND display kwargs to positional slots (viz S4 — display params are state now)", () => {
+    // Pre-S4 this pinned `rt.label.new($.idx, $.high.get(0), "hi")` with color/style/size
+    // dropped. The DRAWING_STATE_PARAM_NAMES rows grew the display columns, so they lower
+    // like any state kwarg: skipped slots pad with undefined up to the last set one.
     const code = codegenSource(
       'l = label.new(bar_index, high, text="hi", color=color.red, style=label.style_label_down, size=size.normal)',
     );
-    expect(code).toBe('var l = rt.label.new($.idx, $.high.get(0), "hi");');
+    expect(code).toBe(
+      'var l = rt.label.new($.idx, $.high.get(0), "hi", undefined, undefined, "#FF5252", "label_down", undefined, "normal");',
+    );
   });
 
   it("resolves label.style_*/line.style_*/size.*/position.*/extend.*/xloc.*/yloc.*/text.align_*·wrap_* namespace constants without error", () => {

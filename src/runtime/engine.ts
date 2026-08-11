@@ -9,6 +9,7 @@
 // `var:<name>` channel, which is the format the differential oracle compares.
 
 import { Context, type OHLCVData } from "./context";
+import { setDrawingContext } from "./drawing";
 import { rt } from "./rt";
 // Type-only: erased at runtime, so no runtime cycle back into the transpiler.
 import type { TranspileOk } from "../transpiler/pipeline";
@@ -127,6 +128,15 @@ export interface RunResult {
       low: number[];
       close: number[];
     }>;
+    // viz S4 — runtime drawing creations (label/line/box/table), in creation order.
+    // `bar` is the bar index the object was created on; `state` is its final state
+    // after every set_* the script performed (coordinates, text, colors, styles).
+    drawings: Array<{
+      kind: string;
+      id: number;
+      bar: number;
+      state: Record<string, number | string | null>;
+    }>;
   };
 }
 
@@ -141,7 +151,12 @@ export function compile(code: string): (ctx: Context) => () => void {
     if (typeof barFn !== "function") {
       throw new Error("compiled module did not return a per-bar function (not two-layer output)");
     }
-    return barFn;
+    // viz S4 — route drawing creations to this context's log. Set before every bar,
+    // not once, so interleaved streaming contexts never cross-contaminate.
+    return () => {
+      setDrawingContext(ctx);
+      barFn();
+    };
   };
 }
 
@@ -254,6 +269,7 @@ export function run(
         open: ctx.vizSeries[m.openSlot]!, high: ctx.vizSeries[m.highSlot]!,
         low: ctx.vizSeries[m.lowSlot]!, close: ctx.vizSeries[m.closeSlot]!,
       })),
+      drawings: ctx.drawingLog.map((d) => ({ kind: d.kind, id: d.id, bar: d.bar, state: { ...d.state } })),
     };
     return base;
   }

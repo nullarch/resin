@@ -22,11 +22,37 @@ export interface DrawingHandle {
   state: Record<string, number | string | null>;
 }
 
+// viz S4 — 생성 로그 한 건. state는 핸들의 live 참조라 이후 set_* 변이가 그대로 반영된다
+// (스냅샷은 engine 조립부가 실행 종료 후에 뜬다).
+export interface DrawingRecord {
+  kind: string;
+  id: number;
+  bar: number;
+  state: DrawingHandle["state"];
+}
+
+// viz S4 — 현재 실행 중인 Context의 드로잉 싱크. engine.compile()이 돌려주는 바 함수 래퍼가
+// 매 호출 직전에 자기 Context로 설정하므로, 여러 Context를 번갈아 스트리밍해도 로그가 섞이지
+// 않는다(JS 단일 스레드 + 바 함수 실행은 동기). 싱크가 없으면(러ntime 단위 테스트의 직접 호출)
+// 로그 없이 기존 동작 그대로다.
+interface DrawingSink {
+  idx: number;
+  drawingLog: DrawingRecord[];
+}
+let currentSink: DrawingSink | null = null;
+export function setDrawingContext(sink: DrawingSink): void {
+  currentSink = sink;
+}
+
 let nextDrawingId = 0;
 
 function newHandle(kind: string): DrawingHandle {
   nextDrawingId += 1;
-  return { kind, id: nextDrawingId, state: {} };
+  const h: DrawingHandle = { kind, id: nextDrawingId, state: {} };
+  if (currentSink !== null) {
+    currentSink.drawingLog.push({ kind, id: h.id, bar: currentSink.idx, state: h.state });
+  }
+  return h;
 }
 
 function numArg(args: readonly unknown[], i: number): number {
@@ -38,12 +64,27 @@ function strArg(args: readonly unknown[], i: number): string | null {
   return typeof v === "string" ? v : null;
 }
 
+// viz S4 — 생성자 공용의 선택 필드 캡처: 위치에 실제 값이 있을 때만 state에 싣는다
+// (undefined 패딩·미전달은 건너뜀 — get_*의 "미설정 = NaN/null" 규약 유지).
+function captureOpt(h: DrawingHandle, args: readonly unknown[], fields: ReadonlyArray<[string, number, "num" | "str"]>): void {
+  for (const [name, idx, t] of fields) {
+    if (idx < args.length && args[idx] !== undefined) {
+      h.state[name] = t === "num" ? numArg(args, idx) : strArg(args, idx);
+    }
+  }
+}
+
 // label.new(x, y, text, ...) — x/y series int/float(필수), text series string(기본 "").
+// viz S4: 표시용 파라미터(DRAWING_STATE_PARAM_NAMES "label.new" 순서)도 캡처한다.
 export function newLabel(...args: unknown[]): DrawingHandle {
   const h = newHandle("label");
   h.state.x = numArg(args, 0);
   h.state.y = numArg(args, 1);
   h.state.text = args.length > 2 ? strArg(args, 2) : "";
+  captureOpt(h, args, [
+    ["xloc", 3, "str"], ["yloc", 4, "str"], ["color", 5, "str"], ["style", 6, "str"],
+    ["textcolor", 7, "str"], ["size", 8, "str"], ["textalign", 9, "str"], ["tooltip", 10, "str"],
+  ]);
   return h;
 }
 // line.new(x1, y1, x2, y2, ...) — 전부 series int/float 필수(기본값 없음).
@@ -53,6 +94,9 @@ export function newLine(...args: unknown[]): DrawingHandle {
   h.state.y1 = numArg(args, 1);
   h.state.x2 = numArg(args, 2);
   h.state.y2 = numArg(args, 3);
+  captureOpt(h, args, [
+    ["xloc", 4, "str"], ["extend", 5, "str"], ["color", 6, "str"], ["style", 7, "str"], ["width", 8, "num"],
+  ]);
   return h;
 }
 // box.new(left, top, right, bottom, ...) — 전부 series int/float 필수(기본값 없음).
@@ -62,10 +106,19 @@ export function newBox(...args: unknown[]): DrawingHandle {
   h.state.top = numArg(args, 1);
   h.state.right = numArg(args, 2);
   h.state.bottom = numArg(args, 3);
+  captureOpt(h, args, [
+    ["border_color", 4, "str"], ["border_width", 5, "num"], ["border_style", 6, "str"],
+    ["extend", 7, "str"], ["xloc", 8, "str"], ["bgcolor", 9, "str"], ["text", 10, "str"],
+  ]);
   return h;
 }
-export function newTable(..._args: unknown[]): DrawingHandle {
-  return newHandle("table");
+export function newTable(...args: unknown[]): DrawingHandle {
+  const h = newHandle("table");
+  captureOpt(h, args, [
+    ["position", 0, "str"], ["columns", 1, "num"], ["rows", 2, "num"], ["bgcolor", 3, "str"],
+    ["frame_color", 4, "str"], ["frame_width", 5, "num"], ["border_color", 6, "str"], ["border_width", 7, "num"],
+  ]);
+  return h;
 }
 
 export function drawingNoop(..._args: unknown[]): undefined {
@@ -98,6 +151,15 @@ function setNumField(h: unknown, field: string, value: number): undefined {
 function setStrField(h: unknown, field: string, value: string | null): undefined {
   if (isHandle(h)) h.state[field] = value;
   return undefined;
+}
+// viz S4 — 표시용 setter 승격: drawingNoop이던 set_color/set_style류가 이제 state에 쓴다
+// (생성 로그가 최종 상태를 노출하므로 표시 속성 변이도 관측 대상이다). 값 타입은 느슨하게
+// 받아 문자열/숫자만 싣고 그 외(na 등)는 null로 낮춘다.
+export function setDisplayField(field: string): (h: unknown, v: unknown) => undefined {
+  return (h: unknown, v: unknown): undefined => {
+    if (isHandle(h)) h.state[field] = typeof v === "number" || typeof v === "string" ? v : null;
+    return undefined;
+  };
 }
 
 export function labelGetX(h: unknown): number {

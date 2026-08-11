@@ -172,10 +172,13 @@ describe("C813 method-call sugar 폼(receiver가 'id' 슬롯을 차지)", () => 
 });
 
 describe("C813 회귀 가드 — 표에 없는 kwarg는 기존과 동일하게 무시된다", () => {
-  it("표시용 kwarg만 있는 콜은 출력 코드가 kwarg 없는 콜과 완전히 같다", () => {
+  it("표시용 kwarg도 이제 슬롯으로 낮춰진다(viz S4) — state 값은 변함없다", () => {
+    // C813 당시엔 표시용 kwarg가 출력에 아무 흔적을 남기지 않는 것이 계약이었다. viz S4가
+    // 표시 파라미터를 state로 승격해 이제 낮춰진다 — 좌표/텍스트 등 기존 state 값은 불변.
     const withKw = src("var float __obs = na", 'lb = label.new(0, 5.0, "x", style=label.style_label_down, color=color.red)', "__obs := label.get_y(lb)");
     const without = src("var float __obs = na", 'lb = label.new(0, 5.0, "x")', "__obs := label.get_y(lb)");
-    expect(code(withKw)).toBe(code(without));
+    expect(code(withKw)).not.toBe(code(without));
+    expect(code(withKw)).toContain('"label_down"');
     expect(obs(withKw)).toEqual([5, 5, 5, 5, 5]);
   });
 
@@ -185,14 +188,14 @@ describe("C813 회귀 가드 — 표에 없는 kwarg는 기존과 동일하게 �
     expect(obs(withBogus)).toEqual([5, 5, 5, 5, 5]);
   });
 
-  it("state가 없는 네임스페이스(table)는 표에 없어 kwarg가 그대로 discard된다", () => {
+  it("table.new도 이제 등재돼 kwarg가 낮춰진다(viz S4); cell 계열은 여전히 discard", () => {
     const t = src(
       "var float __obs = na",
       "t = table.new(position=position.top_right, columns=2, rows=2)",
       't.cell(0, 0, "x", text_color=color.red)',
       "__obs := 3.0",
     );
-    expect(code(t)).toContain("rt.table.new()");
+    expect(code(t)).toContain('rt.table.new("top_right", 2, 2)');
     expect(obs(t)).toEqual([3, 3, 3, 3, 3]);
   });
 
@@ -209,13 +212,13 @@ describe("C813 회귀 가드 — 표에 없는 kwarg는 기존과 동일하게 �
 });
 
 describe("C813 DRAWING_STATE_PARAM_NAMES 표 자체의 정합성", () => {
-  it("모든 키가 'kind.method' 형태이고 label/line/box 3종만 등재된다(table/polyline/linefill은 state 없음)", () => {
+  it("모든 키가 'kind.method' 형태이고 label/line/box/table 4종만 등재된다(viz S4가 table.new 추가)", () => {
     for (const key of Object.keys(DRAWING_STATE_PARAM_NAMES)) {
       const [kind, method] = key.split(".");
-      expect(["label", "line", "box"]).toContain(kind);
+      expect(["label", "line", "box", "table"]).toContain(kind);
       expect(method).toBeTruthy();
     }
-    expect(Object.keys(DRAWING_STATE_PARAM_NAMES).some((k) => k.startsWith("table."))).toBe(false);
+    expect(DRAWING_STATE_PARAM_NAMES["table.new"]).toBeDefined();
   });
 
   it("생성자를 제외한 전 항목의 첫 슬롯이 'id'다(sugar slice(1) 오프셋의 전제)", () => {

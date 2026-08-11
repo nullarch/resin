@@ -25,6 +25,7 @@ import { StrategyState } from "./strategy";
 import { build as buildSecurityCache, type SecurityCache } from "./security";
 // Type-only: erased at runtime, so no runtime cycle back into the transpiler.
 import type { TranspileOk } from "../transpiler/pipeline";
+import type { DrawingRecord } from "./drawing";
 
 export interface OHLCVData {
   open: ArrayLike<number>;
@@ -81,6 +82,10 @@ export class Context {
   // plotarrow values, plotcandle/plotbar OHLC). Same lifecycle as plotColors: the
   // generated preamble calls $.initVizSeries(N), the bar loop writes by index.
   vizSeries: number[][] = [];
+  // viz S4 — creation log for drawing objects (label/line/box/table). Filled by the
+  // runtime's newHandle through the per-barFn sink engine.compile() installs; each
+  // record's state is the live handle state, so later set_* mutations are reflected.
+  drawingLog: DrawingRecord[] = [];
   // Plot collection channel, one preallocated Series per plot call site.
   // Generated code fills them with `$.plots[N].record(value)` each bar; once
   // the loop finishes, run() converts them to plain arrays.
