@@ -35,7 +35,7 @@ Resin は Pine Script v5/v6 を素の JavaScript モジュールにコンパイ�
 TradingView はスクリプトをプラットフォームの外に出させてくれません。これはそれを外に出す方法です。
 
 - 実在するスクリプトの **95.1%** がコンパイルできる（10,618 本中、[測定方法は下記](#coverage)）
-- **9,882 件のテスト**、加えて独立実装と 1e-9 の精度で突き合わせる差分オラクル
+- **9,883 件のテスト**、加えて独立実装と 1e-9 の精度で突き合わせる差分オラクル
 - **ランタイム依存ゼロ** — CLI は clone した状態からそのまま動く。インストール手順もビルド手順も不要
 - **本番で稼働中** — [wavealgo リーダーボード](https://www.wavealgo.com/leaderboard)
   に並ぶスコアはすべてこのエンジンが計算しています
@@ -65,6 +65,9 @@ node bin/resin.mjs build examples/rsi-cross.pine -o rsi-cross.js
 
 # 自分のスクリプトが入ったフォルダを指定し、どれだけコンパイルできるか調べる
 node bin/resin.mjs check ./my-scripts
+
+# チャートに必要なすべて — 色、シェイプ、描画オブジェクト — を JSON でダンプする
+node bin/resin.mjs run examples/rsi-cross.pine --bars 300 --viz viz.json
 
 # 任意: node bin/resin.mjs と打つ代わりに `resin` を PATH に通す
 npm install -g .
@@ -169,17 +172,21 @@ for (let i = 0; i < ctx.barCount; i++) { ctx.advance(); bar(); }
 console.log(ctx.plots[0].toArray());
 ```
 
-実行の途中経過を観測する必要がなければ、`run()` が同じことを 1 回の呼び出しで行います。
+実行の途中経過を観測する必要がなければ、`run(result, data)` が同じことを 1 回の呼び出しで行い、
+その戻り値には `viz` が載っています — plot のスタイルとバーごとの色、マーカーの条件、
+背景/バー色のストライプ、fill、そしてスクリプトが作ったすべての label/line/box/table まで。
 サポート対象の API 面は `src/index.ts` が export しているものが厳密にすべてです。
 それ以外の `src/` 配下は内部実装であり、変更されます。[API.md](API.md) を参照してください。
 
 ## やらないこと
 
 - **チャートはありません。** Resin は plot の系列を計算します。それを描くのはあなたの仕事です。
-- **可視化専用の呼び出しは no-op にコンパイルされます。** `plotshape`、`plotchar`、`bgcolor`、
-  `barcolor`、`hline`、`alertcondition`、`alert` などが装飾する対象のチャートはここには存在しないため、
-  コンパイル時に落とされます。ただし引数の中に入れ子になった `plot()` 呼び出しは記録されます。
-  シェイプの条件をデータとして得たい場合は、それを `plot()` してください。
+- **ここではチャートはピクセルではなくデータです。** 0.2.0 から可視化呼び出しは捨てられる
+  代わりにキャプチャされます: plot のスタイルとバーごとの色、`plotshape` / `plotchar` /
+  `plotarrow` / `plotcandle` / `plotbar`、`bgcolor` / `barcolor` / `hline` / `fill`、
+  そしてすべての `label` / `line` / `box` / `table` の生成が `run(result, data).viz` —
+  CLI では `resin run --viz out.json` — で返ってきます。描画は依然としてあなたの仕事で、
+  `polyline`、`linefill`、`alert`、`alertcondition` は no-op のままです。
 - **注文約定は TradingView が文書化しているルール（成行は次バーの始値）に従いますが、TradingView 自身と
   突き合わせて確認したわけではありません。** ルールは仕様書から実装したものであって、並走比較から
   得たものではありません。インジケーターの値ではなくバックテストの数字に依存するのであれば、

@@ -21,7 +21,7 @@ import { join, extname, basename } from 'node:path';
 register('../scripts/ts-esm-loader-hook.mjs', import.meta.url);
 
 const { transpile } = await import('../src/transpiler/pipeline.ts');
-const { compile } = await import('../src/runtime/engine.ts');
+const { compile, run } = await import('../src/runtime/engine.ts');
 const { Context } = await import('../src/runtime/context.ts');
 const { PineRuntimeHaltError } = await import('../src/runtime/log.ts');
 
@@ -40,6 +40,7 @@ const USAGE = `resin — run TradingView Pine Script outside TradingView
   resin build <file.pine> [-o out.js]      compile to a JavaScript module
   resin run   <file.pine> [--data f.json]  execute and print the plot output
                           [--bars N]       synthesize N bars instead (default 100)
+                          [--viz out.json] also dump the visualization data (viz S5)
   resin check <file|dir>                   compile-check; report what failed
 
   --chart-tf <tf>   chart timeframe the script should compile against ("D", "60", …)
@@ -168,6 +169,15 @@ switch (cmd) {
       const s = ctx.strategy;
       console.log(`${'closed trades'.padEnd(24)} ${s.closedTrades}`);
       console.log(`${'net profit'.padEnd(24)} ${s.realizedPnl.toFixed(2)}`);
+    }
+    const vizOut = flag('viz');
+    if (vizOut) {
+      // viz S5 — 오브젝트 폼 run()으로 한 번 더 실행해 viz를 뽑는다. 엔진은 결정론적이라
+      // 위 스트리밍 실행과 결과가 동일하고, CLI 용도에서 이중 실행 비용은 무시 가능하다.
+      // JSON.stringify가 NaN을 null로 낮추므로 na 값은 JSON에서 null로 나간다.
+      const { viz } = run(result, data);
+      writeFileSync(vizOut, JSON.stringify(viz, null, 1));
+      console.error(`wrote ${vizOut}`);
     }
     break;
   }

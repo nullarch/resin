@@ -35,7 +35,7 @@ same indicators, same series semantics, your own machine. TradingView will not
 let a script leave the platform; this is how you get it out.
 
 - **95.1%** of 10,618 real-world scripts compile ([measured, method below](#coverage-and-where-the-number-comes-from))
-- **9,882 tests**, plus a differential oracle matched to an independent
+- **9,883 tests**, plus a differential oracle matched to an independent
   implementation at 1e-9
 - **Zero runtime dependencies** — the CLI runs straight from a clone, no
   install step, no build step
@@ -67,6 +67,9 @@ node bin/resin.mjs build examples/rsi-cross.pine -o rsi-cross.js
 
 # point it at a folder of your scripts and find out how much of it compiles
 node bin/resin.mjs check ./my-scripts
+
+# dump everything a chart would need — colors, shapes, drawings — as JSON
+node bin/resin.mjs run examples/rsi-cross.pine --bars 300 --viz viz.json
 
 # optional: get `resin` on your PATH instead of typing node bin/resin.mjs
 npm install -g .
@@ -178,19 +181,23 @@ for (let i = 0; i < ctx.barCount; i++) { ctx.advance(); bar(); }
 console.log(ctx.plots[0].toArray());
 ```
 
-`run()` does the same thing in one call when you do not need to observe state as
-it goes. The supported surface is exactly what `src/index.ts` exports and
-nothing else — everything under `src/` beyond that is internal and will change.
-See [API.md](API.md).
+`run(result, data)` does the same thing in one call when you do not need to
+observe state as it goes, and its return carries `viz`: plot styles and per-bar
+colors, marker conditions, background/bar-color stripes, fills, and every
+label/line/box/table the script created. The supported surface is exactly what
+`src/index.ts` exports and nothing else — everything under `src/` beyond that
+is internal and will change. See [API.md](API.md).
 
 ## What this does not do
 
 - **No charts.** Resin computes plot series. Drawing them is your problem.
-- **Visualization-only calls compile to no-ops.** `plotshape`, `plotchar`,
-  `bgcolor`, `barcolor`, `hline`, `alertcondition`, `alert` and friends mark up
-  a chart that does not exist here, so they are dropped at compile time —
-  `plot()` calls nested in their arguments still record. If you need a shape's
-  condition as data, `plot()` it.
+- **Charts are data here, not pixels.** Since 0.2.0 the visualization calls are
+  captured instead of dropped: plot styles and per-bar colors, `plotshape` /
+  `plotchar` / `plotarrow` / `plotcandle` / `plotbar`, `bgcolor` / `barcolor` /
+  `hline` / `fill`, and every `label` / `line` / `box` / `table` creation come
+  back under `run(result, data).viz` — or `resin run --viz out.json` from the
+  CLI. Rendering them is still your problem; `polyline`, `linefill`, `alert`
+  and `alertcondition` remain no-ops.
 - **Order fills follow TradingView's documented rule — market orders at the next
   bar's open — but that has not been confirmed against TradingView itself.** The
   rule is implemented from the specification, not from a side-by-side run. If

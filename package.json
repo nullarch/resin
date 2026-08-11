@@ -1,6 +1,6 @@
 {
   "name": "@nullarch/resin",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Run TradingView Pine Script v5/v6 outside TradingView — a compiler and runtime for JavaScript",
   "license": "Apache-2.0",
   "type": "module",

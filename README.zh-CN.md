@@ -34,7 +34,7 @@ Resin 把 Pine Script v5/v6 编译成一个普通的 JavaScript 模块并运行�
 相同的序列语义，跑在你自己的机器上。TradingView 不让脚本离开平台；这是把它带出来的方法。
 
 - 真实世界脚本中 **95.1%** 可编译（10,618 个中，[测量方法见下文](#coverage)）
-- **9,882 项测试**，另有与一个独立实现逐条比对、精度达 1e-9 的差分对照
+- **9,883 项测试**，另有与一个独立实现逐条比对、精度达 1e-9 的差分对照
 - **零运行时依赖**——CLI 从 clone 出来即可运行，无需安装步骤，无需构建步骤
 - **已在生产环境运行**——[wavealgo 排行榜](https://www.wavealgo.com/leaderboard)
   上的每一个分数都由这个引擎计算
@@ -64,6 +64,9 @@ node bin/resin.mjs build examples/rsi-cross.pine -o rsi-cross.js
 
 # 指向你自己的脚本目录，看看其中有多少能编译通过
 node bin/resin.mjs check ./my-scripts
+
+# 把图表需要的一切——颜色、形状、绘图对象——导出为 JSON
+node bin/resin.mjs run examples/rsi-cross.pine --bars 300 --viz viz.json
 
 # 可选：把 `resin` 装到 PATH 上，省去每次输入 node bin/resin.mjs
 npm install -g .
@@ -157,17 +160,20 @@ for (let i = 0; i < ctx.barCount; i++) { ctx.advance(); bar(); }
 console.log(ctx.plots[0].toArray());
 ```
 
-当你不需要在执行过程中观察状态时，`run()` 用一次调用完成同样的事情。受支持的接口面
-恰好就是 `src/index.ts` 导出的内容，仅此而已——`src/` 下的其余一切都是内部实现，会发生变化。
-详见 [API.md](API.md)。
+当你不需要在执行过程中观察状态时，`run(result, data)` 用一次调用完成同样的事情，而且它的
+返回值带着 `viz`：plot 的样式与逐 K 线颜色、标记的条件、背景/K 线颜色条带、fill，以及脚本
+创建的每一个 label/line/box/table。受支持的接口面恰好就是 `src/index.ts` 导出的内容，
+仅此而已——`src/` 下的其余一切都是内部实现，会发生变化。详见 [API.md](API.md)。
 
 ## 不做的事
 
 - **没有图表。** Resin 计算 plot 序列。把它们画出来是你的事。
-- **仅用于可视化的调用会被编译成空操作。** `plotshape`、`plotchar`、`bgcolor`、`barcolor`、
-  `hline`、`alertcondition`、`alert` 之类标注的是这里并不存在的图表，因此在编译期被丢弃——
-  但嵌套在它们参数中的 `plot()` 调用仍会记录数据。如果你需要把某个形状的条件当作数据，
-  就用 `plot()` 输出它。
+- **在这里，图表是数据而不是像素。** 从 0.2.0 起，可视化调用不再被丢弃，而是被捕获：
+  plot 的样式与逐 K 线颜色、`plotshape` / `plotchar` / `plotarrow` / `plotcandle` /
+  `plotbar`、`bgcolor` / `barcolor` / `hline` / `fill`，以及每一次 `label` / `line` /
+  `box` / `table` 的创建，都会通过 `run(result, data).viz` 返回——CLI 里用
+  `resin run --viz out.json`。把它们画出来仍然是你的事；`polyline`、`linefill`、
+  `alert` 和 `alertcondition` 仍是空操作。
 - **订单成交遵循 TradingView 文档所述的规则——市价单在下一根 K 线开盘成交——但这一点尚未与
   TradingView 本身对照确认。** 该规则是照着规范实现的，而不是通过并排运行验证的。如果你依赖的是
   回测数字而非指标数值，请把它们当作暂定值。

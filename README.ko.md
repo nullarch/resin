@@ -35,7 +35,7 @@ Resin은 Pine Script v5/v6를 평범한 JavaScript 모듈로 컴파일해서 실
 나가는 것을 허용하지 않습니다. 이건 그걸 꺼내오는 방법입니다.
 
 - 실제 스크립트 10,618개 중 **95.1%** 컴파일 ([측정 방법은 아래](#coverage))
-- **테스트 9,882개**, 그리고 독립 구현과 1e-9까지 대조하는 차분 오라클
+- **테스트 9,883개**, 그리고 독립 구현과 1e-9까지 대조하는 차분 오라클
 - **런타임 의존성 0** — CLI는 clone한 그대로 실행됩니다. 설치 단계도, 빌드 단계도 없습니다
 - **프로덕션에서 가동 중** — [wavealgo 리더보드](https://www.wavealgo.com/leaderboard)의
   모든 점수가 이 엔진으로 계산됩니다
@@ -65,6 +65,9 @@ node bin/resin.mjs build examples/rsi-cross.pine -o rsi-cross.js
 
 # 자기 스크립트 폴더를 지정해서 그중 얼마나 컴파일되는지 확인
 node bin/resin.mjs check ./my-scripts
+
+# 차트에 필요한 모든 것 — 색, 도형, 드로잉 — 을 JSON으로 덤프
+node bin/resin.mjs run examples/rsi-cross.pine --bars 300 --viz viz.json
 
 # 선택: node bin/resin.mjs 대신 `resin` 명령을 PATH에 등록
 npm install -g .
@@ -167,17 +170,21 @@ for (let i = 0; i < ctx.barCount; i++) { ctx.advance(); bar(); }
 console.log(ctx.plots[0].toArray());
 ```
 
-실행 도중의 상태를 관찰할 필요가 없다면 `run()`이 같은 일을 한 번의 호출로 처리합니다.
-지원되는 표면은 정확히 `src/index.ts`가 export하는 것뿐이며, 그 밖의 `src/` 아래는 전부
-내부 구현이고 바뀝니다. [API.md](API.md)를 참고하세요.
+실행 도중의 상태를 관찰할 필요가 없다면 `run(result, data)`가 같은 일을 한 번의 호출로
+처리하고, 그 반환값에는 `viz`가 실려 있습니다 — plot 스타일과 바별 색, 마커 조건,
+배경/바 색 줄무늬, fill, 그리고 스크립트가 만든 모든 label/line/box/table까지. 지원되는
+표면은 정확히 `src/index.ts`가 export하는 것뿐이며, 그 밖의 `src/` 아래는 전부 내부
+구현이고 바뀝니다. [API.md](API.md)를 참고하세요.
 
 ## 하지 않는 것
 
 - **차트 없음.** Resin은 plot 시리즈를 계산합니다. 그리는 것은 당신의 몫입니다.
-- **시각화 전용 호출은 no-op으로 컴파일됩니다.** `plotshape`, `plotchar`, `bgcolor`,
-  `barcolor`, `hline`, `alertcondition`, `alert` 같은 것들은 여기 존재하지 않는 차트를
-  꾸미는 호출이라 컴파일 시점에 제거됩니다 — 다만 인자 안에 중첩된 `plot()` 호출은 여전히
-  기록됩니다. 어떤 모양의 조건을 데이터로 받고 싶다면 그것을 `plot()` 하세요.
+- **여기서 차트는 픽셀이 아니라 데이터입니다.** 0.2.0부터 시각화 호출은 버려지는 대신
+  캡처됩니다: plot의 스타일·바별 색, `plotshape` / `plotchar` / `plotarrow` /
+  `plotcandle` / `plotbar`, `bgcolor` / `barcolor` / `hline` / `fill`, 그리고 모든
+  `label` / `line` / `box` / `table` 생성이 `run(result, data).viz`로 — CLI에서는
+  `resin run --viz out.json`으로 — 돌아옵니다. 그리는 것은 여전히 당신의 몫이고,
+  `polyline`, `linefill`, `alert`, `alertcondition`은 no-op으로 남습니다.
 - **주문 체결은 TradingView가 문서화한 규칙(시장가 주문은 다음 바 시가)을 따르지만, TradingView
   자체와 대조해 확인한 것은 아닙니다.** 규칙은 명세를 보고 구현한 것이지 나란히 돌려서 얻은
   것이 아닙니다. 지표 값이 아니라 백테스트 숫자에 의존한다면 잠정치로 취급하세요.

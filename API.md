@@ -39,11 +39,11 @@ script stopped itself on purpose" from "the engine broke".
 | `BarSnapshot` | `src/runtime/engine` | `Record<string, number>`, keyed `var:<name>` |
 | `OHLCVData` | `src/runtime/context` | `Context` input: `open/high/low/close/volume: ArrayLike<number>`, optional `time` |
 | `PlotResult` | `src/runtime/engine` | `{ title, values }` |
-| `RunResult` | `src/runtime/engine` | `run()` return: `bars` / `finalVarState` / `plots`, plus `viz` (styles, per-bar colors) on the object form |
+| `RunResult` | `src/runtime/engine` | `run()` return: `bars` / `finalVarState` / `plots`, plus `viz` (plot styles and per-bar colors, markers, bgcolor/barcolor, hlines, fills, drawing creations) on the object form |
 | `Series` | `src/runtime/series` | read type for `ctx.close.get(0)` and friends; never constructed by a caller |
 | `StrategyState` | `src/runtime/strategy` | read type for `ctx.strategy.posSize` and friends |
 | `TranspileErr` | `src/transpiler/pipeline` | `ok: false` plus `errors: string[]` |
-| `TranspileOk` | `src/transpiler/pipeline` | `ok: true` plus `code`, the ten slot-metadata fields `Context` needs, `isStrategy`, and `viz` (`{ overlay, plots }`) |
+| `TranspileOk` | `src/transpiler/pipeline` | `ok: true` plus `code`, the ten slot-metadata fields `Context` needs, `isStrategy`, and `viz` (overlay, plots, bgcolors, barcolors, hlines, fills, shapes, chars, arrows, candles, plotbars) |
 | `TranspileResult` | `src/transpiler/pipeline` | discriminated union of the two above |
 
 ## Two ways to run

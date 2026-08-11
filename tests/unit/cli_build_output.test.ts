@@ -34,4 +34,25 @@ describe("resin build CLI output routing", () => {
     expect(readFileSync(out, "utf-8")).toContain("return function");
     expect(readFileSync(src, "utf-8")).toBe(SOURCE);
   });
+
+  it("run --viz dumps the visualization data as JSON (viz S5)", () => {
+    const src = join(dir, "v.pine");
+    const out = join(dir, "v.json");
+    writeFileSync(
+      src,
+      '//@version=5\nindicator("v")\nplot(close, "C", color = close > open ? color.green : color.red)\nplotshape(close > open, "U")\n',
+    );
+    execFileSync(process.execPath, [CLI, "run", src, "--bars", "4", "--viz", out], { encoding: "utf-8" });
+    const viz = JSON.parse(readFileSync(out, "utf-8")) as {
+      overlay: boolean;
+      plots: Array<{ title: string; colors: (string | null)[] | null }>;
+      shapes: Array<{ condition: boolean[] }>;
+      drawings: unknown[];
+    };
+    expect(viz.overlay).toBe(false);
+    expect(viz.plots[0]!.title).toBe("C");
+    expect(viz.plots[0]!.colors).toHaveLength(4);
+    expect(viz.shapes[0]!.condition).toHaveLength(4);
+    expect(Array.isArray(viz.drawings)).toBe(true);
+  });
 });
