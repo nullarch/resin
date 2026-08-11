@@ -1,5 +1,0 @@
-//@version=5
-indicator("Str Tostring")
-var float result = 0.0
-string s = str.tostring(close)
-result := str.length(s) > 0 ? 1.0 : 0.0

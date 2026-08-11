@@ -1,5 +1,0 @@
-
-//@version=5
-indicator("PercentRank Precision")
-pr = ta.percentrank(close, 10)
-plot(pr)

@@ -1,8 +1,0 @@
-//@version=5
-indicator("Loss Aversion")
-ret = close - nz(close[1])
-lossMultiplier = 2.25
-weighted = ret >= 0 ? ret : ret * lossMultiplier
-var float cumWeighted = 0.0
-cumWeighted := cumWeighted + weighted
-plot(cumWeighted)

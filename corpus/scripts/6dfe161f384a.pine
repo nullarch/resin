@@ -1,5 +1,0 @@
-//@version=5
-indicator("Logistic Map")
-float rParam = 3.7
-var float xState = 0.5
-xState := rParam * xState * (1.0 - xState)

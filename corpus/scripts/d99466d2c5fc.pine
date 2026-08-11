@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("ForBreakResult")
-found = -1
-for i = 0 to 9
-    if float(i) * 10.0 > close
-        found := i
-        break
-plot(float(found), "F")

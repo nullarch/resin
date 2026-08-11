@@ -1,9 +1,0 @@
-//@version=5
-indicator("Sea Level Tracker")
-baseline = ta.sma(close, 5)
-var float anomalySum = 0.0
-var int validBars = 0
-if not na(baseline)
-    anomaly = close - baseline
-    anomalySum := anomalySum + anomaly
-    validBars := validBars + 1

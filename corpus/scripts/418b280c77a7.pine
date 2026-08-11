@@ -1,8 +1,0 @@
-//@version=5
-indicator("Na Equality")
-var float result = 0.0
-float x = na
-if x == na
-    result := 1.0
-if x != na
-    result := 2.0

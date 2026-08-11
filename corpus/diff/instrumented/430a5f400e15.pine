@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Str Match")
-s = "hello 123 world"
-has_digits = not na(str.match(s, "\d+"))
-var float __obs_plot0 = na
-__obs_plot0 := has_digits ? 1.0 : 0.0
-plot(has_digits ? 1.0 : 0.0)

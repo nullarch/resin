@@ -1,5 +1,0 @@
-//@version=5
-indicator("for expr")
-float total = 0.0
-for i = 1 to 5
-    total := total + float(i)

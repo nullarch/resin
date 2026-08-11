@@ -1,7 +1,0 @@
-//@version=5
-indicator("Doubling Time")
-var float prevCases = 0.0
-currentCases = close * 10.0
-growthRate = prevCases > 0 ? (currentCases - prevCases) / prevCases : 0.0
-doublingTime = growthRate > 0.01 ? math.log(2.0) / math.log(1.0 + growthRate) : 999.0
-prevCases := currentCases

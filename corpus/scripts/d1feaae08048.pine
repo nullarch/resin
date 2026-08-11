@@ -1,7 +1,0 @@
-//@version=5
-indicator("UnshiftShift")
-a = array.from(2.0, 3.0)
-array.unshift(a, 1.0)
-var float first = 0.0
-first := array.shift(a)
-plot(first)

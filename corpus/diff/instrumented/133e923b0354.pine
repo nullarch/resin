@@ -1,7 +1,0 @@
-//@version=5
-indicator("Color Literal")
-c = #FF0000
-var float result = close
-var float __obs_plot0 = na
-__obs_plot0 := result
-plot(result, color=c)

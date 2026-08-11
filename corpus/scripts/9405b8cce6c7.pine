@@ -1,7 +1,0 @@
-//@version=5
-indicator("Return Level")
-float blockMax = ta.highest(close, 5)
-float sigma = ta.stdev(close, 5)
-float kFactor = 2.0
-float returnLevel = blockMax + kFactor * sigma
-plot(returnLevel, "RetLevel")

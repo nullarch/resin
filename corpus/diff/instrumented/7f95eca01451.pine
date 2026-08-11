@@ -1,9 +1,0 @@
-//@version=5
-indicator("Hydraulic Head")
-elevationHead = close - 100.0
-pressureHead = (high - close) * 2.0
-velocityHead = math.pow(math.abs(close - open), 2) / (2.0 * 9.81)
-totalHead = elevationHead + pressureHead + velocityHead
-var float __obs_plot0 = na
-__obs_plot0 := totalHead
-plot(totalHead)

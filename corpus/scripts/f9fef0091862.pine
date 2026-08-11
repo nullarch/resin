@@ -1,7 +1,0 @@
-//@version=5
-indicator("Relative Entropy")
-var float relEnt = 0.0
-bodyRatio = math.abs(close - open) / (high - low > 0.01 ? high - low : 0.01)
-refRatio = 0.5
-safeBody = bodyRatio > 0.01 ? bodyRatio : 0.01
-relEnt := safeBody * math.log(safeBody / refRatio)

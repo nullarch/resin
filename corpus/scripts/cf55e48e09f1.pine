@@ -1,8 +1,0 @@
-//@version=5
-indicator("CF Expr Reassign")
-var float x = 0.0
-x := if bar_index == 0
-    42.0
-else
-    x
-plot(x)

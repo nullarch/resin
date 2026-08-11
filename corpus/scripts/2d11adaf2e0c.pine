@@ -1,5 +1,0 @@
-//@version=5
-indicator("Wait Time")
-float waitT = volume > 0 ? (high - low) / volume * 10000.0 : 0.0
-float avgWait = ta.sma(waitT, 5)
-plot(nz(avgWait, 0.0), "AvgWait")

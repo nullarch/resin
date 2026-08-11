@@ -1,9 +1,0 @@
-//@version=5
-indicator("UDF TA Var")
-mySignal(src, len) =>
-    var float prev = 0.0
-    s = ta.sma(src, len)
-    prev := s
-    prev
-var float result = 0.0
-result := mySignal(close, 3)

@@ -1,5 +1,0 @@
-//@version=5
-indicator("NaCheck")
-var int naCount = 0
-if na(close[100])
-    naCount := naCount + 1

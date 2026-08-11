@@ -1,7 +1,0 @@
-//@version=5
-indicator("Test")
-/*
-This is a multi-line
-block comment
-*/
-x = 1

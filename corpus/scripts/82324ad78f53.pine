@@ -1,6 +1,0 @@
-//@version=5
-indicator("Drawing Noop")
-var float result = 0.0
-lbl = label.new(bar_index, close, "test")
-label.set_text(lbl, "updated")
-result := close

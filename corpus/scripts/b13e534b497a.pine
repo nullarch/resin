@@ -1,8 +1,0 @@
-//@version=5
-indicator("sliding window")
-var float result = 0.0
-var arr = array.new_float(0)
-arr.push(close)
-if arr.size() > 5
-    arr.shift()
-result := arr.size()

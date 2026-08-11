@@ -1,7 +1,0 @@
-//@version=5
-indicator("Radioactive Decay")
-float n0 = 10000.0
-float decayConst = 0.1
-float timeStep = bar_index + 1.0
-float remaining = n0 * math.exp(-decayConst * timeStep)
-float decayed = n0 - remaining

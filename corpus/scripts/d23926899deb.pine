@@ -1,5 +1,0 @@
-//@version=5
-indicator("input bool")
-show = input.bool(true, "Show")
-var float result = 0.0
-result := show ? 1.0 : 0.0

@@ -1,7 +1,0 @@
-//@version=5
-indicator("ForIn Arr Destr")
-arr = array.from(10.0, 20.0, 30.0)
-total = 0.0
-for [idx, val] in arr
-    total := total + val * (idx + 1)
-plot(total)

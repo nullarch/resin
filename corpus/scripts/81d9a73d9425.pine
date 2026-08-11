@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("EMA Accel")
-ema3 = ta.ema(close, 3)
-velocity = ema3 - ema3[1]
-acceleration = velocity - velocity[1]
-plot(velocity, "Vel")
-plot(acceleration, "Accel")

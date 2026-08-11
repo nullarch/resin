@@ -1,8 +1,0 @@
-//@version=5
-indicator("Nz Series")
-rsi = ta.rsi(close, 3)
-fallback = ta.sma(close, 3)
-result = nz(rsi, fallback)
-var float __obs_plot0 = na
-__obs_plot0 := result
-plot(result)

@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Trig")
-angle = math.pi / 4
-sinVal = math.sin(angle)
-cosVal = math.cos(angle)
-tanVal = math.tan(angle)
-result = sinVal * sinVal + cosVal * cosVal
-plot(result, "Sin2+Cos2")

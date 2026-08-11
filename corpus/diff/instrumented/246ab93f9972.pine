@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("TSI")
-tsiVal = ta.tsi(close, 5, 3)
-bullish = tsiVal > 0
-var float __obs_plot0 = na
-__obs_plot0 := tsiVal
-plot(tsiVal, "TSI")

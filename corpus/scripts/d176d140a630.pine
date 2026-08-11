@@ -1,4 +1,0 @@
-//@version=5
-indicator("barssince")
-var float bs = 0.0
-bs := ta.barssince(close > open)

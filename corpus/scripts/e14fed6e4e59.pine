@@ -1,5 +1,0 @@
-
-//@version=5
-indicator("Add Chain")
-result = close + high - low + open - volume
-plot(result)

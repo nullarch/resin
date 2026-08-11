@@ -1,7 +1,0 @@
-//@version=5
-indicator("Unary")
-var float neg = 0.0
-neg := -close
-var bool not_true = true
-not_true := not (close > 200)
-plot(close)

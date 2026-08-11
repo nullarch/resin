@@ -1,5 +1,0 @@
-//@version=5
-indicator("Math Chain")
-x = math.abs(math.min(close - open, 0))
-y = math.max(x, math.sqrt(math.abs(close)))
-plot(y)

@@ -1,6 +1,0 @@
-//@version=5
-indicator("Hline Styles")
-rsi = ta.rsi(close, 14)
-hline(70, "OB", color=color.red, linestyle=hline.style_dashed)
-hline(30, "OS", color=color.green, linestyle=hline.style_dotted)
-plot(rsi)

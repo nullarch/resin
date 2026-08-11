@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Every Some")
-arr = array.from(1.0, 2.0, 3.0, 4.0, 5.0)
-allPositive = array.every(arr)
-hasAny = array.some(arr)
-plot(allPositive ? 1 : 0, "Every")
-plot(hasAny ? 1 : 0, "Some")

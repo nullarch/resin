@@ -1,5 +1,0 @@
-//@version=5
-indicator("test")
-s = "hello world"
-result = str.replace(str.upper(s), "HELLO", "HI")
-plot(str.length(result))

@@ -1,5 +1,0 @@
-//@version=5
-indicator("barstate")
-var int count = 0
-if barstate.ishistory
-    count := count + 1

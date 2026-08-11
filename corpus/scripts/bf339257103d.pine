@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("TF Session")
-tf = timeframe.period
-isintra = timeframe.isintraday
-isdaily = timeframe.isdaily
-mult = timeframe.multiplier
-plot(mult, "Mult")

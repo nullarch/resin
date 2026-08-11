@@ -1,8 +1,0 @@
-//@version=5
-indicator("ADX")
-[diPlus, diMinus, adxVal] = ta.dmi(5, 5)
-strongTrend = adxVal > 25
-bullTrend = strongTrend and diPlus > diMinus
-bearTrend = strongTrend and diMinus > diPlus
-signal = bullTrend ? 1 : bearTrend ? -1 : 0
-plot(signal)

@@ -1,8 +1,0 @@
-//@version=5
-indicator("Var Neg Step")
-s = -2
-var float total = 0.0
-total := 0.0
-for i = 10 to 0 by s
-    total := total + i
-plot(total)

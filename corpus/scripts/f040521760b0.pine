@@ -1,8 +1,0 @@
-//@version=5
-indicator("Map Method Style")
-m = map.new<string, float>()
-m.put("x", 100.0)
-m.put("y", 200.0)
-var float result = 0.0
-result := m.get("x") + m.get("y")
-plot(result)

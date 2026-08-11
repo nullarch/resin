@@ -1,3 +1,0 @@
-//@version=5
-indicator("MTF")
-htf_close = request.security(syminfo.tickerid, "D", close)

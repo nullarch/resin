@@ -1,5 +1,0 @@
-//@version=5
-indicator("chart pt")
-var float result = 0.0
-pt = chart.point.new(0, bar_index, close)
-result := close

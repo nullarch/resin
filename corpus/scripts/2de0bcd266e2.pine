@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("Generic Array")
-array<float> prices = array.new<float>(0)
-array.push(prices, close)
-plot(array.size(prices))

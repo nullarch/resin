@@ -1,7 +1,0 @@
-//@version=5
-indicator("Block Comment")
-var float result = 0.0
-/* This is
-   a multi-line
-   block comment */
-result := close

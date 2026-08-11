@@ -1,9 +1,0 @@
-//@version=5
-indicator("QAOA Mixing")
-float costSignal = close - nz(ta.sma(close, 3), close)
-float mixerSignal = nz(ta.ema(close, 2), close) - close
-float gamma = 0.3
-float beta = 0.7
-float layer1 = math.cos(gamma * costSignal) * close
-float layer2 = math.sin(beta * mixerSignal) * close
-float qaoaOutput = (layer1 + layer2) / 2.0

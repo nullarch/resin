@@ -1,6 +1,0 @@
-//@version=5
-indicator("StrStartEnd")
-var bool sw = false
-var bool ew = false
-sw := str.startswith("hello world", "hello")
-ew := str.endswith("hello world", "world")

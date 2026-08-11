@@ -1,8 +1,0 @@
-//@version=5
-indicator("array int")
-var float result = 0.0
-arr = array.new_int(3, 0)
-array.set(arr, 0, 10)
-array.set(arr, 1, 20)
-array.set(arr, 2, 30)
-result := array.sum(arr)

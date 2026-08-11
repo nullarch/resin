@@ -1,9 +1,0 @@
-//@version=5
-indicator("Basal Ganglia Selection")
-channel1 = close - open
-channel2 = high - close
-channel3 = close - low
-winner = channel1 >= channel2 and channel1 >= channel3 ? 1 : channel2 >= channel3 ? 2 : 3
-var float __obs_plot0 = na
-__obs_plot0 := winner
-plot(winner)

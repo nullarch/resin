@@ -1,4 +1,0 @@
-//@version=5
-indicator("test")
-[_, signalLine, _] = ta.macd(close, 3, 5, 3)
-plot(signalLine)

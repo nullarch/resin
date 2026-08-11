@@ -1,6 +1,0 @@
-//@version=5
-indicator("Comprehensive C92")
-var string result = ""
-sum_val = for i = 1 to 5
-    float(i)
-result := str.tostring(sum_val, "#.#")

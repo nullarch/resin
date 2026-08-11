@@ -1,5 +1,0 @@
-//@version=5
-indicator("Assign Cont")
-x =
-    close + open
-plot(x)

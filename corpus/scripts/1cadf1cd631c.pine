@@ -1,4 +1,0 @@
-//@version=5
-indicator("history")
-var float result = 0.0
-result := close[1]

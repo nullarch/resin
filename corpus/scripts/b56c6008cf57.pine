@@ -1,6 +1,0 @@
-//@version=5
-indicator("Varip tick")
-varip int tickCount = 0
-tickCount := tickCount + 1
-var int barNum = 0
-barNum := barNum + 1

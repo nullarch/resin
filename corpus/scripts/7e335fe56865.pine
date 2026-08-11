@@ -1,8 +1,0 @@
-//@version=5
-indicator("BB Squeeze")
-[upper, mid, lower] = ta.bb(close, 5, 2.0)
-bbWidth = not na(upper) and not na(lower) ? (nz(upper) - nz(lower)) / nz(mid) : 0.0
-var float minWidth = 999.0
-if not na(upper) and bbWidth < minWidth and bbWidth > 0
-    minWidth := bbWidth
-isSqueeze = bbWidth < minWidth * 1.5

@@ -1,5 +1,0 @@
-//@version=5
-indicator("log test")
-log.info("close = {0}", close)
-log.warning("test warning")
-log.error("test error")

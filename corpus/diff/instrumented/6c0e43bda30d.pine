@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Trend Reg")
-sma3 = ta.sma(close, 3)
-sma5 = ta.sma(close, 5)
-regime = close > sma3 and sma3 > sma5 ? 2 : close > sma3 ? 1 : close < sma3 and sma3 < sma5 ? -2 : -1
-var float __obs_plot0 = na
-__obs_plot0 := regime
-plot(regime, "R")

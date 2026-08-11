@@ -1,9 +1,0 @@
-//@version=5
-indicator("NA Chain")
-rsi = ta.rsi(close, 3)
-safeRsi = nz(rsi, 50.0)
-isValid = not na(safeRsi)
-fixedRsi = fixnan(rsi)
-plot(safeRsi)
-plot(isValid ? 1.0 : 0.0)
-plot(fixedRsi)

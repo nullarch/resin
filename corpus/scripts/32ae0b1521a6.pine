@@ -1,6 +1,0 @@
-//@version=5
-indicator("bool cond")
-var float val = 0.0
-b = close > open
-if b
-    val := close

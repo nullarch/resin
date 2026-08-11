@@ -1,7 +1,0 @@
-//@version=5
-indicator("QEC Majority Vote")
-float sig1 = close > nz(ta.sma(close, 3), close) ? 1.0 : 0.0
-float sig2 = close > nz(ta.ema(close, 3), close) ? 1.0 : 0.0
-float sig3 = close > nz(ta.rma(close, 3), close) ? 1.0 : 0.0
-float voteSum = sig1 + sig2 + sig3
-float corrected = voteSum >= 2.0 ? 1.0 : 0.0

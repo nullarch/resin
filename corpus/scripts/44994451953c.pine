@@ -1,8 +1,0 @@
-//@version=5
-indicator("scope block")
-var float result = 0.0
-x = 10.0
-if close > 100
-    y = 20.0
-    x := x + y
-result := x

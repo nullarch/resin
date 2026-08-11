@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("Alert Noop")
-sma3 = ta.sma(close, 3)
-if ta.crossover(close, sma3)
-    alert("Crossover detected", alert.freq_once_per_bar)
-plot(sma3, "SMA")

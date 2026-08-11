@@ -1,6 +1,0 @@
-//@version=5
-indicator("Peephole Algebra")
-float zero1 = close * 0.0
-float zero2 = close - close
-float sum = zero1 + zero2
-float result = sum + close

@@ -1,9 +1,0 @@
-//@version=5
-indicator("MapSize")
-var m = map.new<string, float>()
-map.put(m, "a", 1.0)
-map.put(m, "b", 2.0)
-var int sz = 0
-var bool has = false
-sz := map.size(m)
-has := map.contains(m, "a")

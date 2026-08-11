@@ -1,6 +1,0 @@
-//@version=5
-indicator("LineCont")
-var float result = 0
-result := (close +
-           high +
-           low) / 3

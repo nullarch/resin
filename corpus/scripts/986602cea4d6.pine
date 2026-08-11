@@ -1,8 +1,0 @@
-//@version=5
-indicator("UDT factory")
-type Container
-    float value = 0.0
-    int count = 0
-var float result = 0.0
-c = Container.new(close, 1)
-result := c.value + c.count

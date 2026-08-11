@@ -1,4 +1,0 @@
-//@version=5
-indicator("req div splits")
-div = request.dividends(syminfo.tickerid, dividends.gross)
-spl = request.splits(syminfo.tickerid, splits.denominator)

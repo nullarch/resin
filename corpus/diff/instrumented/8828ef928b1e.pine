@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("MDD")
-var float peak = 0.0
-peak := math.max(peak, close)
-dd = peak > 0 ? (peak - close) / peak * 100 : 0.0
-var float __obs_plot0 = na
-__obs_plot0 := dd
-plot(dd, "DD")

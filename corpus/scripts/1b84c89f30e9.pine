@@ -1,8 +1,0 @@
-//@version=5
-indicator("UDF TA Isolation")
-myMA(float src, int len) =>
-    ta.sma(src, len)
-outside_sma = ta.sma(close, 3)
-inside_sma = myMA(close, 3)
-plot(outside_sma)
-plot(inside_sma)

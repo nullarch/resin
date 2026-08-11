@@ -1,6 +1,0 @@
-//@version=5
-indicator("Plankton Bloom")
-avgNutrients = ta.sma(volume, 3)
-var int bloomCount = 0
-if not na(avgNutrients) and volume > avgNutrients * 1.2
-    bloomCount := bloomCount + 1

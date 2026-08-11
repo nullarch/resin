@@ -1,5 +1,0 @@
-//@version=5
-indicator("For Expr")
-var float result = 0.0
-result := for i = 0 to 4
-    i

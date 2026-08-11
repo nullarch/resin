@@ -1,8 +1,0 @@
-//@version=5
-indicator("Ocean Acidification")
-co2Proxy = volume / 200.0
-basePH = 8.1
-phDrop = co2Proxy * 0.001
-currentPH = basePH - phDrop
-var float minPH = 8.1
-minPH := math.min(minPH, currentPH)

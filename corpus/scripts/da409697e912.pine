@@ -1,9 +1,0 @@
-//@version=5
-indicator("NS-15 Lagrangian")
-var float particleX = 0.0
-var float particleV = 0.0
-smaVal = nz(ta.sma(close, 3), close)
-fieldForce = close - smaVal
-particleV := particleV * 0.9 + fieldForce * 0.1
-particleX := particleX + particleV
-plot(particleX)

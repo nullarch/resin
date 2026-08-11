@@ -1,8 +1,0 @@
-//@version=5
-indicator("UDT new")
-type MyData
-    float value = 0.0
-    int count = 0
-var float result = 0.0
-d = MyData.new(close, 1)
-result := d.value

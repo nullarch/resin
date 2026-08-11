@@ -1,6 +1,0 @@
-//@version=5
-indicator("NaN Cmp")
-x = float(na)
-var int r = 0
-r := x > 10 ? 1 : 0
-plot(r)

@@ -1,4 +1,0 @@
-//@version=5
-strategy("Test")
-inLong = strategy.position_size > 0
-eq = strategy.equity

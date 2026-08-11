@@ -1,6 +1,0 @@
-//@version=5
-indicator("SwitchTA")
-var string signal = "none"
-rsiVal = ta.rsi(close, 5)
-if not na(rsiVal)
-    signal := rsiVal > 70 ? "overbought" : rsiVal < 30 ? "oversold" : "neutral"

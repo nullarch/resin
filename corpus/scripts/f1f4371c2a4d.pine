@@ -1,5 +1,0 @@
-//@version=5
-indicator("WMA VWMA")
-wma5 = ta.wma(close, 5)
-vwma5 = ta.vwma(close, 5)
-diff = nz(wma5) - nz(vwma5)

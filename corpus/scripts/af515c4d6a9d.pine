@@ -1,6 +1,0 @@
-//@version=5
-indicator("LowestBars")
-var int lastLB = 0
-lb = ta.lowestbars(low, 5)
-if not na(lb)
-    lastLB := lb

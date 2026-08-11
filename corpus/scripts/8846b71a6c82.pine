@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("Pct Rank")
-prank = ta.percentrank(close, 5)
-high_ = prank > 80
-low_ = prank < 20
-plot(prank, "PctRank")

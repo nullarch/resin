@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Math Edge")
-sqrtVal = math.sqrt(math.abs(close - open))
-logVal = close > 0 ? math.log(close) : 0.0
-expVal = math.exp(math.min(close - open, 5.0))
-powVal = math.pow(math.abs(close - open) + 1, 0.5)
-plot(sqrtVal, "Sqrt")
-plot(logVal, "Log")

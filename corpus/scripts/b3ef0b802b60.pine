@@ -1,6 +1,0 @@
-//@version=5
-indicator("var vs nonvar")
-var float persisted = 0.0
-float resetted = 0.0
-persisted := persisted + 1.0
-resetted := resetted + 1.0

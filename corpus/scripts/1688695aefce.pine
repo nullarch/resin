@@ -1,5 +1,0 @@
-//@version=5
-indicator("4-Ternary")
-rsi = ta.rsi(close, 5)
-zone = rsi > 70 ? 4 : rsi > 50 ? 3 : rsi > 30 ? 2 : 1
-plot(zone)

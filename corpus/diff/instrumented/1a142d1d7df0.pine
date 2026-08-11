@@ -1,9 +1,0 @@
-//@version=5
-indicator("Var vs Regular")
-var float counter = 0.0
-float regular = 0.0
-counter := counter + 1.0
-regular := regular + 1.0
-var float __obs_plot0 = na
-__obs_plot0 := counter
-plot(counter)

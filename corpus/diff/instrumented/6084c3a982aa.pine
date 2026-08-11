@@ -1,7 +1,0 @@
-//@version=5
-indicator("DeltaProxyRoc")
-prevClose = nz(close[1], close)
-deltaProxy = prevClose > 0 ? (close - prevClose) / prevClose : 0.0
-var float __obs_plot0 = na
-__obs_plot0 := deltaProxy
-plot(deltaProxy, "Delta")

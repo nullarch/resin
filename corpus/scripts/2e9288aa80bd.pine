@@ -1,5 +1,0 @@
-//@version=5
-indicator("Chained Ternary")
-var float result = 0.0
-result := close > 110 ? 3.0 : close > 105 ? 2.0 : 1.0
-plot(result)

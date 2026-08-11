@@ -1,9 +1,0 @@
-//@version=5
-indicator("Lyapunov Proxy")
-float chg = not na(close[1]) ? math.abs(close - close[1]) : 0.001
-float logDiv = math.log(math.max(chg, 0.001))
-var float sumLogDiv = 0.0
-var int barCnt = 0
-barCnt := barCnt + 1
-sumLogDiv := sumLogDiv + logDiv
-float lyapunov = barCnt > 0 ? sumLogDiv / barCnt : 0.0

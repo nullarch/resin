@@ -1,6 +1,0 @@
-//@version=5
-indicator("Cast Float")
-var float x = float(42)
-var float __obs_plot0 = na
-__obs_plot0 := x
-plot(x)

@@ -1,6 +1,0 @@
-//@version=5
-indicator("Service Time")
-float svcTime = volume > 0 ? (high - low) / volume * 1000.0 : 0.0
-var float __obs_plot0 = na
-__obs_plot0 := svcTime
-plot(svcTime, "SvcTime")

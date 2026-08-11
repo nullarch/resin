@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Pctl Linear")
-arr = array.from(10.0, 20.0, 30.0, 40.0, 50.0)
-p50 = array.percentile_linear_interpolation(arr, 50)
-p90 = array.percentile_linear_interpolation(arr, 90)
-plot(p50, "P50")
-plot(p90, "P90")

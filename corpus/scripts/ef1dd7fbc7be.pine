@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Zone Alloc")
-rsi = nz(ta.rsi(close, 3), 50.0)
-sma3 = ta.sma(close, 3)
-trendAlloc = close > sma3 ? 0.7 : 0.3
-momAlloc = rsi > 60 ? 0.8 : rsi < 40 ? 0.2 : 0.5
-blended = trendAlloc * 0.6 + momAlloc * 0.4
-plot(blended, "Alloc")

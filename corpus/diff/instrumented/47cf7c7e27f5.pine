@@ -1,8 +1,0 @@
-//@version=5
-indicator("Narrow Framing")
-barReturn = close - open
-barRange = high - low
-efficiency = barRange > 0 ? math.abs(barReturn) / barRange : 0.0
-var float __obs_plot0 = na
-__obs_plot0 := efficiency
-plot(efficiency)

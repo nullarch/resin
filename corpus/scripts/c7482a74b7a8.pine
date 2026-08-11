@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Median")
-med = ta.median(close, 5)
-aboveMedian = close > med
-deviation = close - med
-devPct = med > 0 ? deviation / med * 100 : 0.0
-plot(med, "Median")
-plot(devPct, "Dev%")

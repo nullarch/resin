@@ -1,9 +1,0 @@
-//@version=5
-indicator("Dual Coordinates")
-var float eMu = 0.0
-var float mMu = 0.0
-var int cnt = 0
-cnt := cnt + 1
-eMu := eMu + (close - eMu) / cnt
-logClose = math.log(close > 0 ? close : 1.0)
-mMu := mMu + (logClose - mMu) / cnt

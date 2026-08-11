@@ -1,7 +1,0 @@
-//@version=5
-indicator("Enum Switch")
-maType = "SMA"
-ma = maType == "SMA" ? ta.sma(close, 5) : maType == "EMA" ? ta.ema(close, 5) : ta.rma(close, 5)
-var float __obs_plot0 = na
-__obs_plot0 := ma
-plot(ma)

@@ -1,6 +1,0 @@
-//@version=5
-strategy("Position Size")
-if bar_index == 5
-    strategy.entry("Long", strategy.long, qty=100)
-var float ps = 0.0
-ps := strategy.position_size

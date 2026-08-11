@@ -1,6 +1,0 @@
-//@version=5
-indicator("Word Length Proxy")
-barRange = high - low
-wordLen = barRange > 5 ? 3 : barRange > 3 ? 2 : 1
-var int totalLen = 0
-totalLen := totalLen + wordLen

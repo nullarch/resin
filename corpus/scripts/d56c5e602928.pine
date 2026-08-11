@@ -1,6 +1,0 @@
-//@version=5
-indicator("Trig")
-var float sinVal = 0
-var float cosVal = 0
-sinVal := math.sin(0)
-cosVal := math.cos(0)

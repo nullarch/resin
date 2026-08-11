@@ -1,4 +1,0 @@
-//@version=5
-strategy("Test")
-if close > open
-    strategy.entry("Long", strategy.long)

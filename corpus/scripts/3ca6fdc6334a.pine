@@ -1,5 +1,0 @@
-//@version=5
-indicator("MaxClose")
-var float maxClose = 0
-if close > maxClose
-    maxClose := close

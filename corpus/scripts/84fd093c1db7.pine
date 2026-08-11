@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Math Chain")
-val = close - open
-absVal = math.abs(val)
-logVal = absVal > 0 ? math.log(1 + absVal) : 0.0
-sqrtVal = math.sqrt(absVal)
-final = val > 0 ? logVal + sqrtVal : -(logVal + sqrtVal)
-plot(final, "Final")

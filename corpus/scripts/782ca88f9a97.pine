@@ -1,6 +1,0 @@
-//@version=5
-indicator("Inline Index")
-float prev = nz(close[1], close)
-var float result = 0.0
-result := prev
-plot(result)

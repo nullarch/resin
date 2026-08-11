@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Manual TR")
-prevC = close[1]
-tr1 = high - low
-tr2 = not na(prevC) ? math.abs(high - prevC) : tr1
-tr3 = not na(prevC) ? math.abs(low - prevC) : tr1
-tr = math.max(tr1, math.max(tr2, tr3))
-plot(tr, "TR")

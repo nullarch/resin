@@ -1,6 +1,0 @@
-//@version=5
-strategy("Test Strat", overlay=true)
-if close > open
-    strategy.entry("Long", strategy.long)
-if close < open
-    strategy.close("Long")

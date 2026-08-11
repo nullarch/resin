@@ -1,8 +1,0 @@
-//@version=5
-indicator("Prevalence vs Incidence")
-var float prevalence = 50.0
-float incidence = close / 10.0
-float recoveries = prevalence * 0.1
-prevalence := math.max(prevalence + incidence - recoveries, 0.0)
-var float cumIncidence = 0.0
-cumIncidence := cumIncidence + incidence

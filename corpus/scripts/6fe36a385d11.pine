@@ -1,7 +1,0 @@
-//@version=5
-indicator("TA Chain Isolation")
-inner_ema = ta.ema(close, 3)
-outer_sma = ta.sma(inner_ema, 5)
-var float result = 0.0
-result := nz(outer_sma, 0.0)
-plot(result)

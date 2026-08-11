@@ -1,9 +1,0 @@
-//@version=5
-indicator("Math Round Prec")
-var float r0 = 0.0
-r0 := math.round(2.567)  // 3
-var float r2 = 0.0
-r2 := math.round(2.567, 2)  // 2.57
-var float r_neg = 0.0
-r_neg := math.round(-3.5)  // -4 (half away from zero)
-plot(close)

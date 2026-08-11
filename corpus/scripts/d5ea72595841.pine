@@ -1,8 +1,0 @@
-//@version=5
-indicator("Celestial Coords")
-ra = (close % 24.0)
-dec = ((high - low) * 10.0) - 45.0
-var float sumRA = 0.0
-var float sumDec = 0.0
-sumRA := sumRA + ra
-sumDec := sumDec + dec

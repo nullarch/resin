@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Stoch Zones")
-k = ta.stoch(close, high, low, 5)
-d = ta.sma(k, 3)
-ob = k > 80 and d > 80
-os = k < 20 and d < 20
-plot(k, "K")
-plot(ob ? 1 : os ? -1 : 0, "Zone")

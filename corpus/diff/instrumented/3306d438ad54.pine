@@ -1,7 +1,0 @@
-//@version=5
-indicator("Octave Bands")
-rng = high - low
-octave = math.floor(rng)
-var float __obs_plot0 = na
-__obs_plot0 := octave
-plot(octave, title="octave")

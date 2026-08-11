@@ -1,6 +1,0 @@
-//@version=5
-indicator("volume")
-var float result = 0.0
-avgVol = ta.sma(volume, 5)
-relVol = volume / avgVol
-result := relVol

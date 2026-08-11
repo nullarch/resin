@@ -1,9 +1,0 @@
-//@version=5
-strategy("Transport Signal Strategy")
-float emaVal = nz(ta.ema(close, 3), close)
-float transportCost = math.abs(close - emaVal)
-float avgCost = nz(ta.sma(close, 5), close) * 0.02
-if transportCost > avgCost and close > open
-    strategy.entry("Long", strategy.long)
-if transportCost < avgCost * 0.5
-    strategy.close("Long")

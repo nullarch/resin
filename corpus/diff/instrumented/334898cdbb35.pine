@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("COG Precision")
-c = ta.cog(close, 10)
-var float __obs_plot0 = na
-__obs_plot0 := c
-plot(c)

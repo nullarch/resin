@@ -1,6 +1,0 @@
-//@version=5
-indicator("Modular Cycle")
-period = 4.0
-phase = bar_index - math.floor(bar_index / period) * period
-wave = math.sin(phase * 3.14159 / 2.0)
-plot(wave, "Wave")

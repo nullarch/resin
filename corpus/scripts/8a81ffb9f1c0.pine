@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("BB%B")
-[mid, upper, lower] = ta.bb(close, 5, 2.0)
-bbRange = upper - lower
-pctB = bbRange > 0 ? (close - lower) / bbRange : 0.5
-overbought = pctB > 0.95
-oversold = pctB < 0.05
-plot(pctB, "%B")

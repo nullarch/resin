@@ -1,5 +1,0 @@
-//@version=5
-indicator("MathMaxMin")
-var float maxSpread = 0
-spread = high - low
-maxSpread := math.max(maxSpread, spread)

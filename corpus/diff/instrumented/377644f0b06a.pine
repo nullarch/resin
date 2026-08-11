@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("StrContains")
-direction = close > open ? "BULL" : "BEAR"
-full = "Signal: " + direction
-hasBull = str.contains(full, "BULL")
-var float __obs_plot0 = na
-__obs_plot0 := hasBull ? 1 : 0
-plot(hasBull ? 1 : 0, "HB")

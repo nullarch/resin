@@ -1,8 +1,0 @@
-//@version=5
-indicator("Exponential Growth")
-growthRate = 0.05
-var float population = 100.0
-population := population * (1.0 + growthRate)
-var float __obs_plot0 = na
-__obs_plot0 := population
-plot(population, "Population")

@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Strip Generic Map")
-m = map.new<string, float>()
-m.put("val", close)
-var float __obs_plot0 = na
-__obs_plot0 := m.get("val", 0.0)
-plot(m.get("val", 0.0))

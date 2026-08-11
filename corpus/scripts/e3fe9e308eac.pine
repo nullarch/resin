@@ -1,5 +1,0 @@
-//@version=5
-indicator("MTF")
-var float result = 0
-dailySma = ta.sma(close, 3)
-result := nz(dailySma, 0)

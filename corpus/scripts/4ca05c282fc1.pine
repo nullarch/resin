@@ -1,5 +1,0 @@
-//@version=5
-indicator("Max Bars Back")
-max_bars_back(close, 500)
-sma5 = ta.sma(close, 5)
-plot(sma5)

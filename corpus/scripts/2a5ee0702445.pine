@@ -1,9 +1,0 @@
-//@version=5
-strategy("Monoidal Strategy")
-float rsiSignal = nz(ta.rsi(close, 5), 50.0) > 55.0 ? 1.0 : nz(ta.rsi(close, 5), 50.0) < 45.0 ? -1.0 : 0.0
-float maSignal = close > nz(ta.sma(close, 5), close) ? 1.0 : -1.0
-float combined = rsiSignal + maSignal
-if combined >= 2.0
-    strategy.entry("Bull", strategy.long)
-if combined <= -2.0
-    strategy.close("Bull")

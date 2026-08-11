@@ -1,6 +1,0 @@
-//@version=5
-indicator("Conditional Color")
-var float result = 0.0
-c = close > open ? #00FF00 : #FF0000
-plot(close, color=c)
-result := close

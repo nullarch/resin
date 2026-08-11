@@ -1,8 +1,0 @@
-//@version=5
-indicator("Nested Loop Scope")
-var float result = 0.0
-float total = 0.0
-for i = 1 to 3
-    for j = 1 to 3
-        total += i * j
-result := total

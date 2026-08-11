@@ -1,8 +1,0 @@
-//@version=5
-strategy("Pyramid", overlay=true, pyramiding=3)
-sma_ = ta.sma(close, 3)
-if not na(sma_) and close > sma_
-    strategy.entry("Long", strategy.long)
-if not na(sma_) and close < sma_
-    strategy.close("Long")
-plot(sma_)

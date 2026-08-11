@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Fill Pat")
-var float[] levels = array.new_float(5, 0.0)
-sma3 = ta.sma(close, 3)
-array.fill(levels, sma3, 0, 3)
-array.fill(levels, close, 3, 5)
-avg = array.avg(levels)
-plot(avg, "Avg")

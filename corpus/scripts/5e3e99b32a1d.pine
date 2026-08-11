@@ -1,5 +1,0 @@
-//@version=5
-indicator("HLCC4vs")
-var float diff = 0
-manual = (high + low + close + close) / 4
-diff := hlcc4 - manual

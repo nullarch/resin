@@ -1,8 +1,0 @@
-//@version=5
-indicator("Valuewhen Occ1")
-cond = close > 105
-var float vw0 = na
-var float vw1 = na
-vw0 := ta.valuewhen(cond, close, 0)
-vw1 := ta.valuewhen(cond, close, 1)
-plot(close)

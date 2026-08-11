@@ -1,5 +1,0 @@
-//@version=5
-indicator("HaarDetail1")
-prev = nz(close[1], close)
-detail = (close - prev) / 2.0
-plot(detail, "Detail1")

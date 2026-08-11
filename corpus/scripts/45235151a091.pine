@@ -1,4 +1,0 @@
-//@version=5
-indicator("Walrus")
-var float x = 10.0
-x := x + 5.0

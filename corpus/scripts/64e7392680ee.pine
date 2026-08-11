@@ -1,6 +1,0 @@
-//@version=5
-indicator("NaEqLHS")
-var int count = 0
-sma3 = ta.sma(close, 3)
-if na == sma3
-    count := count + 1

@@ -1,5 +1,0 @@
-//@version=5
-strategy("Pos Size", overlay=true)
-var float pos = 0.0
-strategy.entry("L", strategy.long)
-pos := strategy.position_size

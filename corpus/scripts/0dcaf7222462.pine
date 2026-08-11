@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("Color Palette")
-rsiVal = ta.rsi(close, 3)
-clr = rsiVal > 70 ? color.red : rsiVal > 50 ? color.orange : rsiVal > 30 ? color.yellow : color.green
-plot(rsiVal, "RSI", color=clr)

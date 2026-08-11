@@ -1,4 +1,0 @@
-//@version=5
-indicator("Correlation")
-corr = ta.correlation(close, volume, 5)
-isStrong = not na(corr) ? math.abs(nz(corr)) > 0.5 : false

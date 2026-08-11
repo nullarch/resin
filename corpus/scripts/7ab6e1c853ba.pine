@@ -1,6 +1,0 @@
-//@version=5
-indicator("Crescendo")
-var int crescendo = 0
-prevVol = not na(volume[1]) ? volume[1] : volume
-if volume > prevVol
-    crescendo := crescendo + 1

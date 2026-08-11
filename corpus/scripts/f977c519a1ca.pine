@@ -1,9 +1,0 @@
-//@version=5
-indicator("NS-11 Stokes Drag")
-var float position = 100.0
-var float vel = 0.0
-dragCoeff = 0.2
-force = close - position
-vel := vel + force * 0.1 - dragCoeff * vel
-position := position + vel
-plot(position)

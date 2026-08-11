@@ -1,7 +1,0 @@
-//@version=5
-indicator("Fourier 1st Harmonic")
-float mean5 = nz(ta.sma(close, 5), close)
-float deviation = close - mean5
-float harmonic1 = deviation / math.max(mean5, 0.01)
-var float maxHarm = 0.0
-maxHarm := math.abs(harmonic1) > maxHarm ? math.abs(harmonic1) : maxHarm

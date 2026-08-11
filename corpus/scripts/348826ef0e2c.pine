@@ -1,8 +1,0 @@
-//@version=5
-indicator("RSI Div")
-rsiLen = 5
-rsiVal = ta.rsi(close, rsiLen)
-priceChange = ta.change(close, 3)
-rsiChange = ta.change(rsiVal, 3)
-divergence = priceChange > 0 and rsiChange < 0
-plot(rsiVal)

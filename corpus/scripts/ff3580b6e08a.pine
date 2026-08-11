@@ -1,8 +1,0 @@
-//@version=5
-indicator("TA Dynamic Length")
-base = 3
-len_ = base + 2  // = 5
-sma_dyn = ta.sma(close, len_)
-var float last_sma = 0.0
-last_sma := nz(sma_dyn)
-plot(close)

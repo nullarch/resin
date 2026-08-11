@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Type Coerce")
-int_val = int(close)
-float_val = float(int_val)
-str_val = str.tostring(float_val)
-bool_val = float_val > 100
-result = bool_val ? 1.0 : 0.0
-plot(result)

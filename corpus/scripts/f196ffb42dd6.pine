@@ -1,3 +1,0 @@
-//@version=5
-indicator("EMA3 conv")
-ema3 = ta.ema(close, 3)

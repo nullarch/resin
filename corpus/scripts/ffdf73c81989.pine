@@ -1,8 +1,0 @@
-//@version=5
-indicator("ArrPushPop")
-var a = array.from(10.0, 20.0, 30.0)
-var float popped = 0
-var int sz = 0
-if bar_index == 0
-    popped := array.pop(a)
-    sz := array.size(a)

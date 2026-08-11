@@ -1,5 +1,0 @@
-//@version=5
-indicator("Lead Lag")
-float fastSmooth = nz(ta.ema(close, 3), close)
-float slowSmooth = nz(ta.ema(close, 7), close)
-float leadLag = 2.0 * fastSmooth - slowSmooth

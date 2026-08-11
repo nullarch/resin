@@ -1,7 +1,0 @@
-//@version=5
-indicator("Block Comment Multi")
-/* this is
-   a multi-line
-   comment */
-var float result = 0.0
-result := 99.0

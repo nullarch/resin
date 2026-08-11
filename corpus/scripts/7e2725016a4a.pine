@@ -1,6 +1,0 @@
-//@version=5
-indicator("PVI")
-var float lastP = 0
-p = ta.pvi(close, volume)
-if not na(p)
-    lastP := p

@@ -1,6 +1,0 @@
-//@version=5
-indicator("fn hoist")
-var float result = 0.0
-result := myFunc()
-myFunc() =>
-    42.0

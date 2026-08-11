@@ -1,9 +1,0 @@
-//@version=5
-indicator("Alert Freq")
-if close > 108
-    alert("High price", alert.freq_once_per_bar)
-if close < 100
-    alert("Low price", alert.freq_all)
-var float result = 0.0
-result := close
-plot(result)

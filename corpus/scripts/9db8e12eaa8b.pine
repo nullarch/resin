@@ -1,4 +1,0 @@
-//@version=5
-indicator("label params")
-if barstate.islast
-    label.new(bar_index, close, "Test", color=color.blue, textcolor=color.white, style=label.style_label_down, size=size.normal)

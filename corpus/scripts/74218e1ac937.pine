@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("PeakTrack")
-var float cumReturn = 0.0
-ret = close > open ? 1.0 : -1.0
-cumReturn := cumReturn + ret
-var float peak = 0.0
-peak := cumReturn > peak ? cumReturn : peak
-plot(peak, "Peak")

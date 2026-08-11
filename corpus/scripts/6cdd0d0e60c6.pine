@@ -1,7 +1,0 @@
-//@version=5
-indicator("Token Counter")
-var int[] buckets = array.new_int(5, 0)
-idx = math.floor(math.abs(close - open)) % 5
-oldVal = array.get(buckets, idx)
-array.set(buckets, idx, oldVal + 1)
-totalTokens = array.get(buckets, 0) + array.get(buckets, 1) + array.get(buckets, 2) + array.get(buckets, 3) + array.get(buckets, 4)

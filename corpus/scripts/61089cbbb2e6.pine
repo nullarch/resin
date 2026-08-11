@@ -1,6 +1,0 @@
-//@version=5
-indicator("Wave Superposition")
-float wave1 = nz(ta.sma(close, 3), close) - close
-float wave2 = nz(ta.sma(close, 5), close) - close
-float superposed = wave1 + wave2
-float amplitude = math.abs(superposed)

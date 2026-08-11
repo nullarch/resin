@@ -1,9 +1,0 @@
-//@version=5
-indicator("Map Dispatch")
-m = map.new<string, float>()
-m.put("x", 10.0)
-m.put("y", 20.0)
-has = m.contains("x")
-var float __obs_plot0 = na
-__obs_plot0 := has ? 1.0 : 0.0
-plot(has ? 1.0 : 0.0)

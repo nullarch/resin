@@ -1,8 +1,0 @@
-//@version=5
-strategy("C300-11")
-rsiVal = nz(ta.rsi(close, 3), 50.0)
-if rsiVal < 40
-    strategy.entry("Long", strategy.long)
-if rsiVal > 70
-    strategy.close("Long")
-plot(rsiVal)

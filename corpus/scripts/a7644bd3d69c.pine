@@ -1,8 +1,0 @@
-//@version=5
-indicator("AdaptSmooth")
-prev = nz(close[1], close)
-detail = close - prev
-detailSq = detail * detail
-useShort = detailSq > 2.0 ? true : false
-smoothVal = useShort ? nz(ta.sma(close, 2), close) : nz(ta.sma(close, 5), close)
-plot(smoothVal, "Adapt")

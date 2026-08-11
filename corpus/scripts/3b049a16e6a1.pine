@@ -1,8 +1,0 @@
-//@version=5
-indicator("Array Slice Concat")
-var float result = 0.0
-a = array.from(1.0, 2.0, 3.0, 4.0, 5.0)
-b = a.slice(0, 3)
-c = array.from(10.0)
-d = b.concat(c)
-result := array.sum(d)

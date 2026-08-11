@@ -1,6 +1,0 @@
-//@version=5
-indicator("Chart Pt Idx")
-pt = chart.point.from_index(bar_index, close)
-var int bars = 0
-bars := bars + 1
-plot(close)

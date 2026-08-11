@@ -1,7 +1,0 @@
-//@version=5
-indicator("Test")
-t = table.new(position.top_right, 2, 2)
-table.cell(t, 0, 0, "Header")
-table.cell_set_bgcolor(t, 0, 0, color.blue)
-table.cell_set_text_color(t, 0, 0, color.white)
-table.clear(t, 0, 0, 1, 1)

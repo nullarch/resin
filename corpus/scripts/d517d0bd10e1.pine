@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("FG Index")
-rsi = nz(ta.rsi(close, 3), 50.0)
-sma5 = ta.sma(close, 5)
-momentum = sma5 > 0 ? (close - sma5) / sma5 * 100 : 0.0
-fgIndex = rsi * 0.5 + (momentum + 5) * 5
-fgIndex := math.max(math.min(fgIndex, 100), 0)
-plot(fgIndex, "FG")

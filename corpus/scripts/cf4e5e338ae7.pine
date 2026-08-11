@@ -1,8 +1,0 @@
-//@version=5
-indicator("Switch Expr Var")
-trend = ta.ema(close, 3) > ta.ema(close, 5) ? 1 : -1
-label_text = switch trend
-    1 => "Bullish"
-    -1 => "Bearish"
-    => "Neutral"
-plot(trend)

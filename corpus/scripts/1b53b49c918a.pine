@@ -1,9 +1,0 @@
-//@version=5
-indicator("Cup Product")
-float rsiVal = nz(ta.rsi(close, 3), 50.0)
-float cocycle1 = rsiVal > 50.0 ? 1.0 : 0.0
-float cocycle2 = close > open ? 1.0 : 0.0
-float cupProd = cocycle1 * cocycle2
-var float cumCup = 0.0
-cumCup := cumCup + cupProd
-plot(cumCup, "CupProd")

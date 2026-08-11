@@ -1,9 +1,0 @@
-//@version=5
-indicator("fib levels")
-var float result = 0.0
-h = ta.highest(high, 5)
-l = ta.lowest(low, 5)
-range_ = h - l
-fib382 = h - range_ * 0.382
-fib618 = h - range_ * 0.618
-result := fib382

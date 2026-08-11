@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("BBW Precision")
-[middle, upper, lower] = ta.bb(close, 20, 2.0)
-bbw = (upper - lower) / middle
-plot(bbw)

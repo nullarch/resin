@@ -1,7 +1,0 @@
-//@version=5
-strategy("RSI Strategy")
-rsiVal = nz(ta.rsi(close, 3), 50.0)
-if rsiVal < 35
-    strategy.entry("Long", strategy.long)
-if rsiVal > 65
-    strategy.close("Long")

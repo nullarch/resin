@@ -1,5 +1,0 @@
-//@version=5
-indicator("Str Concat")
-msg = "Price: " + str.tostring(close)
-label_ = "RSI=" + str.tostring(ta.rsi(close, 5))
-plot(close)

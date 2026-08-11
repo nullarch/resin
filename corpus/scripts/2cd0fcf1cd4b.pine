@@ -1,8 +1,0 @@
-//@version=5
-indicator("udf ta default")
-var float result = 0.0
-calcSignal(src, fast=3, slow=5) =>
-    f = ta.ema(src, fast)
-    s = ta.ema(src, slow)
-    not na(f) and not na(s) ? f - s : 0.0
-result := calcSignal(close)

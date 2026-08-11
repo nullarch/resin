@@ -1,5 +1,0 @@
-//@version=5
-indicator("Plus Assign")
-var float x = 10.0
-x += 5.0
-plot(x)

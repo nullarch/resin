@@ -1,8 +1,0 @@
-//@version=5
-indicator("CPU Util")
-var float busyCycles = 0.0
-var float totalCycles = 0.0
-totalCycles := totalCycles + 1.0
-float load = close - open > 0 ? 1.0 : 0.0
-busyCycles := busyCycles + load
-float utilPct = totalCycles > 0.0 ? busyCycles / totalCycles * 100.0 : 0.0

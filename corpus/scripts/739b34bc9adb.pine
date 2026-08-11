@@ -1,3 +1,0 @@
-//@version=5
-indicator("HourFunc")
-h = hour(time)

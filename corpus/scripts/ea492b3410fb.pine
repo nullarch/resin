@@ -1,9 +1,0 @@
-//@version=5
-indicator("Nested For If")
-float total = 0.0
-for i = 1 to 10
-    if i % 2 == 0
-        total := total + float(i)
-var float result = 0.0
-result := total
-plot(result)

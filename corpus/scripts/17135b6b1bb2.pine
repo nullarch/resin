@@ -1,6 +1,0 @@
-//@version=5
-indicator("FwdRef")
-var float result = 0
-result := double(close)
-double(x) =>
-    x * 2

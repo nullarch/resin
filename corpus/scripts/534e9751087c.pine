@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("Cum Change")
-chg = ta.change(close, 1)
-cumChg = ta.cum(chg)
-plot(cumChg, "CumChange")

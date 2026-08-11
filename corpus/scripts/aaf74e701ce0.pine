@@ -1,5 +1,0 @@
-//@version=5
-indicator("Safe Div")
-var float result = 0.0
-float x = 10.0 / 0.0
-result := nz(x, -1.0)

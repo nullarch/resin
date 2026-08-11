@@ -1,8 +1,0 @@
-//@version=5
-indicator("array mixed")
-var float result = 0.0
-arr = array.new_float(0)
-array.push(arr, close)
-array.push(arr, high)
-array.push(arr, low)
-result := array.size(arr)

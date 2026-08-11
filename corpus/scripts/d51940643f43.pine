@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("Mom Rate")
-mom = close - close[3]
-momPct = close[3] > 0 ? mom / close[3] * 100 : 0.0
-plot(momPct, "MP")

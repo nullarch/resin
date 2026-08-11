@@ -1,6 +1,0 @@
-//@version=5
-indicator("Session Bars")
-isFirst = session.isfirstbar
-isLast = session.islastbar
-plot(isFirst ? 1 : 0)
-plot(isLast ? 1 : 0)

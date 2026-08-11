@@ -1,6 +1,0 @@
-//@version=5
-indicator("UDF Default OHLCV")
-myMA(src=close, len=3) =>
-    ta.sma(src, len)
-var float result = 0.0
-result := myMA()

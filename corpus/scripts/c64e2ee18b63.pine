@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Excess")
-upperTail = high - math.max(close, open)
-lowerTail = math.min(close, open) - low
-range_ = high - low
-excessUp = range_ > 0 ? upperTail / range_ : 0.0
-excessDn = range_ > 0 ? lowerTail / range_ : 0.0
-plot(excessUp + excessDn, "Excess")

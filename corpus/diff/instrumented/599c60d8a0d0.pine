@@ -1,7 +1,0 @@
-//@version=5
-indicator("Color Cond")
-rsi_ = ta.rsi(close, 5)
-c = rsi_ > 70 ? color.red : rsi_ < 30 ? color.green : color.gray
-var float __obs_plot0 = na
-__obs_plot0 := rsi_
-plot(rsi_, color=c)

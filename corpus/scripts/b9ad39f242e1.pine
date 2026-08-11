@@ -1,6 +1,0 @@
-//@version=5
-indicator("IntCast")
-var int pos = 0
-var int neg = 0
-pos := int(3.7)
-neg := int(-3.7)

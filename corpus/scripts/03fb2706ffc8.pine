@@ -1,7 +1,0 @@
-//@version=5
-indicator("Multi TA Isolation")
-var float result = 0.0
-sma3 = ta.sma(close, 3)
-sma5 = ta.sma(close, 5)
-ema3 = ta.ema(close, 3)
-result := nz(sma3, 0.0) + nz(sma5, 0.0) + nz(ema3, 0.0)

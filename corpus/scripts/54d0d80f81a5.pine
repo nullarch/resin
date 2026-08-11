@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("HV")
-ret = close[1] > 0 ? math.log(close / close[1]) : 0.0
-hvol = ta.stdev(ret, 5)
-annHV = nz(hvol, 0.0) * math.sqrt(252)
-plot(annHV, "HV")

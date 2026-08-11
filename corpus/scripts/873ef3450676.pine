@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Amihud")
-ret = math.abs(close - close[1])
-dollarVol = close * volume
-illiq = dollarVol > 0 ? nz(ret, 0.0) / dollarVol * 1000000.0 : 0.0
-avgIlliq = ta.sma(illiq, 5)
-plot(nz(avgIlliq, 0.0), "AIR")

@@ -1,8 +1,0 @@
-//@version=5
-indicator("UDT new")
-type Point
-    float x = 0.0
-    float y = 0.0
-var Point p = Point.new(3.0, 4.0)
-var float dist = 0.0
-dist := math.sqrt(p.x * p.x + p.y * p.y)

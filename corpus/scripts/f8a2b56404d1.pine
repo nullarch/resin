@@ -1,4 +1,0 @@
-//@version=5
-indicator("Toplevel Var")
-var float total = 0.0
-total := total + 1.0

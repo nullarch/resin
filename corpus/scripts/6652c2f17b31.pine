@@ -1,8 +1,0 @@
-//@version=5
-indicator("nested for")
-var float val = 0.0
-x = for i = 1 to 3
-    y = for j = 1 to 3
-        float(i * j)
-    y
-val := x

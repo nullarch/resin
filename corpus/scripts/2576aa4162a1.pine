@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("TW Avg")
-var int barNum = 0
-barNum := barNum + 1
-weight = float(barNum)
-weightedPrice = close * weight
-avgWeight = ta.sma(weightedPrice, 3)
-plot(avgWeight, "TWA")

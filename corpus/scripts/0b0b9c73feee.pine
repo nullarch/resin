@@ -1,7 +1,0 @@
-//@version=5
-indicator("Backlog")
-var float backlog = 0.0
-float incoming = volume
-float resolved = close > open ? volume * 0.8 : volume * 0.5
-backlog := math.max(backlog + incoming - resolved, 0.0)
-plot(backlog, "Backlog")

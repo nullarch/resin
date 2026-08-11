@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Doji")
-bodySize = math.abs(close - open_)
-fullRange = high - low
-isDoji = fullRange > 0 and bodySize / fullRange < 0.1
-var float __obs_plot0 = na
-__obs_plot0 := isDoji ? 1 : 0
-plot(isDoji ? 1 : 0, "Doji")

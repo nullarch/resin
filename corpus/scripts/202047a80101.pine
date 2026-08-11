@@ -1,9 +1,0 @@
-//@version=5
-indicator("Safety Bubble")
-float speed = math.abs(close - open)
-float atrVal = nz(ta.atr(3), 1.0)
-float baseRadius = 2.0
-float dynRadius = baseRadius + speed * 0.5 + atrVal * 0.3
-float obstDist = high - close
-bool safe = obstDist > dynRadius
-float margin = obstDist - dynRadius

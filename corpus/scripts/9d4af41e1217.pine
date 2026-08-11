@@ -1,5 +1,0 @@
-
-//@version=5
-indicator("COG")
-cogVal = ta.cog(close, 5)
-plot(cogVal, "COG")

@@ -1,9 +1,0 @@
-//@version=5
-strategy("Compression Regime")
-float barRange = high - low
-float avgRange = nz(ta.sma(high, 5), 5.0) - nz(ta.sma(low, 5), 95.0)
-float compression = avgRange > 0.01 ? barRange / avgRange : 1.0
-if compression > 1.5
-    strategy.entry("Breakout", strategy.long)
-if compression < 0.5
-    strategy.close("Breakout")

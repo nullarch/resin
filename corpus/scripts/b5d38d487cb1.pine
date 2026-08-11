@@ -1,6 +1,0 @@
-//@version=5
-indicator("Even Odd")
-idx = math.floor(bar_index)
-remainder = idx - math.floor(idx / 2.0) * 2.0
-isEven = remainder == 0.0 ? 1.0 : 0.0
-plot(isEven, "IsEven")

@@ -1,6 +1,0 @@
-//@version=5
-indicator("Complex Expr")
-x = (close * 100 + open * 50 - low * 30) / (high + 1)
-y = math.sqrt(math.abs(x))
-z = math.pow(y, 2)
-plot(z)

@@ -1,8 +1,0 @@
-//@version=5
-indicator("Str Format")
-msg = str.format("{0} price: {1}", "Current", str.tostring(close))
-var int len_ = 0
-len_ := str.length(msg)
-var float __obs_plot0 = na
-__obs_plot0 := close
-plot(close)

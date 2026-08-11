@@ -1,6 +1,0 @@
-//@version=5
-indicator("ReqSec")
-float wkClose = request.security(syminfo.tickerid, "W", close)
-var float last_wk = 0.0
-last_wk := nz(wkClose, close)
-plot(close)

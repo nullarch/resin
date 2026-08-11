@@ -1,8 +1,0 @@
-//@version=5
-indicator("Flock Cohesion")
-ma3 = ta.sma(close, 3)
-ma5 = ta.sma(close, 5)
-ma7 = ta.sma(close, 7)
-center = (ma3 + ma5 + ma7) / 3.0
-cohesionForce = center - close
-plot(cohesionForce)

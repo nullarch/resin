@@ -1,7 +1,0 @@
-//@version=5
-indicator("Bandpass")
-float emaShort = nz(ta.ema(close, 2), close)
-float emaLong = nz(ta.ema(close, 5), close)
-float bandpass = emaShort - emaLong
-float smoothBP = ta.sma(bandpass, 3)
-plot(nz(smoothBP, 0.0), "Bandpass")

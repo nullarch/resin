@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("WMA Sig")
-wma5 = ta.wma(close, 5)
-sma5 = ta.sma(close, 5)
-diff = wma5 - sma5
-signal = close > wma5 and diff > 0 ? 1 : close < wma5 and diff < 0 ? -1 : 0
-plot(signal, "Sig")

@@ -1,8 +1,0 @@
-//@version=5
-indicator("PushSeries")
-var a = array.new<float>(0)
-if bar_index == 0
-    array.push(a, close)
-var float val = 0
-if array.size(a) > 0
-    val := array.get(a, 0)

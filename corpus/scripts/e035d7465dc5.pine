@@ -1,6 +1,0 @@
-//@version=5
-indicator("Tent Map")
-float mu = 1.8
-var float tState = 0.4
-tState := tState < 0.5 ? mu * tState : mu * (1.0 - tState)
-tState := math.max(0.0, math.min(1.0, tState))

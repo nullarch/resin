@@ -1,9 +1,0 @@
-//@version=5
-strategy("Radiation Alert Strategy")
-rsiProxy = nz(ta.rsi(close, 3), 50.0)
-atrProxy = nz(ta.atr(3), 1.0)
-radiationLevel = rsiProxy * atrProxy / 50.0
-if radiationLevel < 1.5
-    strategy.entry("Safe", strategy.long)
-if radiationLevel > 3.0
-    strategy.close("Safe")

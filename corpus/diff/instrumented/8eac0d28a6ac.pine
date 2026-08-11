@@ -1,8 +1,0 @@
-//@version=5
-indicator("String Escape")
-string s = "hello\nworld"
-var float result = 0.0
-result := float(str.length(s))
-var float __obs_plot0 = na
-__obs_plot0 := result
-plot(result)

@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("Engulf")
-bullEngulf = close > open and close[1] < open[1] and close > open[1] and open < close[1]
-bearEngulf = close < open and close[1] > open[1] and close < open[1] and open > close[1]
-plot(bullEngulf ? 1 : bearEngulf ? -1 : 0, "Eng")

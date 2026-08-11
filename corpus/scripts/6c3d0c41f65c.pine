@@ -1,6 +1,0 @@
-//@version=5
-indicator("Bool Chain")
-longCond = close > open and not (high == low) and volume > 500
-shortCond = close < open and not (high == low) and volume > 500
-signal = longCond ? 1 : shortCond ? -1 : 0
-plot(signal)

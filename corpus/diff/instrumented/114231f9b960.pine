@@ -1,7 +1,0 @@
-//@version=5
-indicator("Str Upper")
-var s = str.upper("hello")
-var int len_ = str.length(s)
-var float __obs_plot0 = na
-__obs_plot0 := len_
-plot(len_)

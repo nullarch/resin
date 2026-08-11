@@ -1,9 +1,0 @@
-//@version=5
-indicator("For Expr")
-float total = 0.0
-float result_expr = for i = 1 to 5
-    total := total + i
-    total
-var float result = 0.0
-result := result_expr
-plot(result)

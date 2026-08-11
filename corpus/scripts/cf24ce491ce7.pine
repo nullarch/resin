@@ -1,3 +1,0 @@
-//@version=5
-indicator("Test")
-d = ta.dev(close, 14)

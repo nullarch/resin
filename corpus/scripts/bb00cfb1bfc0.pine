@@ -1,6 +1,0 @@
-//@version=5
-indicator("TA State Key")
-var float result = 0.0
-s1 = ta.sma(close, 3)
-s2 = ta.sma(close, 5)
-result := s1 + s2

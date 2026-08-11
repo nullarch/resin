@@ -1,8 +1,0 @@
-//@version=5
-indicator("Attention Weight")
-var float attnSum = 0.0
-var float weightSum = 0.0
-weight = bar_index + 1.0
-attnSum := attnSum + close * weight
-weightSum := weightSum + weight
-attnAvg = weightSum > 0 ? attnSum / weightSum : close

@@ -1,6 +1,0 @@
-//@version=5
-indicator("tf props")
-period = timeframe.period
-isDaily = timeframe.isdaily
-isIntraday = timeframe.isintraday
-multiplier = timeframe.multiplier

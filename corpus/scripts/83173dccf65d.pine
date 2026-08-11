@@ -1,7 +1,0 @@
-//@version=5
-strategy("Full Strategy")
-sma3 = ta.sma(close, 3)
-if close > sma3
-    strategy.entry("Buy", strategy.long)
-else
-    strategy.close("Buy")

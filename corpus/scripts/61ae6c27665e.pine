@@ -1,6 +1,0 @@
-//@version=5
-indicator("for return")
-var float result = 0.0
-total = for i = 0 to 4
-    i * 10
-result := total

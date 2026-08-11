@@ -1,7 +1,0 @@
-//@version=5
-indicator("For Equal Step")
-var int count = 0
-count := 0
-for i = 5 to 5 by 2
-    count := count + 1
-plot(close)

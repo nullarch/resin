@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Kurt")
-mean = ta.sma(close, 5)
-sd = ta.stdev(close, 5)
-dev4 = math.pow((close - mean), 4)
-avgDev4 = ta.sma(dev4, 5)
-kurt = sd > 0 ? avgDev4 / math.pow(sd, 4) - 3.0 : 0.0
-plot(kurt, "Kurt")

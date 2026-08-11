@@ -1,6 +1,0 @@
-//@version=5
-indicator("Var Conditional Update")
-var float max_close = 0.0
-if close > max_close
-    max_close := close
-plot(max_close)

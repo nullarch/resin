@@ -1,4 +1,0 @@
-//@version=5
-indicator("StringCast")
-var string result = ""
-result := string(42)

@@ -1,8 +1,0 @@
-//@version=5
-indicator("AvgReward")
-var float avgR = 0.0
-var int steps = 0
-steps := steps + 1
-reward = (close - open) / math.max(math.abs(open), 0.01)
-avgR := avgR + (reward - avgR) / float(steps)
-plot(avgR, "AvgR")

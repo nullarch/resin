@@ -1,5 +1,0 @@
-//@version=5
-indicator("Switch Error")
-maType = "SMA"
-ma = maType == "SMA" ? ta.sma(close, 5) : maType == "EMA" ? ta.ema(close, 5) : ta.rma(close, 5)
-plot(ma)

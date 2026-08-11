@@ -1,6 +1,0 @@
-//@version=5
-indicator("ORDER BY Rank")
-hh = ta.highest(high, 5)
-ll = ta.lowest(low, 5)
-median_est = not na(hh) and not na(ll) ? (hh + ll) / 2.0 : close
-rank_above = close > median_est ? 1.0 : 0.0

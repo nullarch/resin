@@ -1,3 +1,0 @@
-//@version=5
-indicator("table new")
-var t = table.new(position.top_right, 2, 3)

@@ -1,6 +1,0 @@
-//@version=5
-indicator("for expr sum")
-var float result = 0.0
-total = for i = 1 to 5
-    i
-result := float(total)

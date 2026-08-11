@@ -1,8 +1,0 @@
-//@version=5
-strategy("Enum Strategy")
-d = Dir.Up
-var float val = 0.0
-val := d == Dir.Up ? 1.0 : 0.0
-enum Dir
-    Up
-    Down

@@ -1,6 +1,0 @@
-//@version=5
-indicator("For neg step")
-var float total = 0.0
-total := 0.0
-for i = 10 to 0 by 2
-    total := total + float(i)

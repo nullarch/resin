@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Sigmoid")
-rsi = ta.rsi(close, 3)
-// Center RSI at 50, scale
-x = (nz(rsi, 50.0) - 50.0) / 10.0
-sigmoid = 1.0 / (1.0 + math.exp(-x))
-plot(sigmoid, "Sigmoid")

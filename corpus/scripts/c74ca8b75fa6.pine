@@ -1,8 +1,0 @@
-//@version=5
-indicator("Epoch Counter")
-var int bar_num = 0
-var int epoch = 0
-bar_num := bar_num + 1
-if bar_num % 3 == 0
-    epoch := epoch + 1
-epoch_progress = bar_num % 3

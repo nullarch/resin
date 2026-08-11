@@ -1,8 +1,0 @@
-//@version=5
-indicator("Cont In If")
-if close > open
-    x = close +
-        open
-    plot(x)
-else
-    plot(0)

@@ -1,5 +1,0 @@
-
-//@version=5
-indicator("Mode Precision")
-m = ta.mode(close, 10)
-plot(m)

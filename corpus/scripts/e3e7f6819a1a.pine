@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Hoist Func")
-result = myCalc(close, 2.0)
-
-myCalc(src, mult) =>
-    ta.sma(src, 5) * mult
-
-plot(result)

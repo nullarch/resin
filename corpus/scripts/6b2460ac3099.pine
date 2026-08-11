@@ -1,7 +1,0 @@
-//@version=5
-indicator("vol weight")
-var float result = 0.0
-vwma5 = ta.vwma(close, 5)
-sma5 = ta.sma(close, 5)
-if not na(vwma5) and not na(sma5)
-    result := vwma5 - sma5

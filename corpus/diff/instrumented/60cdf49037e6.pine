@@ -1,9 +1,0 @@
-//@version=5
-indicator("Risk Reward")
-float atrVal = nz(ta.atr(3), 1.0)
-float stopDist = atrVal * 1.5
-float targetDist = atrVal * 3.0
-float rrRatio = stopDist > 0 ? targetDist / stopDist : 0.0
-var float __obs_plot0 = na
-__obs_plot0 := rrRatio
-plot(rrRatio, "RR")

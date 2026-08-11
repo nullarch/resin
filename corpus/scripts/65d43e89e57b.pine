@@ -1,8 +1,0 @@
-//@version=5
-indicator("VWAP Bands")
-vwapVal = ta.vwap(close)
-dev = ta.stdev(close, 20)
-upper1 = vwapVal + dev
-lower1 = vwapVal - dev
-plot(vwapVal)
-plot(upper1)

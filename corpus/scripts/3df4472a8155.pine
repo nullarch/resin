@@ -1,8 +1,0 @@
-//@version=5
-indicator("Resonance Detection")
-float fast = nz(ta.sma(close, 3), close) - close
-float slow = nz(ta.sma(close, 5), close) - close
-bool sameSign = (fast > 0.0 and slow > 0.0) or (fast < 0.0 and slow < 0.0)
-float resonance = sameSign ? math.abs(fast) + math.abs(slow) : 0.0
-var int resonanceCount = 0
-resonanceCount := sameSign ? resonanceCount + 1 : resonanceCount

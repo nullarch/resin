@@ -1,6 +1,0 @@
-//@version=5
-indicator("GROUP BY Bucket")
-var float[] bucket_counts = array.new_float(3, 0.0)
-bucket = close < 104.0 ? 0 : close < 108.0 ? 1 : 2
-current = array.get(bucket_counts, bucket)
-array.set(bucket_counts, bucket, current + 1.0)

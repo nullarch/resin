@@ -1,7 +1,0 @@
-//@version=5
-strategy("My Strategy", overlay=true)
-var int bars = 0
-bars := bars + 1
-if bars == 5
-    strategy.entry("Long", strategy.long)
-plot(close)

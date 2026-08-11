@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Vol MA")
-avgVol = ta.sma(volume, 5)
-aboveAvg = volume > avgVol
-var float __obs_plot0 = na
-__obs_plot0 := aboveAvg ? 1 : 0
-plot(aboveAvg ? 1 : 0, "AA")

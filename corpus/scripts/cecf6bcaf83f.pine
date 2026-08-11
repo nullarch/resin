@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("WMA vs VWMA")
-wmaVal = ta.wma(close, 5)
-vwmaVal = ta.vwma(close, 5)
-diff = wmaVal - vwmaVal
-plot(diff, "Diff")

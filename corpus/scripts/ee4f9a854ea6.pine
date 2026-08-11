@@ -1,9 +1,0 @@
-//@version=5
-indicator("UDF_TA")
-smoothed_rsi(src, rsiLen, smaLen) =>
-    r = ta.rsi(src, rsiLen)
-    ta.sma(r, smaLen)
-var float result = 0
-sr = smoothed_rsi(close, 5, 3)
-if not na(sr)
-    result := sr

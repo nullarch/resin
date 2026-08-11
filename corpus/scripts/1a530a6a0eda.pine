@@ -1,7 +1,0 @@
-//@version=5
-indicator("Line Draw", overlay=true)
-if barstate.islast
-    line.new(bar_index - 5, close[5], bar_index, close)
-var float result = 0.0
-result := close
-plot(result)

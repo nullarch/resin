@@ -1,9 +1,0 @@
-//@version=5
-indicator("Array Sort Asc")
-var arr = array.from(30.0, 10.0, 50.0, 20.0, 40.0)
-array.sort(arr)
-var float first = 0.0
-first := array.get(arr, 0)
-var float last_ = 0.0
-last_ := array.get(arr, 4)
-plot(close)

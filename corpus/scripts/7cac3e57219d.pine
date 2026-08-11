@@ -1,8 +1,0 @@
-//@version=5
-indicator("Persistence Death")
-float smaVal = ta.sma(close, 3)
-var float deathCount = 0.0
-float prevClose = not na(close[1]) ? close[1] : close
-if prevClose > smaVal and close <= smaVal
-    deathCount := deathCount + 1.0
-plot(deathCount, "Deaths")

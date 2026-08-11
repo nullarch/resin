@@ -1,6 +1,0 @@
-//@version=5
-indicator("Recovery")
-x = 1 + 2 + 3
-y = x > 0 ? x : -x
-z = math.max(x, y)
-plot(z)

@@ -1,4 +1,0 @@
-//@version=5
-indicator("pivot low")
-var float pl = 0.0
-pl := nz(ta.pivotlow(low, 2, 2), pl)

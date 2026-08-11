@@ -1,5 +1,0 @@
-
-//@version=5
-indicator("OBV Implicit")
-o = ta.obv
-plot(o)

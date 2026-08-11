@@ -1,5 +1,0 @@
-//@version=5
-indicator("Varip Tick")
-varip int tickCount = 0
-tickCount := tickCount + 1
-plot(tickCount)

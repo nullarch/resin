@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Precedence")
-a = 2.0 + 3.0 * 4.0
-b = (2.0 + 3.0) * 4.0
-c = not (close > 105) and close < 110 or close == 107
-result = a + b + (c ? 1.0 : 0.0)
-plot(result)

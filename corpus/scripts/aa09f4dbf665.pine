@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("Nested Generic")
-a = array.new<float>(3, 0.0)
-array.set(a, 0, close)
-plot(array.get(a, 0))

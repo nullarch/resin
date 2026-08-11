@@ -1,8 +1,0 @@
-//@version=5
-indicator("Substr")
-s = str.substring("hello world", 6, 11)
-var int len_ = 0
-len_ := str.length(s)
-var float __obs_plot0 = na
-__obs_plot0 := len_
-plot(len_)

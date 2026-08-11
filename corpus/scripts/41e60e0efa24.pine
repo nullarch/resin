@@ -1,9 +1,0 @@
-//@version=5
-indicator("Hospital Capacity")
-var float beds = 100.0
-var float occupied = 20.0
-float admissions = close / 20.0
-float discharges = occupied * 0.15
-occupied := math.max(math.min(occupied + admissions - discharges, beds), 0.0)
-float utilization = occupied / beds * 100.0
-isOverCapacity = utilization > 80.0 ? 1.0 : 0.0

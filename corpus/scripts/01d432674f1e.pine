@@ -1,8 +1,0 @@
-//@version=5
-indicator("UDF TA")
-myFunc() =>
-    ta.sma(close, 3)
-var float result = 0
-r = myFunc()
-if not na(r)
-    result := r

@@ -1,6 +1,0 @@
-//@version=5
-indicator("Round Trip")
-float delta = not na(close[1]) ? close - close[1] : close
-var float reconstructed = 0.0
-reconstructed := reconstructed + delta
-float err = math.abs(reconstructed - close)

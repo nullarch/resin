@@ -1,8 +1,0 @@
-//@version=5
-indicator("Absorbing Barrier")
-float barrier = 100.0
-var float path = 105.0
-float prevC = not na(close[1]) ? close[1] : close
-float increment = close - prevC
-path := math.max(path + increment, barrier)
-plot(path, "Path")

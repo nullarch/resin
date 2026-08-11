@@ -1,7 +1,0 @@
-//@version=5
-indicator("multiline and")
-var float result = 0.0
-if close > 100 and
-   close < 200 and
-   high > low
-    result := 1.0

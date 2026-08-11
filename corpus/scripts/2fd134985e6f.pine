@@ -1,9 +1,0 @@
-//@version=5
-indicator("Comprehensive C94")
-var float[] highs = array.new<float>(0)
-if barstate.ishistory
-    array.push(highs, high)
-var int count = 0
-count := array.size(highs)
-var float safeClose = 0.0
-safeClose := nz(close, 0.0)

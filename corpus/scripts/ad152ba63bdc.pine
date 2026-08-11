@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Abs Sign")
-change = close - open
-absChange = math.abs(change)
-sign = math.sign(change)
-normalizedChange = absChange > 0 ? sign * math.log(1 + absChange) : 0.0
-plot(normalizedChange, "NC")

@@ -1,5 +1,0 @@
-//@version=5
-indicator("Inverse Square Dose")
-float sourceStrength = 1000.0
-float distance = close / 10.0
-float doseRate = distance > 0.1 ? sourceStrength / (distance * distance) : sourceStrength / 0.01

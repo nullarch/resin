@@ -1,4 +1,0 @@
-//@version=5
-indicator("SMA Accuracy")
-sma5 = ta.sma(close, 5)
-plot(sma5)

@@ -1,6 +1,0 @@
-//@version=5
-indicator("na chain")
-sma3 = ta.sma(close, 3)
-val1 = nz(sma3, 0.0)
-val2 = fixnan(sma3)
-result = na(sma3) ? close : sma3

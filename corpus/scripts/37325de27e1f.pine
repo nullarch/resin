@@ -1,8 +1,0 @@
-//@version=5
-indicator("Test")
-arr = array.new<float>(0)
-arr.push(1)
-arr.push(2)
-arr.push(3)
-arr.reverse()
-first = arr.first()

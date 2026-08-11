@@ -1,5 +1,0 @@
-//@version=5
-indicator("Int Truncate")
-val = 3.7
-result = int(val)
-plot(result)

@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("HH HL")
-hh = not na(high[2]) and high > high[2]
-hl = not na(low[2]) and low > low[2]
-uptrend = hh and hl
-var float __obs_plot0 = na
-__obs_plot0 := uptrend ? 1 : 0
-plot(uptrend ? 1 : 0, "UT")

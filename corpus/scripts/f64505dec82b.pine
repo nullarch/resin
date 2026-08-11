@@ -1,6 +1,0 @@
-//@version=5
-indicator("Harmonic Number")
-var float harmonic = 0.0
-n = bar_index + 1.0
-harmonic := harmonic + 1.0 / n
-plot(harmonic, "Harmonic")

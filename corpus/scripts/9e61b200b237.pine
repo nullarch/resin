@@ -1,4 +1,0 @@
-//@version=5
-indicator("Test")
-x = 2
-x *= 5

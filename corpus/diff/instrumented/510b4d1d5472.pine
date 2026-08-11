@@ -1,7 +1,0 @@
-//@version=5
-indicator("test")
-histogram = close - open
-histColor = histogram >= 0 ? (histogram > histogram[1] ? 1 : 2) : (histogram < histogram[1] ? 3 : 4)
-var float __obs_plot0 = na
-__obs_plot0 := histColor
-plot(histColor)

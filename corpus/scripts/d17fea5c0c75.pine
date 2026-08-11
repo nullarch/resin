@@ -1,8 +1,0 @@
-//@version=5
-indicator("Recency Bias")
-w0 = 0.5
-w1 = 0.25
-w2 = 0.15
-w3 = 0.10
-recency = w0 * close + w1 * nz(close[1]) + w2 * nz(close[2]) + w3 * nz(close[3])
-plot(recency)

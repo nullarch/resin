@@ -1,5 +1,0 @@
-//@version=5
-indicator("MTF")
-htfClose = request.security("", "D", close)
-ratio = close / htfClose
-plot(ratio)

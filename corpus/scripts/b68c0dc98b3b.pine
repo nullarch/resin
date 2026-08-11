@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Normalize")
-rsi = nz(ta.rsi(close, 3), 50.0)
-minMax = (rsi - 0) / (100 - 0)
-zScore = ta.stdev(rsi, 5) > 0 ? (rsi - ta.sma(rsi, 5)) / ta.stdev(rsi, 5) : 0.0
-percentRank = rsi / 100
-plot(minMax, "MM")
-plot(zScore, "Z")

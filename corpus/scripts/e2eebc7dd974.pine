@@ -1,8 +1,0 @@
-//@version=5
-indicator("Materialized View")
-var float cached_ema = 0.0
-ema5 = ta.ema(close, 5)
-if not na(ema5)
-    cached_ema := ema5
-deviation = math.abs(close - cached_ema)
-pct_dev = cached_ema > 0 ? deviation / cached_ema * 100.0 : 0.0

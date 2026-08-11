@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("MomRegime")
-rsiVal = nz(ta.rsi(close, 3), 50.0)
-regime = rsiVal > 70 ? 2.0 : rsiVal < 30 ? 0.0 : 1.0
-plot(regime, "MR")

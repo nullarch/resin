@@ -1,6 +1,0 @@
-//@version=5
-indicator("For result")
-var float total = 0.0
-total := 0.0
-for i = 1 to 5
-    total := total + float(i) * close

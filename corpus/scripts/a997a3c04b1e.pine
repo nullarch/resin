@@ -1,7 +1,0 @@
-//@version=5
-indicator("Position", overlay=true)
-var t = table.new(position.bottom_left, 2, 2)
-if barstate.islast
-    table.cell(t, 0, 0, "Price")
-    table.cell(t, 0, 1, str.tostring(close))
-plot(close)

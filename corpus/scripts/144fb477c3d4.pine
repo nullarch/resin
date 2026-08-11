@@ -1,6 +1,0 @@
-//@version=5
-indicator("Test")
-x = helper(close)
-helper(src) =>
-    ta.sma(src, 20)
-plot(x)

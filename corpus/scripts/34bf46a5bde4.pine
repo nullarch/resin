@@ -1,9 +1,0 @@
-//@version=5
-indicator("Waveguide Channel")
-float mid = nz(ta.sma(close, 5), close)
-float atrVal = nz(ta.atr(3), 1.0)
-float upper = mid + atrVal * 2.0
-float lower = mid - atrVal * 2.0
-bool inGuide = close >= lower and close <= upper
-var int inCount = 0
-inCount := inGuide ? inCount + 1 : inCount

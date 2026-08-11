@@ -1,5 +1,0 @@
-//@version=5
-indicator("Richter Magnitude")
-amplitude = high - low
-magnitude = amplitude > 0 ? math.log10(amplitude) + 3.0 : 0.0
-plot(magnitude)

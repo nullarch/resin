@@ -1,4 +1,0 @@
-//@version=5
-indicator("Var Persist")
-var float counter = 0.0
-counter += 1.0

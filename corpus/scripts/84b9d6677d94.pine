@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("KyleLambda")
-priceChange = math.abs(close - open)
-kyleLambda = volume > 0 ? priceChange / volume * 10000.0 : 0.0
-avgLambda = ta.sma(kyleLambda, 5)
-plot(nz(avgLambda, 0.0), "KL")

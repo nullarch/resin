@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Buy Press")
-bodyUp = close > open
-totalRange = high - low
-buyPress = totalRange > 0 ? (close - low) / totalRange * 100 : 50.0
-var float __obs_plot0 = na
-__obs_plot0 := buyPress
-plot(buyPress, "BP")

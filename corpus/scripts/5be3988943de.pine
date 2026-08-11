@@ -1,6 +1,0 @@
-//@version=5
-indicator("Split Brain")
-fast_ma = ta.sma(close, 3)
-slow_ma = ta.sma(close, 7)
-divergence = not na(fast_ma) and not na(slow_ma) ? math.abs(fast_ma - slow_ma) : 0.0
-split_brain = divergence > 2.0 ? 1.0 : 0.0

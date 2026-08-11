@@ -1,4 +1,0 @@
-//@version=5
-indicator("func mode")
-var float x = 0.0
-x := close

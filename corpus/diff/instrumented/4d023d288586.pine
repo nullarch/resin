@@ -1,9 +1,0 @@
-//@version=5
-indicator("Input Int")
-length = input.int(5, title="RSI Period")
-sma_ = ta.sma(close, length)
-var float last = 0.0
-last := nz(sma_)
-var float __obs_plot0 = na
-__obs_plot0 := close
-plot(close)

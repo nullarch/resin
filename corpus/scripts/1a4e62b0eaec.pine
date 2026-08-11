@@ -1,5 +1,0 @@
-//@version=5
-indicator("Stefan-Boltzmann")
-float temperature = nz(ta.atr(3), 1.0)
-float radiation = math.pow(temperature, 4) * 5.67e-8
-float normalized = math.log(math.max(radiation, 1e-20))

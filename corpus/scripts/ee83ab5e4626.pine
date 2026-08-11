@@ -1,9 +1,0 @@
-//@version=5
-indicator("Manhattan Heuristic")
-float goalX = 110.0
-float goalY = 112.0
-float curX = close
-float curY = high
-float manhattan = math.abs(goalX - curX) + math.abs(goalY - curY)
-float euclidean = math.sqrt(math.pow(goalX - curX, 2.0) + math.pow(goalY - curY, 2.0))
-float ratio = euclidean > 0.01 ? manhattan / euclidean : 1.0

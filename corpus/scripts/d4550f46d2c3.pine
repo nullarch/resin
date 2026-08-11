@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("Poor HL")
-range_ = high - low
-poorHigh = range_ > 0 ? (high - close) / range_ < 0.1 ? 1.0 : 0.0 : 0.0
-poorLow = range_ > 0 ? (close - low) / range_ < 0.1 ? 1.0 : 0.0 : 0.0
-plot(poorHigh + poorLow, "Poor")

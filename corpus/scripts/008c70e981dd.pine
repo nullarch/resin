@@ -1,9 +1,0 @@
-//@version=5
-indicator("While Break")
-i = 0
-result = 0.0
-while i < 100
-    if i > 5
-        break
-    result := result + float(i)
-    i := i + 1

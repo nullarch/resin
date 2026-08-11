@@ -1,8 +1,0 @@
-//@version=5
-indicator("Deadlock RAG")
-float r1Holder = math.floor(close) % 3
-float r2Holder = math.floor(open) % 3
-float r1Requester = math.floor(high) % 3
-float r2Requester = math.floor(low) % 3
-bool circularWait = r1Holder == r2Requester and r2Holder == r1Requester
-float deadlockRisk = circularWait ? 1.0 : 0.0

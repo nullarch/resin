@@ -1,6 +1,0 @@
-//@version=5
-indicator("TA Chain")
-var float result = 0.0
-ema3 = ta.ema(close, 3)
-smaOfEma = ta.sma(ema3, 3)
-result := nz(smaOfEma, 0.0)

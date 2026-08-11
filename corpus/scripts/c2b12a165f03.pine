@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Stdev Bands")
-sma5 = ta.sma(close, 5)
-sd = ta.stdev(close, 5)
-upper = sma5 + sd * 2
-lower = sma5 - sd * 2
-pos = (upper - lower) > 0 ? (close - lower) / (upper - lower) : 0.5
-plot(pos, "Pos")

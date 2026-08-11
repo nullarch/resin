@@ -1,4 +1,0 @@
-//@version=5
-indicator("Cast Float")
-var float x = float(42)
-plot(x)

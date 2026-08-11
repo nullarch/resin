@@ -1,7 +1,0 @@
-//@version=5
-indicator("Moore Machine")
-var int state = 0
-input_sym = close > open ? 1 : 0
-state := state == 0 and input_sym == 1 ? 1 : state == 1 and input_sym == 1 ? 2 : state == 2 ? 0 : state
-output_val = state == 0 ? 0.0 : state == 1 ? 5.0 : 10.0
-plot(output_val, "MooreOut")

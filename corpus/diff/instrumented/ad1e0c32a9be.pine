@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("OBV")
-obvVal = ta.obv
-var float __obs_plot0 = na
-__obs_plot0 := obvVal
-plot(obvVal, "OBV")

@@ -1,7 +1,0 @@
-//@version=5
-indicator("Empty Array")
-arr = array.new_float(0)
-sz = array.size(arr)
-var float __obs_plot0 = na
-__obs_plot0 := sz
-plot(sz)

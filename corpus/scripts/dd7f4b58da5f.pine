@@ -1,6 +1,0 @@
-//@version=5
-indicator("bb tuple")
-var float result = 0.0
-[mid, upper, lower] = ta.bb(close, 5, 2.0)
-if not na(mid) and not na(upper) and not na(lower)
-    result := upper - lower

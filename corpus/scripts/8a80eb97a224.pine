@@ -1,7 +1,0 @@
-//@version=5
-indicator("Birth Death")
-var float pop = 200.0
-birthRate = 0.08
-deathRate = 0.05
-pop := pop + pop * (birthRate - deathRate)
-plot(pop, "Pop")

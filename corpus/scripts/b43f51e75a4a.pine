@@ -1,5 +1,0 @@
-//@version=5
-indicator("Security basic")
-dailyClose = request.security(syminfo.tickerid, "D", close)
-dailyHigh = request.security(syminfo.tickerid, "D", high)
-aboveDaily = not na(dailyClose) ? close > nz(dailyClose) : false

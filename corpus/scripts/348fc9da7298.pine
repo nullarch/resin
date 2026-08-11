@@ -1,8 +1,0 @@
-//@version=5
-indicator("Array Div")
-var ratios = array.new_float(0)
-array.clear(ratios)
-array.push(ratios, close / open)
-array.push(ratios, high / low)
-avg_ = array.avg(ratios)
-plot(avg_)

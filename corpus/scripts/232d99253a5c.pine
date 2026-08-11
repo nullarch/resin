@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("CVD")
-delta = close > open ? volume : -volume
-cvd = ta.cum(delta)
-cvdMA = ta.sma(cvd, 5)
-bullish = cvd > cvdMA
-plot(cvd, "CVD")
-plot(bullish ? 1 : 0, "Bull")

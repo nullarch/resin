@@ -1,8 +1,0 @@
-//@version=5
-indicator("Sliding window")
-var window = array.new_float(0)
-array.push(window, close)
-if array.size(window) > 5
-    array.shift(window)
-windowSize = array.size(window)
-windowAvg = array.avg(window)

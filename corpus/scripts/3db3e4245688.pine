@@ -1,6 +1,0 @@
-//@version=5
-indicator("supertrend")
-var float result = 0.0
-[st, dir] = ta.supertrend(3.0, 5)
-if not na(dir)
-    result := dir

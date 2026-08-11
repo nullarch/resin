@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("Label Defaults")
-if bar_index == 5
-    label.new(bar_index, close, "Hello")
-plot(close)

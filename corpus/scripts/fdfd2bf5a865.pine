@@ -1,7 +1,0 @@
-//@version=5
-indicator("MapRemove")
-var m = map.new<string, float>()
-map.put(m, "x", 10.0)
-map.remove(m, "x")
-var int sz = 0
-sz := map.size(m)

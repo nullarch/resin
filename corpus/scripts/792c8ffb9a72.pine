@@ -1,6 +1,0 @@
-//@version=5
-indicator("Color RGB")
-c1 = color.rgb(255, 0, 0, 50)
-c2 = color.rgb(0, 255, 0)
-c3 = color.new(color.blue, 80)
-plot(close, color=c1)

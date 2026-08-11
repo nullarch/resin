@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("EffSpread")
-midPrice = (high + low) / 2.0
-direction = close > open ? 1.0 : -1.0
-effSpread = 2.0 * direction * (close - midPrice)
-smoothSpread = ta.sma(effSpread, 5)
-output = nz(smoothSpread, 0.0)
-plot(output, "ES")

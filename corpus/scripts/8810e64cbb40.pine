@@ -1,4 +1,0 @@
-//@version=5
-indicator("Test")
-/* This is a block comment */
-x = 1

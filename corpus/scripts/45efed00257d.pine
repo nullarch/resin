@@ -1,4 +1,0 @@
-//@version=5
-indicator("pivot high")
-var float ph = 0.0
-ph := nz(ta.pivothigh(high, 2, 2), ph)

@@ -1,8 +1,0 @@
-//@version=5
-indicator("Keyword Field Var")
-type Settings
-    float var = 1.0
-    float switch = 2.0
-Settings s = Settings.new()
-var float result = 0.0
-result := s.var + s.switch

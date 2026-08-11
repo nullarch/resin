@@ -1,5 +1,0 @@
-//@version=5
-indicator("FloatNa")
-var float result = -1
-x = na
-result := float(x)

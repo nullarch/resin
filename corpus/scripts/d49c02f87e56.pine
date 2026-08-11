@@ -1,9 +1,0 @@
-//@version=5
-indicator("Info Geometric Mean")
-var float logSum = 0.0
-var int cnt = 0
-spread = high - low
-fisher = spread > 0.01 ? 1.0 / (spread * spread) : 1.0
-logSum := logSum + math.log(fisher > 0.0001 ? fisher : 0.0001)
-cnt := cnt + 1
-geoMean = math.exp(cnt > 0 ? logSum / cnt : 0.0)

@@ -1,4 +1,0 @@
-//@version=5
-indicator("Block Comment Inline")
-var float result = 0.0
-result := 10.0 /* comment */ + 20.0

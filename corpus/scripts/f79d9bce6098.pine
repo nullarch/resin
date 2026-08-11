@@ -1,6 +1,0 @@
-//@version=5
-indicator("VolDuration")
-dur = volume > 0 ? 1.0 / float(volume) : 0.0
-durScaled = dur * 10000.0
-smoothDur = nz(ta.ema(durScaled, 3), durScaled)
-plot(smoothDur, "Dur")

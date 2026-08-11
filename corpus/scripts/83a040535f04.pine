@@ -1,6 +1,0 @@
-//@version=5
-indicator("Syncopation")
-mid = (high + low) / 2.0
-offBeat = close > mid ? 1.0 : -1.0
-smoothOff = ta.sma(offBeat, 3)
-plot(smoothOff, title="syncopation")

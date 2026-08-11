@@ -1,7 +1,0 @@
-//@version=5
-indicator("AssignIf")
-var int result = 0
-result := if close > open
-    1
-else
-    -1

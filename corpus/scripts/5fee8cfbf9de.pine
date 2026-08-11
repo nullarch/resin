@@ -1,9 +1,0 @@
-//@version=5
-indicator("Explore vs Exploit")
-atrVal = nz(ta.atr(5), 1.0)
-avgAtr = ta.sma(atrVal, 5)
-ratio = avgAtr > 0 ? atrVal / avgAtr : 1.0
-exploring = ratio > 1.2
-exploiting = ratio < 0.8
-mode = exploring ? 1 : exploiting ? -1 : 0
-plot(mode)

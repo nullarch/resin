@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("CCI Ext")
-cci = ta.cci(close, 5)
-overbought = cci > 100
-oversold = cci < -100
-extreme = math.abs(cci) > 200
-plot(cci, "CCI")
-plot(extreme ? 1 : 0, "Ext")

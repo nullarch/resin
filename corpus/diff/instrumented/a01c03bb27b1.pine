@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Std Dev")
-stdev5 = ta.stdev(close, 5)
-sma5 = ta.sma(close, 5)
-cv = sma5 > 0 ? stdev5 / sma5 * 100 : 0.0
-var float __obs_plot0 = na
-__obs_plot0 := cv
-plot(cv, "CV")

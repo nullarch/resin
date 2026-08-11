@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Substr")
-code = "LONG_BUY_NOW"
-prefix = str.substring(code, 0, 4)
-isLong = prefix == "LONG"
-var float __obs_plot0 = na
-__obs_plot0 := isLong ? 1 : 0
-plot(isLong ? 1 : 0, "IsLong")

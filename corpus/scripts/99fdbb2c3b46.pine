@@ -1,6 +1,0 @@
-//@version=5
-indicator("AutoCorr")
-ret = nz(close[1]) > 0 ? (close - nz(close[1])) / nz(close[1]) : 0.0
-prevRet = nz(ret[1])
-product = ret * prevRet
-plot(product)

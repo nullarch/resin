@@ -1,7 +1,0 @@
-//@version=5
-indicator("Str Bool Cast")
-s = str.tostring(close)
-b = close > 0 ? true : false
-var float __obs_plot0 = na
-__obs_plot0 := b ? 1.0 : 0.0
-plot(b ? 1.0 : 0.0)

@@ -1,5 +1,0 @@
-//@version=5
-indicator("Stdev Check")
-sd = ta.stdev(close, 5)
-nonNeg = na(sd) or sd >= 0
-plot(nonNeg ? 1.0 : 0.0)

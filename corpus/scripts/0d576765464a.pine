@@ -1,6 +1,0 @@
-//@version=5
-indicator("UniformPrior")
-priorUp = 0.5
-priorDown = 0.5
-plot(priorUp, "PriorUp")
-plot(priorDown, "PriorDn")

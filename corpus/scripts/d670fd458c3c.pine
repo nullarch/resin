@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Str Len")
-sma3 = ta.sma(close, 3)
-label = close > sma3 ? "ABOVE_AVERAGE" : "BELOW"
-length = str.length(label)
-isLong = length > 8
-plot(isLong ? 1 : 0, "Long")

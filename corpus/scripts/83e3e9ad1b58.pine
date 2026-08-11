@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Mom Wt")
-rsi = nz(ta.rsi(close, 3), 50.0)
-momStrength = math.abs(rsi - 50) / 50
-weight = momStrength > 0.6 ? 0.5 : momStrength > 0.3 ? 1.0 : 1.5
-sma3 = ta.sma(close, 3)
-signal = (close - sma3) * weight
-plot(signal, "Sig")

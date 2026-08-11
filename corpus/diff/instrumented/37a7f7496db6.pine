@@ -1,8 +1,0 @@
-//@version=5
-indicator("Str Escape")
-s = "Line1\nLine2\tTabbed"
-hasN = str.contains(s, "\n")
-len = str.length(s)
-var float __obs_plot0 = na
-__obs_plot0 := len
-plot(len)

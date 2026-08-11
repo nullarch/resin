@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("MACD+BB")
-[macdLine, signalLine, histLine] = ta.macd(close, 12, 26, 9)
-[middle, upper, lower] = ta.bb(close, 20, 2.0)
-result = macdLine > 0 ? upper : lower
-plot(result)

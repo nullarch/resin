@@ -1,8 +1,0 @@
-//@version=5
-indicator("int shorthand")
-int[] counts = array.new<int>(3, 0)
-array.set(counts, 0, 10)
-array.set(counts, 1, 20)
-array.set(counts, 2, 30)
-var int total = 0
-total := array.get(counts, 0) + array.get(counts, 1) + array.get(counts, 2)

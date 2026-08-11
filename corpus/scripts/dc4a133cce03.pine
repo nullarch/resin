@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("For-In Array")
-var a = array.from(1.0, 2.0, 3.0, 4.0, 5.0)
-var float total = 0.0
-total := 0.0
-for val in a
-    total := total + val
-plot(total)

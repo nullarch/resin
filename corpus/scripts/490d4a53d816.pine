@@ -1,9 +1,0 @@
-//@version=5
-indicator("Barstate")
-var bool first_seen = false
-var bool last_seen = false
-if barstate.isfirst
-    first_seen := true
-if barstate.islast
-    last_seen := true
-plot(close)

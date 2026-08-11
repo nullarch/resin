@@ -1,5 +1,0 @@
-//@version=5
-indicator("Simple Hash")
-prime = 31.0
-bucket_count = 16.0
-hash_val = math.floor(close * prime) % bucket_count

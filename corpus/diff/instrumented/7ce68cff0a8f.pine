@@ -1,8 +1,0 @@
-//@version=5
-indicator("Na Compare Left")
-var float x = 42.0
-var bool check = true
-check := na != x
-var float __obs_plot0 = na
-__obs_plot0 := close
-plot(close)

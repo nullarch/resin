@@ -1,9 +1,0 @@
-//@version=5
-indicator("MACD")
-fastMA = ta.ema(close, 3)
-slowMA = ta.ema(close, 5)
-macdLine = fastMA - slowMA
-signalLine = ta.ema(macdLine, 3)
-histogram = macdLine - signalLine
-rising = histogram > histogram[1]
-plot(rising ? 1 : 0)

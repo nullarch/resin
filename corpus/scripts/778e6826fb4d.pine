@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Case")
-sig = "Buy"
-upper = str.upper(sig)
-lower = str.lower(sig)
-isBuy = upper == "BUY"
-plot(isBuy ? 1 : 0, "Buy")

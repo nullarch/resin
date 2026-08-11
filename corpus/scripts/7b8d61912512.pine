@@ -1,4 +1,0 @@
-//@version=5
-indicator("DivEq")
-var float result = 1024
-result /= 2

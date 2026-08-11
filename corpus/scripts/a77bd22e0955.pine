@@ -1,4 +1,0 @@
-//@version=5
-indicator("MTF")
-htfClose = request.security(syminfo.tickerid, "D", close)
-sma20 = ta.sma(close, 5)

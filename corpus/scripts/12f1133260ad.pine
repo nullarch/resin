@@ -1,9 +1,0 @@
-//@version=5
-indicator("Enum Arith")
-enum Weight
-    Heavy = 5
-    Light = 2
-
-var float result = 0.0
-result := float(Weight.Heavy) + float(Weight.Light)
-plot(result)

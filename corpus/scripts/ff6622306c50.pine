@@ -1,9 +1,0 @@
-//@version=5
-indicator("For Var Bounds")
-var float result = 0.0
-int start = 0
-int end_val = 4
-float sum = 0.0
-for i = start to end_val
-    sum += i
-result := sum

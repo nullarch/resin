@@ -1,5 +1,0 @@
-//@version=5
-indicator("Str Upper")
-var s = str.upper("hello")
-var int len_ = str.length(s)
-plot(len_)

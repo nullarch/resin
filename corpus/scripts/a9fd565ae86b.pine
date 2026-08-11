@@ -1,6 +1,0 @@
-//@version=5
-indicator("Hoist + Decl")
-var float val = 0.0
-val := myFunc()
-myFunc() =>
-    42.0

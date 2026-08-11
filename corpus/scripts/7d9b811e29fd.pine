@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Reverse Iter")
-maxVal = 0.0
-for i = 9 to 0 by 1
-    val = close[i]
-    if not na(val) and val > maxVal
-        maxVal := val
-plot(maxVal, "Max")

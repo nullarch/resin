@@ -1,8 +1,0 @@
-//@version=5
-indicator("UDT method TA")
-type Signal
-    float value = 0.0
-    bool active = false
-calcSignal(src, len) =>
-    Signal.new(ta.sma(src, len), true)
-sig = calcSignal(close, 3)

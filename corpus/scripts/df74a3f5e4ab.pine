@@ -1,6 +1,0 @@
-//@version=5
-indicator("MTF")
-dailyClose = request.security(syminfo.tickerid, "D", close)
-weeklyClose = request.security(syminfo.tickerid, "W", close)
-plot(dailyClose, "Daily")
-plot(weeklyClose, "Weekly")

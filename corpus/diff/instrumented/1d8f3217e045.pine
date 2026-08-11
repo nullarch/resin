@@ -1,8 +1,0 @@
-//@version=5
-indicator("Dynamics Marker")
-avgV = ta.sma(volume, 5)
-dynamics = avgV > 0 ? volume / avgV : 1.0
-label = dynamics > 1.3 ? 4.0 : dynamics > 1.0 ? 3.0 : dynamics > 0.7 ? 2.0 : 1.0
-var float __obs_plot0 = na
-__obs_plot0 := label
-plot(label, title="dynamics")

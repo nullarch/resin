@@ -1,6 +1,0 @@
-//@version=5
-indicator("Var Persist")
-var float maxClose = 0.0
-if close > maxClose
-    maxClose := close
-plot(maxClose)

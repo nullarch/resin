@@ -1,8 +1,0 @@
-//@version=5
-indicator("Num Int")
-var int x = 42
-var float result = 0.0
-result := x
-var float __obs_plot0 = na
-__obs_plot0 := result
-plot(result)

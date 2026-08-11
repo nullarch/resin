@@ -1,8 +1,0 @@
-//@version=5
-indicator("CSE")
-float sma3 = nz(ta.sma(close, 3), close)
-float deviation = close - sma3
-float upper = sma3 + deviation * 2.0
-float lower = sma3 - deviation * 2.0
-float bandwidth = upper - lower
-float position = deviation > 0.0 ? deviation / math.max(upper - sma3, 0.01) : deviation / math.min(lower - sma3, -0.01)

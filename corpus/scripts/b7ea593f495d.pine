@@ -1,6 +1,0 @@
-//@version=5
-indicator("String Dash")
-var int result = 0
-s = str.tostring(close)
-label = "Close: " + s
-result := str.length(label)

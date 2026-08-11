@@ -1,9 +1,0 @@
-//@version=5
-indicator("Inline Expansion")
-normalize(float val, float base) =>
-    base > 0.01 ? val / base : 0.0
-float sma3 = nz(ta.sma(close, 3), close)
-float n1 = normalize(close, sma3)
-float n2 = normalize(open, sma3)
-float n3 = normalize(high, sma3)
-float avg = (n1 + n2 + n3) / 3.0

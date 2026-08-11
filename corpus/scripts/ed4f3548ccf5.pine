@@ -1,4 +1,0 @@
-//@version=5
-indicator("var counter")
-var int count = 0
-count := count + 1

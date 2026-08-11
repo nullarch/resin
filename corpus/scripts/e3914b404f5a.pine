@@ -1,6 +1,0 @@
-//@version=5
-indicator("ROC")
-var float lastROC = 0
-r = ta.roc(close, 3)
-if not na(r)
-    lastROC := r

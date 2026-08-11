@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("WPR")
-wpr = ta.wpr(5)
-oversold = wpr < -80
-overbought = wpr > -20
-var float __obs_plot0 = na
-__obs_plot0 := wpr
-plot(wpr, "WPR")

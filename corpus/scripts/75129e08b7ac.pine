@@ -1,6 +1,0 @@
-//@version=5
-indicator("input defaults")
-var float result = 0.0
-len = input.int(3, "Length")
-src = close
-result := ta.sma(src, len)

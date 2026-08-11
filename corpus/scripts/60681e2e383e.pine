@@ -1,7 +1,0 @@
-//@version=5
-indicator("Line Cont Comma")
-var float result = 0.0
-result := math.max(
-    10.0,
-    20.0,
-    30.0)

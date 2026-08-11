@@ -1,4 +1,0 @@
-//@version=5
-indicator("Modular BarIndex")
-modVal = bar_index - math.floor(bar_index / 3) * 3
-plot(modVal, "Mod3")

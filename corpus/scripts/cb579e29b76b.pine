@@ -1,5 +1,0 @@
-//@version=5
-indicator("NestedTernary")
-var int result = 0
-spread = close - open
-result := spread > 5 ? 2 : spread > 0 ? 1 : 0

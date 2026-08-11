@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Px Cross MA")
-sma5 = ta.sma(close, 5)
-crossUp = ta.crossover(close, sma5)
-crossDn = ta.crossunder(close, sma5)
-var float __obs_plot0 = na
-__obs_plot0 := crossUp ? 1 : crossDn ? -1 : 0
-plot(crossUp ? 1 : crossDn ? -1 : 0, "Cx")

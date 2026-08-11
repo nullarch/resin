@@ -1,9 +1,0 @@
-//@version=5
-strategy("Epidemic Trading")
-rsiProxy = nz(ta.rsi(close, 3), 50.0)
-severityHigh = rsiProxy > 70
-severityLow = rsiProxy < 30
-if severityLow
-    strategy.entry("Recovery", strategy.long)
-if severityHigh
-    strategy.close("Recovery")

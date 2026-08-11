@@ -1,9 +1,0 @@
-//@version=5
-strategy("Array Strategy")
-var arr = array.new<float>(0)
-arr.push(close)
-if arr.size() > 20
-    arr.shift()
-avg = arr.avg()
-if close > avg
-    strategy.entry("Long", strategy.long)

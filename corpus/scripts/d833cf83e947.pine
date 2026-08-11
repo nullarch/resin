@@ -1,6 +1,0 @@
-//@version=5
-indicator("TA Implicit")
-tr_val = ta.tr
-var float result = 0.0
-result := nz(tr_val, 0.0)
-plot(result)

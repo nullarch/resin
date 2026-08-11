@@ -1,9 +1,0 @@
-//@version=5
-indicator("Isomorphism")
-float scale = 100.0
-float scaled = close * scale
-float unscaled = scaled / scale
-float error = math.abs(close - unscaled)
-bool isIso = error < 0.0001
-var int isoCount = 0
-isoCount := isIso ? isoCount + 1 : isoCount

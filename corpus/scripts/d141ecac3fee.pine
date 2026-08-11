@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Vol Wt")
-avgVol = ta.sma(volume, 5)
-ratio = avgVol > 0 ? volume / avgVol : 1.0
-weight = ratio > 2.0 ? 1.5 : ratio > 1.0 ? 1.0 : 0.5
-rsi = nz(ta.rsi(close, 3), 50.0)
-signal = (rsi - 50) / 50 * weight
-plot(signal, "Sig")

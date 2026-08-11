@@ -1,9 +1,0 @@
-//@version=5
-indicator("RMS Error")
-float setpoint = 106.0
-float err = setpoint - close
-var float sumSqErr = 0.0
-var int barCnt = 0
-sumSqErr := sumSqErr + err * err
-barCnt := barCnt + 1
-float rmsErr = barCnt > 0 ? math.sqrt(sumSqErr / barCnt) : 0.0

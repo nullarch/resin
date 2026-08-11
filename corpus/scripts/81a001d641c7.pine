@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("Period Ret")
-ret3 = close[3] > 0 ? (close - close[3]) / close[3] * 100 : 0.0
-ret5 = not na(close[5]) and close[5] > 0 ? (close - close[5]) / close[5] * 100 : 0.0
-momentum = nz(ret3, 0.0) * 0.6 + nz(ret5, 0.0) * 0.4
-plot(momentum, "M")

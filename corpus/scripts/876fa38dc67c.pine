@@ -1,3 +1,0 @@
-//@version=5
-indicator("ATR")
-x = ta.atr(5)

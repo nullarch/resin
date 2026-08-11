@@ -1,4 +1,0 @@
-//@version=5
-indicator("line params")
-if barstate.islast
-    line.new(bar_index - 10, close[1], bar_index, close, color=color.red, width=2, style=line.style_dashed)

@@ -1,9 +1,0 @@
-//@version=5
-indicator("Drawing Line Box")
-ln = line.new(bar_index - 1, close[1], bar_index, close)
-ln.set_color(color.blue)
-ln.set_width(2)
-bx = box.new(bar_index - 5, high, bar_index, low)
-bx.set_bgcolor(color.red)
-var float result = close
-plot(result)

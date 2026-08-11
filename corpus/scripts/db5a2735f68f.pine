@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Str Trim Pos")
-padded = "  Hello World  "
-trimmed = str.trim(padded)
-pos = str.pos(trimmed, "World")
-len = str.length(trimmed)
-plot(len, "Len")

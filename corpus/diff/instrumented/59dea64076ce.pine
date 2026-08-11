@@ -1,8 +1,0 @@
-//@version=5
-indicator("Barstate Last")
-var int last_bar = -1
-if barstate.islast
-    last_bar := bar_index
-var float __obs_plot0 = na
-__obs_plot0 := last_bar
-plot(last_bar)

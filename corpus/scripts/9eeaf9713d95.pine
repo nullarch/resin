@@ -1,7 +1,0 @@
-//@version=5
-indicator("Redshift")
-var float cumShift = 0.0
-emitted = nz(close[1], close)
-observed = close
-zShift = emitted > 0 ? (observed - emitted) / emitted : 0.0
-cumShift := cumShift + zShift

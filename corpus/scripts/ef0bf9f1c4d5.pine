@@ -1,4 +1,0 @@
-//@version=5
-indicator("Supertrend tuple")
-[supertrend, direction] = ta.supertrend(3.0, 3)
-isBull = not na(direction) and nz(direction) < 0

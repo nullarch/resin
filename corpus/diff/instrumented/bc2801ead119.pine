@@ -1,8 +1,0 @@
-//@version=5
-indicator("Str Format")
-txt = str.format("Price: {0} Vol: {1}", str.tostring(close, "#.##"), str.tostring(volume))
-hasP = str.contains(txt, "Price")
-hasV = str.contains(txt, "Vol")
-var float __obs_plot0 = na
-__obs_plot0 := hasP and hasV ? 1.0 : 0.0
-plot(hasP and hasV ? 1.0 : 0.0)

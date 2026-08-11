@@ -1,5 +1,0 @@
-//@version=5
-indicator("Heatmap")
-rsi_ = ta.rsi(close, 5)
-rsiColor = not na(rsi_) ? color.from_gradient(rsi_, 0, 100, color.red, color.green) : color.gray
-plot(nz(rsi_), color=rsiColor)

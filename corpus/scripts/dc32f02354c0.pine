@@ -1,5 +1,0 @@
-//@version=5
-indicator("str coerce")
-var float result = 0.0
-s = "price: " + str.tostring(close)
-result := str.length(s)

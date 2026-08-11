@@ -1,9 +1,0 @@
-//@version=5
-indicator("MACD Verify")
-[macdLine, signalLine, hist] = ta.macd(close, 3, 5, 3)
-computed_hist = macdLine - signalLine
-diff = na(hist) ? 0.0 : math.abs(hist - computed_hist)
-small = diff < 0.0001
-var float __obs_plot0 = na
-__obs_plot0 := small ? 1.0 : 0.0
-plot(small ? 1.0 : 0.0)

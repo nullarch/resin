@@ -1,6 +1,0 @@
-//@version=5
-indicator("Int Cast")
-x = int(3.7)
-y = int(-3.7)
-plot(x)
-plot(y)

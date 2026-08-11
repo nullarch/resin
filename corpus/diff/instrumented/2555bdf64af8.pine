@@ -1,8 +1,0 @@
-//@version=5
-indicator("Match")
-var int matched = 0
-m = str.match("price 123", "\\d+")
-matched := m ? 1 : 0
-var float __obs_plot0 = na
-__obs_plot0 := matched
-plot(matched)

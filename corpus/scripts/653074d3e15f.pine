@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("Doji")
-bodySize = math.abs(close - open_)
-fullRange = high - low
-isDoji = fullRange > 0 and bodySize / fullRange < 0.1
-plot(isDoji ? 1 : 0, "Doji")

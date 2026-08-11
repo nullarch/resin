@@ -1,6 +1,0 @@
-//@version=5
-indicator("Ichimoku")
-convLen = 3
-baseLen = 5
-tenkan = (ta.highest(high, convLen) + ta.lowest(low, convLen)) / 2.0
-kijun = (ta.highest(high, baseLen) + ta.lowest(low, baseLen)) / 2.0

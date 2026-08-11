@@ -1,8 +1,0 @@
-//@version=5
-indicator("Fracture Toughness")
-stress = volume / ((high - low) > 0 ? (high - low) : 1.0)
-crackLen = math.abs(close - open)
-kIC = stress * math.sqrt(3.14159 * (crackLen > 0.01 ? crackLen : 0.01))
-var float maxKIC = 0.0
-if kIC > maxKIC
-    maxKIC := kIC

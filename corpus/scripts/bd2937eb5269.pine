@@ -1,4 +1,0 @@
-//@version=5
-indicator("cast float")
-var float result = 0.0
-result := float(42)

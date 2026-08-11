@@ -1,7 +1,0 @@
-//@version=5
-indicator("CrossBlend")
-parent1 = nz(ta.sma(close, 3), close)
-parent2 = nz(ta.ema(close, 3), close)
-alpha = 0.6
-child = alpha * parent1 + (1.0 - alpha) * parent2
-plot(child, "Child")

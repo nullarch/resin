@@ -1,8 +1,0 @@
-//@version=5
-indicator("ParetoProxy")
-obj1_a = close - open
-obj2_a = math.abs(high - low)
-obj1_b = nz(close[1], close) - nz(open[1], open)
-obj2_b = math.abs(nz(high[1], high) - nz(low[1], low))
-aDominates = obj1_a >= obj1_b and obj2_a >= obj2_b and (obj1_a > obj1_b or obj2_a > obj2_b) ? 1.0 : 0.0
-plot(aDominates, "ADom")

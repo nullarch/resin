@@ -1,9 +1,0 @@
-//@version=5
-indicator("Cross Section Resonance")
-float energy = close
-float e0 = 106.0
-float gammaWidth = 2.0
-float peakXS = 1000.0
-float diff = energy - e0
-float denominator = diff * diff + gammaWidth * gammaWidth / 4.0
-float crossSection = denominator > 0 ? peakXS * (gammaWidth * gammaWidth / 4.0) / denominator : peakXS

@@ -1,9 +1,0 @@
-//@version=5
-indicator("Kepler Period")
-semiMajor = (high + low) / 2.0
-periodSq = math.pow(semiMajor / 100.0, 3.0)
-period = math.sqrt(periodSq)
-var float avgPeriod = 0.0
-var int barCount = 0
-barCount := barCount + 1
-avgPeriod := avgPeriod + (period - avgPeriod) / barCount

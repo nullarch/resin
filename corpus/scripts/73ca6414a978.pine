@@ -1,6 +1,0 @@
-//@version=5
-indicator("Vol Signal")
-var float lastVwma = 0
-vwmaVal = ta.vwma(close, 5)
-if not na(vwmaVal)
-    lastVwma := vwmaVal

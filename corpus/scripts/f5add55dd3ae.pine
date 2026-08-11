@@ -1,8 +1,0 @@
-//@version=5
-indicator("if expr nested")
-result = if close > 110
-    "HIGH"
-else if close > 105
-    "MID"
-else
-    "LOW"

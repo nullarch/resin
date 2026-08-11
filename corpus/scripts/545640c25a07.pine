@@ -1,7 +1,0 @@
-//@version=5
-indicator("Double Delta")
-float d1 = not na(close[1]) ? close - close[1] : 0.0
-float d2 = not na(close[2]) ? close[1] - close[2] : 0.0
-float doubleDelta = d1 - d2
-var float sumDD = 0.0
-sumDD := sumDD + math.abs(doubleDelta)

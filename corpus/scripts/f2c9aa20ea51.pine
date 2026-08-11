@@ -1,8 +1,0 @@
-//@version=5
-indicator("Multi Level Indent")
-var float result = 0.0
-if close > 100
-    if close > 105
-        result := 2.0
-    else
-        result := 1.0

@@ -1,8 +1,0 @@
-//@version=5
-indicator("Simplex Count")
-var int streak = 0
-if close > open
-    streak := streak + 1
-else
-    streak := 0
-plot(streak, "Streak")

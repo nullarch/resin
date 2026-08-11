@@ -1,5 +1,0 @@
-
-//@version=5
-indicator("EMA Num")
-e = ta.ema(close, 5)
-plot(e)

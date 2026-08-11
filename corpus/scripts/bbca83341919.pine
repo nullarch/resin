@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Drawdown")
-var float peak = 0.0
-if close > peak
-    peak := close
-drawdown = peak > 0 ? (peak - close) / peak * 100 : 0.0
-plot(drawdown, "DD")
-plot(peak, "Peak")

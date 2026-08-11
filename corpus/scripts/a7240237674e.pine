@@ -1,5 +1,0 @@
-//@version=5
-indicator("StrChain")
-var string lastMsg = ""
-msg = "O:" + open + " H:" + high
-lastMsg := msg

@@ -1,8 +1,0 @@
-//@version=5
-indicator("Multiline call")
-sma_val = ta.sma(close,
-    5)
-plot(sma_val,
-    "SMA",
-    color=color.blue,
-    linewidth=2)

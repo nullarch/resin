@@ -1,6 +1,0 @@
-//@version=5
-indicator("Triple TA")
-var float result = 0.0
-e = ta.ema(close, 3)
-s = ta.sma(e, 3)
-result := s

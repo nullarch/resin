@@ -1,5 +1,0 @@
-//@version=5
-indicator("RSI Bounds")
-var float result = 0.0
-r = ta.rsi(close, 3)
-result := r

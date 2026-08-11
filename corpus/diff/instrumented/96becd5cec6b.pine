@@ -1,7 +1,0 @@
-//@version=5
-indicator("test")
-val = 1 + na
-result = na(val) ? 0 : 1
-var float __obs_plot0 = na
-__obs_plot0 := result
-plot(result)

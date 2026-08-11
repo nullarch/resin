@@ -1,6 +1,0 @@
-//@version=5
-indicator("TripleTArun")
-var float result = 0
-val = ta.ema(ta.sma(ta.rsi(close, 5), 3), 3)
-if not na(val)
-    result := val

@@ -1,9 +1,0 @@
-//@version=5
-indicator("UDF ML Ternary")
-classify(float src, float prev) =>
-    src > prev ?
-        src > prev * 1.01 ? 2 : 1 :
-        src < prev ?
-            src < prev * 0.99 ? -2 : -1 :
-        0
-plot(classify(close, open))

@@ -1,6 +1,0 @@
-//@version=5
-indicator("Type Hint")
-var float result = 0.0
-int count = 5
-float price = 100.5
-result := count + price

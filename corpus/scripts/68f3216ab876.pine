@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("HLine BG")
-rsiVal = ta.rsi(close, 3)
-hline(70, "OB", color=color.red)
-hline(30, "OS", color=color.green)
-bgColor = rsiVal > 70 ? color.new(color.red, 90) : rsiVal < 30 ? color.new(color.green, 90) : na
-bgcolor(bgColor)
-plot(rsiVal, "RSI")

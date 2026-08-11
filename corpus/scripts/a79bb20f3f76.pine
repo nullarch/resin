@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Log Warn Err")
-if close > 110
-    log.warning("High price: {0}", close)
-if close < 100
-    log.error("Low price: {0}", close)
-plot(close)

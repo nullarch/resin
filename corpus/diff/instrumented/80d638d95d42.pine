@@ -1,7 +1,0 @@
-//@version=5
-indicator("Assign Cont")
-x =
-    close + open
-var float __obs_plot0 = na
-__obs_plot0 := x
-plot(x)

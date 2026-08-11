@@ -1,8 +1,0 @@
-//@version=5
-indicator("Filtration Volume")
-var float cumVol = 0.0
-cumVol := cumVol + volume
-float filtLevel = cumVol > 0 ? volume / cumVol : 0.0
-var float __obs_plot0 = na
-__obs_plot0 := filtLevel
-plot(filtLevel, "Filt")

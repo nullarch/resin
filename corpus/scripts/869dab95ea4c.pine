@@ -1,9 +1,0 @@
-//@version=5
-indicator("Char Frequency")
-var float freqA = 0.0
-var float freqB = 0.0
-letterIdx = math.floor(close) % 26
-if letterIdx < 13
-    freqA := freqA + 1.0
-else
-    freqB := freqB + 1.0

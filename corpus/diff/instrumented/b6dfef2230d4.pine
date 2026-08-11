@@ -1,8 +1,0 @@
-//@version=5
-indicator("Triple TA")
-rsi_ = ta.rsi(close, 5)
-emaRsi = ta.ema(rsi_, 3)
-smaEmaRsi = ta.sma(emaRsi, 3)
-var float __obs_plot0 = na
-__obs_plot0 := smaEmaRsi
-plot(smaEmaRsi)

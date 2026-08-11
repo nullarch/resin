@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("MFI")
-mfiVal = ta.mfi(close, 5)
-overbought = mfiVal > 80
-oversold = mfiVal < 20
-plot(mfiVal, "MFI")

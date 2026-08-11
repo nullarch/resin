@@ -1,6 +1,0 @@
-//@version=5
-indicator("test")
-x = -close
-y = -(close - open)
-z = -(-5.0)
-plot(x + y + z)

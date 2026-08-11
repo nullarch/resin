@@ -1,6 +1,0 @@
-//@version=5
-indicator("sort median")
-var float result = 0.0
-arr = array.from(50.0, 10.0, 30.0, 20.0, 40.0)
-array.sort(arr)
-result := array.get(arr, 2)

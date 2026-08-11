@@ -1,6 +1,0 @@
-//@version=5
-indicator("EMA Verify")
-var float lastEma = 0
-e = ta.ema(close, 3)
-if not na(e)
-    lastEma := e

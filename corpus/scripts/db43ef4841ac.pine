@@ -1,9 +1,0 @@
-//@version=5
-indicator("Switch String")
-var float result = 0.0
-string maType = "EMA"
-result := switch maType
-    "SMA" => 1.0
-    "EMA" => 2.0
-    "WMA" => 3.0
-    => 0.0

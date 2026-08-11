@@ -1,5 +1,0 @@
-//@version=5
-indicator("Return Map")
-float xCoord = not na(close[1]) ? close[1] : close
-float yCoord = close
-float dist = math.sqrt((xCoord - 105.0) * (xCoord - 105.0) + (yCoord - 105.0) * (yCoord - 105.0))

@@ -1,7 +1,0 @@
-//@version=5
-indicator("Constant Folding Arithmetic")
-float pi = 3.14159
-float twoPi = pi * 2.0
-float halfPi = pi / 2.0
-float combined = twoPi + halfPi
-float scaled = close * combined / math.max(close, 0.01)

@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("Line Defaults")
-if bar_index == 5
-    line.new(bar_index - 1, close[1], bar_index, close)
-plot(close)

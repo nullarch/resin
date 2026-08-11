@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("UpLow")
-original = "Hello World"
-upper = str.upper(original)
-lower = str.lower(original)
-upperLen = str.length(upper)
-lowerLen = str.length(lower)
-plot(upperLen + lowerLen, "UL")

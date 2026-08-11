@@ -1,8 +1,0 @@
-//@version=5
-strategy("Supertrend Strat")
-[st, dir] = ta.supertrend(2, 5)
-if not na(st) and not na(dir)
-    if dir < 0
-        strategy.entry("Long", strategy.long)
-    if dir > 0
-        strategy.close("Long")

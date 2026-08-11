@@ -1,9 +1,0 @@
-//@version=5
-indicator("Hysteresis")
-float upper = 108.0
-float lower = 104.0
-var int mode = 0
-if close > upper
-    mode := 1
-if close < lower
-    mode := -1

@@ -1,5 +1,0 @@
-
-//@version=5
-indicator("TA Cum")
-c = ta.cum(close)
-plot(c)

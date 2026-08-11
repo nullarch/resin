@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Filt Wt")
-rsi = nz(ta.rsi(close, 3), 50.0)
-sma3 = ta.sma(close, 3)
-confirmed = close > sma3 and rsi > 55
-weight = confirmed ? 1.5 : close > sma3 ? 1.0 : 0.5
-signal = (rsi - 50) / 50 * weight
-plot(signal, "Sig")

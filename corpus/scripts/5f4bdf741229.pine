@@ -1,4 +1,0 @@
-//@version=5
-indicator("Gen UDT")
-type Foo
-    float x = 0.0

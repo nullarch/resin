@@ -1,6 +1,0 @@
-//@version=5
-indicator("test")
-var int marketBars = 0
-if session.ismarket
-    marketBars := marketBars + 1
-plot(marketBars)

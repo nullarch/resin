@@ -1,5 +1,0 @@
-
-//@version=5
-indicator("OBV Precision")
-o = ta.obv()
-plot(o)

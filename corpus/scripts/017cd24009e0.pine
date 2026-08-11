@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("LR Slope")
-sma5 = ta.sma(close, 5)
-slope = sma5 - sma5[1]
-slopeMA = ta.sma(slope, 3)
-trendUp = nz(slopeMA, 0.0) > 0
-plot(nz(slopeMA, 0.0), "Slope")

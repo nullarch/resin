@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("Strip Generic Map")
-m = map.new<string, float>()
-m.put("val", close)
-plot(m.get("val", 0.0))

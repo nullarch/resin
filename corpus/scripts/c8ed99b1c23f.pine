@@ -1,6 +1,0 @@
-//@version=5
-indicator("Tuple")
-[macd_line, signal, hist] = ta.macd(close, 3, 5, 3)
-var float last_hist = 0.0
-last_hist := nz(hist)
-plot(close)

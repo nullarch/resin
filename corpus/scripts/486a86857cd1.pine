@@ -1,6 +1,0 @@
-//@version=5
-indicator("Production Rule")
-var float length = 1.0
-growthFactor = close > open ? 2.0 : 1.5
-length := math.min(length * growthFactor, 1000.0)
-plot(length, "StringLen")

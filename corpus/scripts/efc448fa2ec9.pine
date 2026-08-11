@@ -1,7 +1,0 @@
-//@version=5
-indicator("Geodesic Distance")
-var float geoDist = 0.0
-spread = high - low
-prevSpread = spread
-ds = math.abs(close - open) * (spread > 0.01 ? 1.0 / spread : 1.0)
-geoDist := geoDist + ds

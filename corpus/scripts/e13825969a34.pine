@@ -1,4 +1,0 @@
-//@version=5
-indicator("test")
-cond = not (close > 105 and close < 110) or (volume > 1000 and not na(close[3]))
-plot(cond ? 1 : 0)

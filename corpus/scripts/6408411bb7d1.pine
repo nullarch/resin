@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("LR Slope")
-lr0 = ta.linreg(close, 5, 0)
-lr1 = ta.linreg(close, 5, 1)
-slope = lr0 - lr1
-rising = slope > 0
-plot(slope, "Slope")

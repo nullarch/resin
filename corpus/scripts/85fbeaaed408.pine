@@ -1,4 +1,0 @@
-//@version=5
-indicator("Import Test")
-sma3 = ta.sma(close, 3)
-plot(sma3)

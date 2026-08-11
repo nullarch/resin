@@ -1,9 +1,0 @@
-//@version=5
-indicator("NS-07 Diffusion")
-var float temp = 0.0
-diffCoeff = 0.3
-if bar_index == 0
-    temp := close
-else
-    temp := temp + diffCoeff * (close - temp)
-plot(temp)

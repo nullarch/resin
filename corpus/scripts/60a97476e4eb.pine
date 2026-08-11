@@ -1,5 +1,0 @@
-//@version=5
-indicator("test")
-int x = 5
-x := x + 1
-plot(x)

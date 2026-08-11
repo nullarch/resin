@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Plot Shape")
-sma3 = ta.sma(close, 3)
-bullCross = ta.crossover(close, sma3)
-bearCross = ta.crossunder(close, sma3)
-plotshape(bullCross, "Buy", shape.triangleup, location.belowbar, color.green)
-plotshape(bearCross, "Sell", shape.triangledown, location.abovebar, color.red)
-plot(sma3, "SMA")

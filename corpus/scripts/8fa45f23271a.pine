@@ -1,4 +1,0 @@
-//@version=5
-indicator("TimesEq")
-var float result = 1
-result *= 2

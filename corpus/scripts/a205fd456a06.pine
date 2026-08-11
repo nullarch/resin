@@ -1,5 +1,0 @@
-//@version=5
-indicator("GEV Location")
-float blockMax = ta.highest(close, 3)
-float gevMu = ta.sma(blockMax, 5)
-plot(gevMu, "GevMu")

@@ -1,9 +1,0 @@
-//@version=5
-indicator("Congestion Index")
-float atrVal = nz(ta.atr(3), 1.0)
-float spread = high - low + 0.01
-float volNorm = volume / 1000.0
-float spreadScore = atrVal > 0 ? spread / atrVal : 1.0
-float volScore = ta.sma(volNorm, 3)
-float congIdx = nz(volScore, 1.0) * spreadScore
-plot(congIdx, "CongIdx")

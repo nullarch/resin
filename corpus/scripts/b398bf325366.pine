@@ -1,8 +1,0 @@
-//@version=5
-indicator("Quantum Tunneling")
-float resistance = 108.0
-float barrierHeight = math.max(resistance - close, 0.0)
-float energy = nz(ta.atr(3), 1.0)
-float safeEnergy = math.max(energy, 0.01)
-float tunnelingProb = math.exp(-2.0 * barrierHeight / safeEnergy)
-float clampedProb = math.min(tunnelingProb, 1.0)

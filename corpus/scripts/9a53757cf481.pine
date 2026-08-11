@@ -1,8 +1,0 @@
-//@version=5
-indicator("MFI", overlay=false)
-length = input.int(14, title="Length")
-mfi_val = ta.mfi(hlc3, length)
-overbought = hline(80, title="Overbought")
-oversold = hline(20, title="Oversold")
-plot(mfi_val, title="MFI", color=color.blue)
-fill(overbought, oversold, color=color.new(color.blue, 90))

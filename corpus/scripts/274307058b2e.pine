@@ -1,7 +1,0 @@
-//@version=5
-indicator("MapKV")
-var m = map.new<string, float>()
-map.put(m, "a", 1.0)
-map.put(m, "b", 2.0)
-var k = map.keys(m)
-var v = map.values(m)

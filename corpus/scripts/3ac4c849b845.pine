@@ -1,8 +1,0 @@
-//@version=5
-indicator("If Expr TA")
-var float result = 0.0
-sma_val = ta.sma(close, 3)
-result := if sma_val > 105
-    sma_val
-else
-    0.0

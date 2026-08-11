@@ -1,4 +1,0 @@
-//@version=5
-indicator("PlusEq")
-var float result = 0
-result += 1

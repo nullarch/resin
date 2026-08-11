@@ -1,7 +1,0 @@
-//@version=5
-indicator("Crustal Thickness")
-gravityAnomaly = close - ta.sma(close, 5)
-anomaly = not na(gravityAnomaly) ? gravityAnomaly : 0.0
-density = 2.7
-thickness = anomaly > 0 ? anomaly / density * 10.0 : math.abs(anomaly) / density * 10.0
-plot(thickness)

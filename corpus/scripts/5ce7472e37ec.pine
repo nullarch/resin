@@ -1,9 +1,0 @@
-//@version=5
-indicator("UDF OHLCV defaults")
-myMA(src = close, len = 5) =>
-    ta.sma(src, len)
-myRange(hi = high, lo = low) =>
-    hi - lo
-sma_default = myMA()
-sma_custom = myMA(open, 3)
-rng = myRange()

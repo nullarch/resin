@@ -1,8 +1,0 @@
-//@version=5
-indicator("XOR Cipher")
-key = 42.0
-plaintext = math.floor(close)
-p = plaintext - math.floor(plaintext / 256.0) * 256.0
-k = key - math.floor(key / 256.0) * 256.0
-ciphertext = math.abs(p - k)
-plot(ciphertext)

@@ -1,6 +1,0 @@
-//@version=5
-indicator("String Escape")
-var float result = 0.0
-string s = "hello\nworld"
-int len = str.length(s)
-result := len

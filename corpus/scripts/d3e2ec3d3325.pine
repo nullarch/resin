@@ -1,6 +1,0 @@
-//@version=5
-indicator("Precision")
-x = 1.0 / 3.0
-y = x * 3.0
-almost_one = math.abs(y - 1.0) < 0.0000001
-plot(almost_one ? 1.0 : 0.0)

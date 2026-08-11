@@ -1,6 +1,0 @@
-//@version=5
-indicator("RSI Derived")
-var float result = 0.0
-diff = close - open
-r = ta.rsi(diff, 3)
-result := r

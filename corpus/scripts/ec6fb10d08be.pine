@@ -1,5 +1,0 @@
-//@version=5
-indicator("RMA linreg")
-rma5 = ta.rma(close, 5)
-linreg5 = ta.linreg(close, 5, 0)
-diff = nz(rma5) - nz(linreg5)

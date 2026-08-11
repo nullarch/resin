@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Div Lbl")
-rsi = nz(ta.rsi(close, 3), 50.0)
-priceDir = close > close[1] ? "UP" : "DN"
-rsiDir = rsi > 50 ? "BULL" : "BEAR"
-label = priceDir + "_" + rsiDir
-isDivergent = label == "UP_BEAR" or label == "DN_BULL"
-plot(isDivergent ? 1 : 0, "Div")

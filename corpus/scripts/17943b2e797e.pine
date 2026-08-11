@@ -1,5 +1,0 @@
-//@version=5
-indicator("Str Bool Cast")
-s = str.tostring(close)
-b = close > 0 ? true : false
-plot(b ? 1.0 : 0.0)

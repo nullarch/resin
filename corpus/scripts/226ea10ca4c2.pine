@@ -1,6 +1,0 @@
-//@version=5
-indicator("Str Replace All")
-var s = "aXbXcX"
-var s2 = str.replace_all(s, "X", "_")
-var int len_ = str.length(s2)
-plot(len_)

@@ -1,4 +1,0 @@
-//@version=5
-indicator("Scientific")
-var float result = 0.0
-result := 1.5e2 + 2.0E1

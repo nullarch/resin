@@ -1,8 +1,0 @@
-//@version=5
-indicator("Williams VixFix")
-highest5 = ta.highest(close, 5)
-wvf = (nz(highest5) - low) / nz(highest5) * 100
-smaWVF = ta.sma(wvf, 3)
-stdWVF = ta.stdev(wvf, 3)
-upperBand = nz(smaWVF) + 2.0 * nz(stdWVF)
-isHigh = wvf > nz(upperBand)

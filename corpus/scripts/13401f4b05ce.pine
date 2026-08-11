@@ -1,6 +1,0 @@
-//@version=5
-indicator("UDF OHLCV Default")
-myMA(src = close, len = 5) =>
-    ta.sma(src, len)
-result = myMA()
-result2 = myMA(open, 3)

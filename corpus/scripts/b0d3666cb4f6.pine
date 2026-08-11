@@ -1,9 +1,0 @@
-//@version=5
-indicator("Nested Scope")
-float total = 0.0
-if close > 100
-    for i = 1 to 3
-        float n = float(i)
-        total := total + n
-var float result = 0.0
-result := total

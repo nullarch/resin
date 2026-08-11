@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("VWP")
-var float cumPV = 0.0
-var float cumVol = 0.0
-cumPV := cumPV + close * volume
-cumVol := cumVol + volume
-vwp = cumVol > 0 ? cumPV / cumVol : close
-plot(vwp, "VWP")

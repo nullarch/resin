@@ -1,5 +1,0 @@
-//@version=5
-indicator("Test")
-lbl = label.new(bar_index, close)
-x = label.get_x(lbl)
-y = label.get_y(lbl)

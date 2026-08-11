@@ -1,4 +1,0 @@
-//@version=5
-indicator("Percentrank COG")
-prank = ta.percentrank(close, 5)
-cog5 = ta.cog(close, 5)

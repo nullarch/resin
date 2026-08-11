@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Str Empty")
-empty = ""
-notEmpty = "hello"
-combined = empty + notEmpty
-len = str.length(combined)
-plot(len, "L")

@@ -1,9 +1,0 @@
-//@version=5
-indicator("Williams R", overlay=false)
-length = input.int(14, title="Length")
-upper_val = ta.highest(high, length)
-lower_val = ta.lowest(low, length)
-wpr = 100 * (close - upper_val) / (upper_val - lower_val)
-plot(wpr, title="WPR", color=color.blue)
-hline(-20, title="Upper Band")
-hline(-80, title="Lower Band")

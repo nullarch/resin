@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Z Score")
-avg5 = ta.sma(close, 5)
-dev5 = ta.stdev(close, 5)
-zScore = dev5 > 0 ? (close - avg5) / dev5 : 0.0
-var float __obs_plot0 = na
-__obs_plot0 := zScore
-plot(zScore, "Z")

@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Color Chain")
-rsi_val = ta.rsi(close, 14)
-col = rsi_val > 70 ? color.red : rsi_val < 30 ? color.green : color.gray
-var float __obs_plot0 = na
-__obs_plot0 := rsi_val
-plot(rsi_val, color=col)

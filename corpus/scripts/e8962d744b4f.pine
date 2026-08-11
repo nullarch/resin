@@ -1,4 +1,0 @@
-//@version=5
-indicator("BarIndex")
-var int lastIdx = 0
-lastIdx := bar_index

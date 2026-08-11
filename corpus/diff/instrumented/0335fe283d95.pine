@@ -1,8 +1,0 @@
-//@version=5
-indicator("Herding")
-avgVol = ta.sma(volume, 5)
-volRatio = avgVol > 0 ? volume / avgVol : 1.0
-herding = volRatio > 1.5
-var float __obs_plot0 = na
-__obs_plot0 := herding ? 1 : 0
-plot(herding ? 1 : 0)

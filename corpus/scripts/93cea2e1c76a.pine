@@ -1,8 +1,0 @@
-//@version=5
-indicator("Test")
-a = func_a(close)
-b = func_b(close)
-func_a(src) =>
-    src * 2
-func_b(src) =>
-    src + 1

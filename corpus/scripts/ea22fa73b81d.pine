@@ -1,6 +1,0 @@
-//@version=5
-indicator("Highest lowest bars")
-hBars = ta.highestbars(high, 5)
-lBars = ta.lowestbars(low, 5)
-h5 = ta.highest(high, 5)
-l5 = ta.lowest(low, 5)

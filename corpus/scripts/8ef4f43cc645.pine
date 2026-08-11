@@ -1,3 +1,0 @@
-//@version=5
-strategy("Test")
-sz = strategy.position_size

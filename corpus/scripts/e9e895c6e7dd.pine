@@ -1,5 +1,0 @@
-//@version=5
-indicator("test")
-var float[] prices = array.new_float(0)
-array.push(prices, close)
-plot(array.size(prices))

@@ -1,7 +1,0 @@
-//@version=5
-indicator("Crop Growth Rate")
-biomass = ta.ema(close, 3)
-growthRate = biomass - close[1]
-var float maxGrowth = 0.0
-if not na(growthRate) and not na(close[1])
-    maxGrowth := math.max(maxGrowth, growthRate)

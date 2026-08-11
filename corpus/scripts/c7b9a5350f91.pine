@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Ulcer")
-hi5 = ta.highest(close, 5)
-pctDD = hi5 > 0 ? (close - hi5) / hi5 * 100 : 0.0
-sqDD = math.pow(pctDD, 2)
-ulcer = math.sqrt(ta.sma(sqDD, 5))
-plot(ulcer, "UI")

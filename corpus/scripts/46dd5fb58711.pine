@@ -1,6 +1,0 @@
-//@version=5
-indicator("Multiline Ternary")
-trend = close > open ?
-    close > close[1] ? 2 : 1 :
-    close < close[1] ? -2 : -1
-plot(trend)

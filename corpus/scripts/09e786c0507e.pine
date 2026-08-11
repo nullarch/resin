@@ -1,7 +1,0 @@
-//@version=5
-indicator("Binary search")
-arr = array.from(10.0, 20.0, 30.0, 40.0, 50.0)
-idx = array.binary_search(arr, 30.0)
-idxL = array.binary_search_leftmost(arr, 25.0)
-idxR = array.binary_search_rightmost(arr, 30.0)
-notFound = array.binary_search(arr, 99.0)

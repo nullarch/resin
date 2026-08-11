@@ -1,8 +1,0 @@
-//@version=5
-indicator("Input MinMax")
-length = input.int(14, "Length", minval=1, maxval=100)
-var int result = 0
-result := length
-var float __obs_plot0 = na
-__obs_plot0 := result
-plot(result)

@@ -1,5 +1,0 @@
-//@version=5
-indicator("Cast Int")
-var int x = int(3.7)
-var int y = int(-2.9)
-plot(x)

@@ -1,6 +1,0 @@
-//@version=5
-indicator("for result desc")
-var float last_x = 0.0
-x = for i = 5 to 1
-    float(i)
-last_x := x

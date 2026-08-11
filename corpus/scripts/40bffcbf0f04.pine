@@ -1,9 +1,0 @@
-//@version=5
-indicator("Exposure Tracking")
-var float cumDose = 0.0
-float annualLimit = 20.0
-float doseRate = close / 500.0
-cumDose := cumDose + doseRate
-float remainingAllowance = math.max(annualLimit - cumDose, 0.0)
-isOverLimit = cumDose > annualLimit ? 1.0 : 0.0
-pctUsed = cumDose / annualLimit * 100.0

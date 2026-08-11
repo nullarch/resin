@@ -1,6 +1,0 @@
-//@version=5
-indicator("Planet Distances")
-var float[] distances = array.new_float(0)
-dist = math.sqrt(close * close + high * high)
-array.push(distances, dist)
-numPlanets = array.size(distances)

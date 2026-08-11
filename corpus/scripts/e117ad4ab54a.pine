@@ -1,8 +1,0 @@
-//@version=5
-indicator("Dislocation Density")
-var int dislocations = 0
-var int prevDir = 0
-currDir = close > open ? 1 : -1
-if not na(close[1]) and prevDir != 0 and currDir != prevDir
-    dislocations := dislocations + 1
-prevDir := currDir

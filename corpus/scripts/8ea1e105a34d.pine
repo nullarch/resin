@@ -1,9 +1,0 @@
-
-//@version=5
-strategy("RSI MR", overlay=true)
-rsi = ta.rsi(close, 3)
-if rsi < 35
-    strategy.entry("Long", strategy.long)
-if rsi > 65
-    strategy.close("Long")
-plot(rsi, "RSI")

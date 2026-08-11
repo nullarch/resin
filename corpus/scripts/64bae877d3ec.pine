@@ -1,7 +1,0 @@
-//@version=5
-indicator("Squeeze")
-length = 5
-[upper, basis, lower] = ta.bb(close, length, 2.0)
-[kcUpper, kcMiddle, kcLower] = ta.kc(close, length, 1.5)
-sqzOn = lower > kcLower and upper < kcUpper
-sqzOff = lower < kcLower or upper > kcUpper

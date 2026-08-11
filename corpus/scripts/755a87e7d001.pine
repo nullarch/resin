@@ -1,9 +1,0 @@
-//@version=5
-indicator("Crossover")
-var float result = 0.0
-sma3 = ta.sma(close, 3)
-sma5 = ta.sma(close, 5)
-var int cross_count = 0
-if ta.crossover(sma3, sma5)
-    cross_count := cross_count + 1
-result := cross_count

@@ -1,6 +1,0 @@
-//@version=5
-indicator("BB %B")
-var float percentB = 0
-[middle, upper, lower] = ta.bb(close, 5, 2)
-if not na(upper) and not na(lower) and upper != lower
-    percentB := (close - lower) / (upper - lower)

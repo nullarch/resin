@@ -1,9 +1,0 @@
-//@version=5
-indicator("Carnot Efficiency")
-float tHot = high
-float tCold = low
-float efficiency = tHot > 0 ? 1.0 - tCold / tHot : 0.0
-var float avgEff = 0.0
-var int cnt = 0
-cnt := cnt + 1
-avgEff := avgEff + (efficiency - avgEff) / cnt

@@ -1,8 +1,0 @@
-//@version=5
-indicator("AutoCorr")
-ret = nz(close[1]) > 0 ? (close - nz(close[1])) / nz(close[1]) : 0.0
-prevRet = nz(ret[1])
-product = ret * prevRet
-var float __obs_plot0 = na
-__obs_plot0 := product
-plot(product)

@@ -1,5 +1,0 @@
-//@version=5
-indicator("Str Trim")
-var s = str.trim("  hello  ")
-var int len_ = str.length(s)
-plot(len_)

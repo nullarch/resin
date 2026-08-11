@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("HL Channel")
-hi5 = ta.highest(high, 5)
-lo5 = ta.lowest(low, 5)
-mid = (hi5 + lo5) / 2
-width = hi5 - lo5
-position = width != 0 ? (close - lo5) / width : 0.5
-plot(position, "Position")

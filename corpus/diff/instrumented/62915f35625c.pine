@@ -1,9 +1,0 @@
-//@version=5
-indicator("Spectral Centroid")
-float vwp = close * volume
-float sumVWP = ta.sma(vwp, 5)
-float sumVol = ta.sma(volume, 5)
-float centroid = nz(sumVol, 1.0) > 0 ? nz(sumVWP, 0.0) / nz(sumVol, 1.0) : close
-var float __obs_plot0 = na
-__obs_plot0 := centroid
-plot(centroid, "Centroid")

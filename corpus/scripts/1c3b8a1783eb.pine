@@ -1,4 +1,0 @@
-//@version=5
-indicator("Prefix Sum")
-var float prefixSum = 0.0
-prefixSum := prefixSum + close

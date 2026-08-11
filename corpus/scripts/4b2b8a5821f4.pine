@@ -1,5 +1,0 @@
-//@version=5
-indicator("FuncCont")
-var float result = 0
-result := ta.sma(close,
-                 5)

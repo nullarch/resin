@@ -1,6 +1,0 @@
-//@version=5
-indicator("NVI")
-var float lastN = 0
-n = ta.nvi(close, volume)
-if not na(n)
-    lastN := n

@@ -1,6 +1,0 @@
-//@version=5
-indicator("Median")
-var float lastM = 0
-m = ta.median(close, 5)
-if not na(m)
-    lastM := m

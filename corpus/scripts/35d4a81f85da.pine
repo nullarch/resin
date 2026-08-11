@@ -1,9 +1,0 @@
-//@version=5
-indicator("UDT Method TA")
-type Signal
-    float value = 0.0
-    int direction = 0
-calcSignal() =>
-    Signal.new(ta.sma(close, 5), close > open ? 1 : -1)
-sig = calcSignal()
-plot(sig.value)

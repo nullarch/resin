@@ -1,5 +1,0 @@
-//@version=5
-indicator("LowestExplicit")
-var float result = 0
-l3 = ta.lowest(close, 3)
-result := l3

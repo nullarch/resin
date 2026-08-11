@@ -1,7 +1,0 @@
-//@version=5
-indicator("Alert")
-sma_ = ta.sma(close, 3)
-cross_up = ta.crossover(close, sma_)
-alertcondition(cross_up, "Cross Up", "Price crossed above SMA")
-if cross_up
-    alert("Cross detected", alert.freq_once_per_bar)

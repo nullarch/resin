@@ -1,5 +1,0 @@
-//@version=5
-indicator("Exp Smooth")
-float alpha = 0.3
-var float smooth = 0.0
-smooth := alpha * close + (1.0 - alpha) * smooth

@@ -1,9 +1,0 @@
-//@version=5
-indicator("Nested For")
-float total = 0.0
-for i = 0 to 2
-    for j = 0 to 2
-        total := total + close[i] + close[j]
-var float __obs_plot0 = na
-__obs_plot0 := total
-plot(total)

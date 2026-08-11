@@ -1,8 +1,0 @@
-//@version=5
-indicator("Diffusion Coeff")
-float prevC = not na(close[1]) ? close[1] : close
-float logRet = prevC > 0 ? math.log(close / prevC) : 0.0
-float sigma = ta.stdev(logRet, 5)
-var float __obs_plot0 = na
-__obs_plot0 := sigma
-plot(sigma, "Sigma")

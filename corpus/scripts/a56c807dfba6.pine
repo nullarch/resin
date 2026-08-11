@@ -1,7 +1,0 @@
-//@version=5
-indicator("Types")
-float x = 1.5
-int y = 3
-bool flag = true
-string label_ = "test"
-plot(x + y)

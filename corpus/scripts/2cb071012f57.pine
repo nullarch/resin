@@ -1,8 +1,0 @@
-//@version=5
-indicator("Prospect Value")
-ret = close - nz(close[1])
-alpha = 0.88
-gain = ret > 0 ? math.pow(ret, alpha) : 0.0
-loss = ret < 0 ? -2.25 * math.pow(math.abs(ret), alpha) : 0.0
-prospectVal = gain + loss
-plot(prospectVal)

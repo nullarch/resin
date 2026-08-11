@@ -1,6 +1,0 @@
-//@version=5
-indicator("LinReg")
-var float lastL = 0
-l = ta.linreg(close, 5, 0)
-if not na(l)
-    lastL := l

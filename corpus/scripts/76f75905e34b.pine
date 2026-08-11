@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("NR Osc")
-hi5 = ta.highest(high, 5)
-lo5 = ta.lowest(low, 5)
-rangeVal = hi5 - lo5
-normRange = rangeVal > 0 ? (close - lo5) / rangeVal * 100 : 50.0
-osc = normRange - 50
-plot(osc, "NRO")

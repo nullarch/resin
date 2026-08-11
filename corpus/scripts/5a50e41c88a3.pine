@@ -1,7 +1,0 @@
-//@version=5
-indicator("SetSeries")
-var a = array.new<float>(3, 0)
-if bar_index == 0
-    array.set(a, 0, close)
-var float val = 0
-val := array.get(a, 0)

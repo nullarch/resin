@@ -1,7 +1,0 @@
-//@version=5
-indicator("Input Simple Qualifier")
-int len = input.int(5, "Length")
-float s = ta.sma(close, len)
-var float result = 0.0
-if not na(s)
-    result := s

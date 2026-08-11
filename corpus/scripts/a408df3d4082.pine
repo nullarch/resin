@@ -1,9 +1,0 @@
-//@version=5
-indicator("Zipf Proxy")
-var float rank1Score = 0.0
-var float rank2Score = 0.0
-if volume > 1300
-    rank1Score := rank1Score + 1.0
-else if volume > 1000
-    rank2Score := rank2Score + 1.0
-ratio = rank1Score > 0 ? rank2Score / rank1Score : 0.0

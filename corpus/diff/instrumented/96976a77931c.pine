@@ -1,9 +1,0 @@
-//@version=5
-indicator("Priority Queue")
-float hh = ta.highest(high, 5)
-float ll = ta.lowest(low, 5)
-float rng = nz(hh, high) - nz(ll, low) + 0.01
-float priority = (close - nz(ll, low)) / rng
-var float __obs_plot0 = na
-__obs_plot0 := priority
-plot(priority, "Priority")

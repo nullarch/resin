@@ -1,8 +1,0 @@
-//@version=5
-indicator("test")
-var int firstCount = 0
-if session.isfirstbar
-    firstCount := firstCount + 1
-var float __obs_plot0 = na
-__obs_plot0 := firstCount
-plot(firstCount)

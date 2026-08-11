@@ -1,6 +1,0 @@
-//@version=5
-indicator("OHLCV inject")
-var float result = 0.0
-a = ta.atr(5)
-if not na(a)
-    result := a

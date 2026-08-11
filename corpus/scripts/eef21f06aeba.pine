@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Osc Wt")
-rsi = nz(ta.rsi(close, 3), 50.0)
-weight = rsi > 70 ? 0.5 : rsi < 30 ? 2.0 : rsi > 60 ? 0.8 : rsi < 40 ? 1.5 : 1.0
-sma3 = ta.sma(close, 3)
-signal = (close - sma3) * weight
-plot(signal, "Sig")

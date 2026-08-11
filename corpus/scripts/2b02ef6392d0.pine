@@ -1,8 +1,0 @@
-//@version=5
-indicator("For In Index")
-var float result = 0.0
-float[] arr = array.from(10.0, 20.0, 30.0)
-float weighted_sum = 0.0
-for [idx, val] in arr
-    weighted_sum += val * (idx + 1)
-result := weighted_sum

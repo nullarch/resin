@@ -1,9 +1,0 @@
-//@version=5
-indicator("Switch")
-var int result = 0
-x = 2
-result := switch x
-    1 => 10
-    2 => 20
-    3 => 30
-    => 0

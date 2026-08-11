@@ -1,7 +1,0 @@
-//@version=5
-indicator("Soil Erosion Risk")
-rainfallIntensity = volume / 100.0
-slopeProxy = (high - low) / close * 100
-erosionRisk = rainfallIntensity * slopeProxy * 0.1
-var float totalErosion = 0.0
-totalErosion := totalErosion + erosionRisk

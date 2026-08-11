@@ -1,5 +1,0 @@
-//@version=5
-indicator("StrCoerce2")
-var string lastMsg = ""
-msg = close + " USD"
-lastMsg := msg

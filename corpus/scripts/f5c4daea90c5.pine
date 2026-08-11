@@ -1,6 +1,0 @@
-//@version=5
-indicator("Float Cast")
-x = float(42)
-y = float(close)
-plot(x)
-plot(y)

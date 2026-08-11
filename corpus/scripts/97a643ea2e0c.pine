@@ -1,6 +1,0 @@
-//@version=5
-indicator("Faraday Induction")
-float flux = close * volume
-float prevFlux = not na(close[1]) and not na(volume[1]) ? close[1] * volume[1] : flux
-float emf = -(flux - prevFlux)
-float emfNorm = emf / math.max(math.abs(flux), 1.0)

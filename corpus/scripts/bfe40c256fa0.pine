@@ -1,4 +1,0 @@
-//@version=5
-indicator("Ternary chain")
-rsi5 = ta.rsi(close, 5)
-grade = not na(rsi5) ? (nz(rsi5) > 80 ? "A" : nz(rsi5) > 60 ? "B" : nz(rsi5) > 40 ? "C" : nz(rsi5) > 20 ? "D" : "F") : "NA"

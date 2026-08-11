@@ -1,4 +1,0 @@
-//@version=5
-indicator("Inline Block")
-var float result = 0.0
-result := close /* ignore this */ + 1.0

@@ -1,8 +1,0 @@
-//@version=5
-indicator("Multi TA Dashboard")
-var float result = 0.0
-sma3 = ta.sma(close, 3)
-ema3 = ta.ema(close, 3)
-rsi5 = ta.rsi(close, 5)
-atr5 = ta.atr(5)
-result := nz(sma3, 0.0) + nz(ema3, 0.0) + nz(rsi5, 0.0) + nz(atr5, 0.0)

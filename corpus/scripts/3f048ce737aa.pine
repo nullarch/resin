@@ -1,4 +1,0 @@
-//@version=5
-indicator("PctChange")
-var float totalPct = 0
-totalPct := totalPct + ((close - open) / open)

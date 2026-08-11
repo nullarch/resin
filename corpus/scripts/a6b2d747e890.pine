@@ -1,7 +1,0 @@
-//@version=5
-indicator("multi TA isolation")
-sma2 = ta.sma(close, 2)
-sma3 = ta.sma(close, 3)
-sma5 = ta.sma(close, 5)
-sma7 = ta.sma(close, 7)
-sma9 = ta.sma(close, 9)

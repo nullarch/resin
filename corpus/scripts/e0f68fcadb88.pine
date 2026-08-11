@@ -1,6 +1,0 @@
-
-//@version=5
-library("TestLib")
-export double(float x) =>
-    x * 2.0
-plot(0)

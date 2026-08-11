@@ -1,6 +1,0 @@
-//@version=5
-indicator("Transition Delta")
-var int state = 0
-symbol = high > nz(ta.sma(high, 3), high) ? 1 : 0
-state := state == 0 ? (symbol == 1 ? 1 : 0) : state == 1 ? (symbol == 0 ? 2 : 1) : (symbol == 1 ? 0 : 2)
-plot(state, "State")

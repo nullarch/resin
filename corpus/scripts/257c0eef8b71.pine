@@ -1,9 +1,0 @@
-//@version=5
-indicator("Empty Body")
-var float result = 0.0
-
-// Use a simple function instead
-noop(x) =>
-    x
-
-result := noop(42.0)

@@ -1,7 +1,0 @@
-//@version=5
-indicator("Math Trig")
-float s = math.sin(0.0)
-float c = math.cos(0.0)
-var float result = 0.0
-result := s + c
-plot(result)

@@ -1,7 +1,0 @@
-//@version=5
-indicator("Ternary TA")
-useSma = true
-val = useSma ? ta.sma(close, 3) : ta.ema(close, 3)
-var float __obs_plot0 = na
-__obs_plot0 := val
-plot(val)

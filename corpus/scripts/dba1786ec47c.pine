@@ -1,7 +1,0 @@
-//@version=5
-indicator("Survival Time Dist")
-var int timeSinceEvent = 0
-bool isEvent = close > open and volume > 1100
-timeSinceEvent := isEvent ? 0 : timeSinceEvent + 1
-float normalizedTime = timeSinceEvent / 10.0
-plot(normalizedTime, "TimeDist")

@@ -1,8 +1,0 @@
-//@version=5
-indicator("Nested if-for")
-var float accum = 0.0
-if close > open
-    for i = 1 to 3
-        accum := accum + float(i)
-else
-    accum := accum + 0.5

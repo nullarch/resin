@@ -1,9 +1,0 @@
-//@version=5
-indicator("switch disc")
-var float result = 0.0
-int mode = 2
-result := switch mode
-    1 => 10.0
-    2 => 20.0
-    3 => 30.0
-    => 0.0

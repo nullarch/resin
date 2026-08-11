@@ -1,9 +1,0 @@
-//@version=5
-indicator("test")
-sma3 = ta.sma(close, 3)
-sma5 = ta.sma(close, 5)
-sma8 = ta.sma(close, 8)
-avg = (sma3 + sma5 + sma8) / 3
-var float __obs_plot0 = na
-__obs_plot0 := avg
-plot(avg)

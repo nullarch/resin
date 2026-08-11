@@ -1,8 +1,0 @@
-//@version=5
-indicator("HP Detrend")
-trend = ta.ema(close, 8)
-detrended = close - trend
-normalized = detrended > 0 ? 1.0 : -1.0
-var float __obs_plot0 = na
-__obs_plot0 := normalized
-plot(normalized)

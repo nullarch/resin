@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("BB Sqz")
-basis = ta.sma(close, 5)
-dev = ta.stdev(close, 5)
-bbWidth = basis > 0 ? dev * 2 / basis * 100 : 0.0
-avgWidth = ta.sma(bbWidth, 3)
-squeeze = bbWidth < avgWidth * 0.8
-plot(squeeze ? 1 : 0, "Sqz")

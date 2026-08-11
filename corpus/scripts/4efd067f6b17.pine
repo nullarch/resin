@@ -1,8 +1,0 @@
-//@version=5
-indicator("Weed Competition")
-cropGrowth = ta.ema(close, 3)
-weedGrowth = ta.ema(close, 5)
-var float competitionIndex = 0.0
-if not na(cropGrowth) and not na(weedGrowth)
-    ratio = weedGrowth > 0.0 ? cropGrowth / weedGrowth : 1.0
-    competitionIndex := ratio

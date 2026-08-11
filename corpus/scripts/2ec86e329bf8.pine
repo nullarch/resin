@@ -1,8 +1,0 @@
-//@version=5
-strategy("Crop Insurance")
-yieldProxy = ta.ema(close, 3)
-insuredLevel = ta.sma(close, 5)
-if not na(yieldProxy) and not na(insuredLevel) and yieldProxy < insuredLevel
-    strategy.entry("Payout", strategy.long)
-if not na(yieldProxy) and not na(insuredLevel) and yieldProxy >= insuredLevel
-    strategy.close("Payout")

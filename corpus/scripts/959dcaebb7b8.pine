@@ -1,9 +1,0 @@
-//@version=5
-indicator("Tsunami Early Warning")
-seaLevel = ta.ema(close, 3)
-var float prevLevel = 0.0
-var int warningLevel = 0
-if not na(seaLevel)
-    changeRate = prevLevel > 0 ? math.abs(seaLevel - prevLevel) / prevLevel * 100 : 0.0
-    warningLevel := changeRate > 2.0 ? 3 : changeRate > 1.0 ? 2 : changeRate > 0.5 ? 1 : 0
-    prevLevel := seaLevel

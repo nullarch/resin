@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("RSI Range")
-r = ta.rsi(close, 14)
-var float __obs_plot0 = na
-__obs_plot0 := r
-plot(r)

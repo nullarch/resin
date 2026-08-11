@@ -1,7 +1,0 @@
-//@version=5
-indicator("MultiPlot")
-plot(
-    ta.sma(close, 3),
-    "SMA",
-    color.blue
-    )

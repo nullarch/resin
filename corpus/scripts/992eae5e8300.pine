@@ -1,8 +1,0 @@
-//@version=5
-indicator("Harmonic Series")
-var float harmonicSum = 0.0
-total = 0.0
-for i = 1 to 5
-    denom = math.pow(2.0, i)
-    total := total + (denom > 0 ? 1.0 / denom : 0.0)
-harmonicSum := total

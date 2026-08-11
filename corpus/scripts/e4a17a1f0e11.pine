@@ -1,5 +1,0 @@
-//@version=5
-indicator("CompIf")
-var float total = 0
-if close > 105
-    total += close

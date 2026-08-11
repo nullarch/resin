@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Str Match")
-ticker = syminfo.ticker
-base = "TEST_USDT"
-ends = str.endswith(base, "USDT")
-starts = str.startswith(base, "TEST")
-plot(ends and starts ? 1 : 0, "Match")

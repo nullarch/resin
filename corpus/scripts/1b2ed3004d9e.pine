@@ -1,8 +1,0 @@
-//@version=5
-indicator("Fission Chain")
-var float neutronPop = 100.0
-float kEff = 1.0 + (close - 105.0) / 100.0
-neutronPop := neutronPop * kEff
-neutronPop := math.max(math.min(neutronPop, 1e8), 1.0)
-isCritical = kEff > 1.0 ? 1.0 : 0.0
-isSubcritical = kEff < 1.0 ? 1.0 : 0.0

@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Normalize")
-hi5 = ta.highest(close, 5)
-lo5 = ta.lowest(close, 5)
-rng = hi5 - lo5
-normalized = rng != 0 ? (close - lo5) / rng * 100 : 50.0
-clamped = math.max(0.0, math.min(100.0, normalized))
-plot(clamped, "Norm")

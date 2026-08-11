@@ -1,5 +1,0 @@
-//@version=5
-indicator("Var Persist")
-var int counter = 0
-counter := counter + 1
-plot(close)

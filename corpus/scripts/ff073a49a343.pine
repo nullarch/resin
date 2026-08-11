@@ -1,6 +1,0 @@
-//@version=5
-indicator("Barssince")
-var int lastB = 0
-b = ta.barssince(close > 109)
-if not na(b)
-    lastB := b

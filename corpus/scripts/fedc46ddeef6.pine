@@ -1,5 +1,0 @@
-//@version=5
-indicator("Prec MulAdd")
-var float r = 0.0
-r := 10.0 + 5.0 * 2.0
-plot(r)

@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("Vol Ratio")
-avgVol = ta.sma(volume, 5)
-ratio = avgVol > 0 ? volume / avgVol : 1.0
-isHighVol = ratio > 1.5
-plot(ratio, "R")

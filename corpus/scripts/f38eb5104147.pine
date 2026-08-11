@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("CCI Anal")
-cci = nz(ta.cci(close, 5), 0.0)
-isOB = cci > 100
-isOS = cci < -100
-zone = isOB ? 1 : isOS ? -1 : 0
-plot(cci, "CCI")
-plot(zone, "Zone")

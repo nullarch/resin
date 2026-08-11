@@ -1,8 +1,0 @@
-//@version=5
-indicator("Jet Stream")
-fast = ta.ema(close, 3)
-slow = ta.ema(close, 5)
-stream = fast - slow
-var float __obs_plot0 = na
-__obs_plot0 := stream
-plot(stream, title="stream")

@@ -1,7 +1,0 @@
-//@version=5
-indicator("Shared Size")
-var float result = 0.0
-m = map.new<string, float>()
-m.put("a", 1.0)
-a = array.from(1.0, 2.0, 3.0)
-result := m.size() + a.size()

@@ -1,9 +1,0 @@
-//@version=5
-indicator("SR Levels")
-var float resistance = 0
-var float support = 0
-h5 = ta.highest(high, 5)
-l5 = ta.lowest(low, 5)
-if not na(h5) and not na(l5)
-    resistance := h5
-    support := l5

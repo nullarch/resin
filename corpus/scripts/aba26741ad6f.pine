@@ -1,8 +1,0 @@
-//@version=5
-indicator("UDT New")
-type MyPoint
-    float x = 0.0
-    float y = 0.0
-var float result = 0.0
-p = MyPoint.new(x=3.0, y=4.0)
-result := p.x + p.y

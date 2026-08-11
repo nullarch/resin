@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("Bar Count")
-var int barNum = 0
-barNum := barNum + 1
-plot(barNum, "BN")

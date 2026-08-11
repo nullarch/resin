@@ -1,5 +1,0 @@
-//@version=5
-indicator("Pressure Gradient")
-gradient = close - open
-absGrad = math.abs(gradient)
-plot(absGrad, title="gradient")

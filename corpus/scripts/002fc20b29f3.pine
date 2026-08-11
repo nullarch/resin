@@ -1,8 +1,0 @@
-//@version=5
-indicator("Copy Propagation")
-float original = nz(ta.sma(close, 3), close)
-float copy1 = original
-float copy2 = copy1
-float copy3 = copy2
-float used = copy3 - close
-float check = math.abs(original - copy3)

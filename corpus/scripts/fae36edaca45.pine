@@ -1,7 +1,0 @@
-//@version=5
-indicator("Vol of Vol")
-float prevC = not na(close[1]) ? close[1] : close
-float logRet = prevC > 0 ? math.log(close / prevC) : 0.0
-float sigma = ta.stdev(logRet, 3)
-float volOfVol = ta.stdev(sigma, 3)
-plot(volOfVol, "VoV")

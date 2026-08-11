@@ -1,7 +1,0 @@
-//@version=5
-indicator("Stigmergy")
-pivotHigh = ta.highest(high, 5)
-pivotLow = ta.lowest(low, 5)
-midPivot = (pivotHigh + pivotLow) / 2.0
-attraction = midPivot - close
-plot(attraction)

@@ -1,9 +1,0 @@
-//@version=5
-indicator("Tidal Force")
-mass = volume / 100.0
-rNear = low > 0 ? low : 1.0
-rFar = high > 0 ? high : 1.0
-tidalForce = mass * (1.0 / (rNear * rNear) - 1.0 / (rFar * rFar))
-var float maxTidal = 0.0
-if math.abs(tidalForce) > maxTidal
-    maxTidal := math.abs(tidalForce)

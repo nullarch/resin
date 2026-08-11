@@ -1,7 +1,0 @@
-//@version=5
-indicator("Chain Methods")
-var a = array.new_float(0)
-array.push(a, close)
-var float first_val = 0.0
-first_val := array.get(a, 0)
-plot(close)

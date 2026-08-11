@@ -1,7 +1,0 @@
-//@version=5
-indicator("Complex ternary")
-sma3 = ta.sma(close, 3)
-sma5 = ta.sma(close, 5)
-rsi5 = ta.rsi(close, 5)
-signal = not na(rsi5) ? (nz(rsi5) > 70 ? "overbought" : nz(rsi5) < 30 ? "oversold" : not na(sma3) and not na(sma5) ? (nz(sma3) > nz(sma5) ? "bullish" : "bearish") : "neutral") : "wait"
-score = signal == "overbought" ? -2 : signal == "oversold" ? 2 : signal == "bullish" ? 1 : signal == "bearish" ? -1 : 0

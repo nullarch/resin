@@ -1,6 +1,0 @@
-//@version=5
-indicator("NA Coalesce")
-prev = close[1]
-safe = nz(prev, close)
-diff = close - safe
-plot(diff)

@@ -1,6 +1,0 @@
-//@version=5
-indicator("History Ref")
-var float result = 0.0
-s = ta.sma(close, 3)
-prev = s[1]
-result := nz(prev, 0)

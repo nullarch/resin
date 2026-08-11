@@ -1,5 +1,0 @@
-//@version=5
-indicator("while conv")
-var float val = 100.0
-while val > 1.0
-    val := val * 0.5

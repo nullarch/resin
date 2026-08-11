@@ -1,5 +1,0 @@
-//@version=5
-indicator("color")
-var float result = 0.0
-c = color.rgb(255, 0, 0)
-result := close

@@ -1,5 +1,0 @@
-//@version=5
-indicator("alert freq")
-if close > open
-    alert("up", alert.freq_once_per_bar)
-var float x = 1.0

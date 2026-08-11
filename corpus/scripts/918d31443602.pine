@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Deep Tern")
-rsi = nz(ta.rsi(close, 3), 50.0)
-k = ta.stoch(close, high, low, 5)
-sma3 = ta.sma(close, 3)
-sig = close > sma3 ? (rsi > 60 ? (k > 70 ? 3 : 2) : 1) : (rsi < 40 ? (k < 30 ? -3 : -2) : -1)
-plot(sig, "Sig")

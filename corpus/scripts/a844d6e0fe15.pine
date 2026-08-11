@@ -1,7 +1,0 @@
-//@version=5
-indicator("nz fixnan")
-var float result = 0.0
-x = ta.sma(close, 20)
-y = fixnan(x)
-z = nz(y, 42.0)
-result := z

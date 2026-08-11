@@ -1,6 +1,0 @@
-//@version=5
-indicator("WAD")
-var float lastW = 0
-w = ta.wad
-if not na(w)
-    lastW := w

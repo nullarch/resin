@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("CSV Build")
-csv = str.tostring(close) + "," + str.tostring(open) + "," + str.tostring(high) + "," + str.tostring(low)
-fieldCount = 4
-totalLen = str.length(csv)
-plot(totalLen, "Len")
-plot(fieldCount, "Fields")

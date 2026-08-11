@@ -1,6 +1,0 @@
-//@version=5
-indicator("Certainty Effect")
-volatility = nz(ta.atr(5), 1.0)
-avgClose = ta.sma(close, 5)
-certainty = avgClose > 0 ? 1.0 / (1.0 + volatility / avgClose) : 0.5
-plot(certainty)

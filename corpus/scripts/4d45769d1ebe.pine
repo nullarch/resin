@@ -1,4 +1,0 @@
-//@version=5
-indicator("My Indicator", overlay=true)
-var float result = close
-plot(result)

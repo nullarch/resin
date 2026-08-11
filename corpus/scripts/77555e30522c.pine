@@ -1,5 +1,0 @@
-//@version=5
-indicator("ModZero")
-var float result = -1
-x = close % 0
-result := x

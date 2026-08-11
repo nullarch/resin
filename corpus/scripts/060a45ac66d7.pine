@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Cast")
-rsi = nz(ta.rsi(close, 3), 50.0)
-intRsi = int(rsi)
-floatBack = float(intRsi)
-diff = rsi - floatBack
-plot(diff, "Diff")

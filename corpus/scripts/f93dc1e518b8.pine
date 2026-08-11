@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Str Replace")
-base = "BUY_SIGNAL_ACTIVE"
-modified = str.replace_all(base, "BUY", close > open ? "BULL" : "BEAR")
-hasActive = str.contains(modified, "ACTIVE")
-plot(hasActive ? 1 : 0, "Active")
-plot(str.length(modified), "Len")

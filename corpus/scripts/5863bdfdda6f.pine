@@ -1,8 +1,0 @@
-//@version=5
-indicator("Vol Weighted")
-vwap = ta.vwap(close)
-vwma = ta.vwma(close, 5)
-spread = vwap - vwma
-plot(vwap)
-plot(vwma)
-plot(spread)

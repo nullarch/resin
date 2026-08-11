@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Log Ret")
-prev = close[1]
-logRet = not na(prev) and prev > 0 and close > 0 ? math.log(close / prev) : 0.0
-cumLogRet = ta.cum(logRet)
-plot(logRet, "LogRet")
-plot(cumLogRet, "CumLogRet")

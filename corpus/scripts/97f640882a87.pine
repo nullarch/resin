@@ -1,5 +1,0 @@
-//@version=5
-indicator("RSI Bounds")
-rsi = ta.rsi(close, 5)
-inBounds = na(rsi) or (rsi >= 0 and rsi <= 100)
-plot(inBounds ? 1.0 : 0.0)

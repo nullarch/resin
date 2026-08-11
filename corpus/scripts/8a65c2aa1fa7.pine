@@ -1,9 +1,0 @@
-//@version=5
-indicator("If Expr Var")
-var float max_seen = 0.0
-float new_max = if close > max_seen
-    close
-else
-    max_seen
-max_seen := new_max
-plot(max_seen)

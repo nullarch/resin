@@ -1,5 +1,0 @@
-//@version=5
-indicator("Test")
-helper(src) =>
-    src * 2
-x = helper(close)

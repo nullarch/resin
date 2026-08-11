@@ -1,9 +1,0 @@
-//@version=5
-indicator("Colony Size")
-colonySize = ta.sma(volume, 3)
-avgColony = ta.sma(volume, 7)
-activity = avgColony > 0 ? colonySize / avgColony : 1.0
-hyperActive = activity > 1.2
-var float __obs_plot0 = na
-__obs_plot0 := hyperActive ? 1 : 0
-plot(hyperActive ? 1 : 0)

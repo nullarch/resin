@@ -1,6 +1,0 @@
-//@version=5
-indicator("R0 Estimation")
-contactRate = close / 50.0
-recoveryDays = 7.0
-r0 = contactRate * recoveryDays
-isEpidemic = r0 > 1.0 ? 1.0 : 0.0

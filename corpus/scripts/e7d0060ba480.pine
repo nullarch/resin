@@ -1,6 +1,0 @@
-//@version=5
-indicator("TSI")
-var float lastT = 0
-t = ta.tsi(close, 5, 3)
-if not na(t)
-    lastT := t

@@ -1,8 +1,0 @@
-//@version=5
-indicator("MTF")
-rsi_fast = ta.rsi(close, 3)
-rsi_slow = ta.rsi(close, 7)
-confluence = rsi_fast > 70 and rsi_slow > 60 ? 1 : rsi_fast < 30 and rsi_slow < 40 ? -1 : 0
-var float __obs_plot0 = na
-__obs_plot0 := confluence
-plot(confluence)

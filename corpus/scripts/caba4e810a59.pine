@@ -1,4 +1,0 @@
-//@version=5
-indicator("chart point")
-pt = chart.point.from_index(bar_index, close)
-pt2 = chart.point.now(high)

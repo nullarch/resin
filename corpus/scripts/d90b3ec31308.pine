@@ -1,7 +1,0 @@
-//@version=5
-indicator("Bar Index")
-var float bi = 0.0
-bi := bar_index
-var bool is_last = false
-is_last := barstate.islast
-plot(close)

@@ -1,7 +1,0 @@
-//@version=5
-indicator("Array OOB")
-a = array.new_float(3, 0.0)
-var bool oob_is_na = false
-oob_val = array.get(a, 100)
-oob_is_na := na(oob_val)
-plot(close)

@@ -1,7 +1,0 @@
-//@version=5
-indicator("Monsoon Signal")
-var int monsoons = 0
-bigVol = volume > 1200
-bigRange = (high - low) > 5
-if bigVol and bigRange
-    monsoons := monsoons + 1

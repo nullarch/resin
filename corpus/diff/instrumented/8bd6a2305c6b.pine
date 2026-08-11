@@ -1,8 +1,0 @@
-//@version=5
-indicator("Nested Ternary TA")
-rsi_ = ta.rsi(close, 5)
-sma5 = ta.sma(close, 5)
-signal = rsi_ > 70 ? sma5 > close ? 2 : 1 : rsi_ < 30 ? sma5 < close ? -2 : -1 : 0
-var float __obs_plot0 = na
-__obs_plot0 := signal
-plot(signal)

@@ -1,8 +1,0 @@
-//@version=5
-indicator("NFA Branches")
-var int branches = 1
-input_sym = close > open ? 1 : 0
-branches := input_sym == 1 ? math.min(branches + 1, 5) : math.max(branches - 1, 1)
-var float __obs_plot0 = na
-__obs_plot0 := branches
-plot(branches, "Branches")

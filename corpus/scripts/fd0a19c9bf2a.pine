@@ -1,6 +1,0 @@
-//@version=5
-indicator("Trace")
-float varC = ta.stdev(close, 5)
-float varV = ta.stdev(volume, 5)
-float trace = nz(varC, 0.0) * nz(varC, 0.0) + nz(varV, 0.0) * nz(varV, 0.0)
-plot(trace, "Trace")

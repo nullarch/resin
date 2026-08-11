@@ -1,6 +1,0 @@
-//@version=5
-indicator("Scientific notation")
-a = 1e3
-b = 2.5e-4
-c = close * 1e-2
-d = 1.23e5

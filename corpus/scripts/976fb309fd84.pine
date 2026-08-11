@@ -1,5 +1,0 @@
-
-//@version=5
-indicator("Corr Precision")
-c = ta.correlation(close, volume, 14)
-plot(c)

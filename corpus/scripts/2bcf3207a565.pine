@@ -1,9 +1,0 @@
-//@version=5
-indicator("Solar-Weather Model")
-// Astronomy: solar irradiance cycle
-solarCycle = math.sin(bar_index * 0.628) * 50 + 1000
-// Meteorology: temperature response to solar input
-thermalInertia = ta.ema(close, 3)
-tempResponse = not na(thermalInertia) ? thermalInertia * solarCycle / 100000.0 : 0.0
-var float maxTemp = 0.0
-maxTemp := math.max(maxTemp, tempResponse)

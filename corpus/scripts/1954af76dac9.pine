@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Sigmoid")
-sigmoid(x) =>
-    1.0 / (1.0 + math.exp(-math.max(math.min(x, 10.0), -10.0)))
-norm = (close - 100.0) / 10.0
-out = sigmoid(norm)
-plot(out, "Sig")

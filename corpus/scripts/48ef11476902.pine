@@ -1,5 +1,0 @@
-//@version=5
-indicator("Current Direction")
-momentum = close - open
-var string direction = "calm"
-direction := momentum > 2.0 ? "northward" : momentum > 0.0 ? "drifting_north" : momentum < -2.0 ? "southward" : "calm"

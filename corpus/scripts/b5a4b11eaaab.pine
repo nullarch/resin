@@ -1,7 +1,0 @@
-//@version=5
-indicator("Highest Overload")
-h1 = ta.highest(5)
-h2 = ta.highest(close, 5)
-var float diff = 0.0
-diff := nz(h1, 0.0) - nz(h2, 0.0)
-plot(diff)

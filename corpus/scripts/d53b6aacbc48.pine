@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("Line Noop")
-ln = line.new(bar_index, high, bar_index, low)
-line.set_color(ln, color.blue)
-line.set_width(ln, 2)
-plot(close)

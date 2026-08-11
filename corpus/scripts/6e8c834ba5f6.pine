@@ -1,5 +1,0 @@
-//@version=5
-indicator("HighestDefault")
-var float result = 0
-h5 = ta.highest(high, 5)
-result := h5

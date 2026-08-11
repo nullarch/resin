@@ -1,8 +1,0 @@
-//@version=5
-indicator("Hoisting Type")
-var float result = 0.0
-p = MyType.new(42.0)
-result := p.val
-
-type MyType
-    float val = 0.0

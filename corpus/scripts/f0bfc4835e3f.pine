@@ -1,8 +1,0 @@
-//@version=5
-indicator("For NS Bounds")
-a = array.from(10.0, 20.0, 30.0)
-var float total = 0.0
-total := 0.0
-for i = 0 to array.size(a) - 1
-    total := total + array.get(a, i)
-plot(close)

@@ -1,6 +1,0 @@
-//@version=5
-indicator("Input MinMax")
-length = input.int(14, "Length", minval=1, maxval=100)
-var int result = 0
-result := length
-plot(result)

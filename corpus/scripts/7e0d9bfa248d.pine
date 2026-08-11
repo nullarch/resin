@@ -1,6 +1,0 @@
-//@version=5
-indicator("Ternary TA")
-var float result = 0.0
-s = ta.sma(close, 3)
-e = ta.ema(close, 3)
-result := close > 108 ? s : e

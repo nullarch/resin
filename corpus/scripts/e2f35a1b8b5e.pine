@@ -1,9 +1,0 @@
-//@version=5
-indicator("BB Squeeze")
-length = 5
-mult = 2.0
-[middle, upper, lower] = ta.bb(close, length, mult)
-bandwidth = (upper - lower) / middle * 100
-avgBW = ta.sma(bandwidth, length)
-squeeze = bandwidth < avgBW
-plot(squeeze ? 1 : 0)

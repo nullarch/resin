@@ -1,7 +1,0 @@
-//@version=5
-indicator("test")
-momentum = close - close[3]
-accel = momentum - (close[1] - close[4])
-var float __obs_plot0 = na
-__obs_plot0 := accel
-plot(accel)

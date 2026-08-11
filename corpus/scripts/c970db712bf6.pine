@@ -1,8 +1,0 @@
-//@version=5
-indicator("Manual VWAP")
-var float cumVol = 0.0
-var float cumPV = 0.0
-cumVol := cumVol + volume
-cumPV := cumPV + close * volume
-manualVwap = cumPV / cumVol
-plot(manualVwap)

@@ -1,9 +1,0 @@
-//@version=5
-indicator("OFI")
-var float cumOfi = 0.0
-prevClose = nz(close[1], close)
-buyPressure = close >= prevClose ? float(volume) : 0.0
-sellPressure = close < prevClose ? float(volume) : 0.0
-ofi = buyPressure - sellPressure
-cumOfi := cumOfi + ofi
-plot(cumOfi, "CumOFI")

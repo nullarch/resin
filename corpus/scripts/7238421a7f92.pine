@@ -1,6 +1,0 @@
-//@version=5
-indicator("Line Cont Walrus")
-var float result = 0.0
-result :=
-    close + 1.0
-plot(result)

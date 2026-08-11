@@ -1,8 +1,0 @@
-//@version=5
-indicator("Kleene Star")
-var int repetitions = 0
-pattern = close > open
-repetitions := pattern ? repetitions + 1 : 0
-var float __obs_plot0 = na
-__obs_plot0 := repetitions
-plot(repetitions, "Reps")

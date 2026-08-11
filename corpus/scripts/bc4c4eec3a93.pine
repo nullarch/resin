@@ -1,5 +1,0 @@
-//@version=5
-indicator("Negative")
-x = -1.5
-y = x * -2.0
-plot(y)

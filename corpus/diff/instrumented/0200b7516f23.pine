@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Range Ratio")
-barRange = high - low
-avgRange = ta.sma(high - low, 5)
-ratio = avgRange > 0 ? barRange / avgRange : 1.0
-var float __obs_plot0 = na
-__obs_plot0 := ratio
-plot(ratio, "RR")

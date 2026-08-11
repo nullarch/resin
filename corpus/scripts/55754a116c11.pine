@@ -1,9 +1,0 @@
-//@version=5
-indicator("While Limit")
-var int count = 0
-x = 100.0
-count := 0
-while x > 0.001
-    x := x / 2
-    count := count + 1
-plot(close)

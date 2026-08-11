@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Sell Press")
-totalRange = high - low
-sellPress = totalRange > 0 ? (high - close) / totalRange * 100 : 50.0
-var float __obs_plot0 = na
-__obs_plot0 := sellPress
-plot(sellPress, "SP")

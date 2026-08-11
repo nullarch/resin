@@ -1,8 +1,0 @@
-//@version=5
-indicator("Multi Plot")
-var float result = 0.0
-sma3 = ta.sma(close, 3)
-ema3 = ta.ema(close, 3)
-plot(nz(sma3, close), "SMA")
-plot(nz(ema3, close), "EMA")
-result := nz(sma3, 0.0) + nz(ema3, 0.0)

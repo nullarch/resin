@@ -1,9 +1,0 @@
-//@version=5
-indicator("Accepting State")
-var int state = 0
-input_sym = close > open ? 1 : 0
-state := state == 0 and input_sym == 1 ? 1 : state == 1 and input_sym == 0 ? 2 : state == 2 ? 2 : state
-accepted = state == 2 ? 1.0 : 0.0
-var float __obs_plot0 = na
-__obs_plot0 := accepted
-plot(accepted, "Accepted")

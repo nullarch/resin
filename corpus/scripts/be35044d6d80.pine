@@ -1,8 +1,0 @@
-//@version=5
-indicator("Sensitivity")
-float rParam = 3.9
-var float traj1 = 0.500
-var float traj2 = 0.501
-traj1 := rParam * traj1 * (1.0 - traj1)
-traj2 := rParam * traj2 * (1.0 - traj2)
-float divergence = math.abs(traj1 - traj2)

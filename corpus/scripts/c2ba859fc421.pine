@@ -1,4 +1,0 @@
-//@version=5
-library("Milestone")
-export myFunc(float x, float y) =>
-    x + y

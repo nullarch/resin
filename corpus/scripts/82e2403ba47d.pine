@@ -1,8 +1,0 @@
-//@version=5
-indicator("Switch Cond DefMid")
-var int r = 0
-r := switch
-    close > 200 => 3
-    => 0
-    close > 100 => 1
-plot(r)

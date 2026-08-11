@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("Cum Volume")
-cumVol = ta.cum(volume)
-avgVol = ta.sma(volume, 5)
-relVol = volume / avgVol
-plot(relVol, "RelVol")

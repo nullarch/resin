@@ -1,8 +1,0 @@
-//@version=5
-indicator("Array Shorthand")
-float[] arr = array.new<float>(0)
-array.push(arr, 5.0)
-array.push(arr, 10.0)
-var float result = 0.0
-result := array.sum(arr)
-plot(result)

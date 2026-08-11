@@ -1,9 +1,0 @@
-//@version=5
-indicator("Empty Map")
-m = map.new<string, float>()
-val = map.get(m, "nonexistent")
-var int isNa = 0
-isNa := na(val) ? 1 : 0
-var float __obs_plot0 = na
-__obs_plot0 := isNa
-plot(isNa)

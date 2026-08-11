@@ -1,6 +1,0 @@
-//@version=5
-indicator("Math Log Zero")
-float x = math.log(0.0)
-var bool is_nan = false
-is_nan := na(x)
-plot(close)

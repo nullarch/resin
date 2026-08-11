@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("Array Sum NaN")
-var a = array.from(1.0, 2.0, 3.0)
-s = array.sum(a)
-plot(s)

@@ -1,8 +1,0 @@
-//@version=5
-indicator("Mod Test")
-x = close - close
-m = 10 % x
-safe = na(m) ? 0.0 : m
-var float __obs_plot0 = na
-__obs_plot0 := safe
-plot(safe)

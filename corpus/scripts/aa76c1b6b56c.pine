@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Map Default")
-var m = map.new<string, float>()
-m.put("key", 42.0)
-val1 = m.get("key", 0.0)
-val2 = m.get("missing", -1.0)
-result = val1 + val2
-plot(result)

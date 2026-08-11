@@ -1,4 +1,0 @@
-//@version=5
-indicator("Inline Comment")
-var float result = 0.0
-result := 42.0 // this is a comment

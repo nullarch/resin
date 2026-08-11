@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("DMI ADX")
-[diPlus, diMinus, adxVal] = ta.dmi(5, 5)
-strongTrend = adxVal > 25
-plot(adxVal, "ADX")

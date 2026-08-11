@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Implicit OHLCV")
-atr_val = ta.atr(14)
-tr_val = ta.tr
-var float __obs_plot0 = na
-__obs_plot0 := atr_val + tr_val
-plot(atr_val + tr_val)

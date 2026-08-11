@@ -1,8 +1,0 @@
-//@version=5
-indicator("EpsilonDecay")
-var float epsilon = 1.0
-decayRate = 0.9
-epsilon := math.max(0.05, epsilon * decayRate)
-var float __obs_plot0 = na
-__obs_plot0 := epsilon
-plot(epsilon, "Eps")

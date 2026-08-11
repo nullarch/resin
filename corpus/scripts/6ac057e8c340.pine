@@ -1,7 +1,0 @@
-//@version=5
-indicator("Alpha Decay Energy")
-float parentMass = close * 2.0
-float daughterMass = parentMass - 4.003
-float alphaMass = 4.002602
-float qValue = (parentMass - daughterMass - alphaMass) * 931.5
-float alphaKE = qValue > 0 ? qValue * (parentMass - 4.0) / parentMass : 0.0

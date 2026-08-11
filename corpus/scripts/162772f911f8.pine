@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Per Search")
-barRange = high - low
-avgRange = ta.sma(high - low, 5)
-period = 1
-while period < 10 and barRange > avgRange * float(period) * 0.3
-    period := period + 1
-plot(period, "Per")

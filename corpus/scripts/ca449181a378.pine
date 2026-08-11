@@ -1,6 +1,0 @@
-//@version=5
-indicator("Test")
-var float a = 0
-var int b = 0
-a := a + 1
-b := b + 2

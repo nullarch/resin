@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Map Size")
-var m = map.new<string, float>()
-map.put(m, "bar" + str.tostring(bar_index), close)
-sz = map.size(m)
-if sz > 5
-    map.clear(m)
-plot(map.size(m), "Size")

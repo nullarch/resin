@@ -1,8 +1,0 @@
-//@version=5
-indicator("Notch Filter")
-smoothed = ta.sma(close, 3)
-superSmoothed = ta.sma(close, 7)
-notch = close - (smoothed - superSmoothed)
-var float __obs_plot0 = na
-__obs_plot0 := notch
-plot(notch)

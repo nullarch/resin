@@ -1,8 +1,0 @@
-//@version=5
-indicator("3lvl TA")
-inner = ta.rsi(close, 5)
-mid = ta.sma(inner, 3)
-outer = ta.ema(mid, 3)
-var float __obs_plot0 = na
-__obs_plot0 := outer
-plot(outer)

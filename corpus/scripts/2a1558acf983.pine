@@ -1,4 +1,0 @@
-//@version=5
-indicator("Block Maxima")
-float blockMax = ta.highest(close, 5)
-plot(blockMax, "BMax")

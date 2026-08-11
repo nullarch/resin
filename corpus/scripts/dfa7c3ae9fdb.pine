@@ -1,7 +1,0 @@
-//@version=5
-indicator("Sort indices")
-arr = array.from(30.0, 10.0, 50.0, 20.0, 40.0)
-indices = array.sort_indices(arr)
-firstIdx = array.get(indices, 0)
-sorted_arr = array.copy(arr)
-array.sort(sorted_arr)

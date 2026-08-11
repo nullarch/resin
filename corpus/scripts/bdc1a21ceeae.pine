@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("ADX Filter")
-[diPlus, diMinus, adx] = ta.dmi(3, 3)
-strongTrend = adx > 20
-trendDir = diPlus > diMinus ? 1 : -1
-filteredSignal = strongTrend ? trendDir : 0
-plot(adx, "ADX")
-plot(filteredSignal, "Filtered")

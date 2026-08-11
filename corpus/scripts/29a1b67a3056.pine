@@ -1,7 +1,0 @@
-//@version=5
-indicator("Quantile Bucket")
-float minVal = 98.0
-float maxVal = 113.0
-float span = maxVal - minVal
-float normalized = span > 0 ? (close - minVal) / span : 0.0
-int bucket = math.floor(normalized * 4.0) > 3 ? 3 : math.floor(normalized * 4.0)

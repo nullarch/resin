@@ -1,7 +1,0 @@
-//@version=5
-indicator("Scientific")
-float x = 1.5e2
-float y = 2e3
-var float result = 0.0
-result := x + y
-plot(result)

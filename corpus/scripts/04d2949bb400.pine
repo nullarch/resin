@@ -1,7 +1,0 @@
-//@version=5
-indicator("Half Life")
-float decayConst = close / 1000.0
-float halfLife = decayConst > 0 ? math.log(2.0) / decayConst : 999.0
-var float minHalfLife = 999.0
-if halfLife < minHalfLife
-    minHalfLife := halfLife

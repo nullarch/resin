@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Log Exp")
-logClose = close > 0 ? math.log(close) : 0.0
-logReturn = close > 0 and close[1] > 0 ? math.log(close / close[1]) : 0.0
-expSmooth = math.exp(math.min(logReturn * 10, 5.0))
-plot(logReturn, "LR")
-plot(expSmooth, "Exp")

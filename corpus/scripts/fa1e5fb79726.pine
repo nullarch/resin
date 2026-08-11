@@ -1,7 +1,0 @@
-//@version=5
-indicator("Multi BinOp")
-var float r = 0.0
-r := 2 + 3 * 4 - 1  // 2 + 12 - 1 = 13
-var bool cmp = false
-cmp := 10 > 5 and 3 < 7  // true and true = true
-plot(close)

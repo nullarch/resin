@@ -1,6 +1,0 @@
-//@version=5
-indicator("Str Arg Propagation")
-string s = str.tostring(42.0)
-bool has = str.contains(s, "42")
-var float result = 0.0
-result := has ? 1.0 : 0.0

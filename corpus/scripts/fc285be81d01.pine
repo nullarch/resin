@@ -1,5 +1,0 @@
-//@version=5
-indicator("For Reverse")
-sum_ = 0.0
-for i = 9 to 0
-    sum_ := sum_ + float(i)

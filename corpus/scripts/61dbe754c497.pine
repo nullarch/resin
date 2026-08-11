@@ -1,3 +1,0 @@
-//@version=5
-indicator("SMA Test")
-sma3 = ta.sma(close, 3)

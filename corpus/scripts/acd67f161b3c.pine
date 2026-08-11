@@ -1,8 +1,0 @@
-//@version=5
-indicator("na handling")
-sma3 = ta.sma(close, 3)
-isNa = na(sma3)
-filled = nz(sma3, 0.0)
-fixed = fixnan(sma3)
-eqNa = sma3 == na
-neNa = sma3 != na

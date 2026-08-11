@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Manual EMA")
-alpha = 2.0 / (5 + 1)
-var float ema = 0.0
-ema := barstate.isfirst ? close : ema * (1 - alpha) + close * alpha
-tEma = ta.ema(close, 5)
-plot(ema, "Manual")
-plot(tEma, "TA")

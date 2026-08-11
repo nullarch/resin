@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Includes")
-arr = array.from(100.0, 105.0, 110.0)
-has105 = array.includes(arr, 105.0)
-has999 = array.includes(arr, 999.0)
-plot(has105 ? 1 : 0, "Has105")
-plot(has999 ? 1 : 0, "Has999")

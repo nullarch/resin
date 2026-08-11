@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("Generic Func")
-a = array.new<float>(5, 1.0)
-var float __obs_plot0 = na
-__obs_plot0 := array.sum(a)
-plot(array.sum(a))

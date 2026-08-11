@@ -1,7 +1,0 @@
-//@version=5
-indicator("Migration Wave")
-migrationSignal = ta.sma(close, 3)
-arrival = close > nz(migrationSignal, close)
-var float __obs_plot0 = na
-__obs_plot0 := arrival ? 1.0 : 0.0
-plot(arrival ? 1.0 : 0.0, "Arrival")

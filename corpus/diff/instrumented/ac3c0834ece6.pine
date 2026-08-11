@@ -1,8 +1,0 @@
-//@version=5
-indicator("Color Lit")
-var color c = #ff5733
-var bool valid = false
-valid := not na(c)
-var float __obs_plot0 = na
-__obs_plot0 := close
-plot(close)

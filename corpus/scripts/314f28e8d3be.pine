@@ -1,6 +1,0 @@
-//@version=5
-indicator("Stdev Verify")
-var float lastStd = 0
-s = ta.stdev(close, 5)
-if not na(s)
-    lastStd := s

@@ -1,8 +1,0 @@
-//@version=5
-indicator("Safe Div UDF")
-var float result = 0.0
-
-safe_ratio(float a, float b) =>
-    nz(a / b, 0.0)
-
-result := safe_ratio(10.0, 0.0) + safe_ratio(10.0, 2.0)

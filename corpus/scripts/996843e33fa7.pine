@@ -1,7 +1,0 @@
-//@version=5
-indicator("MultiIndepTA")
-var float result = 0
-emaVal = ta.ema(close, 3)
-rsiVal = ta.rsi(close, 5)
-if not na(emaVal) and not na(rsiVal)
-    result := emaVal + rsiVal

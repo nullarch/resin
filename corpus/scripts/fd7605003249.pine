@@ -1,6 +1,0 @@
-//@version=5
-indicator("test")
-a = close * 1.5
-b = close / 3.0
-c = a + b - close
-plot(c)

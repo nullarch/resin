@@ -1,5 +1,0 @@
-//@version=5
-indicator("Timeframe")
-var int mult = 0
-mult := timeframe.multiplier
-plot(mult)

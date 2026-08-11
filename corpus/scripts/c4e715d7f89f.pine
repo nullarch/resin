@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Round Precision")
-val = 3.14159
-r1 = math.round(val)
-r2 = math.ceil(val)
-r3 = math.floor(val)
-r4 = math.round(val * 100) / 100
-plot(r4, "Rounded")

@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Ternary Full")
-rsi = nz(ta.rsi(close, 3), 50.0)
-sma3 = ta.sma(close, 3)
-sma5 = ta.sma(close, 5)
-score = rsi > 70 ? (close > sma3 ? 5 : 4) : rsi > 55 ? (sma3 > sma5 ? 3 : 2) : rsi > 45 ? 1 : rsi > 30 ? (sma3 < sma5 ? -2 : -1) : (close < sma3 ? -4 : -3)
-weight = score > 3 ? 0.5 : score > 0 ? 1.0 : score > -3 ? 1.5 : 2.0
-plot(score * weight, "SW")

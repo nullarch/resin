@@ -1,7 +1,0 @@
-//@version=5
-indicator("multi drawing")
-var float result = 0.0
-lbl = label.new(bar_index, close)
-l = line.new(0, 100, 1, 200)
-b = box.new(0, 200, 1, 100)
-result := close + high

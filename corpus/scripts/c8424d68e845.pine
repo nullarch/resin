@@ -1,6 +1,0 @@
-//@version=5
-indicator("Type Cast")
-var int result = 0
-f = float(bar_index)
-s = str.tostring(f)
-result := str.length(s)

@@ -1,5 +1,0 @@
-
-//@version=5
-indicator("ST Dir")
-[st, dir] = ta.supertrend(3, 10)
-plot(st)

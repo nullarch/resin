@@ -1,9 +1,0 @@
-//@version=5
-indicator("Nested UDF TA")
-smoothRsi(src, rsiLen, smoothLen) =>
-    rsiVal = ta.rsi(src, rsiLen)
-    ta.sma(rsiVal, smoothLen)
-myVal = smoothRsi(close, 14, 5)
-fast = smoothRsi(close, 7, 3)
-plot(myVal, "Slow RSI")
-plot(fast, "Fast RSI")

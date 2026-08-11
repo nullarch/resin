@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Precision Chain")
-sma1 = ta.sma(close, 5)
-sma2 = ta.sma(sma1, 3)
-ema1 = ta.ema(sma2, 5)
-var float __obs_plot0 = na
-__obs_plot0 := ema1
-plot(ema1)

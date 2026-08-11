@@ -1,9 +1,0 @@
-//@version=5
-indicator("Hline Fill")
-h1 = hline(70, "Overbought")
-h2 = hline(30, "Oversold")
-fill(h1, h2, color=color.new(color.green, 90))
-rsi5 = ta.rsi(close, 5)
-var float last_rsi = 50.0
-last_rsi := nz(rsi5, 50.0)
-plot(close)

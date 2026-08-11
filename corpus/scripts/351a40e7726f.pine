@@ -1,8 +1,0 @@
-//@version=5
-indicator("switch multi")
-var float result = 0.0
-int x = 2
-result := switch x
-    1, 2 => 10.0
-    3, 4 => 20.0
-    => 0.0

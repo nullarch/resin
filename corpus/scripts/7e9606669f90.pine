@@ -1,4 +1,0 @@
-//@version=5
-indicator("StrFmt")
-s = str.format("{0} is {1}", "price", str.tostring(close))
-x = close

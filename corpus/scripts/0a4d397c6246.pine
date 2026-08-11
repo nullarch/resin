@@ -1,5 +1,0 @@
-
-//@version=5
-indicator("Security")
-daily_close = request.security(syminfo.tickerid, "D", close)
-plot(close)

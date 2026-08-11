@@ -1,9 +1,0 @@
-//@version=5
-indicator("Emergent Oscillator")
-var float osc = 0.0
-var int cell = 0
-force = close > open ? 1.0 : -1.0
-cell := cell == 0 and force > 0 ? 1 : cell == 1 and force < 0 ? 0 : cell
-decay = 0.9
-push = cell == 1 ? 1.0 : -1.0
-osc := osc * decay + push * 0.1

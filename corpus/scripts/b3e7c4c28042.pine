@@ -1,7 +1,0 @@
-//@version=5
-indicator("test")
-var float dayOpen = na
-if session.isfirstbar
-    dayOpen := open
-change = not na(dayOpen) ? close - dayOpen : 0
-plot(change)

@@ -1,6 +1,0 @@
-//@version=5
-indicator("Nz Fixnan")
-var float result = 0.0
-sma20 = ta.sma(close, 20)
-float safe = nz(sma20, close)
-result := safe

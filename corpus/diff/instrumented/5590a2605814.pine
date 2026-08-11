@@ -1,8 +1,0 @@
-//@version=5
-indicator("Nz Default")
-x = close[100]  // NaN
-var float result = 0.0
-result := nz(x, -999.0)
-var float __obs_plot0 = na
-__obs_plot0 := close
-plot(close)

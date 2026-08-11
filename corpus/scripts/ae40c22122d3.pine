@@ -1,9 +1,0 @@
-//@version=5
-indicator("EMD")
-var float cdfA = 0.0
-var float cdfB = 0.0
-var float emd = 0.0
-cdfA := cdfA + (close > open ? 0.15 : 0.05)
-cdfB := cdfB + 0.1
-emd := emd + math.abs(cdfA - cdfB)
-plot(emd, "EMD")

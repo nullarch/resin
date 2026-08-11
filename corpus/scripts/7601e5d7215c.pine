@@ -1,6 +1,0 @@
-//@version=5
-indicator("Entropy Proxy")
-float barRange = high - low
-float entropyProxy = close > 0 ? barRange / close : 0.0
-var float cumEntropy = 0.0
-cumEntropy := cumEntropy + entropyProxy

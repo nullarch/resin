@@ -1,5 +1,0 @@
-
-//@version=5
-indicator("Generic Func")
-a = array.new<float>(5, 1.0)
-plot(array.sum(a))

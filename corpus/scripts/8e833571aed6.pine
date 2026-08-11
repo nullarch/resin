@@ -1,9 +1,0 @@
-//@version=5
-indicator("test")
-var string[] labels = array.new_string(0)
-if barstate.isfirst
-    array.push(labels, "A")
-    array.push(labels, "B")
-    array.push(labels, "C")
-joined = array.join(labels, "-")
-plot(str.length(joined))

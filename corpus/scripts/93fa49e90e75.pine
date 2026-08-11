@@ -1,7 +1,0 @@
-//@version=5
-indicator("Monoid Sum")
-float retVal = close - (not na(close[1]) ? close[1] : close)
-var float identity = 0.0
-var float accumulated = 0.0
-accumulated := accumulated + retVal
-float doubleCheck = accumulated - identity

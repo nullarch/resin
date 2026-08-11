@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Multi Tern")
-rsi = ta.rsi(close, 3)
-sma3 = ta.sma(close, 3)
-atr = ta.atr(3)
-score = (close > sma3 ? 1.0 : 0.0) + (rsi > 50 ? 1.0 : 0.0) + (atr > 0 ? 1.0 : 0.0)
-normalizedScore = score / 3.0
-plot(normalizedScore, "Score")

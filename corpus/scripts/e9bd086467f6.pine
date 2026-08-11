@@ -1,7 +1,0 @@
-//@version=5
-indicator("Type Cast")
-f = float(bar_index)
-i = int(close)
-s = str(close)
-b = bool(close)
-f2 = float(int(close))

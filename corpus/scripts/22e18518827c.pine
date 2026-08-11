@@ -1,9 +1,0 @@
-//@version=5
-indicator("Creep Rate Map")
-var creepMap = map.new<string, float>()
-temp = close - 100.0
-creepRate = math.exp(temp / 10.0)
-zone = temp > 7 ? "high" : temp > 3 ? "mid" : "low"
-oldRate = nz(map.get(creepMap, zone), 0.0)
-map.put(creepMap, zone, oldRate + creepRate)
-mapSize = map.size(creepMap)

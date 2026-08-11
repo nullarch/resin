@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Every Some")
-vals = array.from(close, open, high, low)
-allPositive = array.every(vals)
-anyPositive = array.some(vals)
-plot(allPositive ? 1 : 0, "Every")
-plot(anyPositive ? 1 : 0, "Some")

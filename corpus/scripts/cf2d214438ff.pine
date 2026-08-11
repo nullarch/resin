@@ -1,6 +1,0 @@
-//@version=5
-indicator("Lifespan Range")
-float hh = ta.highest(high, 5)
-float ll = ta.lowest(low, 5)
-float lifespan = hh - ll
-plot(lifespan, "Lifespan")

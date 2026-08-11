@@ -1,8 +1,0 @@
-//@version=5
-indicator("For Expr ML")
-sum = 0.0
-for i = 0 to 4
-    sum += close[i] *
-        (5 - i) /
-        15.0
-plot(sum)

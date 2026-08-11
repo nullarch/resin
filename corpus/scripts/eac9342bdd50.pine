@@ -1,7 +1,0 @@
-//@version=5
-indicator("na eq chain")
-var int result = 0
-x = na
-y = close
-if x == na and y != na
-    result := 1

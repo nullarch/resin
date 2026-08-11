@@ -1,7 +1,0 @@
-//@version=5
-indicator("Input Source")
-src = input.source(close, "Source")
-sma_val = ta.sma(src, 3)
-var float result = 0.0
-result := nz(sma_val, 0.0)
-plot(result)

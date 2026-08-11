@@ -1,7 +1,0 @@
-//@version=5
-indicator("Math Arg Propagation")
-float x = math.abs(-5.0)
-float y = math.max(3.0, 7.0)
-float z = math.min(x, y)
-var float result = 0.0
-result := x + y + z

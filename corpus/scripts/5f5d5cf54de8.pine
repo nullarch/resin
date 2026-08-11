@@ -1,7 +1,0 @@
-//@version=5
-indicator("Equipartition")
-float dOpen = not na(open[1]) ? math.abs(open - open[1]) : 0.0
-float dHigh = not na(high[1]) ? math.abs(high - high[1]) : 0.0
-float dLow = not na(low[1]) ? math.abs(low - low[1]) : 0.0
-float dClose = not na(close[1]) ? math.abs(close - close[1]) : 0.0
-float totalEnergy = (dOpen * dOpen + dHigh * dHigh + dLow * dLow + dClose * dClose) / 4.0

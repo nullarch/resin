@@ -1,8 +1,0 @@
-//@version=5
-indicator("Littles Law")
-float arrRate = ta.sma(volume, 3)
-float waitTime = high - low
-float queueEst = nz(arrRate, 0.0) * waitTime / 1000.0
-var float __obs_plot0 = na
-__obs_plot0 := queueEst
-plot(queueEst, "LittleL")

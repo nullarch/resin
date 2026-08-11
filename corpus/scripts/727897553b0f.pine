@@ -1,9 +1,0 @@
-//@version=5
-indicator("Math trig")
-a = math.sin(math.pi / 4)
-b = math.cos(math.pi / 3)
-c = math.tan(math.pi / 6)
-d = math.asin(0.5)
-e = math.acos(0.5)
-f = math.atan(1.0)
-g = math.atan2(1.0, 1.0)

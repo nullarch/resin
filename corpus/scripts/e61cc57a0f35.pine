@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("Spread")
-barSpread = high - low
-avgSpread = ta.sma(barSpread, 5)
-wideSpread = avgSpread > 0 and barSpread > avgSpread * 1.5
-plot(wideSpread ? 1 : 0, "W")

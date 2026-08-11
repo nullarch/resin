@@ -1,7 +1,0 @@
-//@version=5
-indicator("Str Contains")
-var float result = 0.0
-string text = "Hello World"
-bool has_hello = str.contains(text, "Hello")
-bool starts_h = str.startswith(text, "H")
-result := has_hello and starts_h ? 1.0 : 0.0

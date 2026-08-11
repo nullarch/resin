@@ -1,6 +1,0 @@
-//@version=5
-indicator("EffSpread")
-mid = (high + low) / 2.0
-effSpread = 2.0 * math.abs(close - mid)
-relSpread = mid > 0 ? effSpread / mid : 0.0
-plot(relSpread * 100.0, "EffSpr")

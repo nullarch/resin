@@ -1,7 +1,0 @@
-//@version=5
-indicator("Var Conditional")
-var float highWaterMark = 0.0
-var int hwmBar = 0
-if close > highWaterMark
-    highWaterMark := close
-    hwmBar := bar_index

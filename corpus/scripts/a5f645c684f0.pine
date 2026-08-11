@@ -1,5 +1,0 @@
-//@version=5
-indicator("Not Cont")
-x = not
-    (close < open)
-plot(x ? 1 : 0)

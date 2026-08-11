@@ -1,7 +1,0 @@
-//@version=5
-indicator("MultiTA")
-sma3 = ta.sma(close, 3)
-rsi3 = ta.rsi(close, 3)
-var int signals = 0
-if close > sma3 and rsi3 > 50
-    signals := signals + 1

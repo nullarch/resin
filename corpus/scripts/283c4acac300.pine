@@ -1,6 +1,0 @@
-//@version=5
-indicator("Poynting Vector")
-float efield = close - (not na(close[1]) ? close[1] : close)
-float bfield = nz(ta.sma(close, 3), close) - close
-float poynting = efield * bfield
-float poyntingAbs = math.abs(poynting)

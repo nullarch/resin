@@ -1,8 +1,0 @@
-//@version=5
-indicator("Nonce Generation")
-var float nonce = 0.0
-var float prevHash = 1.0
-raw = close * 13.7 + volume * 0.03 + prevHash * 7.0
-nonce := math.abs(raw - math.floor(raw / 997.0) * 997.0)
-prevHash := nonce
-plot(nonce)

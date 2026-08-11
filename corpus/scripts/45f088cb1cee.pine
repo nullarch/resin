@@ -1,8 +1,0 @@
-//@version=5
-indicator("Enum Hoisting")
-Dir d = Dir.Up
-var float result = 0.0
-result := d == Dir.Up ? 1.0 : 0.0
-enum Dir
-    Up = 1
-    Down = 2

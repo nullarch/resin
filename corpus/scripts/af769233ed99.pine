@@ -1,8 +1,0 @@
-//@version=5
-indicator("Color gradient")
-rsi5 = ta.rsi(close, 5)
-rsiNorm = not na(rsi5) ? nz(rsi5) / 100.0 : 0.5
-clr = color.from_gradient(nz(rsi5, 50), 0, 100, color.red, color.green)
-plot(rsi5, "RSI", color=clr)
-hline(70)
-hline(30)

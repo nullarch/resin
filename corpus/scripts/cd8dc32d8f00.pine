@@ -1,8 +1,0 @@
-//@version=5
-indicator("MODWT_Proxy")
-var float cumDiff = 0.0
-s2 = nz(ta.sma(close, 2), close)
-s4 = nz(ta.sma(close, 4), close)
-wCoeff = s2 - s4
-cumDiff := cumDiff + math.abs(wCoeff)
-plot(cumDiff, "CumW")

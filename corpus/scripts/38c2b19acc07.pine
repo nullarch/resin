@@ -1,8 +1,0 @@
-//@version=5
-indicator("Load Balancer")
-var int bar_count = 0
-bar_count := bar_count + 1
-node_id = bar_count % 3
-node0_load = node_id == 0 ? 1.0 : 0.0
-node1_load = node_id == 1 ? 1.0 : 0.0
-node2_load = node_id == 2 ? 1.0 : 0.0

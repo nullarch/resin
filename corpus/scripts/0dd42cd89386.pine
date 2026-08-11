@@ -1,7 +1,0 @@
-//@version=5
-indicator("Boltzmann Entropy")
-float barRange = high - low
-float microstates = math.max(barRange * 10.0, 1.0)
-float entropy = math.log(microstates)
-var float cumEntropy = 0.0
-cumEntropy := cumEntropy + entropy

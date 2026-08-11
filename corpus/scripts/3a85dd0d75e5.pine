@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("EMA Dist")
-ema5 = ta.ema(close, 5)
-dist = close - ema5
-distPct = ema5 > 0 ? dist / ema5 * 100 : 0.0
-overextended = math.abs(distPct) > 2.0
-plot(distPct, "Dist%")
-plot(overextended ? 1 : 0, "OE")

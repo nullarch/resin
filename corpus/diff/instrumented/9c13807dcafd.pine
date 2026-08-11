@@ -1,8 +1,0 @@
-//@version=5
-indicator("Line Cont Complex")
-longCond = close > ta.sma(close, 3) and
-    ta.rsi(close, 5) > 50 and
-    volume > ta.sma(volume, 3)
-var float __obs_plot0 = na
-__obs_plot0 := longCond ? 1.0 : 0.0
-plot(longCond ? 1.0 : 0.0)

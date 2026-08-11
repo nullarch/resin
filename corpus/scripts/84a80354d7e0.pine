@@ -1,5 +1,0 @@
-//@version=5
-indicator("Chart Point", overlay=true)
-if barstate.islast
-    pt = chart.point.from_index(bar_index, close)
-plot(close)

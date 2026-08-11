@@ -1,6 +1,0 @@
-//@version=5
-indicator("test")
-var float prevHigh = na
-if close > open
-    prevHigh := high
-plot(prevHigh)

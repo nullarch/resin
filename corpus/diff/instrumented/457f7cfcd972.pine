@@ -1,9 +1,0 @@
-//@version=5
-indicator("Array Fill Reverse")
-arr = array.new<float>(5, 0.0)
-array.fill(arr, 7.0)
-var float result = 0.0
-result := array.sum(arr)
-var float __obs_plot0 = na
-__obs_plot0 := result
-plot(result)

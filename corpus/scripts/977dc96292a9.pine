@@ -1,4 +1,0 @@
-//@version=5
-indicator("test")
-trend = ta.ema(close, 3) > ta.sma(close, 5) ? (ta.rsi(close, 5) > 50 ? 2 : 1) : (ta.rsi(close, 5) < 50 ? -2 : -1)
-plot(trend)

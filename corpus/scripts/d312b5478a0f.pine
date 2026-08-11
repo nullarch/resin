@@ -1,5 +1,0 @@
-//@version=5
-indicator("Deep Ternary")
-var int result = 0
-result := close > 110 ? 4 : close > 108 ? 3 : close > 106 ? 2 : close > 104 ? 1 : 0
-plot(close)

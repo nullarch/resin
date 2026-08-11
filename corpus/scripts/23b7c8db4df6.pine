@@ -1,5 +1,0 @@
-//@version=5
-indicator("ReqSec Input")
-tf = input.timeframe("D", "Timeframe")
-htfClose = request.security(syminfo.tickerid, tf, close)
-plot(htfClose)

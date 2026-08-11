@@ -1,7 +1,0 @@
-//@version=5
-indicator("UDT array field")
-type Container
-    array<float> values = array.new_float(0)
-    int count = 0
-c = Container.new()
-array.push(c.values, close)

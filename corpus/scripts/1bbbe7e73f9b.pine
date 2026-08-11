@@ -1,4 +1,0 @@
-//@version=5
-indicator("Wind Chill")
-chill = ta.ema(close, 3)
-plot(chill, title="chill")

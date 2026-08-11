@@ -1,9 +1,0 @@
-//@version=5
-indicator("C300-14")
-var float trailStop = 0.0
-atrVal = nz(ta.atr(3), 1.0)
-hiVal = nz(ta.highest(high, 5), high)
-newStop = hiVal - 3.0 * atrVal
-if newStop > trailStop
-    trailStop := newStop
-plot(trailStop)

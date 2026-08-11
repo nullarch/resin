@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Pyramid")
-n = 10
-total = 0
-for i = 1 to n
-    total := total + i
-plot(total, "Sum")

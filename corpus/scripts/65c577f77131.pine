@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("StartEnd")
-tag = "SIGNAL_BUY_STRONG"
-startsOk = str.startswith(tag, "SIGNAL")
-endsOk = str.endswith(tag, "STRONG")
-both = startsOk and endsOk
-plot(both ? 1 : 0, "B")

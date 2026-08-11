@@ -1,6 +1,0 @@
-//@version=5
-indicator("Habitat Fragmentation")
-totalArea = high - low
-edgeLength = (high - close) + (close - low)
-fragIndex = totalArea > 0.0 ? edgeLength / totalArea : 0.0
-plot(fragIndex, "FragIndex")

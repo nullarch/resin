@@ -1,6 +1,0 @@
-//@version=5
-indicator("generic map")
-var float result = 0.0
-map<string, float> m = map.new<string, float>()
-m.put("price", close)
-result := m.get("price")

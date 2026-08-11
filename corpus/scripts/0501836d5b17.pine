@@ -1,8 +1,0 @@
-//@version=5
-indicator("Timestamp")
-ts = timestamp(2024, 1, 15, 12, 0, 0)
-yr = year
-mo = month
-dy = dayofmonth
-hr = hour
-mn = minute

@@ -1,4 +1,0 @@
-//@version=5
-indicator("MTF Expr")
-htfSma = request.security("", "D", ta.sma(close, 5))
-plot(htfSma)

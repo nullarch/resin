@@ -1,7 +1,0 @@
-//@version=5
-indicator("Math Chain")
-x = math.abs(math.min(close - open, 0))
-y = math.max(x, math.sqrt(math.abs(close)))
-var float __obs_plot0 = na
-__obs_plot0 := y
-plot(y)

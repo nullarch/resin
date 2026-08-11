@@ -1,7 +1,0 @@
-//@version=5
-indicator("Alert Noop")
-if close > 105
-    alert("Price above 105")
-var float result = 0.0
-result := close
-plot(result)

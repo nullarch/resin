@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("MACD Components")
-[macdLine, signalLine, hist] = ta.macd(close, 12, 26, 9)
-var float __obs_plot0 = na
-__obs_plot0 := macdLine
-plot(macdLine)

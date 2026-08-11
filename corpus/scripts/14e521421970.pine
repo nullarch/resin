@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("AD Proxy")
-var float ad = 0.0
-clv = high != low ? (2 * close - high - low) / (high - low) : 0.0
-ad := ad + clv * volume
-adMA = ta.sma(ad, 3)
-adRising = ad > adMA
-plot(ad, "AD")

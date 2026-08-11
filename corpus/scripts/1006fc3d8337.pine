@@ -1,7 +1,0 @@
-//@version=5
-indicator("Morphism Composition")
-float sma3 = nz(ta.sma(close, 3), close)
-float normalized = close / math.max(sma3, 0.01)
-float thresholded = normalized > 1.01 ? 1.0 : normalized < 0.99 ? -1.0 : 0.0
-var float cumSignal = 0.0
-cumSignal := cumSignal + thresholded

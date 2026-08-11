@@ -1,6 +1,0 @@
-//@version=5
-indicator("Server Count")
-float spread = high - low
-float tickSize = 0.5
-float servers = spread > 0 ? math.floor(spread / tickSize) : 1.0
-plot(servers, "Servers")

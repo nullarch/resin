@@ -1,6 +1,0 @@
-//@version=5
-indicator("Strength Reduction Mul")
-float doubled = close + close
-float quadrupled = doubled + doubled
-float halved = close * 0.5
-float result = quadrupled - doubled + halved

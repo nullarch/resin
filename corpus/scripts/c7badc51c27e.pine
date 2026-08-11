@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Single Case")
-rsi = nz(ta.rsi(close, 3), 50.0)
-special = rsi > 80
-result = switch
-    special => 100.0
-    => 0.0
-plot(result, "R")

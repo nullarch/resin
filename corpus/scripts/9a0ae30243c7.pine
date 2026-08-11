@@ -1,3 +1,0 @@
-//@version=5
-indicator("analyzer warn")
-smaVal = ta.sma(close, close)

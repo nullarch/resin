@@ -1,9 +1,0 @@
-//@version=5
-indicator("Binary Weight")
-n = math.floor(math.abs(close))
-b0 = n - math.floor(n / 2.0) * 2.0
-b1 = math.floor(n / 2.0) - math.floor(math.floor(n / 2.0) / 2.0) * 2.0
-b2 = math.floor(n / 4.0) - math.floor(math.floor(n / 4.0) / 2.0) * 2.0
-b3 = math.floor(n / 8.0) - math.floor(math.floor(n / 8.0) / 2.0) * 2.0
-popcount = b0 + b1 + b2 + b3
-plot(popcount, "Popcount")

@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Ternary Chain")
-rsiVal = ta.rsi(close, 3)
-label = rsiVal > 80 ? "extreme_bull" : rsiVal > 60 ? "bull" : rsiVal > 40 ? "neutral" : rsiVal > 20 ? "bear" : "extreme_bear"
-score = rsiVal > 80 ? 4 : rsiVal > 60 ? 3 : rsiVal > 40 ? 2 : rsiVal > 20 ? 1 : 0
-var float __obs_plot0 = na
-__obs_plot0 := score
-plot(score, "Score")

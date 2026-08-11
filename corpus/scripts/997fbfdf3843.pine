@@ -1,9 +1,0 @@
-//@version=5
-indicator("Method UDT")
-type MyData
-    float value = 0.0
-    float multiplier = 1.0
-method compute(MyData this) =>
-    this.value * this.multiplier
-d = MyData.new(close, 2.0)
-plot(d.compute())

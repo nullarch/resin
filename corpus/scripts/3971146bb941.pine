@@ -1,9 +1,0 @@
-//@version=5
-indicator("Compound All")
-var float result = 0.0
-float x = 100.0
-x += 50.0
-x -= 20.0
-x *= 2.0
-x /= 4.0
-result := x

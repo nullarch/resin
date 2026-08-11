@@ -1,8 +1,0 @@
-//@version=5
-indicator("Multi TA")
-a = ta.sma(close, 3)
-b = ta.sma(close, 3)
-c = ta.ema(close, 3)
-d = ta.ema(close, 3)
-plot(a)
-plot(c)

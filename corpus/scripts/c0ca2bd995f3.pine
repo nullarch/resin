@@ -1,9 +1,0 @@
-//@version=5
-indicator("Vol Profile")
-var float cumBullVol = 0.0
-var float cumBearVol = 0.0
-isBull = close > open
-cumBullVol := cumBullVol + (isBull ? volume : 0)
-cumBearVol := cumBearVol + (isBull ? 0 : volume)
-ratio = cumBullVol / (cumBullVol + cumBearVol)
-plot(ratio)

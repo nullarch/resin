@@ -1,5 +1,0 @@
-
-//@version=5
-indicator("Percentile Linear")
-p = ta.percentile_linear_interpolation(close, 10, 50)
-plot(p)

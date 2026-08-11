@@ -1,8 +1,0 @@
-//@version=5
-indicator("Line Setters")
-var ln = line.new(bar_index, high, bar_index, low)
-line.set_color(ln, color.blue)
-line.set_width(ln, 2)
-var float __obs_plot0 = na
-__obs_plot0 := close
-plot(close)

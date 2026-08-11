@@ -1,8 +1,0 @@
-//@version=5
-indicator("If TA Block")
-var float result = 0.0
-if close > ta.sma(close, 5)
-    result := ta.ema(close, 3)
-else
-    result := ta.sma(close, 3)
-plot(result)

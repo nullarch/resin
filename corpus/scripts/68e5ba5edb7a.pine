@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("VFI")
-force = nz(close - close[1], 0.0) * volume
-smoothForce = ta.ema(force, 3)
-plot(smoothForce, "VFI")

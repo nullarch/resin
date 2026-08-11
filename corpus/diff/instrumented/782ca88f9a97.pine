@@ -1,8 +1,0 @@
-//@version=5
-indicator("Inline Index")
-float prev = nz(close[1], close)
-var float result = 0.0
-result := prev
-var float __obs_plot0 = na
-__obs_plot0 := result
-plot(result)

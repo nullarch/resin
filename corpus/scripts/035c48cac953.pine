@@ -1,7 +1,0 @@
-//@version=5
-indicator("test")
-var int nanCount = 0
-smaVal = ta.sma(close, 5)
-if na(smaVal)
-    nanCount := nanCount + 1
-plot(smaVal)

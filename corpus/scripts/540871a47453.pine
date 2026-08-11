@@ -1,6 +1,0 @@
-//@version=5
-indicator("NZ Fixnan Chain")
-sma_ = ta.sma(close, 3)
-val1 = nz(sma_, 0.0)
-val2 = fixnan(sma_)
-result = nz(fixnan(ta.sma(close, 5)), close)

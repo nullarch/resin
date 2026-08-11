@@ -1,5 +1,0 @@
-//@version=5
-indicator("Import pattern")
-import TradingView/ta/1 as tvta
-sma5 = ta.sma(close, 5)
-plot(sma5)

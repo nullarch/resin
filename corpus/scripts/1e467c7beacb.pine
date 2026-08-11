@@ -1,7 +1,0 @@
-//@version=5
-indicator("Drought Stress")
-moistureRSI = nz(ta.rsi(close, 3), 50.0)
-droughtLevel = moistureRSI < 40 ? 2 : moistureRSI < 50 ? 1 : 0
-var int droughtDays = 0
-if droughtLevel > 0
-    droughtDays := droughtDays + 1

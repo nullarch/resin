@@ -1,3 +1,0 @@
-//@version=5
-indicator("req financial")
-rev = request.financial(syminfo.tickerid, "TOTAL_REVENUE", "FQ")

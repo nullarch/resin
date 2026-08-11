@@ -1,8 +1,0 @@
-//@version=5
-indicator("Cast Float Na")
-float x = float(na)
-var bool is_nan = false
-is_nan := na(x)
-var float __obs_plot0 = na
-__obs_plot0 := close
-plot(close)

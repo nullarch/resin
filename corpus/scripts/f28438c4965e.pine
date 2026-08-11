@@ -1,7 +1,0 @@
-//@version=5
-indicator("Proof of Work")
-var int work_done = 0
-var float difficulty = 3.0
-bar_range = high - low
-if bar_range >= difficulty
-    work_done := work_done + 1

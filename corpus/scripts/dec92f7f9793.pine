@@ -1,8 +1,0 @@
-//@version=5
-indicator("P-Wave Velocity")
-displacement = math.abs(close - open)
-timeUnit = 1.0
-velocity = displacement / timeUnit
-smaVel = ta.sma(close, 3)
-normalized = not na(smaVel) and smaVel > 0 ? velocity / smaVel * 100.0 : 0.0
-plot(normalized)

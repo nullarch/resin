@@ -1,8 +1,0 @@
-//@version=5
-indicator("Switch Div")
-rsiVal = ta.rsi(close, 5)
-zone = rsiVal > 70 ? 1 : rsiVal < 30 ? -1 : 0
-strength = zone == 1 ? (rsiVal - 70) / 30 : zone == -1 ? (30 - rsiVal) / 30 : 0.0
-var float __obs_plot0 = na
-__obs_plot0 := strength
-plot(strength)

@@ -1,6 +1,0 @@
-//@version=5
-indicator("Security")
-daily = request.security(syminfo.tickerid, "D", close)
-var float last = 0.0
-last := nz(daily, close)
-plot(close)

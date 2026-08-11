@@ -1,7 +1,0 @@
-//@version=5
-indicator("Switch No Disc")
-var float result = 0.0
-result := switch
-    close > 110 => 3.0
-    close > 105 => 2.0
-    => 1.0

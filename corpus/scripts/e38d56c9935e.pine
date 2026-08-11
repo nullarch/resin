@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("HL Bars")
-hi = ta.highest(high, 5)
-lo = ta.lowest(low, 5)
-mid = (hi + lo) / 2
-pctRange = (hi - lo) / mid * 100
-plot(pctRange, "Range%")

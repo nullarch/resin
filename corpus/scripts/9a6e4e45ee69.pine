@@ -1,5 +1,0 @@
-//@version=5
-indicator("BB Order")
-var float result = 0.0
-[mid, up, lo] = ta.bb(close, 3, 2.0)
-result := up - lo

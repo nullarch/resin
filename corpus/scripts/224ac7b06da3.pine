@@ -1,5 +1,0 @@
-//@version=5
-indicator("Dissonance")
-rsiVal = nz(ta.rsi(close, 3), 50.0)
-dissonance = math.abs(rsiVal - 50.0)
-plot(dissonance, title="dissonance")

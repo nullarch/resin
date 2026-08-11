@@ -1,9 +1,0 @@
-//@version=5
-indicator("Caesar Shift")
-shiftKey = 7.0
-priceLevel = math.floor(close)
-alphabet = 26.0
-normalized = priceLevel - math.floor(priceLevel / alphabet) * alphabet
-encrypted = normalized + shiftKey
-encrypted := encrypted - math.floor(encrypted / alphabet) * alphabet
-plot(encrypted)

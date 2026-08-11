@@ -1,8 +1,0 @@
-//@version=5
-indicator("Mod Zero")
-float a = 10.0 % 0.0
-var bool is_na = na(a)
-float b = 10.0 % 3.0
-var float result = 0.0
-result := (is_na ? 1.0 : 0.0) + b
-plot(result)

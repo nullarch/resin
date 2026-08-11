@@ -1,4 +1,0 @@
-//@version=5
-indicator("Timestamp Comp")
-ts = timestamp(2024, 1, 15, 0, 0, 0)
-plot(ts > 0 ? 1.0 : 0.0)

@@ -1,8 +1,0 @@
-//@version=5
-indicator("Drawing Setters")
-var lbl = label.new(bar_index, close, "test")
-label.set_text(lbl, "updated")
-label.set_color(lbl, color.red)
-var float __obs_plot0 = na
-__obs_plot0 := close
-plot(close)

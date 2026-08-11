@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("Array Stats")
-var a = array.new<float>(0)
-array.push(a, close)
-sz = array.size(a)
-plot(sz)

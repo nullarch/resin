@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("Table Noop")
-t = table.new(position.top_right, 2, 2)
-table.cell(t, 0, 0, "A")
-plot(close)

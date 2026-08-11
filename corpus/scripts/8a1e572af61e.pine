@@ -1,9 +1,0 @@
-//@version=5
-indicator("PI Controller")
-float setpoint = 105.0
-float error = setpoint - close
-float kp = 0.5
-float ki = 0.1
-var float integral = 0.0
-integral := integral + error
-float output = kp * error + ki * integral

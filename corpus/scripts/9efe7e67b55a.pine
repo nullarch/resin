@@ -1,8 +1,0 @@
-//@version=5
-indicator("UDF Chain")
-add1(x) =>
-    x + 1
-double(x) =>
-    x * 2
-var float result = 0.0
-result := double(add1(close))

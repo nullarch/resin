@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("SAR")
-sarVal = ta.sar(0.02, 0.02, 0.2)
-bullish = close > sarVal
-plot(sarVal, "SAR")

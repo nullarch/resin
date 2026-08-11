@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Stoch Mom")
-k = ta.stoch(close, high, low, 5)
-d = ta.sma(k, 3)
-kCross = ta.crossover(k, d)
-kCrossDown = ta.crossunder(k, d)
-signal = kCross ? 1 : kCrossDown ? -1 : 0
-plot(signal, "Sig")

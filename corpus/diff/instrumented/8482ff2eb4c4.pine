@@ -1,7 +1,0 @@
-//@version=5
-indicator("test")
-var float[] allCloses = array.new_float(0)
-array.push(allCloses, close)
-var float __obs_plot0 = na
-__obs_plot0 := array.size(allCloses)
-plot(array.size(allCloses))

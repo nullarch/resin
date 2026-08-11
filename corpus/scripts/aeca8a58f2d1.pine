@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Stoch Sig")
-k = ta.stoch(close, high, low, 5)
-d = ta.sma(k, 3)
-bullCross = ta.crossover(k, d)
-bearCross = ta.crossunder(k, d)
-plot(bullCross ? 1 : bearCross ? -1 : 0, "Sig")

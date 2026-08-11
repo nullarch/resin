@@ -1,8 +1,0 @@
-//@version=5
-indicator("Unary Nested")
-float x = -(-5.0)
-float y = -(3.0 + 2.0)
-var float result = 0.0
-result := x + y
-// 5 + (-5) = 0
-plot(result)

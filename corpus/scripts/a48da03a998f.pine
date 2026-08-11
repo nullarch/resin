@@ -1,6 +1,0 @@
-//@version=5
-indicator("Range")
-var float lastR = 0
-r = ta.range(close, 5)
-if not na(r)
-    lastR := r

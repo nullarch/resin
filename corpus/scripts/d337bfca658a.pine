@@ -1,5 +1,0 @@
-//@version=5
-indicator("Tempo")
-prevC = not na(close[1]) ? close[1] : close
-tempo = math.abs(close - prevC)
-plot(tempo, title="tempo")

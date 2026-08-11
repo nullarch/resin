@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Compound Ops")
-var float x = 10.0
-x += close
-x -= 1.0
-x *= 1.01
-x /= 1.005
-plot(x, "X")

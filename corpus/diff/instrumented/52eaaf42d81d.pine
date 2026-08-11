@@ -1,9 +1,0 @@
-//@version=5
-indicator("Kwargs Method")
-sma_val = ta.sma(close, 3)
-ema_val = ta.ema(close, 5)
-var float result = 0.0
-result := nz(sma_val, 0.0) + nz(ema_val, 0.0)
-var float __obs_plot0 = na
-__obs_plot0 := result
-plot(result)

@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("VWAP Dev")
-vwap = ta.vwap(close)
-dev = ta.stdev(close, 5)
-upperBand = vwap + dev
-lowerBand = vwap - dev
-position = upperBand != lowerBand ? (close - lowerBand) / (upperBand - lowerBand) : 0.5
-plot(position, "Position")

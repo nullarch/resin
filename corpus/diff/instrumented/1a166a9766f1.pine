@@ -1,9 +1,0 @@
-//@version=5
-indicator("VarTernarySma")
-var float best = 0.0
-smaVal = nz(ta.sma(close, 3), close)
-diff = math.abs(close - smaVal)
-best := diff > best ? diff : best
-var float __obs_plot0 = na
-__obs_plot0 := best
-plot(best, "Best")

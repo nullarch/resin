@@ -1,9 +1,0 @@
-//@version=5
-indicator("map tracker")
-var float result = 0.0
-var m = map.new<string, float>()
-if close > open
-    m.put("bull", nz(m.get("bull"), 0.0) + 1.0)
-else
-    m.put("bear", nz(m.get("bear"), 0.0) + 1.0)
-result := nz(m.get("bull"), 0.0)

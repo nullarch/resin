@@ -1,9 +1,0 @@
-//@version=5
-indicator("MA Ribbon")
-var int crossCount = 0
-fast = ta.ema(close, 3)
-mid = ta.sma(close, 4)
-slow = ta.sma(close, 5)
-if not na(fast) and not na(slow)
-    if ta.crossover(fast, slow)
-        crossCount := crossCount + 1

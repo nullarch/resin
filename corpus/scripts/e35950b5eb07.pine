@@ -1,9 +1,0 @@
-//@version=5
-indicator("Fib Levels")
-h = ta.highest(high, 5)
-l = ta.lowest(low, 5)
-diff = nz(h) - nz(l)
-fib236 = nz(l) + diff * 0.236
-fib382 = nz(l) + diff * 0.382
-fib500 = nz(l) + diff * 0.500
-fib618 = nz(l) + diff * 0.618

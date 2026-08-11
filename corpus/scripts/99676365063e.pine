@@ -1,6 +1,0 @@
-//@version=5
-indicator("General Func Propagation")
-double_val(float x) =>
-    x * 2.0
-var float result = 0.0
-result := double_val(15.0)

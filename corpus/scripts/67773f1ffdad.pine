@@ -1,8 +1,0 @@
-//@version=5
-indicator("Frailty")
-float theta = 0.5
-var float cumH = 0.0
-float haz = 0.05
-cumH := cumH + haz
-float marginalSurv = math.pow(1.0 + theta * cumH, -1.0 / theta)
-plot(marginalSurv, "FrailtySurv")

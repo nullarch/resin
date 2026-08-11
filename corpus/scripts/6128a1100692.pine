@@ -1,7 +1,0 @@
-//@version=5
-indicator("Map Dispatch")
-m = map.new<string, float>()
-m.put("x", 10.0)
-m.put("y", 20.0)
-has = m.contains("x")
-plot(has ? 1.0 : 0.0)

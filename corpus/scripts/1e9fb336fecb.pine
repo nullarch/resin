@@ -1,4 +1,0 @@
-//@version=5
-indicator("Consistent Hash")
-hash_val = math.floor(close * 7.0) % 5
-node_assignment = hash_val

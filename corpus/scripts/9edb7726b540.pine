@@ -1,6 +1,0 @@
-//@version=5
-indicator("Z-Score")
-sma5 = ta.sma(close, 5)
-stdev5 = ta.stdev(close, 5)
-zScore = not na(sma5) and not na(stdev5) and nz(stdev5) != 0 ? (close - nz(sma5)) / nz(stdev5) : 0.0
-isExtreme = math.abs(zScore) > 2.0

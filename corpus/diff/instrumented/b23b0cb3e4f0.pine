@@ -1,8 +1,0 @@
-//@version=5
-indicator("Table")
-var t = table.new(position.top_right, 2, 2)
-if barstate.islast
-    table.cell(t, 0, 0, str.tostring(close))
-var float __obs_plot0 = na
-__obs_plot0 := close
-plot(close)

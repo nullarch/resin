@@ -1,5 +1,0 @@
-//@version=5
-indicator("na cmp")
-var float result = 0.0
-x = na
-result := x == na ? 1.0 : 0.0

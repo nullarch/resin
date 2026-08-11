@@ -1,9 +1,0 @@
-//@version=5
-indicator("History")
-var float prev = 0.0
-prev := nz(close[1], close)
-var float diff = 0.0
-diff := close - prev
-var float __obs_plot0 = na
-__obs_plot0 := close
-plot(close)

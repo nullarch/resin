@@ -1,7 +1,0 @@
-//@version=5
-indicator("Moho Discontinuity")
-shallow = ta.sma(close, 3)
-deep = ta.sma(close, 5)
-discontinuity = not na(shallow) and not na(deep) ? math.abs(shallow - deep) : 0.0
-isDiscontinuity = discontinuity > 1.0 ? 1 : 0
-plot(discontinuity)

@@ -1,7 +1,0 @@
-//@version=5
-indicator("Line Cont Or")
-var float result = 0.0
-bool cond = close > 200 or
-    close < 150
-result := cond ? 1.0 : 0.0
-plot(result)

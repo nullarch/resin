@@ -1,8 +1,0 @@
-//@version=5
-indicator("ThetaProxy")
-var float peakVal = 0.0
-spread = high - low
-peakVal := math.max(peakVal, spread)
-decay = peakVal > 0 ? (peakVal - spread) / peakVal : 0.0
-thetaProxy = -1.0 * decay
-plot(thetaProxy, "Theta")

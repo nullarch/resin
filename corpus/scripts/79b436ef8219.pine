@@ -1,7 +1,0 @@
-//@version=5
-indicator("OBV", overlay=false)
-src = input.source(close, title="Source")
-obv_val = ta.cum(math.sign(ta.change(src)) * volume)
-signal = ta.ema(obv_val, 20)
-plot(obv_val, title="OBV", color=color.blue)
-plot(signal, title="Signal", color=color.orange)

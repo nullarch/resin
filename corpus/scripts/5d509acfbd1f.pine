@@ -1,7 +1,0 @@
-//@version=5
-indicator("Map Signal")
-var float result = 0.0
-map<string, float> signals = map.new<string, float>()
-signals.put("rsi", nz(ta.rsi(close, 5), 50.0))
-signals.put("sma", nz(ta.sma(close, 3), close))
-result := signals.get("rsi") + signals.get("sma")

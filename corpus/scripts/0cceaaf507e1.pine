@@ -1,8 +1,0 @@
-//@version=5
-indicator("Power of Two")
-val = math.floor(close)
-log2val = math.log(math.max(val, 1.0)) / math.log(2.0)
-rounded = math.round(log2val)
-diff = math.abs(log2val - rounded)
-isPow2 = diff < 0.001 ? 1.0 : 0.0
-plot(isPow2, "IsPow2")

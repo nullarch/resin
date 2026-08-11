@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("ValueWhen")
-cond = close > open
-last_bull_close = ta.valuewhen(cond, close, 0)
-plot(last_bull_close)

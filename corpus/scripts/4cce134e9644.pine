@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("DMI")
-[diPlus, diMinus, adxVal] = ta.dmi(3, 3)
-bullish = diPlus > diMinus
-strongTrend = adxVal > 25
-plot(adxVal, "ADX")
-plot(bullish ? 1 : -1, "Dir")

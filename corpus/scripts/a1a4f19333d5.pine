@@ -1,5 +1,0 @@
-//@version=5
-indicator("Var Init")
-var float x = 100.0
-x := x + 1.0
-plot(x)

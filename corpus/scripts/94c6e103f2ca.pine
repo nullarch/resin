@@ -1,7 +1,0 @@
-//@version=5
-indicator("test")
-x = math.abs(close - open)
-y = math.max(x, math.min(high - low, 5.0))
-z = math.round(y * 100) / 100
-logVal = math.log(z + 1)
-plot(logVal)

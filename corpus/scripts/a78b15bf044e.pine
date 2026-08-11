@@ -1,5 +1,0 @@
-//@version=5
-indicator("Safe Div")
-var float result = 0.0
-a = close / 0
-result := nz(a, -999)

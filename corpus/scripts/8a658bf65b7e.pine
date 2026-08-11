@@ -1,6 +1,0 @@
-//@version=5
-indicator("TripleChain")
-var float result = 0
-triple = ta.sma(ta.ema(ta.rma(close, 3), 3), 3)
-if not na(triple)
-    result := triple

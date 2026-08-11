@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("EMA Slope")
-ema3 = ta.ema(close, 3)
-slope = nz(ema3 - ema3[1], 0.0)
-steepUp = slope > 0.5
-steepDn = slope < -0.5
-plot(steepUp ? 1 : steepDn ? -1 : 0, "Slp")

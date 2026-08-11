@@ -1,6 +1,0 @@
-//@version=5
-indicator("SMA1")
-s = ta.sma(close, 1)
-var float result = 0.0
-result := nz(s)
-plot(close)

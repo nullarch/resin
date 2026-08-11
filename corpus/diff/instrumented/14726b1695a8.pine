@@ -1,8 +1,0 @@
-//@version=5
-indicator("Precedence")
-a = 2.0 * close / open
-b = close / open * 2.0
-c = (close + open) / 2.0
-var float __obs_plot0 = na
-__obs_plot0 := a
-plot(a)

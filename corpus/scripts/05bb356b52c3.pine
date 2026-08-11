@@ -1,9 +1,0 @@
-//@version=5
-indicator("Switch No Expr")
-signal = switch
-    close > open and close > close[1] => 2
-    close > open => 1
-    close < open and close < close[1] => -2
-    close < open => -1
-    => 0
-plot(signal)

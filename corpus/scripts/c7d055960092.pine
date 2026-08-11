@@ -1,8 +1,0 @@
-//@version=5
-indicator("Ternary TA")
-rsi = ta.rsi(close, 5)
-result = rsi > 80 ? ta.sma(close, 3) :
-    rsi > 50 ? ta.ema(close, 3) :
-    rsi > 20 ? ta.rma(close, 3) :
-    ta.wma(close, 3)
-plot(result)

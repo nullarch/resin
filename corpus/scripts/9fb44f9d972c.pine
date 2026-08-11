@@ -1,3 +1,0 @@
-//@version=5
-indicator("precision")
-sma3 = ta.sma(close, 3)

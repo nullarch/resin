@@ -1,9 +1,0 @@
-//@version=5
-indicator("Bool ML")
-sma5 = ta.sma(close, 3)
-rsi5 = ta.rsi(close, 5)
-buy = (close > sma5 and
-    rsi5 < 70) or
-    (close > close[1] and
-    volume > 1000)
-plot(buy ? 1.0 : 0.0)

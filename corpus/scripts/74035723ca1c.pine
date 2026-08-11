@@ -1,7 +1,0 @@
-//@version=5
-indicator("Flow Balance")
-float buyPressure = close > open ? volume : 0.0
-float sellPressure = close <= open ? volume : 0.0
-float balance = buyPressure - sellPressure
-float cumBal = ta.sma(balance, 3)
-plot(nz(cumBal, 0.0), "FlowBal")

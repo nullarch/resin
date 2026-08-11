@@ -1,7 +1,0 @@
-//@version=5
-indicator("test")
-sma3 = ta.sma(close, 3)
-sma5 = ta.sma(close, 5)
-sma8 = ta.sma(close, 8)
-avg = (sma3 + sma5 + sma8) / 3
-plot(avg)

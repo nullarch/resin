@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("Random")
-seed = close * 1000
-hash = math.abs(math.sin(seed) * 43758.5453)
-pseudoRandom = hash - math.floor(hash)
-plot(pseudoRandom, "Rand")

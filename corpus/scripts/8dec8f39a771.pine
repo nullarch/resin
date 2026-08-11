@@ -1,8 +1,0 @@
-//@version=5
-indicator("MultiArray")
-arr = array.from(
-    1.0,
-    2.0,
-    3.0
-    )
-x = array.get(arr, 0)

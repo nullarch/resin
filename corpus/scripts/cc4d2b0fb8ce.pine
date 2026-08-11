@@ -1,7 +1,0 @@
-//@version=5
-indicator("Soil Moisture Index")
-rawMoisture = (high - low) / high * 100
-smoothMoisture = ta.sma(rawMoisture, 3)
-var float lastMoisture = 0.0
-if not na(smoothMoisture)
-    lastMoisture := smoothMoisture

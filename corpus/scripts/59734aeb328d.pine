@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("HB LB")
-hb = ta.highestbars(high, 5)
-lb = ta.lowestbars(low, 5)
-plot(hb, "HighBars")
-plot(lb, "LowBars")

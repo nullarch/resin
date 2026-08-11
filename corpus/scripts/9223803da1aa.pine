@@ -1,4 +1,0 @@
-//@version=5
-indicator("CumClose")
-var float cumClose = 0
-cumClose := cumClose + close

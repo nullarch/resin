@@ -1,8 +1,0 @@
-//@version=5
-indicator("Table Cell")
-t = table.new(position.top_right, 2, 2)
-t.cell(0, 0, "Hello")
-var float result = close
-var float __obs_plot0 = na
-__obs_plot0 := result
-plot(result)

@@ -1,8 +1,0 @@
-//@version=5
-indicator("Pivots")
-var pivots = array.new<float>(0)
-var int pivotCount = 0
-ph = ta.pivothigh(high, 2, 2)
-if not na(ph)
-    array.push(pivots, ph)
-    pivotCount := pivotCount + 1

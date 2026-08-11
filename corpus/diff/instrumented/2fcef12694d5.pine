@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Syminfo")
-ticker = syminfo.ticker
-prefix = syminfo.prefix
-minTick = syminfo.mintick
-var float __obs_plot0 = na
-__obs_plot0 := minTick
-plot(minTick, "MinTick")

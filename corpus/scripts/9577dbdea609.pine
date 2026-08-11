@@ -1,8 +1,0 @@
-//@version=5
-indicator("Lookback")
-float highest5 = close
-for i = 1 to 4
-    if close[i] > highest5
-        highest5 := close[i]
-diff = close - highest5
-plot(diff)

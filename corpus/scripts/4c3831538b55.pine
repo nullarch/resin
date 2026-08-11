@@ -1,7 +1,0 @@
-//@version=5
-indicator("Ichimoku")
-tenkan = (ta.highest(high, 5) + ta.lowest(low, 5)) / 2
-kijun = (ta.highest(high, 5) + ta.lowest(low, 5)) / 2
-spanA = (tenkan + kijun) / 2
-plot(tenkan)
-plot(kijun)

@@ -1,6 +1,0 @@
-//@version=5
-indicator("input defaults")
-len = input.int(14, "Length", minval=1)
-mult = input.float(2.0, "Multiplier")
-useEma = input.bool(true, "Use EMA")
-src = input.source(close, "Source")

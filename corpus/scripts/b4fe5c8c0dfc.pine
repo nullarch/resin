@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("Port Ret")
-ret = close[1] > 0 ? (close - close[1]) / close[1] * 100 : 0.0
-var float cumRet = 0.0
-cumRet := cumRet + nz(ret, 0.0)
-plot(cumRet, "CR")

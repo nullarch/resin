@@ -1,6 +1,0 @@
-//@version=5
-indicator("Barssince")
-bs = ta.barssince(close > 108)
-var float result = 0.0
-result := nz(bs, -1.0)
-plot(result)

@@ -1,7 +1,0 @@
-//@version=5
-indicator("Map CRUD")
-var int result = 0
-var m = map.new<string, float>()
-map.put(m, "price", close)
-has = map.contains(m, "price")
-result := has ? 1 : 0

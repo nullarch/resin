@@ -1,3 +1,0 @@
-//@version=5
-indicator("str concat")
-s = "Close: " + str.tostring(close) + " | Open: " + str.tostring(open)

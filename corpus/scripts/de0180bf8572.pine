@@ -1,9 +1,0 @@
-//@version=5
-indicator("String Concat")
-prefix = "Price: "
-mid = str.tostring(close)
-suffix = " vol=" + str.tostring(volume)
-label_ = prefix + mid + suffix
-var int len_ = 0
-len_ := str.length(label_)
-plot(close)

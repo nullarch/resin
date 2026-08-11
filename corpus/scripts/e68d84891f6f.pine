@@ -1,7 +1,0 @@
-//@version=5
-indicator("WaveMom")
-prev = nz(close[1], close)
-detail = close - prev
-prevDetail = nz(close[1], close) - nz(close[2], close)
-momentum = detail - prevDetail
-plot(momentum, "WMom")

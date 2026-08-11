@@ -1,6 +1,0 @@
-//@version=5
-indicator("Heat Dome")
-dome = ta.highest(high, 5)
-var float __obs_plot0 = na
-__obs_plot0 := dome
-plot(dome, title="dome")

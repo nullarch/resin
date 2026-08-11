@@ -1,9 +1,0 @@
-//@version=5
-indicator("Endowment")
-smaVal = ta.sma(close, 5)
-buyThreshold = 0.98
-sellThreshold = 1.05
-buySignal = smaVal > 0 ? close / smaVal < buyThreshold : false
-sellSignal = smaVal > 0 ? close / smaVal > sellThreshold : false
-sig = buySignal ? 1 : sellSignal ? -1 : 0
-plot(sig)

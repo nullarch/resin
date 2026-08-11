@@ -1,9 +1,0 @@
-//@version=5
-indicator("ATR trail")
-var float result = 0.0
-atrVal = ta.atr(5)
-var float trailStop = 0.0
-newStop = close - atrVal * 2.0
-if newStop > trailStop
-    trailStop := newStop
-result := trailStop

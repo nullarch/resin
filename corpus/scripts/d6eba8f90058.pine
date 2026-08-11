@@ -1,8 +1,0 @@
-//@version=5
-indicator("Map Dispatch")
-var m = map.new<string, float>()
-m.put("price", close)
-m.put("vol", volume)
-var int sz = 0
-sz := m.size()
-plot(close)

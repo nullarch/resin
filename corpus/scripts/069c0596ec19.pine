@@ -1,7 +1,0 @@
-//@version=5
-indicator("Ternary TA")
-sma5 = ta.sma(close, 5)
-sma3 = ta.sma(close, 3)
-faster = not na(sma3) and not na(sma5) ? (sma3 > sma5 ? sma3 : sma5) : close
-rsiVal = ta.rsi(close, 5)
-signal = not na(rsiVal) ? (rsiVal > 70 ? "OB" : rsiVal < 30 ? "OS" : "N") : "wait"

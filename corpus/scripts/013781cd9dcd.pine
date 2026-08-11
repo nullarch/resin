@@ -1,7 +1,0 @@
-//@version=5
-indicator("Drawings", overlay=true)
-if barstate.islast
-    lbl = label.new(bar_index, close, text="Current")
-    ln = line.new(bar_index - 5, close, bar_index, close)
-    bx = box.new(bar_index - 3, high, bar_index, low)
-plot(close)

@@ -1,8 +1,0 @@
-//@version=5
-indicator("NaN Guard")
-sma_ = ta.sma(close, 3)
-var float safe = 0.0
-safe := not na(sma_) ? sma_ : 0.0
-var float __obs_plot0 = na
-__obs_plot0 := safe
-plot(safe)

@@ -1,4 +1,0 @@
-//@version=5
-indicator("Block Minima")
-float blockMin = ta.lowest(close, 5)
-plot(blockMin, "BMin")

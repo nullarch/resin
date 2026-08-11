@@ -1,7 +1,0 @@
-//@version=5
-indicator("Var Coding")
-float chg = not na(close[1]) ? math.abs(close - close[1]) : 0.0
-float avgChg = nz(ta.sma(close, 3), close) - nz(ta.sma(close, 5), close)
-float bitWeight = chg > math.abs(avgChg) + 0.5 ? 2.0 : 1.0
-var float totalBits = 0.0
-totalBits := totalBits + bitWeight

@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Trade Int")
-range_ = high - low
-intensity = range_ > 0 ? volume / range_ : 0.0
-avgIntensity = ta.sma(intensity, 5)
-relIntensity = avgIntensity > 0 ? intensity / avgIntensity : 1.0
-plot(relIntensity, "RI")

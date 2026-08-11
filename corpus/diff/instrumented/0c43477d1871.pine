@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Correlation")
-corr = ta.correlation(close, volume, 5)
-highCorr = not na(corr) and corr > 0.5
-var float __obs_plot0 = na
-__obs_plot0 := corr
-plot(corr, "Corr")

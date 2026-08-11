@@ -1,6 +1,0 @@
-//@version=5
-indicator("CCI MFI")
-cci5 = ta.cci(close, 5)
-mfi5 = ta.mfi(hlc3, 5)
-cciOB = not na(cci5) and nz(cci5) > 100
-mfiOB = not na(mfi5) and nz(mfi5) > 80

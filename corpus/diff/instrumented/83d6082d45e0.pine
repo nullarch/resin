@@ -1,8 +1,0 @@
-//@version=5
-indicator("CallPutIntrinsic")
-strike = 105.0
-callIntrinsic = math.max(close - strike, 0.0)
-putIntrinsic = math.max(strike - close, 0.0)
-var float __obs_plot0 = na
-__obs_plot0 := callIntrinsic - putIntrinsic
-plot(callIntrinsic - putIntrinsic, "Spread")

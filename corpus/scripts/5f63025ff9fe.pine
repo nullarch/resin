@@ -1,5 +1,0 @@
-//@version=5
-indicator("plot kwargs")
-sma3 = ta.sma(close, 3)
-plot(sma3, "SMA", color=color.blue, linewidth=2, style=plot.style_line)
-hline(100, "Level", color=color.gray)

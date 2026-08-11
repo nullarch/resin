@@ -1,7 +1,0 @@
-//@version=5
-strategy("ATR Trail")
-atrVal = ta.atr(3)
-longCond = ta.crossover(ta.sma(close, 3), ta.sma(close, 5))
-if longCond
-    strategy.entry("Long", strategy.long)
-    strategy.exit("Exit", "Long", trail_points=atrVal * 100, trail_offset=atrVal * 50)

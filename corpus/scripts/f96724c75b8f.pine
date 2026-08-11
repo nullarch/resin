@@ -1,6 +1,0 @@
-//@version=5
-indicator("Str Replace")
-var s = "hello world hello"
-var s2 = str.replace(s, "hello", "HI")
-var int len_ = str.length(s2)
-plot(len_)

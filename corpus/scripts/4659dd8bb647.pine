@@ -1,7 +1,0 @@
-//@version=5
-indicator("Array Shift")
-var arr = array.from(20.0, 30.0)
-array.unshift(arr, 10.0)
-var float shifted = array.shift(arr)
-var int sz = array.size(arr)
-plot(shifted)

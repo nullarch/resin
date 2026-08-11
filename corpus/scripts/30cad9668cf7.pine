@@ -1,8 +1,0 @@
-//@version=5
-indicator("Array Method")
-var float result = 0.0
-float[] arr = array.new<float>(0)
-arr.push(10.0)
-arr.push(20.0)
-arr.push(30.0)
-result := arr.size()

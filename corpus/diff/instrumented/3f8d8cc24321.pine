@@ -1,9 +1,0 @@
-//@version=5
-indicator("Gamma Brainwave")
-diff1 = close - open
-diff2 = not na(close[1]) ? close - close[1] : 0.0
-gamma = math.abs(diff1) + math.abs(diff2)
-normalized = gamma > 0 ? math.log(gamma + 1) : 0.0
-var float __obs_plot0 = na
-__obs_plot0 := normalized
-plot(normalized)

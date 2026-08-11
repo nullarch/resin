@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("VWAP Cross")
-vwap = ta.vwap(close)
-bullCross = ta.crossover(close, vwap)
-bearCross = ta.crossunder(close, vwap)
-above = close > vwap
-plot(above ? 1 : 0, "Above")
-plot(bullCross ? 1 : bearCross ? -1 : 0, "Cross")

@@ -1,5 +1,0 @@
-//@version=5
-indicator("Rising falling")
-isRising = ta.rising(close, 3)
-isFalling = ta.falling(close, 3)
-trend = isRising ? "up" : isFalling ? "down" : "flat"

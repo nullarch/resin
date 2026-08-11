@@ -1,5 +1,0 @@
-//@version=5
-indicator("test")
-var int counter = 0
-counter := counter + 1
-plot(counter)

@@ -1,6 +1,0 @@
-//@version=5
-indicator("SELECT Projection")
-col_price = close
-col_vol = volume
-col_range = high - low
-result_row = col_price + col_range

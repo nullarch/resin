@@ -1,9 +1,0 @@
-
-//@version=5
-strategy("Bracket", overlay=true)
-sma3 = ta.sma(close, 3)
-atrVal = ta.atr(3)
-if ta.crossover(close, sma3)
-    strategy.entry("Long", strategy.long)
-    strategy.exit("Exit", "Long", profit=10, loss=5)
-plot(sma3, "SMA")

@@ -1,4 +1,0 @@
-//@version=5
-indicator("tostring integer")
-var string s = ""
-s := str.tostring(42.7, "integer")

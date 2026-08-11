@@ -1,9 +1,0 @@
-//@version=5
-strategy("Topo Strategy")
-float smaVal = ta.sma(close, 3)
-float emaVal = ta.ema(close, 3)
-float crossUp = ta.crossover(smaVal, emaVal) ? 1.0 : 0.0
-if crossUp > 0
-    strategy.entry("Long", strategy.long)
-if ta.crossunder(smaVal, emaVal)
-    strategy.close("Long")

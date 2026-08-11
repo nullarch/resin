@@ -1,8 +1,0 @@
-//@version=5
-indicator("test")
-sma5 = ta.sma(close, 5)
-sma3 = ta.sma(close, 3)
-rsi = ta.rsi(close, 5)
-valid = not na(sma5) and not na(sma3) and not na(rsi)
-signal = valid ? (sma3 > sma5 and rsi > 50 ? 1 : sma3 < sma5 and rsi < 50 ? -1 : 0) : 0
-plot(signal)

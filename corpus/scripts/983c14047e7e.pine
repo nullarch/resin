@@ -1,4 +1,0 @@
-//@version=5
-indicator("Annotation")
-var float result = 0.0
-result := 1.0

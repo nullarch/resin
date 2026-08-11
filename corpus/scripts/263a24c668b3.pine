@@ -1,3 +1,0 @@
-//@version=5
-indicator("Nested Ternary")
-x = close > 110 ? 3 : close > 105 ? 2 : 1

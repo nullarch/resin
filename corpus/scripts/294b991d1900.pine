@@ -1,4 +1,0 @@
-//@version=5
-indicator("tf props")
-var string tf = ""
-tf := timeframe.period

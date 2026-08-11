@@ -1,5 +1,0 @@
-//@version=5
-indicator("TernEq")
-var int result = 0
-x = 5
-result := x == 5 ? 10 : 20

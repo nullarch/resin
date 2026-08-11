@@ -1,8 +1,0 @@
-//@version=5
-indicator("ATR Trail")
-atr_val = ta.atr(3)
-var float trail = na
-if not na(atr_val)
-    new_stop = close - 2 * atr_val
-    trail := na(trail) ? new_stop : math.max(trail, new_stop)
-plot(trail)

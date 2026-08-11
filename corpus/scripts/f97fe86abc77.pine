@@ -1,9 +1,0 @@
-//@version=5
-strategy("Trail Exit")
-if bar_index == 2
-    strategy.entry("Long", strategy.long)
-if bar_index == 5
-    strategy.exit("Exit", "Long", trail_points=10, trail_offset=5)
-var int bars = 0
-bars := bars + 1
-plot(close)

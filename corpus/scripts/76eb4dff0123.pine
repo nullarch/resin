@@ -1,6 +1,0 @@
-//@version=5
-indicator("generic array")
-var float result = 0.0
-array<float> arr = array.new<float>(3, 0.0)
-array.set(arr, 0, close)
-result := array.get(arr, 0)

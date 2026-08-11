@@ -1,3 +1,0 @@
-//@version=5
-indicator("tf from sec")
-tf5 = timeframe.from_seconds(300)

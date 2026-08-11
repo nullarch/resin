@@ -1,6 +1,0 @@
-//@version=5
-indicator("Str Concat")
-s = "Price: " + str.tostring(close)
-var float __obs_plot0 = na
-__obs_plot0 := close
-plot(close)

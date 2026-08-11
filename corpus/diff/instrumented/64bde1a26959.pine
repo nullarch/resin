@@ -1,7 +1,0 @@
-//@version=5
-indicator("Log Return")
-float prevC = not na(close[1]) ? close[1] : close
-float logRet = prevC > 0 ? math.log(close / prevC) : 0.0
-var float __obs_plot0 = na
-__obs_plot0 := logRet
-plot(logRet, "LogRet")

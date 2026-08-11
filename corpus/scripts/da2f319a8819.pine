@@ -1,5 +1,0 @@
-//@version=5
-indicator("Supertrend Pattern")
-var float result = 0.0
-[supertrend, direction] = ta.supertrend(3.0, 5)
-result := nz(supertrend, close)

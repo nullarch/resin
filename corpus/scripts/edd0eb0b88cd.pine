@@ -1,9 +1,0 @@
-//@version=5
-indicator("IronCondor")
-k1 = 100.0
-k2 = 103.0
-k3 = 108.0
-k4 = 111.0
-credit = 2.0
-pnl = close <= k1 ? -(k2 - k1) + credit : close <= k2 ? -(close - k1) + credit : close <= k3 ? credit : close <= k4 ? -(close - k3) + credit : -(k4 - k3) + credit
-plot(pnl, "IC")

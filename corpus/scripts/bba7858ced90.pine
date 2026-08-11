@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("Decay Accum")
-var float accum = 0.0
-accum := accum * 0.95 + close * 0.05
-plot(accum, "EMA-like")

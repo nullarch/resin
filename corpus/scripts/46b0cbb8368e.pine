@@ -1,7 +1,0 @@
-//@version=5
-indicator("Multi TA")
-var float result = 0.0
-sma3 = ta.sma(close, 3)
-ema5 = ta.ema(close, 5)
-rsi5 = ta.rsi(close, 5)
-result := sma3 + ema5 + rsi5

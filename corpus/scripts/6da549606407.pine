@@ -1,8 +1,0 @@
-//@version=5
-indicator("MACD Tuple")
-[macdLine, signalLine, hist] = ta.macd(close, 3, 5, 3)
-bullish = macdLine > signalLine
-plot(macdLine)
-plot(signalLine)
-plot(hist)
-plot(bullish ? 1.0 : 0.0)

@@ -1,9 +1,0 @@
-//@version=5
-indicator("switch expr")
-var float result = 0.0
-c = close
-x = switch
-    c > 110 => "high"
-    c > 105 => "mid"
-    => "low"
-result := x == "high" ? 3.0 : x == "mid" ? 2.0 : 1.0

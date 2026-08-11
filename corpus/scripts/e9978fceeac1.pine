@@ -1,8 +1,0 @@
-//@version=5
-indicator("Dashboard")
-var t = table.new(position.top_right, 2, 3)
-if barstate.islast
-    table.cell(t, 0, 0, "Metric")
-    table.cell(t, 1, 0, "Value")
-    table.cell(t, 0, 1, "Close")
-    table.cell(t, 1, 1, str.tostring(close))

@@ -1,6 +1,0 @@
-//@version=5
-indicator("PctLI")
-var float lastP = 0
-p = ta.percentile_linear_interpolation(close, 5, 50)
-if not na(p)
-    lastP := p

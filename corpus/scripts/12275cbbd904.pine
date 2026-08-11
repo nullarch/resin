@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("MACD Quality")
-[macd, sig, hist] = ta.macd(close, 3, 5, 3)
-histRising = hist > hist[1]
-histPositive = hist > 0
-macdAboveSignal = macd > sig
-quality = (histPositive ? 1 : 0) + (histRising ? 1 : 0) + (macdAboveSignal ? 1 : 0)
-plot(quality, "Quality")

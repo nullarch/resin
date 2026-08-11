@@ -1,7 +1,0 @@
-//@version=5
-indicator("For-in simple")
-arr = array.from(1.0, 2.0, 3.0, 4.0, 5.0)
-var float product = 1.0
-product := 1.0
-for val in arr
-    product := product * val

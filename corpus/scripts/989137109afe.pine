@@ -1,4 +1,0 @@
-//@version=5
-indicator("NestedTern")
-var float result = 0
-result := close > 110 ? (close > 115 ? 3 : 2) : 1

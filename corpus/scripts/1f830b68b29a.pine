@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Concat Slice")
-a = array.from(1.0, 2.0, 3.0)
-b = array.from(4.0, 5.0, 6.0)
-c = array.concat(a, b)
-sliced = array.slice(c, 1, 4)
-total = array.sum(sliced)
-plot(total, "Sum")

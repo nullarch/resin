@@ -1,6 +1,0 @@
-//@version=5
-indicator("BB_EMA")
-var float lastWidth = 0
-[mid, up, dn] = ta.bb(ta.ema(close, 3), 5, 2)
-if not na(mid)
-    lastWidth := up - dn

@@ -1,6 +1,0 @@
-//@version=5
-indicator("Diff Signal")
-diff1 = close - nz(close[1])
-diff2 = diff1 - nz(diff1[1])
-accel = diff2 > 0 ? 1 : diff2 < 0 ? -1 : 0
-plot(accel)

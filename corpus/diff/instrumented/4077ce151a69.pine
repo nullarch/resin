@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Vol Mom")
-volChg = volume - volume[1]
-volAcc = volChg - volChg[1]
-volMom = not na(volChg) ? math.sign(volChg) * math.sqrt(math.abs(volChg)) : 0.0
-var float __obs_plot0 = na
-__obs_plot0 := volMom
-plot(volMom, "VMom")

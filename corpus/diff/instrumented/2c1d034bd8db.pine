@@ -1,8 +1,0 @@
-//@version=5
-indicator("Cross Hist")
-fast = ta.sma(close, 2)
-slow = ta.sma(close, 4)
-crossed = ta.crossover(fast, slow)
-var float __obs_plot0 = na
-__obs_plot0 := crossed ? 1 : 0
-plot(crossed ? 1 : 0)

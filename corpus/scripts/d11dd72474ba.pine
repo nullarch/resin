@@ -1,8 +1,0 @@
-//@version=5
-indicator("Bool Filter")
-rsi_ = ta.rsi(close, 5)
-sma_ = ta.sma(close, 5)
-vol_ = ta.sma(volume, 5)
-bullish = close > sma_ and rsi_ > 50 and rsi_ < 70 and volume > vol_
-signal = bullish ? 1 : 0
-plot(signal)

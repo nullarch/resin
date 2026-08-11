@@ -1,6 +1,0 @@
-//@version=5
-indicator("Test")
-p = Point.new(1.0, 2.0)
-type Point
-    float x
-    float y

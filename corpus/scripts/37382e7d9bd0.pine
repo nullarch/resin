@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Skew")
-sma5 = ta.sma(close, 5)
-dev = ta.stdev(close, 5)
-median = ta.sma(close, 3)
-skew = nz(dev, 0.0) > 0 ? 3 * (sma5 - median) / dev : 0.0
-plot(skew, "Skew")

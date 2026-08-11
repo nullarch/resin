@@ -1,8 +1,0 @@
-//@version=5
-indicator("ArrTA")
-var a = array.new<float>(0)
-smaVal = ta.sma(close, 3)
-if not na(smaVal) and bar_index < 3
-    array.push(a, smaVal)
-var int sz = 0
-sz := array.size(a)

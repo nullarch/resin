@@ -1,9 +1,0 @@
-//@version=5
-indicator("WhileNormal")
-var int result = 0
-x = 0
-total = 0
-while x < 10
-    total := total + x
-    x := x + 1
-result := total

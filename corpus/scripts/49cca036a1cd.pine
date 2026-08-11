@@ -1,9 +1,0 @@
-//@version=5
-indicator("While Converge")
-var float result = 0.0
-float x = 100.0
-int iters = 0
-while x > 1.0
-    x := x / 2.0
-    iters := iters + 1
-result := iters

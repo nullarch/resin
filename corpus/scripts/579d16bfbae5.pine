@@ -1,5 +1,0 @@
-//@version=5
-indicator("Generic Call")
-float[] arr = array.new<float>(3, 1.5)
-var float result = 0.0
-result := array.sum(arr)

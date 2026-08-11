@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("TripleTernary")
-rsi = nz(ta.rsi(close, 5), 50.0)
-label = rsi > 80 ? "EXTREME_OB" : rsi > 60 ? "OB" : rsi < 20 ? "EXTREME_OS" : rsi < 40 ? "OS" : "NEUTRAL"
-code = label == "EXTREME_OB" ? 5.0 : label == "OB" ? 4.0 : label == "EXTREME_OS" ? 1.0 : label == "OS" ? 2.0 : 3.0
-var float __obs_plot0 = na
-__obs_plot0 := code
-plot(code, "T")

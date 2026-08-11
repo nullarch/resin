@@ -1,4 +1,0 @@
-//@version=5
-indicator("Frost Line")
-frostLine = ta.lowest(low, 5)
-plot(frostLine, title="frost")

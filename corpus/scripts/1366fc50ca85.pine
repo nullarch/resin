@@ -1,5 +1,0 @@
-//@version=5
-indicator("Not Op")
-var int result = 0
-cond = not (close < 100)
-result := cond ? 1 : 0

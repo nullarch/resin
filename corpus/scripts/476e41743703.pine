@@ -1,4 +1,0 @@
-//@version=5
-indicator("Heat Dome")
-dome = ta.highest(high, 5)
-plot(dome, title="dome")

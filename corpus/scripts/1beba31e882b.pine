@@ -1,6 +1,0 @@
-//@version=5
-indicator("Method Style")
-float[] arr = array.from(10.0, 20.0, 30.0)
-arr.push(40.0)
-var float result = 0.0
-result := arr.size() == 4 ? arr.sum() : 0.0

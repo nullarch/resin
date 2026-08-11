@@ -1,6 +1,0 @@
-//@version=5
-indicator("Multi Var")
-var float sum_c = 0.0
-var int bar_cnt = 0
-sum_c := sum_c + close
-bar_cnt := bar_cnt + 1

@@ -1,8 +1,0 @@
-//@version=5
-indicator("MultiUDF")
-var float result = 0
-normalize(x, lo, hi) =>
-    (x - lo) / (hi - lo)
-scale(x, factor) =>
-    normalize(x, 0, 200) * factor
-result := scale(close, 100)

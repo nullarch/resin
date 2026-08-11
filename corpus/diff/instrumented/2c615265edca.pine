@@ -1,7 +1,0 @@
-//@version=5
-indicator("Timeframe")
-var int mult = 0
-mult := timeframe.multiplier
-var float __obs_plot0 = na
-__obs_plot0 := mult
-plot(mult)

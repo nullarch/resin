@@ -1,7 +1,0 @@
-//@version=5
-indicator("test")
-a = array.from(close, open, high, low, hl2)
-sorted = array.copy(a)
-array.sort(sorted)
-median = array.median(sorted)
-plot(median)

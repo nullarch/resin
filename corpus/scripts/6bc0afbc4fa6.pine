@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("ATR%")
-atr = ta.atr(3)
-atrPct = close > 0 ? atr / close * 100 : 0.0
-avgAtrPct = ta.sma(atrPct, 5)
-highVol = atrPct > avgAtrPct
-plot(atrPct, "ATR%")
-plot(highVol ? 1 : 0, "HighVol")

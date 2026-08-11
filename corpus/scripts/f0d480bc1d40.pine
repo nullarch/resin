@@ -1,9 +1,0 @@
-//@version=5
-indicator("Varip vs Var")
-varip float a = 0.0
-var float b = 0.0
-float c = 0.0
-a := a + 1.0
-b := b + 1.0
-c := c + 1.0
-plot(a)

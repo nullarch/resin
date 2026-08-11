@@ -1,5 +1,0 @@
-//@version=5
-indicator("HaarL1")
-prev = nz(close[1], close)
-approx = (close + prev) / 2.0
-plot(approx, "Approx1")

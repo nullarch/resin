@@ -1,9 +1,0 @@
-//@version=5
-indicator("Switch DefMid")
-x = 2
-var int r = 0
-r := switch x
-    1 => 10
-    => 0
-    2 => 20
-plot(r)

@@ -1,4 +1,0 @@
-//@version=5
-indicator("LogExp")
-var float result = 0
-result := math.exp(math.log(close))

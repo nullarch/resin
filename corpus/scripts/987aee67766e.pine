@@ -1,8 +1,0 @@
-//@version=5
-indicator("While Expr")
-var float result = 0.0
-float x = 100.0
-out = while x > 1
-    x := x / 2
-    x
-result := out

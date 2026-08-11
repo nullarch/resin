@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("StrReplace")
-template = "X_VALUE"
-result = str.replace_all(template, "X", str.tostring(close))
-resLen = str.length(result)
-plot(resLen, "RL")

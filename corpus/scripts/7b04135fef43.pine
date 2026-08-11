@@ -1,8 +1,0 @@
-//@version=5
-indicator("VPIN_Proxy")
-prevClose = nz(close[1], close)
-buyVol = close >= prevClose ? float(volume) : 0.0
-sellVol = close < prevClose ? float(volume) : 0.0
-imbalance = math.abs(buyVol - sellVol)
-vpin = volume > 0 ? imbalance / float(volume) : 0.0
-plot(vpin, "VPIN")

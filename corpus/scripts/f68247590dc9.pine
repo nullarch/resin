@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Triple MA")
-ma3 = ta.sma(close, 3)
-ma5 = ta.sma(close, 5)
-aligned = close > ma3 and ma3 > ma5
-fullBull = aligned ? 3 : close > ma3 ? 2 : close > ma5 ? 1 : 0
-plot(fullBull, "FB")

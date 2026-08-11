@@ -1,6 +1,0 @@
-//@version=5
-indicator("Var Cond")
-var float highest_close = 0.0
-if close > highest_close
-    highest_close := close
-plot(highest_close)

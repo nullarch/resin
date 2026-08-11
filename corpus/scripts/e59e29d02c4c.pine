@@ -1,9 +1,0 @@
-//@version=5
-indicator("bool chain")
-var float result = 0.0
-a = close > open
-b = high > high[1]
-c = low > low[1]
-allTrue = a and b and c
-anyTrue = a or b or c
-result := allTrue ? 3.0 : anyTrue ? 1.0 : 0.0

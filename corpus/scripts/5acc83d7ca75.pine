@@ -1,3 +1,0 @@
-//@version=5
-indicator("TradingDay")
-td = time_tradingday

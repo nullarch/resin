@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Dual Mom")
-absMom = close - close[3]
-relMom = close > ta.sma(close, 5) ? 1.0 : -1.0
-dualSig = absMom > 0 and relMom > 0 ? 2 : absMom < 0 and relMom < 0 ? -2 : 0
-var float __obs_plot0 = na
-__obs_plot0 := dualSig
-plot(dualSig, "DM")

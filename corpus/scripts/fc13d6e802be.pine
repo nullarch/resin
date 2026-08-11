@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Clamp Sign")
-diff = close - ta.sma(close, 3)
-clamped = math.max(-5.0, math.min(5.0, diff))
-sgn = math.sign(diff)
-plot(clamped, "Clamped")
-plot(sgn, "Sign")

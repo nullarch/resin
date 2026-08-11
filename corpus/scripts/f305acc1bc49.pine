@@ -1,6 +1,0 @@
-//@version=5
-indicator("Fixnan")
-ph = ta.pivothigh(high, 2, 2)
-var float fixed = 0.0
-fixed := fixnan(ph)
-plot(close)

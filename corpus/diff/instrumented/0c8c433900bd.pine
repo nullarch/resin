@@ -1,8 +1,0 @@
-//@version=5
-indicator("Var Max Track")
-var float max_vol = 0.0
-if volume > max_vol
-    max_vol := volume
-var float __obs_plot0 = na
-__obs_plot0 := max_vol
-plot(max_vol)

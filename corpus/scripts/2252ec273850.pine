@@ -1,8 +1,0 @@
-//@version=5
-indicator("for-in simple")
-var float result = 0.0
-arr = array.from(1.0, 2.0, 3.0, 4.0)
-float sum = 0.0
-for v in arr
-    sum := sum + v
-result := sum

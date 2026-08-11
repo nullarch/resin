@@ -1,8 +1,0 @@
-//@version=5
-indicator("switch complex disc")
-int mode = close > open ? 1 : close < open ? 2 : 0
-label = switch mode
-    0 => "DOJI"
-    1 => "BULL"
-    2 => "BEAR"
-    => "UNKNOWN"

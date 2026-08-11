@@ -1,3 +1,0 @@
-//@version=5
-indicator("TR")
-x = ta.tr

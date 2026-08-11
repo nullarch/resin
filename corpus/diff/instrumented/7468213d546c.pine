@@ -1,9 +1,0 @@
-//@version=5
-indicator("Log Funcs")
-log.info("Processing bar")
-log.warning("Low volume detected")
-var int bars = 0
-bars := bars + 1
-var float __obs_plot0 = na
-__obs_plot0 := close
-plot(close)

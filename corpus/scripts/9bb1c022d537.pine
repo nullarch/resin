@@ -1,6 +1,0 @@
-//@version=5
-strategy("test strat")
-if close > 108
-    strategy.entry("Long", strategy.long)
-if close < 104
-    strategy.close("Long")

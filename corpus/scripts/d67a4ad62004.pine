@@ -1,9 +1,0 @@
-//@version=5
-indicator("Certificate Validity")
-var int issued_bar = 0
-var int validity_period = 4
-var bool cert_valid = true
-issued_bar := issued_bar + 1
-if issued_bar > validity_period
-    cert_valid := false
-status = cert_valid ? 1.0 : 0.0

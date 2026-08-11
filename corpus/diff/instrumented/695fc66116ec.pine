@@ -1,8 +1,0 @@
-//@version=5
-indicator("Integral")
-var float cumRet = 0.0
-ret = nz(close[1]) > 0 ? (close - nz(close[1])) / nz(close[1]) : 0.0
-cumRet := cumRet + ret
-var float __obs_plot0 = na
-__obs_plot0 := cumRet
-plot(cumRet)

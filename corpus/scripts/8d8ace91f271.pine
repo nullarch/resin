@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Vol Imbal")
-buyVol = close > open ? volume : volume * 0.4
-sellVol = close < open ? volume : volume * 0.4
-imbalance = buyVol - sellVol
-smoothImbal = ta.sma(imbalance, 3)
-plot(smoothImbal, "Imb")

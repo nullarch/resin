@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("MR ZScore")
-sma5 = ta.sma(close, 5)
-sd = ta.stdev(close, 5)
-z = sd > 0 ? (close - sma5) / sd : 0.0
-mrSignal = z < -1.5 ? 1.0 : z > 1.5 ? -1.0 : 0.0
-plot(z, "Z")
-plot(mrSignal, "MR")

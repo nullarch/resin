@@ -1,9 +1,0 @@
-//@version=5
-indicator("TA No Dup")
-// Normal call — codegen injects context+state_key
-sma1 = ta.sma(close, 3)
-// Another call with different length
-sma2 = ta.sma(close, 5)
-var float diff = 0.0
-diff := nz(sma1) - nz(sma2)
-plot(close)

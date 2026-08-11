@@ -1,4 +1,0 @@
-//@version=5
-indicator("HourVar")
-var int h = 0
-h := hour

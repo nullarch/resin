@@ -1,6 +1,0 @@
-//@version=5
-indicator("PctRank")
-var float lastP = 0
-p = ta.percentrank(close, 5)
-if not na(p)
-    lastP := p

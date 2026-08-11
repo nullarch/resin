@@ -1,9 +1,0 @@
-//@version=5
-indicator("Str Coerce")
-var string msg = ""
-msg := "Price: " + str.tostring(close)
-var int len_ = 0
-len_ := str.length(msg)
-var bool starts = false
-starts := str.startswith(msg, "Price")
-plot(close)

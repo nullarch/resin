@@ -1,9 +1,0 @@
-//@version=5
-indicator("For-in No Idx")
-var arr = array.from(5.0, 10.0, 15.0, 20.0)
-float total = 0.0
-for val in arr
-    total := total + val
-var float last = 0.0
-last := total
-plot(close)

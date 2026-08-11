@@ -1,8 +1,0 @@
-//@version=5
-indicator("If Scope")
-float x = 10.0
-if close > 100
-    float y = 20.0
-    x := x + y
-var float result = 0.0
-result := x

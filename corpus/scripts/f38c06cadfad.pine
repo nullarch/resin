@@ -1,7 +1,0 @@
-//@version=5
-indicator("hoisting")
-var float result = 0.0
-x = helper(close, 2)
-result := x
-helper(src, mult) =>
-    src * mult

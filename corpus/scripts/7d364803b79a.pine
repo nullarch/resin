@@ -1,4 +1,0 @@
-//@version=5
-indicator("Test")
-if close < 0
-    runtime.error("Negative price!")

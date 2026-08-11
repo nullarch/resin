@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("LR Quality")
-lr = ta.linreg(close, 5, 0)
-dev = ta.stdev(close, 5)
-trendQuality = dev > 0 ? math.abs(lr - close) / dev : 0.0
-goodFit = trendQuality < 1.0
-plot(trendQuality, "Quality")
-plot(goodFit ? 1 : 0, "GoodFit")

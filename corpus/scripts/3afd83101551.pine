@@ -1,4 +1,0 @@
-//@version=5
-indicator("cast str")
-var string s = ""
-s := str.tostring(42)

@@ -1,7 +1,0 @@
-//@version=5
-indicator("Multiline Or")
-var bool result = false
-result := close > 200 or
-    close > 150 or
-    close > 100
-plot(close)

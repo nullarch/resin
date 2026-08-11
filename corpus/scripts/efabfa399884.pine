@@ -1,6 +1,0 @@
-//@version=5
-indicator("test")
-var int lastCount = 0
-if session.islastbar
-    lastCount := lastCount + 1
-plot(lastCount)

@@ -1,7 +1,0 @@
-//@version=5
-indicator("test")
-getBounds(src, len) =>
-    hi = ta.highest(src, len)
-    lo = ta.lowest(src, len)
-    [hi, lo]
-[upper, lower] = getBounds(close, 3)

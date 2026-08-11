@@ -1,5 +1,0 @@
-
-//@version=5
-indicator("Ticker")
-sym = ticker.new("BINANCE", "BTCUSDT")
-plot(close)

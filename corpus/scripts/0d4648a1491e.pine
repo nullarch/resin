@@ -1,9 +1,0 @@
-//@version=5
-indicator("Phase Angle")
-float e1 = nz(ta.ema(close, 2), close)
-float e2 = nz(ta.ema(close, 5), close)
-float dx = close - e1
-float dy = close - e2
-float denom = math.abs(dx) + 0.001
-float phase = dy > 0 ? math.abs(dy / denom) : -math.abs(dy / denom)
-plot(phase, "Phase")

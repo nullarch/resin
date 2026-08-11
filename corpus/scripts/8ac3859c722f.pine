@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Map Miss")
-var data = map.new<string, float>()
-map.put(data, "exists", 42.0)
-exists = map.get(data, "exists", 0.0)
-missing = map.get(data, "nope", -1.0)
-plot(exists + missing, "R")

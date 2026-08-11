@@ -1,7 +1,0 @@
-//@version=5
-indicator("TA State Isolation")
-float s1 = ta.sma(close, 3)
-float s2 = ta.sma(close, 5)
-var float result = 0.0
-if not na(s1) and not na(s2)
-    result := s1 - s2

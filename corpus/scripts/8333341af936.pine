@@ -1,6 +1,0 @@
-//@version=5
-indicator("unary")
-var float result = 0.0
-x = -close
-y = not (close < 50)
-result := y ? x : 0.0

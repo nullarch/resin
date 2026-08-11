@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Strip Regression")
-a = array.new<float>(3, 0.0)
-m = map.new<string, float>()
-array.set(a, 0, close)
-m.put("close", close)
-result = array.get(a, 0) + m.get("close", 0.0)
-plot(result)

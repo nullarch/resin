@@ -1,8 +1,0 @@
-//@version=5
-indicator("Sliding Window")
-var float[] buf = array.new_float(0)
-array.push(buf, close)
-if array.size(buf) > 3
-    array.shift(buf)
-var int result = 0
-result := array.size(buf)

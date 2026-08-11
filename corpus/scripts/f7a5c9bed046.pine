@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("BB RSI")
-[mid, upper, lower] = ta.bb(close, 5, 2.0)
-rsi = ta.rsi(close, 3)
-bbPos = upper != lower ? (close - lower) / (upper - lower) : 0.5
-combined = (bbPos + nz(rsi, 50.0) / 100.0) / 2.0
-plot(combined, "Combined")

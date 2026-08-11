@@ -1,7 +1,0 @@
-//@version=5
-indicator("Map Method")
-var float result = 0.0
-map<string, float> m = map.new<string, float>()
-m.put("x", 10.0)
-m.put("y", 20.0)
-result := m.size()

@@ -1,8 +1,0 @@
-//@version=5
-indicator("Failover")
-var float threshold = 0.0
-sma5 = ta.sma(close, 5)
-if not na(sma5)
-    threshold := sma5 * 0.98
-primary_healthy = close >= threshold ? true : false
-mode = primary_healthy ? 1.0 : 0.0

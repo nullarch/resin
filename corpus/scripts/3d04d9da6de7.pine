@@ -1,7 +1,0 @@
-//@version=5
-indicator("Var Reset")
-var int count = 0
-count := close > open ? count + 1 : 0
-maxCount = ta.highest(count, 5)
-plot(count)
-plot(maxCount)

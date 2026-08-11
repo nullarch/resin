@@ -1,5 +1,0 @@
-//@version=5
-indicator("DeltaProxyRoc")
-prevClose = nz(close[1], close)
-deltaProxy = prevClose > 0 ? (close - prevClose) / prevClose : 0.0
-plot(deltaProxy, "Delta")

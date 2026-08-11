@@ -1,7 +1,0 @@
-//@version=5
-indicator("Seismogram Envelope")
-rawSignal = close - open
-absSignal = math.abs(rawSignal)
-emaEnv = ta.ema(close, 3)
-envelope = not na(emaEnv) ? absSignal : 0.0
-plot(envelope)

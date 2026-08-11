@@ -1,5 +1,0 @@
-//@version=5
-indicator("Block Chain")
-var float chain_hash = 0.0
-block_data = close + volume / 100.0
-chain_hash := chain_hash * 0.9 + block_data * 0.1

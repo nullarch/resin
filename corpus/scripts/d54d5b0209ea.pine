@@ -1,4 +1,0 @@
-//@version=5
-indicator("IntNormal")
-var int result = 0
-result := int(3.7)

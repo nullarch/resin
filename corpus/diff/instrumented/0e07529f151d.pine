@@ -1,9 +1,0 @@
-//@version=5
-indicator("Not And")
-a = true
-b = true
-var bool result = false
-result := not a and b  // (not true) and true → false and true → false
-var float __obs_plot0 = na
-__obs_plot0 := close
-plot(close)

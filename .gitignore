@@ -2,3 +2,6 @@ node_modules/
 dist/
 coverage/
 *.log
+
+# the development corpus is not redistributed with this snapshot
+/corpus/

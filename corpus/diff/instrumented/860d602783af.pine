@@ -1,9 +1,0 @@
-//@version=5
-indicator("Quad Variation")
-float prevC = not na(close[1]) ? close[1] : close
-float sqRet = math.pow(close - prevC, 2)
-var float quadVar = 0.0
-quadVar := quadVar + sqRet
-var float __obs_plot0 = na
-__obs_plot0 := quadVar
-plot(quadVar, "QV")

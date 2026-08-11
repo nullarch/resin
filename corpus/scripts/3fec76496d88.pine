@@ -1,6 +1,0 @@
-//@version=5
-indicator("nested ternary na")
-var float result = 0.0
-sma3 = ta.sma(close, 3)
-ema3 = ta.ema(close, 3)
-result := na(sma3) ? 0.0 : na(ema3) ? sma3 : (sma3 + ema3) / 2.0

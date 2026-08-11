@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("MA Compare")
-s = ta.sma(close, 5)
-e = ta.ema(close, 5)
-w = ta.wma(close, 5)
-h = ta.hma(close, 5)
-spread = math.max(s, math.max(e, math.max(w, h))) - math.min(s, math.min(e, math.min(w, h)))
-plot(spread, "Spread")

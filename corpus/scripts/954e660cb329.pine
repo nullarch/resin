@@ -1,7 +1,0 @@
-//@version=5
-indicator("shadow loop")
-int x = 100
-float total = 0.0
-for x = 1 to 3
-    total := total + float(x)
-afterLoop = x

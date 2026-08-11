@@ -1,6 +1,0 @@
-//@version=5
-indicator("Ocean Current Speed")
-currentProxy = ta.ema(close, 3) - ta.ema(close, 5)
-speed = not na(currentProxy) ? math.abs(currentProxy) : 0.0
-var float maxSpeed = 0.0
-maxSpeed := math.max(maxSpeed, speed)

@@ -1,7 +1,0 @@
-//@version=5
-indicator("Block comment")
-/* This is a block comment
-   spanning multiple lines */
-a = close
-// inline comment
-b = open

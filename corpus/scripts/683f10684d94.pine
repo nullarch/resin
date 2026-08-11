@@ -1,6 +1,0 @@
-//@version=5
-indicator("GEV Shape")
-float range3 = ta.highest(high, 3) - ta.lowest(low, 3)
-float range5 = ta.highest(high, 5) - ta.lowest(low, 5)
-float shapeProxy = range3 > 0.01 ? math.log(range5 / range3 + 0.01) : 0.0
-plot(shapeProxy, "Shape")

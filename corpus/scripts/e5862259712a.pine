@@ -1,6 +1,0 @@
-//@version=5
-indicator("TernaryChain")
-var string signal = "none"
-rsiVal = ta.rsi(close, 5)
-if not na(rsiVal)
-    signal := rsiVal > 70 ? "strong_buy" : rsiVal > 50 ? "buy" : rsiVal > 30 ? "sell" : "strong_sell"

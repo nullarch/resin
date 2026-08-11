@@ -1,7 +1,0 @@
-//@version=5
-indicator("Cast Chain")
-x = 123.456
-s = str.tostring(x, "#.##")
-var float y = 0.0
-y := str.tonumber(s)
-plot(y)

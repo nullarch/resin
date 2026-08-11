@@ -1,6 +1,0 @@
-//@version=5
-indicator("Skin Depth")
-float atrVal = nz(ta.atr(3), 1.0)
-float trendStrength = math.abs(nz(ta.sma(close, 5), close) - nz(ta.sma(close, 3), close))
-float skinDepth = trendStrength > 0.01 ? atrVal / trendStrength : 100.0
-float penetration = math.min(skinDepth, 100.0)

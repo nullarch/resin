@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("ALMA")
-almaVal = ta.alma(close, 5, 0.85, 6)
-diff = close - almaVal
-plot(almaVal, "ALMA")
-plot(diff, "Diff")

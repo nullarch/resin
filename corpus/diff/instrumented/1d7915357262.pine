@@ -1,7 +1,0 @@
-//@version=5
-indicator("test")
-int[] counts = array.new_int(3, 0)
-array.set(counts, 0, bar_index)
-var float __obs_plot0 = na
-__obs_plot0 := array.get(counts, 0)
-plot(array.get(counts, 0))

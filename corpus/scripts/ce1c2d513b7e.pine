@@ -1,8 +1,0 @@
-//@version=5
-indicator("NZ Series")
-sma20 = ta.sma(close, 20)
-// SMA(20) will be NaN for first 19 bars (only 10 bars total)
-float val = nz(sma20, close)
-var float result = 0.0
-result := val
-plot(result)

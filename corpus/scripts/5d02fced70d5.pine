@@ -1,6 +1,0 @@
-//@version=5
-indicator("BBW")
-var float lastB = 0
-b = ta.bbw(close, 5, 2)
-if not na(b)
-    lastB := b

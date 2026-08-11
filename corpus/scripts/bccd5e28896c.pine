@@ -1,6 +1,0 @@
-//@version=5
-indicator("Repeat")
-s = str.repeat("ab", 3)
-var int len_ = 0
-len_ := str.length(s)
-plot(len_)

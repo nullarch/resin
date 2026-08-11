@@ -1,6 +1,0 @@
-//@version=5
-indicator("UDT")
-type Point
-    float x = 0
-    float y = 0
-p = Point.new(close, high)

@@ -1,7 +1,0 @@
-//@version=5
-strategy("ATR Stop")
-atrVal = ta.atr(5)
-if ta.crossover(ta.sma(close, 3), ta.sma(close, 5))
-    strategy.entry("Long", strategy.long)
-    strategy.exit("Exit", "Long", stop=close - 2 * atrVal)
-plot(atrVal)

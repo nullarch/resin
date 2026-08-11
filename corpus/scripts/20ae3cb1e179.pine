@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Exp State")
-var float smoothed = 0.0
-alpha = 0.3
-smoothed := barstate.isfirst ? close : smoothed * (1 - alpha) + close * alpha
-deviation = close - smoothed
-plot(smoothed, "Smooth")
-plot(deviation, "Dev")

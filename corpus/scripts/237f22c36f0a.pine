@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Smooth ROC")
-roc3 = ta.roc(close, 3)
-smoothROC = ta.ema(roc3, 3)
-above = smoothROC > 0
-plot(smoothROC, "SmoothROC")
-plot(above ? 1 : 0, "Above")

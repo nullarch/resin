@@ -1,7 +1,0 @@
-//@version=5
-indicator("Array Methods")
-arr = array.from(close, close[1], close[2])
-sz = arr.size()
-mn = arr.min()
-mx = arr.max()
-md = arr.median()

@@ -1,8 +1,0 @@
-//@version=5
-indicator("var state")
-var float persistent = 0.0
-varip float alsoPersis = 0.0
-float resetted = 0.0
-persistent := persistent + 1.0
-alsoPersis := alsoPersis + 1.0
-resetted := resetted + 1.0

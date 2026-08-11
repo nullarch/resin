@@ -1,5 +1,0 @@
-//@version=5
-indicator("Eventual Consistency")
-ema3 = ta.ema(close, 3)
-ema7 = ta.ema(close, 7)
-gap = not na(ema3) and not na(ema7) ? math.abs(ema3 - ema7) : 0.0

@@ -1,8 +1,0 @@
-//@version=5
-indicator("NA Coalesce")
-prev = close[1]
-safe = nz(prev, close)
-diff = close - safe
-var float __obs_plot0 = na
-__obs_plot0 := diff
-plot(diff)

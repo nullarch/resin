@@ -1,4 +1,0 @@
-//@version=5
-indicator("str coerce")
-s = "Price: " + str.tostring(close)
-s2 = "Bar " + str.tostring(bar_index)

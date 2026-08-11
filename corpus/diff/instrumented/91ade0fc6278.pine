@@ -1,9 +1,0 @@
-//@version=5
-indicator("test")
-m = map.new<string, float>()
-map.put(m, "ema", ta.ema(close, 3))
-map.put(m, "sma", ta.sma(close, 3))
-diff = map.get(m, "ema") - map.get(m, "sma")
-var float __obs_plot0 = na
-__obs_plot0 := diff
-plot(diff)

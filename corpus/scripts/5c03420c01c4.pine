@@ -1,7 +1,0 @@
-//@version=5
-indicator("POT Threshold")
-float prevC = not na(close[1]) ? close[1] : close
-float retAbs = math.abs(close - prevC)
-float threshold = nz(ta.atr(5), 1.0) * 1.5
-float exceed = retAbs > threshold ? retAbs - threshold : 0.0
-plot(exceed, "Exceed")

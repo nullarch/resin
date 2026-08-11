@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Sign Abs")
-change = close - open
-sign = math.sign(change)
-magnitude = math.abs(change)
-normalized = magnitude > 0 ? sign * math.log(1 + magnitude) : 0.0
-plot(normalized, "Norm")

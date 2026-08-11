@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("NA Handle")
-val = close[20]
-safe = nz(val, close)
-isNA = na(val)
-plot(isNA ? safe : val, "R")

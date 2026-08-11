@@ -1,4 +1,0 @@
-//@version=5
-indicator("Test")
-m = map.new<string, float>()
-k = m.keys()

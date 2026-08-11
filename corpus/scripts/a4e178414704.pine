@@ -1,6 +1,0 @@
-//@version=5
-indicator("Var")
-var float lastVar = 0
-v = ta.variance(close, 5)
-if not na(v)
-    lastVar := v

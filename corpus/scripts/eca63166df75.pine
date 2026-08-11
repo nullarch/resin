@@ -1,6 +1,0 @@
-//@version=5
-indicator("Ichimoku")
-var float result = 0.0
-tenkan = (ta.highest(high, 3) + ta.lowest(low, 3)) / 2.0
-kijun = (ta.highest(high, 5) + ta.lowest(low, 5)) / 2.0
-result := tenkan - kijun

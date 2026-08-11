@@ -1,6 +1,0 @@
-//@version=5
-indicator("CastCond")
-var int result = 0
-x = 5.9
-if int(x) == 5
-    result := 1

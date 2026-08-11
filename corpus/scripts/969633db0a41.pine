@@ -1,8 +1,0 @@
-//@version=5
-indicator("test")
-var float highest_close = 0
-var int highest_bar = 0
-if close > highest_close
-    highest_close := close
-    highest_bar := bar_index
-plot(highest_close)

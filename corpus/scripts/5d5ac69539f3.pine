@@ -1,9 +1,0 @@
-//@version=5
-indicator("For break")
-arr = array.from(5.0, 10.0, 15.0, 20.0, 25.0)
-var int foundIdx = -1
-foundIdx := -1
-for i = 0 to array.size(arr) - 1
-    if array.get(arr, i) > 12.0
-        foundIdx := i
-        break

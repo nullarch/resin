@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("HMA")
-hmaVal = ta.hma(close, 5)
-trend = hmaVal > hmaVal[1]
-var float __obs_plot0 = na
-__obs_plot0 := hmaVal
-plot(hmaVal, "HMA")

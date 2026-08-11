@@ -1,5 +1,0 @@
-//@version=5
-indicator("Typed UDF")
-f(float x) =>
-    x * 2.0
-plot(f(close))

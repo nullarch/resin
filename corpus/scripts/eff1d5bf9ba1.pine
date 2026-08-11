@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Trend Age")
-hb = ta.highestbars(high, 5)
-lb = ta.lowestbars(low, 5)
-trendAge = not na(hb) ? math.abs(hb) : 5
-fresh = trendAge < 2
-plot(trendAge, "Age")
-plot(fresh ? 1 : 0, "Fresh")

@@ -1,7 +1,0 @@
-//@version=5
-indicator("Color")
-var color c1 = #ff0000
-var color c2 = color.rgb(0, 255, 0)
-var bool has_colors = false
-has_colors := not na(c1) and not na(c2)
-plot(close)

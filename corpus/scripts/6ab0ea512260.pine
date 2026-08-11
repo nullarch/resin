@@ -1,4 +1,0 @@
-//@version=5
-indicator("VLine")
-if bar_index == 5
-    vline(bar_index)

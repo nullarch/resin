@@ -1,6 +1,0 @@
-//@version=5
-indicator("Gossip Protocol")
-local_view = ta.sma(close, 3)
-regional_view = ta.sma(close, 5)
-global_view = ta.sma(close, 7)
-diffusion = not na(local_view) and not na(global_view) ? local_view - global_view : 0.0

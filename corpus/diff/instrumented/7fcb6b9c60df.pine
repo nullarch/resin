@@ -1,8 +1,0 @@
-//@version=5
-indicator("Pop Momentum")
-var float pop = 100.0
-growthRate = nz(ta.rsi(close, 3), 50.0) / 1000.0
-pop := pop * (1.0 + growthRate)
-var float __obs_plot0 = na
-__obs_plot0 := pop
-plot(pop, "Pop")

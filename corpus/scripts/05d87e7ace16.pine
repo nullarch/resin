@@ -1,9 +1,0 @@
-//@version=5
-indicator("Activity Decay")
-var float atoms = 1e6
-float decayConst = 0.15
-float activity = decayConst * atoms
-float decayed = activity * 1.0
-atoms := math.max(atoms - decayed, 0.0)
-var float cumDecayed = 0.0
-cumDecayed := cumDecayed + decayed

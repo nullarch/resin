@@ -1,8 +1,0 @@
-//@version=5
-indicator("UDF Accum")
-cumSum(src) =>
-    var float total = 0.0
-    total := total + src
-    total
-var float result = 0.0
-result := cumSum(1.0)

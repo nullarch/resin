@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("RMA Smooth")
-rmaVal = ta.rma(close, 5)
-diff = close - rmaVal
-plot(rmaVal, "RMA")
-plot(diff, "Diff")

@@ -1,9 +1,0 @@
-//@version=5
-indicator("Halting Heuristic")
-var int steps = 0
-var bool halted = false
-steps := steps + 1
-if steps > 5
-    halted := true
-running = halted ? 0.0 : 1.0
-plot(running, "Running")

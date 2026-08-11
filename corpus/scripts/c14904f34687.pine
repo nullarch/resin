@@ -1,8 +1,0 @@
-//@version=5
-indicator("Compound Ops")
-var float x = 100.0
-x += close
-x -= 10.0
-x *= 0.5
-x /= 2.0
-x %= 1000.0

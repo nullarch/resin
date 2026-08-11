@@ -1,7 +1,0 @@
-//@version=5
-indicator("PV Work")
-float pressure = volume
-float dVolume = not na(close[1]) ? close - close[1] : 0.0
-float work = pressure * dVolume
-var float totalWork = 0.0
-totalWork := totalWork + work

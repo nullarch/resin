@@ -1,8 +1,0 @@
-//@version=5
-indicator("Byzantine Consensus")
-signal_a = close > open ? 1 : 0
-rsi_val = nz(ta.rsi(close, 3), 50.0)
-signal_b = rsi_val > 50 ? 1 : 0
-signal_c = high > ta.sma(high, 3) ? 1 : 0
-total_signals = signal_a + signal_b + signal_c
-consensus = total_signals >= 2 ? 1.0 : 0.0

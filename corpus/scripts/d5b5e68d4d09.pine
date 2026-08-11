@@ -1,5 +1,0 @@
-//@version=5
-indicator("Walrus Assign")
-var float x = 0.0
-x := x + close
-plot(x)

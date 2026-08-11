@@ -1,6 +1,0 @@
-//@version=5
-indicator("Diffusion Cascade")
-stage1 = ta.sma(close, 3)
-perturbed = close + 0.01
-stage1p = ta.sma(perturbed, 3)
-avalanche = not na(stage1) and not na(stage1p) ? math.abs(stage1 - stage1p) : 0.0

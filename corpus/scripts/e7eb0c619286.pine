@@ -1,6 +1,0 @@
-//@version=5
-indicator("VegaProxy")
-vol5 = nz(ta.stdev(close, 5), 1.0)
-vol3 = nz(ta.stdev(close, 3), 1.0)
-vegaProxy = math.abs(vol5 - vol3)
-plot(vegaProxy, "Vega")

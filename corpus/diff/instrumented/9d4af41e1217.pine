@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("COG")
-cogVal = ta.cog(close, 5)
-var float __obs_plot0 = na
-__obs_plot0 := cogVal
-plot(cogVal, "COG")

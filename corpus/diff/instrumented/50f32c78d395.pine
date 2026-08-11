@@ -1,7 +1,0 @@
-//@version=5
-indicator("Exp Big")
-val = math.exp(100)
-isBig = val > 1e30 ? 1 : 0
-var float __obs_plot0 = na
-__obs_plot0 := isBig
-plot(isBig)

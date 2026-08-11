@@ -1,5 +1,0 @@
-
-//@version=5
-indicator("PVT Implicit")
-p = ta.pvt
-plot(p)

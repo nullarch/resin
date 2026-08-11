@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Hi RSI")
-rsi = ta.rsi(close, 3)
-hiRSI = ta.highest(rsi, 5)
-loRSI = ta.lowest(rsi, 5)
-rsiRange = hiRSI - loRSI
-plot(hiRSI, "HiRSI")
-plot(rsiRange, "Range")

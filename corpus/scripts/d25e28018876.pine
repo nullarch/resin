@@ -1,6 +1,0 @@
-//@version=5
-indicator("RSI Divergence")
-var float result = 0.0
-rsi14 = ta.rsi(close, 5)
-float rsi_val = nz(rsi14, 50.0)
-result := rsi_val

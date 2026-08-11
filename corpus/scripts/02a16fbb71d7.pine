@@ -1,9 +1,0 @@
-//@version=5
-indicator("Deep Ternary")
-rsi = ta.rsi(close, 14)
-macd = ta.ema(close, 5) - ta.ema(close, 10)
-result = rsi > 70 ? (macd > 0 ? 3 : 2) :
-    rsi > 50 ? (macd > 0 ? 1 : 0) :
-    rsi > 30 ? (macd > 0 ? -1 : -2) :
-    -3
-plot(result)

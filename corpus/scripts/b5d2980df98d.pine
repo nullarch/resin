@@ -1,6 +1,0 @@
-//@version=5
-indicator("var array")
-var float result = 0.0
-var closes = array.new_float(0)
-closes.push(close)
-result := closes.size()

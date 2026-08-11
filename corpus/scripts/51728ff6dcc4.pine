@@ -1,7 +1,0 @@
-//@version=5
-indicator("ArrSearch")
-var a = array.from(5.0, 10.0, 15.0)
-var bool has = false
-var int idx = 0
-has := array.includes(a, 10.0)
-idx := array.indexof(a, 15.0)

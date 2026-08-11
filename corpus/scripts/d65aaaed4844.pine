@@ -1,5 +1,0 @@
-//@version=5
-indicator("Input Price")
-lvl = input.price(100.0, "Level")
-diff = close - lvl
-plot(diff)

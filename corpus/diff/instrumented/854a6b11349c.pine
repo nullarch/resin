@@ -1,6 +1,0 @@
-//@version=5
-indicator("No Dup KW")
-sma_ = ta.sma(close, 3)
-var float __obs_plot0 = na
-__obs_plot0 := nz(sma_)
-plot(nz(sma_))

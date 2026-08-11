@@ -1,9 +1,0 @@
-//@version=5
-indicator("Str Concat")
-var string msg = "Price: " + str.tostring(42.5) + " Vol: " + str.tostring(1000)
-var int len = str.length(msg)
-var float result = 0.0
-result := len
-var float __obs_plot0 = na
-__obs_plot0 := result
-plot(result)

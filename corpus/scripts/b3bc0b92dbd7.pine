@@ -1,6 +1,0 @@
-//@version=5
-indicator("EMA Converge")
-ema3 = ta.ema(close, 3)
-diff = math.abs(close - ema3)
-plot(ema3)
-plot(diff)

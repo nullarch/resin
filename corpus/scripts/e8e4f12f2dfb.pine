@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Ratios")
-hlRatio = low > 0 ? high / low : 1.0
-coRatio = open > 0 ? close / open : 1.0
-bodyToRange = (high - low) > 0 ? math.abs(close - open) / (high - low) : 0.0
-avgRatio = (hlRatio + coRatio) / 2.0
-plot(bodyToRange, "BTR")

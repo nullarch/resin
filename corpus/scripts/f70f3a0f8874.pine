@@ -1,7 +1,0 @@
-//@version=5
-indicator("Test")
-b = box.new(bar_index - 5, high, bar_index, low)
-box.set_bgcolor(b, color.green)
-box.set_border_color(b, color.red)
-box.set_border_width(b, 2)
-box.set_text(b, "Zone")

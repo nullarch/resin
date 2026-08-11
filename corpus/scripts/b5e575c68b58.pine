@@ -1,9 +1,0 @@
-//@version=5
-indicator("Particle Position")
-var float position = 0.0
-var float velocity = 0.0
-inertia = 0.7
-target = close - ta.sma(close, 5)
-velocity := inertia * velocity + 0.3 * target
-position := position + velocity
-plot(position)

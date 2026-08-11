@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Rotation")
-var int rotation = 0
-prevClose = close[1]
-if not na(prevClose)
-    rotation := close > prevClose ? rotation + 1 : rotation - 1
-plot(float(rotation), "Rot")

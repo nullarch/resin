@@ -1,6 +1,0 @@
-//@version=5
-indicator("Nested")
-var int signals = 0
-if close > open
-    if volume > 1000
-        signals := signals + 1

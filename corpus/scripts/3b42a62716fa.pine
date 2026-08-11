@@ -1,9 +1,0 @@
-//@version=5
-indicator("test")
-myFunc(src, len = 14, mult = 2.0) =>
-    basis = ta.sma(src, len)
-    dev = ta.stdev(src, len) * mult
-    [basis, dev]
-[b1, d1] = myFunc(close)
-[b2, d2] = myFunc(close, 5, 1.5)
-plot(b1)

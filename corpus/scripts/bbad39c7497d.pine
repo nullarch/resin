@@ -1,9 +1,0 @@
-//@version=5
-indicator("Matrix ops")
-m = matrix.new<float>(3, 3, 0.0)
-matrix.set(m, 0, 0, 1.0)
-matrix.set(m, 1, 1, 2.0)
-matrix.set(m, 2, 2, 3.0)
-val = matrix.get(m, 1, 1)
-rows = matrix.rows(m)
-cols = matrix.columns(m)

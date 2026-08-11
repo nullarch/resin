@@ -1,6 +1,0 @@
-//@version=5
-indicator("Heiken")
-ha_ticker = ticker.heikinashi(syminfo.tickerid)
-var bool valid = false
-valid := not na(ha_ticker)
-plot(close)

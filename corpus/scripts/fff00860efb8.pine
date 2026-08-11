@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("AlertCond")
-bull = close > open
-alertcondition(bull, title="Bull", message="Bullish bar")
-plot(close)

@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("TrendRange")
-smaVal = nz(ta.sma(close, 5), close)
-var float prevSma = 0.0
-slope = smaVal - prevSma
-prevSma := smaVal
-isTrend = math.abs(slope) > 0.5 ? 1.0 : 0.0
-plot(isTrend, "IT")

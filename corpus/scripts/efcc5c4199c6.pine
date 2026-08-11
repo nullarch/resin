@@ -1,7 +1,0 @@
-//@version=5
-indicator("INSERT INTO")
-var float[] price_table = array.new_float(0)
-var float[] vol_table = array.new_float(0)
-array.push(price_table, close)
-array.push(vol_table, volume)
-table_rows = array.size(price_table)

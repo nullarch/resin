@@ -1,7 +1,0 @@
-//@version=5
-indicator("ForIn Array TA")
-var float total = 0.0
-lengths = array.from(3, 5, 7)
-for i = 0 to array.size(lengths) - 1
-    len_val = array.get(lengths, i)
-total := ta.sma(close, 3)

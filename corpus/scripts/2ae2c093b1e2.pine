@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("VWAP Dev")
-cumPV = ta.cum(close * volume)
-cumV = ta.cum(volume)
-vwap = cumV > 0 ? cumPV / cumV : close
-dev = close - vwap
-devPct = vwap > 0 ? dev / vwap * 100 : 0.0
-plot(devPct, "DevPct")

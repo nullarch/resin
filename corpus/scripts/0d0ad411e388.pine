@@ -1,4 +1,0 @@
-//@version=5
-indicator("Max Bars")
-max_bars_back(close, 500)
-plot(close)

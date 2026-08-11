@@ -1,5 +1,0 @@
-
-//@version=5
-indicator("OBV")
-obvVal = ta.obv
-plot(obvVal, "OBV")

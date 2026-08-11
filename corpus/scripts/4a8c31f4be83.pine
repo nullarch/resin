@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Price Cluster")
-tick = 0.5
-rounded = math.round(close / tick) * tick
-diff = close - rounded
-plot(rounded, "Rounded")
-plot(diff, "Diff")

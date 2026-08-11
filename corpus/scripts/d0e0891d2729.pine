@@ -1,9 +1,0 @@
-//@version=5
-indicator("Register Allocation")
-float temp = close - open
-float signal1 = temp > 0.0 ? 1.0 : -1.0
-temp := high - low
-float signal2 = temp > 5.0 ? 1.0 : 0.0
-temp := close - nz(ta.sma(close, 3), close)
-float signal3 = temp > 0.0 ? 1.0 : -1.0
-float combined = signal1 + signal2 + signal3

@@ -1,6 +1,0 @@
-//@version=5
-indicator("Bang Bang")
-float setpoint = 106.0
-float output = close < setpoint ? 1.0 : -1.0
-var float accumulated = 0.0
-accumulated := accumulated + output

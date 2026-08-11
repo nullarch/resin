@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Vol Ratio")
-volSMA = ta.sma(volume, 5)
-volRatio = volSMA > 0 ? volume / volSMA : 1.0
-isHigh = volRatio > 1.5
-plot(volRatio, "VR")
-plot(isHigh ? 1 : 0, "Hi")

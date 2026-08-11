@@ -1,4 +1,0 @@
-//@version=5
-indicator("StrToNum")
-var float result = 0
-result := str.tonumber("42.5")

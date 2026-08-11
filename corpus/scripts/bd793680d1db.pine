@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("Gap")
-gapUp = not na(high[1]) and low > high[1]
-gapDn = not na(low[1]) and high < low[1]
-gapSize = gapUp ? low - high[1] : gapDn ? low[1] - high : 0.0
-plot(gapSize, "Gap")

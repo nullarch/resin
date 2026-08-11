@@ -1,5 +1,0 @@
-//@version=5
-indicator("alert test")
-sma3 = ta.sma(close, 3)
-alertcondition(ta.crossover(sma3, close), "Cross Up")
-alert("test alert", alert.freq_once_per_bar)

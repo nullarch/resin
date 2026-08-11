@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("RSI EMA Cross")
-rsi = ta.rsi(close, 3)
-rsiEMA = ta.ema(rsi, 5)
-bullCross = ta.crossover(rsi, rsiEMA)
-bearCross = ta.crossunder(rsi, rsiEMA)
-plot(rsi, "RSI")
-plot(bullCross ? 1 : bearCross ? -1 : 0, "Cross")

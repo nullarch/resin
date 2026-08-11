@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("PVT Precision")
-p = ta.pvt()
-var float __obs_plot0 = na
-__obs_plot0 := p
-plot(p)

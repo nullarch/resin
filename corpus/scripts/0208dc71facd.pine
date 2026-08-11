@@ -1,6 +1,0 @@
-//@version=5
-indicator("SimpleReward")
-reward = close > open ? 1.0 : -1.0
-var float totalReward = 0.0
-totalReward := totalReward + reward
-plot(totalReward, "TotalR")

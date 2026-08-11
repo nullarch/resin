@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("Input Session")
-sess = input.session("0930-1600", title="Session")
-var float __obs_plot0 = na
-__obs_plot0 := close
-plot(close)

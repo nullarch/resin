@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Vol Price")
-chg = close - close[1]
-vpt = not na(chg) and close[1] > 0 ? volume * (chg / close[1]) : 0.0
-cumVPT = ta.cum(vpt)
-var float __obs_plot0 = na
-__obs_plot0 := cumVPT
-plot(cumVPT, "VPT")

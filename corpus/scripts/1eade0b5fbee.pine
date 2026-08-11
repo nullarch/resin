@@ -1,9 +1,0 @@
-//@version=5
-strategy("Hash Entry Strategy")
-hash_val = math.floor(close * 7.0) % 3
-sma3 = ta.sma(close, 3)
-bullish = not na(sma3) and close > sma3
-if bullish and hash_val == 0
-    strategy.entry("HashLong", strategy.long)
-if not bullish
-    strategy.close("HashLong")

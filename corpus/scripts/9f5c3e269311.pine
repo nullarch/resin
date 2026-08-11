@@ -1,5 +1,0 @@
-//@version=5
-indicator("standalone hoist")
-plot(myFunc())
-myFunc() =>
-    close * 2

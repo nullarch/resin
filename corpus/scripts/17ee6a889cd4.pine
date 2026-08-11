@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("Replace")
-status = "BUY_SIGNAL_ACTIVE"
-cleaned = str.replace(status, "_", " ")
-hasSpace = str.contains(cleaned, " ")
-plot(hasSpace ? 1 : 0, "Space")

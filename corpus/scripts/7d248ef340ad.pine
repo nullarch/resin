@@ -1,6 +1,0 @@
-//@version=5
-indicator("EscQuote")
-s = "say \"hello\""
-var int len_ = 0
-len_ := str.length(s)
-plot(len_)

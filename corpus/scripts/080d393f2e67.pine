@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Ind ID")
-rsi = ta.rsi(close, 3)
-zone = rsi > 70 ? "OB" : rsi < 30 ? "OS" : "N"
-trend = close > ta.sma(close, 3) ? "U" : "D"
-id = trend + "_" + zone
-isOB = str.endswith(id, "OB")
-plot(isOB ? 1 : 0, "IsOB")

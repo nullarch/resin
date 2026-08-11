@@ -1,7 +1,0 @@
-//@version=5
-indicator("Unary Minus")
-var float result = 0.0
-float x = 10.0
-float y = -x
-float z = -(-x)
-result := y + z

@@ -1,6 +1,0 @@
-//@version=5
-indicator("TernaryTA")
-var float result = 0
-smaVal = ta.sma(close, 3)
-emaVal = ta.ema(close, 3)
-result := not na(smaVal) and not na(emaVal) ? (smaVal > emaVal ? smaVal : emaVal) : 0

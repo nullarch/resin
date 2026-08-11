@@ -1,8 +1,0 @@
-//@version=5
-indicator("Triple MA Cross")
-fast = ta.sma(close, 3)
-mid = ta.sma(close, 5)
-slow = ta.sma(close, 8)
-bullAlign = not na(fast) and not na(mid) and not na(slow) ? fast > mid and mid > slow : false
-bearAlign = not na(fast) and not na(mid) and not na(slow) ? fast < mid and mid < slow : false
-trend = bullAlign ? 1 : bearAlign ? -1 : 0

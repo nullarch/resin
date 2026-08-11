@@ -1,9 +1,0 @@
-//@version=5
-indicator("NaN Compare")
-float x = na
-bool cmp = x > 0
-var float val = 0.0
-val := cmp ? 1.0 : -1.0
-var float __obs_plot0 = na
-__obs_plot0 := val
-plot(val)

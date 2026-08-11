@@ -1,7 +1,0 @@
-//@version=5
-indicator("TournSelect")
-fitness1 = math.abs(math.sin(close * 0.1)) * 100.0
-fitness2 = math.abs(math.cos(close * 0.1)) * 100.0
-fitness3 = math.abs(math.sin(close * 0.2)) * 100.0
-winner = math.max(fitness1, math.max(fitness2, fitness3))
-plot(winner, "Winner")

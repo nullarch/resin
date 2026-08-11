@@ -1,6 +1,0 @@
-//@version=5
-indicator("tf syminfo")
-period = timeframe.period
-isDaily = timeframe.isdaily
-ticker = syminfo.ticker
-mintick = syminfo.mintick

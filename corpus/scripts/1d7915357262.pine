@@ -1,5 +1,0 @@
-//@version=5
-indicator("test")
-int[] counts = array.new_int(3, 0)
-array.set(counts, 0, bar_index)
-plot(array.get(counts, 0))

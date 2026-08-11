@@ -1,8 +1,0 @@
-//@version=5
-indicator("Var Sliding Window")
-var float result = 0.0
-var float[] window = array.new<float>(0)
-window.push(close)
-if array.size(window) > 5
-    array.shift(window)
-result := array.size(window)

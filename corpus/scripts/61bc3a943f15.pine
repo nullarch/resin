@@ -1,7 +1,0 @@
-//@version=5
-indicator("Fixnan")
-sma10 = ta.sma(close, 10)
-fixed = fixnan(sma10)
-var float result = 0.0
-result := fixed
-plot(result)

@@ -1,7 +1,0 @@
-//@version=5
-indicator("TA Triple Chain")
-var float result = 0.0
-ema3 = ta.ema(close, 3)
-sma_of_ema = ta.sma(ema3, 3)
-rsi_of_sma = ta.rsi(sma_of_ema, 3)
-result := nz(rsi_of_sma, 50.0)

@@ -1,6 +1,0 @@
-//@version=5
-indicator("Overshoot")
-float setpoint = 106.0
-var float smooth = 100.0
-smooth := 0.3 * close + 0.7 * smooth
-float overshoot = smooth > setpoint ? smooth - setpoint : 0.0

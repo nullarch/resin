@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("StrConcat")
-priceStr = str.tostring(close)
-msg = "Price: " + priceStr
-msgLen = str.length(msg)
-plot(msgLen, "L")

@@ -1,6 +1,0 @@
-//@version=5
-indicator("Barometric Trend")
-var float pressure = 0.0
-delta = close - open
-pressure := pressure + delta
-plot(pressure, title="pressure")

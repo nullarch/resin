@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("Mom Filt")
-rsi = nz(ta.rsi(close, 3), 50.0)
-mom = close - close[1]
-filtered = rsi > 60 ? nz(mom, 0.0) * 1.5 : rsi < 40 ? nz(mom, 0.0) * 1.5 : nz(mom, 0.0) * 0.5
-plot(filtered, "F")

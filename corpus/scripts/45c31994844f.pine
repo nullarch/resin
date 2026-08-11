@@ -1,7 +1,0 @@
-//@version=5
-indicator("UDT copy func")
-type Trade
-    float price = 0.0
-    int qty = 0
-var Trade orig = Trade.new(100.0, 5)
-var Trade copied = Trade.copy(orig)

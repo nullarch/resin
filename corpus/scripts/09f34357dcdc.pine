@@ -1,4 +1,0 @@
-//@version=5
-indicator("StrConcat")
-var string msg = ""
-msg := "Price: " + str.tostring(close)

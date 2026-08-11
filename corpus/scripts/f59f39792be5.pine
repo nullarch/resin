@@ -1,9 +1,0 @@
-//@version=5
-indicator("Hydraulic Jump")
-var float prevDepth = 5.0
-currentDepth = close - low
-froude = currentDepth > 0.1 ? math.abs(close - open) / math.sqrt(9.81 * currentDepth) : 0.0
-isJump = froude > 1.0 and prevDepth < currentDepth ? 1.0 : 0.0
-conjugateDepth = prevDepth * 0.5 * (math.sqrt(1.0 + 8.0 * froude * froude) - 1.0)
-prevDepth := currentDepth
-plot(conjugateDepth)

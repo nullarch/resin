@@ -1,5 +1,0 @@
-//@version=5
-indicator("Nz")
-var float result = 0
-val = close[100]
-result := nz(val)

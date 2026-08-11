@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("RR Ratio")
-atr = nz(ta.atr(3), 1.0)
-stopDist = atr * 2
-targetDist = atr * 4
-rr = stopDist > 0 ? targetDist / stopDist : 0
-plot(rr, "RR")

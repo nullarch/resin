@@ -1,5 +1,0 @@
-//@version=5
-indicator("test")
-src = input.source(close, "Source")
-smaVal = ta.sma(src, 3)
-plot(smaVal)

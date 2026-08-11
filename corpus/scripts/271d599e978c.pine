@@ -1,6 +1,0 @@
-//@version=5
-indicator("SWMA")
-var float lastS = 0
-s = ta.swma(close)
-if not na(s)
-    lastS := s

@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Ternary Chain")
-rsi = nz(ta.rsi(close, 3), 50.0)
-sma3 = ta.sma(close, 3)
-sma5 = ta.sma(close, 5)
-score = close > sma3 and sma3 > sma5 and rsi > 60 ? 3 : close > sma3 and rsi > 50 ? 2 : close > sma3 ? 1 : close < sma3 and sma3 < sma5 and rsi < 40 ? -3 : close < sma3 and rsi < 50 ? -2 : -1
-plot(score, "S")

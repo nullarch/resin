@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Big Tern")
-rsi = nz(ta.rsi(close, 3), 50.0)
-level = rsi > 90 ? 9 : rsi > 80 ? 8 : rsi > 70 ? 7 : rsi > 60 ? 6 : rsi > 50 ? 5 : rsi > 40 ? 4 : rsi > 30 ? 3 : rsi > 20 ? 2 : rsi > 10 ? 1 : 0
-var float __obs_plot0 = na
-__obs_plot0 := level
-plot(level, "Lvl")

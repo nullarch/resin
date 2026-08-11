@@ -1,8 +1,0 @@
-//@version=5
-indicator("Switch expr assign")
-rsi5 = ta.rsi(close, 5)
-multiplier = switch
-    not na(rsi5) and nz(rsi5) > 70 => 0.5
-    not na(rsi5) and nz(rsi5) < 30 => 2.0
-    => 1.0
-adjusted = close * multiplier

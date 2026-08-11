@@ -1,9 +1,0 @@
-//@version=5
-indicator("Block Comment")
-/* This is a
-   multi-line block comment */
-var float result = 0.0
-result := close
-var float __obs_plot0 = na
-__obs_plot0 := result
-plot(result)

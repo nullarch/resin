@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Vote")
-sma3 = ta.sma(close, 3)
-rsi = nz(ta.rsi(close, 3), 50.0)
-volUp = volume > ta.sma(volume, 5)
-votes = (close > sma3 ? 1 : 0) + (rsi > 50 ? 1 : 0) + (volUp ? 1 : 0)
-bullish = votes >= 2
-plot(bullish ? 1 : 0, "V")

@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Smooth")
-smoothed = ta.sma(close, 3)
-noise = close - smoothed
-snr = smoothed > 0 ? math.abs(noise) / smoothed * 100 : 0.0
-var float __obs_plot0 = na
-__obs_plot0 := snr
-plot(snr, "SNR")

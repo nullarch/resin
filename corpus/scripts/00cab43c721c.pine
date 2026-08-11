@@ -1,4 +1,0 @@
-//@version=5
-indicator("DotAccess Strategy")
-var int dir_ = strategy.long
-plot(dir_)

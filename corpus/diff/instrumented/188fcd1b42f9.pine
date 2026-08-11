@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("SMATrend")
-trend = ta.sma(close, 5)
-detrended = close - nz(trend, close)
-var float __obs_plot0 = na
-__obs_plot0 := nz(trend, close)
-plot(nz(trend, close), "Trend")

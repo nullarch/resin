@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("Breadth")
-aboveMA = close > ta.sma(close, 5) ? 1.0 : 0.0
-aboveMASmooth = ta.sma(aboveMA, 3)
-breadth = nz(aboveMASmooth, 0.5) * 100
-plot(breadth, "B")

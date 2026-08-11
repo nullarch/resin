@@ -1,7 +1,0 @@
-//@version=5
-indicator("Deep Default")
-myFunc(float threshold = 50.0, int lookback = 5) =>
-    rsi = ta.rsi(close, lookback)
-    rsi > threshold ? 1.0 : -1.0
-plot(myFunc())
-plot(myFunc(70.0, 3))

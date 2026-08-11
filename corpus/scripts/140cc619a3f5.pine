@@ -1,7 +1,0 @@
-//@version=5
-indicator("Alert Test")
-rsi_val = ta.rsi(close, 14)
-alertcondition(rsi_val > 70, title="RSI High", message="RSI above 70")
-var float result = 0.0
-result := nz(rsi_val, 0.0)
-plot(result)

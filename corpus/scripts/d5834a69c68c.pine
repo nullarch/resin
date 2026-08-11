@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("MAD")
-sma5 = ta.sma(close, 5)
-absDev = math.abs(close - sma5)
-mad = ta.sma(absDev, 5)
-ratio = mad > 0 ? absDev / mad : 1.0
-plot(mad, "MAD")
-plot(ratio, "Ratio")

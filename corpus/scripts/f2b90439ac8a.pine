@@ -1,7 +1,0 @@
-//@version=5
-indicator("Feedforward")
-float avgVol = nz(ta.sma(volume, 5), volume)
-float volRatio = avgVol > 0 ? volume / avgVol : 1.0
-float feedforward = (volRatio - 1.0) * 0.5
-float feedback = 0.3 * (106.0 - close)
-float totalOutput = feedback + feedforward

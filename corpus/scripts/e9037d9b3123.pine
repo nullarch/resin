@@ -1,9 +1,0 @@
-//@version=5
-indicator("Custom Stoch")
-length = 5
-smoothK = 3
-smoothD = 3
-k = ta.sma(ta.stoch(close, high, low, length), smoothK)
-d = ta.sma(k, smoothD)
-plot(k)
-plot(d)

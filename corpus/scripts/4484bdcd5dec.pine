@@ -1,9 +1,0 @@
-//@version=5
-indicator("RepGameAvg")
-var float totalPay = 0.0
-var int rounds = 0
-rounds := rounds + 1
-roundPay = close > open ? 2.0 : -1.0
-totalPay := totalPay + roundPay
-avgPay = rounds > 0 ? totalPay / float(rounds) : 0.0
-plot(avgPay, "AvgPay")

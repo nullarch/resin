@@ -1,5 +1,0 @@
-
-//@version=5
-indicator("Chart Point")
-p = chart.point.now(close)
-plot(close)

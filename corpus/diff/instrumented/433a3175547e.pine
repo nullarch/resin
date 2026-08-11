@@ -1,9 +1,0 @@
-//@version=5
-indicator("MACD Histogram")
-[macdLine, signalLine, hist] = ta.macd(close, 3, 5, 3)
-rising = not na(hist) and not na(hist[1]) ? nz(hist) > nz(hist[1]) : false
-falling = not na(hist) and not na(hist[1]) ? nz(hist) < nz(hist[1]) : false
-histColor = nz(hist) >= 0 ? (rising ? color.green : color.lime) : (falling ? color.red : color.maroon)
-var float __obs_plot0 = na
-__obs_plot0 := hist
-plot(hist, "Histogram", color=histColor, style=plot.style_histogram)

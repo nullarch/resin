@@ -1,9 +1,0 @@
-//@version=5
-indicator("GreeksDash")
-c1 = nz(close[1], close)
-deltaP = c1 > 0 ? (close - c1) / c1 : 0.0
-gammaP = math.abs(close - 2.0 * c1 + nz(close[2], close))
-thetaP = -1.0 * (high - low) / math.max(close, 1.0)
-plot(deltaP * 100.0, "D")
-plot(gammaP, "G")
-plot(thetaP, "T")

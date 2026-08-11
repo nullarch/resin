@@ -1,8 +1,0 @@
-//@version=5
-indicator("Score Function")
-var float score = 0.0
-mu = ta.sma(close, 3)
-safeNz = nz(mu, close)
-residual = close - safeNz
-variance = (high - low) * (high - low)
-score := variance > 0.01 ? residual / variance : 0.0

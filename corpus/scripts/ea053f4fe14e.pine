@@ -1,8 +1,0 @@
-//@version=5
-indicator("Tidal Harmonic")
-var float barPhase = 0.0
-barPhase := barPhase + 0.628
-semiDiurnal = 2.0 * math.sin(barPhase * 2.0)
-diurnal = 1.0 * math.sin(barPhase)
-tideLevel = semiDiurnal + diurnal + close * 0.01
-plot(tideLevel)

@@ -1,9 +1,0 @@
-//@version=5
-indicator("Mealy Machine")
-var int state = 0
-input_sym = close > open ? 1 : 0
-output_val = state == 0 and input_sym == 1 ? 10.0 : state == 1 and input_sym == 0 ? 20.0 : 0.0
-state := state == 0 and input_sym == 1 ? 1 : state == 1 and input_sym == 0 ? 0 : state
-var float __obs_plot0 = na
-__obs_plot0 := output_val
-plot(output_val, "Output")

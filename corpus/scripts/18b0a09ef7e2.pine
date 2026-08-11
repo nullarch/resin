@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Pos Val")
-posValue(float shares, float price, float leverage) =>
-    shares * price * leverage
-
-val = posValue(100.0, close, 1.0)
-pctOfCapital = val / 10000 * 100
-plot(pctOfCapital, "Pct")

@@ -1,8 +1,0 @@
-//@version=5
-indicator("Plot shapes")
-sma5 = ta.sma(close, 5)
-bullCross = ta.crossover(close, sma5)
-bearCross = ta.crossunder(close, sma5)
-plotshape(bullCross, style=shape.triangleup, location=location.belowbar)
-plotshape(bearCross, style=shape.triangledown, location=location.abovebar)
-plotchar(close > open, char="B", location=location.belowbar)

@@ -1,3 +1,0 @@
-//@version=5
-indicator("Test")
-plotbar(open, high, low, close)

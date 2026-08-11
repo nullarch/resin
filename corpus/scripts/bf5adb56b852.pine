@@ -1,5 +1,0 @@
-//@version=5
-indicator("Tuple Destr")
-var float result = 0.0
-[macdLine, signalLine, hist] = ta.macd(close, 3, 5, 3)
-result := macdLine

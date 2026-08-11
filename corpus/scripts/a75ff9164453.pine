@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Abs MinMax")
-arr = array.from(-5.0, 3.0, -1.0, 7.0, -2.0)
-absArr = array.abs(arr)
-mx = array.max(absArr)
-mn = array.min(absArr)
-plot(mx, "Max")
-plot(mn, "Min")

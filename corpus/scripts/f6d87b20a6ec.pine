@@ -1,9 +1,0 @@
-//@version=5
-indicator("Nested UDF TA")
-getSMA(float src, int len) =>
-    ta.sma(src, len)
-getSignal(float src) =>
-    fast = getSMA(src, 3)
-    slow = getSMA(src, 5)
-    fast > slow ? 1 : -1
-plot(getSignal(close))

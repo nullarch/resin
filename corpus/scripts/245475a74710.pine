@@ -1,4 +1,0 @@
-//@version=5
-indicator("tostring pattern")
-var string s = ""
-s := str.tostring(3.14159, "#.##")

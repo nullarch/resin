@@ -1,9 +1,0 @@
-//@version=5
-indicator("Multiline Kwargs")
-var float result = 0.0
-result := close
-var float __obs_plot0 = na
-__obs_plot0 := result
-plot(result,
-    title="Test",
-    color=#00FF00)

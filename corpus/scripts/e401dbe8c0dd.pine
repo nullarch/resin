@@ -1,5 +1,0 @@
-//@version=5
-indicator("Var Array")
-var arr = array.new_float(0)
-arr.push(close)
-plot(arr.avg())

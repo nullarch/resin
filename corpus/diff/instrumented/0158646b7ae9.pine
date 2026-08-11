@@ -1,7 +1,0 @@
-//@version=5
-indicator("Percent")
-x = 100 %
-    3
-var float __obs_plot0 = na
-__obs_plot0 := x
-plot(x)

@@ -1,5 +1,0 @@
-//@version=5
-indicator("GEV Scale")
-float blockMax = ta.highest(close, 3)
-float gevSigma = ta.stdev(blockMax, 5)
-plot(gevSigma, "GevSigma")

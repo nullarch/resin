@@ -1,7 +1,0 @@
-//@version=5
-strategy("Test Strategy")
-if ta.crossover(ta.sma(close, 3), ta.sma(close, 5))
-    strategy.entry("Long", strategy.long)
-if ta.crossunder(ta.sma(close, 3), ta.sma(close, 5))
-    strategy.close("Long")
-plot(close)

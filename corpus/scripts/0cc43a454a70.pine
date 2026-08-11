@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("Pivots")
-ph = ta.pivothigh(high, 2, 2)
-pl = ta.pivotlow(low, 2, 2)
-hasPivot = not na(ph) or not na(pl)
-plot(hasPivot ? 1 : 0, "HasPivot")

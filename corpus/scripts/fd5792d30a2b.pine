@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("TR Analysis")
-tr = ta.tr
-avgTR = ta.sma(tr, 5)
-trRatio = avgTR > 0 ? tr / avgTR : 1.0
-expansion = trRatio > 1.5
-plot(tr, "TR")
-plot(expansion ? 1 : 0, "Expansion")

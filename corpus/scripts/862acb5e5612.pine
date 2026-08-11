@@ -1,6 +1,0 @@
-//@version=5
-indicator("AccDist")
-var float lastA = 0
-a = ta.accdist(close, high, low, volume)
-if not na(a)
-    lastA := a

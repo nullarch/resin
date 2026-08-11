@@ -1,6 +1,0 @@
-//@version=5
-indicator("RSI Pipeline")
-var float lastRsi = 0
-r = ta.rsi(close, 5)
-if not na(r)
-    lastRsi := r

@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("Std Dev")
-stdev5 = ta.stdev(close, 5)
-sma5 = ta.sma(close, 5)
-cv = sma5 > 0 ? stdev5 / sma5 * 100 : 0.0
-plot(cv, "CV")

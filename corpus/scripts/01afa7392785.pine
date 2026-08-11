@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Rank Norm")
-var float[] data = array.new_float(0)
-array.push(data, close)
-if array.size(data) > 8
-    array.shift(data)
-rank = array.size(data) > 0 ? array.percentrank(data, close) : 50.0
-plot(rank, "Rank")

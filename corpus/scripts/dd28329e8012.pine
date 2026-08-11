@@ -1,4 +1,0 @@
-//@version=5
-indicator("tostring na")
-var string s = ""
-s := str.tostring(na)

@@ -1,8 +1,0 @@
-//@version=5
-indicator("squeeze lite")
-var float result = 0.0
-[bbMid, bbUp, bbLow] = ta.bb(close, 5, 2.0)
-[kcMid, kcUp, kcLow] = ta.kc(close, 5, 1.5)
-sqzOn = not na(bbLow) and not na(kcLow) ? (bbLow > kcLow and bbUp < kcUp) : false
-mom = ta.mom(close, 5)
-result := sqzOn ? nz(mom, 0.0) : 0.0

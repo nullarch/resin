@@ -1,6 +1,0 @@
-
-//@version=5
-strategy("No Trades", overlay=true)
-if close > 99999
-    strategy.entry("Long", strategy.long)
-plot(close, "C")

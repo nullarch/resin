@@ -1,7 +1,0 @@
-//@version=5
-indicator("Effective Rt")
-float cases = close
-emaShort = ta.ema(close, 3)
-emaLong = ta.ema(close, 5)
-rtEstimate = not na(emaLong) and emaLong > 0 ? emaShort / emaLong : 1.0
-isGrowing = rtEstimate > 1.0 ? 1.0 : 0.0

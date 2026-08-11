@@ -1,7 +1,0 @@
-//@version=5
-indicator("Table Noop")
-var t = table.new(position.top_right, 3, 3)
-table.cell(t, 0, 0, "A")
-table.cell_set_text(t, 0, 0, "B")
-table.cell_set_bgcolor(t, 0, 0, color.red)
-plot(close)

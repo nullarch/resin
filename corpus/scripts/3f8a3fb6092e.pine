@@ -1,7 +1,0 @@
-//@version=5
-indicator("Var Init")
-var float x = close
-// x is initialized to close on bar 0 (102), then never re-initialized
-var float result = 0.0
-result := x
-plot(result)

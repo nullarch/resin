@@ -1,6 +1,0 @@
-//@version=5
-indicator("While Converge")
-x = close
-for i = 0 to 9
-    x := (x + close / x) / 2
-plot(x)

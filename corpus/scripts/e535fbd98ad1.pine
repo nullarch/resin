@@ -1,9 +1,0 @@
-//@version=5
-indicator("Channel Roughness")
-var roughnessMap = map.new<string, float>()
-velocity = math.abs(close - open)
-regime = velocity > 3.0 ? "turbulent" : velocity > 1.0 ? "transitional" : "laminar"
-prev = map.contains(roughnessMap, regime) ? map.get(roughnessMap, regime) : 0.0
-map.put(roughnessMap, regime, prev + 1.0)
-regimeCount = map.size(roughnessMap)
-plot(regimeCount)

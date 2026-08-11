@@ -1,7 +1,0 @@
-//@version=5
-indicator("BB Order")
-[mid, upper, lower] = ta.bb(close, 5, 2.0)
-ordered = na(mid) or (upper >= mid and mid >= lower)
-var float __obs_plot0 = na
-__obs_plot0 := ordered ? 1.0 : 0.0
-plot(ordered ? 1.0 : 0.0)

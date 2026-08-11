@@ -1,7 +1,0 @@
-//@version=5
-indicator("Float NA")
-var float x = 0.0
-x := float(na)
-var bool check = false
-check := na(x)
-plot(close)

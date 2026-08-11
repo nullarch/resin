@@ -1,4 +1,0 @@
-//@version=5
-indicator("VarPersist")
-var int barCount = 0
-barCount := barCount + 1

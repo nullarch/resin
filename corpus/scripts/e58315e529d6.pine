@@ -1,6 +1,0 @@
-//@version=5
-indicator("Deadband")
-float setpoint = 106.0
-float err = setpoint - close
-float tolerance = 2.0
-float action = math.abs(err) > tolerance ? err * 0.5 : 0.0

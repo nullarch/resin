@@ -1,6 +1,0 @@
-//@version=5
-indicator("WVF Div")
-pd = 5
-hc = ta.highest(close, pd)
-wvf = ((hc - low) / hc) * 100
-plot(wvf)

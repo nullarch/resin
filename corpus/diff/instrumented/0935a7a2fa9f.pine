@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Sort Asc")
-var a = array.from(3.0, 1.0, 4.0, 1.0, 5.0)
-array.sort(a, order.ascending)
-first = array.get(a, 0)
-var float __obs_plot0 = na
-__obs_plot0 := first
-plot(first)

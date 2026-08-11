@@ -1,6 +1,0 @@
-//@version=5
-indicator("StrTA")
-var string msg = ""
-smaVal = ta.sma(close, 3)
-if not na(smaVal)
-    msg := str.tostring(smaVal)

@@ -1,5 +1,0 @@
-//@version=5
-indicator("Biodiversity Oscillation")
-cycle = math.sin(bar_index * 0.5) * 10.0 + 50.0
-diversity = math.max(cycle, 0.0)
-plot(diversity, "Diversity")

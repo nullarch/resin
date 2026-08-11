@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("NVI PVI")
-n = ta.nvi()
-p = ta.pvi()
-plot(n + p)

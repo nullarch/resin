@@ -1,6 +1,0 @@
-//@version=5
-indicator("Line Cont Plus")
-var float result = 0.0
-result := 10.0 +
-    20.0 +
-    30.0

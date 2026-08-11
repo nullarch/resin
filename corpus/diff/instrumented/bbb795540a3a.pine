@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("BB Width %")
-[mid, upper, lower] = ta.bb(close, 5, 2.0)
-bbw = (upper - lower) / mid * 100
-var float __obs_plot0 = na
-__obs_plot0 := bbw
-plot(bbw, "BBW%")

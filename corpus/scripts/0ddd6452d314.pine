@@ -1,5 +1,0 @@
-//@version=5
-indicator("PrevClose")
-var int crossCount = 0
-if close > close[1]
-    crossCount := crossCount + 1

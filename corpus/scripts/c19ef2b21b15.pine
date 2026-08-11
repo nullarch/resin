@@ -1,7 +1,0 @@
-//@version=5
-indicator("Series in Args")
-var float diff = 0.0
-diff := nz(close) - nz(close[1], close)
-var float avg_diff = 0.0
-avg_diff := math.avg(nz(close), nz(close[1], close), nz(close[2], close))
-plot(close)

@@ -1,7 +1,0 @@
-
-//@version=5
-strategy("Exit Test")
-if close > open
-    strategy.entry("Long", strategy.long)
-strategy.exit("Exit", "Long", profit=100, loss=50)
-plot(close)

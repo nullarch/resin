@@ -1,5 +1,0 @@
-//@version=5
-indicator("Impulse RSI")
-rsiVal = nz(ta.rsi(close, 5), 50.0)
-impulse = rsiVal > 70 ? 1 : rsiVal < 30 ? -1 : 0
-plot(impulse)

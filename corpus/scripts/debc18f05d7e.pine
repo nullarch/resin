@@ -1,6 +1,0 @@
-//@version=5
-indicator("Color")
-c1 = #FF0000
-c2 = #00FF00FF
-c3 = color.rgb(255, 0, 0)
-c4 = color.new(color.red, 50)

@@ -1,4 +1,0 @@
-//@version=5
-indicator("Import Test")
-import TradingView/ta/5 as tvta
-plot(ta.sma(close, 14))

@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("ExpDecay")
-var float filtered = 0.0
-decayFactor = 0.85
-filtered := filtered * decayFactor + close * (1.0 - decayFactor)
-diff = close - filtered
-plot(diff, "D")

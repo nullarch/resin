@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Safe Div")
-a = close / open
-b = (high - low) / close
-c = volume / ta.sma(volume, 3)
-safe = na(c) ? 1.0 : c
-plot(a * b * safe, "Product")

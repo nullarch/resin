@@ -1,8 +1,0 @@
-//@version=5
-indicator("If Arg")
-bull = close > open
-src = bull ? close : open
-result = ta.sma(src, 3)
-fast = ta.ema(bull ? close : low, 3)
-plot(result)
-plot(fast)

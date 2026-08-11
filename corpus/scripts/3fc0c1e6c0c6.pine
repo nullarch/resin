@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("LeakyReLU")
-leakyRelu(x) =>
-    x >= 0 ? x : 0.01 * x
-diff = close - open
-out = leakyRelu(diff)
-plot(out, "LReLU")

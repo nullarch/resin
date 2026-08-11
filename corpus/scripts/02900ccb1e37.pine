@@ -1,8 +1,0 @@
-//@version=5
-strategy("Shipping Route")
-currentStrength = nz(ta.atr(3), 1.0)
-favorableThreshold = ta.sma(currentStrength, 3)
-if not na(favorableThreshold) and currentStrength < favorableThreshold
-    strategy.entry("Sail", strategy.long)
-if not na(favorableThreshold) and currentStrength >= favorableThreshold * 1.5
-    strategy.close("Sail")

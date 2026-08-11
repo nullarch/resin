@@ -1,6 +1,0 @@
-//@version=5
-indicator("Hash Digest")
-seed = close * 31.0 + open * 17.0 + high * 13.0 + low * 7.0
-mixed = math.abs(seed)
-digest = mixed - math.floor(mixed / 256.0) * 256.0
-plot(digest)

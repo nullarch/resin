@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Switch TA")
-rsiVal = ta.rsi(close, 3)
-indicator_val = switch
-    rsiVal > 60 => ta.sma(close, 3)
-    rsiVal > 40 => ta.ema(close, 5)
-    => ta.wma(close, 5)
-plot(indicator_val, "Adaptive")

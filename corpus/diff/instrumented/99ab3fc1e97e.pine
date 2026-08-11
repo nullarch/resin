@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("KC Precision")
-[middle, upper, lower] = ta.kc(close, 20, 1.5)
-var float __obs_plot0 = na
-__obs_plot0 := middle
-plot(middle)

@@ -1,3 +1,0 @@
-//@version=5
-indicator("Test")
-var boxes = array.new_box(0)

@@ -1,7 +1,0 @@
-//@version=5
-indicator("For Expr")
-float total = 0.0
-for i = 0 to 4
-    total := total + close[i]
-avg_ = total / 5
-plot(avg_)

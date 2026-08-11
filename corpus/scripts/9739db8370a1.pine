@@ -1,6 +1,0 @@
-//@version=5
-indicator("test")
-rsi = ta.rsi(close, 3)
-signal = rsi > 70 ? "overbought" : rsi < 30 ? "oversold" : "neutral"
-color_val = signal == "overbought" ? 1 : signal == "oversold" ? -1 : 0
-plot(color_val)

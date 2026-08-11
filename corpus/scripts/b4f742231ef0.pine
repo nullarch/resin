@@ -1,6 +1,0 @@
-//@version=5
-indicator("Underscore")
-float _my_var_1 = 10.0
-float __double = 20.0
-var float result = 0.0
-result := _my_var_1 + __double

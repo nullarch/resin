@@ -1,4 +1,0 @@
-//@version=5
-indicator("Inline Comment")
-var float result = 0.0
-result := close // this is inline

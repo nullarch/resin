@@ -1,7 +1,0 @@
-//@version=5
-indicator("Subquery")
-sub_result = ta.sma(close, 3)
-outer_filter = not na(sub_result) and sub_result > 104.0
-var int subq_matches = 0
-if outer_filter
-    subq_matches := subq_matches + 1

@@ -1,6 +1,0 @@
-//@version=5
-indicator("Arr Fill")
-a = array.new<float>(5, 10.0)
-var float total = 0.0
-total := array.sum(a)
-plot(total)

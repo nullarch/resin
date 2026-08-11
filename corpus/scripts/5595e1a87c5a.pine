@@ -1,4 +1,0 @@
-//@version=5
-library("myLib")
-export myFunc(float x) =>
-    x * 2.0

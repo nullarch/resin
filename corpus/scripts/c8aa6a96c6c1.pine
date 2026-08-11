@@ -1,8 +1,0 @@
-//@version=5
-indicator("Variance Ratio")
-float prevC = not na(close[1]) ? close[1] : close
-float logRet = prevC > 0 ? math.log(close / prevC) : 0.0
-float var1 = ta.stdev(logRet, 3) * ta.stdev(logRet, 3)
-float var2 = ta.stdev(logRet, 5) * ta.stdev(logRet, 5)
-float vr = var1 > 0.0001 ? var2 / var1 : 1.0
-plot(vr, "VR")

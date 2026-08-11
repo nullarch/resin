@@ -1,5 +1,0 @@
-//@version=5
-indicator("Vol Analysis")
-vwap_val = ta.vwap(close)
-volSma = ta.sma(volume, 5)
-highVol = volume > nz(volSma) * 1.5

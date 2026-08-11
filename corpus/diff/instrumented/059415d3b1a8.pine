@@ -1,7 +1,0 @@
-//@version=5
-indicator("Pressure Gradient")
-gradient = close - open
-absGrad = math.abs(gradient)
-var float __obs_plot0 = na
-__obs_plot0 := absGrad
-plot(absGrad, title="gradient")

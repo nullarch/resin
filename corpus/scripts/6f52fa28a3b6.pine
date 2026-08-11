@@ -1,6 +1,0 @@
-//@version=5
-indicator("Ternary Cont")
-var float result = 0.0
-result := close > 100 ?
-    close :
-    0.0

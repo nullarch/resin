@@ -1,8 +1,0 @@
-//@version=5
-indicator("Regret")
-recentHigh = ta.highest(high, 5)
-missedUpside = recentHigh - close
-regretLevel = missedUpside > 3.0 ? 2 : missedUpside > 1.0 ? 1 : 0
-var float __obs_plot0 = na
-__obs_plot0 := regretLevel
-plot(regretLevel)

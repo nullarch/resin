@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Cmp+Arith")
-a = close + 5.0 > open * 1.1
-b = close - 1.0 < high
-c = close >= low + 2.0
-result = a and b and c ? 1.0 : 0.0
-plot(result)

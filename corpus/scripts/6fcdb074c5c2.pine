@@ -1,9 +1,0 @@
-//@version=5
-indicator("Alerts")
-var int signalCount = 0
-smaVal = ta.sma(close, 3)
-if not na(smaVal)
-    if close > smaVal
-        signalCount := signalCount + 1
-        alert("Price above SMA")
-    alertcondition(close > smaVal, "Above SMA", "Price crossed above SMA")

@@ -1,5 +1,0 @@
-//@version=5
-indicator("test")
-momentum = close - open
-accel = momentum - momentum[1]
-plot(accel)

@@ -1,8 +1,0 @@
-//@version=5
-indicator("Func Typed")
-var float result = 0.0
-
-calc(float x, int n) =>
-    x * n
-
-result := calc(5.5, 4)

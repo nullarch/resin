@@ -1,6 +1,0 @@
-//@version=5
-indicator("Multi Tuple")
-[macdLine, signalLine, histLine] = ta.macd(close, 3, 5, 3)
-[bb_mid, bb_upper, bb_lower] = ta.bb(close, 5, 2.0)
-spread = macdLine - bb_mid
-plot(spread)

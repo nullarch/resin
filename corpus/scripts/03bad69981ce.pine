@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("PRO")
-roc3 = close[3] > 0 ? (close - close[3]) / close[3] * 100 : 0.0
-smoothROC = ta.sma(roc3, 3)
-plot(smoothROC, "PRO")

@@ -1,8 +1,0 @@
-//@version=5
-indicator("Color Gradient")
-rsi = ta.rsi(close, 14)
-rsiColor = color.from_gradient(rsi, 0, 100, color.red, color.green)
-plot(rsi, color=rsiColor)
-bgcolor(color.new(rsiColor, 90))
-hline(70)
-hline(30)

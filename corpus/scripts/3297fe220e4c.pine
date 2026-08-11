@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("BarsSince")
-cond = close > open
-bars = ta.barssince(cond)
-plot(bars)

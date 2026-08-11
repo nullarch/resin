@@ -1,9 +1,0 @@
-//@version=5
-indicator("Hline fill")
-rsi5 = ta.rsi(close, 5)
-var float __obs_plot0 = na
-__obs_plot0 := rsi5
-p1 = plot(rsi5, "RSI")
-h1 = hline(70, "OB")
-h2 = hline(30, "OS")
-fill(h1, h2, color=color.new(color.purple, 90))

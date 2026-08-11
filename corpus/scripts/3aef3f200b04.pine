@@ -1,6 +1,0 @@
-//@version=5
-indicator("Cont In UDF")
-calc(float a, float b) =>
-    a +
-        b
-plot(calc(close, open))

@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Format Str")
-s1 = str.tostring(close, "#.##")
-s2 = str.tostring(close, "#.####")
-s3 = str.tostring(bar_index)
-combined = s1 + "|" + s3
-len = str.length(combined)
-plot(len, "Len")

@@ -1,6 +1,0 @@
-//@version=5
-indicator("Format patterns")
-s1 = str.tostring(close)
-s2 = str.tostring(close, "#.##")
-s3 = str.tostring(close, "#")
-s4 = str.tostring(123.456, "#.####")

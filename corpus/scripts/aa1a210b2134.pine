@@ -1,9 +1,0 @@
-//@version=5
-indicator("Entropy Rate")
-float barRange = high - low
-float prevRange = not na(high[1]) ? high[1] - low[1] : barRange
-float entropyNow = barRange > 0.01 ? math.log(barRange) : 0.0
-float entropyPrev = prevRange > 0.01 ? math.log(prevRange) : 0.0
-float entropyRate = entropyNow - entropyPrev
-var float cumRate = 0.0
-cumRate := cumRate + math.abs(entropyRate)

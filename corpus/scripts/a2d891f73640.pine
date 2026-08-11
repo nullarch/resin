@@ -1,8 +1,0 @@
-//@version=5
-indicator("Volume")
-avgVol = ta.sma(volume, 5)
-highVol = volume > avgVol * 1.5
-bullVol = highVol and close > open
-bearVol = highVol and close < open
-signal = bullVol ? 1 : bearVol ? -1 : 0
-plot(signal)

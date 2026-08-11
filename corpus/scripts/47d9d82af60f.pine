@@ -1,5 +1,0 @@
-//@version=5
-indicator("Var State Save")
-var float total = 0.0
-total := total + 1.0
-plot(total)

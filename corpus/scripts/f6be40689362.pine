@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Mom Trend")
-rsi = nz(ta.rsi(close, 3), 50.0)
-sma5 = ta.sma(close, 5)
-upTrend = close > sma5
-momBull = rsi > 55
-filtered = upTrend and momBull ? 1 : not upTrend and not momBull ? -1 : 0
-plot(filtered, "Filt")

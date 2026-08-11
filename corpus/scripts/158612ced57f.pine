@@ -1,6 +1,0 @@
-//@version=5
-indicator("Math Chain")
-var float result = 0.0
-a = math.sqrt(close)
-b = math.pow(a, 2)
-result := math.abs(b - close)

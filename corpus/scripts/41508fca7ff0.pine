@@ -1,8 +1,0 @@
-//@version=5
-indicator("arr stats")
-var float result = 0.0
-arr = array.from(10.0, 20.0, 30.0, 40.0, 50.0)
-avgVal = array.avg(arr)
-minVal = array.min(arr)
-maxVal = array.max(arr)
-result := avgVal + minVal + maxVal

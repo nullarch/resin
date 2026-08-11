@@ -1,6 +1,0 @@
-//@version=5
-indicator("str coerce")
-var float result = 0.0
-s = "Price: " + str.tostring(close)
-if str.length(s) > 5
-    result := 1.0

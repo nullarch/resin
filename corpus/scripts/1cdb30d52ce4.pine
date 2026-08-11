@@ -1,5 +1,0 @@
-//@version=5
-indicator("Bool Arith")
-x = close > open ? 1 : 0
-y = x + 1
-plot(y)

@@ -1,7 +1,0 @@
-//@version=5
-indicator("Multiline Bool")
-var int result = 0
-cond = close > open and
-    high > low and
-    volume > 0
-result := cond ? 1 : 0

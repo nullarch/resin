@@ -1,5 +1,0 @@
-//@version=5
-indicator("barstate first")
-var int firstCount = 0
-if barstate.isfirst
-    firstCount := firstCount + 1

@@ -1,8 +1,0 @@
-//@version=5
-indicator("Array Dispatch")
-arr = array.new<float>(0)
-arr.push(1.0)
-arr.push(2.0)
-arr.push(3.0)
-total = arr.sum()
-plot(total)

@@ -1,5 +1,0 @@
-//@version=5
-indicator("Multiline Compare")
-x = close >
-    open ? 1 : 0
-plot(x)

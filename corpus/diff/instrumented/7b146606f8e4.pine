@@ -1,8 +1,0 @@
-//@version=5
-indicator("NS-03 Viscosity")
-atrVal = nz(ta.atr(3), 1.0)
-volFlow = volume > 0 ? volume / 1000.0 : 1.0
-viscosity = atrVal / volFlow
-var float __obs_plot0 = na
-__obs_plot0 := viscosity
-plot(viscosity)

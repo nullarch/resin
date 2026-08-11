@@ -1,4 +1,0 @@
-//@version=5
-indicator("RoundNeg")
-var float r = 0
-r := math.round(-2.5)

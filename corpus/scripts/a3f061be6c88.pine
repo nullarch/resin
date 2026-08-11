@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Alloc Wt")
-rsi = nz(ta.rsi(close, 3), 50.0)
-sma5 = ta.sma(close, 5)
-trend = close > sma5
-eqWeight = trend ? rsi > 60 ? 0.8 : 0.6 : rsi < 40 ? 0.2 : 0.4
-bondWeight = 1.0 - eqWeight
-plot(eqWeight, "Eq")

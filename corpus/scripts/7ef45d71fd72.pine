@@ -1,5 +1,0 @@
-//@version=5
-indicator("Label Full")
-if barstate.islast
-    label.new(bar_index, close, "Buy", xloc=xloc.bar_index, yloc=yloc.price, color=color.green, textcolor=color.white, style=label.style_label_up, size=size.normal)
-plot(close)

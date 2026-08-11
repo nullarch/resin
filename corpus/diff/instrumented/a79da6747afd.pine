@@ -1,9 +1,0 @@
-//@version=5
-indicator("Div Chain")
-x = close - close
-y = 1.0 / x
-z = y / x
-safe = na(y) ? 0.0 : y
-var float __obs_plot0 = na
-__obs_plot0 := safe
-plot(safe)

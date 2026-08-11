@@ -1,4 +1,0 @@
-//@version=5
-indicator("Clean")
-x = ta.sma(close, 14)
-plot(x, "SMA")

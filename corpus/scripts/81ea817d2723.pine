@@ -1,9 +1,0 @@
-//@version=5
-indicator("Donchian")
-length = 5
-upper = ta.highest(high, length)
-lower = ta.lowest(low, length)
-basis = (upper + lower) / 2
-plot(basis)
-plot(upper)
-plot(lower)

@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("HLC3")
-tp = (high + low + close) / 3
-tpMA = ta.sma(tp, 5)
-deviation = tp - tpMA
-plot(deviation, "Dev")

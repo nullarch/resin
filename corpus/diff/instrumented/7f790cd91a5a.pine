@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Atan2 Pi")
-angle = math.atan2(close - open, high - low)
-degrees = angle * 180 / math.pi
-var float __obs_plot0 = na
-__obs_plot0 := degrees
-plot(degrees, "Angle")

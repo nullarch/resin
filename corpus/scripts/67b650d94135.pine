@@ -1,6 +1,0 @@
-//@version=5
-indicator("bool shorthand")
-bool[] flags = array.new<bool>(3, false)
-array.set(flags, 1, true)
-var bool mid = false
-mid := array.get(flags, 1)

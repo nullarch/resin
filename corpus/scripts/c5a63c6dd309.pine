@@ -1,6 +1,0 @@
-//@version=5
-indicator("Collatz Step")
-var float n = 27.0
-remainder = n - math.floor(n / 2.0) * 2.0
-n := remainder == 0.0 ? n / 2.0 : 3.0 * n + 1.0
-plot(n, "Collatz")

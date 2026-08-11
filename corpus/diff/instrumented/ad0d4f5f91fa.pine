@@ -1,8 +1,0 @@
-//@version=5
-indicator("Multiline Bool")
-cond = close > open and
-    high > high[1] and
-    low > low[1]
-var float __obs_plot0 = na
-__obs_plot0 := cond ? 1 : 0
-plot(cond ? 1 : 0)

@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("RSI Slope")
-rsi = ta.rsi(close, 3)
-rsiSlope = rsi - rsi[1]
-accelerating = rsiSlope > 0 and rsi > 50
-decelerating = rsiSlope < 0 and rsi > 50
-plot(rsiSlope, "Slope")
-plot(accelerating ? 1 : decelerating ? -1 : 0, "Accel")

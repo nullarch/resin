@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("SR Width")
-hi5 = ta.highest(high, 5)
-lo5 = ta.lowest(low, 5)
-zoneWidth = hi5 - lo5
-avgWidth = ta.sma(zoneWidth, 3)
-narrowing = zoneWidth < avgWidth
-plot(narrowing ? 1 : 0, "N")

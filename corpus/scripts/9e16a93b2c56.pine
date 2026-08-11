@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("RSI MR")
-rsi = nz(ta.rsi(close, 3), 50.0)
-oversold = rsi < 30
-overbought = rsi > 70
-mrSignal = oversold ? 1 : overbought ? -1 : 0
-plot(mrSignal, "MR")

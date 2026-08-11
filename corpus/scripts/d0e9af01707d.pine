@@ -1,6 +1,0 @@
-//@version=5
-indicator("Corr")
-var float lastC = 0
-c = ta.correlation(close, volume, 5)
-if not na(c)
-    lastC := c

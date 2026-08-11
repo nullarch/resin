@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("NaN Chain")
-val = close[20]
-result = na(val) ? -1.0 : val + 1.0
-safe = nz(val, 0.0)
-plot(result, "Result")
-plot(safe, "Safe")

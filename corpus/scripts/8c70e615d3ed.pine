@@ -1,9 +1,0 @@
-//@version=5
-indicator("Manifold Curvature")
-var float prevFisher = 1.0
-var float curvature = 0.0
-spread = high - low
-fisher = spread > 0.01 ? 1.0 / (spread * spread) : 1.0
-dFisher = fisher - prevFisher
-curvature := math.abs(dFisher)
-prevFisher := fisher

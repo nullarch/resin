@@ -1,9 +1,0 @@
-//@version=5
-indicator("atr trail")
-var float trail = 0.0
-atr5 = ta.atr(5)
-if not na(atr5)
-    stopDist = atr5 * 2.0
-    newTrail = close - stopDist
-    if newTrail > trail
-        trail := newTrail

@@ -1,6 +1,0 @@
-//@version=5
-indicator("Partition Tolerance")
-midpoint = (high + low) / 2.0
-upper_partition = high - midpoint
-lower_partition = midpoint - low
-spread = upper_partition + lower_partition

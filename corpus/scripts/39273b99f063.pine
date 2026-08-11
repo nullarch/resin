@@ -1,8 +1,0 @@
-//@version=5
-indicator("String Ops")
-s1 = str.tostring(close)
-s2 = str.tostring(close, "#.##")
-s3 = "Price: " + s1
-s4 = str.contains(s3, "Price")
-s5 = str.length(s3)
-s6 = str.upper("hello")

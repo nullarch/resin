@@ -1,6 +1,0 @@
-//@version=5
-indicator("Harmonic 1")
-float ema3 = nz(ta.ema(close, 3), close)
-float harmonic1 = close - ema3
-float magnitude = math.abs(harmonic1)
-plot(magnitude, "H1Mag")

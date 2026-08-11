@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("Inside Bar")
-isInside = not na(high[1]) and high <= high[1] and low >= low[1]
-isOutside = not na(high[1]) and high > high[1] and low < low[1]
-plot(isInside ? 1 : isOutside ? -1 : 0, "IO")

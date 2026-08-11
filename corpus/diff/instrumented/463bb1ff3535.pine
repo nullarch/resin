@@ -1,9 +1,0 @@
-//@version=5
-indicator("UDT Draw")
-type Container
-    float price = 0.0
-    int dir = 0
-var Container c = Container.new(close, 1)
-var float __obs_plot0 = na
-__obs_plot0 := c.price
-plot(c.price)

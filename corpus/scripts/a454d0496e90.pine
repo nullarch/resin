@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Vol Scale")
-atr3 = nz(ta.atr(3), 1.0)
-atr5 = nz(ta.atr(5), 1.0)
-ratio = atr5 > 0 ? atr3 / atr5 : 1.0
-shortTermVol = ratio > 1.2
-plot(shortTermVol ? 1 : 0, "STV")

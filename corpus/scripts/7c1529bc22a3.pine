@@ -1,8 +1,0 @@
-//@version=5
-indicator("For Expr Sum")
-var float result = 0.0
-float acc = 0.0
-result := for i = 1 to 5
-    acc := acc + float(i)
-    acc
-plot(result)

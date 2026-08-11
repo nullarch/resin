@@ -1,8 +1,0 @@
-//@version=5
-indicator("Attractor Basin")
-float attractor1 = 103.0
-float attractor2 = 110.0
-float dist1 = math.abs(close - attractor1)
-float dist2 = math.abs(close - attractor2)
-float basin = dist1 < dist2 ? 1.0 : 2.0
-float basinStrength = dist1 < dist2 ? 1.0 / (dist1 + 0.01) : 1.0 / (dist2 + 0.01)

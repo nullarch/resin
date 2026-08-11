@@ -1,7 +1,0 @@
-//@version=5
-indicator("Entropy Pool")
-var float pool = 0.0
-newEntropy = math.abs(close - open) * 7.3 + math.abs(high - low) * 3.1
-pool := pool + newEntropy
-pool := pool - math.floor(pool / 1000.0) * 1000.0
-plot(pool)

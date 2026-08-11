@@ -1,8 +1,0 @@
-//@version=5
-indicator("If Expr ML")
-x = if close > open and
-    volume > 1000
-    ta.sma(close, 3)
-else
-    ta.ema(close, 3)
-plot(x)

@@ -1,7 +1,0 @@
-//@version=5
-indicator("Standing Wave Nodes")
-float oscillation = close - nz(ta.sma(close, 5), close)
-float prevOsc = not na(close[1]) ? close[1] - nz(ta.sma(close, 5), close) : 0.0
-bool isNode = (oscillation >= 0.0 and prevOsc <= 0.0) or (oscillation <= 0.0 and prevOsc >= 0.0)
-var int nodeCount = 0
-nodeCount := isNode ? nodeCount + 1 : nodeCount

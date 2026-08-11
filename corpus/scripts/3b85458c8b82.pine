@@ -1,7 +1,0 @@
-//@version=5
-indicator("Bandgap EMA")
-bandgap = (high - low) * (close - open > 0 ? 1.0 : 0.5)
-smoothGap = ta.ema(close, 3)
-var float minGap = 999.0
-if bandgap < minGap and bandgap > 0
-    minGap := bandgap

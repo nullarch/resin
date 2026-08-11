@@ -1,9 +1,0 @@
-//@version=5
-indicator("While Expr")
-var float result = 0.0
-int n = 5
-float x = 0.0
-while n > 0
-    x := x + 1.0
-    n := n - 1
-result := x

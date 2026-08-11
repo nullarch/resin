@@ -1,9 +1,0 @@
-//@version=5
-indicator("Cubical Complex")
-float priceNorm = (close - ta.lowest(low, 5)) /
-    math.max(ta.highest(high, 5) - ta.lowest(low, 5), 0.01)
-float volNorm = volume / math.max(ta.highest(volume, 5), 1.0)
-float cellId = math.floor(priceNorm * 4) + math.floor(volNorm * 4) * 4
-var float __obs_plot0 = na
-__obs_plot0 := cellId
-plot(cellId, "Cell")

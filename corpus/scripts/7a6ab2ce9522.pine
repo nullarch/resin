@@ -1,5 +1,0 @@
-//@version=5
-indicator("nonvar reset")
-var float result = 0.0
-x = 42.0
-result := x

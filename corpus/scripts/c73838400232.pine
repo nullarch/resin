@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Str Concat")
-s = "O:" + str.tostring(open, "#.#")
-s := s + " H:" + str.tostring(high, "#.#")
-s := s + " L:" + str.tostring(low, "#.#")
-s := s + " C:" + str.tostring(close, "#.#")
-len = str.length(s)
-plot(len, "Len")

@@ -1,6 +1,0 @@
-//@version=5
-indicator("El Nino Index")
-shortSma = ta.sma(close, 3)
-longSma = ta.sma(close, 5)
-elNino = longSma > 0 ? shortSma / longSma : 1.0
-plot(elNino, title="elnino")

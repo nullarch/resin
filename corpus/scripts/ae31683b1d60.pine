@@ -1,8 +1,0 @@
-//@version=5
-indicator("Generic Array")
-var float result = 0.0
-array<float> arr = array.new<float>(3, 0.0)
-arr.set(0, 10.0)
-arr.set(1, 20.0)
-arr.set(2, 30.0)
-result := arr.get(1)

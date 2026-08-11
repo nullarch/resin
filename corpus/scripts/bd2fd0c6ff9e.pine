@@ -1,3 +1,0 @@
-//@version=5
-indicator("tf main period")
-p = timeframe.main_period

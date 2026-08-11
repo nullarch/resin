@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("ATR Size")
-atr = nz(ta.atr(3), 1.0)
-riskPct = 2.0
-accountSize = 10000.0
-riskAmount = accountSize * riskPct / 100
-posSize = atr > 0 ? riskAmount / atr : 0
-plot(posSize, "Size")

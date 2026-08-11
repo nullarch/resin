@@ -1,8 +1,0 @@
-//@version=5
-indicator("UDT Import")
-type MyType
-    float value = 0.0
-    string label = ""
-var t = MyType.new()
-t.value := close
-plot(t.value)

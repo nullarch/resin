@@ -1,6 +1,0 @@
-//@version=5
-indicator("Div Zero")
-x = close - close
-y = 1.0 / x
-safe = na(y) ? 0.0 : y
-plot(safe)

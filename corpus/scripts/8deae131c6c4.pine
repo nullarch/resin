@@ -1,8 +1,0 @@
-//@version=5
-indicator("UDT Fields")
-type Signal
-    float price = 0.0
-    int dir = 0
-var float result = 0.0
-sig = Signal.new(close, close > open ? 1 : -1)
-result := sig.price

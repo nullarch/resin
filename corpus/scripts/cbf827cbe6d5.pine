@@ -1,6 +1,0 @@
-//@version=5
-indicator("type cast")
-i = int(close)
-f = float(i)
-s = str.tostring(f)
-b = close > 100

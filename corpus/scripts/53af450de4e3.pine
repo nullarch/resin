@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("Round")
-roundLevel = math.round(close / 10) * 10
-dist = math.abs(close - roundLevel)
-nearRound = dist < 1.0
-plot(nearRound ? 1 : 0, "NR")

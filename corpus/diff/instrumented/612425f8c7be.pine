@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Weighted Close")
-typical = (high + low + close) / 3
-weighted = (high + low + close + close) / 4
-diff = typical - weighted
-var float __obs_plot0 = na
-__obs_plot0 := diff
-plot(diff, "Diff")

@@ -1,7 +1,0 @@
-//@version=5
-indicator("Mean Free Path")
-float microXS = 5.0
-float atomDensity = close / 10.0
-float macroXS = microXS * atomDensity
-float meanFreePath = macroXS > 0 ? 1.0 / macroXS : 999.0
-float collisionProb = 1.0 - math.exp(-1.0 / meanFreePath)

@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("OBV Proxy")
-var float obv = 0.0
-chg = nz(close - close[1], 0.0)
-obv := chg > 0 ? obv + volume : chg < 0 ? obv - volume : obv
-plot(obv, "OBV")

@@ -1,8 +1,0 @@
-//@version=5
-indicator("If Expr")
-var float result = 0.0
-float x = if close > 110
-    close + 10
-else
-    close - 10
-result := x

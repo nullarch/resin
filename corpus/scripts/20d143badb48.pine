@@ -1,7 +1,0 @@
-//@version=5
-indicator("Logistic Growth")
-r = 0.1
-K = 1000.0
-var float pop = 50.0
-pop := pop + r * pop * (1.0 - pop / K)
-plot(pop, "Pop")

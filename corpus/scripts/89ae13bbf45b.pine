@@ -1,4 +1,0 @@
-//@version=5
-indicator("input bool color")
-showMA = input.bool(true, "Show MA")
-maColor = input.color(color.blue, "MA Color")

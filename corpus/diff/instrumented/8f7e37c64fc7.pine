@@ -1,7 +1,0 @@
-//@version=5
-indicator("Runtime Bars")
-var int count = 0
-count := count + 1
-var float __obs_plot0 = na
-__obs_plot0 := count
-plot(count)

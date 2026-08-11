@@ -1,3 +1,0 @@
-//@version=5
-indicator("MACD hist")
-[macdLine, signalLine, hist] = ta.macd(close, 12, 26, 9)

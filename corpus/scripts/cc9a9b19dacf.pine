@@ -1,7 +1,0 @@
-//@version=5
-indicator("Lenz Law")
-float priceMove = close - (not na(close[1]) ? close[1] : close)
-float smaLag = nz(ta.sma(close, 5), close) - (not na(close[1]) ? nz(ta.sma(close, 5), close) : nz(ta.sma(close, 5), close))
-float opposition = priceMove * smaLag < 0.0 ? 1.0 : 0.0
-var int oppCount = 0
-oppCount := opposition > 0.5 ? oppCount + 1 : oppCount

@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("RSI Div")
-rsi = nz(ta.rsi(close, 3), 50.0)
-priceLow = close < close[1] and close < close[2]
-rsiLow = rsi < rsi[1] and rsi < rsi[2]
-bullDiv = priceLow and not rsiLow
-plot(bullDiv ? 1 : 0, "BDiv")

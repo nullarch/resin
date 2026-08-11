@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Bar Cycle")
-var int barNum = 0
-barNum := barNum + 1
-cycleLen = 5
-cyclePos = barNum % cycleLen
-isStart = cyclePos == 1
-plot(cyclePos, "Pos")

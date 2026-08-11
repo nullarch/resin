@@ -1,7 +1,0 @@
-//@version=5
-indicator("ER")
-length = 5
-change_ = math.abs(ta.change(close, length))
-volatility = ta.cum(math.abs(ta.change(close, 1)))
-er = change_ / close
-plot(er)

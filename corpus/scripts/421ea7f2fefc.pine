@@ -1,5 +1,0 @@
-//@version=5
-indicator("Str Format")
-var s = str.tostring(3.14159)
-var int len_ = str.length(s)
-plot(len_)

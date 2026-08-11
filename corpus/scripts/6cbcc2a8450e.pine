@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("Vol Spike")
-avgVol = ta.sma(volume, 5)
-spike = avgVol > 0 and volume > avgVol * 2
-plot(spike ? 1 : 0, "Spk")

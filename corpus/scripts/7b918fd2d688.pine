@@ -1,8 +1,0 @@
-//@version=5
-indicator("CompAssign")
-var float x = 10.0
-if bar_index == 0
-    x += 5
-    x -= 2
-    x *= 3
-    x /= 2

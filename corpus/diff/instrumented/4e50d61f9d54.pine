@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("MA Dist")
-sma5 = ta.sma(close, 5)
-dist = sma5 > 0 ? (close - sma5) / sma5 * 100 : 0.0
-extended = math.abs(dist) > 2
-var float __obs_plot0 = na
-__obs_plot0 := extended ? dist : 0.0
-plot(extended ? dist : 0.0, "Dist")

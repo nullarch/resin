@@ -1,7 +1,0 @@
-//@version=5
-indicator("test")
-myFunc(float x, float y = na) =>
-    result = na(y) ? x * 2 : x + y
-    result
-val = myFunc(close)
-plot(val)

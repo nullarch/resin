@@ -1,8 +1,0 @@
-//@version=5
-library("MyLib")
-export add(float a, float b) =>
-    a + b
-export multiply(float a, float b) =>
-    a * b
-export calcMA(float src, int len) =>
-    ta.sma(src, len)

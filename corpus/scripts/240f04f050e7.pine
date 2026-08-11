@@ -1,5 +1,0 @@
-//@version=5
-indicator("BBW Dev")
-bbw5 = ta.bbw(close, 5, 2.0)
-dev5 = ta.dev(close, 5)
-isNarrow = not na(bbw5) and nz(bbw5) < 0.1

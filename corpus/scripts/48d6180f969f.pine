@@ -1,6 +1,0 @@
-//@version=5
-indicator("VWAP")
-var float lastV = 0
-v = ta.vwap(hlc3)
-if not na(v)
-    lastV := v

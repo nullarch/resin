@@ -1,7 +1,0 @@
-//@version=5
-indicator("UDF Chain")
-double(float x) =>
-    x * 2
-triple(float x) =>
-    double(x) + x
-plot(triple(close))

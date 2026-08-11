@@ -1,9 +1,0 @@
-//@version=5
-indicator("Displacement Interp")
-var int step = 0
-step := step + 1
-float tParam = math.min(step / 10.0, 1.0)
-float x0 = open
-float x1 = close
-float interpVal = (1.0 - tParam) * x0 + tParam * x1
-plot(interpVal, "Interp")

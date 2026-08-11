@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("BidAskSpread")
-spread = high - low
-relSpread = close > 0 ? spread / close * 100.0 : 0.0
-avgSpread = ta.sma(relSpread, 5)
-plot(nz(avgSpread, 0.0), "Spread")

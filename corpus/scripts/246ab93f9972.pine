@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("TSI")
-tsiVal = ta.tsi(close, 5, 3)
-bullish = tsiVal > 0
-plot(tsiVal, "TSI")

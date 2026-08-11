@@ -1,5 +1,0 @@
-
-//@version=5
-indicator("AccDist Precision")
-ad = ta.accdist
-plot(ad)

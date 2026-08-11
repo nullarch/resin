@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Dyn MA")
-atr = nz(ta.atr(3), 1.0)
-avgATR = ta.sma(nz(ta.atr(3), 1.0), 3)
-volRatio = avgATR > 0 ? atr / avgATR : 1.0
-useShort = volRatio > 1.2
-ma = useShort ? ta.sma(close, 3) : ta.sma(close, 5)
-plot(ma, "MA")

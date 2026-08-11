@@ -1,8 +1,0 @@
-//@version=5
-indicator("UDF Chain")
-var float result = 0.0
-
-inc(x) =>
-    x + 1
-
-result := inc(inc(inc(0.0)))

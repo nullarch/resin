@@ -1,9 +1,0 @@
-//@version=5
-indicator("Bar Index")
-var int first_idx = -1
-var int last_idx = -1
-if barstate.isfirst
-    first_idx := bar_index
-if barstate.islast
-    last_idx := bar_index
-plot(bar_index)

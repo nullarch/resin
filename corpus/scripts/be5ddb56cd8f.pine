@@ -1,5 +1,0 @@
-//@version=5
-indicator("Sum of Squares")
-n = bar_index + 1.0
-sumSq = n * (n + 1.0) * (2.0 * n + 1.0) / 6.0
-plot(sumSq, "SumSq")

@@ -1,6 +1,0 @@
-//@version=5
-indicator("CeilFloor")
-var float c = 0
-var float f = 0
-c := math.ceil(3.14)
-f := math.floor(3.14)

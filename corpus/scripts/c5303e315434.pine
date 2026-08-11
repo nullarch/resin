@@ -1,5 +1,0 @@
-//@version=5
-indicator("WHERE Filter")
-var int matching_rows = 0
-if close > 105.0
-    matching_rows := matching_rows + 1

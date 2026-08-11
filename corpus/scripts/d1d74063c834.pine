@@ -1,7 +1,0 @@
-//@version=5
-indicator("P Controller")
-float setpoint = 105.0
-float measured = close
-float error = setpoint - measured
-float kp = 0.5
-float output = kp * error

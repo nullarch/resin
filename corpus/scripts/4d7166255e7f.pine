@@ -1,7 +1,0 @@
-//@version=5
-indicator("First-Order Absorption")
-var float absorbed = 0.0
-dose = (close - open) > 0 ? close - open : 0.0
-ka = 0.3
-absorbed := absorbed + dose * ka * math.exp(-ka * absorbed / 100.0)
-plot(absorbed)

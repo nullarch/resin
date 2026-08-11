@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Fill Plot")
-sma3 = ta.sma(close, 3)
-sma5 = ta.sma(close, 5)
-p1 = plot(sma3, "Fast")
-p2 = plot(sma5, "Slow")
-fill(p1, p2, color=color.new(color.blue, 80))

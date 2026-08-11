@@ -1,8 +1,0 @@
-//@version=5
-indicator("Orifice Flow")
-dischargeCoeff = 0.62
-area = math.abs(close - open) * 0.1
-head = high - low
-gravity = 9.81
-discharge = dischargeCoeff * area * math.sqrt(2.0 * gravity * head)
-plot(discharge)

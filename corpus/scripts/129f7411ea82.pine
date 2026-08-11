@@ -1,4 +1,0 @@
-//@version=5
-indicator("box params")
-if barstate.islast
-    box.new(bar_index - 5, high, bar_index, low, border_color=color.blue, bgcolor=color.new(color.blue, 90))

@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("SMATrend")
-trend = ta.sma(close, 5)
-detrended = close - nz(trend, close)
-plot(nz(trend, close), "Trend")

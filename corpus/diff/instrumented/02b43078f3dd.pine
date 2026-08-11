@@ -1,6 +1,0 @@
-//@version=5
-indicator("Frost Line")
-frostLine = ta.lowest(low, 5)
-var float __obs_plot0 = na
-__obs_plot0 := frostLine
-plot(frostLine, title="frost")

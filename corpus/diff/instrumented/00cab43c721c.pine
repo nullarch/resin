@@ -1,6 +1,0 @@
-//@version=5
-indicator("DotAccess Strategy")
-var int dir_ = strategy.long
-var float __obs_plot0 = na
-__obs_plot0 := dir_
-plot(dir_)

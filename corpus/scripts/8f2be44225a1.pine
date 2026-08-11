@@ -1,6 +1,0 @@
-//@version=5
-indicator("Normal After")
-x = close +
-    open
-y = high - low
-plot(x + y)

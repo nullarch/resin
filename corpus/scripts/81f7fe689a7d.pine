@@ -1,6 +1,0 @@
-//@version=5
-indicator("Barmerge")
-daily = request.security(syminfo.tickerid, "D", close, barmerge.gaps_off, barmerge.lookahead_off)
-var float last = 0.0
-last := nz(daily, close)
-plot(close)

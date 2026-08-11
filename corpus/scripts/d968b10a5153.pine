@@ -1,6 +1,0 @@
-//@version=5
-indicator("for result asc")
-var float last_x = 0.0
-x = for i = 0 to 3
-    i * 2.0
-last_x := x

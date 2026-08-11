@@ -1,8 +1,0 @@
-//@version=5
-indicator("Str tonumber")
-s = "123.45"
-n = str.tonumber(s)
-l = str.length(s)
-empty = str.length("")
-upper = str.upper("hello")
-lower = str.lower("WORLD")

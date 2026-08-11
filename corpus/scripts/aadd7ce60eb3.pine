@@ -1,7 +1,0 @@
-//@version=5
-indicator("crossover")
-var float result = 0.0
-sma3 = ta.sma(close, 3)
-sma5 = ta.sma(close, 5)
-crossed = ta.crossover(sma3, sma5)
-result := crossed ? 1.0 : 0.0

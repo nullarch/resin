@@ -1,3 +1,0 @@
-//@version=5
-indicator("ColorAlpha")
-c = #FF000080

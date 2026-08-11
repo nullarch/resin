@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("VWAP")
-vwapVal = ta.vwap(close)
-deviation = close - vwapVal
-plot(vwapVal, "VWAP")
-plot(deviation, "Dev")

@@ -1,5 +1,0 @@
-//@version=5
-indicator("Label")
-if barstate.islast
-    label.new(bar_index, close, "Last")
-plot(close)

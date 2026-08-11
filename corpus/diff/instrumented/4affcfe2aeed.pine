@@ -1,9 +1,0 @@
-//@version=5
-indicator("test")
-var string result = ""
-result := ""
-for i = 1 to 3
-    result := result + str.tostring(i) + ","
-var float __obs_plot0 = na
-__obs_plot0 := str.length(result)
-plot(str.length(result))

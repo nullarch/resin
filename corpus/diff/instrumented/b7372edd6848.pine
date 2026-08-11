@@ -1,8 +1,0 @@
-//@version=5
-indicator("Barstate First")
-var int first_bar = -1
-if barstate.isfirst
-    first_bar := bar_index
-var float __obs_plot0 = na
-__obs_plot0 := first_bar
-plot(first_bar)

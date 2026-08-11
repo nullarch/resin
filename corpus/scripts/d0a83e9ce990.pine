@@ -1,8 +1,0 @@
-//@version=5
-indicator("Input TA")
-length = input.int(5, "Length")
-mult = input.float(2.0, "Multiplier")
-src = input.source(close, "Source")
-sma_val = ta.sma(src, length)
-[upper, mid, lower] = ta.bb(src, length, mult)
-plot(sma_val, "SMA")

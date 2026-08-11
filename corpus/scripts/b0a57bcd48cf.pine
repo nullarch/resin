@@ -1,8 +1,0 @@
-//@version=5
-indicator("Switch Scope")
-int mode = 2
-var float result = 0.0
-result := switch mode
-    1 => 10.0
-    2 => 20.0
-    => 0.0

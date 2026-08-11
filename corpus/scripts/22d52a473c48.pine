@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("MFI Anal")
-mfi = nz(ta.mfi(close, 5), 50.0)
-overbought = mfi > 80
-oversold = mfi < 20
-zone = overbought ? 1 : oversold ? -1 : 0
-plot(mfi, "MFI")
-plot(zone, "Zone")

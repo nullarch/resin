@@ -1,7 +1,0 @@
-//@version=5
-indicator("UDF Arrow")
-f_sq(x) => x * x
-
-var float result = 0.0
-result := f_sq(7.0)
-plot(result)

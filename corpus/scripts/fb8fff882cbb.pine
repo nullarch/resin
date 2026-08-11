@@ -1,7 +1,0 @@
-//@version=5
-indicator("Trophic Cascade")
-apex = nz(ta.ema(close, 3), close)
-meso = apex * 0.5
-base = meso * 0.3
-cascadeIndex = apex > 0.0 ? base / apex : 0.0
-plot(cascadeIndex, "Cascade")

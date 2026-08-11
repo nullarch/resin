@@ -1,9 +1,0 @@
-//@version=5
-indicator("Kantorovich Dual")
-float cost = math.abs(close - open)
-float fDual = math.min(close / 100.0, cost)
-float gDual = math.min(open / 100.0, cost - fDual)
-float dualVal = fDual + gDual
-var float cumDual = 0.0
-cumDual := cumDual + dualVal
-plot(cumDual, "KDual")

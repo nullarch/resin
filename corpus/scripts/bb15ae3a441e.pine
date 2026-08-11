@@ -1,9 +1,0 @@
-//@version=5
-indicator("If Chain")
-var int result = 0
-if close > 110
-    result := 3
-else if close > 105
-    result := 2
-else
-    result := 1

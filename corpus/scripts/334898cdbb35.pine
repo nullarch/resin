@@ -1,5 +1,0 @@
-
-//@version=5
-indicator("COG Precision")
-c = ta.cog(close, 10)
-plot(c)

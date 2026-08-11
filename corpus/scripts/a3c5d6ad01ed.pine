@@ -1,5 +1,0 @@
-//@version=5
-indicator("BoolNa")
-var bool result = true
-x = na
-result := bool(x)

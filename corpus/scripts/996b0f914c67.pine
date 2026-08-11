@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("Long Tern")
-rsi = nz(ta.rsi(close, 3), 50.0)
-grade = rsi > 80 ? 5 : rsi > 70 ? 4 : rsi > 60 ? 3 : rsi > 50 ? 2 : rsi > 40 ? 1 : rsi > 30 ? 0 : -1
-plot(grade, "Grade")

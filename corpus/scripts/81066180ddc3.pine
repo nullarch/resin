@@ -1,7 +1,0 @@
-//@version=5
-indicator("Switch string")
-trend = close > open ? "bull" : "bear"
-score = switch trend
-    "bull" => 1
-    "bear" => -1
-    => 0

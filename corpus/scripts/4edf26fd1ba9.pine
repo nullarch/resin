@@ -1,5 +1,0 @@
-//@version=5
-indicator("Change ROC")
-chg = ta.change(close)
-chg2 = ta.change(close, 2)
-roc5 = ta.roc(close, 5)

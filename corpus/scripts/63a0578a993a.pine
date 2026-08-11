@@ -1,5 +1,0 @@
-
-//@version=5
-indicator("III Precision")
-i = ta.iii()
-plot(i)

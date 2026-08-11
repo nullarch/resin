@@ -1,3 +1,0 @@
-//@version=5
-indicator("Keltner")
-[kcUpper, kcMiddle, kcLower] = ta.kc(close, 5, 1.5)

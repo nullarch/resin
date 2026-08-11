@@ -1,7 +1,0 @@
-//@version=5
-indicator("Double Neg")
-x = close > 100
-y = not not x
-var float __obs_plot0 = na
-__obs_plot0 := y ? 1 : 0
-plot(y ? 1 : 0)

@@ -1,7 +1,0 @@
-//@version=5
-indicator("Not Or")
-a = true
-b = true
-var bool result = false
-result := not a or b  // (not true) or true → false or true → true
-plot(close)

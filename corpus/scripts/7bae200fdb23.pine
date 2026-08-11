@@ -1,6 +1,0 @@
-//@version=5
-indicator("cross detection")
-sma3 = ta.sma(close, 3)
-sma5 = ta.sma(close, 5)
-bullCross = ta.crossover(sma3, sma5)
-bearCross = ta.crossunder(sma3, sma5)

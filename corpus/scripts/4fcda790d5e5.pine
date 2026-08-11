@@ -1,9 +1,0 @@
-//@version=5
-indicator("Stress Strain")
-force = volume / 100.0
-area = high - low
-stress = area > 0 ? force / area : 0.0
-strain = close > 0 ? (close - open) / close : 0.0
-var float maxStress = 0.0
-if stress > maxStress
-    maxStress := stress

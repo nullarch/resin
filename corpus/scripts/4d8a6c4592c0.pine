@@ -1,9 +1,0 @@
-//@version=5
-indicator("Map Signal Tracker")
-var map<string, float> signals = map.new<string, float>()
-if close > open
-    prev = map.contains(signals, "bull") ? map.get(signals, "bull") : 0.0
-    map.put(signals, "bull", prev + 1)
-else
-    prev = map.contains(signals, "bear") ? map.get(signals, "bear") : 0.0
-    map.put(signals, "bear", prev + 1)

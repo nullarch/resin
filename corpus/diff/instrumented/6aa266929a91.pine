@@ -1,9 +1,0 @@
-//@version=5
-indicator("Non-var Reset")
-float x = 5.0
-x := x + 1.0
-var float last_x = 0.0
-last_x := x
-var float __obs_plot0 = na
-__obs_plot0 := last_x
-plot(last_x)

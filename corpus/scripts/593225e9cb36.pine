@@ -1,6 +1,0 @@
-
-//@version=5
-indicator("Sell Press")
-totalRange = high - low
-sellPress = totalRange > 0 ? (high - close) / totalRange * 100 : 50.0
-plot(sellPress, "SP")

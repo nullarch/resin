@@ -1,7 +1,0 @@
-//@version=5
-indicator("Array Index")
-var arr = array.from(10.0, 20.0, 30.0)
-var float val = array.get(arr, 1)
-var float __obs_plot0 = na
-__obs_plot0 := val
-plot(val)

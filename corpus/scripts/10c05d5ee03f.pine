@@ -1,6 +1,0 @@
-//@version=5
-indicator("UDTMut")
-type Counter
-    int value = 0
-var Counter c = Counter.new()
-c.value := c.value + 1

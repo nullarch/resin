@@ -1,8 +1,0 @@
-//@version=5
-indicator("Kaplan-Meier Survival")
-float hazardRate = 0.0
-float rsiVal = nz(ta.rsi(close, 3), 50.0)
-hazardRate := rsiVal > 70.0 ? 0.1 : 0.02
-var float survivalProb = 1.0
-survivalProb := survivalProb * (1.0 - hazardRate)
-plot(survivalProb, "Survival")

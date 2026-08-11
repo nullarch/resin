@@ -1,9 +1,0 @@
-//@version=5
-indicator("While convergence")
-var float result = 100.0
-val = close
-i = 0
-while val > 1.0 and i < 20
-    val := val * 0.5
-    i := i + 1
-result := val

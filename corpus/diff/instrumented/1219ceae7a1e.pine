@@ -1,9 +1,0 @@
-//@version=5
-indicator("Perfect Square")
-n = math.floor(math.abs(close))
-sqrtN = math.sqrt(n)
-rounded = math.floor(sqrtN)
-isPerfect = math.abs(rounded * rounded - n) < 0.5 ? 1.0 : 0.0
-var float __obs_plot0 = na
-__obs_plot0 := isPerfect
-plot(isPerfect, "IsPerfSq")

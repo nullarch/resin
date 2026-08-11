@@ -1,7 +1,0 @@
-//@version=5
-indicator("Num Sci")
-float a = 1e5
-float b = 2.5e-3
-var float result = 0.0
-result := a + b
-plot(result)

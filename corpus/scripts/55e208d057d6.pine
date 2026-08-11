@@ -1,9 +1,0 @@
-//@version=5
-indicator("PushMulti")
-var a = array.new<float>(0)
-if bar_index < 3
-    array.push(a, close)
-var float total = 0
-if bar_index == 9
-    for i = 0 to array.size(a) - 1
-        total := total + array.get(a, i)

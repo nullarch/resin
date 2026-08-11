@@ -1,6 +1,0 @@
-//@version=5
-indicator("Raft Log")
-var float[] log_entries = array.new_float(0)
-array.push(log_entries, close)
-log_size = array.size(log_entries)
-last_entry = log_size > 0 ? array.get(log_entries, log_size - 1) : 0.0

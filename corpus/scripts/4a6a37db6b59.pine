@@ -1,8 +1,0 @@
-//@version=5
-indicator("Cursor Iteration")
-var float[] window = array.new_float(0)
-array.push(window, close)
-if array.size(window) > 5
-    array.remove(window, 0)
-window_size = array.size(window)
-window_last = window_size > 0 ? array.get(window, window_size - 1) : 0.0

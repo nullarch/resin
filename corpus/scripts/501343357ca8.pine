@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("Var vs Non")
-var float persistent = 0.0
-float reset_each = 0.0
-persistent := persistent + 1.0
-reset_each := reset_each + 1.0
-plot(persistent)

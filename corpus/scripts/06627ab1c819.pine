@@ -1,7 +1,0 @@
-//@version=5
-indicator("Epidemic Curve")
-float peakDay = 5.0
-float sigma = 2.0
-float dayNum = bar_index + 1.0
-float exponent = -0.5 * math.pow((dayNum - peakDay) / sigma, 2.0)
-float cases = 1000.0 * math.exp(exponent)

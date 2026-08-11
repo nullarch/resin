@@ -1,8 +1,0 @@
-//@version=5
-indicator("method array")
-var float result = 0.0
-arr = array.new_float(0)
-arr.push(10.0)
-arr.push(20.0)
-arr.push(30.0)
-result := arr.sum()

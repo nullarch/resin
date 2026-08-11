@@ -1,7 +1,0 @@
-//@version=5
-indicator("Label")
-if barstate.islast
-    label.new(bar_index, close, "Last")
-var float __obs_plot0 = na
-__obs_plot0 := close
-plot(close)

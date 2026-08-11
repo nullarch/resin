@@ -1,7 +1,0 @@
-//@version=5
-indicator("test")
-s = "hello world"
-result = str.replace(str.upper(s), "HELLO", "HI")
-var float __obs_plot0 = na
-__obs_plot0 := str.length(result)
-plot(str.length(result))

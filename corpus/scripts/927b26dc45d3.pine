@@ -1,7 +1,0 @@
-//@version=5
-indicator("alert noop")
-var float result = 0.0
-if close > 110
-    alert("Price above 110")
-alertcondition(close > 110, "High", "Above 110")
-result := close

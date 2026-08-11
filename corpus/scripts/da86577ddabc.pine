@@ -1,8 +1,0 @@
-//@version=5
-indicator("Array filter")
-arr = array.from(1.0, 2.0, 3.0, 4.0, 5.0)
-allPositive = array.every(arr)
-hasAny = array.some(arr)
-arr2 = array.from(0.0, 1.0, 2.0)
-allPositive2 = array.every(arr2)
-hasAny2 = array.some(arr2)

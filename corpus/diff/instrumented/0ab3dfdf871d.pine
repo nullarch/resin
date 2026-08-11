@@ -1,9 +1,0 @@
-//@version=5
-indicator("Multi Var State")
-var float count = 0.0
-var float sum_ = 0.0
-count := count + 1.0
-sum_ := sum_ + close
-var float __obs_plot0 = na
-__obs_plot0 := count
-plot(count)

@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Scope Shadow")
-x = 10.0
-if close > 105
-    x := 20.0
-    if close > 110
-        x := 30.0
-plot(x)

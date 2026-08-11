@@ -1,9 +1,0 @@
-//@version=5
-indicator("Switch Multi")
-var int result = 0
-int x = 2
-val = switch x
-    1, 2 => 100
-    3, 4 => 200
-    => 0
-result := val

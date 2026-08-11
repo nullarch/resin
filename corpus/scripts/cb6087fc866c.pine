@@ -1,5 +1,0 @@
-//@version=5
-indicator("Arrival Rate")
-float prevVol = not na(volume[1]) ? volume[1] : volume
-float arrivalRate = prevVol > 0 ? volume / prevVol : 1.0
-plot(arrivalRate, "ArrivalRate")

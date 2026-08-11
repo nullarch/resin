@@ -1,5 +1,0 @@
-
-//@version=5
-indicator("Input Sym")
-sym = input.symbol("AAPL", title="Symbol")
-plot(close)

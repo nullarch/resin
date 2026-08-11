@@ -1,7 +1,0 @@
-//@version=5
-indicator("Fractal Dim")
-float absChg = not na(close[1]) ? math.abs(close - close[1]) : 0.0
-var float pathLen = 0.0
-pathLen := pathLen + absChg
-float netDisp = not na(close[4]) ? math.abs(close - close[4]) : 0.001
-float fractalDim = netDisp > 0.001 ? math.log(pathLen + 0.001) / math.log(netDisp + 0.001) : 1.0

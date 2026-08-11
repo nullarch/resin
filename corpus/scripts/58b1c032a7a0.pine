@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Ichi Proxy")
-tenkan = (ta.highest(high, 3) + ta.lowest(low, 3)) / 2
-kijun = (ta.highest(high, 5) + ta.lowest(low, 5)) / 2
-aboveCloud = close > math.max(tenkan, kijun)
-belowCloud = close < math.min(tenkan, kijun)
-plot(tenkan, "Tenkan")
-plot(kijun, "Kijun")

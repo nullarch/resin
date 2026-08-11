@@ -1,5 +1,0 @@
-//@version=5
-indicator("barstate flags")
-isFirst = barstate.isfirst
-isLast = barstate.islast
-isHist = barstate.ishistory

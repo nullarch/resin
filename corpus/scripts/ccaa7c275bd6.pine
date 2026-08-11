@@ -1,7 +1,0 @@
-//@version=5
-indicator("Coprime Heuristic")
-a = math.floor(close)
-b = math.floor(high)
-diff = math.abs(a - b)
-heuristic = diff > 1.0 ? 1.0 : 0.0
-plot(heuristic, "Coprime")

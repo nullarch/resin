@@ -1,8 +1,0 @@
-//@version=5
-indicator("History lookback")
-c0 = close
-c1 = close[1]
-c2 = close[2]
-c3 = close[3]
-avg4 = (c0 + nz(c1) + nz(c2) + nz(c3)) / 4
-momentum = c0 - nz(c3)

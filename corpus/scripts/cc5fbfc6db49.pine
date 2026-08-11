@@ -1,7 +1,0 @@
-//@version=5
-indicator("Carrying Capacity")
-K = 1000.0
-var float pop = 10.0
-pop := pop * 1.5
-pop := math.min(pop, K)
-plot(pop, "Pop")

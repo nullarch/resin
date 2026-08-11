@@ -1,5 +1,0 @@
-//@version=5
-indicator("IVProxyAtr")
-atrVal = nz(ta.atr(5), 1.0)
-ivProxy = close > 0 ? (atrVal / close) * math.sqrt(252.0) : 0.0
-plot(ivProxy, "IV")

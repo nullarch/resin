@@ -1,5 +1,0 @@
-//@version=5
-indicator("Line Ext")
-if barstate.islast
-    line.new(bar_index - 5, close, bar_index, close, extend=extend.right, color=color.red, width=2)
-plot(close)

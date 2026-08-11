@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("Str Split")
-data = "10,20,30,40,50"
-parts = str.split(data, ",")
-count = array.size(parts)
-plot(count, "Parts")

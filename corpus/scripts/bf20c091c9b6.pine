@@ -1,5 +1,0 @@
-//@version=5
-indicator("Plot bar candle")
-sma5 = ta.sma(close, 5)
-isBull = close > open
-plotcandle(open, high, low, close, color=isBull ? color.green : color.red)

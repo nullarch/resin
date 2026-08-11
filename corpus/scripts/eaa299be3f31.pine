@@ -1,8 +1,0 @@
-
-//@version=5
-indicator("MR Regime")
-sma5 = ta.sma(close, 5)
-dist = sma5 > 0 ? (close - sma5) / sma5 * 100 : 0.0
-extended = math.abs(dist) > 2
-nearMean = math.abs(dist) < 0.5
-plot(extended ? 2 : nearMean ? 0 : 1, "MR")

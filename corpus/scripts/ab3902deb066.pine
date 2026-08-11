@@ -1,9 +1,0 @@
-//@version=5
-indicator("Comprehensive C96")
-alertcondition(close > open, "Bull")
-var float result = 0.0
-x = na
-isNa = x == na
-result := isNa ? myFunc() : 0.0
-myFunc() =>
-    ta.sma(close, 3)

@@ -1,9 +1,0 @@
-//@version=5
-indicator("Switch Expr String")
-string mode = "fast"
-var float result = 0.0
-result := switch mode
-    "fast" => 5.0
-    "slow" => 20.0
-    => 10.0
-plot(result)

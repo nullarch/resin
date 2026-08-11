@@ -1,8 +1,0 @@
-//@version=5
-indicator("BB %B")
-length = 5
-mult = 2.0
-[middle, upper, lower] = ta.bb(close, length, mult)
-bbRange = upper - lower
-percentB = bbRange != 0 ? (close - lower) / bbRange : 0.5
-plot(percentB)

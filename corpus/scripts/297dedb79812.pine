@@ -1,6 +1,0 @@
-//@version=5
-indicator("CCI_SMA")
-var float result = 0
-cciVal = ta.cci(ta.sma(close, 3), 5)
-if not na(cciVal)
-    result := cciVal

@@ -1,7 +1,0 @@
-//@version=5
-indicator("OOB NaN")
-x = close[100]
-isNa = na(x)
-var float __obs_plot0 = na
-__obs_plot0 := isNa ? 1.0 : 0.0
-plot(isNa ? 1.0 : 0.0)

@@ -1,8 +1,0 @@
-//@version=5
-indicator("Priority Sched")
-float sma3 = nz(ta.sma(close, 3), close)
-float priority = close > sma3 ? 3.0 : 1.0
-float rsiVal = nz(ta.rsi(close, 5), 50.0)
-float urgency = rsiVal > 60.0 ? 2.0 : 1.0
-float effectivePri = priority * urgency
-float scheduled = effectivePri > 4.0 ? close : open

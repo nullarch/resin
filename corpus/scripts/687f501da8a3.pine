@@ -1,4 +1,0 @@
-//@version=5
-indicator("format number")
-var string s = ""
-s := str.format_number(1234.5678, "#.##")

@@ -1,7 +1,0 @@
-//@version=5
-indicator("Timbre Blend")
-w1 = 0.5
-w2 = 0.3
-w3 = 0.2
-blend = close * w1 + open * w2 + low * w3
-plot(blend, title="timbre")

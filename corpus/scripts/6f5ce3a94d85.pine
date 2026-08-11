@@ -1,7 +1,0 @@
-//@version=5
-indicator("Smoothness")
-float absMove = not na(close[1]) ? math.abs(close - close[1]) : 0.0
-var float pathLen = 0.0
-pathLen := pathLen + absMove
-float netMove = not na(close[5]) ? math.abs(close - close[5]) : 0.0
-float smoothness = pathLen > 0 ? netMove / pathLen : 1.0

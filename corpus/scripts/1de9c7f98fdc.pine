@@ -1,8 +1,0 @@
-//@version=5
-indicator("OU Process")
-float mu = ta.sma(close, 5)
-float theta = 0.5
-float prevC = not na(close[1]) ? close[1] : close
-float ouStep = theta * (mu - prevC)
-float ouVal = prevC + ouStep
-plot(ouVal, "OU")

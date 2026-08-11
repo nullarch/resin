@@ -1,8 +1,0 @@
-//@version=5
-indicator("TF-IDF Proxy")
-tf = volume / 1000.0
-barRange = high - low
-idf = barRange > 0 ? 1.0 / barRange : 0.0
-tfidf = tf * idf
-var float cumTfidf = 0.0
-cumTfidf := cumTfidf + tfidf

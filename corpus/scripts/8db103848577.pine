@@ -1,4 +1,0 @@
-//@version=5
-indicator("fixnan")
-sma3 = ta.sma(close, 3)
-filled = fixnan(sma3)

@@ -1,6 +1,0 @@
-//@version=5
-indicator("Endofunctor")
-float mapped1 = nz(ta.sma(close, 3), close)
-float mapped2 = nz(ta.sma(mapped1, 3), mapped1)
-float mapped3 = nz(ta.sma(mapped2, 3), mapped2)
-float smoothness = math.abs(mapped3 - mapped2) + math.abs(mapped2 - mapped1)

@@ -1,7 +1,0 @@
-//@version=5
-indicator("Brownian Path")
-var float cumRet = 0.0
-float prevC = not na(close[1]) ? close[1] : close
-float logRet = prevC > 0 ? math.log(close / prevC) : 0.0
-cumRet := cumRet + logRet
-plot(cumRet, "CumRet")

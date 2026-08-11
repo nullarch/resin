@@ -1,5 +1,0 @@
-//@version=5
-indicator("Alert")
-crossUp = ta.crossover(ta.sma(close, 3), ta.sma(close, 5))
-alertcondition(crossUp, "Cross Up", "SMA cross up")
-plot(crossUp ? 1 : 0)

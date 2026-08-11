@@ -1,9 +1,0 @@
-//@version=5
-indicator("Switch CFExpr")
-var int level = 0
-level := switch close
-    111 => 5
-    110 => 4
-    109 => 3
-    => 0
-plot(close)

@@ -1,8 +1,0 @@
-//@version=5
-indicator("Triple Ternary TA")
-sma3 = ta.sma(close, 3)
-sma5 = ta.sma(close, 5)
-result = close > sma3 ? (sma3 > sma5 ? 2.0 : 1.0) : (close < sma5 ? -2.0 : -1.0)
-var float __obs_plot0 = na
-__obs_plot0 := result
-plot(result)

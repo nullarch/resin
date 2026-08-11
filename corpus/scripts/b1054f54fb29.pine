@@ -1,6 +1,0 @@
-//@version=5
-indicator("MTF Expression")
-dailyClose = request.security(syminfo.tickerid, "D", close)
-weeklyClose = request.security(syminfo.tickerid, "W", close)
-aboveDaily = not na(dailyClose) ? close > nz(dailyClose) : false
-aboveWeekly = not na(weeklyClose) ? close > nz(weeklyClose) : false

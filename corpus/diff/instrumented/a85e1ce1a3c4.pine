@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("Dev POC")
-mid = (high + low + close) / 3.0
-devPoc = nz(ta.ema(mid, 5), mid)
-dist = math.abs(close - devPoc)
-var float __obs_plot0 = na
-__obs_plot0 := dist
-plot(dist, "DistPOC")

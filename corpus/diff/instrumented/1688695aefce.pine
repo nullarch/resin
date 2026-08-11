@@ -1,7 +1,0 @@
-//@version=5
-indicator("4-Ternary")
-rsi = ta.rsi(close, 5)
-zone = rsi > 70 ? 4 : rsi > 50 ? 3 : rsi > 30 ? 2 : 1
-var float __obs_plot0 = na
-__obs_plot0 := zone
-plot(zone)

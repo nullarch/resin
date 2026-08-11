@@ -1,3 +1,0 @@
-//@version=5
-indicator("Warn Test")
-x = ta.sma(close, bar_index)

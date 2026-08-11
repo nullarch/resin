@@ -1,5 +1,0 @@
-//@version=5
-indicator("Blocking Prob")
-float rho = volume > 0 ? math.abs(close - open) / (high - low + 0.01) : 0.0
-float blockProb = rho > 1.0 ? 1.0 : rho * rho / (1.0 + rho * rho)
-plot(blockProb, "BlockProb")

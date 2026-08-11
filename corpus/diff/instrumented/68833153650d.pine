@@ -1,8 +1,0 @@
-//@version=5
-indicator("Tape Head")
-var int head = 5
-moveRight = close > open
-head := moveRight ? head + 1 : math.max(head - 1, 0)
-var float __obs_plot0 = na
-__obs_plot0 := head
-plot(head, "Head")

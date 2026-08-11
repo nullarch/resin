@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("EW Blend")
-rsi = nz(ta.rsi(close, 3), 50.0)
-sma3 = ta.sma(close, 3)
-maScore = close > sma3 ? 1.0 : -1.0
-rsiScore = (rsi - 50) / 50
-blend = (maScore + rsiScore) / 2
-plot(blend, "B")

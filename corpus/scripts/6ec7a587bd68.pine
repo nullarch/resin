@@ -1,7 +1,0 @@
-
-//@version=5
-indicator("Substr")
-code = "LONG_BUY_NOW"
-prefix = str.substring(code, 0, 4)
-isLong = prefix == "LONG"
-plot(isLong ? 1 : 0, "IsLong")

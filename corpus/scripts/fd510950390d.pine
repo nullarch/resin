@@ -1,7 +1,0 @@
-//@version=5
-indicator("Multi Input")
-var float result = 0.0
-int len = input.int(14, "Length")
-float mult = input.float(2.0, "Mult")
-bool show = input.bool(true, "Show")
-result := show ? len * mult : 0.0

@@ -1,8 +1,0 @@
-//@version=5
-indicator("SNR")
-signal = ta.ema(close, 5)
-noise = close - signal
-signalPow = signal * signal
-noisePow = noise * noise
-snr = noisePow > 0 ? signalPow / noisePow : 0.0
-plot(snr)

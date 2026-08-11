@@ -1,7 +1,0 @@
-//@version=5
-indicator("Cross Verify")
-sma2 = ta.sma(close, 2)
-sma4 = ta.sma(close, 4)
-var int crosses = 0
-if ta.crossover(sma2, sma4)
-    crosses := crosses + 1

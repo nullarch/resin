@@ -1,6 +1,0 @@
-//@version=5
-indicator("RMA")
-var float lastRMA = 0
-r = ta.rma(close, 5)
-if not na(r)
-    lastRMA := r

@@ -1,8 +1,0 @@
-//@version=5
-indicator("Resonance")
-fast = ta.ema(close, 2)
-slow = ta.ema(close, 5)
-resonance = math.abs(fast - slow)
-var float __obs_plot0 = na
-__obs_plot0 := resonance
-plot(resonance, title="resonance")

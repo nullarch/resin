@@ -1,7 +1,0 @@
-//@version=5
-indicator("Multiline Kwargs")
-plot(
-    close,
-    title="Close",
-    color=color.blue
-    )

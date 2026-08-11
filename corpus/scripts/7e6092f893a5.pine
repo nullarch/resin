@@ -1,8 +1,0 @@
-//@version=5
-indicator("RisFall")
-var int riseCount = 0
-var int fallCount = 0
-if ta.rising(close, 2)
-    riseCount := riseCount + 1
-if ta.falling(close, 2)
-    fallCount := fallCount + 1

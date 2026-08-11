@@ -1,6 +1,0 @@
-//@version=5
-indicator("Clip")
-raw = close - ta.sma(close, 5)
-threshold = 3.0
-clipped = raw > threshold ? threshold : raw < -threshold ? -threshold : raw
-plot(clipped)

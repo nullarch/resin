@@ -1,9 +1,0 @@
-
-//@version=5
-indicator("MFI")
-mfiVal = ta.mfi(close, 5)
-overbought = mfiVal > 80
-oversold = mfiVal < 20
-var float __obs_plot0 = na
-__obs_plot0 := mfiVal
-plot(mfiVal, "MFI")

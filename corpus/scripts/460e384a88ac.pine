@@ -1,8 +1,0 @@
-//@version=5
-strategy("EMA Cross")
-ema3 = ta.ema(close, 3)
-ema5 = ta.ema(close, 5)
-if ta.crossover(ema3, ema5)
-    strategy.entry("Long", strategy.long)
-if ta.crossunder(ema3, ema5)
-    strategy.close("Long")
