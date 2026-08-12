@@ -70,11 +70,11 @@ node bin/resin.mjs check ./my-scripts
 node bin/resin.mjs run examples/rsi-cross.pine --bars 300 --viz viz.json
 
 # 任意: node bin/resin.mjs と打つ代わりに `resin` を PATH に通す
-npm install -g .
+npm install -g @nullarch/resin
 ```
 
 `run` は既定では決定論的なバーを合成します。`--data bars.json` を渡せば自分の OHLCV データを
-使えます。npm には未公開です — 今のところは clone してください。
+使えます。clone しなくても同じ CLI が使えます: `npx @nullarch/resin build my.pine`。
 
 ## なぜ作ったか
 

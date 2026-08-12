@@ -69,11 +69,11 @@ node bin/resin.mjs check ./my-scripts
 node bin/resin.mjs run examples/rsi-cross.pine --bars 300 --viz viz.json
 
 # 可选：把 `resin` 装到 PATH 上，省去每次输入 node bin/resin.mjs
-npm install -g .
+npm install -g @nullarch/resin
 ```
 
 `run` 默认合成确定性的 K 线数据；传入 `--data bars.json` 即可使用你自己的 OHLCV 数据。
-尚未发布到 npm——目前请先 clone。
+不 clone 也能使用同一个 CLI：`npx @nullarch/resin build my.pine`。
 
 ## 为什么
 

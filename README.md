@@ -72,11 +72,11 @@ node bin/resin.mjs check ./my-scripts
 node bin/resin.mjs run examples/rsi-cross.pine --bars 300 --viz viz.json
 
 # optional: get `resin` on your PATH instead of typing node bin/resin.mjs
-npm install -g .
+npm install -g @nullarch/resin
 ```
 
 `run` synthesizes deterministic bars by default; pass `--data bars.json` to use
-your own OHLCV data. Not on npm yet — clone it for now.
+your own OHLCV data. The same CLI works without the clone: `npx @nullarch/resin build my.pine`.
 
 ## Why
 
