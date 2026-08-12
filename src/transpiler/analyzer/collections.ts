@@ -252,9 +252,9 @@ export function analyzeMapCall(expr: CallExpr, method: string, prog: AnalyzedPro
   const minArgCount = entry.minArgCount ?? entry.argCount;
   const effectiveArgCount = expr.args.length + receiverOffset;
   if (effectiveArgCount < minArgCount || effectiveArgCount > entry.argCount) {
-    const need = minArgCount === entry.argCount ? `${entry.argCount}개` : `${minArgCount}~${entry.argCount}개`;
+    const need = minArgCount === entry.argCount ? `${entry.argCount}` : `${minArgCount}~${entry.argCount}`;
     prog.errors.push(
-      `'map.${method}' 호출 인자 개수 불일치: ${need} 필요, ${effectiveArgCount}개 전달 (L${expr.line}:${expr.col})`,
+      `'map.${method}' call argument count mismatch: ${need} required, ${effectiveArgCount} passed (L${expr.line}:${expr.col})`,
     );
   }
   prog.builtinCalls.set(expr, `map.${method}`);
@@ -296,7 +296,7 @@ export function analyzeStrCall(expr: CallExpr, method: string, prog: AnalyzedPro
     const paramIndex = new Map(paramNames.map((name, i) => [name, i]));
     if (expr.args.length > paramNames.length) {
       prog.errors.push(
-        `'str.${method}' 호출 인자 개수 불일치: ${paramNames.length}개(${paramNames.join(", ")}) 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'str.${method}' call argument count mismatch: ${paramNames.length} (${paramNames.join(", ")}) required, ${expr.args.length} passed (L${expr.line}:${expr.col})`,
       );
     }
     const seen = new Set<string>();
@@ -304,11 +304,11 @@ export function analyzeStrCall(expr: CallExpr, method: string, prog: AnalyzedPro
     for (const kw of expr.kwargs) {
       const idx = paramIndex.get(kw.name);
       if (idx === undefined) {
-        prog.errors.push(`'str.${method}'에 없는 인자 이름: '${kw.name}' (L${kw.line}:${kw.col})`);
+        prog.errors.push(`unknown argument name for 'str.${method}': '${kw.name}' (L${kw.line}:${kw.col})`);
       } else if (seen.has(kw.name)) {
         const posArg = idx < expr.args.length ? expr.args[idx] : undefined;
         if (!isHarmlessArgDup(posArg, kw.value)) {
-          prog.errors.push(`인자 '${kw.name}'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`);
+          prog.errors.push(`argument '${kw.name}' given as both positional and keyword argument (L${kw.line}:${kw.col})`);
         }
       } else {
         seen.add(kw.name);
@@ -317,7 +317,7 @@ export function analyzeStrCall(expr: CallExpr, method: string, prog: AnalyzedPro
     }
     const missing = paramNames.slice(0, requiredCount).filter((name) => !seen.has(name));
     if (missing.length > 0) {
-      prog.errors.push(`'str.${method}' 호출에는 ${paramNames.slice(0, requiredCount).join("/")} 인자가 모두 필요 (L${expr.line}:${expr.col})`);
+      prog.errors.push(`'str.${method}' call requires all of the ${paramNames.slice(0, requiredCount).join("/")} arguments (L${expr.line}:${expr.col})`);
     }
     // tostring int/float 갭(C201) — value가 kwarg로 지정된 경우도 위치 인자와 동일하게 판별한다.
     // value 자체가 누락된 경우(위 missing 에러가 이미 보고됨)는 valueExpr이 undefined로 남아 스킵.
@@ -332,12 +332,12 @@ export function analyzeStrCall(expr: CallExpr, method: string, prog: AnalyzedPro
   if (expr.args.length < minArgCount || expr.args.length > entry.argCount) {
     const need =
       entry.argCount === Infinity
-        ? `최소 ${minArgCount}개`
+        ? `at least ${minArgCount}`
         : minArgCount === entry.argCount
-          ? `${entry.argCount}개`
-          : `${minArgCount}~${entry.argCount}개`;
+          ? `${entry.argCount}`
+          : `${minArgCount}~${entry.argCount}`;
     prog.errors.push(
-      `'str.${method}' 호출 인자 개수 불일치: ${need} 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+      `'str.${method}' call argument count mismatch: ${need} required, ${expr.args.length} passed (L${expr.line}:${expr.col})`,
     );
   }
   // tostring(value[, format_str]) 기본 포맷의 int/float 갭 수정(C201) — value가 정적으로 int로
@@ -446,7 +446,7 @@ export function analyzeArrayCall(
     const paramIndex = new Map(paramNames.map((name, i) => [name, i]));
     if (expr.args.length > paramNames.length) {
       prog.errors.push(
-        `'array.${method}' 호출 인자 개수 불일치: ${paramNames.length}개(${paramNames.join(", ")}) 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'array.${method}' call argument count mismatch: ${paramNames.length} (${paramNames.join(", ")}) required, ${expr.args.length} passed (L${expr.line}:${expr.col})`,
       );
     }
     const seen = new Set<string>();
@@ -454,11 +454,11 @@ export function analyzeArrayCall(
     for (const kw of expr.kwargs) {
       const idx = paramIndex.get(kw.name);
       if (idx === undefined) {
-        prog.errors.push(`'array.${method}'에 없는 인자 이름: '${kw.name}' (L${kw.line}:${kw.col})`);
+        prog.errors.push(`unknown argument name for 'array.${method}': '${kw.name}' (L${kw.line}:${kw.col})`);
       } else if (seen.has(kw.name)) {
         const posArg = idx < expr.args.length ? expr.args[idx] : undefined;
         if (!isHarmlessArgDup(posArg, kw.value)) {
-          prog.errors.push(`인자 '${kw.name}'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`);
+          prog.errors.push(`argument '${kw.name}' given as both positional and keyword argument (L${kw.line}:${kw.col})`);
         }
       } else {
         seen.add(kw.name);
@@ -467,7 +467,7 @@ export function analyzeArrayCall(
     }
     const missing = paramNames.slice(0, requiredCount).filter((name) => !seen.has(name));
     if (missing.length > 0) {
-      prog.errors.push(`'array.${method}' 호출에는 ${paramNames.slice(0, requiredCount).join("/")} 인자가 모두 필요 (L${expr.line}:${expr.col})`);
+      prog.errors.push(`'array.${method}' call requires all of the ${paramNames.slice(0, requiredCount).join("/")} arguments (L${expr.line}:${expr.col})`);
     }
     prog.builtinCalls.set(expr, `array.${method}`);
     return;
@@ -477,12 +477,12 @@ export function analyzeArrayCall(
   if (effectiveArgCount < minArgCount || effectiveArgCount > entry.argCount) {
     const need =
       entry.argCount === Infinity
-        ? `최소 ${minArgCount}개`
+        ? `at least ${minArgCount}`
         : minArgCount === entry.argCount
-          ? `${entry.argCount}개`
-          : `${minArgCount}~${entry.argCount}개`;
+          ? `${entry.argCount}`
+          : `${minArgCount}~${entry.argCount}`;
     prog.errors.push(
-      `'array.${method}' 호출 인자 개수 불일치: ${need} 필요, ${effectiveArgCount}개 전달 (L${expr.line}:${expr.col})`,
+      `'array.${method}' call argument count mismatch: ${need} required, ${effectiveArgCount} passed (L${expr.line}:${expr.col})`,
     );
   }
   // sort/sort_indices의 order 위치(두 번째 인자) 원시 문자열 리터럴 폴딩(C203, LIMITATIONS.md
@@ -529,10 +529,10 @@ export function analyzeMatrixCall(expr: CallExpr, method: string, prog: Analyzed
   if (effectiveArgCount < minArgCount || effectiveArgCount > entry.argCount) {
     const need =
       minArgCount === entry.argCount
-        ? `${entry.argCount}개`
-        : `${minArgCount}~${entry.argCount}개`;
+        ? `${entry.argCount}`
+        : `${minArgCount}~${entry.argCount}`;
     prog.errors.push(
-      `'matrix.${method}' 호출 인자 개수 불일치: ${need} 필요, ${effectiveArgCount}개 전달 (L${expr.line}:${expr.col})`,
+      `'matrix.${method}' call argument count mismatch: ${need} required, ${effectiveArgCount} passed (L${expr.line}:${expr.col})`,
     );
   }
   // sort의 order 위치(세 번째 인자) 원시 문자열 리터럴 폴딩 — analyzeArrayCall의 동일 조치(C203)

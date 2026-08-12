@@ -42,7 +42,7 @@ import { isUdtFieldTypeAllowed } from "./udt-types";
 //     단 enumTypes 자기 충돌은 위 (1)이 이미 검사했으므로 제외).
 function registerEnumMembers(stmt: EnumDecl, prog: AnalyzedProgram): void {
   if (prog.enumTypes.has(stmt.name)) {
-    prog.errors.push(`이미 사용 중인 이름과 충돌하는 'enum' 선언: '${stmt.name}' (L${stmt.line}:${stmt.col})`);
+    prog.errors.push(`'enum' declaration conflicts with a name already in use: '${stmt.name}' (L${stmt.line}:${stmt.col})`);
     return;
   }
   const seenMembers = new Set<string>();
@@ -50,7 +50,7 @@ function registerEnumMembers(stmt: EnumDecl, prog: AnalyzedProgram): void {
   const titles = new Map<string, string>();
   for (const m of stmt.members) {
     if (seenMembers.has(m.name)) {
-      prog.errors.push(`중복 enum 멤버: '${stmt.name}.${m.name}' (L${m.line}:${m.col})`);
+      prog.errors.push(`duplicate enum member: '${stmt.name}.${m.name}' (L${m.line}:${m.col})`);
       continue;
     }
     seenMembers.add(m.name);
@@ -62,7 +62,7 @@ function registerEnumMembers(stmt: EnumDecl, prog: AnalyzedProgram): void {
 
 function checkEnumDeclConflict(stmt: EnumDecl, prog: AnalyzedProgram): void {
   if (prog.udtTypes.has(stmt.name) || prog.funcs.has(stmt.name) || prog.varIndex.has(stmt.name)) {
-    prog.errors.push(`이미 사용 중인 이름과 충돌하는 'enum' 선언: '${stmt.name}' (L${stmt.line}:${stmt.col})`);
+    prog.errors.push(`'enum' declaration conflicts with a name already in use: '${stmt.name}' (L${stmt.line}:${stmt.col})`);
   }
 }
 
@@ -73,7 +73,7 @@ export function prepassEnumDecl(stmt: EnumDecl, prog: AnalyzedProgram): void {
 
 export function analyzeEnumDecl(stmt: EnumDecl, prog: AnalyzedProgram, scope: LexScope): void {
   if (scope.depth !== 0) {
-    prog.errors.push(`'enum' 선언은 top-level에서만 가능: '${stmt.name}' (L${stmt.line}:${stmt.col})`);
+    prog.errors.push(`'enum' declaration is only allowed at top level: '${stmt.name}' (L${stmt.line}:${stmt.col})`);
     return;
   }
   // depth===0이면 이 stmt는 script.body 직속이라 prepass가 이미 멤버까지 완전히 등록했다 — 여기선
@@ -108,20 +108,20 @@ export function analyzeEnumDecl(stmt: EnumDecl, prog: AnalyzedProgram, scope: Le
 // prepass가 절대 보지 않는 통계(script.body 바깥)라 원래 로직 그대로 유지한다.
 function registerTypeDeclFields(stmt: TypeDecl, prog: AnalyzedProgram, scope: LexScope): void {
   if (prog.udtTypes.has(stmt.name)) {
-    prog.errors.push(`이미 사용 중인 이름과 충돌하는 'type' 선언: '${stmt.name}' (L${stmt.line}:${stmt.col})`);
+    prog.errors.push(`'type' declaration conflicts with a name already in use: '${stmt.name}' (L${stmt.line}:${stmt.col})`);
     return;
   }
   const seenFields = new Set<string>();
   const fields: UdtFieldInfo[] = [];
   for (const f of stmt.fields) {
     if (seenFields.has(f.name)) {
-      prog.errors.push(`중복 UDT 필드: '${stmt.name}.${f.name}' (L${f.line}:${f.col})`);
+      prog.errors.push(`duplicate UDT field: '${stmt.name}.${f.name}' (L${f.line}:${f.col})`);
       continue;
     }
     seenFields.add(f.name);
     if (!isUdtFieldTypeAllowed(f.typeHint, prog)) {
       prog.errors.push(
-        `UDT 필드 타입은 float/int/bool/string/color, 다른 UDT 타입(forward-ref/자기참조 포함), enum 타입, 또는 array<T>/map<K,V>(원소·중첩도 동일 규칙)만 지원: '${stmt.name}.${f.name}: ${f.typeHint}' (L${f.line}:${f.col})`,
+        `UDT field type must be float/int/bool/string/color, another UDT type (including forward-ref/self-reference), an enum type, or array<T>/map<K,V> (elements and nesting follow the same rule): '${stmt.name}.${f.name}: ${f.typeHint}' (L${f.line}:${f.col})`,
       );
       continue;
     }
@@ -139,7 +139,7 @@ function checkTypeDeclConflict(stmt: TypeDecl, prog: AnalyzedProgram): void {
   // 충돌은 없다 — analyzeCallExpr의 isUdtConstructorCall(DotAccess-only)/isUserFuncCall
   // (Identifier-only)도 AST 형태로만 갈려 이름이 같아도 디스패치 모호성이 없다.
   if (prog.enumTypes.has(stmt.name) || prog.varIndex.has(stmt.name)) {
-    prog.errors.push(`이미 사용 중인 이름과 충돌하는 'type' 선언: '${stmt.name}' (L${stmt.line}:${stmt.col})`);
+    prog.errors.push(`'type' declaration conflicts with a name already in use: '${stmt.name}' (L${stmt.line}:${stmt.col})`);
   }
 }
 
@@ -150,7 +150,7 @@ export function prepassTypeDecl(stmt: TypeDecl, prog: AnalyzedProgram, scope: Le
 
 export function analyzeTypeDecl(stmt: TypeDecl, prog: AnalyzedProgram, scope: LexScope): void {
   if (scope.depth !== 0) {
-    prog.errors.push(`'type' 선언은 top-level에서만 가능: '${stmt.name}' (L${stmt.line}:${stmt.col})`);
+    prog.errors.push(`'type' declaration is only allowed at top level: '${stmt.name}' (L${stmt.line}:${stmt.col})`);
     return;
   }
   // depth===0이면 이 stmt는 script.body 직속이라 prepass가 이미 필드까지 완전히 등록했다 — 여기선
@@ -168,7 +168,7 @@ export function analyzeTypeDecl(stmt: TypeDecl, prog: AnalyzedProgram, scope: Le
 export function analyzeFieldAssignment(stmt: FieldAssignment, prog: AnalyzedProgram, scope: LexScope): void {
   if (stmt.object.kind !== "Identifier" && stmt.object.kind !== "DotAccess") {
     prog.errors.push(
-      `UDT 필드 대입 대상은 UDT 인스턴스 식별자 또는 그 필드 경로만 지원: (L${stmt.line}:${stmt.col})`,
+      `UDT field assignment target must be a UDT instance identifier or a field path on one: (L${stmt.line}:${stmt.col})`,
     );
     analyzeControlFlowOrExpr(stmt.value, prog, scope);
     return;
@@ -179,9 +179,9 @@ export function analyzeFieldAssignment(stmt: FieldAssignment, prog: AnalyzedProg
   if (stmt.object.kind === "DotAccess") analyzeExpr(stmt.object, prog, scope, false);
   const typeName = resolveUdtObjectType(stmt.object, prog, scope);
   if (typeName === undefined) {
-    const desc = stmt.object.kind === "Identifier" ? `'${stmt.object.name}'` : "대입 대상 경로";
+    const desc = stmt.object.kind === "Identifier" ? `'${stmt.object.name}'` : "assignment target path";
     prog.errors.push(
-      `${desc}는 UDT 인스턴스로 추적되지 않음(항상 'var Type x = Type.new(...)'로 선언할 것): (L${stmt.line}:${stmt.col})`,
+      `${desc} is not tracked as a UDT instance (always declare it as 'var Type x = Type.new(...)'): (L${stmt.line}:${stmt.col})`,
     );
     analyzeControlFlowOrExpr(stmt.value, prog, scope);
     return;
@@ -189,13 +189,13 @@ export function analyzeFieldAssignment(stmt: FieldAssignment, prog: AnalyzedProg
   // chart.point(C486)는 prog.udtTypes에 없는 값 타입이라 아래 typeInfo 조회가 성립하지 않는다 --
   // 필드 단위 재대입(`point.price := ...`) 지원 근거가 wild에 없어 범위 밖으로 명시 거부.
   if (typeName === CHART_POINT_FIELD_TYPE) {
-    prog.errors.push(`'chart.point' 필드는 개별 재대입 미지원(전체 값을 다시 대입할 것): (L${stmt.line}:${stmt.col})`);
+    prog.errors.push(`'chart.point' field-level reassignment is not supported (reassign the whole value): (L${stmt.line}:${stmt.col})`);
     analyzeControlFlowOrExpr(stmt.value, prog, scope);
     return;
   }
   const typeInfo = prog.udtTypes.get(typeName)!;
   if (!typeInfo.fields.some((f) => f.name === stmt.field)) {
-    prog.errors.push(`'${typeName}'에 없는 필드: '${stmt.field}' (L${stmt.line}:${stmt.col})`);
+    prog.errors.push(`field not found in '${typeName}': '${stmt.field}' (L${stmt.line}:${stmt.col})`);
   }
   analyzeControlFlowOrExpr(stmt.value, prog, scope);
 }

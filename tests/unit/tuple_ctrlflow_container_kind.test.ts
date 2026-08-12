@@ -124,7 +124,7 @@ describe("tuple ctrl-flow RHS element container-kind propagation (C685)", () => 
     );
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.errors.join("; ")).toContain("지원하지 않는 호출");
+    expect(result.errors.join("; ")).toContain("unsupported call");
   });
 
   it("a [na, na] fallback branch does not block the other branch's verdict (null merges, no conflict)", () => {
@@ -212,6 +212,6 @@ describe("tuple ctrl-flow RHS element container-kind propagation (C685)", () => 
     );
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.errors.join("; ")).toContain("지원하지 않는 호출");
+    expect(result.errors.join("; ")).toContain("unsupported call");
   });
 });

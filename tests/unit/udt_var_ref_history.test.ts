@@ -71,7 +71,7 @@ describe("UDT var/'=' local reference history (recv[N]).field — analyzer gates
     const prog = analyzeSource(
       [...MARKER, "f() =>", "    x = Marker.new(1.0)", "    (x[1]).price", "y = f()"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("UDT 값을 담은 UDF 내부 '=' 로컬"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("UDF internal '=' local holding UDT value"))).toBe(true);
   });
 
   it("allows a UDF/method parameter UDT receiver, whole-object history (C751, wild `id[i]`)", () => {

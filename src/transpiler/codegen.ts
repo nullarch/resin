@@ -314,7 +314,7 @@ function isControlFlowExpr(expr: Expr): expr is ControlFlowExpr {
 
 export function generateCode(program: AnalyzedProgram): string {
   if (program.errors.length > 0) {
-    throw new Error(`codegen 호출 전 analyzer 에러 필요: ${program.errors.join("; ")}`);
+    throw new Error(`analyzer errors must be handled before codegen: ${program.errors.join("; ")}`);
   }
   // lazy 호이스팅 상태는 generateCode 호출 단위로 초기화한다(모듈 상태를 쓰는 유일한 이유는
   // genExpr 재귀 전체에 파라미터를 새로 꿰지 않기 위해서 — 위 lazyTemps 주석 참조).
@@ -406,7 +406,7 @@ export function generateCode(program: AnalyzedProgram): string {
   for (const [name, guard] of program.securityTfConstGuards) {
     lines.push(
       `if (${genExpr(guard.inputCall, program, null)} !== ${JSON.stringify(guard.literal)}) throw new Error(${JSON.stringify(
-        `request.security의 입력 '${name}'은 트랜스파일 시점에 '${guard.literal}'로 고정됨 — 입력 오버라이드로 값 변경 불가(request.security의 HTF 관련 인자는 컴파일타임 확정)`,
+        `request.security input '${name}' is fixed to '${guard.literal}' at transpile time — cannot be changed via input override (request.security HTF-related arguments are fixed at compile time)`,
       )});`,
     );
   }
@@ -782,7 +782,7 @@ function funcBodyLocalNames(func: {
 // 실행되므로 함수 객체가 매 바 재생성되던 기존 비용은 해소됐다.
 function genFuncDecl(stmt: FuncDecl, program: AnalyzedProgram): string {
   const func = program.funcs.get(stmt.name);
-  if (!func) throw new Error(`internal: FuncInfo missing for '${stmt.name}' (analyzer 통과 후 발생 불가)`);
+  if (!func) throw new Error(`internal: FuncInfo missing for '${stmt.name}' (unreachable after analyzer pass)`);
   const paramNameSet = new Set(stmt.params.map((p) => p.name));
   const funcCtx: FuncGenContext = {
     localVarIndex: func.localVarIndex,
@@ -899,7 +899,7 @@ function genMethodDecl(stmt: MethodDecl, program: AnalyzedProgram): string {
   // 이름 맵을 우선 조회(재계산만 쓰면 오버로드 선언들이 같은 JS 함수명으로 겹쳐 last-wins 오답).
   const mangledName = program.methodDeclMangledNames.get(stmt) ?? mangleMethodName(typeName, stmt.name);
   const func = program.funcs.get(mangledName);
-  if (!func) throw new Error(`internal: FuncInfo missing for '${mangledName}' (analyzer 통과 후 발생 불가)`);
+  if (!func) throw new Error(`internal: FuncInfo missing for '${mangledName}' (unreachable after analyzer pass)`);
   const paramNameSet = new Set(stmt.params.map((p) => p.name));
   const funcCtx: FuncGenContext = {
     localVarIndex: func.localVarIndex,
@@ -1514,13 +1514,13 @@ function walkForLazyHoist(
           slotRef = `$.histSlots[__histBase + ${funcCallHistIdx}]`;
         } else {
           const histIdx = program.taCallHistorySlots.get(expr.obj);
-          if (histIdx === undefined) throw new Error("internal: ta call history slot missing for lazy hoist (analyzer 통과 후 발생 불가)");
+          if (histIdx === undefined) throw new Error("internal: ta call history slot missing for lazy hoist (unreachable after analyzer pass)");
           slotRef = `$.histSlots[${histIdx}]`;
         }
         const isDynamic = program.dynamicHistoryOffsets.has(expr);
         const offset = isDynamic ? undefined : program.historyOffsets.get(expr);
         if (!isDynamic && offset === undefined) {
-          throw new Error("internal: lazy hist IndexAccess에 확정된 오프셋 없음 (analyzer 통과 후 발생 불가)");
+          throw new Error("internal: no resolved offset for lazy hist IndexAccess (unreachable after analyzer pass)");
         }
         const offsetCode = isDynamic ? genExpr(expr.index, program, funcCtx) : String(offset);
         const callCode = genCallExpr(expr.obj, program, funcCtx);
@@ -1545,13 +1545,13 @@ function walkForLazyHoist(
           arithSlotRef = `$.histSlots[__histBase + ${funcArithHistIdx}]`;
         } else {
           const histIdx = program.taCallHistorySlots.get(expr.obj);
-          if (histIdx === undefined) throw new Error("internal: arith expr history slot missing for lazy hoist (analyzer 통과 후 발생 불가)");
+          if (histIdx === undefined) throw new Error("internal: arith expr history slot missing for lazy hoist (unreachable after analyzer pass)");
           arithSlotRef = `$.histSlots[${histIdx}]`;
         }
         const isDynamic = program.dynamicHistoryOffsets.has(expr);
         const offset = isDynamic ? undefined : program.historyOffsets.get(expr);
         if (!isDynamic && offset === undefined) {
-          throw new Error("internal: lazy hist IndexAccess에 확정된 오프셋 없음 (analyzer 통과 후 발생 불가)");
+          throw new Error("internal: no resolved offset for lazy hist IndexAccess (unreachable after analyzer pass)");
         }
         const offsetCode = isDynamic ? genExpr(expr.index, program, funcCtx) : String(offset);
         const objCode = genExpr(expr.obj, program, funcCtx);
@@ -1639,7 +1639,7 @@ function genStmt(
     case "VarDecl": {
       if (funcCtx) {
         const localSlot = funcCtx.localVarIndex.get(stmt.name);
-        if (localSlot === undefined) throw new Error(`internal: 함수-로컬 var 슬롯 없음 '${stmt.name}'`);
+        if (localSlot === undefined) throw new Error(`internal: func-local var slot missing '${stmt.name}'`);
         const target = `$.fnVars[__slotBase + ${localSlot}]`;
         if (isControlFlowExpr(stmt.value)) {
           return `if (${target} === undefined) {\n${genControlFlowExprValue(stmt.value, program, funcCtx, (temp) => `${target} = ${temp};`)}\n}`;
@@ -1813,7 +1813,7 @@ function genStmt(
       // top-level FuncDecl/TypeDecl/MethodDecl은 generateCode()가 먼저 걸러 genFuncDecl/genTypeDecl/
       // genMethodDecl로 직접 생성하고(EnumDecl은 아무것도 생성하지 않고 그냥 걸러지기만 함), 중첩된
       // 것은 analyzer가 errors를 채워 generateCode()가 위에서 throw했어야 함(도달 불가).
-      throw new Error(`internal: '${stmt.kind}' codegen 미구현 (analyzer 통과 후 발생 불가)`);
+      throw new Error(`internal: '${stmt.kind}' codegen not implemented (unreachable after analyzer pass)`);
   }
 }
 
@@ -1858,11 +1858,11 @@ function resolveUdtObjectType(obj: Expr, program: AnalyzedProgram, funcCtx: Func
 function genFieldAssignment(stmt: FieldAssignment, program: AnalyzedProgram, funcCtx: FuncGenContext | null): string {
   const typeName = resolveUdtObjectType(stmt.object, program, funcCtx);
   if (typeName === undefined) {
-    throw new Error("internal: FieldAssignment.object는 UDT 인스턴스로 확정돼야 함 (analyzer 통과 후 발생 불가)");
+    throw new Error("internal: FieldAssignment.object must be resolved to a UDT instance (unreachable after analyzer pass)");
   }
   const typeInfo = program.udtTypes.get(typeName)!;
   const field = typeInfo.fields.find((f) => f.name === stmt.field);
-  if (!field) throw new Error(`internal: '${typeName}'에 없는 필드 '${stmt.field}' (analyzer 통과 후 발생 불가)`);
+  if (!field) throw new Error(`internal: no field '${stmt.field}' on '${typeName}' (unreachable after analyzer pass)`);
   const objCode = genExpr(stmt.object, program, funcCtx);
   const target = `${objCode}.${stmt.field}`;
   if (isControlFlowExpr(stmt.value)) {
@@ -2209,7 +2209,7 @@ function genForStmt(stmt: ForStmt, program: AnalyzedProgram, funcCtx: FuncGenCon
 // 실행으로 확인, C216) — GOAL.md "알려진 버그는 따르지 않는다" 적용.
 function genForInStmt(stmt: ForInStmt, program: AnalyzedProgram, funcCtx: FuncGenContext | null): string {
   const kind = program.forInKinds.get(stmt);
-  if (kind === undefined) throw new Error("internal: ForInStmt kind missing (analyzer가 항상 먼저 채움)");
+  if (kind === undefined) throw new Error("internal: ForInStmt kind missing (analyzer always fills it first)");
 
   const pre: string[] = [];
   hoistLazyStatefulCalls(stmt.iterable, program, funcCtx, pre);
@@ -2477,7 +2477,7 @@ function hoistBinOpControlFlowOperands(
     case "%":
       return { pre, code: `rt.pineMod(${l}, ${r})` };
     default:
-      throw new Error(`internal: 제어문-식 피연산자 BinOp에 지원하지 않는 연산자 '${value.op}' (analyzer 통과 후 발생 불가)`);
+      throw new Error(`internal: unsupported operator '${value.op}' in statement-expression operand BinOp (unreachable after analyzer pass)`);
   }
 }
 
@@ -3097,7 +3097,7 @@ function genExpr(
           expr.obj.kind === "IndexAccess" ? `(${genExpr(expr.obj, program, funcCtx)} ?? ${objTypeName}())` : genExpr(expr.obj, program, funcCtx);
         return `${objExpr}.${expr.attr}`;
       }
-      throw new Error(`internal: DotAccess는 CallExpr 없이 codegen될 수 없음 (${expr.attr})`);
+      throw new Error(`internal: DotAccess cannot be codegenned without a CallExpr (${expr.attr})`);
     }
     case "IndexAccess":
       return genIndexAccess(expr, program, funcCtx, secCtx);
@@ -3106,7 +3106,7 @@ function genExpr(
     case "TupleExpr":
       // 유일하게 허용되는 위치(UDF 마지막 문장)는 genFuncBody가 이 함수를 거치지 않고 직접
       // 처리한다 — 여기 도달했다면 analyzer가 TupleExpr를 다른 위치에서 막지 못한 버그.
-      throw new Error("internal: TupleExpr는 함수 반환 위치 전용 (analyzer 통과 후 발생 불가)");
+      throw new Error("internal: TupleExpr is only for function return position (unreachable after analyzer pass)");
     case "IfStmt":
     case "ForStmt":
     case "WhileStmt":
@@ -3114,7 +3114,7 @@ function genExpr(
       // 유일하게 허용되는 위치(VarDecl/Assignment 값)는 genStmt가 isControlFlowExpr로 먼저
       // 가로채 genControlFlowBranches/genControlFlowAssignment로 보낸다 — 여기 도달했다면
       // analyzer가 다른 위치에서 막지 못한 버그(TupleExpr와 동일한 internal throw 패턴).
-      throw new Error(`internal: '${expr.kind}'는 VarDecl/Assignment 값 위치 전용 (analyzer 통과 후 발생 불가)`);
+      throw new Error(`internal: '${expr.kind}' is only for VarDecl/Assignment value position (unreachable after analyzer pass)`);
   }
 }
 
@@ -3170,11 +3170,11 @@ function genIndexAccess(
       return `rt.secHistGet(${bufName}, ${secCtx.loopVar}, ${offsetCode})`;
     }
     if (expr.obj.kind !== "Identifier") {
-      throw new Error("internal: security 프리패스 IndexAccess는 bare/파생 시리즈만 (analyzer 통과 후 발생 불가)");
+      throw new Error("internal: security prepass IndexAccess supports bare/derived series only (unreachable after analyzer pass)");
     }
     const name = expr.obj.name;
     if (!BAR_SERIES_NAMES.has(name) && !DERIVED_PRICE_NAMES.has(name)) {
-      throw new Error(`internal: security 프리패스 IndexAccess obj '${name}' 미지원 (analyzer 통과 후 발생 불가)`);
+      throw new Error(`internal: security prepass IndexAccess obj '${name}' not supported (unreachable after analyzer pass)`);
     }
     if (expr.index.kind === "NumberLiteral") {
       const n = expr.index.value;
@@ -3196,7 +3196,7 @@ function genIndexAccess(
   const isDynamic = program.dynamicHistoryOffsets.has(expr);
   const offset = isDynamic ? undefined : program.historyOffsets.get(expr);
   if (!isDynamic && offset === undefined) {
-    throw new Error("internal: IndexAccess에 확정된 오프셋 없음 (analyzer 통과 후 발생 불가)");
+    throw new Error("internal: no resolved offset for IndexAccess (unreachable after analyzer pass)");
   }
   const offsetCode = isDynamic ? genExpr(expr.index, program, funcCtx) : String(offset);
   // strategy.<prop>[N](C339) — obj가 DotAccess인 유일한 허용 형태. offset===0은 var와 동일하게
@@ -3210,7 +3210,7 @@ function genIndexAccess(
     if (expr.obj.obj.kind === "Identifier" && (expr.obj.obj.name === "barstate" || expr.obj.obj.name === "session")) {
       const baseExpr = program.builtinRuntimeExprs.get(expr.obj);
       if (baseExpr === undefined) {
-        throw new Error(`internal: barstate/session runtime expr missing for '${expr.obj.attr}' (analyzer 통과 후 발생 불가)`);
+        throw new Error(`internal: barstate/session runtime expr missing for '${expr.obj.attr}' (unreachable after analyzer pass)`);
       }
       const shifted = baseExpr.replace(/\$\.idx\b/g, `($.idx - ${offset})`);
       return `($.idx >= ${offset} ? (${shifted}) : NaN)`;
@@ -3257,7 +3257,7 @@ function genIndexAccess(
     }
     const histIdx = program.strategyPropHistorySlots.get(expr.obj.attr);
     if (histIdx === undefined) {
-      throw new Error(`internal: strategy prop history slot missing for '${expr.obj.attr}' (analyzer 통과 후 발생 불가)`);
+      throw new Error(`internal: strategy prop history slot missing for '${expr.obj.attr}' (unreachable after analyzer pass)`);
     }
     return `$.histSlots[${histIdx}].get(${offset})`;
   }
@@ -3340,7 +3340,7 @@ function genIndexAccess(
     }
     const histIdx = program.taCallHistorySlots.get(expr.obj);
     if (histIdx === undefined) {
-      throw new Error("internal: ta call history slot missing (analyzer 통과 후 발생 불가)");
+      throw new Error("internal: ta call history slot missing (unreachable after analyzer pass)");
     }
     // 동적 오프셋(C365)도 같은 문자열 그대로다 — 인라인 record가 comma 식에서 먼저 실행되므로
     // get(0)이 방금 기록한 현재 콜 값이라 rt.histGet의 0-분기가 필요 없고, 음수/NaN/범위밖은
@@ -3391,12 +3391,12 @@ function genIndexAccess(
     }
     const histIdx = program.taCallHistorySlots.get(expr.obj);
     if (histIdx === undefined) {
-      throw new Error("internal: arith expr history slot missing (analyzer 통과 후 발생 불가)");
+      throw new Error("internal: arith expr history slot missing (unreachable after analyzer pass)");
     }
     const objCode = genExpr(expr.obj, program, funcCtx);
     return `($.histSlots[${histIdx}].record(${objCode}), $.histSlots[${histIdx}].get(${offsetCode}))`;
   }
-  if (expr.obj.kind !== "Identifier") throw new Error("internal: IndexAccess.obj는 Identifier만 지원 (analyzer 통과 후 발생 불가)");
+  if (expr.obj.kind !== "Identifier") throw new Error("internal: IndexAccess.obj supports Identifier only (unreachable after analyzer pass)");
   const name = expr.obj.name;
   if (BAR_SERIES_NAMES.has(name)) return `$.${name}.get(${offsetCode})`;
   // hl2[n] 등 — 히스토리 인덱싱도 security HTF 프리패스 서브트리에는 절대 등장하지 않으므로
@@ -3502,7 +3502,7 @@ function genIndexAccess(
     program.refHistorySlots.get(name) ??
     (slot !== undefined ? program.varRefHistorySlots.get(slot) : undefined) ??
     program.ambiguousNestedRefReadSlots.get(expr);
-  if (refHistIdx === undefined) throw new Error(`internal: history slot missing for '${name}' (analyzer 통과 후 발생 불가)`);
+  if (refHistIdx === undefined) throw new Error(`internal: history slot missing for '${name}' (unreachable after analyzer pass)`);
   return isDynamic
     ? `rt.refHistGet(${genIdentifier(name, program, funcCtx)}, $.refHistSlots[${refHistIdx}], ${offsetCode})`
     : `$.refHistSlots[${refHistIdx}].get(${offsetCode})`;
@@ -3585,7 +3585,7 @@ function genIdentifier(
   const slot = program.varIndex.get(name);
   if (slot !== undefined) return `$.vars[${slot}]`;
   if (program.locals.has(name)) return safeLocalName(name);
-  throw new Error(`internal: 알 수 없는 식별자 '${name}' (analyzer 통과 후 발생 불가)`);
+  throw new Error(`internal: unknown identifier '${name}' (unreachable after analyzer pass)`);
 }
 
 function genBinOp(
@@ -4815,5 +4815,5 @@ function genCallExpr(
     if (condRefHistBase !== undefined) baseArgs.push(String(condRefHistBase));
     return `${mangledName}(${[...baseArgs, objCode, ...args].join(", ")})`;
   }
-  throw new Error("internal: 알 수 없는 CallExpr (analyzer 통과 후 발생 불가)");
+  throw new Error("internal: unknown CallExpr (unreachable after analyzer pass)");
 }

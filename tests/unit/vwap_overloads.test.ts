@@ -111,7 +111,7 @@ describe("ta.vwap multi-arg overloads through the full pipeline (C362)", () => {
     const result = transpile("x = ta.vwap(close, close < open, 2.0)");
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.errors.some((e) => e.includes("'ta.vwap'") && e.includes("3개 값을 반환"))).toBe(true);
+      expect(result.errors.some((e) => e.includes("'ta.vwap'") && e.includes("returns 3 values"))).toBe(true);
     }
   });
 

@@ -2003,13 +2003,13 @@ function resolveSecurityLeadArgs(
     if (idx === -1) continue; // gaps/lookahead/ignore_invalid_symbol/currency — 아래 별도 루프가 처리
     if (idx < expr.args.length) {
       if (!isHarmlessArgDup(expr.args[idx], kw.value)) {
-        prog.errors.push(`인자 '${kw.name}'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`);
+        prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
         ok = false;
       }
       continue;
     }
     if (slots[idx] !== undefined) {
-      prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+      prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
       ok = false;
       continue;
     }
@@ -2017,7 +2017,7 @@ function resolveSecurityLeadArgs(
   }
   if (slots[0] === undefined || slots[1] === undefined || slots[2] === undefined) {
     prog.errors.push(
-      `'request.security' 호출 인자 개수 불일치: 3~5개(symbol, timeframe, expression[, gaps[, lookahead]]) 필요(symbol/timeframe/expression은 위치 또는 키워드 인자 모두 지원, gaps/lookahead는 위치 또는 키워드 인자 모두 지원, ignore_invalid_symbol/currency/calc_bars_count는 키워드 인자로만 지원) (L${expr.line}:${expr.col})`,
+      `'request.security' call argument count mismatch: requires 3~5 (symbol, timeframe, expression[, gaps[, lookahead]]) (symbol/timeframe/expression supported positionally or as keywords, gaps/lookahead supported positionally or as keywords, ignore_invalid_symbol/currency/calc_bars_count keyword-only) (L${expr.line}:${expr.col})`,
     );
     return null;
   }
@@ -2391,7 +2391,7 @@ function isSecurityUdfScopeOffsetExpr(node: Expr, paramNames: readonly string[])
 // 매칭하는 문자열이므로 바꾸지 말 것).
 function pushSecurityExprUnsupportedError(prog: AnalyzedProgram, expr: CallExpr): void {
   prog.errors.push(
-    `'request.security'의 'expression' 인자는 bare/파생 시리즈('open'/'high'/'low'/'close'/'volume'/'hl2'/'hlc3'/'ohlc4'/'hlcc4')·TV 내장 bar 변수('time'/'time_close'/'bar_index')·숫자/불리언/na 리터럴·산술(+ - * /)·정수 리터럴 히스토리('close[1]'/'ta.sma(close,10)[1]' — 유효 서브식 전반)·비교(</>/<=/>=/==/!=)·논리(and/or/not)·삼항('cond ? a : b' — 값/오프셋 위치)·ta.* 콜(다중/중첩 허용)·nz() 콜(위치 인자 1~2개)·na() 콜(인자 1개)·fixnan() 콜(인자 1개)·math.* 콜(위치 인자만, abs/round/max/min/avg/floor/ceil/sqrt/pow/log/log10/exp/sign/삼각·역삼각/atan2/todegrees/toradians/round_to_mintick)·전역 유일 top-level '=' 변수 치환(값이 이 문법에 맞는 경우, input.int/float/bool 스칼라 상수 포함)만 지원 — request.*/strategy.*/UDF 콜·다중 반환 TA·':=' 재대입 변수는 미구현 (L${expr.line}:${expr.col})`,
+    `'request.security' 'expression' argument only supports bare/derived series ('open'/'high'/'low'/'close'/'volume'/'hl2'/'hlc3'/'ohlc4'/'hlcc4')·TV built-in bar variables ('time'/'time_close'/'bar_index')·number/boolean/na literals·arithmetic (+ - * /)·integer-literal history ('close[1]'/'ta.sma(close,10)[1]' — any valid subexpression)·comparison (</>/<=/>=/==/!=)·logical (and/or/not)·ternary ('cond ? a : b' — in value/offset position)·ta.* calls (multiple/nested allowed)·nz() calls (1~2 positional arguments)·na() calls (1 argument)·fixnan() calls (1 argument)·math.* calls (positional only, abs/round/max/min/avg/floor/ceil/sqrt/pow/log/log10/exp/sign/trig·inverse trig/atan2/todegrees/toradians/round_to_mintick)·substitution of a globally unique top-level '=' variable (when its value fits this grammar, including input.int/float/bool scalar constants) — request.*/strategy.*/UDF calls·multi-return TA·':=' reassigned variables are not implemented (L${expr.line}:${expr.col})`,
   );
 }
 
@@ -4346,7 +4346,7 @@ function analyzeInputCall(expr: CallExpr, method: string, errorLabel: string, pr
   const maxArgs = paramNames.length;
   if (expr.args.length > maxArgs) {
     prog.errors.push(
-      `'${errorLabel}' 호출 인자 개수 불일치: 0~${maxArgs}개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+      `'${errorLabel}' call argument count mismatch: requires 0~${maxArgs}, got ${expr.args.length} (L${expr.line}:${expr.col})`,
     );
   } else {
     const paramIndex = new Map(paramNames.map((name, i) => [name, i]));
@@ -4367,22 +4367,22 @@ function analyzeInputCall(expr: CallExpr, method: string, errorLabel: string, pr
       // (isHarmlessArgDup 미지원 kind) — 기존 무조건 거부 유지.
       if (isMetaKwarg && !paramIndex.has(kw.name)) {
         if (kw.name === "options" && seenKwargNames.has(kw.name)) {
-          prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+          prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
         }
         seenKwargNames.add(kw.name);
         continue;
       }
       const idx = paramIndex.get(kw.name);
       if (idx === undefined) {
-        prog.errors.push(`'${errorLabel}'에 없는 인자 이름: '${kw.name}' (L${kw.line}:${kw.col})`);
+        prog.errors.push(`unknown argument name for '${errorLabel}': '${kw.name}' (L${kw.line}:${kw.col})`);
       } else if (kw.name === "defval" || kw.name === "options") {
         // defval은 실제로 계산에 쓰이는 값, options는 배열이라 값 동일성 판단 불가 — 이 둘만 기존
         // 값 비교(위치-키워드) / 무조건 거부(키워드-키워드) 시맨틱을 유지한다. C762가 아래로 넓힌
         // "이름 무조건 허용"의 유일한 예외.
         if (seenKwargNames.has(kw.name)) {
-          prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+          prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
         } else if (idx < expr.args.length && !isHarmlessArgDup(expr.args[idx], kw.value)) {
-          prog.errors.push(`인자 '${kw.name}'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`);
+          prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
         }
       }
       // C762: title/minval/maxval/step/tooltip(위치 슬롯 버전) 등 defval/options 이외의 모든
@@ -4409,12 +4409,12 @@ function analyzeStrategyRiskThresholdCall(expr: CallExpr, displayName: string, p
   // 레벨 분기 주석 참조, wild tv_verdict 실측).
   if (!prog.stmtCalls.has(expr)) {
     prog.errors.push(
-      `'${displayName}' 호출은 문장 위치에서만 지원(반환값 없음 — 대입/식/인자 위치 호출 불가) (L${expr.line}:${expr.col})`,
+      `'${displayName}' call is only supported in statement position (no return value — cannot be called in assignment/expression/argument position) (L${expr.line}:${expr.col})`,
     );
   } else {
     if (expr.args.length > 2) {
       prog.errors.push(
-        `'${displayName}' 호출 인자 개수 불일치: 2개(value, type) 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'${displayName}' call argument count mismatch: requires 2 (value, type), got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
     const seen = new Set<string>();
@@ -4422,18 +4422,18 @@ function analyzeStrategyRiskThresholdCall(expr: CallExpr, displayName: string, p
     if (expr.args.length >= 2) seen.add("type");
     for (const kw of expr.kwargs) {
       if (kw.name !== "value" && kw.name !== "type") {
-        prog.errors.push(`'${displayName}' 키워드 인자는 'value='/'type='만 지원: '${kw.name}=' (L${kw.line}:${kw.col})`);
+        prog.errors.push(`'${displayName}' only supports keyword arguments 'value='/'type=': '${kw.name}=' (L${kw.line}:${kw.col})`);
       } else if (seen.has(kw.name)) {
         const posArg = kw.name === "value" ? expr.args[0] : expr.args[1];
         if (!isHarmlessArgDup(posArg, kw.value)) {
-          prog.errors.push(`인자 '${kw.name}'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`);
+          prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
         }
       } else {
         seen.add(kw.name);
       }
     }
     if (!seen.has("value") || !seen.has("type")) {
-      prog.errors.push(`'${displayName}' 호출에는 value/type 인자가 모두 필요 (L${expr.line}:${expr.col})`);
+      prog.errors.push(`'${displayName}' call requires both value and type arguments (L${expr.line}:${expr.col})`);
     }
   }
   prog.builtinCalls.set(expr, displayName);
@@ -4753,7 +4753,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     !isUdtMethodKwargCall
   ) {
     prog.errors.push(
-      `키워드 인자('${expr.kwargs[0]!.name}=...')는 'TypeName.new(...)' UDT 생성자 호출, 사용자 정의 함수 호출, 'obj.method(...)' UDT method 호출, 'input.*'/bare 'input(...)' 호출, 'plot(...)' 호출, 'indicator(...)'/'strategy(...)'/'study(...)' 호출, 'strategy.entry/order/exit/close/close_all/cancel(...)' 호출, 'request.security(...)'/'request.security_lower_tf(...)'/'request.financial(...)'/'request.earnings(...)'/'request.dividends(...)'/'request.splits(...)' 호출, hline/bgcolor/barcolor/plotshape/plotchar/plotarrow/plotcandle/plotbar/alert/alertcondition/max_bars_back/fill 호출, 'array.*(id=...)' 호출(size/get/set/push/pop/... — analyzer/collections.ts ARRAY_KWARG_PARAM_NAMES 참조), 'ticker.new/modify/renko(...)' 호출, 'ta.sma/ema/rsi/highest/lowest/crossover/crossunder/change/cum/alma/pivotlow/atr/pivothigh(...)' 호출, 'str.tostring(...)' 호출, 'math.abs/round/sign(...)' 호출, 'nz(...)' 호출, 'fixnan(...)' 호출, 'timeframe.in_seconds(...)' 호출, 'timestamp(...)' 호출, 'runtime.error/warning(...)' 호출, 'time(...)'/'time_close(...)' 호출, 'color.from_gradient(...)' 호출, 또는 label/line/box/table/polyline/linefill 호출에서만 지원 (L${expr.line}:${expr.col})`,
+      `keyword arguments ('${expr.kwargs[0]!.name}=...') are only supported in 'TypeName.new(...)' UDT constructor calls, user-defined function calls, 'obj.method(...)' UDT method calls, 'input.*'/bare 'input(...)' calls, 'plot(...)' calls, 'indicator(...)'/'strategy(...)'/'study(...)' calls, 'strategy.entry/order/exit/close/close_all/cancel(...)' calls, 'request.security(...)'/'request.security_lower_tf(...)'/'request.financial(...)'/'request.earnings(...)'/'request.dividends(...)'/'request.splits(...)' calls, hline/bgcolor/barcolor/plotshape/plotchar/plotarrow/plotcandle/plotbar/alert/alertcondition/max_bars_back/fill calls, 'array.*(id=...)' calls (size/get/set/push/pop/... — see analyzer/collections.ts ARRAY_KWARG_PARAM_NAMES), 'ticker.new/modify/renko(...)' calls, 'ta.sma/ema/rsi/highest/lowest/crossover/crossunder/change/cum/alma/pivotlow/atr/pivothigh(...)' calls, 'str.tostring(...)' calls, 'math.abs/round/sign(...)' calls, 'nz(...)' calls, 'fixnan(...)' calls, 'timeframe.in_seconds(...)' calls, 'timestamp(...)' calls, 'runtime.error/warning(...)' calls, 'time(...)'/'time_close(...)' calls, 'color.from_gradient(...)' calls, or label/line/box/table/polyline/linefill calls (L${expr.line}:${expr.col})`,
     );
   }
   // strategy() 지시어의 kwargs 값(default_qty_type=strategy.percent_of_equity 등)이 strategy.*
@@ -4815,7 +4815,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       const maxArgs = paramNames.length;
       if (expr.args.length > maxArgs) {
         prog.errors.push(
-          `'${callee.name}' 호출 인자 개수 불일치: 0~${maxArgs}개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'${callee.name}' call argument count mismatch: requires 0~${maxArgs}, got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       } else {
         const paramIndex = new Map(paramNames.map((name, i) => [name, i]));
@@ -4825,18 +4825,18 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           // DIRECTIVE_META_KWARG_NAMES 주석 참조). library는 집합 조건 앞의 이름 판별로 제외.
           if ((callee.name === "indicator" || callee.name === "strategy") && DIRECTIVE_META_KWARG_NAMES.has(kw.name)) {
             if (seenKwargNames.has(kw.name)) {
-              prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+              prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
             }
             seenKwargNames.add(kw.name);
             continue;
           }
           const idx = paramIndex.get(kw.name);
           if (idx === undefined) {
-            prog.errors.push(`'${callee.name}'에 없는 인자 이름: '${kw.name}' (L${kw.line}:${kw.col})`);
+            prog.errors.push(`unknown argument name for '${callee.name}': '${kw.name}' (L${kw.line}:${kw.col})`);
           } else if (seenKwargNames.has(kw.name)) {
-            prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+            prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
           } else if (idx < expr.args.length && !isHarmlessArgDup(expr.args[idx], kw.value)) {
-            prog.errors.push(`인자 '${kw.name}'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`);
+            prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
           }
           seenKwargNames.add(kw.name);
         }
@@ -4881,7 +4881,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             prog.strategyDefaultQty = dqVal;
           } else {
             prog.errors.push(
-              `'strategy()'의 'default_qty_value' 인자는 0 이상의 숫자 리터럴만 지원(컴파일타임 확정 필요) (L${expr.line}:${expr.col})`,
+              `'strategy()' 'default_qty_value' argument only supports a number literal >= 0 (requires a compile-time constant) (L${expr.line}:${expr.col})`,
             );
           }
         }
@@ -4892,7 +4892,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             prog.strategyPyramiding = pyrVal;
           } else {
             prog.errors.push(
-              `'strategy()'의 'pyramiding' 인자는 0 이상의 정수 리터럴만 지원(컴파일타임 확정 필요) (L${expr.line}:${expr.col})`,
+              `'strategy()' 'pyramiding' argument only supports an int literal >= 0 (requires a compile-time constant) (L${expr.line}:${expr.col})`,
             );
           }
         }
@@ -4908,7 +4908,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             prog.strategyInitialCapital = capVal;
           } else {
             prog.errors.push(
-              `'strategy()'의 'initial_capital' 인자는 0 이상의 숫자 리터럴만 지원(컴파일타임 확정 필요) (L${expr.line}:${expr.col})`,
+              `'strategy()' 'initial_capital' argument only supports a number literal >= 0 (requires a compile-time constant) (L${expr.line}:${expr.col})`,
             );
           }
         }
@@ -4936,7 +4936,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           }
           if (qtyType === null) {
             prog.errors.push(
-              `'strategy()'의 'default_qty_type' 인자는 strategy.fixed/strategy.percent_of_equity/strategy.cash 상수(또는 동치 문자열 리터럴)만 지원(컴파일타임 확정 필요) (L${expr.line}:${expr.col})`,
+              `'strategy()' 'default_qty_type' argument only supports strategy.fixed/strategy.percent_of_equity/strategy.cash constants (or an equivalent string literal) (requires a compile-time constant) (L${expr.line}:${expr.col})`,
             );
           } else if (qtyType === "cash") {
             prog.strategyQtyIsCash = true;
@@ -5005,7 +5005,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         return;
       } else if (scalarMatches.length > 1) {
         prog.errors.push(
-          `'${callee.name}' 스칼라 receiver extension method가 여러 타입(${scalarMatches.map((m) => m.base).join("/")})으로 중복 선언돼 있어 호출부에서 어느 것인지 판별 불가(값 흐름 타입 추적 미지원) (L${expr.line}:${expr.col})`,
+          `'${callee.name}' scalar receiver extension method is declared for multiple types (${scalarMatches.map((m) => m.base).join("/")}) — cannot determine which one at the call site (value-flow type tracking not supported) (L${expr.line}:${expr.col})`,
         );
         for (const arg of expr.args) analyzeExpr(arg, prog, scope, false);
         return;
@@ -5035,7 +5035,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         const paramIndex = new Map(NZ_KWARG_PARAM_NAMES.map((name, i) => [name, i]));
         if (expr.args.length > NZ_KWARG_PARAM_NAMES.length) {
           prog.errors.push(
-            `'nz' 호출 인자 개수 불일치: ${NZ_KWARG_PARAM_NAMES.length}개(${NZ_KWARG_PARAM_NAMES.join(", ")}) 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+            `'nz' call argument count mismatch: requires ${NZ_KWARG_PARAM_NAMES.length} (${NZ_KWARG_PARAM_NAMES.join(", ")}), got ${expr.args.length} (L${expr.line}:${expr.col})`,
           );
         }
         const seen = new Set<string>();
@@ -5043,11 +5043,11 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         for (const kw of expr.kwargs) {
           const idx = paramIndex.get(kw.name);
           if (idx === undefined) {
-            prog.errors.push(`'nz'에 없는 인자 이름: '${kw.name}' (L${kw.line}:${kw.col})`);
+            prog.errors.push(`unknown argument name for 'nz': '${kw.name}' (L${kw.line}:${kw.col})`);
           } else if (seen.has(kw.name)) {
             const posArg = idx < expr.args.length ? expr.args[idx] : undefined;
             if (!isHarmlessArgDup(posArg, kw.value)) {
-              prog.errors.push(`인자 '${kw.name}'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`);
+              prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
             }
           } else {
             seen.add(kw.name);
@@ -5055,11 +5055,11 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           analyzeExpr(kw.value, prog, scope, false);
         }
         if (!seen.has(NZ_KWARG_PARAM_NAMES[0]!)) {
-          prog.errors.push(`'nz' 호출에는 '${NZ_KWARG_PARAM_NAMES[0]}' 인자가 필요 (L${expr.line}:${expr.col})`);
+          prog.errors.push(`'nz' call requires argument '${NZ_KWARG_PARAM_NAMES[0]}' (L${expr.line}:${expr.col})`);
         }
       } else if (expr.args.length < 1 || expr.args.length > 2) {
         prog.errors.push(
-          `'nz' 호출 인자 개수 불일치: 1~2개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'nz' call argument count mismatch: requires 1~2, got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       }
       prog.builtinCalls.set(expr, "nz");
@@ -5074,7 +5074,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // 가로챈다(동일 섀도잉 정책, nz와 동일).
       if (expr.args.length !== 1) {
         prog.errors.push(
-          `'na' 호출 인자 개수 불일치: 1개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'na' call argument count mismatch: requires 1, got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       }
       prog.builtinCalls.set(expr, "na");
@@ -5091,7 +5091,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     if (callee.name === "int" || callee.name === "float" || callee.name === "bool" || callee.name === "string") {
       if (expr.args.length !== 1) {
         prog.errors.push(
-          `'${callee.name}' 호출 인자 개수 불일치: 1개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'${callee.name}' call argument count mismatch: requires 1, got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       }
       if (callee.name === "string") {
@@ -5118,7 +5118,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     if (callee.name === "color") {
       if (expr.args.length < 1 || expr.args.length > 2) {
         prog.errors.push(
-          `'color' 호출 인자 개수 불일치: 1~2개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'color' call argument count mismatch: requires 1~2, got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       }
       prog.builtinCalls.set(expr, "colorCast");
@@ -5140,7 +5140,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     if (callee.name === "line" || callee.name === "label" || callee.name === "box" || callee.name === "table") {
       if (expr.args.length !== 1) {
         prog.errors.push(
-          `'${callee.name}' 호출 인자 개수 불일치: 1개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'${callee.name}' call argument count mismatch: requires 1, got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       }
       prog.builtinCalls.set(expr, "drawingCast");
@@ -5170,7 +5170,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         const slots = resolveTimestampKwargSlots(expr);
         if (expr.args.length > slots.length) {
           prog.errors.push(
-            `'timestamp' 호출 인자 개수 불일치: 최대 ${slots.length}개(${slots.join(", ")}) 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+            `'timestamp' call argument count mismatch: requires at most ${slots.length} (${slots.join(", ")}), got ${expr.args.length} (L${expr.line}:${expr.col})`,
           );
         }
         const seen = new Set<string>();
@@ -5178,13 +5178,13 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         for (const kw of expr.kwargs) {
           const idx = slots.indexOf(kw.name);
           if (idx === -1) {
-            prog.errors.push(`'timestamp'에 없는 인자 이름: '${kw.name}' (L${kw.line}:${kw.col})`);
+            prog.errors.push(`unknown argument name for 'timestamp': '${kw.name}' (L${kw.line}:${kw.col})`);
           } else if (idx < expr.args.length) {
             if (!isHarmlessArgDup(expr.args[idx], kw.value)) {
-              prog.errors.push(`인자 '${kw.name}'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`);
+              prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
             }
           } else if (seen.has(kw.name)) {
-            prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+            prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
           } else {
             seen.add(kw.name);
           }
@@ -5194,7 +5194,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           const dateKw = expr.kwargs.find((kw) => kw.name === "dateString");
           if (dateKw !== undefined && dateKw.value.kind !== "StringLiteral") {
             prog.errors.push(
-              `'timestamp' 호출의 'dateString' 인자는 컴파일타임 문자열 리터럴만 지원 (L${expr.line}:${expr.col})`,
+              `'timestamp' call 'dateString' argument only supports a compile-time string literal (L${expr.line}:${expr.col})`,
             );
           }
         } else {
@@ -5202,13 +5202,13 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           for (let i = 0; i < maxIdx; i++) {
             if (!seen.has(slots[i]!)) {
               prog.errors.push(
-                `'timestamp' 호출에 '${slots[i]}' 인자가 누락됨(뒤 인자가 이름으로 지정됨) (L${expr.line}:${expr.col})`,
+                `'timestamp' call is missing argument '${slots[i]}' (a later argument was specified by name) (L${expr.line}:${expr.col})`,
               );
             }
           }
           for (const required of ["year", "month", "day"]) {
             if (!seen.has(required)) {
-              prog.errors.push(`'timestamp' 호출에는 '${required}' 인자가 필요 (L${expr.line}:${expr.col})`);
+              prog.errors.push(`'timestamp' call requires argument '${required}' (L${expr.line}:${expr.col})`);
             }
           }
         }
@@ -5216,7 +5216,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         const isDateStringLiteral = expr.args.length === 1 && expr.args[0]!.kind === "StringLiteral";
         if (!isDateStringLiteral && (expr.args.length < 3 || expr.args.length > 7)) {
           prog.errors.push(
-            `'timestamp' 호출 인자 개수 불일치: 1개(dateString 리터럴) 또는 3~7개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+            `'timestamp' call argument count mismatch: requires 1 (dateString literal) or 3~7, got ${expr.args.length} (L${expr.line}:${expr.col})`,
           );
         }
       }
@@ -5233,7 +5233,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       const total = expr.args.length + expr.kwargs.length;
       if (total < arity.min || total > arity.max) {
         prog.errors.push(
-          `'${callee.name}' 호출 인자 개수 불일치: ${arity.min}~${arity.max}개 필요, ${total}개 전달 (L${expr.line}:${expr.col})`,
+          `'${callee.name}' call argument count mismatch: requires ${arity.min}~${arity.max}, got ${total} (L${expr.line}:${expr.col})`,
         );
       }
       // max_bars_back(C347, wild 최다빈도 서브패턴 — `calcSlope(source, length) =>\n
@@ -5252,7 +5252,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         callee.name === "max_bars_back" && scope.kind === "udf-body" && prog.stmtCalls.has(expr);
       if (NOOP_BUILTIN_TOPLEVEL.has(callee.name) && !topLevel && !isUdfBodyMaxBarsBack) {
         prog.errors.push(
-          `'${callee.name}' 호출은 스크립트 최상위 문장 위치에서만 지원함(v5 제약 — local scope/UDF 본문/식 내부 호출 불가): (L${expr.line}:${expr.col})`,
+          `'${callee.name}' call is only supported at script top-level statement position (v5 constraint — cannot be called in local scope/UDF body/inside an expression): (L${expr.line}:${expr.col})`,
         );
       }
       prog.noopStmtCalls.add(expr);
@@ -5497,7 +5497,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       const hasSeriesKwarg = expr.kwargs.some((kw) => kw.name === "series");
       if ((expr.args.length < 1 && !hasSeriesKwarg) || expr.args.length > maxArgs) {
         prog.errors.push(
-          `'plot' 호출 인자 개수 불일치: 1~${maxArgs}개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'plot' call argument count mismatch: requires 1~${maxArgs}, got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       } else {
         const paramIndex = new Map(PLOT_PARAM_NAMES.map((name, i) => [name, i + 1]));
@@ -5509,7 +5509,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           // 전용이라 이 분기 전체가 버림).
           if (kw.name === "transp") {
             if (seenKwargNames.has(kw.name)) {
-              prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+              prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
             }
             seenKwargNames.add(kw.name);
             continue;
@@ -5522,7 +5522,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           // 동일하게 위치 슬롯이 없는 kwarg 전용 — 값은 렌더링 전용이라 discard.
           if (kw.name === "linestyle") {
             if (seenKwargNames.has(kw.name)) {
-              prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+              prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
             }
             seenKwargNames.add(kw.name);
             continue;
@@ -5532,20 +5532,20 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           // named param과 동일하게 "위치/키워드 충돌"로 거부.
           if (kw.name === "series") {
             if (seenKwargNames.has(kw.name)) {
-              prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+              prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
             } else if (expr.args.length >= 1) {
-              prog.errors.push(`인자 '${kw.name}'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`);
+              prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
             }
             seenKwargNames.add(kw.name);
             continue;
           }
           const idx = paramIndex.get(kw.name);
           if (idx === undefined) {
-            prog.errors.push(`'plot'에 없는 인자 이름: '${kw.name}' (L${kw.line}:${kw.col})`);
+            prog.errors.push(`unknown argument name for 'plot': '${kw.name}' (L${kw.line}:${kw.col})`);
           } else if (seenKwargNames.has(kw.name)) {
-            prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+            prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
           } else if (idx < expr.args.length && !isHarmlessArgDup(expr.args[idx], kw.value)) {
-            prog.errors.push(`인자 '${kw.name}'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`);
+            prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
           }
           seenKwargNames.add(kw.name);
         }
@@ -5557,7 +5557,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // ~1080)라 별도 스코프 체인 워크가 필요 없다.
       if (!topLevel) {
         prog.errors.push(
-          `'plot' 호출은 스크립트 최상위 문장 위치에서만 지원함(v5 제약 — local scope/UDF 본문/식 내부 호출 불가): (L${expr.line}:${expr.col})`,
+          `'plot' call is only supported at script top-level statement position (v5 constraint — cannot be called in local scope/UDF body/inside an expression): (L${expr.line}:${expr.col})`,
         );
       } else {
         const slot = prog.plotTitles.length;
@@ -5647,7 +5647,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // 키워드 중 하나" 해석이 필요하다.
       if (expr.args.length > 2) {
         prog.errors.push(
-          `'${callee.name}' 호출 인자 개수 불일치: 1~2개(time_expr[, timezone]) 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'${callee.name}' call argument count mismatch: requires 1~2 (time_expr[, timezone]), got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       }
       const seenTimeFuncParams = new Set<string>();
@@ -5655,18 +5655,18 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       if (expr.args.length >= 2) seenTimeFuncParams.add("timezone");
       for (const kw of expr.kwargs) {
         if (kw.name !== "time" && kw.name !== "timezone") {
-          prog.errors.push(`'${callee.name}' 키워드 인자는 'time='/'timezone='만 지원: '${kw.name}=' (L${kw.line}:${kw.col})`);
+          prog.errors.push(`'${callee.name}' only supports keyword arguments 'time='/'timezone=': '${kw.name}=' (L${kw.line}:${kw.col})`);
         } else if (seenTimeFuncParams.has(kw.name)) {
           const posArg = kw.name === "time" ? expr.args[0] : expr.args[1];
           if (!isHarmlessArgDup(posArg, kw.value)) {
-            prog.errors.push(`인자 '${kw.name}'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`);
+            prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
           }
         } else {
           seenTimeFuncParams.add(kw.name);
         }
       }
       if (!seenTimeFuncParams.has("time")) {
-        prog.errors.push(`'${callee.name}' 호출에는 time 인자가 필요 (L${expr.line}:${expr.col})`);
+        prog.errors.push(`'${callee.name}' call requires a time argument (L${expr.line}:${expr.col})`);
       }
       prog.builtinCalls.set(expr, `datetime.${callee.name}`);
       for (const arg of expr.args) analyzeExpr(arg, prog, scope, false);
@@ -5688,7 +5688,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       if (expr.kwargs.length > 0) {
         if (expr.args.length > TIME_CALL_KWARG_PARAM_NAMES.length) {
           prog.errors.push(
-            `'${callee.name}' 호출 인자 개수 불일치: 1~4개(timeframe[, session[, timezone[, bars_back]]]) 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+            `'${callee.name}' call argument count mismatch: requires 1~4 (timeframe[, session[, timezone[, bars_back]]]), got ${expr.args.length} (L${expr.line}:${expr.col})`,
           );
         }
         const paramIndex = new Map(TIME_CALL_KWARG_PARAM_NAMES.map((name, i) => [name, i]));
@@ -5699,11 +5699,11 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         for (const kw of expr.kwargs) {
           const idx = paramIndex.get(kw.name);
           if (idx === undefined) {
-            prog.errors.push(`'${callee.name}' 키워드 인자는 'timeframe='/'session='/'timezone='/'bars_back='만 지원: '${kw.name}=' (L${kw.line}:${kw.col})`);
+            prog.errors.push(`'${callee.name}' only supports keyword arguments 'timeframe='/'session='/'timezone='/'bars_back=': '${kw.name}=' (L${kw.line}:${kw.col})`);
           } else if (seen.has(kw.name)) {
             const posArg = idx < expr.args.length ? expr.args[idx] : undefined;
             if (!isHarmlessArgDup(posArg, kw.value)) {
-              prog.errors.push(`인자 '${kw.name}'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`);
+              prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
             }
           } else {
             seen.add(kw.name);
@@ -5711,18 +5711,18 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           analyzeExpr(kw.value, prog, scope, false);
         }
         if (!seen.has("timeframe")) {
-          prog.errors.push(`'${callee.name}' 호출에는 'timeframe' 인자가 필요 (L${expr.line}:${expr.col})`);
+          prog.errors.push(`'${callee.name}' call requires a 'timeframe' argument (L${expr.line}:${expr.col})`);
         }
       } else if (expr.args.length < 1 || expr.args.length > 4) {
         prog.errors.push(
-          `'${callee.name}' 호출 인자 개수 불일치: 1~4개(timeframe[, session[, timezone[, bars_back]]]) 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'${callee.name}' call argument count mismatch: requires 1~4 (timeframe[, session[, timezone[, bars_back]]]), got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       }
       prog.builtinCalls.set(expr, callee.name === "time" ? "time" : "timeClose");
       for (const arg of expr.args) analyzeExpr(arg, prog, scope, false);
       return;
     }
-    prog.errors.push(`알 수 없는 함수 호출: '${callee.name}' (L${expr.line}:${expr.col})`);
+    prog.errors.push(`unknown function call: '${callee.name}' (L${expr.line}:${expr.col})`);
     for (const arg of expr.args) analyzeExpr(arg, prog, scope, false);
     return;
   }
@@ -5745,7 +5745,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // (analyzeTupleDestructure가 재귀 전에 tupleStateCalls로 표시 — TaRegistryEntry.returnArity 주석 참조).
       // C362: vwap는 3-인자 폼만 여기 걸린다(taCallReturnArity — 1/2-인자 스칼라 폼은 표현식 위치 합법).
       prog.errors.push(
-        `'${taEntry.displayName}'는 ${taCallArity}개 값을 반환하므로 튜플 디스트럭처링('[a, b, c] = ...')의 값으로만 호출 가능 (L${expr.line}:${expr.col})`,
+        `'${taEntry.displayName}' returns ${taCallArity} values, so it can only be called as the value of a tuple destructuring ('[a, b, c] = ...') (L${expr.line}:${expr.col})`,
       );
       for (const arg of expr.args) analyzeExpr(arg, prog, scope, false);
       return;
@@ -5791,7 +5791,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       const paramIndex = new Map(mathKwargParamNames.map((name, i) => [name, i]));
       if (expr.args.length > mathKwargParamNames.length) {
         prog.errors.push(
-          `'math.${method}' 호출 인자 개수 불일치: ${mathKwargParamNames.length}개(${mathKwargParamNames.join(", ")}) 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'math.${method}' call argument count mismatch: requires ${mathKwargParamNames.length} (${mathKwargParamNames.join(", ")}), got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       }
       const seen = new Set<string>();
@@ -5799,11 +5799,11 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       for (const kw of expr.kwargs) {
         const idx = paramIndex.get(kw.name);
         if (idx === undefined) {
-          prog.errors.push(`'math.${method}'에 없는 인자 이름: '${kw.name}' (L${kw.line}:${kw.col})`);
+          prog.errors.push(`unknown argument name for 'math.${method}': '${kw.name}' (L${kw.line}:${kw.col})`);
         } else if (seen.has(kw.name)) {
           const posArg = idx < expr.args.length ? expr.args[idx] : undefined;
           if (!isHarmlessArgDup(posArg, kw.value)) {
-            prog.errors.push(`인자 '${kw.name}'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`);
+            prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
           }
         } else {
           seen.add(kw.name);
@@ -5811,12 +5811,12 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         analyzeExpr(kw.value, prog, scope, false);
       }
       if (!seen.has(mathKwargParamNames[0]!)) {
-        prog.errors.push(`'math.${method}' 호출에는 '${mathKwargParamNames[0]}' 인자가 필요 (L${expr.line}:${expr.col})`);
+        prog.errors.push(`'math.${method}' call requires argument '${mathKwargParamNames[0]}' (L${expr.line}:${expr.col})`);
       }
     } else if (method === "round" || method === "round_to_mintick") {
       if (expr.args.length < 1 || expr.args.length > 2) {
         prog.errors.push(
-          `'math.${method}' 호출 인자 개수 불일치: 1~2개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'math.${method}' call argument count mismatch: requires 1~2, got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       }
     } else if (method === "max" || method === "min" || method === "avg") {
@@ -5826,21 +5826,21 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // 유추 적용, WebSearch 권한 없어 pine2py 소스만으로는 하한을 확인 불가함을 감안한 결정).
       if (expr.args.length < 2) {
         prog.errors.push(
-          `'math.${method}' 호출 인자 개수 불일치: 2개 이상 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'math.${method}' call argument count mismatch: requires at least 2, got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       }
     } else if (method === "pow" || method === "atan2") {
       // pow(base, exp)/atan2(y, x) — 둘 다 정확히 2개 인자.
       if (expr.args.length !== 2) {
         prog.errors.push(
-          `'math.${method}' 호출 인자 개수 불일치: 2개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'math.${method}' call argument count mismatch: requires 2, got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       }
     } else if (method === "clamp") {
       // clamp(value, min, max) — 정확히 3개 인자(TV 공식 시그니처, kwarg는 wild 근거 없어 미지원).
       if (expr.args.length !== 3) {
         prog.errors.push(
-          `'math.${method}' 호출 인자 개수 불일치: 3개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'math.${method}' call argument count mismatch: requires 3, got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       }
     } else {
@@ -5848,7 +5848,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // 전부 단항.
       if (expr.args.length !== 1) {
         prog.errors.push(
-          `'math.${method}' 호출 인자 개수 불일치: 1개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'math.${method}' call argument count mismatch: requires 1, got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       }
     }
@@ -5876,7 +5876,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     if (method === "rgb") {
       if (expr.args.length < 3 || expr.args.length > 4) {
         prog.errors.push(
-          `'color.rgb' 호출 인자 개수 불일치: 3~4개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'color.rgb' call argument count mismatch: requires 3~4, got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       }
     } else if (method === "new") {
@@ -5889,7 +5889,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       const effectiveArgCount = expr.args.length + (hasColorKwarg ? 1 : 0);
       if (effectiveArgCount < 1 || effectiveArgCount > 2) {
         prog.errors.push(
-          `'color.new' 호출 인자 개수 불일치: 1~2개 필요, ${effectiveArgCount}개 전달 (L${expr.line}:${expr.col})`,
+          `'color.new' call argument count mismatch: requires 1~2, got ${effectiveArgCount} (L${expr.line}:${expr.col})`,
         );
       }
       let transpFromKwarg = false;
@@ -5898,26 +5898,26 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         if (kw.name === "transp") {
           if (expr.args.length >= 2) {
             if (!isHarmlessArgDup(expr.args[1], kw.value)) {
-              prog.errors.push(`인자 'transp'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`);
+              prog.errors.push(`argument 'transp' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
             }
           } else if (transpFromKwarg) {
-            prog.errors.push(`키워드 인자 'transp' 중복 지정 (L${kw.line}:${kw.col})`);
+            prog.errors.push(`duplicate keyword argument 'transp' (L${kw.line}:${kw.col})`);
           } else {
             transpFromKwarg = true;
           }
         } else if (kw.name === "color") {
           if (expr.args.length >= 1) {
             if (!isHarmlessArgDup(expr.args[0], kw.value)) {
-              prog.errors.push(`인자 'color'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`);
+              prog.errors.push(`argument 'color' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
             }
           } else if (colorFromKwarg) {
-            prog.errors.push(`키워드 인자 'color' 중복 지정 (L${kw.line}:${kw.col})`);
+            prog.errors.push(`duplicate keyword argument 'color' (L${kw.line}:${kw.col})`);
           } else {
             colorFromKwarg = true;
           }
         } else {
           prog.errors.push(
-            `'color.new' 키워드 인자는 'color='/'transp='만 지원: '${kw.name}=' (L${kw.line}:${kw.col})`,
+            `'color.new' only supports keyword arguments 'color='/'transp=': '${kw.name}=' (L${kw.line}:${kw.col})`,
           );
         }
       }
@@ -5931,7 +5931,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         const paramIndex = new Map(paramNames.map((name, i) => [name, i]));
         if (expr.args.length > paramNames.length) {
           prog.errors.push(
-            `'color.from_gradient' 호출 인자 개수 불일치: ${paramNames.length}개(${paramNames.join(", ")}) 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+            `'color.from_gradient' call argument count mismatch: requires ${paramNames.length} (${paramNames.join(", ")}), got ${expr.args.length} (L${expr.line}:${expr.col})`,
           );
         }
         const seen = new Set<string>();
@@ -5939,11 +5939,11 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         for (const kw of expr.kwargs) {
           const idx = paramIndex.get(kw.name);
           if (idx === undefined) {
-            prog.errors.push(`'color.from_gradient'에 없는 인자 이름: '${kw.name}' (L${kw.line}:${kw.col})`);
+            prog.errors.push(`unknown argument name for 'color.from_gradient': '${kw.name}' (L${kw.line}:${kw.col})`);
           } else if (seen.has(kw.name)) {
             const posArg = idx < expr.args.length ? expr.args[idx] : undefined;
             if (!isHarmlessArgDup(posArg, kw.value)) {
-              prog.errors.push(`인자 '${kw.name}'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`);
+              prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
             }
           } else {
             seen.add(kw.name);
@@ -5952,17 +5952,17 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         }
         const missing = paramNames.filter((name) => !seen.has(name));
         if (missing.length > 0) {
-          prog.errors.push(`'color.from_gradient' 호출에는 ${paramNames.join("/")} 인자가 모두 필요 (L${expr.line}:${expr.col})`);
+          prog.errors.push(`'color.from_gradient' call requires all of the ${paramNames.join("/")} arguments (L${expr.line}:${expr.col})`);
         }
       } else if (expr.args.length !== paramNames.length) {
         prog.errors.push(
-          `'color.from_gradient' 호출 인자 개수 불일치: 5개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'color.from_gradient' call argument count mismatch: requires 5, got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       }
     } else {
       if (expr.args.length !== 1) {
         prog.errors.push(
-          `'color.${method}' 호출 인자 개수 불일치: 1개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'color.${method}' call argument count mismatch: requires 1, got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       }
     }
@@ -5985,7 +5985,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       const paramIndex = new Map(TIMEFRAME_IN_SECONDS_KWARG_PARAM_NAMES.map((name, i) => [name, i]));
       if (expr.args.length > TIMEFRAME_IN_SECONDS_KWARG_PARAM_NAMES.length) {
         prog.errors.push(
-          `'timeframe.in_seconds' 호출 인자 개수 불일치: ${TIMEFRAME_IN_SECONDS_KWARG_PARAM_NAMES.length}개(${TIMEFRAME_IN_SECONDS_KWARG_PARAM_NAMES.join(", ")}) 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'timeframe.in_seconds' call argument count mismatch: requires ${TIMEFRAME_IN_SECONDS_KWARG_PARAM_NAMES.length} (${TIMEFRAME_IN_SECONDS_KWARG_PARAM_NAMES.join(", ")}), got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       }
       const seen = new Set<string>();
@@ -5995,11 +5995,11 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       for (const kw of expr.kwargs) {
         const idx = paramIndex.get(kw.name);
         if (idx === undefined) {
-          prog.errors.push(`'timeframe.in_seconds'에 없는 인자 이름: '${kw.name}' (L${kw.line}:${kw.col})`);
+          prog.errors.push(`unknown argument name for 'timeframe.in_seconds': '${kw.name}' (L${kw.line}:${kw.col})`);
         } else if (seen.has(kw.name)) {
           const posArg = idx < expr.args.length ? expr.args[idx] : undefined;
           if (!isHarmlessArgDup(posArg, kw.value)) {
-            prog.errors.push(`인자 '${kw.name}'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`);
+            prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
           }
         } else {
           seen.add(kw.name);
@@ -6010,9 +6010,9 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     } else {
       const minArgs = method === "in_seconds" ? 0 : 1;
       if (expr.args.length < minArgs || expr.args.length > 1) {
-        const need = method === "in_seconds" ? "0~1개" : "1개";
+        const need = method === "in_seconds" ? "0~1" : "1";
         prog.errors.push(
-          `'timeframe.${method}' 호출 인자 개수 불일치: ${need} 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'timeframe.${method}' call argument count mismatch: requires ${need}, got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       }
     }
@@ -6025,7 +6025,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     // 같아 minArgCount:0으로 0~1개 허용.
     if (expr.args.length > 1) {
       prog.errors.push(
-        `'timeframe.change' 호출 인자 개수 불일치: 0~1개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'timeframe.change' call argument count mismatch: requires 0~1, got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
     prog.builtinCalls.set(expr, "timeframe.change");
@@ -6041,7 +6041,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     // 흘러가는 drawing no-op 소비라 수치 영향 0).
     if (expr.args.length !== 1) {
       prog.errors.push(
-        `'syminfo.ticker' 호출 인자 개수 불일치: 1개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'syminfo.ticker' call argument count mismatch: requires 1, got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
     prog.builtinCalls.set(expr, "syminfo.ticker");
@@ -6085,7 +6085,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       const paramIndex = new Map(kwargParamNames.map((name, i) => [name, i]));
       if (expr.args.length > kwargParamNames.length) {
         prog.errors.push(
-          `'ticker.${method}' 호출 인자 개수 불일치: 최대 ${kwargParamNames.length}개(${kwargParamNames.join(", ")}), ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'ticker.${method}' call argument count mismatch: at most ${kwargParamNames.length} (${kwargParamNames.join(", ")}), got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       }
       const seen = new Set<string>();
@@ -6093,11 +6093,11 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       for (const kw of expr.kwargs) {
         const idx = paramIndex.get(kw.name);
         if (idx === undefined) {
-          prog.errors.push(`'ticker.${method}'에 없는 인자 이름: '${kw.name}' (L${kw.line}:${kw.col})`);
+          prog.errors.push(`unknown argument name for 'ticker.${method}': '${kw.name}' (L${kw.line}:${kw.col})`);
         } else if (seen.has(kw.name)) {
           const posArg = idx < expr.args.length ? expr.args[idx] : undefined;
           if (!isHarmlessArgDup(posArg, kw.value)) {
-            prog.errors.push(`인자 '${kw.name}'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`);
+            prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
           }
         } else {
           seen.add(kw.name);
@@ -6106,7 +6106,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       }
     } else if (expr.args.length > maxArgs[method]!) {
       prog.errors.push(
-        `'ticker.${method}' 호출 인자 개수 불일치: 최대 ${maxArgs[method]}개, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'ticker.${method}' call argument count mismatch: at most ${maxArgs[method]}, got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
     prog.builtinCalls.set(expr, `ticker.${method}`);
@@ -6127,7 +6127,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     // is_standard=true/나머지=false 하드코딩.
     if (expr.args.length !== 0) {
       prog.errors.push(
-        `'chart.${method}' 호출 인자 개수 불일치: 0개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'chart.${method}' call argument count mismatch: requires 0, got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
     prog.builtinCalls.set(expr, `chart.${method}`);
@@ -6144,17 +6144,17 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     const DIVIDENDS_SPLITS_PARAM_NAMES = ["ticker", "field", "gaps", "lookahead", "ignore_invalid_symbol"] as const;
     if (expr.args.length > 4) {
       prog.errors.push(
-        `'request.${method}' 호출 인자 개수 불일치: 최대 4개, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'request.${method}' call argument count mismatch: at most 4, got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
     const seenDividendsSplitsKwargs = new Set<string>();
     for (const kw of expr.kwargs) {
       if (!DIVIDENDS_SPLITS_PARAM_NAMES.includes(kw.name as (typeof DIVIDENDS_SPLITS_PARAM_NAMES)[number])) {
         prog.errors.push(
-          `'request.${method}' 키워드 인자는 '${DIVIDENDS_SPLITS_PARAM_NAMES.join("='/'")}='만 지원: '${kw.name}=' (L${kw.line}:${kw.col})`,
+          `'request.${method}' only supports keyword arguments '${DIVIDENDS_SPLITS_PARAM_NAMES.join("='/'")}=': '${kw.name}=' (L${kw.line}:${kw.col})`,
         );
       } else if (seenDividendsSplitsKwargs.has(kw.name)) {
-        prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+        prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
       }
       seenDividendsSplitsKwargs.add(kw.name);
       analyzeExpr(kw.value, prog, scope, false);
@@ -6175,17 +6175,17 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     const FINANCIAL_PARAM_NAMES = ["symbol", "financial_id", "period", "gaps", "lookahead", "ignore_invalid_symbol"] as const;
     if (expr.args.length > 5) {
       prog.errors.push(
-        `'request.financial' 호출 인자 개수 불일치: 최대 5개, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'request.financial' call argument count mismatch: at most 5, got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
     const seenFinancialKwargs = new Set<string>();
     for (const kw of expr.kwargs) {
       if (!FINANCIAL_PARAM_NAMES.includes(kw.name as (typeof FINANCIAL_PARAM_NAMES)[number])) {
         prog.errors.push(
-          `'request.financial' 키워드 인자는 '${FINANCIAL_PARAM_NAMES.join("='/'")}='만 지원: '${kw.name}=' (L${kw.line}:${kw.col})`,
+          `'request.financial' only supports keyword arguments '${FINANCIAL_PARAM_NAMES.join("='/'")}=': '${kw.name}=' (L${kw.line}:${kw.col})`,
         );
       } else if (seenFinancialKwargs.has(kw.name)) {
-        prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+        prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
       }
       seenFinancialKwargs.add(kw.name);
       analyzeExpr(kw.value, prog, scope, false);
@@ -6204,17 +6204,17 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     const EARNINGS_PARAM_NAMES = ["ticker", "field", "gaps", "lookahead", "ignore_invalid_symbol"] as const;
     if (expr.args.length > 4) {
       prog.errors.push(
-        `'request.earnings' 호출 인자 개수 불일치: 최대 4개, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'request.earnings' call argument count mismatch: at most 4, got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
     const seenEarningsKwargs = new Set<string>();
     for (const kw of expr.kwargs) {
       if (!EARNINGS_PARAM_NAMES.includes(kw.name as (typeof EARNINGS_PARAM_NAMES)[number])) {
         prog.errors.push(
-          `'request.earnings' 키워드 인자는 '${EARNINGS_PARAM_NAMES.join("='/'")}='만 지원: '${kw.name}=' (L${kw.line}:${kw.col})`,
+          `'request.earnings' only supports keyword arguments '${EARNINGS_PARAM_NAMES.join("='/'")}=': '${kw.name}=' (L${kw.line}:${kw.col})`,
         );
       } else if (seenEarningsKwargs.has(kw.name)) {
-        prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+        prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
       }
       seenEarningsKwargs.add(kw.name);
       analyzeExpr(kw.value, prog, scope, false);
@@ -6228,7 +6228,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     // 有 — 하한 없음, dividends/splits/financial과 동일 원칙 재적용).
     if (expr.args.length > 3) {
       prog.errors.push(
-        `'request.quandl' 호출 인자 개수 불일치: 최대 3개, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'request.quandl' call argument count mismatch: at most 3, got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
     prog.builtinCalls.set(expr, "request.quandl");
@@ -6247,7 +6247,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     // 인자 3~4개(source/symbol/expression 필수 + ignore_invalid_symbol 선택).
     if (expr.args.length < 3 || expr.args.length > 4) {
       prog.errors.push(
-        `'request.seed' 호출 인자 개수 불일치: 3~4개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'request.seed' call argument count mismatch: requires 3~4, got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
     prog.builtinCalls.set(expr, "request.seed");
@@ -6263,7 +6263,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     // 인자 2~3개(from/to 필수 + ignore_invalid_currency 선택).
     if (expr.args.length < 2 || expr.args.length > 3) {
       prog.errors.push(
-        `'request.currency_rate' 호출 인자 개수 불일치: 2~3개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'request.currency_rate' call argument count mismatch: requires 2~3, got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
     prog.builtinCalls.set(expr, "request.currency_rate");
@@ -6299,7 +6299,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     ] as const;
     if (expr.args.length > 7) {
       prog.errors.push(
-        `'request.security_lower_tf' 호출 인자 개수 불일치: 최대 7개, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'request.security_lower_tf' call argument count mismatch: at most 7, got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     } else {
       const paramIndex = new Map<string, number>([
@@ -6315,12 +6315,12 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         const idx = paramIndex.get(kw.name);
         if (idx === undefined) {
           prog.errors.push(
-            `'request.security_lower_tf' 키워드 인자는 '${LOWER_TF_PARAM_NAMES.join("='/'")}='만 지원(이번 슬라이스): '${kw.name}=' (L${kw.line}:${kw.col})`,
+            `'request.security_lower_tf' only supports keyword arguments '${LOWER_TF_PARAM_NAMES.join("='/'")}=' (this slice): '${kw.name}=' (L${kw.line}:${kw.col})`,
           );
         } else if (seenLowerTfKwargs.has(kw.name)) {
-          prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+          prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
         } else if (idx < expr.args.length && !isHarmlessArgDup(expr.args[idx], kw.value)) {
-          prog.errors.push(`인자 '${kw.name}'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`);
+          prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
         }
         seenLowerTfKwargs.add(kw.name);
         analyzeExpr(kw.value, prog, scope, false);
@@ -6375,7 +6375,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     // strategy.entry/exit/close 등을 그대로 호출해도 TV 컴파일 수용, analyzer.ts 주석 참조).
     if (!prog.stmtCalls.has(expr)) {
       prog.errors.push(
-        `'strategy.${method}' 호출은 문장 위치에서만 지원(반환값 없음 — 대입/식/인자 위치 호출 불가) (L${expr.line}:${expr.col})`,
+        `'strategy.${method}' call is only supported in statement position (no return value — cannot be called in assignment/expression/argument position) (L${expr.line}:${expr.col})`,
       );
     } else if (method === "entry" || method === "order") {
       // entry(C163~C166)와 order(C169)는 TV 시그니처가 동일(id, direction[, qty] + qty=/limit=/
@@ -6394,17 +6394,17 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         (expr.args.length < 2 && directionKwarg === undefined)
       ) {
         prog.errors.push(
-          `'strategy.${method}' 호출 인자 개수 불일치: 0~3개(id, direction[, qty] — id/direction은 키워드 인자로도 지정 가능) 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'strategy.${method}' call argument count mismatch: requires 0~3 (id, direction[, qty] — id/direction may also be specified as keyword arguments), got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       } else if (expr.args.length >= 1 && idKwarg !== undefined && !isHarmlessArgDup(expr.args[0], idKwarg.value)) {
-        prog.errors.push(`인자 'id'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${idKwarg.line}:${idKwarg.col})`);
+        prog.errors.push(`argument 'id' specified both positionally and as a keyword (L${idKwarg.line}:${idKwarg.col})`);
       } else if (
         expr.args.length >= 2 &&
         directionKwarg !== undefined &&
         !isHarmlessArgDup(expr.args[1], directionKwarg.value)
       ) {
         prog.errors.push(
-          `인자 'direction'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${directionKwarg.line}:${directionKwarg.col})`,
+          `argument 'direction' specified both positionally and as a keyword (L${directionKwarg.line}:${directionKwarg.col})`,
         );
       }
       // qty=/comment= kwargs(C164, comment= 값은 C173부터 실소비) + limit=/stop=(C166 — 지정가/
@@ -6436,12 +6436,12 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           kw.name !== "disable_alert"
         ) {
           prog.errors.push(
-            `'strategy.${method}' 키워드 인자는 'id='/'direction='/'qty='/'comment='/'limit='/'stop='/'when='/'alert_message='/'disable_alert='만 지원(이번 슬라이스): '${kw.name}=' (L${kw.line}:${kw.col})`,
+            `'strategy.${method}' only supports keyword arguments 'id='/'direction='/'qty='/'comment='/'limit='/'stop='/'when='/'alert_message='/'disable_alert=' (this slice): '${kw.name}=' (L${kw.line}:${kw.col})`,
           );
         } else if (seenEntryKwargs.has(kw.name)) {
-          prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+          prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
         } else if (kw.name === "qty" && expr.args.length >= 3 && !isHarmlessArgDup(expr.args[2], kw.value)) {
-          prog.errors.push(`인자 'qty'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`);
+          prog.errors.push(`argument 'qty' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
         }
         seenEntryKwargs.add(kw.name);
       }
@@ -6499,10 +6499,10 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       const idKwarg = expr.kwargs.find((kw) => kw.name === "id");
       if (expr.args.length > 3 || (expr.args.length === 0 && idKwarg === undefined)) {
         prog.errors.push(
-          `'strategy.exit' 호출 인자 개수 불일치: 0~3개(id[, from_entry[, qty]] — id는 키워드 인자로도 지정 가능) 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'strategy.exit' call argument count mismatch: requires 0~3 (id[, from_entry[, qty]] — id may also be specified as a keyword argument), got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       } else if (expr.args.length >= 1 && idKwarg !== undefined && !isHarmlessArgDup(expr.args[0], idKwarg.value)) {
-        prog.errors.push(`인자 'id'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${idKwarg.line}:${idKwarg.col})`);
+        prog.errors.push(`argument 'id' specified both positionally and as a keyword (L${idKwarg.line}:${idKwarg.col})`);
       }
       const seenExitKwargs = new Set<string>();
       for (const kw of expr.kwargs) {
@@ -6529,14 +6529,14 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           kw.name !== "disable_alert"
         ) {
           prog.errors.push(
-            `'strategy.exit' 키워드 인자는 'id='/'from_entry='/'limit='/'stop='/'trail_points='/'trail_offset='/'trail_price='/'qty='/'comment='/'profit='/'loss='/'qty_percent='/'alert_message='/'comment_loss='/'comment_profit='/'comment_trailing='/'when='/'alert_profit='/'alert_loss='/'disable_alert='만 지원(이번 슬라이스): '${kw.name}=' (L${kw.line}:${kw.col})`,
+            `'strategy.exit' only supports keyword arguments 'id='/'from_entry='/'limit='/'stop='/'trail_points='/'trail_offset='/'trail_price='/'qty='/'comment='/'profit='/'loss='/'qty_percent='/'alert_message='/'comment_loss='/'comment_profit='/'comment_trailing='/'when='/'alert_profit='/'alert_loss='/'disable_alert=' (this slice): '${kw.name}=' (L${kw.line}:${kw.col})`,
           );
         } else if (seenExitKwargs.has(kw.name)) {
-          prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+          prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
         } else if (kw.name === "from_entry" && expr.args.length >= 2 && !isHarmlessArgDup(expr.args[1], kw.value)) {
-          prog.errors.push(`인자 'from_entry'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`);
+          prog.errors.push(`argument 'from_entry' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
         } else if (kw.name === "qty" && expr.args.length >= 3 && !isHarmlessArgDup(expr.args[2], kw.value)) {
-          prog.errors.push(`인자 'qty'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`);
+          prog.errors.push(`argument 'qty' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
         }
         seenExitKwargs.add(kw.name);
       }
@@ -6557,11 +6557,11 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       const commentKwarg = expr.kwargs.find((kw) => kw.name === "comment");
       if (expr.args.length > 2 || (expr.args.length === 0 && idKwarg === undefined)) {
         prog.errors.push(
-          `'strategy.close' 호출 인자 개수 불일치: 1~2개(entry id[, comment]) 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'strategy.close' call argument count mismatch: requires 1~2 (entry id[, comment]), got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       } else if (expr.args.length >= 1 && idKwarg !== undefined && !isHarmlessArgDup(expr.args[0], idKwarg.value)) {
         prog.errors.push(
-          `인자 'id'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${idKwarg.line}:${idKwarg.col})`,
+          `argument 'id' specified both positionally and as a keyword (L${idKwarg.line}:${idKwarg.col})`,
         );
       } else if (
         expr.args.length === 2 &&
@@ -6569,7 +6569,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         !isHarmlessArgDup(expr.args[1], commentKwarg.value)
       ) {
         prog.errors.push(
-          `인자 'comment'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${commentKwarg.line}:${commentKwarg.col})`,
+          `argument 'comment' specified both positionally and as a keyword (L${commentKwarg.line}:${commentKwarg.col})`,
         );
       }
       // qty=(C168 부분 청산) + comment=(C173부터 실소비) + when=(C293) + qty_percent=(C373,
@@ -6584,10 +6584,10 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           kw.name !== "qty_percent" && kw.name !== "alert_message" && kw.name !== "immediately"
         ) {
           prog.errors.push(
-            `'strategy.close' 키워드 인자는 'id='/'qty='/'comment='/'when='/'qty_percent='/'alert_message='/'immediately='만 지원(이번 슬라이스): '${kw.name}=' (L${kw.line}:${kw.col})`,
+            `'strategy.close' only supports keyword arguments 'id='/'qty='/'comment='/'when='/'qty_percent='/'alert_message='/'immediately=' (this slice): '${kw.name}=' (L${kw.line}:${kw.col})`,
           );
         } else if (seenCloseKwargs.has(kw.name)) {
-          prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+          prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
         }
         seenCloseKwargs.add(kw.name);
       }
@@ -6622,7 +6622,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // 폼을 전제하고 설계돼 있었음).
       if (expr.args.length > 2) {
         prog.errors.push(
-          `'strategy.close_all' 호출 인자 개수 불일치: 0~2개(comment, when) 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'strategy.close_all' call argument count mismatch: requires 0~2 (comment, when), got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       }
       const seenCloseAllKwargs = new Set<string>();
@@ -6643,10 +6643,10 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           kw.name !== "disable_alert"
         ) {
           prog.errors.push(
-            `'strategy.close_all' 키워드 인자는 'comment='/'alert_message='/'when='/'immediately='/'disable_alert='만 지원(이번 슬라이스): '${kw.name}=' (L${kw.line}:${kw.col})`,
+            `'strategy.close_all' only supports keyword arguments 'comment='/'alert_message='/'when='/'immediately='/'disable_alert=' (this slice): '${kw.name}=' (L${kw.line}:${kw.col})`,
           );
         } else if (seenCloseAllKwargs.has(kw.name)) {
-          prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+          prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
         }
         seenCloseAllKwargs.add(kw.name);
       }
@@ -6668,19 +6668,19 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       const idKwarg = expr.kwargs.find((kw) => kw.name === "id");
       if (expr.args.length > 1 || (expr.args.length === 0 && idKwarg === undefined)) {
         prog.errors.push(
-          `'strategy.cancel' 호출 인자 개수 불일치: 1개(주문 id) 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'strategy.cancel' call argument count mismatch: requires 1 (order id), got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       } else if (expr.args.length === 1 && idKwarg !== undefined && !isHarmlessArgDup(expr.args[0], idKwarg.value)) {
-        prog.errors.push(`인자 'id'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${idKwarg.line}:${idKwarg.col})`);
+        prog.errors.push(`argument 'id' specified both positionally and as a keyword (L${idKwarg.line}:${idKwarg.col})`);
       }
       const seenCancelKwargs = new Set<string>();
       for (const kw of expr.kwargs) {
         if (kw.name !== "id" && kw.name !== "when") {
           prog.errors.push(
-            `'strategy.cancel' 키워드 인자는 'id='/'when='만 지원(이번 슬라이스): '${kw.name}=' (L${kw.line}:${kw.col})`,
+            `'strategy.cancel' only supports keyword arguments 'id='/'when=' (this slice): '${kw.name}=' (L${kw.line}:${kw.col})`,
           );
         } else if (seenCancelKwargs.has(kw.name)) {
-          prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+          prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
         }
         seenCancelKwargs.add(kw.name);
         analyzeExpr(kw.value, prog, scope, false);
@@ -6689,7 +6689,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     } else {
       if (expr.args.length !== 0) {
         prog.errors.push(
-          `'strategy.cancel_all' 호출 인자 개수 불일치: 0개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'strategy.cancel_all' call argument count mismatch: requires 0, got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       }
       prog.builtinCalls.set(expr, "strategy.cancel_all");
@@ -6708,7 +6708,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     // C771 — strategy() 선행 선언 불필요(analyzer.ts strategy.* 단일 레벨 분기 주석 참조).
     if (expr.args.length !== 1 || expr.kwargs.length > 0) {
       prog.errors.push(
-        `'strategy.default_entry_qty' 호출 인자 개수 불일치: 1개(price, 위치 인자만 지원) 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'strategy.default_entry_qty' call argument count mismatch: requires 1 (price, positional only), got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
     prog.builtinCalls.set(expr, "strategy.default_entry_qty");
@@ -6725,7 +6725,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     // C771 — strategy() 선행 선언 불필요(analyzer.ts strategy.* 단일 레벨 분기 주석 참조).
     if (expr.args.length !== 1 || expr.kwargs.length > 0) {
       prog.errors.push(
-        `'strategy.${method}' 호출 인자 개수 불일치: 1개(value, 위치 인자만 지원) 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'strategy.${method}' call argument count mismatch: requires 1 (value, positional only), got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
     prog.builtinCalls.set(expr, `strategy.${method}`);
@@ -6749,7 +6749,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     // C771 — strategy() 선행 선언 불필요(analyzer.ts strategy.* 단일 레벨 분기 주석 참조).
     if (expr.args.length !== 1) {
       prog.errors.push(
-        `'strategy.${callee.obj.attr}.${method}' 호출 인자 개수 불일치: 1개(trade index) 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'strategy.${callee.obj.attr}.${method}' call argument count mismatch: requires 1 (trade index), got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
     prog.builtinCalls.set(expr, `strategy.${callee.obj.attr}.${method}`);
@@ -6779,11 +6779,11 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // entry/order/exit/close 계열(위 분기)과 동일한 반환값 없음 제약 — strategy.entry의
       // topLevel/stmtCalls 관례 그대로 재사용(주석 참조).
       prog.errors.push(
-        `'strategy.risk.allow_entry_in' 호출은 문장 위치에서만 지원(반환값 없음 — 대입/식/인자 위치 호출 불가) (L${expr.line}:${expr.col})`,
+        `'strategy.risk.allow_entry_in' call is only supported in statement position (no return value — cannot be called in assignment/expression/argument position) (L${expr.line}:${expr.col})`,
       );
     } else if (expr.args.length !== 1 || expr.kwargs.length > 0) {
       prog.errors.push(
-        `'strategy.risk.allow_entry_in' 호출 인자 개수 불일치: 1개(value, 위치 인자만 지원) 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'strategy.risk.allow_entry_in' call argument count mismatch: requires 1 (value, positional only), got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
     prog.builtinCalls.set(expr, "strategy.risk.allow_entry_in");
@@ -6813,11 +6813,11 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     // C771 — strategy() 선행 선언 불필요(analyzer.ts strategy.* 단일 레벨 분기 주석 참조).
     if (!prog.stmtCalls.has(expr)) {
       prog.errors.push(
-        `'strategy.risk.max_position_size' 호출은 문장 위치에서만 지원(반환값 없음 — 대입/식/인자 위치 호출 불가) (L${expr.line}:${expr.col})`,
+        `'strategy.risk.max_position_size' call is only supported in statement position (no return value — cannot be called in assignment/expression/argument position) (L${expr.line}:${expr.col})`,
       );
     } else if (expr.args.length !== 1 || expr.kwargs.length > 0) {
       prog.errors.push(
-        `'strategy.risk.max_position_size' 호출 인자 개수 불일치: 1개(value, 위치 인자만 지원) 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'strategy.risk.max_position_size' call argument count mismatch: requires 1 (value, positional only), got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
     prog.builtinCalls.set(expr, "strategy.risk.max_position_size");
@@ -6845,14 +6845,14 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     // C771 — strategy() 선행 선언 불필요(analyzer.ts strategy.* 단일 레벨 분기 주석 참조).
     if (!prog.stmtCalls.has(expr)) {
       prog.errors.push(
-        `'strategy.risk.max_intraday_filled_orders' 호출은 문장 위치에서만 지원(반환값 없음 — 대입/식/인자 위치 호출 불가) (L${expr.line}:${expr.col})`,
+        `'strategy.risk.max_intraday_filled_orders' call is only supported in statement position (no return value — cannot be called in assignment/expression/argument position) (L${expr.line}:${expr.col})`,
       );
     } else {
       const validPositional = expr.args.length === 1 && expr.kwargs.length === 0;
       const validKwarg = expr.args.length === 0 && expr.kwargs.length === 1 && expr.kwargs[0]!.name === "count";
       if (!validPositional && !validKwarg) {
         prog.errors.push(
-          `'strategy.risk.max_intraday_filled_orders' 호출 인자 개수 불일치: 1개(count, 위치 인자 또는 'count=') 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'strategy.risk.max_intraday_filled_orders' call argument count mismatch: requires 1 (count, positional or 'count='), got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       }
     }
@@ -6905,11 +6905,11 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     // C771 — strategy() 선행 선언 불필요(analyzer.ts strategy.* 단일 레벨 분기 주석 참조).
     if (!prog.stmtCalls.has(expr)) {
       prog.errors.push(
-        `'strategy.risk.max_cons_loss_days' 호출은 문장 위치에서만 지원(반환값 없음 — 대입/식/인자 위치 호출 불가) (L${expr.line}:${expr.col})`,
+        `'strategy.risk.max_cons_loss_days' call is only supported in statement position (no return value — cannot be called in assignment/expression/argument position) (L${expr.line}:${expr.col})`,
       );
     } else if (expr.args.length !== 1 || expr.kwargs.length > 0) {
       prog.errors.push(
-        `'strategy.risk.max_cons_loss_days' 호출 인자 개수 불일치: 1개(count, 위치 인자만 지원) 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'strategy.risk.max_cons_loss_days' call argument count mismatch: requires 1 (count, positional only), got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
     prog.builtinCalls.set(expr, "strategy.risk.max_cons_loss_days");
@@ -6936,7 +6936,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     const maxArgs = method === "new" ? 3 : method === "copy" || method === "now" ? 1 : 2;
     if (expr.args.length > maxArgs) {
       prog.errors.push(
-        `'chart.point.${method}' 호출 인자 개수 불일치: 최대 ${maxArgs}개, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'chart.point.${method}' call argument count mismatch: at most ${maxArgs}, got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
     prog.builtinCalls.set(expr, `chart.point.${method}`);
@@ -7063,7 +7063,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       const chosen = recvElemKind !== null ? lookupMethodOverload(prog, "array", method, arrayDotArgTotal, expr, recvElemKind) : undefined;
       if (chosen === undefined) {
         prog.errors.push(
-          `'array.${method}' 오버로드가 같은 인자 개수로 여러 개 선언됨 — receiver의 원소 타입을 판별할 수 없어 선택 불가 (L${expr.line}:${expr.col})`,
+          `multiple 'array.${method}' overloads declared with the same argument count — cannot determine the receiver's element type to choose one (L${expr.line}:${expr.col})`,
         );
         return;
       }
@@ -7171,7 +7171,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     // 정확성 위험 0).
     if (expr.args.length > 32) {
       prog.errors.push(
-        `'log.${method}' 호출 인자 개수 불일치: 0~32개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'log.${method}' call argument count mismatch: requires 0~32, got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
     prog.builtinCalls.set(expr, method === "info" ? "logInfo" : method === "warning" ? "logWarning" : "logError");
@@ -7185,26 +7185,26 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     if (expr.kwargs.length > 0) {
       if (expr.args.length > RUNTIME_KWARG_PARAM_NAMES.length) {
         prog.errors.push(
-          `'runtime.${method}' 호출 인자 개수 불일치: 0~1개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'runtime.${method}' call argument count mismatch: requires 0~1, got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       }
       const seenKwargNames = new Set<string>();
       for (const kw of expr.kwargs) {
         if (kw.name !== RUNTIME_KWARG_PARAM_NAMES[0]) {
           prog.errors.push(
-            `'runtime.${method}' 키워드 인자는 'message='만 지원: '${kw.name}=' (L${kw.line}:${kw.col})`,
+            `'runtime.${method}' only supports keyword argument 'message=': '${kw.name}=' (L${kw.line}:${kw.col})`,
           );
         } else if (seenKwargNames.has(kw.name)) {
-          prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+          prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
         } else if (expr.args.length >= 1 && !isHarmlessArgDup(expr.args[0], kw.value)) {
-          prog.errors.push(`인자 '${kw.name}'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`);
+          prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
         }
         seenKwargNames.add(kw.name);
         analyzeExpr(kw.value, prog, scope, false);
       }
     } else if (expr.args.length > 1) {
       prog.errors.push(
-        `'runtime.${method}' 호출 인자 개수 불일치: 0~1개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'runtime.${method}' call argument count mismatch: requires 0~1, got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
     prog.builtinCalls.set(expr, method === "error" ? "runtimeError" : "runtimeWarning");
@@ -7221,7 +7221,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     const typeInfo = prog.udtTypes.get(namespace)!;
     if (expr.args.length > typeInfo.fields.length) {
       prog.errors.push(
-        `'${namespace}.new' 호출 인자 개수 불일치: 최대 ${typeInfo.fields.length}개, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'${namespace}.new' call argument count mismatch: at most ${typeInfo.fields.length}, got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     } else {
       const fieldIndex = new Map(typeInfo.fields.map((f, i) => [f.name, i]));
@@ -7229,12 +7229,12 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       for (const kw of expr.kwargs) {
         const idx = fieldIndex.get(kw.name);
         if (idx === undefined) {
-          prog.errors.push(`'${namespace}'에 없는 필드: '${kw.name}' (L${kw.line}:${kw.col})`);
+          prog.errors.push(`unknown field for '${namespace}': '${kw.name}' (L${kw.line}:${kw.col})`);
         } else if (seenKwargNames.has(kw.name)) {
-          prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+          prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
         } else if (idx < expr.args.length && !isHarmlessArgDup(expr.args[idx], kw.value)) {
           prog.errors.push(
-            `필드 '${kw.name}'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`,
+            `field '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`,
           );
         }
         seenKwargNames.add(kw.name);
@@ -7253,7 +7253,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     // 포트" 표기.
     if (expr.args.length !== 1) {
       prog.errors.push(
-        `'${namespace}.copy' 호출 인자 개수 불일치: 1개(복사할 인스턴스) 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'${namespace}.copy' call argument count mismatch: requires 1 (instance to copy), got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
     prog.udtCopyCallTypes.set(expr, namespace);
@@ -7285,12 +7285,12 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // 본문 안에서도 자유롭게 호출 가능하다.
       if (expr.args.length !== 0) {
         prog.errors.push(
-          `'${typeName}.copy' 호출 인자 개수 불일치: 0개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+          `'${typeName}.copy' call argument count mismatch: requires 0, got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       }
       prog.udtCopyCallTypes.set(expr, typeName);
     } else if (methodInfo === undefined) {
-      prog.errors.push(`'${typeName}'에 없는 method: '${method}' (L${expr.line}:${expr.col})`);
+      prog.errors.push(`unknown method for '${typeName}': '${method}' (L${expr.line}:${expr.col})`);
     } else {
       // 사용자 선언 method 호출은 일반 UDF와 완전히 동일한 call-site별 slotBase 메커니즘
       // (funcCallSlots)으로 디스패치한다 — UDF/method 본문 안에서의 obj.method() 호출도 이제
@@ -7317,7 +7317,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     // 치환/input 스칼라 상수 — 함수 주석 참조)로 확장했다.
     if (expr.args.length > 5) {
       prog.errors.push(
-        `'request.security' 호출 인자 개수 불일치: 3~5개(symbol, timeframe, expression[, gaps[, lookahead]]) 필요(gaps/lookahead는 위치 또는 키워드 인자 모두 지원, ignore_invalid_symbol/currency는 키워드 인자로만 지원 — calc_bars_count는 이번 슬라이스 미지원), ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'request.security' call argument count mismatch: requires 3~5 (symbol, timeframe, expression[, gaps[, lookahead]]) (gaps/lookahead supported positionally or as keywords, ignore_invalid_symbol/currency keyword-only — calc_bars_count not supported in this slice), got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     } else {
       const leadArgs = resolveSecurityLeadArgs(expr, prog);
@@ -7514,7 +7514,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       if (isTupleArg) {
         if (!prog.tupleStateCalls.has(expr)) {
           prog.errors.push(
-            `'request.security'의 튜플 리터럴 'expression' 인자는 튜플 디스트럭처링('[a, b] = ...')의 값으로만 지원 (L${expr.line}:${expr.col})`,
+            `'request.security' tuple-literal 'expression' argument is only supported as the value of a tuple destructuring ('[a, b] = ...') (L${expr.line}:${expr.col})`,
           );
         } else {
           const fields: SecurityTupleFieldSpec[] = [];
@@ -7535,7 +7535,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             tupleFields = fields;
           } else {
             prog.errors.push(
-              `'request.security'의 튜플 리터럴 'expression' 인자는 원소마다 bare/파생 시리즈('open'/'high'/'low'/'close'/'volume'/'hl2'/'hlc3'/'ohlc4'/'hlcc4')·TV 내장 bar 변수('time'/'time_close'/'bar_index')·숫자/불리언/na 리터럴·산술(+ - * /)·정수 리터럴 히스토리('close[1]'/'ta.sma(close,10)[1]' — 유효 서브식 전반)·비교(</>/<=/>=/==/!=)·논리(and/or/not)·삼항('cond ? a : b' — 값/오프셋 위치)·ta.* 콜(다중/중첩 허용)·nz() 콜(위치 인자 1~2개)·na() 콜(인자 1개)·fixnan() 콜(인자 1개)·math.* 콜(위치 인자만, abs/round/max/min/avg/floor/ceil/sqrt/pow/log/log10/exp/sign/삼각·역삼각/atan2/todegrees/toradians/round_to_mintick)·전역 유일 top-level '=' 변수 치환(값이 이 문법에 맞는 경우, input.int/float/bool 스칼라 상수 포함)만 지원 — 스칼라 expression과 동일한 확장 좁은 문법(UDF 등 기타 콜·다중 반환 TA·':=' 재대입 변수는 미구현) (L${expr.line}:${expr.col})`,
+              `'request.security' tuple-literal 'expression' argument elements each only support bare/derived series ('open'/'high'/'low'/'close'/'volume'/'hl2'/'hlc3'/'ohlc4'/'hlcc4')·TV built-in bar variables ('time'/'time_close'/'bar_index')·number/boolean/na literals·arithmetic (+ - * /)·integer-literal history ('close[1]'/'ta.sma(close,10)[1]' — any valid subexpression)·comparison (</>/<=/>=/==/!=)·logical (and/or/not)·ternary ('cond ? a : b' — in value/offset position)·ta.* calls (multiple/nested allowed)·nz() calls (1~2 positional arguments)·na() calls (1 argument)·fixnan() calls (1 argument)·math.* calls (positional only, abs/round/max/min/avg/floor/ceil/sqrt/pow/log/log10/exp/sign/trig·inverse trig/atan2/todegrees/toradians/round_to_mintick)·substitution of a globally unique top-level '=' variable (when its value fits this grammar, including input.int/float/bool scalar constants) — same extended narrow grammar as the scalar expression (other calls such as UDFs·multi-return TA·':=' reassigned variables are not implemented) (L${expr.line}:${expr.col})`,
             );
           }
         }
@@ -7827,7 +7827,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           // 금지" — analyzer.test.ts 30여 곳이 이 부분 문자열로 .includes() 매칭). 위에서 새로
           // 흡수한 폼만 여기 도달하지 않게 돼 에러 문구/발생 조건은 완전히 그대로다.
           prog.errors.push(
-            `'request.security'의 'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원(런타임 tf 변경은 HTF 집계 캐시와 어긋남) (L${expr.line}:${expr.col})`,
+            `'request.security' 'timeframe' argument only supports a compile-time string literal (runtime tf changes conflict with the HTF aggregation cache) (L${expr.line}:${expr.col})`,
           );
         }
       }
@@ -7876,7 +7876,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         const resolved = resolveSecurityBooleanKwarg(posArg, prog, undefined, undefined, scope.func?.name ?? null);
         if (resolved === undefined) {
           prog.errors.push(
-            `'request.security'의 '${name}' 위치 인자 값은 컴파일타임 'true'/'false' 리터럴 또는 'barmerge.*' 상수만 지원(변수/식은 HTF 집계 캐시와 어긋남) (L${posArg.line}:${posArg.col})`,
+            `'request.security' '${name}' positional argument value only supports a compile-time 'true'/'false' literal or a 'barmerge.*' constant (variables/expressions conflict with the HTF aggregation cache) (L${posArg.line}:${posArg.col})`,
           );
           kwargsOk = false;
           continue;
@@ -7909,7 +7909,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         }
         if (kw.name === "ignore_invalid_symbol" || kw.name === "currency" || kw.name === "calc_bars_count") {
           if (seenSecurityKwargs.has(kw.name)) {
-            prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+            prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
             kwargsOk = false;
             continue;
           }
@@ -7918,13 +7918,13 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         }
         if (kw.name !== "gaps" && kw.name !== "lookahead") {
           prog.errors.push(
-            `'request.security' 키워드 인자는 'gaps='/'lookahead='/'ignore_invalid_symbol='/'currency='/'calc_bars_count='만 지원(이번 슬라이스): '${kw.name}=' (L${kw.line}:${kw.col})`,
+            `'request.security' only supports keyword arguments 'gaps='/'lookahead='/'ignore_invalid_symbol='/'currency='/'calc_bars_count=' (this slice): '${kw.name}=' (L${kw.line}:${kw.col})`,
           );
           kwargsOk = false;
           continue;
         }
         if (seenSecurityKwargs.has(kw.name)) {
-          prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+          prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
           kwargsOk = false;
           continue;
         }
@@ -7932,7 +7932,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         const resolved = resolveSecurityBooleanKwarg(kw.value, prog, undefined, undefined, scope.func?.name ?? null);
         if (resolved === undefined) {
           prog.errors.push(
-            `'request.security'의 '${kw.name}=' 값은 컴파일타임 'true'/'false' 리터럴 또는 'barmerge.*' 상수만 지원(변수/식은 HTF 집계 캐시와 어긋남) (L${kw.line}:${kw.col})`,
+            `'request.security' '${kw.name}=' value only supports a compile-time 'true'/'false' literal or a 'barmerge.*' constant (variables/expressions conflict with the HTF aggregation cache) (L${kw.line}:${kw.col})`,
           );
           kwargsOk = false;
           continue;
@@ -8294,13 +8294,13 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // `method f(float/int/bool/string)`류) — receiver의 정확한 타입을 값 흐름 추적 없이는 알 수
       // 없어 조용한 오답 대신 명시적으로 거부한다(C327 컨테이너 다중 오버로드 정책과 동일 원칙).
       prog.errors.push(
-        `'${method}' 스칼라 receiver extension method가 여러 타입(${matches.map((m) => m.base).join("/")})으로 중복 선언돼 있어 호출부에서 어느 것인지 판별 불가(값 흐름 타입 추적 미지원) (L${expr.line}:${expr.col})`,
+        `'${method}' scalar receiver extension method is declared for multiple types (${matches.map((m) => m.base).join("/")}) — cannot determine which one at the call site (value-flow type tracking not supported) (L${expr.line}:${expr.col})`,
       );
     } else {
       dispatchUdtMethodCall(expr, matches[0]!.base, method, matches[0]!.info, prog, scope);
     }
   } else {
-    prog.errors.push(`지원하지 않는 호출: '${namespace ?? "?"}.${method}' (L${expr.line}:${expr.col})`);
+    prog.errors.push(`unsupported call: '${namespace ?? "?"}.${method}' (L${expr.line}:${expr.col})`);
   }
   if (callee.obj.kind !== "Identifier") {
     analyzeExpr(callee.obj, prog, scope, false);
@@ -8349,7 +8349,7 @@ function dispatchUdtMethodCall(
     // 순수 위치 호출 — 기존 그대로(메시지 문자열 보존, 기존 테스트 무수정 원칙).
     if (expr.args.length < minArgs || expr.args.length > maxArgs) {
       prog.errors.push(
-        `'${typeName}.${method}' 호출 인자 개수 불일치: ${minArgs}~${maxArgs}개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'${typeName}.${method}' call argument count mismatch: requires ${minArgs}~${maxArgs}, got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
   } else {
@@ -8360,7 +8360,7 @@ function dispatchUdtMethodCall(
     // analyzeExpr 완료.
     if (expr.args.length > maxArgs) {
       prog.errors.push(
-        `'${typeName}.${method}' 호출 인자 개수 불일치: 위치 인자 최대 ${maxArgs}개, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'${typeName}.${method}' call argument count mismatch: at most ${maxArgs} positional arguments, got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
     const paramIndex = new Map(methodInfo.paramNames.slice(1).map((name, i) => [name, i]));
@@ -8368,11 +8368,11 @@ function dispatchUdtMethodCall(
     for (const kw of expr.kwargs) {
       const idx = paramIndex.get(kw.name);
       if (idx === undefined) {
-        prog.errors.push(`'${typeName}.${method}'에 없는 매개변수 이름: '${kw.name}' (L${kw.line}:${kw.col})`);
+        prog.errors.push(`unknown parameter name for '${typeName}.${method}': '${kw.name}' (L${kw.line}:${kw.col})`);
       } else if (seenKwargNames.has(kw.name)) {
-        prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+        prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
       } else if (idx < expr.args.length && !isHarmlessArgDup(expr.args[idx], kw.value)) {
-        prog.errors.push(`인자 '${kw.name}'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`);
+        prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
       }
       seenKwargNames.add(kw.name);
     }
@@ -8382,7 +8382,7 @@ function dispatchUdtMethodCall(
       if (methodInfo.paramHasDefault[i + 1]) continue;
       if (i >= expr.args.length && !seenKwargNames.has(methodInfo.paramNames[i + 1]!)) {
         prog.errors.push(
-          `'${typeName}.${method}' 호출에 필수 매개변수 '${methodInfo.paramNames[i + 1]}' 누락 (L${expr.line}:${expr.col})`,
+          `'${typeName}.${method}' call is missing required parameter '${methodInfo.paramNames[i + 1]}' (L${expr.line}:${expr.col})`,
         );
       }
     }
@@ -8422,7 +8422,7 @@ function analyzeUserFuncCall(expr: CallExpr, func: FuncInfo, prog: AnalyzedProgr
     // 순수 위치 호출 — 기존 그대로(메시지 문자열 보존, 기존 테스트 무수정 원칙).
     if (expr.args.length < func.requiredParamCount || expr.args.length > func.paramNames.length) {
       prog.errors.push(
-        `'${func.name}' 호출 인자 개수 불일치: ${func.requiredParamCount}~${func.paramNames.length}개 필요, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'${func.name}' call argument count mismatch: requires ${func.requiredParamCount}~${func.paramNames.length}, got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
   } else {
@@ -8432,7 +8432,7 @@ function analyzeUserFuncCall(expr: CallExpr, func: FuncInfo, prog: AnalyzedProgr
     // 이미 analyzeExpr해뒀다.
     if (expr.args.length > func.paramNames.length) {
       prog.errors.push(
-        `'${func.name}' 호출 인자 개수 불일치: 위치 인자 최대 ${func.paramNames.length}개, ${expr.args.length}개 전달 (L${expr.line}:${expr.col})`,
+        `'${func.name}' call argument count mismatch: at most ${func.paramNames.length} positional arguments, got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
     const paramIndex = new Map(func.paramNames.map((name, i) => [name, i]));
@@ -8440,11 +8440,11 @@ function analyzeUserFuncCall(expr: CallExpr, func: FuncInfo, prog: AnalyzedProgr
     for (const kw of expr.kwargs) {
       const idx = paramIndex.get(kw.name);
       if (idx === undefined) {
-        prog.errors.push(`'${func.name}'에 없는 매개변수 이름: '${kw.name}' (L${kw.line}:${kw.col})`);
+        prog.errors.push(`unknown parameter name for '${func.name}': '${kw.name}' (L${kw.line}:${kw.col})`);
       } else if (seenKwargNames.has(kw.name)) {
-        prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+        prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
       } else if (idx < expr.args.length && !isHarmlessArgDup(expr.args[idx], kw.value)) {
-        prog.errors.push(`인자 '${kw.name}'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`);
+        prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
       }
       seenKwargNames.add(kw.name);
     }
@@ -8454,7 +8454,7 @@ function analyzeUserFuncCall(expr: CallExpr, func: FuncInfo, prog: AnalyzedProgr
       if (func.paramHasDefault[i]) continue;
       if (i >= expr.args.length && !seenKwargNames.has(func.paramNames[i]!)) {
         prog.errors.push(
-          `'${func.name}' 호출에 필수 매개변수 '${func.paramNames[i]}' 누락 (L${expr.line}:${expr.col})`,
+          `'${func.name}' call is missing required parameter '${func.paramNames[i]}' (L${expr.line}:${expr.col})`,
         );
       }
     }
@@ -8798,7 +8798,7 @@ export function detectRecursiveFuncCalls(prog: AnalyzedProgram): void {
       for (const n of cycle) {
         if (reported.has(n)) continue;
         reported.add(n);
-        prog.errors.push(`'${n}' 함수 호출에 재귀 사이클이 있음(TV v5는 재귀 UDF를 지원하지 않음): ${cycle.join(" -> ")}`);
+        prog.errors.push(`'${n}' function call has a recursive cycle (TV v5 does not support recursive UDFs): ${cycle.join(" -> ")}`);
       }
       return;
     }

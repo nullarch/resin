@@ -240,9 +240,9 @@ describe("ta.pivot_point_levels 파이프라인 배선(analyzer -> codegen -> ex
   });
 
   it("인자 개수 검증: 1개/4개는 거부, 2~3개는 수용", () => {
-    expect(analyzeSource('x = ta.pivot_point_levels("Traditional")').errors[0]).toContain("인자 개수 불일치");
+    expect(analyzeSource('x = ta.pivot_point_levels("Traditional")').errors[0]).toContain("call argument count mismatch");
     expect(analyzeSource('x = ta.pivot_point_levels("Traditional", true, false, 1)').errors[0]).toContain(
-      "인자 개수 불일치",
+      "call argument count mismatch",
     );
     expect(analyzeSource('x = ta.pivot_point_levels("Traditional", true)').errors).toEqual([]);
     expect(analyzeSource('x = ta.pivot_point_levels("Traditional", true, false)').errors).toEqual([]);

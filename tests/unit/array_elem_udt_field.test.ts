@@ -133,7 +133,7 @@ describe("array<UDT> element field access (C341)", () => {
     const result = transpile(source);
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.errors.join(" ")).toMatch(/네임스페이스 접근은 호출식만 지원/);
+    expect(result.errors.join(" ")).toMatch(/namespace access supported only as a call expression/);
   });
 
   it("does not spuriously tag a plain (non-UDT) array.get() result, leaving existing scalar behavior unchanged", () => {
@@ -231,7 +231,7 @@ describe("array<UDT> element field access (C341)", () => {
     const result = transpile(source);
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.errors.join(" ")).toMatch(/네임스페이스 접근은 호출식만 지원/);
+    expect(result.errors.join(" ")).toMatch(/namespace access supported only as a call expression/);
   });
 
   // C393: 위 테스트는 전부 컨테이너 자체가 top-level `var array<OrderBlock> obs = ...`였다. wild
@@ -345,7 +345,7 @@ describe("array<UDT> element field access (C341)", () => {
     const result = transpile(source);
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.errors.join(" ")).toMatch(/네임스페이스 접근은 호출식만 지원/);
+    expect(result.errors.join(" ")).toMatch(/namespace access supported only as a call expression/);
   });
 
   // C457: 위 테스트들은 컨테이너 자체가 array.new<UDT>() 생성자 콜로 만들어졌다. wild
@@ -623,7 +623,7 @@ describe("array<UDT> element field access (C341)", () => {
     const result = transpile(source);
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.errors.join(" ")).toMatch(/네임스페이스 접근은 호출식만 지원/);
+    expect(result.errors.join(" ")).toMatch(/namespace access supported only as a call expression/);
   });
 
   it("still rejects field access when the array<UDT> container reaches the callee only transitively through another function's own untyped parameter (C469 documents this as a remaining gap, exact wild 3c1081fa6ee1.pine idiom — the call-site scan never enters FuncDecl bodies, so `outer(topLevelArr) => inner(topLevelArr)` isn't traced)", () => {
@@ -642,7 +642,7 @@ describe("array<UDT> element field access (C341)", () => {
     const result = transpile(source);
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.errors.join(" ")).toMatch(/네임스페이스 접근은 호출식만 지원/);
+    expect(result.errors.join(" ")).toMatch(/namespace access supported only as a call expression/);
   });
 
   // C491: 위 테스트들의 UDF 반환 array<UDT>는 전부 array.get()/array.copy() 등 CallExpr 경유로
@@ -806,7 +806,7 @@ describe("map<K, UDT> element field access (C502)", () => {
     const result = transpile(source);
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.errors.join(" ")).toMatch(/에 없는 필드/);
+    expect(result.errors.join(" ")).toMatch(/field not found on/);
   });
 
   it("leaves a plain (non-UDT) map<K,V> value extraction unaffected (no regression, mirrors the C500 drawing sibling's equivalent guard)", () => {

@@ -79,17 +79,17 @@ describe("drawing-handle UDT field history — analyzer gates (C718)", () => {
 
   it("still rejects a UDF/method-internal var/'=' local UDT receiver (record-timing ambiguity, out of slice, C750)", () => {
     const prog = analyzeSource([...MARKER, "f() =>", "    var T x = T.new(na)", "    y = x.lb[1]"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("UDF/method 내부 UDT 수신자"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("UDF/method-internal UDT receivers"))).toBe(true);
   });
 
   it("still rejects a nested-block '=' local receiver (JS let — invisible to the bar-end record loop)", () => {
     const prog = analyzeSource([...MARKER, "if close > 0", "    x = T.new(na)", "    y = x.lb[1]"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("top-level var/varip 또는 무조건(depth-0)"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("top-level var/varip or unconditional (depth-0)"))).toBe(true);
   });
 
   it("still rejects a non-drawing/non-numeric field kind (e.g. array) on the same UDT — unrelated axis unaffected", () => {
     const prog = analyzeSource(["type U", "    map<string, float> mm", "var U x = na", "y = x.mm[1]"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("map 타입 UDT 필드"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("UDT fields of map type"))).toBe(true);
   });
 });
 

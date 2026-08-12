@@ -53,12 +53,12 @@ describe("Analyzer arity-disjoint UDF overloads (C686)", () => {
 
   it("still rejects two same-name FuncDecls with identical arity (needs type dispatch — out of scope)", () => {
     const prog = analyzeSource("f(x) => x + 1\nf(y) => y + 2");
-    expect(prog.errors.some((e) => e.includes("이름이 이미 다른 선언과 충돌함") && e.includes("f"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("name conflicts with an existing declaration") && e.includes("f"))).toBe(true);
   });
 
   it("still rejects overloads whose arity ranges overlap through default parameters ([1,2] vs [2,2])", () => {
     const prog = analyzeSource("f(a, b = 1) => a + b\nf(x, y) => x * y");
-    expect(prog.errors.some((e) => e.includes("이름이 이미 다른 선언과 충돌함") && e.includes("f"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("name conflicts with an existing declaration") && e.includes("f"))).toBe(true);
   });
 
   it("default parameters count toward the disjointness range: [0,1] vs [2,3] is accepted and dispatched by count", () => {
@@ -68,7 +68,7 @@ describe("Analyzer arity-disjoint UDF overloads (C686)", () => {
 
   it("a call matching no overload's range reports the arity error against the first declaration's name", () => {
     const prog = analyzeSource("f() => 10.0\nf(a, b) => a + b\nx = f(1.0, 2.0, 3.0, 4.0)");
-    expect(prog.errors.some((e) => e.includes("'f' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'f' call argument count mismatch"))).toBe(true);
   });
 
   it("dispatches forward-reference call sites that appear before both declarations (C255 prepass order)", () => {
@@ -81,14 +81,14 @@ describe("Analyzer arity-disjoint UDF overloads (C686)", () => {
     expect(prog.errors).toEqual([]);
     // 잘못된 kwarg 이름은 count로 매칭된 그 오버로드 기준으로 검증된다
     const bad = analyzeSource("f() => 10.0\nf(a, b) => a + b\nx = f(1.0, c = 2.0)");
-    expect(bad.errors.some((e) => e.includes("없는 매개변수 이름"))).toBe(true);
+    expect(bad.errors.some((e) => e.includes("unknown parameter name for"))).toBe(true);
   });
 
   it("does not touch a name that also has a same-name MethodDecl (bare-method dispatch interplay guard)", () => {
     const prog = analyzeSource(
       ["type P", "    float v", "method f(P p) => p.v", "f() => 10.0", "f(a, b) => a + b"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("이름이 이미 다른 선언과 충돌함") && e.includes("f"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("name conflicts with an existing declaration") && e.includes("f"))).toBe(true);
   });
 
   it("single (non-duplicated) FuncDecls are left completely untouched", () => {

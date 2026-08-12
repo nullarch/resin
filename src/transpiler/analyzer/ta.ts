@@ -51,12 +51,12 @@ function firstForbiddenKind(scope: LexScope): ScopePushKind | null {
 // 거부 에러 메시지용 위치 설명(analyzeStatefulCall). cond-body/loop-body/udf-body는
 // firstForbiddenKind가 반환하지 않지만(허용 kind) Record 완전성을 위해 포함.
 const FORBIDDEN_KIND_DESC: Record<ScopePushKind, string> = {
-  "cond-body": "if 분기 본문/switch case 본문",
+  "cond-body": "if branch body/switch case body",
   condition:
-    "조건식의 and/or lazy 분기(short-circuit 평가 위치 — elif 조건/switch case 값/while 조건 안의 and/or 우변. 직접 호출은 C260부터 허용, 최초 if 조건은 C246부터 허용)",
-  "loop-body": "반복문 본문(C161부터 허용 — 도달 불가)",
-  "lazy-expr": "삼항/and/or의 lazy 분기(C66부터 허용 — 도달 불가)",
-  "udf-body": "UDF 본문(C162부터 허용 — 도달 불가)",
+    "and/or lazy branch of a condition expression (short-circuit evaluation position — and/or right-hand side inside an elif condition/switch case value/while condition. direct calls allowed since C260, initial if condition allowed since C246)",
+  "loop-body": "loop body (allowed since C161 — unreachable)",
+  "lazy-expr": "ternary/and/or lazy branch (allowed since C66 — unreachable)",
+  "udf-body": "UDF body (allowed since C162 — unreachable)",
 };
 
 // 상태 있는(stateful) TA/빌트인 콜 하나의 전체 시맨틱을 표 하나로 기술한다(ROADMAP P2-0 "TA 디스패치
@@ -930,15 +930,15 @@ export function analyzeStatefulCall(
       for (const kw of expr.kwargs) {
         const idx = paramNames.indexOf(kw.name);
         if (idx === -1) {
-          prog.errors.push(`'${entry.displayName}'에 없는 인자 이름: '${kw.name}=' (L${kw.line}:${kw.col})`);
+          prog.errors.push(`argument name not found in '${entry.displayName}': '${kw.name}=' (L${kw.line}:${kw.col})`);
         } else if (idx < expr.args.length) {
           if (!isHarmlessArgDup(expr.args[idx], kw.value)) {
             prog.errors.push(
-              `인자 '${kw.name}'이(가) 위치 인자와 키워드 인자로 중복 지정됨 (L${kw.line}:${kw.col})`,
+              `argument '${kw.name}' specified both positionally and as a keyword argument (L${kw.line}:${kw.col})`,
             );
           }
         } else if (filledPositions.has(idx)) {
-          prog.errors.push(`키워드 인자 '${kw.name}' 중복 지정 (L${kw.line}:${kw.col})`);
+          prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
         } else {
           filledPositions.add(idx);
         }
@@ -947,7 +947,7 @@ export function analyzeStatefulCall(
       for (let i = 0; i < maxFilled; i++) {
         if (!filledPositions.has(i)) {
           prog.errors.push(
-            `'${entry.displayName}' 호출에 '${paramNames[i]}' 인자가 누락됨(뒤 인자가 이름으로 지정됨): (L${expr.line}:${expr.col})`,
+            `'${entry.displayName}' call is missing argument '${paramNames[i]}' (a later argument was specified by name): (L${expr.line}:${expr.col})`,
           );
         }
       }
@@ -956,9 +956,9 @@ export function analyzeStatefulCall(
   const minArgCount = entry.minArgCount ?? entry.argCount;
   if (resolvedArgs.length < minArgCount || resolvedArgs.length > entry.argCount) {
     const need =
-      minArgCount === entry.argCount ? `${entry.argCount}개` : `${minArgCount}~${entry.argCount}개`;
+      minArgCount === entry.argCount ? `${entry.argCount}` : `${minArgCount}..${entry.argCount}`;
     prog.errors.push(
-      `'${entry.displayName}' 호출 인자 개수 불일치: ${need} 필요, ${resolvedArgs.length}개 전달 (L${expr.line}:${expr.col})`,
+      `'${entry.displayName}' call argument count mismatch: requires ${need}, ${resolvedArgs.length} passed (L${expr.line}:${expr.col})`,
     );
   }
   // C64/C65: if 분기 본문/switch case 본문(cond-body 체인)은 per-call 상태 전진이 TV/pine2py와
@@ -974,7 +974,7 @@ export function analyzeStatefulCall(
   const forbiddenKind = entry.conditionalForbidden ? firstForbiddenKind(scope) : null;
   if (forbiddenKind !== null) {
     prog.errors.push(
-      `'${entry.displayName}' 호출은 이 조건부 블록 위치에서 아직 지원하지 않음 — ${FORBIDDEN_KIND_DESC[forbiddenKind]} (if 분기/switch case 본문·삼항/and/or lazy 위치·elif 조건/switch case 값/while 조건의 직접 호출은 허용, ROADMAP P2 조건부 stateful call 항목): (L${expr.line}:${expr.col})`,
+      `'${entry.displayName}' call is not yet supported at this conditional block position — ${FORBIDDEN_KIND_DESC[forbiddenKind]} (if branch/switch case body, ternary/and/or lazy position, and direct calls in elif condition/switch case value/while condition are allowed; ROADMAP P2 conditional stateful call item): (L${expr.line}:${expr.col})`,
     );
     return;
   }
@@ -1026,7 +1026,7 @@ export function analyzeStatefulCall(
         continue;
       }
       prog.errors.push(
-        `'${entry.displayName}'의 length 인자는 'series'일 수 없음(바마다 값이 바뀌면 고정폭/초기화 구간 상태가 깨짐): (L${expr.line}:${expr.col})`,
+        `length argument of '${entry.displayName}' cannot be 'series' (a value changing per bar breaks fixed-width/initialization-window state): (L${expr.line}:${expr.col})`,
       );
     }
   }

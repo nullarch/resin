@@ -585,7 +585,7 @@ export class StrategyState {
     const validBeforeAnyClose = index === -1 && this.closedTrades === 0;
     if (!validBeforeAnyClose && !(index >= 0 && index < this.closedTrades)) {
       throw new Error(
-        `strategy.closedtrades.${method}: index ${index}는 미지원 — 유효 범위 0~${this.closedTrades - 1}(closedTrades=${this.closedTrades})`,
+        `strategy.closedtrades.${method}: index ${index} is out of range — valid range 0..${this.closedTrades - 1} (closedTrades=${this.closedTrades})`,
       );
     }
   }
@@ -712,7 +712,7 @@ export class StrategyState {
   private assertOpenTrade(method: string, index: number): void {
     if (this.posSize !== 0 && index !== 0) {
       throw new Error(
-        `strategy.opentrades.${method}: index ${index}는 미지원 — 열린 포지션은 index=0(단일 가상 트레이드)만 지원(피라미딩 세부 트레이드 미보유, LIMITATIONS.md)`,
+        `strategy.opentrades.${method}: index ${index} is out of range — open position only supports index=0 (single virtual trade) (individual pyramiding trades not tracked, LIMITATIONS.md)`,
       );
     }
   }
@@ -917,7 +917,7 @@ export class StrategyState {
   setAllowEntryIn(direction: string): void {
     if (direction !== "all" && direction !== "long" && direction !== "short") {
       throw new Error(
-        `strategy.risk.allow_entry_in: 지원하지 않는 value '${String(direction)}' ("all"/"long"/"short"만 지원)`,
+        `strategy.risk.allow_entry_in: unsupported value '${String(direction)}' (only "all"/"long"/"short" supported)`,
       );
     }
     this.allowedDirection = direction;
@@ -943,7 +943,7 @@ export class StrategyState {
   setMaxDrawdown(value: number, type: string): void {
     if (type !== "cash" && type !== "percent_of_equity") {
       throw new Error(
-        `strategy.risk.max_drawdown: 지원하지 않는 type '${String(type)}' ("strategy.cash"/"strategy.percent_of_equity"만 지원)`,
+        `strategy.risk.max_drawdown: unsupported type '${String(type)}' (only "strategy.cash"/"strategy.percent_of_equity" supported)`,
       );
     }
     this.maxDrawdownValue = value;
@@ -955,7 +955,7 @@ export class StrategyState {
   setMaxIntradayLoss(value: number, type: string): void {
     if (type !== "cash" && type !== "percent_of_equity") {
       throw new Error(
-        `strategy.risk.max_intraday_loss: 지원하지 않는 type '${String(type)}' ("strategy.cash"/"strategy.percent_of_equity"만 지원)`,
+        `strategy.risk.max_intraday_loss: unsupported type '${String(type)}' (only "strategy.cash"/"strategy.percent_of_equity" supported)`,
       );
     }
     this.maxIntradayLossValue = value;
@@ -994,7 +994,7 @@ export class StrategyState {
     if (!when) return;
     if (direction !== "long" && direction !== "short") {
       throw new Error(
-        `strategy.entry: 지원하지 않는 direction '${String(direction)}' ("long"/"short"만 지원)`,
+        `strategy.entry: unsupported direction '${String(direction)}' (only "long"/"short" supported)`,
       );
     }
     // na 안전성: id가 na(null)이거나 qty가 na(NaN) 또는 0 이하면 주문을 내지 않는다(LIMITATIONS.md).
@@ -1051,7 +1051,7 @@ export class StrategyState {
     if (!when) return;
     if (direction !== "long" && direction !== "short") {
       throw new Error(
-        `strategy.order: 지원하지 않는 direction '${String(direction)}' ("long"/"short"만 지원)`,
+        `strategy.order: unsupported direction '${String(direction)}' (only "long"/"short" supported)`,
       );
     }
     if (id === null || id === undefined) return;

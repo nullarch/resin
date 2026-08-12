@@ -32,7 +32,7 @@ describe("Analyzer", () => {
 
   it("errors on duplicate var declaration", () => {
     const prog = analyzeSource("var float acc = 0.0\nvar float acc = 1.0");
-    expect(prog.errors.some((e) => e.includes("중복 var 선언"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate var declaration"))).toBe(true);
   });
 
   // ── 서로소 형제 블록의 동명 var 선언(C728, LIMITATIONS C682 — wild `if showzigzag\n var line
@@ -46,22 +46,22 @@ describe("Analyzer", () => {
 
   it("still errors when the same nested block redeclares the same var name twice", () => {
     const prog = analyzeSource("if close > open\n    var float x = 1.0\n    var float x = 2.0");
-    expect(prog.errors.some((e) => e.includes("중복 var 선언"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate var declaration"))).toBe(true);
   });
 
   it("still errors when a descendant block redeclares an ancestor's nested var name", () => {
     const prog = analyzeSource("if close > open\n    var float x = 1.0\n    if high > low\n        var float x = 2.0");
-    expect(prog.errors.some((e) => e.includes("중복 var 선언"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate var declaration"))).toBe(true);
   });
 
   it("still errors when a nested var name collides with a flat top-level var", () => {
     const prog = analyzeSource("var float x = 1.0\nif close > open\n    var float x = 2.0");
-    expect(prog.errors.some((e) => e.includes("중복 var 선언"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate var declaration"))).toBe(true);
   });
 
   it("still errors on duplicate var declarations inside sibling blocks of a UDF body (func-local axis unchanged)", () => {
     const prog = analyzeSource("f() =>\n    if close > open\n        var float x = 1.0\n    if close < open\n        var float x = 2.0\n    x\nf()");
-    expect(prog.errors.some((e) => e.includes("중복 var 선언"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate var declaration"))).toBe(true);
   });
 
   it("allows ':=' reassignment of a nested var from within its own declaring block", () => {
@@ -71,7 +71,7 @@ describe("Analyzer", () => {
 
   it("still errors when '=' tries to reassign a nested var (must use ':=')", () => {
     const prog = analyzeSource("if close > open\n    var float x = 1.0\n    x = 2.0");
-    expect(prog.errors.some((e) => e.includes("재대입"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("reassigned"))).toBe(true);
   });
 
   it("allows a nested var read through a UDT field DotAccess receiver (analyzeCallExpr tail-recursion identifier bypass)", () => {
@@ -100,7 +100,7 @@ describe("Analyzer", () => {
 
   it("errors when '=' tries to reassign a var-declared name", () => {
     const prog = analyzeSource("var float acc = 0.0\nacc = 1");
-    expect(prog.errors.some((e) => e.includes("재대입"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("reassigned"))).toBe(true);
   });
 
   it("registers a ta.sma call site with its own slot", () => {
@@ -121,17 +121,17 @@ describe("Analyzer", () => {
 
   it("errors on ta.sma call with wrong argument count (registry now validates uniformly)", () => {
     const prog = analyzeSource("x = ta.sma(close)");
-    expect(prog.errors.some((e) => e.includes("'ta.sma'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.sma'") && e.includes("argument count"))).toBe(true);
   });
 
   it("rejects 'ta.fixnan(...)' — TA_REGISTRY.fixnan is dispatch:'bare', not under the ta. namespace", () => {
     const prog = analyzeSource("x = ta.fixnan(close)");
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("rejects bare 'sma(...)' — TA_REGISTRY.sma is dispatch:'ta', requires the ta. namespace prefix", () => {
     const prog = analyzeSource("x = sma(close, 3)");
-    expect(prog.errors.some((e) => e.includes("알 수 없는 함수 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown function call"))).toBe(true);
   });
 
   // ── ta.* kwargs(C400/C402/C471, TA_REGISTRY.kwargParamNames) — sma/ema/rsi/highest/lowest/
@@ -176,7 +176,7 @@ describe("Analyzer", () => {
 
   it("errors on an unknown ta.pivothigh keyword argument name", () => {
     const prog = analyzeSource("x = ta.pivothigh(high, 2, right=2)");
-    expect(prog.errors.some((e) => e.includes("'ta.pivothigh'에 없는 인자 이름") && e.includes("'right='"))).toBe(
+    expect(prog.errors.some((e) => e.includes("argument name not found in 'ta.pivothigh'") && e.includes("'right='"))).toBe(
       true,
     );
   });
@@ -191,7 +191,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.atr call with too many arguments even when kwargs are used", () => {
     const prog = analyzeSource("x = ta.atr(14, length=9)");
-    expect(prog.errors.some((e) => e.includes("위치 인자와 키워드 인자로 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
   // C407: ta.stoch(source=/high=/low=/length=) — 저비용 후보(next_hint(C406) 1순위, C401 메커니즘
@@ -210,12 +210,12 @@ describe("Analyzer", () => {
 
   it("errors on an unknown ta.stoch keyword argument name", () => {
     const prog = analyzeSource("x = ta.stoch(close, high, low, len=14)");
-    expect(prog.errors.some((e) => e.includes("'ta.stoch'에 없는 인자 이름") && e.includes("'len='"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("argument name not found in 'ta.stoch'") && e.includes("'len='"))).toBe(true);
   });
 
   it("errors on ta.stoch call with too many arguments even when kwargs are used", () => {
     const prog = analyzeSource("x = ta.stoch(close, high, low, 14, length=9)");
-    expect(prog.errors.some((e) => e.includes("위치 인자와 키워드 인자로 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("errors when ta.stoch's length argument (0-based index 3) is a bar series identifier directly, even via kwarg-only form", () => {
@@ -250,32 +250,32 @@ describe("Analyzer", () => {
 
   it("errors on an unknown ta.sma keyword argument name", () => {
     const prog = analyzeSource("x = ta.sma(close, len=3)");
-    expect(prog.errors.some((e) => e.includes("'ta.sma'에 없는 인자 이름") && e.includes("'len='"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("argument name not found in 'ta.sma'") && e.includes("'len='"))).toBe(true);
   });
 
   it("errors when a ta.sma argument is given both positionally and by keyword", () => {
     const prog = analyzeSource("x = ta.sma(close, 3, source=open)");
-    expect(prog.errors.some((e) => e.includes("위치 인자와 키워드 인자로 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("accepts a ta.sma argument given both positionally and by keyword when the values are syntactically identical (C654, TV 실측 harmless dup)", () => {
     const prog = analyzeSource("x = ta.sma(close, 3, source=close)");
-    expect(prog.errors.some((e) => e.includes("위치 인자와 키워드 인자로 중복 지정"))).toBe(false);
+    expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(false);
   });
 
   it("errors on duplicate ta.sma keyword argument", () => {
     const prog = analyzeSource("x = ta.sma(length=3, length=5)");
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'length' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'length'"))).toBe(true);
   });
 
   it("errors on a ta.sma call with only 'length=' keyword (source hole, no positional args) instead of silently miscounting", () => {
     const prog = analyzeSource("x = ta.sma(length=3)");
-    expect(prog.errors.some((e) => e.includes("'source' 인자가 누락됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("missing argument 'source'"))).toBe(true);
   });
 
   it("still enforces the length-is-series hard error when length is passed by keyword (C548 전환: ta.sma는 seriesLengthOk로 허용됐으므로 여전히 금지인 ta.ema로 의도 보존)", () => {
     const prog = analyzeSource("x = ta.ema(source=close, length=close)");
-    expect(prog.errors.some((e) => e.includes("'ta.ema'의 length 인자는 'series'일 수 없음"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("length argument of 'ta.ema' cannot be 'series'"))).toBe(true);
   });
 
   it("marks seriesLength for ta.sma when length is passed by keyword (C548 — kwarg 정규화 뒤에도 series 판별이 같은 resolvedArgs 경로를 탄다)", () => {
@@ -310,19 +310,19 @@ describe("Analyzer", () => {
     const prog = analyzeSource(
       ["type Cfg", "    int len", "f(series Cfg c) =>", "    ta.ema(close, c.len)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'ta.ema'의 length 인자는 'series'일 수 없음"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("length argument of 'ta.ema' cannot be 'series'"))).toBe(true);
   });
 
   it("still rejects a UDT field length arg when the UDT var's own qualifier is series via constructor-arg propagation (var Cfg cfg = Cfg.new(bar_index)) (C548 전환: ta.ema로 의도 보존)", () => {
     const prog = analyzeSource(
       ["type Cfg", "    int len", "var Cfg cfg = Cfg.new(bar_index)", "y = ta.ema(close, cfg.len)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'ta.ema'의 length 인자는 'series'일 수 없음"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("length argument of 'ta.ema' cannot be 'series'"))).toBe(true);
   });
 
   it("still treats barstate.*/session.* DotAccess as series for the length-arg check (no regression — 'barstate'/'session' are never declared as script vars, so the C485 recursion falls into the existing conservative 'undeclared identifier -> series' default — C548 전환: ta.ema로 의도 보존)", () => {
     const prog = analyzeSource("x = ta.ema(close, barstate.isconfirmed ? 5 : 10)");
-    expect(prog.errors.some((e) => e.includes("'ta.ema'의 length 인자는 'series'일 수 없음"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("length argument of 'ta.ema' cannot be 'series'"))).toBe(true);
   });
 
   it("marks seriesLength for ta.sma with a barstate.* ternary length (C548 — 같은 conservative series 판별이 이제 varlen 경로로 흐른다)", () => {
@@ -394,7 +394,7 @@ describe("Analyzer", () => {
     const highestOk = analyzeSource("x = ta.highest(close, bar_index)");
     expect(highestOk.errors).toEqual([]);
     const emaStill = analyzeSource("y = ta.ema(close, bar_index)");
-    expect(emaStill.errors.some((e) => e.includes("'ta.ema'의 length 인자는 'series'일 수 없음"))).toBe(true);
+    expect(emaStill.errors.some((e) => e.includes("length argument of 'ta.ema' cannot be 'series'"))).toBe(true);
   });
 
   it("allows a series length arg for ta.highestbars (seriesLengthOk, C549) and marks the call site for the codegen variable-length path", () => {
@@ -531,22 +531,22 @@ describe("Analyzer", () => {
 
   it("still rejects ta.vwap(anchor=...) keyword form — only 'source' is registered (C471, anchor/stdev_mult stay positional-only)", () => {
     const prog = analyzeSource("x = ta.vwap(close, anchor=close > open)");
-    expect(prog.errors.some((e) => e.includes("'ta.vwap'에 없는 인자 이름"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("argument name not found in 'ta.vwap'"))).toBe(true);
   });
 
   it("still rejects mixing a positional source with a keyword source for ta.vwap (duplicate, C471)", () => {
     const prog = analyzeSource("x = ta.vwap(close, source=open)");
-    expect(prog.errors.some((e) => e.includes("위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("accepts ta.vwap positional/keyword source duplicate when syntactically identical (C654)", () => {
     const prog = analyzeSource("x = ta.vwap(close, source=close)");
-    expect(prog.errors.some((e) => e.includes("위치 인자와 키워드 인자로 중복 지정됨"))).toBe(false);
+    expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(false);
   });
 
   it("still enforces the ta.vwap 3-arg tuple-return rule when source is passed by keyword (returnArityByArgCount unaffected, C471)", () => {
     const prog = analyzeSource("x = ta.vwap(close, close > open, 2.0)");
-    expect(prog.errors.some((e) => e.includes("'ta.vwap'") && e.includes("3개 값을 반환"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.vwap'") && e.includes("returns 3 values"))).toBe(true);
   });
 
   // C473: ta.rma/ta.wma/ta.vwma/ta.stdev(source=/length=) — next_hint(C472) 지시대로 재노출된 wild
@@ -585,7 +585,7 @@ describe("Analyzer", () => {
 
   it("still rejects ta.stdev(source=, length=, biased=...) keyword form — only source/length are registered (biased has 0 wild kwarg usage)", () => {
     const prog = analyzeSource("x = ta.stdev(source=close, length=14, biased=false)");
-    expect(prog.errors.some((e) => e.includes("'ta.stdev'에 없는 인자 이름") && e.includes("'biased='"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("argument name not found in 'ta.stdev'") && e.includes("'biased='"))).toBe(true);
   });
 
   it("marks seriesLength for ta.stdev via the kwarg-only form (C551 — kwarg 정규화 뒤에도 같은 resolvedArgs series 판별 경로를 탄다)", () => {
@@ -598,7 +598,7 @@ describe("Analyzer", () => {
 
   it("errors on an unknown ta.rma keyword argument name", () => {
     const prog = analyzeSource("x = ta.rma(close, len=14)");
-    expect(prog.errors.some((e) => e.includes("'ta.rma'에 없는 인자 이름") && e.includes("'len='"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("argument name not found in 'ta.rma'") && e.includes("'len='"))).toBe(true);
   });
 
   it("marks seriesLength for ta.wma via the kwarg-only form (C550 전환: seriesLengthOk — 하드 에러였던 자리, kwarg 정규화 뒤 같은 판별 경로)", () => {
@@ -627,7 +627,7 @@ describe("Analyzer", () => {
 
   it("errors on an unknown ta.cci keyword argument name", () => {
     const prog = analyzeSource("x = ta.cci(close, len=14)");
-    expect(prog.errors.some((e) => e.includes("'ta.cci'에 없는 인자 이름") && e.includes("'len='"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("argument name not found in 'ta.cci'") && e.includes("'len='"))).toBe(true);
   });
 
   it("errors when ta.cci's length argument is a bar series identifier directly, even via kwarg-only form", () => {
@@ -647,7 +647,7 @@ describe("Analyzer", () => {
 
   it("errors on an unknown fixnan keyword argument name", () => {
     const prog = analyzeSource("x = fixnan(value=close)");
-    expect(prog.errors.some((e) => e.includes("'fixnan'에 없는 인자 이름") && e.includes("'value='"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("argument name not found in 'fixnan'") && e.includes("'value='"))).toBe(true);
   });
 
   it("accepts ta.valuewhen(condition=, source=, occurrence=) fully-named form with no errors (wild 6bbaeabd79ae.pine shape)", () => {
@@ -663,7 +663,7 @@ describe("Analyzer", () => {
 
   it("errors on an unknown ta.valuewhen keyword argument name", () => {
     const prog = analyzeSource("x = ta.valuewhen(close > 100, close, occ=0)");
-    expect(prog.errors.some((e) => e.includes("'ta.valuewhen'에 없는 인자 이름") && e.includes("'occ='"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("argument name not found in 'ta.valuewhen'") && e.includes("'occ='"))).toBe(true);
   });
 
   it("errors when ta.valuewhen's occurrence argument is a bar series identifier directly, even via kwarg-only form", () => {
@@ -745,7 +745,7 @@ describe("Analyzer", () => {
 
   it("errors on unknown identifiers", () => {
     const prog = analyzeSource("x = doesNotExist");
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier"))).toBe(true);
   });
 
   it("errors on unsupported ta.* calls (not yet implemented)", () => {
@@ -756,7 +756,7 @@ describe("Analyzer", () => {
     // 진짜 미구현 호출 — strategy.test.ts 참조)로 재회전했다가, 그마저 C763에서 정식 지원되며
     // request.footprint(tick 레벨 주문흐름 데이터 부재로 여전히 미구현)로 재회전.
     const prog = analyzeSource('request.footprint(10, 20)');
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   // ── math.round: 순수 빌트인 함수 콜 (ta.*와 달리 조건부 블록 제약 없음) ──
@@ -787,7 +787,7 @@ describe("Analyzer", () => {
 
   it("still errors on other unsupported builtin namespaces/methods (strategy.convert_to_account now implemented, C763 — probe rotated again per this test's own convention, this time to request.footprint which has no dispatch branch at all)", () => {
     const prog = analyzeSource('request.footprint(10, 20)');
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   // ── math.abs/math.max/math.min: math.round과 동일한 builtinCalls 패턴 재사용 ──
@@ -844,7 +844,7 @@ describe("Analyzer", () => {
 
   it("propagates unknown-identifier errors through math.round arguments", () => {
     const prog = analyzeSource("x = math.round(doesNotExist)");
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier"))).toBe(true);
   });
 
   it("allows math.round inside a conditional if-body (unlike ta.*, it is stateless)", () => {
@@ -919,12 +919,12 @@ describe("Analyzer", () => {
 
   it("errors on math.clamp() with fewer than 3 arguments", () => {
     const prog = analyzeSource("x = math.clamp(close, 0)");
-    expect(prog.errors.some((e) => e.includes("math.clamp") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("math.clamp") && e.includes("argument count"))).toBe(true);
   });
 
   it("errors on math.clamp() with more than 3 arguments", () => {
     const prog = analyzeSource("x = math.clamp(close, 0, 100, 1)");
-    expect(prog.errors.some((e) => e.includes("math.clamp") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("math.clamp") && e.includes("argument count"))).toBe(true);
   });
 
   it("allows math.clamp inside a conditional if-body (stateless)", () => {
@@ -995,22 +995,22 @@ describe("Analyzer", () => {
 
   it("errors on an unknown math.abs keyword argument name (C404)", () => {
     const prog = analyzeSource("x = math.abs(value=close)");
-    expect(prog.errors.some((e) => e.includes("'math.abs'에 없는 인자 이름: 'value'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown argument name for 'math.abs': 'value'"))).toBe(true);
   });
 
   it("rejects number given both positionally and as a keyword on math.round (C404)", () => {
     const prog = analyzeSource("x = math.round(close, number=open)");
-    expect(prog.errors.some((e) => e.includes("'number'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'number' specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("rejects duplicate number= kwarg on math.abs (C404)", () => {
     const prog = analyzeSource("x = math.abs(number=close, number=open)");
-    expect(prog.errors.some((e) => e.includes("'number'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'number' specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("rejects math.round(precision=) missing the required number argument (C404)", () => {
     const prog = analyzeSource("x = math.round(precision=2)");
-    expect(prog.errors.some((e) => e.includes("'math.round' 호출에는 'number' 인자가 필요"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'math.round' call requires argument 'number'"))).toBe(true);
   });
 
   it("allows math.abs/round/sign kwargs inside a conditional if-body (stateless, C404)", () => {
@@ -1041,17 +1041,17 @@ describe("Analyzer", () => {
 
   it("errors on an unknown math.ceil keyword argument name (C474)", () => {
     const prog = analyzeSource("x = math.ceil(value=close)");
-    expect(prog.errors.some((e) => e.includes("'math.ceil'에 없는 인자 이름: 'value'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown argument name for 'math.ceil': 'value'"))).toBe(true);
   });
 
   it("rejects number given both positionally and as a keyword on math.floor (C474)", () => {
     const prog = analyzeSource("x = math.floor(close, number=open)");
-    expect(prog.errors.some((e) => e.includes("'number'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'number' specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("rejects duplicate number= kwarg on math.ceil (C474)", () => {
     const prog = analyzeSource("x = math.ceil(number=close, number=open)");
-    expect(prog.errors.some((e) => e.includes("'number'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'number' specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("allows math.ceil/floor kwargs inside a conditional if-body (stateless, C474)", () => {
@@ -1157,12 +1157,12 @@ describe("Analyzer", () => {
 
   it("errors on math.pi called as a function (not callable, unlike math.round etc.)", () => {
     const prog = analyzeSource("x = math.pi(1)");
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("errors on an unrecognized bare math.* attribute (not a registered constant)", () => {
     const prog = analyzeSource("x = math.doesNotExist");
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access"))).toBe(true);
   });
 
   it("infers math.pi as a 'const' qualifier, so it passes ta.sma's series-length hard error check", () => {
@@ -1208,12 +1208,12 @@ describe("Analyzer", () => {
 
   it("errors on dayofweek.sunday called as a function (not callable)", () => {
     const prog = analyzeSource("x = dayofweek.sunday(1)");
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("errors on an unrecognized bare dayofweek.* attribute (not a registered constant)", () => {
     const prog = analyzeSource("x = dayofweek.doesNotExist");
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access"))).toBe(true);
   });
 
   it("infers dayofweek.sunday as a 'const' qualifier, so it passes ta.sma's series-length hard error check", () => {
@@ -1262,7 +1262,7 @@ describe("Analyzer", () => {
 
   it("propagates unknown-identifier errors through nz arguments", () => {
     const prog = analyzeSource("x = nz(doesNotExist)");
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier"))).toBe(true);
   });
 
   // ── nz(source=/replacement=) kwargs(C405, next_hint(C404) 1순위 — wild grep 재확인 8개 파일).
@@ -1289,22 +1289,22 @@ describe("Analyzer", () => {
 
   it("errors on an unknown nz keyword argument name (C405)", () => {
     const prog = analyzeSource("x = nz(value=close)");
-    expect(prog.errors.some((e) => e.includes("'nz'에 없는 인자 이름: 'value'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown argument name for 'nz': 'value'"))).toBe(true);
   });
 
   it("rejects source given both positionally and as a keyword on nz (C405)", () => {
     const prog = analyzeSource("x = nz(close, source=open)");
-    expect(prog.errors.some((e) => e.includes("'source'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'source' specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("rejects duplicate replacement= kwarg on nz (C405)", () => {
     const prog = analyzeSource("x = nz(source=close, replacement=0.0, replacement=1.0)");
-    expect(prog.errors.some((e) => e.includes("'replacement'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'replacement' specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("rejects nz(replacement=) missing the required source argument (C405)", () => {
     const prog = analyzeSource("x = nz(replacement=0.0)");
-    expect(prog.errors.some((e) => e.includes("'nz' 호출에는 'source' 인자가 필요"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'nz' call requires argument 'source'"))).toBe(true);
   });
 
   it("allows nz kwargs inside a conditional if-body (stateless, C405)", () => {
@@ -1340,7 +1340,7 @@ describe("Analyzer", () => {
 
   it("propagates unknown-identifier errors through na(x) arguments", () => {
     const prog = analyzeSource("x = na(doesNotExist)");
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier"))).toBe(true);
   });
 
   it("still parses standalone na (no call parens) as NaLiteral, not affected by the na(x) call dispatch", () => {
@@ -1422,7 +1422,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.rma call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.rma(close)");
-    expect(prog.errors.some((e) => e.includes("'ta.rma'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.rma'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.rma inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -1451,7 +1451,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.wma call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.wma(close)");
-    expect(prog.errors.some((e) => e.includes("'ta.wma'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.wma'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.wma inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -1483,7 +1483,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.hma call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.hma(close)");
-    expect(prog.errors.some((e) => e.includes("'ta.hma'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.hma'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.hma inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -1526,9 +1526,9 @@ describe("Analyzer", () => {
     // 폼이 유효해졌으므로(pine2py linreg.py offset:int=0 기본값) 경계를 실제로 무효한 1개/4개
     // 호출로 이동(C250 highest/lowest 선례와 동일한 긍정 마이그레이션).
     const progTooFew = analyzeSource("x = ta.linreg(close)");
-    expect(progTooFew.errors.some((e) => e.includes("'ta.linreg'") && e.includes("인자 개수"))).toBe(true);
+    expect(progTooFew.errors.some((e) => e.includes("'ta.linreg'") && e.includes("argument count"))).toBe(true);
     const progTooMany = analyzeSource("x = ta.linreg(close, 4, 0, 1)");
-    expect(progTooMany.errors.some((e) => e.includes("'ta.linreg'") && e.includes("인자 개수"))).toBe(true);
+    expect(progTooMany.errors.some((e) => e.includes("'ta.linreg'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.linreg(source, length) 2-argument implicit-offset form and registers a taSlots slot (C252)", () => {
@@ -1607,19 +1607,19 @@ describe("Analyzer", () => {
     // 폼이 유효해졌으므로(minArgCount:1) 경계를 실제로 무효한 0-인자 호출로 이동(C161/C246/C249
     // 선례 — 긍정 마이그레이션).
     const prog = analyzeSource("x = ta.highest()");
-    expect(prog.errors.some((e) => e.includes("'ta.highest'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.highest'") && e.includes("argument count"))).toBe(true);
   });
 
   it("errors on ta.lowest call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.lowest()");
-    expect(prog.errors.some((e) => e.includes("'ta.lowest'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.lowest'") && e.includes("argument count"))).toBe(true);
   });
 
   it("errors on ta.highest/ta.lowest call with too many arguments", () => {
     const progHi = analyzeSource("x = ta.highest(close, 4, 5)");
-    expect(progHi.errors.some((e) => e.includes("'ta.highest'") && e.includes("인자 개수"))).toBe(true);
+    expect(progHi.errors.some((e) => e.includes("'ta.highest'") && e.includes("argument count"))).toBe(true);
     const progLo = analyzeSource("x = ta.lowest(close, 4, 5)");
-    expect(progLo.errors.some((e) => e.includes("'ta.lowest'") && e.includes("인자 개수"))).toBe(true);
+    expect(progLo.errors.some((e) => e.includes("'ta.lowest'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.highest(length)/ta.lowest(length) 1-argument implicit-source form and registers a taSlots slot (C250)", () => {
@@ -1688,7 +1688,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.stoch call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.stoch(close, high, low)");
-    expect(prog.errors.some((e) => e.includes("'ta.stoch'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.stoch'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.stoch inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -1728,7 +1728,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.wpr call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.wpr(4, close)");
-    expect(prog.errors.some((e) => e.includes("'ta.wpr'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.wpr'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.wpr inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -1787,19 +1787,19 @@ describe("Analyzer", () => {
     // 폼이 유효해졌으므로(minArgCount:1) 경계를 실제로 무효한 0-인자 호출로 이동(C250/C509 선례 —
     // 긍정 마이그레이션).
     const prog = analyzeSource("x = ta.highestbars()");
-    expect(prog.errors.some((e) => e.includes("'ta.highestbars'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.highestbars'") && e.includes("argument count"))).toBe(true);
   });
 
   it("errors on ta.lowestbars call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.lowestbars()");
-    expect(prog.errors.some((e) => e.includes("'ta.lowestbars'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.lowestbars'") && e.includes("argument count"))).toBe(true);
   });
 
   it("errors on ta.highestbars/ta.lowestbars call with too many arguments", () => {
     const progHi = analyzeSource("x = ta.highestbars(close, 4, 4)");
-    expect(progHi.errors.some((e) => e.includes("'ta.highestbars'") && e.includes("인자 개수"))).toBe(true);
+    expect(progHi.errors.some((e) => e.includes("'ta.highestbars'") && e.includes("argument count"))).toBe(true);
     const progLo = analyzeSource("x = ta.lowestbars(close, 4, 4)");
-    expect(progLo.errors.some((e) => e.includes("'ta.lowestbars'") && e.includes("인자 개수"))).toBe(true);
+    expect(progLo.errors.some((e) => e.includes("'ta.lowestbars'") && e.includes("argument count"))).toBe(true);
   });
 
   // C655: ta.highestbars(length)/ta.lowestbars(length) — TV 공식 오버로드(source 생략, 암묵
@@ -1881,7 +1881,7 @@ describe("Analyzer", () => {
     // Pine 문법상 ta.vwma는 volume을 인자로 받지 않는다(내장 volume series 암묵 사용) — argCount는
     // 여전히 2(source, length)라 3개를 넘기면 에러다.
     const prog = analyzeSource("x = ta.vwma(close, volume, 3)");
-    expect(prog.errors.some((e) => e.includes("'ta.vwma'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.vwma'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.vwma inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -1912,7 +1912,7 @@ describe("Analyzer", () => {
     // Pine 문법상 ta.mfi는 volume을 인자로 받지 않는다(내장 volume series 암묵 사용, vwma와
     // 동일) — argCount는 여전히 2(source, length)라 3개를 넘기면 에러다.
     const prog = analyzeSource("x = ta.mfi(close, volume, 3)");
-    expect(prog.errors.some((e) => e.includes("'ta.mfi'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.mfi'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.mfi inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -1950,7 +1950,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.cog call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.cog(close)");
-    expect(prog.errors.some((e) => e.includes("'ta.cog'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.cog'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.cog inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -1990,7 +1990,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.range call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.range(close)");
-    expect(prog.errors.some((e) => e.includes("'ta.range'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.range'") && e.includes("argument count"))).toBe(true);
   });
 
   it("no longer errors when ta.range's length argument is a bar series identifier directly (C553 전환: seriesLengthOk — 이전엔 하드 에러였음, rangeVarLen 경로로 codegen된다)", () => {
@@ -2034,7 +2034,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.correlation call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.correlation(close, open)");
-    expect(prog.errors.some((e) => e.includes("'ta.correlation'") && e.includes("인자 개수"))).toBe(
+    expect(prog.errors.some((e) => e.includes("'ta.correlation'") && e.includes("argument count"))).toBe(
       true
     );
   });
@@ -2076,7 +2076,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.tsi call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.tsi(close, 2)");
-    expect(prog.errors.some((e) => e.includes("'ta.tsi'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.tsi'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.tsi inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -2126,7 +2126,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.alma call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.alma(close, 9, 0.85)");
-    expect(prog.errors.some((e) => e.includes("'ta.alma'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.alma'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.alma inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -2190,19 +2190,19 @@ describe("Analyzer", () => {
     // C509 선례(C250 긍정 마이그레이션과 동일 패턴): sourceOmittable로 2-인자 폼(leftbars, rightbars)이
     // 유효해졌으므로(minArgCount:2) 경계를 실제로 무효한 1-인자 호출로 이동.
     const prog = analyzeSource("x = ta.pivothigh(1)");
-    expect(prog.errors.some((e) => e.includes("'ta.pivothigh'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.pivothigh'") && e.includes("argument count"))).toBe(true);
   });
 
   it("errors on ta.pivotlow call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.pivotlow(1)");
-    expect(prog.errors.some((e) => e.includes("'ta.pivotlow'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.pivotlow'") && e.includes("argument count"))).toBe(true);
   });
 
   it("errors on ta.pivothigh/ta.pivotlow call with too many arguments", () => {
     const progHi = analyzeSource("x = ta.pivothigh(close, 1, 1, 1)");
-    expect(progHi.errors.some((e) => e.includes("'ta.pivothigh'") && e.includes("인자 개수"))).toBe(true);
+    expect(progHi.errors.some((e) => e.includes("'ta.pivothigh'") && e.includes("argument count"))).toBe(true);
     const progLo = analyzeSource("x = ta.pivotlow(close, 1, 1, 1)");
-    expect(progLo.errors.some((e) => e.includes("'ta.pivotlow'") && e.includes("인자 개수"))).toBe(true);
+    expect(progLo.errors.some((e) => e.includes("'ta.pivotlow'") && e.includes("argument count"))).toBe(true);
   });
 
   // C509: ta.pivothigh(leftbars, rightbars)/ta.pivotlow(leftbars, rightbars) — TV 공식 오버로드
@@ -2308,17 +2308,17 @@ describe("Analyzer", () => {
 
   it("errors when ta.supertrend is called in expression position (single assignment)", () => {
     const prog = analyzeSource("x = ta.supertrend(2.0, 10)");
-    expect(prog.errors.some((e) => e.includes("'ta.supertrend'") && e.includes("튜플 디스트럭처링"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.supertrend'") && e.includes("tuple destructuring"))).toBe(true);
   });
 
   it("errors when tuple destructuring target count mismatches ta.supertrend's 2 returns", () => {
     const prog = analyzeSource("[v, d, extra] = ta.supertrend(2.0, 10)");
-    expect(prog.errors.some((e) => e.includes("개수 불일치") && e.includes("2개 반환"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("arity mismatch") && e.includes("returns 2"))).toBe(true);
   });
 
   it("errors on ta.supertrend call with wrong argument count", () => {
     const prog = analyzeSource("[v, d] = ta.supertrend(2.0)");
-    expect(prog.errors.some((e) => e.includes("'ta.supertrend'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.supertrend'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.supertrend inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -2368,27 +2368,27 @@ describe("Analyzer", () => {
 
   it("errors when ta.macd is called in expression position (single assignment)", () => {
     const prog = analyzeSource("x = ta.macd(close, 12, 26, 9)");
-    expect(prog.errors.some((e) => e.includes("'ta.macd'") && e.includes("튜플 디스트럭처링"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.macd'") && e.includes("tuple destructuring"))).toBe(true);
   });
 
   it("errors when ta.macd is called in expression position (argument of another call)", () => {
     const prog = analyzeSource("x = math.abs(ta.macd(close, 12, 26, 9))");
-    expect(prog.errors.some((e) => e.includes("'ta.macd'") && e.includes("튜플 디스트럭처링"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.macd'") && e.includes("tuple destructuring"))).toBe(true);
   });
 
   it("errors when tuple destructuring target count mismatches ta.macd's 3 returns", () => {
     const prog = analyzeSource("[m, s] = ta.macd(close, 12, 26, 9)");
-    expect(prog.errors.some((e) => e.includes("개수 불일치") && e.includes("3개 반환"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("arity mismatch") && e.includes("returns 3"))).toBe(true);
   });
 
   it("still errors when tuple destructuring value is a single-return ta.* call", () => {
     const prog = analyzeSource("[a, b] = ta.sma(close, 3)");
-    expect(prog.errors.some((e) => e.includes("튜플을 반환하는 UDF 호출이어야 함"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("must be a UDF call returning a tuple"))).toBe(true);
   });
 
   it("errors on ta.macd call with wrong argument count", () => {
     const prog = analyzeSource("[m, s, h] = ta.macd(close, 12, 26)");
-    expect(prog.errors.some((e) => e.includes("'ta.macd'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.macd'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.macd inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -2443,17 +2443,17 @@ describe("Analyzer", () => {
 
   it("errors when ta.bb is called in expression position (single assignment)", () => {
     const prog = analyzeSource("x = ta.bb(close, 20, 2)");
-    expect(prog.errors.some((e) => e.includes("'ta.bb'") && e.includes("튜플 디스트럭처링"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.bb'") && e.includes("tuple destructuring"))).toBe(true);
   });
 
   it("errors when tuple destructuring target count mismatches ta.bb's 3 returns", () => {
     const prog = analyzeSource("[m, u] = ta.bb(close, 20, 2)");
-    expect(prog.errors.some((e) => e.includes("개수 불일치") && e.includes("3개 반환"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("arity mismatch") && e.includes("returns 3"))).toBe(true);
   });
 
   it("errors on ta.bb call with wrong argument count", () => {
     const prog = analyzeSource("[m, u, l] = ta.bb(close, 20)");
-    expect(prog.errors.some((e) => e.includes("'ta.bb'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.bb'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.bb inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -2500,7 +2500,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.bbw call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.bbw(close, 20)");
-    expect(prog.errors.some((e) => e.includes("'ta.bbw'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.bbw'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.bbw inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -2573,7 +2573,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.tr call with 2+ arguments (only handle_na is a real TV parameter, C291)", () => {
     const prog = analyzeSource("x = ta.tr(true, false)");
-    expect(prog.errors.some((e) => e.includes("'ta.tr'") && e.includes("인자 개수") && e.includes("0~1개"))).toBe(
+    expect(prog.errors.some((e) => e.includes("'ta.tr'") && e.includes("argument count") && e.includes("0..1"))).toBe(
       true,
     );
   });
@@ -2603,7 +2603,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.atr call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.atr(14, close)");
-    expect(prog.errors.some((e) => e.includes("'ta.atr'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.atr'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.atr inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -2645,7 +2645,7 @@ describe("Analyzer", () => {
     // Pine 문법상 ta.swma는 length 인자가 없다(고정 4-tap) — argCount는 1(source)뿐이라
     // length를 넘기면 에러다.
     const prog = analyzeSource("x = ta.swma(close, 3)");
-    expect(prog.errors.some((e) => e.includes("'ta.swma'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.swma'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.swma inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -2673,7 +2673,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.cmo call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.cmo(close)");
-    expect(prog.errors.some((e) => e.includes("'ta.cmo'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.cmo'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.cmo inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -2715,7 +2715,7 @@ describe("Analyzer", () => {
 
   it("errors on math.sum call with wrong argument count", () => {
     const prog = analyzeSource("x = math.sum(close)");
-    expect(prog.errors.some((e) => e.includes("'math.sum'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'math.sum'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts math.sum inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -2743,7 +2743,7 @@ describe("Analyzer", () => {
 
   it("rejects 'ta.sum(...)' — TA_REGISTRY.sum is dispatch:'math', not under the ta. namespace", () => {
     const prog = analyzeSource("x = ta.sum(close, 3)");
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("registers a math.sum call site sharing the taSlots pool with ta.sma (regression guard)", () => {
@@ -2781,12 +2781,12 @@ describe("Analyzer", () => {
 
   it("errors on math.random() with more than 3 arguments", () => {
     const prog = analyzeSource("x = math.random(0, 100, 42, 7)");
-    expect(prog.errors.some((e) => e.includes("'math.random'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'math.random'") && e.includes("argument count"))).toBe(true);
   });
 
   it("reports the min~max argument-count range in the error message for math.random (minArgCount:0 distinct from exact-count functions like math.sum)", () => {
     const prog = analyzeSource("x = math.random(0, 100, 42, 7)");
-    expect(prog.errors.some((e) => e.includes("0~3개 필요"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("requires 0..3"))).toBe(true);
   });
 
   it("accepts math.random inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -2802,7 +2802,7 @@ describe("Analyzer", () => {
 
   it("rejects 'ta.random(...)' — TA_REGISTRY.random is dispatch:'math', not under the ta. namespace", () => {
     const prog = analyzeSource("x = ta.random()");
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("registers a math.random call site sharing the taSlots pool with ta.sma (regression guard)", () => {
@@ -2998,22 +2998,22 @@ describe("Analyzer", () => {
 
   it("errors on an unknown str.tostring keyword argument name", () => {
     const prog = analyzeSource("x = str.tostring(close, format_str=1)");
-    expect(prog.errors.some((e) => e.includes("'str.tostring'에 없는 인자 이름: 'format_str'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown argument name for 'str.tostring': 'format_str'"))).toBe(true);
   });
 
   it("rejects value given both positionally and as a keyword on str.tostring", () => {
     const prog = analyzeSource("x = str.tostring(close, value=open)");
-    expect(prog.errors.some((e) => e.includes("'value'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("argument 'value' given as both positional and keyword argument"))).toBe(true);
   });
 
   it("rejects duplicate value= kwarg on str.tostring", () => {
     const prog = analyzeSource("x = str.tostring(value=close, value=open)");
-    expect(prog.errors.some((e) => e.includes("'value'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("argument 'value' given as both positional and keyword argument"))).toBe(true);
   });
 
   it("rejects str.tostring(format=) missing the required value", () => {
     const prog = analyzeSource('x = str.tostring(format="#.##")');
-    expect(prog.errors.some((e) => e.includes("'str.tostring' 호출에는 value 인자가 모두 필요"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'str.tostring' call requires all of the value arguments"))).toBe(true);
   });
 
   it("registers a str.tonumber(value) call site with no errors", () => {
@@ -3046,7 +3046,7 @@ describe("Analyzer", () => {
     // request.footprint(footprint 차트 데이터 — tick 레벨 주문흐름 데이터 부재로 여전히 미구현,
     // C763 조사)로 재회전.
     const prog = analyzeSource('request.footprint(10, 20)');
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   // ── str.split (C107, array.*/map.*/matrix.* 완주 후 str.* 잔여 슬라이스의 첫 항목) — pine2py
@@ -3318,17 +3318,17 @@ describe("Analyzer", () => {
 
   it("errors on an unknown str.format_time keyword argument name", () => {
     const prog = analyzeSource('x = str.format_time(1705276800000.0, format_str="", timezone="")');
-    expect(prog.errors.some((e) => e.includes("'str.format_time'에 없는 인자 이름: 'format_str'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown argument name for 'str.format_time': 'format_str'"))).toBe(true);
   });
 
   it("rejects time given both positionally and as a keyword on str.format_time", () => {
     const prog = analyzeSource('x = str.format_time(1705276800000.0, time=1705329045000.0)');
-    expect(prog.errors.some((e) => e.includes("'time'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("argument 'time' given as both positional and keyword argument"))).toBe(true);
   });
 
   it("rejects str.format_time(format=, timezone=) missing the required time", () => {
     const prog = analyzeSource('x = str.format_time(format="yyyy-MM-dd", timezone="UTC")');
-    expect(prog.errors.some((e) => e.includes("'str.format_time' 호출에는 time 인자가 모두 필요"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'str.format_time' call requires all of the time arguments"))).toBe(true);
   });
 
   // ── color.* 상수 17종(bare DotAccess, math.pi류와 동일한 컴파일타임 폴딩) + rgb/new/
@@ -3350,12 +3350,12 @@ describe("Analyzer", () => {
 
   it("errors on color.red called as a function (not callable, unlike color.rgb etc.)", () => {
     const prog = analyzeSource("x = color.red(1)");
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("errors on an unrecognized bare color.* attribute (not a registered constant)", () => {
     const prog = analyzeSource("x = color.doesNotExist");
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access"))).toBe(true);
   });
 
   it("infers color.red as a 'const' qualifier, so it passes ta.sma's series-length hard error check (structural, not semantically meaningful for a color arg — mirrors math.pi's test)", () => {
@@ -3447,37 +3447,37 @@ describe("Analyzer", () => {
 
   it("rejects an unknown keyword argument name on color.new (not blanket — only 'color='/'transp=' are curated)", () => {
     const prog = analyzeSource("x = color.new(color.red, foo=50)");
-    expect(prog.errors.some((e) => e.includes("'color.new' 키워드 인자는 'color='/'transp='만 지원: 'foo='"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'color.new' only supports keyword arguments 'color='/'transp=': 'foo='"))).toBe(true);
   });
 
   it("rejects transp specified both positionally and as a keyword argument", () => {
     const prog = analyzeSource("x = color.new(color.red, 50, transp=10)");
-    expect(prog.errors.some((e) => e.includes("인자 'transp'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("argument 'transp' specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("accepts transp specified both positionally and as an identical keyword argument (C654)", () => {
     const prog = analyzeSource("x = color.new(color.red, 50, transp=50)");
-    expect(prog.errors.some((e) => e.includes("인자 'transp'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(false);
+    expect(prog.errors.some((e) => e.includes("argument 'transp' specified both positionally and as a keyword"))).toBe(false);
   });
 
   it("rejects a duplicate transp= keyword argument", () => {
     const prog = analyzeSource("x = color.new(color.red, transp=10, transp=20)");
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'transp' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'transp'"))).toBe(true);
   });
 
   it("rejects color specified both positionally and as a keyword argument", () => {
     const prog = analyzeSource("x = color.new(color.red, color=color.blue)");
-    expect(prog.errors.some((e) => e.includes("인자 'color'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("argument 'color' specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("accepts color specified both positionally and as an identical keyword argument (C654)", () => {
     const prog = analyzeSource("x = color.new(color.red, color=color.red)");
-    expect(prog.errors.some((e) => e.includes("인자 'color'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(false);
+    expect(prog.errors.some((e) => e.includes("argument 'color' specified both positionally and as a keyword"))).toBe(false);
   });
 
   it("rejects a duplicate color= keyword argument", () => {
     const prog = analyzeSource("x = color.new(color=color.red, color=color.blue)");
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'color' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'color'"))).toBe(true);
   });
 
   it("errors on color.new() with 0 arguments when only transp= is given as a keyword (color slot still unfilled)", () => {
@@ -3487,17 +3487,17 @@ describe("Analyzer", () => {
 
   it("still rejects kwargs on color.rgb/r/g/b/t (blanket exception is 'new'/'from_gradient' only, C479, not the whole namespace)", () => {
     const prog = analyzeSource("x = color.rgb(255, 0, 0, transp=10)");
-    expect(prog.errors.some((e) => e.includes("키워드 인자('transp=...')는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("keyword arguments ('transp=...') are"))).toBe(true);
   });
 
   it("still analyzes an undeclared identifier used inside a color.new transp= keyword argument (kwarg values are not skipped)", () => {
     const prog = analyzeSource("x = color.new(color.red, transp=undeclaredVar)");
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자: 'undeclaredVar'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier: 'undeclaredVar'"))).toBe(true);
   });
 
   it("still analyzes an undeclared identifier used inside a color.new color= keyword argument (kwarg values are not skipped)", () => {
     const prog = analyzeSource("x = color.new(color=undeclaredVar)");
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자: 'undeclaredVar'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier: 'undeclaredVar'"))).toBe(true);
   });
 
   it("registers a color.from_gradient(...) call site with exactly 5 arguments with no errors", () => {
@@ -3541,24 +3541,24 @@ describe("Analyzer", () => {
 
   it("errors on an unknown color.from_gradient keyword argument name", () => {
     const prog = analyzeSource("x = color.from_gradient(50, 0, 100, color.red, color.blue, extra=1)");
-    expect(prog.errors.some((e) => e.includes("'color.from_gradient'에 없는 인자 이름") && e.includes("'extra'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown argument name for 'color.from_gradient'") && e.includes("'extra'"))).toBe(true);
   });
 
   it("errors when color.from_gradient's top_value is duplicated as positional and keyword", () => {
     const prog = analyzeSource("x = color.from_gradient(50, 0, 100, color.red, color.blue, top_value=90)");
-    expect(prog.errors.some((e) => e.includes("인자 'top_value'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("argument 'top_value' specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("errors when color.from_gradient is missing a required keyword argument (top_color)", () => {
     const prog = analyzeSource("x = color.from_gradient(value=50, bottom_value=0, top_value=100, bottom_color=color.red)");
-    expect(prog.errors.some((e) => e.includes("'color.from_gradient' 호출에는") && e.includes("모두 필요"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'color.from_gradient' call requires") && e.includes("all of the"))).toBe(true);
   });
 
   it("still analyzes an undeclared identifier used inside a color.from_gradient keyword argument", () => {
     const prog = analyzeSource(
       "x = color.from_gradient(value=50, bottom_value=0, top_value=100, bottom_color=color.red, top_color=undeclaredVar)",
     );
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자: 'undeclaredVar'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier: 'undeclaredVar'"))).toBe(true);
   });
 
   it("still errors on unsupported color.* methods", () => {
@@ -3566,7 +3566,7 @@ describe("Analyzer", () => {
     // color.* 메서드 이름(hue는 TV에 없는 이름)으로 대체(기능 확장에 따른 메시지 갱신, C292/C293/
     // C294/C295와 동일 범주 — zero_bug_streak 리셋 대상 아님).
     const prog = analyzeSource("x = color.hue(color.red)");
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   // ── color.r/g/b/t (C311, wild "지원하지 않는 호출" 클러스터 1위(18건)) ──
@@ -3842,7 +3842,7 @@ describe("Analyzer", () => {
     // "인자 개수 불일치"까지 확인 — ARRAY_REGISTRY 미등재 상태의 "지원하지 않는 호출" 폴백도
     // 우연히 'array.new_label' 문자열을 포함해(둘 다 이름을 에러 메시지에 싣는다) 이름만 검사하면
     // 레지스트리 등록 여부와 무관하게 항상 통과해버린다 — 실제 argCount 검증 경로인지까지 구분.
-    expect(prog.errors.some((e) => e.includes("array.new_label") && e.includes("인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("array.new_label") && e.includes("argument count mismatch"))).toBe(true);
   });
 
   it("allows array.get/array.push on an 'array.new_label(...)'-constructed array (round trip)", () => {
@@ -3909,27 +3909,27 @@ describe("Analyzer", () => {
 
   it("rejects an unknown kwarg name on array.get (C382)", () => {
     const prog = analyzeSource(["var a = array.new_float(1)", "x = array.get(id=a, offset=0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'array.get'에 없는 인자 이름: 'offset'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown argument name for 'array.get': 'offset'"))).toBe(true);
   });
 
   it("rejects array.get with index given both positionally and as a keyword (C382)", () => {
     const prog = analyzeSource(["var a = array.new_float(1)", "x = array.get(a, 0, index=1)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'index'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("argument 'index' given as both positional and keyword argument"))).toBe(true);
   });
 
   it("rejects duplicate index= kwarg on array.get (C382)", () => {
     const prog = analyzeSource(["var a = array.new_float(1)", "x = array.get(id=a, index=0, index=1)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'index'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("argument 'index' given as both positional and keyword argument"))).toBe(true);
   });
 
   it("rejects array.get(index=) missing the required id (C382)", () => {
     const prog = analyzeSource(["x = array.get(index=0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'array.get' 호출에는 id/index 인자가 모두 필요"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'array.get' call requires all of the id/index arguments"))).toBe(true);
   });
 
   it("still rejects kwargs on receiver-sugar array calls (C382, C222 — wild 실사용 0건이라 범위 밖)", () => {
     const prog = analyzeSource(["var a = array.new_float(1)", "x = a.size(id=a)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("키워드 인자"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("keyword argument"))).toBe(true);
   });
 
   // ── array.new_* 생성자 11종 'size='/'initial_value=' kwargs(C383, next_hint(C382) 1순위 — wild
@@ -3964,17 +3964,17 @@ describe("Analyzer", () => {
 
   it("rejects an unknown kwarg name on array.new_float (C383)", () => {
     const prog = analyzeSource("var a = array.new_float(size=2, capacity=9)");
-    expect(prog.errors.some((e) => e.includes("'array.new_float'에 없는 인자 이름: 'capacity'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown argument name for 'array.new_float': 'capacity'"))).toBe(true);
   });
 
   it("rejects array.new_float with size given both positionally and as a keyword (C383)", () => {
     const prog = analyzeSource("var a = array.new_float(2, size=3)");
-    expect(prog.errors.some((e) => e.includes("'size'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("argument 'size' given as both positional and keyword argument"))).toBe(true);
   });
 
   it("rejects duplicate initial_value= kwarg on array.new_float (C383)", () => {
     const prog = analyzeSource("var a = array.new_float(size=2, initial_value=1.0, initial_value=2.0)");
-    expect(prog.errors.some((e) => e.includes("'initial_value'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("argument 'initial_value' given as both positional and keyword argument"))).toBe(true);
   });
 
   it("allows array.push inside a conditional if-body (state lives in the user-visible array, no hidden slot)", () => {
@@ -4027,7 +4027,7 @@ describe("Analyzer", () => {
 
   it("errors on method-call style array.push() with 0 explicit arguments (receiverOffset accounted: effective 1 of 2)", () => {
     const prog = analyzeSource(["var arr = array.new_float(0)", "arr.push()"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("array.push") && e.includes("1개 전달"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("array.push") && e.includes("1 passed"))).toBe(true);
   });
 
   it("folds the sort() order-string literal correctly under method-call style (order arg shifts from args[1] to args[0])", () => {
@@ -4088,7 +4088,7 @@ describe("Analyzer", () => {
 
   it("errors on method-call style matrix.set() with only 2 explicit arguments (receiverOffset accounted: effective 3 of 4)", () => {
     const prog = analyzeSource(["var m = matrix.new<float>(2, 2, 0.0)", "m.set(0, 0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("matrix.set") && e.includes("3개 전달"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("matrix.set") && e.includes("3 passed"))).toBe(true);
   });
 
   it("folds the sort() order-string literal correctly under method-call style (order arg shifts from args[2] to args[1])", () => {
@@ -4102,7 +4102,7 @@ describe("Analyzer", () => {
 
   it("does not route method-call style matrix calls for a UDF parameter receiver (no value-flow tracking — still 'unsupported')", () => {
     const prog = analyzeSource(["f(a) =>", "    a.det()", "var m = matrix.new<float>(2, 2, 0.0)", "s = f(m)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   // ── matrix method-call 스타일 체이닝(C494, wild `kso_F.mult(kso_P.mult(kso_F.transpose())).sum(kso_Q)`류)
@@ -4144,7 +4144,7 @@ describe("Analyzer", () => {
     const prog = analyzeSource(
       ["var m = matrix.new<float>(2, 2, 0.0)", "var v = array.new_float(2, 0.0)", "d = m.mult(v).det()"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   // C503: isMatrixMultVectorArg가 Identifier 판별에 prog.arrayVars(top-level 전용)만 조회해 '='
@@ -4154,14 +4154,14 @@ describe("Analyzer", () => {
     const prog = analyzeSource(
       ["var m = matrix.new<float>(2, 2, 0.0)", "v = array.new_float(2, 0.0)", "d = m.mult(v).det()"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("does not classify sugar matrix.mult(...) chaining as matrix when the other operand is a UDF func-local var array, not just a top-level var (C503)", () => {
     const prog = analyzeSource(
       ["f() =>", "    m = matrix.new<float>(2, 2, 0.0)", "    var v = array.new_float(2, 0.0)", "    m.mult(v).det()"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("routes the full Kalman-idiom chain m1.mult(m2.mult(m3)).sum(m4) — 2-arg matrix.sum sugar (C656, DIVERGENCES #201)", () => {
@@ -4250,12 +4250,12 @@ describe("Analyzer", () => {
 
   it("does NOT classify a 0-arg .sum() sugar call (scalar aggregate reduction) as matrix — further method-call chaining is still rejected (C658 regression guard)", () => {
     const prog = analyzeSource(["var m1 = matrix.new<float>(2, 2, 0.0)", "p = m1.sum()", "d = p.det()"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출: 'p.det'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call: 'p.det'"))).toBe(true);
   });
 
   it("does NOT classify the literal-namespace 1-arg matrix.sum(id) (scalar aggregate) as matrix — further method-call chaining is still rejected (C658 regression guard, parity with the sugar form)", () => {
     const prog = analyzeSource(["var m1 = matrix.new<float>(2, 2, 0.0)", "p = matrix.sum(m1)", "d = p.det()"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출: 'p.det'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call: 'p.det'"))).toBe(true);
   });
 
   it("routes matrix.row()/col() method-call sugar chained further with an array method (C494, m.row(i).get(0))", () => {
@@ -4271,7 +4271,7 @@ describe("Analyzer", () => {
 
   it("still does not route matrix method-call chaining for a UDF parameter receiver even when chained further (no value-flow tracking — still 'unsupported')", () => {
     const prog = analyzeSource(["f(a) =>", "    a.transpose().det()", "var m = matrix.new<float>(2, 2, 0.0)", "s = f(m)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   // ── func-local var(top-level이 아니라 UDF/method 본문 안 'var' 선언) matrix 판별 폴백(C646, wild
@@ -4312,7 +4312,7 @@ describe("Analyzer", () => {
     const prog = analyzeSource(
       ["f() =>", "    var m = matrix.new<float>(2, 2, 0.0)", "    m.det()", "", "g() =>", "    m.det()"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출: 'm.det'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call: 'm.det'"))).toBe(true);
   });
 
   // ── UDF/method 매개변수의 명시 matrix<T> typeHint 판별 폴백(C646 확장, wild
@@ -4332,7 +4332,7 @@ describe("Analyzer", () => {
 
   it("still rejects a matrix method-call for a UDF parameter with NO type hint (bare param, no value-flow tracking — C646 regression guard, mirrors existing L3981 test)", () => {
     const prog = analyzeSource(["f(a) =>", "    a.add_col(0, array.from(1.0, 2.0))", "var m = matrix.new<float>(2, 2, 0.0)", "s = f(m)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   // ── '=' 로컬 matrix 힌트 등록 비대칭(C502, wild `XTW = X.transpose().mult(W)` 후 `XTW.mult(...)`
@@ -4397,7 +4397,7 @@ describe("Analyzer", () => {
 
   it("does not treat a UDT field typed array<float> (not matrix) as a matrix method-call receiver (isMatrixTypeHint must not overreach onto array)", () => {
     const prog = analyzeSource(["type Data", "    array<float> HLmat", "var Data data = Data.new(array.new<float>())", "f() =>", "    data.HLmat.det()"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("routes matrix method-call chaining for a matrix UDT field receiver on a UDF parameter whose call site is nested in another function body (C644 — prepassInferParamUdtTypesFromCallSites now recurses into FuncDecl/MethodDecl bodies, closing the C496 scope-safety boundary)", () => {
@@ -4473,7 +4473,7 @@ describe("Analyzer", () => {
         "callerB()",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
     expect(prog.funcs.get("helper")?.paramContainerKinds.has("v")).toBe(false);
   });
 
@@ -4594,7 +4594,7 @@ describe("Analyzer", () => {
 
   it("still does not misclassify a chain whose receiver is a map-typed UDF parameter with no call site establishing its container kind (genuine value-flow-tracking gap remains)", () => {
     const prog = analyzeSource(["f(p) =>", "    q = p.values()", "    q.size()"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   // ── 생성자 반환 콜을 var 경유 없이 직접 체이닝(C420, wild "?." 서브클러스터) — C223(위 블록)은
@@ -4631,7 +4631,7 @@ describe("Analyzer", () => {
 
   it("still rejects a chained method call whose receiver CallExpr is not a recognized constructor (UDF call)", () => {
     const prog = analyzeSource(["f() =>", "    x = 1.0", "    x", "y = f().push(1.0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   // ── FuncInfo.returnContainerKind(C651, wild "?.get"/"?.new" 서브클러스터 — `mean(data,weights,len)
@@ -4700,7 +4700,7 @@ describe("Analyzer", () => {
         "y = pick(true).get(0)",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("still errors on unsupported builtin namespaces/methods (array.*/map.*/matrix.*/str.*/ta.* 전부 지원 완료, request.*가 다음 프로브)", () => {
@@ -4737,7 +4737,7 @@ describe("Analyzer", () => {
         "request.footprint(10, 20)",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   // ── array<drawing> UDF/method 매개변수의 elem kind 판별 폴백(C421, wild "?." 서브클러스터 잔여) —
@@ -4768,7 +4768,7 @@ describe("Analyzer", () => {
 
   it("still rejects a chained drawing method-call sugar whose array parameter has no type hint (value-flow tracking still unsupported, C421 regression guard)", () => {
     const prog = analyzeSource(["f(l) =>", "    l.pop().delete()"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   // ── resolveUdtFieldTypeHint CallExpr obj 확장(C422, wild "?." 서브클러스터 잔여) — 이전엔
@@ -4814,12 +4814,12 @@ describe("Analyzer", () => {
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("still rejects a chained call on array.get(...) of a non-UDT array (value-flow tracking still unsupported, C422 regression guard)", () => {
     const prog = analyzeSource(["var array<float> xs = array.from(1.0, 2.0)", "array.get(xs, 0).push(1.0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   // ── matrix<drawing/UDT> 원소 kind 판별(C618, resolveArrayGetElemDrawingKind/resolveArrayGetElemUdtType의
@@ -4864,12 +4864,12 @@ describe("Analyzer", () => {
 
   it("still rejects a chained call on a matrix<float> element (scalar elem, not drawing/UDT, C618 regression guard)", () => {
     const prog = analyzeSource(["var m = matrix.new<float>(1, 1, 0.0)", "m.get(0, 0).delete()"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("still rejects a chained call on a matrix<line> var declared without the generic type arg (var m = matrix.new(...), C618 regression guard)", () => {
     const prog = analyzeSource(["var m = matrix.new(1, 1, na)", "m.get(0, 0).delete()"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   // ── linefill.get_line1/get_line2 반환 kind 체이닝(C648, wild "지원하지 않는 호출: '?.set_xy1'"
@@ -4928,12 +4928,12 @@ describe("Analyzer", () => {
 
   it("still rejects a further chained method that doesn't belong to 'line' (kind check flows through the chain, C648 regression guard)", () => {
     const prog = analyzeSource([LF_SETUP, "lf.get_line1().set_bgcolor(color.red)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("still rejects .get_line1() chained on a non-linefill drawing handle (label is not linefill, C648 regression guard)", () => {
     const prog = analyzeSource(["lbl = label.new(bar_index, high)", "lbl.get_line1().set_xy1(bar_index, high)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   // ── bare 타입캐스트 콜(`box(na)` 등, C301)도 drawingKindHints를 등록하는 생성자 콜로 인정
@@ -4980,7 +4980,7 @@ describe("Analyzer", () => {
 
   it("still rejects a method not belonging to the cast's resolved kind (bare-cast wires the SAME DRAWING_METHODS dispatch, not a blanket allow, C633 regression guard)", () => {
     const prog = analyzeSource(["var box1 = box(na)", "box1.set_x1(bar_index)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   // ── 명시 typeHint를 단 non-var '=' 로컬의 drawing kind 폴백(C698, next_hint(C697) '미지원호출'
@@ -5022,7 +5022,7 @@ describe("Analyzer", () => {
 
   it("still rejects a method not belonging to the explicit typeHint's resolved kind on a non-var '=' local (C698 regression guard)", () => {
     const prog = analyzeSource(["box up = na", "up.get_line1()"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   // ── func-local var(top-level이 아니라 UDF/method 본문 안 'var' 선언) 컨테이너 종류 판별 폴백
@@ -5070,7 +5070,7 @@ describe("Analyzer", () => {
     const prog = analyzeSource(
       ["f() =>", "    var a = array.new<float>()", "    a.push(1.0)", "", "g() =>", "    a.push(2.0)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출: 'a.push'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call: 'a.push'"))).toBe(true);
   });
 
   // ── '=' 로컬/var 별칭 대입 컨테이너 종류 전파(C427, next_hint(C426) 2순위 조사 — wild
@@ -5105,7 +5105,7 @@ describe("Analyzer", () => {
 
   it("does not grant container method-call sugar via alias assignment to a non-container Identifier (C427 regression guard)", () => {
     const prog = analyzeSource(["x = 1.0", "y = x", "y.push(1.0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   // ── 삼항(TernaryOp) 별칭 대입 컨테이너 종류 전파(C428, next_hint(C427) 2순위 조사 — wild
@@ -5191,12 +5191,12 @@ describe("Analyzer", () => {
         "x.push(1.0)",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("does not grant container method-call sugar via ternary alias assignment when only one branch is a known container (C428 regression guard)", () => {
     const prog = analyzeSource(["var array<float> a = array.new<float>()", "cond = true", "x = cond ? a : 1.0", "x.push(1.0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   // ── bare UDF 콜 별칭 대입 컨테이너 종류 전파(C682, wild `fvgDn = fvg(-3)` \ `fvgDn.size()` 클러스터)
@@ -5244,7 +5244,7 @@ describe("Analyzer", () => {
 
   it("does not grant container method-call sugar via bare UDF call alias assignment when the UDF does not return a recognized container (C682 regression guard)", () => {
     const prog = analyzeSource(["helper() =>", "    1.0", "y = helper()", "y.push(1.0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   // ── bare UDF 콜 별칭 대입의 array<drawing> "원소" kind 전파(C683, next_hint(C682) — C650이
@@ -5322,7 +5322,7 @@ describe("Analyzer", () => {
     const prog = analyzeSource(
       ["helper() =>", "    var a = array.new_float(0)", "    a", "y = helper()", "y.get(0).delete()"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("still resolves drawing method-call sugar for a direct array.new_box() alias, not just bare UDF calls (C683 regression guard, pre-existing C352 path)", () => {
@@ -6017,7 +6017,7 @@ describe("Analyzer", () => {
 
   it("errors on an unrecognized bare order.* attribute (not a registered constant)", () => {
     const prog = analyzeSource("x = order.doesNotExist");
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access"))).toBe(true);
   });
 
   it("infers order.ascending as a 'const' qualifier (structural, mirrors math.pi/color.red's test)", () => {
@@ -6055,17 +6055,17 @@ describe("Analyzer", () => {
 
   it("errors on an unrecognized bare barstate.* attribute (not a registered property)", () => {
     const prog = analyzeSource("x = barstate.doesNotExist");
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access"))).toBe(true);
   });
 
   it("errors on an unrecognized bare session.* attribute (not a registered property)", () => {
     const prog = analyzeSource("x = session.doesNotExist");
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access"))).toBe(true);
   });
 
   it("errors on barstate.isfirst called as a function (not callable, unlike ta.* etc.)", () => {
     const prog = analyzeSource("x = barstate.isfirst(1)");
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("infers barstate.isfirst as a 'series' qualifier, so it FAILS ta.ema's series-length hard error check (unlike math.pi/order.ascending's 'const' — real bar-by-bar value, not a compile-time literal; C548 전환으로 프로브를 sma→ema로 교체)", () => {
@@ -6103,12 +6103,12 @@ describe("Analyzer", () => {
 
   it("errors on an unrecognized bare syminfo.* attribute (not a registered property, e.g. volumetype which pine2py itself can't codegen)", () => {
     const prog = analyzeSource("x = syminfo.volumetype");
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access"))).toBe(true);
   });
 
   it("still errors on syminfo.exchange (C337 — wild uses it 3x but PineTS's otherwise-thorough syminfo coverage doesn't list it, insufficient evidence it's a real TV constant vs. author error/confusion with syminfo.prefix)", () => {
     const prog = analyzeSource("x = syminfo.exchange");
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access"))).toBe(true);
   });
 
   it("supports syminfo.ticker(symbol) called as a function (C430 — distinct from the bare syminfo.ticker property, pine2py has no corresponding implementation — hand-verified)", () => {
@@ -6120,14 +6120,14 @@ describe("Analyzer", () => {
 
   it("errors when syminfo.ticker() is called with 0 arguments (TV signature is exactly 1-arity)", () => {
     const prog = analyzeSource("x = syminfo.ticker()");
-    expect(prog.errors.some((e) => e.includes("'syminfo.ticker' 호출 인자 개수 불일치") && e.includes("1개 필요"))).toBe(
+    expect(prog.errors.some((e) => e.includes("'syminfo.ticker' call argument count mismatch") && e.includes("requires 1"))).toBe(
       true,
     );
   });
 
   it("errors when syminfo.ticker(sym) is called with 2 arguments (TV signature is exactly 1-arity)", () => {
     const prog = analyzeSource('x = syminfo.ticker("A", "B")');
-    expect(prog.errors.some((e) => e.includes("'syminfo.ticker' 호출 인자 개수 불일치") && e.includes("1개 필요"))).toBe(
+    expect(prog.errors.some((e) => e.includes("'syminfo.ticker' call argument count mismatch") && e.includes("requires 1"))).toBe(
       true,
     );
   });
@@ -6139,12 +6139,12 @@ describe("Analyzer", () => {
 
   it("rejects a keyword argument for syminfo.ticker(sym) (not in the blanket kwargs exception list, wild usage is always positional)", () => {
     const prog = analyzeSource('x = syminfo.ticker(symbol = "NASDAQ:AAPL")');
-    expect(prog.errors.some((e) => e.includes("키워드 인자"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("keyword argument"))).toBe(true);
   });
 
   it("still rejects an unrecognized syminfo.* method call as unsupported (not silently accepted by the namespace match)", () => {
     const prog = analyzeSource('x = syminfo.frobnicate("NASDAQ:AAPL")');
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("bare syminfo.ticker property access is unaffected by the new call form (still folds to a compile-time empty string constant)", () => {
@@ -6195,7 +6195,7 @@ describe("Analyzer", () => {
 
   it("errors on an unrecognized bare timeframe.* attribute (not a registered property)", () => {
     const prog = analyzeSource("x = timeframe.doesNotExist");
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access"))).toBe(true);
   });
 
   it("infers timeframe.multiplier as a 'simple' qualifier, so it passes ta.sma's series-length hard error check (like syminfo, unlike barstate/session's 'series')", () => {
@@ -6231,12 +6231,12 @@ describe("Analyzer", () => {
 
   it("errors on timeframe.in_seconds called with 2 arguments", () => {
     const prog = analyzeSource('x = timeframe.in_seconds("D", "W")');
-    expect(prog.errors.some((e) => e.includes("'timeframe.in_seconds'") && e.includes("0~1개 필요"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe.in_seconds'") && e.includes("requires 0~1"))).toBe(true);
   });
 
   it("errors on timeframe.from_seconds called with 2 arguments", () => {
     const prog = analyzeSource("x = timeframe.from_seconds(60, 1)");
-    expect(prog.errors.some((e) => e.includes("'timeframe.from_seconds'") && e.includes("1개 필요"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe.from_seconds'") && e.includes("requires 1"))).toBe(true);
   });
 
   it("allows timeframe.in_seconds inside a conditional if-body (stateless call, no HoistingPass constraint)", () => {
@@ -6257,17 +6257,17 @@ describe("Analyzer", () => {
 
   it("errors on an unknown timeframe.in_seconds keyword argument name (C405)", () => {
     const prog = analyzeSource('x = timeframe.in_seconds(tf="D")');
-    expect(prog.errors.some((e) => e.includes("'timeframe.in_seconds'에 없는 인자 이름: 'tf'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown argument name for 'timeframe.in_seconds': 'tf'"))).toBe(true);
   });
 
   it("rejects timeframe given both positionally and as a keyword on timeframe.in_seconds (C405)", () => {
     const prog = analyzeSource('x = timeframe.in_seconds("D", timeframe="W")');
-    expect(prog.errors.some((e) => e.includes("'timeframe'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("does not require timeframe.in_seconds(timeframe=) to supply the (optional) argument at all, but still rejects a plain positional+kwarg duplicate count overflow (C405)", () => {
     const prog = analyzeSource('x = timeframe.in_seconds("D", "W", timeframe="M")');
-    expect(prog.errors.some((e) => e.includes("'timeframe.in_seconds' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe.in_seconds' call argument count mismatch"))).toBe(true);
   });
 
   it("registers timeframe.change(tf) as a stateless builtinCall with no errors (C235 — pine2py timeframe_change is a hardcoded False constant, not stateful)", () => {
@@ -6284,7 +6284,7 @@ describe("Analyzer", () => {
 
   it("errors on timeframe.change called with 2 arguments", () => {
     const prog = analyzeSource('x = timeframe.change("D", "W")');
-    expect(prog.errors.some((e) => e.includes("'timeframe.change'") && e.includes("0~1개 필요"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe.change'") && e.includes("requires 0~1"))).toBe(true);
   });
 
   it("allows timeframe.change inside a conditional if-body (stateless call, no HoistingPass constraint)", () => {
@@ -6320,12 +6320,12 @@ describe("Analyzer", () => {
 
   it("errors when ticker.new is called with more than 4 arguments", () => {
     const prog = analyzeSource('x = ticker.new("a", "b", "c", "d", "e")');
-    expect(prog.errors.some((e) => e.includes("'ticker.new'") && e.includes("최대 4개"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ticker.new'") && e.includes("at most 4"))).toBe(true);
   });
 
   it("errors when ticker.heikinashi is called with more than 1 argument", () => {
     const prog = analyzeSource('x = ticker.heikinashi("BINANCE:BTCUSDT", "extra")');
-    expect(prog.errors.some((e) => e.includes("'ticker.heikinashi'") && e.includes("최대 1개"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ticker.heikinashi'") && e.includes("at most 1"))).toBe(true);
   });
 
   it("allows ticker.heikinashi inside a conditional if-body (stateless call, no HoistingPass constraint)", () => {
@@ -6355,27 +6355,27 @@ describe("Analyzer", () => {
   });
 
   it("rejects an unknown kwarg name for ticker.new/modify/renko (C385)", () => {
-    expect(analyzeSource('x = ticker.new(bogus = "a")').errors.some((e) => e.includes("'ticker.new'에 없는 인자 이름"))).toBe(true);
-    expect(analyzeSource('x = ticker.modify(bogus = "a")').errors.some((e) => e.includes("'ticker.modify'에 없는 인자 이름"))).toBe(true);
-    expect(analyzeSource('x = ticker.renko(bogus = "a")').errors.some((e) => e.includes("'ticker.renko'에 없는 인자 이름"))).toBe(true);
+    expect(analyzeSource('x = ticker.new(bogus = "a")').errors.some((e) => e.includes("unknown argument name for 'ticker.new'"))).toBe(true);
+    expect(analyzeSource('x = ticker.modify(bogus = "a")').errors.some((e) => e.includes("unknown argument name for 'ticker.modify'"))).toBe(true);
+    expect(analyzeSource('x = ticker.renko(bogus = "a")').errors.some((e) => e.includes("unknown argument name for 'ticker.renko'"))).toBe(true);
   });
 
   it("rejects duplicate kwarg names for ticker.modify (C385, array.* kwargs와 동일한 merged '위치·키워드 중복' 메시지 — 순수 kwarg-kwarg 중복도 이 메시지로 보고된다)", () => {
     const prog = analyzeSource('x = ticker.modify(session = "regular", session = "extended")');
-    expect(prog.errors.some((e) => e.includes("'session'") && e.includes("위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'session'") && e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("rejects a positional/keyword conflict for ticker.new (C385, prefix given both positionally and as a kwarg)", () => {
     const prog = analyzeSource('x = ticker.new("BINANCE", "BTCUSDT", prefix = "OTHER")');
-    expect(prog.errors.some((e) => e.includes("'prefix'") && e.includes("위치 인자와 키워드 인자로 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'prefix'") && e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("still rejects kwargs for ticker.standard/heikinashi/kagi/linebreak/pointfigure (C385, wild has 0 kwarg usage for these 5 — TICKER_KWARG_PARAM_NAMES intentionally omits them)", () => {
-    expect(analyzeSource('x = ticker.standard(symbol = "a")').errors.some((e) => e.includes("키워드 인자"))).toBe(true);
-    expect(analyzeSource('x = ticker.heikinashi(symbol = "a")').errors.some((e) => e.includes("키워드 인자"))).toBe(true);
-    expect(analyzeSource('x = ticker.kagi(symbol = "a")').errors.some((e) => e.includes("키워드 인자"))).toBe(true);
-    expect(analyzeSource('x = ticker.linebreak(symbol = "a")').errors.some((e) => e.includes("키워드 인자"))).toBe(true);
-    expect(analyzeSource('x = ticker.pointfigure(symbol = "a")').errors.some((e) => e.includes("키워드 인자"))).toBe(true);
+    expect(analyzeSource('x = ticker.standard(symbol = "a")').errors.some((e) => e.includes("keyword argument"))).toBe(true);
+    expect(analyzeSource('x = ticker.heikinashi(symbol = "a")').errors.some((e) => e.includes("keyword argument"))).toBe(true);
+    expect(analyzeSource('x = ticker.kagi(symbol = "a")').errors.some((e) => e.includes("keyword argument"))).toBe(true);
+    expect(analyzeSource('x = ticker.linebreak(symbol = "a")').errors.some((e) => e.includes("keyword argument"))).toBe(true);
+    expect(analyzeSource('x = ticker.pointfigure(symbol = "a")').errors.some((e) => e.includes("keyword argument"))).toBe(true);
   });
 
   it("registers ticker.inherit as a stateless builtinCall with no errors (C664, 미지원호출 클러스터 wild 2건 — pine2py엔 ticker 네임스페이스 자체에 대응 함수가 없어 hand-verified)", () => {
@@ -6392,11 +6392,11 @@ describe("Analyzer", () => {
 
   it("errors when ticker.inherit is called with more than 2 arguments (TV signature is from_tickerid/symbol only, C664)", () => {
     const prog = analyzeSource('x = ticker.inherit("BINANCE:BTCUSDT", "BINANCE:ETHUSDT", "extra")');
-    expect(prog.errors.some((e) => e.includes("'ticker.inherit'") && e.includes("최대 2개"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ticker.inherit'") && e.includes("at most 2"))).toBe(true);
   });
 
   it("rejects kwargs for ticker.inherit (TICKER_KWARG_PARAM_NAMES intentionally omits it, wild usage is positional-only, C664)", () => {
-    expect(analyzeSource('x = ticker.inherit(symbol = "a")').errors.some((e) => e.includes("키워드 인자"))).toBe(true);
+    expect(analyzeSource('x = ticker.inherit(symbol = "a")').errors.some((e) => e.includes("keyword argument"))).toBe(true);
   });
 
   it("allows ticker.inherit inside a conditional if-body (stateless call, no HoistingPass constraint, C664)", () => {
@@ -6420,9 +6420,9 @@ describe("Analyzer", () => {
 
   it("errors on an unrecognized adjustment.*/backadjustment.* member (constant folding is still a closed set, C615)", () => {
     const prog1 = analyzeSource("x = adjustment.bogus");
-    expect(prog1.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog1.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
     const prog2 = analyzeSource("x = backadjustment.bogus");
-    expect(prog2.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog2.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("registers chart.is_standard/is_heikinashi/is_renko/is_kagi/is_linebreak/is_pnf/is_range as stateless builtinCalls with no errors (C239, pine2py has no corresponding implementation — hand-verified)", () => {
@@ -6455,7 +6455,7 @@ describe("Analyzer", () => {
 
   it("errors when chart.is_standard is called with an argument (TV signature is 0-arity)", () => {
     const prog = analyzeSource("x = chart.is_standard(1)");
-    expect(prog.errors.some((e) => e.includes("'chart.is_standard'") && e.includes("0개 필요"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'chart.is_standard'") && e.includes("requires 0"))).toBe(true);
   });
 
   it("allows chart.is_heikinashi inside a conditional if-body (stateless call, no HoistingPass constraint)", () => {
@@ -6487,12 +6487,12 @@ describe("Analyzer", () => {
 
   it("errors when request.dividends is called with more than 4 arguments", () => {
     const prog = analyzeSource('x = request.dividends("a", "b", "c", "d", "e")');
-    expect(prog.errors.some((e) => e.includes("'request.dividends'") && e.includes("최대 4개"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.dividends'") && e.includes("at most 4"))).toBe(true);
   });
 
   it("errors when request.splits is called with more than 4 arguments", () => {
     const prog = analyzeSource('x = request.splits("a", "b", "c", "d", "e")');
-    expect(prog.errors.some((e) => e.includes("'request.splits'") && e.includes("최대 4개"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.splits'") && e.includes("at most 4"))).toBe(true);
   });
 
   it("allows request.dividends inside a conditional if-body (stateless call, no HoistingPass constraint)", () => {
@@ -6525,22 +6525,22 @@ describe("Analyzer", () => {
 
   it("rejects an unknown kwarg name for request.dividends (C398)", () => {
     const prog = analyzeSource('x = request.dividends(bogus = "a")');
-    expect(prog.errors.some((e) => e.includes("'request.dividends' 키워드 인자는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.dividends' only supports keyword arguments"))).toBe(true);
   });
 
   it("rejects an unknown kwarg name for request.splits (C398)", () => {
     const prog = analyzeSource('x = request.splits(bogus = "a")');
-    expect(prog.errors.some((e) => e.includes("'request.splits' 키워드 인자는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.splits' only supports keyword arguments"))).toBe(true);
   });
 
   it("rejects duplicate kwarg names for request.dividends (C398)", () => {
     const prog = analyzeSource("x = request.dividends(gaps = true, gaps = false)");
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'gaps' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'gaps'"))).toBe(true);
   });
 
   it("rejects duplicate kwarg names for request.splits (C398)", () => {
     const prog = analyzeSource("x = request.splits(gaps = true, gaps = false)");
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'gaps' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'gaps'"))).toBe(true);
   });
 
   it("registers request.financial as a stateless builtinCall with no errors (C257, pine2py wavealgo/__init__.py L118-120 pure NaN stub)", () => {
@@ -6557,7 +6557,7 @@ describe("Analyzer", () => {
 
   it("errors when request.financial is called with more than 5 arguments", () => {
     const prog = analyzeSource('x = request.financial("a", "b", "c", "d", "e", "f")');
-    expect(prog.errors.some((e) => e.includes("'request.financial'") && e.includes("최대 5개"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.financial'") && e.includes("at most 5"))).toBe(true);
   });
 
   it("allows request.financial inside a conditional if-body (stateless call, no HoistingPass constraint)", () => {
@@ -6585,12 +6585,12 @@ describe("Analyzer", () => {
 
   it("rejects an unknown kwarg name for request.financial (C385)", () => {
     const prog = analyzeSource('x = request.financial(bogus = "a")');
-    expect(prog.errors.some((e) => e.includes("'request.financial' 키워드 인자는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.financial' only supports keyword arguments"))).toBe(true);
   });
 
   it("rejects duplicate kwarg names for request.financial (C385)", () => {
     const prog = analyzeSource('x = request.financial(gaps = true, gaps = false)');
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'gaps' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'gaps'"))).toBe(true);
   });
 
   it("registers request.earnings as a stateless builtinCall with no errors (C397, pine2py wavealgo/__init__.py L130-132 pure 0.0 stub)", () => {
@@ -6607,7 +6607,7 @@ describe("Analyzer", () => {
 
   it("errors when request.earnings is called with more than 4 arguments", () => {
     const prog = analyzeSource('x = request.earnings("a", "b", "c", "d", "e")');
-    expect(prog.errors.some((e) => e.includes("'request.earnings'") && e.includes("최대 4개"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.earnings'") && e.includes("at most 4"))).toBe(true);
   });
 
   it("allows request.earnings inside a conditional if-body (stateless call, no HoistingPass constraint)", () => {
@@ -6633,12 +6633,12 @@ describe("Analyzer", () => {
 
   it("rejects an unknown kwarg name for request.earnings (C397)", () => {
     const prog = analyzeSource('x = request.earnings(bogus = "a")');
-    expect(prog.errors.some((e) => e.includes("'request.earnings' 키워드 인자는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.earnings' only supports keyword arguments"))).toBe(true);
   });
 
   it("rejects duplicate kwarg names for request.earnings (C397)", () => {
     const prog = analyzeSource("x = request.earnings(gaps = true, gaps = false)");
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'gaps' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'gaps'"))).toBe(true);
   });
 
   it("registers request.quandl as a stateless builtinCall with no errors (C310, pine2py wavealgo/__init__.py L138-140 pure 0.0 stub)", () => {
@@ -6655,7 +6655,7 @@ describe("Analyzer", () => {
 
   it("errors when request.quandl is called with more than 3 arguments", () => {
     const prog = analyzeSource('x = request.quandl("a", "b", "c", "d")');
-    expect(prog.errors.some((e) => e.includes("'request.quandl'") && e.includes("최대 3개"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.quandl'") && e.includes("at most 3"))).toBe(true);
   });
 
   it("allows request.quandl inside a conditional if-body (stateless call, no HoistingPass constraint)", () => {
@@ -6682,7 +6682,7 @@ describe("Analyzer", () => {
       'x = request.security_lower_tf("a", "b", close, true, "c", true, 5, "extra")',
     );
     expect(
-      prog.errors.some((e) => e.includes("'request.security_lower_tf'") && e.includes("최대 7개")),
+      prog.errors.some((e) => e.includes("'request.security_lower_tf'") && e.includes("at most 7")),
     ).toBe(true);
   });
 
@@ -6714,21 +6714,21 @@ describe("Analyzer", () => {
   it("errors when request.security_lower_tf gets an unsupported kwarg name like 'currency=' (C381, wild 실사용 0건이라 이번 슬라이스 미지원)", () => {
     const prog = analyzeSource('a = request.security_lower_tf(syminfo.tickerid, "1", close, currency = "USD")');
     expect(
-      prog.errors.some((e) => e.includes("'request.security_lower_tf' 키워드 인자는") && e.includes("'currency='")),
+      prog.errors.some((e) => e.includes("'request.security_lower_tf' only supports keyword arguments") && e.includes("'currency='")),
     ).toBe(true);
   });
 
   it("errors when request.security_lower_tf's 'expression=' kwarg duplicates the 3rd positional argument (C381)", () => {
     const prog = analyzeSource('a = request.security_lower_tf(syminfo.tickerid, "1", close, expression = open)');
     expect(
-      prog.errors.some((e) => e.includes("인자 'expression'이(가) 위치 인자와 키워드 인자로 중복 지정됨")),
+      prog.errors.some((e) => e.includes("argument 'expression' specified both positionally and as a keyword")),
     ).toBe(true);
   });
 
   it("accepts request.security_lower_tf's 'expression=' kwarg duplicating an identical 3rd positional argument (C654)", () => {
     const prog = analyzeSource('a = request.security_lower_tf(syminfo.tickerid, "1", close, expression = close)');
     expect(
-      prog.errors.some((e) => e.includes("인자 'expression'이(가) 위치 인자와 키워드 인자로 중복 지정됨")),
+      prog.errors.some((e) => e.includes("argument 'expression' specified both positionally and as a keyword")),
     ).toBe(false);
   });
 
@@ -6736,7 +6736,7 @@ describe("Analyzer", () => {
     const prog = analyzeSource(
       'a = request.security_lower_tf(syminfo.tickerid, "1", close, calc_bars_count = 3, calc_bars_count = 5)',
     );
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'calc_bars_count' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'calc_bars_count'"))).toBe(true);
   });
 
   // ── request.security_lower_tf 단일(비-튜플) 대입 대상의 container kind 등록(C694, next_hint(C693) —
@@ -6802,12 +6802,12 @@ describe("Analyzer", () => {
 
   it("errors when request.seed is called with fewer than 3 arguments", () => {
     const prog = analyzeSource('x = request.seed("a", "b")');
-    expect(prog.errors.some((e) => e.includes("'request.seed'") && e.includes("3~4개"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.seed'") && e.includes("3~4"))).toBe(true);
   });
 
   it("errors when request.seed is called with more than 4 arguments", () => {
     const prog = analyzeSource('x = request.seed("a", "b", close, true, "extra")');
-    expect(prog.errors.some((e) => e.includes("'request.seed'") && e.includes("3~4개"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.seed'") && e.includes("3~4"))).toBe(true);
   });
 
   it("allows request.seed inside a conditional if-body (stateless call, no HoistingPass constraint)", () => {
@@ -6824,12 +6824,12 @@ describe("Analyzer", () => {
 
   it("errors when request.currency_rate is called with fewer than 2 arguments", () => {
     const prog = analyzeSource('x = request.currency_rate("USD")');
-    expect(prog.errors.some((e) => e.includes("'request.currency_rate'") && e.includes("2~3개"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.currency_rate'") && e.includes("2~3"))).toBe(true);
   });
 
   it("errors when request.currency_rate is called with more than 3 arguments", () => {
     const prog = analyzeSource('x = request.currency_rate("USD", "EUR", true, "extra")');
-    expect(prog.errors.some((e) => e.includes("'request.currency_rate'") && e.includes("2~3개"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.currency_rate'") && e.includes("2~3"))).toBe(true);
   });
 
   it("allows request.currency_rate inside a conditional if-body (stateless call, no HoistingPass constraint)", () => {
@@ -7306,7 +7306,7 @@ describe("Analyzer", () => {
 
   it("blocks history indexing '[]' on a map-typed top-level var", () => {
     const prog = analyzeSource(["var m = map.new<string, float>()", "x = m[1]"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("map 타입"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("map-type"))).toBe(true);
   });
 
   it("allows map.* calls inside a conditional if-body (stateless — no HoistingPass constraint)", () => {
@@ -7405,7 +7405,7 @@ describe("Analyzer", () => {
 
   it("blocks history indexing '[]' on a matrix-typed top-level var", () => {
     const prog = analyzeSource(["var m = matrix.new<float>(2, 2, 0.0)", "x = m[1]"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("matrix 타입"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("matrix-type"))).toBe(true);
   });
 
   it("registers a matrix.row(id, row_number) call site with no errors (C91)", () => {
@@ -8313,7 +8313,7 @@ describe("Analyzer", () => {
 
   it("blocks history indexing '[]' on a var holding a matrix.mult(id, scalar) matrix result", () => {
     const prog = analyzeSource(["var m = matrix.new<float>(2, 2, 0.0)", "var r = matrix.mult(m, 2.0)", "x = r[1]"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("matrix 타입"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("matrix-type"))).toBe(true);
   });
 
   it("allows matrix.mult calls inside a conditional if-body (stateless — no HoistingPass constraint, C97)", () => {
@@ -8355,12 +8355,12 @@ describe("Analyzer", () => {
 
   it("still errors on ta.change call with 0 args (below minArgCount:1)", () => {
     const prog = analyzeSource("x = ta.change()");
-    expect(prog.errors.some((e) => e.includes("'ta.change'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.change'") && e.includes("argument count"))).toBe(true);
   });
 
   it("errors on ta.mom call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.mom(close)");
-    expect(prog.errors.some((e) => e.includes("'ta.mom'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.mom'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.change inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -8405,7 +8405,7 @@ describe("Analyzer", () => {
 
   it("still errors on ta.percentile_nearest_rank call with 1 arg (below minArgCount:2)", () => {
     const prog = analyzeSource("x = ta.percentile_nearest_rank(close)");
-    expect(prog.errors.some((e) => e.includes("'ta.percentile_nearest_rank'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.percentile_nearest_rank'") && e.includes("argument count"))).toBe(true);
   });
 
   it("no longer errors when ta.percentile_nearest_rank's length argument is a bar series identifier directly (C553 전환: seriesLengthOk — 이전엔 하드 에러였음, percentileNearestRankVarLen 경로로 codegen된다)", () => {
@@ -8458,7 +8458,7 @@ describe("Analyzer", () => {
 
   it("still errors on ta.percentile_linear_interpolation call with 1 arg (below minArgCount:2)", () => {
     const prog = analyzeSource("x = ta.percentile_linear_interpolation(close)");
-    expect(prog.errors.some((e) => e.includes("'ta.percentile_linear_interpolation'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.percentile_linear_interpolation'") && e.includes("argument count"))).toBe(true);
   });
 
   it("registers ta.percentile_nearest_rank/ta.percentile_linear_interpolation call sites sharing the taSlots pool with ta.sma (regression guard)", () => {
@@ -8483,7 +8483,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.roc call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.roc(close)");
-    expect(prog.errors.some((e) => e.includes("'ta.roc'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.roc'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.roc inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -8528,7 +8528,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.dema call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.dema(close)");
-    expect(prog.errors.some((e) => e.includes("'ta.dema'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.dema'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.dema inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -8565,7 +8565,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.rci call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.rci(close)");
-    expect(prog.errors.some((e) => e.includes("'ta.rci'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.rci'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.rci inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -8603,7 +8603,7 @@ describe("Analyzer", () => {
 
   it.each(["max", "min"])("errors on ta.%s call with wrong argument count", (fn) => {
     const prog = analyzeSource(`x = ta.${fn}(close, 10)`);
-    expect(prog.errors.some((e) => e.includes(`'ta.${fn}'`) && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes(`'ta.${fn}'`) && e.includes("argument count"))).toBe(true);
   });
 
   it.each(["max", "min"])("accepts ta.%s inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", (fn) => {
@@ -8632,7 +8632,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.cross call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.cross(close)");
-    expect(prog.errors.some((e) => e.includes("'ta.cross'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.cross'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.cross inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -8686,12 +8686,12 @@ describe("Analyzer", () => {
 
   it("errors on ta.crossover call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.crossover(close)");
-    expect(prog.errors.some((e) => e.includes("'ta.crossover'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.crossover'") && e.includes("argument count"))).toBe(true);
   });
 
   it("errors on ta.crossunder call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.crossunder(close, open, 1)");
-    expect(prog.errors.some((e) => e.includes("'ta.crossunder'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.crossunder'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.crossover inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -8724,12 +8724,12 @@ describe("Analyzer", () => {
 
   it("errors on ta.rising call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.rising(close)");
-    expect(prog.errors.some((e) => e.includes("'ta.rising'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.rising'") && e.includes("argument count"))).toBe(true);
   });
 
   it("errors on ta.falling call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.falling(close, 2, 1)");
-    expect(prog.errors.some((e) => e.includes("'ta.falling'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.falling'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.rising inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -8780,14 +8780,14 @@ describe("Analyzer", () => {
 
   it("errors on ta.variance call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.variance(close)");
-    expect(prog.errors.some((e) => e.includes("'ta.variance'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.variance'") && e.includes("argument count"))).toBe(true);
   });
 
   it("errors on ta.stdev call with wrong argument count (1 or 4+ — C296 widened 2 to 2~3 for biased=)", () => {
     const progTooFew = analyzeSource("x = ta.stdev(close)");
-    expect(progTooFew.errors.some((e) => e.includes("'ta.stdev'") && e.includes("인자 개수"))).toBe(true);
+    expect(progTooFew.errors.some((e) => e.includes("'ta.stdev'") && e.includes("argument count"))).toBe(true);
     const progTooMany = analyzeSource("y = ta.stdev(close, 3, true, 1)");
-    expect(progTooMany.errors.some((e) => e.includes("'ta.stdev'") && e.includes("인자 개수"))).toBe(true);
+    expect(progTooMany.errors.some((e) => e.includes("'ta.stdev'") && e.includes("argument count"))).toBe(true);
   });
 
   // C296: ta.stdev(source, length, biased) — TV 공식 3번째 위치 인자(bool, 기본 true). pine2py
@@ -8860,7 +8860,7 @@ describe("Analyzer", () => {
     // Pine 문법상 ta.cum은 length 인자가 없다(단일 러닝 합계) — argCount는 1(source)뿐이라
     // length를 넘기면 에러다.
     const prog = analyzeSource("x = ta.cum(close, 3)");
-    expect(prog.errors.some((e) => e.includes("'ta.cum'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.cum'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.cum inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -8889,7 +8889,7 @@ describe("Analyzer", () => {
   it("errors on ta.barssince call with wrong argument count", () => {
     // Pine 문법상 ta.barssince는 condition 인자 1개뿐이다(length 없음) — 2개 넘기면 에러.
     const prog = analyzeSource("x = ta.barssince(close > open, 3)");
-    expect(prog.errors.some((e) => e.includes("'ta.barssince'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.barssince'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.barssince inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -8918,7 +8918,7 @@ describe("Analyzer", () => {
   it("errors on ta.valuewhen call with wrong argument count", () => {
     // Pine 문법상 ta.valuewhen은 condition/source/occurrence 3개 필수 — 2개면 에러.
     const prog = analyzeSource("x = ta.valuewhen(close > open, close)");
-    expect(prog.errors.some((e) => e.includes("'ta.valuewhen'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.valuewhen'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.valuewhen inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -8950,12 +8950,12 @@ describe("Analyzer", () => {
 
   it("errors on ta.ema call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.ema(close)");
-    expect(prog.errors.some((e) => e.includes("'ta.ema'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.ema'") && e.includes("argument count"))).toBe(true);
   });
 
   it("errors on ta.rsi call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.rsi(close, 3, 1)");
-    expect(prog.errors.some((e) => e.includes("'ta.rsi'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.rsi'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.ema inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -8998,7 +8998,7 @@ describe("Analyzer", () => {
 
   it("propagates unknown-identifier errors through fixnan arguments", () => {
     const prog = analyzeSource("x = fixnan(doesNotExist)");
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier"))).toBe(true);
   });
 
   it("marks indicator() as a directive, not an error", () => {
@@ -9015,12 +9015,12 @@ describe("Analyzer", () => {
 
   it("errors on bare namespace access without a call (ta.sma missing parens)", () => {
     const prog = analyzeSource("x = ta.sma");
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access"))).toBe(true);
   });
 
   it("recurses into ternary branches and still catches unknown identifiers", () => {
     const prog = analyzeSource("x = close > open ? doesNotExist : close");
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier"))).toBe(true);
   });
 
   it("accepts a ternary expression with all-known identifiers", () => {
@@ -9030,8 +9030,8 @@ describe("Analyzer", () => {
 
   it("errors on TupleDestructure whose value is not a tuple-returning UDF call", () => {
     const prog = analyzeSource("[a, b] = f()");
-    expect(prog.errors.some((e) => e.includes("알 수 없는 함수 호출"))).toBe(true);
-    expect(prog.errors.some((e) => e.includes("튜플을 반환하는 UDF 호출이어야 함"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown function call"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("must be a UDF call returning a tuple"))).toBe(true);
   });
 
   it("analyzes the full smoke_var_sma statement sequence with zero errors", () => {
@@ -9072,7 +9072,7 @@ describe("Analyzer", () => {
 
   it("errors when a local declared only inside an if-body is referenced after the block (block scope leak)", () => {
     const prog = analyzeSource(["if close > open", "    y = 1.0", "z = y"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자") && e.includes("y"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier") && e.includes("y"))).toBe(true);
   });
 
   it("errors when ':=' inside an if-body targets a name only declared in a sibling branch", () => {
@@ -9087,7 +9087,7 @@ describe("Analyzer", () => {
 
   it("evaluates elif condition/body in a sibling scope, not nested inside the previous branch", () => {
     const prog = analyzeSource(["if close > open", "    y = 1.0", "else if y > 0", "    z := 1.0"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자") && e.includes("y"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier") && e.includes("y"))).toBe(true);
   });
 
   it("recurses unknown-identifier detection into if/elif/else bodies", () => {
@@ -9098,13 +9098,13 @@ describe("Analyzer", () => {
       "if close > open\n    x := 1\nelse\n    x := doesNotExist",
     ]) {
       const prog = analyzeSource(src);
-      expect(prog.errors.some((e) => e.includes("알 수 없는 식별자"))).toBe(true);
+      expect(prog.errors.some((e) => e.includes("unknown identifier"))).toBe(true);
     }
   });
 
   it("rejects indicator()/strategy() calls made from inside an if-body (directives are script top-level only)", () => {
     const prog = analyzeSource('if close > open\n    indicator("nope")');
-    expect(prog.errors.some((e) => e.includes("알 수 없는 함수 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown function call"))).toBe(true);
     expect(prog.directives.size).toBe(0);
   });
 
@@ -9207,7 +9207,7 @@ describe("Analyzer", () => {
     const prog = analyzeSource(
       ["if close > open", "    x = 1.0", "else if close > 0 and ta.sma(close, 3) > 0", "    y = 2.0"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("조건부 블록") && e.includes("lazy"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("conditional block") && e.includes("lazy"))).toBe(true);
   });
 
   it("allows a ta.* call on the and-lhs of an elif condition (always evaluated first, not lazy — C260)", () => {
@@ -9225,7 +9225,7 @@ describe("Analyzer", () => {
     const prog = analyzeSource(
       ["if close > open", "    x = 1.0", "else if close > 0 or ta.sma(close, 3) > 0", "    y = 2.0"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("조건부 블록") && e.includes("lazy"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("conditional block") && e.includes("lazy"))).toBe(true);
   });
 
   it("still rejects a ta.* call in a ternary branch nested inside an elif condition (ternary branches stay lazy-expr under condition)", () => {
@@ -9234,7 +9234,7 @@ describe("Analyzer", () => {
     const prog = analyzeSource(
       ["if close > open", "    x = 1.0", "else if (close > 0 ? ta.sma(close, 3) : 0.0) > 0", "    y = 2.0"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("조건부 블록") && e.includes("lazy"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("conditional block") && e.includes("lazy"))).toBe(true);
   });
 
   it("allows a direct ta.* call in an elif condition inside a UDF body (condition-under-udf-body chain, C260 + C162)", () => {
@@ -9307,7 +9307,7 @@ describe("Analyzer", () => {
 
   it("still allows a ta.* call in a ternary's condition (always evaluated, not lazy)", () => {
     const prog = analyzeSource("x = ta.sma(close, 3) > 0 ? 1.0 : 2.0");
-    expect(prog.errors.filter((e) => e.includes("조건부 블록"))).toEqual([]);
+    expect(prog.errors.filter((e) => e.includes("conditional block"))).toEqual([]);
     expect(prog.taSlotCount).toBe(1);
   });
 
@@ -9372,18 +9372,18 @@ describe("Analyzer", () => {
     const prog = analyzeSource(
       ["y = 0.0", "switch", "    close > open and ta.sma(close, 3) > 0 =>", "        y := 1.0"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("조건부 블록") && e.includes("조건식"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("conditional block") && e.includes("condition expression"))).toBe(true);
   });
 
   it("still allows a ta.* call in an 'and' left operand (always evaluated first, not lazy)", () => {
     const prog = analyzeSource("x = ta.sma(close, 3) > 0 and close > open");
-    expect(prog.errors.filter((e) => e.includes("조건부 블록"))).toEqual([]);
+    expect(prog.errors.filter((e) => e.includes("conditional block"))).toEqual([]);
     expect(prog.taSlotCount).toBe(1);
   });
 
   it("still allows a ta.* call in an 'or' left operand (always evaluated first, not lazy)", () => {
     const prog = analyzeSource("x = ta.sma(close, 3) > 0 or close > open");
-    expect(prog.errors.filter((e) => e.includes("조건부 블록"))).toEqual([]);
+    expect(prog.errors.filter((e) => e.includes("conditional block"))).toEqual([]);
     expect(prog.taSlotCount).toBe(1);
   });
 
@@ -9618,7 +9618,7 @@ describe("Analyzer", () => {
 
   it("errors when a local declared only inside a while-body is referenced after the loop (block scope leak)", () => {
     const prog = analyzeSource(["while close > open", "    y = 1.0", "z = y"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자") && e.includes("y"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier") && e.includes("y"))).toBe(true);
   });
 
   it("now allows a direct ta.* call inside a while condition (C260 — condition re-tested every iteration including the final false test)", () => {
@@ -9633,7 +9633,7 @@ describe("Analyzer", () => {
 
   it("still rejects a ta.* call on the and-rhs inside a while condition (genuinely lazy, same rule as elif/switch)", () => {
     const condProg = analyzeSource("while close > open and ta.sma(close, 3) > 0\n    break");
-    expect(condProg.errors.some((e) => e.includes("조건부 블록") && e.includes("lazy"))).toBe(true);
+    expect(condProg.errors.some((e) => e.includes("conditional block") && e.includes("lazy"))).toBe(true);
   });
 
   it("allows a ta.* call on the and-lhs inside a while condition (always evaluated first, not lazy — C260)", () => {
@@ -9663,14 +9663,14 @@ describe("Analyzer", () => {
   it("errors on 'break'/'continue' used outside any loop", () => {
     for (const src of ["break", "continue", "if close > open\n    break", "if close > open\n    continue"]) {
       const prog = analyzeSource(src);
-      expect(prog.errors.some((e) => e.includes("반복문"))).toBe(true);
+      expect(prog.errors.some((e) => e.includes("inside a loop (while/for)"))).toBe(true);
     }
   });
 
   it("does not leak loop scope back out to a sibling statement after the while ends", () => {
     // break immediately after a while (not nested inside it) must still error
     const prog = analyzeSource(["while close > open", "    y = 1.0", "break"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("반복문"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("inside a loop (while/for)"))).toBe(true);
   });
 
   // ── ForStmt: 숫자 range for 실제 구현 ────────────────────────
@@ -9692,12 +9692,12 @@ describe("Analyzer", () => {
 
   it("errors when the for-loop variable is referenced after the loop ends (block scope leak)", () => {
     const prog = analyzeSource(["for i = 1 to 5", "    x = i", "y = i"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자") && e.includes("i"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier") && e.includes("i"))).toBe(true);
   });
 
   it("errors when the for-loop variable name collides with an existing var slot", () => {
     const prog = analyzeSource(["var float i = 0.0", "for i = 1 to 5", "    x := i"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("이미 var로 선언됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("already declared with var"))).toBe(true);
   });
 
   it("allows a ta.* call directly in the for-loop's end expression (evaluated once per entry, unlike while's condition it is not a conditional zone)", () => {
@@ -9721,7 +9721,7 @@ describe("Analyzer", () => {
 
   it("does not leak loop scope back out to a sibling statement after the for loop ends", () => {
     const prog = analyzeSource(["for i = 1 to 5", "    y = 1.0", "break"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("반복문"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("inside a loop (while/for)"))).toBe(true);
   });
 
   // ── ForInStmt: analyzer+codegen 실구현(C216, C215 파서 슬라이스의 후속) ─────────
@@ -9760,8 +9760,8 @@ describe("Analyzer", () => {
 
   it("rejects for-in whose iterable is an undeclared identifier (unknown-identifier error plus the for-in's own rejection)", () => {
     const prog = analyzeSource(["for x in arr", "    y = x"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자") && e.includes("arr"))).toBe(true);
-    expect(prog.errors.some((e) => e.includes("for-in") && e.includes("정적으로 판별할 수 없음"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier") && e.includes("arr"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("for-in") && e.includes("cannot be statically determined"))).toBe(true);
   });
 
   it("accepts for-in over a matrix iterable, yielding each row as an array (C709 -- TV iterates matrices row-by-row, PineMatrix is already unknown[][])", () => {
@@ -9787,7 +9787,7 @@ describe("Analyzer", () => {
 
   it("rejects for-in whose iterable is an untyped UDF parameter with no body-internal container signal (still a genuine gap, C709 doesn't touch this axis; a call site with a scalar arg keeps the C678 dead-code placeholder from masking this check)", () => {
     const prog = analyzeSource(["f(p) =>", "    for x in p", "        y = x", "f(close)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("for-in") && e.includes("정적으로 판별할 수 없음"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("for-in") && e.includes("cannot be statically determined"))).toBe(true);
   });
 
   it("accepts a nested for-in over a top-level '=' local aliased from a UDT field DotAccess (C709, wild `g_boxs = box_row.g_box` pattern -- resolveContainerExprKind already supported DotAccess, but the alias gate excluded it)", () => {
@@ -9852,7 +9852,7 @@ describe("Analyzer", () => {
     const prog = analyzeSource(
       ["var x = 0.0", "var a = array.new_float(3)", "for x in a", "    y = x"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("for-in") && e.includes("이미 var로 선언됨") && e.includes("'x'"))).toBe(
+    expect(prog.errors.some((e) => e.includes("for-in") && e.includes("already declared with var") && e.includes("'x'"))).toBe(
       true,
     );
   });
@@ -9867,7 +9867,7 @@ describe("Analyzer", () => {
       ["f(p) =>", "    for x in p", "        y = x", "    z = undeclaredName", "f(close)"].join("\n"),
     );
     expect(prog.errors.some((e) => e.includes("for-in"))).toBe(true);
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자") && e.includes("undeclaredName"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier") && e.includes("undeclaredName"))).toBe(true);
   });
 
   it("tags the array for-in element/index as 'series' (same ta.* length hard-error as range-for counters, C161 — C548 전환으로 프로브를 sma→ema로 교체)", () => {
@@ -9913,7 +9913,7 @@ describe("Analyzer", () => {
 
   it("rejects for-in over an untyped UDF parameter when the UDF has at least one call site (no value-flow tracking, unchanged behavior)", () => {
     const prog = analyzeSource(["f(arr) =>", "    for x in arr", "        y = x", "f(1.0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("for-in") && e.includes("정적으로 판별할 수 없음"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("for-in") && e.includes("cannot be statically determined"))).toBe(true);
   });
 
   it("resolves for-in over an untyped UDF parameter as array when the UDF has zero call sites anywhere in the script (C678 dead-code placeholder — TV still compiles unreachable UDF bodies, value never observed so 'array' is a safe default)", () => {
@@ -9938,8 +9938,8 @@ describe("Analyzer", () => {
         "g(1.0)",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("for-in") && e.includes("정적으로 판별할 수 없음"))).toBe(true);
-    expect(prog.errors.filter((e) => e.includes("for-in") && e.includes("정적으로 판별할 수 없음"))).toHaveLength(1);
+    expect(prog.errors.some((e) => e.includes("for-in") && e.includes("cannot be statically determined"))).toBe(true);
+    expect(prog.errors.filter((e) => e.includes("for-in") && e.includes("cannot be statically determined"))).toHaveLength(1);
   });
 
   it("propagates the array<UDT> element type from a typed UDF param so the loop var supports UDT field access", () => {
@@ -10024,7 +10024,7 @@ describe("Analyzer", () => {
         "z2 = g(m)",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("for-in") && e.includes("정적으로 판별할 수 없음"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("for-in") && e.includes("cannot be statically determined"))).toBe(true);
     expect(prog.funcs.get("g")?.paramContainerKinds.has("v")).toBe(false);
   });
 
@@ -10290,7 +10290,7 @@ describe("Analyzer", () => {
 
   it("errors when a local declared only inside a case body is referenced after the switch (block scope leak)", () => {
     const prog = analyzeSource(["switch close", "    1 =>", "        y = 1.0", "z = y"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자") && e.includes("y"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier") && e.includes("y"))).toBe(true);
   });
 
   it("allows ':=' inside a case body to reassign an outer '=' local or var slot", () => {
@@ -10320,7 +10320,7 @@ describe("Analyzer", () => {
 
   it("still rejects a ta.* call on the and-rhs of a subject-less case value (genuinely lazy, same rule as elif/while)", () => {
     const prog = analyzeSource(["switch", "    close > open and ta.sma(close, 3) > 0 =>", "        y = 1.0"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("조건부 블록") && e.includes("lazy"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("conditional block") && e.includes("lazy"))).toBe(true);
   });
 
   it("allows a ta.* call in a subject-based case's compared value (direct, first value of the list, C260)", () => {
@@ -10345,12 +10345,12 @@ describe("Analyzer", () => {
     // 정말로 단락 평가한다 — and/or의 rt.pineAnd/pineOr 함수 호출 우회와 달리 여기는 값 자체가
     // 목적이라 우회할 수 없음) — analyzeSwitchStmt가 두 번째 값부터 kind:"lazy-expr"로 다룬다.
     const prog = analyzeSource(["switch", "    close > open, ta.sma(close, 3) > 0 =>", "        y = 1.0"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("조건부 블록") && e.includes("lazy"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("conditional block") && e.includes("lazy"))).toBe(true);
   });
 
   it("still rejects a ta.* call in the SECOND value of a subject-based comma-separated case value list", () => {
     const prog = analyzeSource(["switch close", "    1, ta.sma(close, 3) =>", "        y = 1.0"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("조건부 블록") && e.includes("lazy"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("conditional block") && e.includes("lazy"))).toBe(true);
   });
 
   it("accepts a ta.* call inside a case body and registers its slot (C65 per-call state advance)", () => {
@@ -10388,7 +10388,7 @@ describe("Analyzer", () => {
 
   it("errors when more than one default (bare '=>') case is present", () => {
     const prog = analyzeSource(["switch close", "    => 1", "    => 0"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("default") && e.includes("최대 1개"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("default") && e.includes("at most one"))).toBe(true);
   });
 
   it("accepts 'break'/'continue' inside a case body nested inside a while-body (inLoop inherited)", () => {
@@ -10403,7 +10403,7 @@ describe("Analyzer", () => {
   it("errors on 'break'/'continue' used inside a case body outside any loop", () => {
     for (const kw of ["break", "continue"]) {
       const prog = analyzeSource(["switch close", "    1 =>", `        ${kw}`].join("\n"));
-      expect(prog.errors.some((e) => e.includes("반복문"))).toBe(true);
+      expect(prog.errors.some((e) => e.includes("inside a loop (while/for)"))).toBe(true);
     }
   });
 
@@ -10419,7 +10419,7 @@ describe("Analyzer", () => {
   it("errors on a call with too few or too many arguments", () => {
     for (const src of ["f(x, y) => x + y\nz = f(close)", "f(x) => x + 1\nz = f(close, open)"]) {
       const prog = analyzeSource(src);
-      expect(prog.errors.some((e) => e.includes("인자 개수 불일치"))).toBe(true);
+      expect(prog.errors.some((e) => e.includes("argument count mismatch"))).toBe(true);
     }
   });
 
@@ -10439,7 +10439,7 @@ describe("Analyzer", () => {
 
   it("requires positional args up to the last required parameter even when an earlier parameter has a default (C565)", () => {
     const prog = analyzeSource("f(a, b = 1.0, c) => a + b + c\nz = f(close)");
-    expect(prog.errors.some((e) => e.includes("인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("argument count mismatch"))).toBe(true);
   });
 
   it("accepts a middle default parameter left at its default via keyword, with the trailing required parameter supplied positionally is unsupported — required param must still be covered by keyword (C565)", () => {
@@ -10449,17 +10449,17 @@ describe("Analyzer", () => {
 
   it("errors when the trailing required parameter after a middle default is covered by neither position nor keyword (C565, kwarg branch)", () => {
     const prog = analyzeSource("f(a, b = 1.0, c) => a + b + c\nz = f(close, b = 2.0)");
-    expect(prog.errors.some((e) => e.includes("필수 매개변수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("required parameter"))).toBe(true);
   });
 
   it("errors when a UDF is declared nested inside an if-body (top-level only)", () => {
     const prog = analyzeSource(["if close > open", "    f(x) => x + 1"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("top-level에서만 가능"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("only allowed at top level"))).toBe(true);
   });
 
   it("errors when calling an undeclared function name (not yet a known UDF)", () => {
     const prog = analyzeSource("y = notDeclared(close)");
-    expect(prog.errors.some((e) => e.includes("알 수 없는 함수 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown function call"))).toBe(true);
   });
 
   it("gives a var/varip declared inside a UDF its own function-relative slot, separate from top-level var slots", () => {
@@ -10492,7 +10492,7 @@ describe("Analyzer", () => {
 
   it("isolates UDF body scope: a name only declared inside the UDF is not visible outside it", () => {
     const prog = analyzeSource(["f(x) =>", "    y = x + 1", "    y", "z = y"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자") && e.includes("y"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier") && e.includes("y"))).toBe(true);
   });
 
   it("allows a UDF body to read a top-level '=' local visible at its declaration point (pine2py scope semantics)", () => {
@@ -10546,7 +10546,7 @@ describe("Analyzer", () => {
 
   it("rejects direct self-recursion with a dedicated cycle error (TV v5 does not support recursive UDFs)", () => {
     const prog = analyzeSource(["f(x) =>", "    x <= 0 ? 0 : f(x - 1)", "y = f(5.0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("재귀 사이클") && e.includes("'f'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("recursive cycle") && e.includes("'f'"))).toBe(true);
   });
 
   it("rejects direct self-recursion in a method body the same way as a plain UDF", () => {
@@ -10560,23 +10560,23 @@ describe("Analyzer", () => {
         "pt.depth(3.0)",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("재귀 사이클"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("recursive cycle"))).toBe(true);
   });
 
   it("rejects 2-cycle mutual recursion (f calls g, g calls f) and flags both functions", () => {
     const prog = analyzeSource(["f(x) =>", "    g(x)", "g(x) =>", "    f(x)", "y = f(close)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("재귀 사이클") && e.includes("'f'"))).toBe(true);
-    expect(prog.errors.some((e) => e.includes("재귀 사이클") && e.includes("'g'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("recursive cycle") && e.includes("'f'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("recursive cycle") && e.includes("'g'"))).toBe(true);
   });
 
   it("rejects a 3-function indirect recursion cycle (f calls g calls h calls f)", () => {
     const prog = analyzeSource(["f(x) =>", "    g(x)", "g(x) =>", "    h(x)", "h(x) =>", "    f(x)", "y = f(close)"].join("\n"));
-    expect(prog.errors.filter((e) => e.includes("재귀 사이클")).length).toBe(3);
+    expect(prog.errors.filter((e) => e.includes("recursive cycle")).length).toBe(3);
   });
 
   it("does not flag an unrelated sibling function as recursive when only some functions form a cycle", () => {
     const prog = analyzeSource(["f(x) =>", "    g(x)", "g(x) =>", "    f(x)", "safe(x) => x + 1", "y = f(close) + safe(1.0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("재귀 사이클") && e.includes("'safe'"))).toBe(false);
+    expect(prog.errors.some((e) => e.includes("recursive cycle") && e.includes("'safe'"))).toBe(false);
   });
 
   // ── UDF 튜플 반환([a, b] = f()) ─────────────────────────────
@@ -10625,7 +10625,7 @@ describe("Analyzer", () => {
     const prog = analyzeSource(
       ["f(x) =>", "    if x > 0", "        [x, x * 2]", "    else", "        [0.0, 0.0, 0.0]", "y = f(close)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("튜플 리터럴은 함수의 마지막 문장"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple literal supported only as the function's last statement"))).toBe(true);
   });
 
   it("accepts a single-element tuple return via an if/else tail since C706 (both branches end in a matching 1-element tuple literal)", () => {
@@ -10682,14 +10682,14 @@ describe("Analyzer", () => {
         "y = f(close)",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("튜플 리터럴은 함수의 마지막 문장"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple literal supported only as the function's last statement"))).toBe(true);
   });
 
   it("analyzes the individual tuple elements inside if-branches (an undeclared identifier still errors)", () => {
     const prog = analyzeSource(
       ["f(x) =>", "    if x > 0", "        [x, undeclaredName]", "    else", "        [0.0, 0.0]", "y = f(close)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자") && e.includes("undeclaredName"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier") && e.includes("undeclaredName"))).toBe(true);
   });
 
   it("infers tupleArity the same way for a method whose last statement is an if/else tuple return", () => {
@@ -10747,7 +10747,7 @@ describe("Analyzer", () => {
     const prog = analyzeSource(
       ["f(x) =>", "    switch", "        x > 0 => [x, 1.0]", "        => [0.0, 0.0, 0.0]", "y = f(close)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("튜플 리터럴은 함수의 마지막 문장"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple literal supported only as the function's last statement"))).toBe(true);
   });
 
   it("accepts a tuple-returning switch with no default branch (C519 — codegen synthesizes an [NaN,...] fallback, no undefined-destructure crash)", () => {
@@ -10780,7 +10780,7 @@ describe("Analyzer", () => {
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자") && e.includes("undeclaredName"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier") && e.includes("undeclaredName"))).toBe(true);
   });
 
   it("infers tupleArity the same way for a method whose last statement is a switch tuple return", () => {
@@ -10836,41 +10836,41 @@ describe("Analyzer", () => {
 
   it("still analyzes discarded tuple elements as value positions (undeclared identifier errors, C610)", () => {
     const prog = analyzeSource(["if close > open", "    [undeclaredName, na]", "x = close"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자") && e.includes("undeclaredName"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier") && e.includes("undeclaredName"))).toBe(true);
   });
 
   it("still rejects a tuple literal as an Assignment RHS (C610 — TV-invalid value position)", () => {
     const prog = analyzeSource(["x = [1, 2]"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("튜플 리터럴은 함수의 마지막 문장"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple literal supported only as the function's last statement"))).toBe(true);
   });
 
   it("still rejects a tuple literal as a ':=' reassignment RHS (C610, wild 995e47b2b9a9.pine)", () => {
     const prog = analyzeSource(["var x = 0.0", "x := [1, 2]"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("튜플 리터럴은 함수의 마지막 문장"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple literal supported only as the function's last statement"))).toBe(true);
   });
 
   it("still rejects trailing tuple branches in a control-flow-expression value position (C610 pre-reject guard)", () => {
     const prog = analyzeSource(["x = if close > open", "    [1, 2]", "else", "    [3, 4]"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("튜플 리터럴은 함수의 마지막 문장"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple literal supported only as the function's last statement"))).toBe(true);
   });
 
   it("still rejects a UDF whose last if mixes a tuple branch with a scalar branch (C610 implicit-return guard)", () => {
     const prog = analyzeSource(
       ["h(x) =>", "    if x > 0", "        [1.0, 2.0]", "    else", "        3.0", "y = h(close)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("튜플 리터럴은 함수의 마지막 문장"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple literal supported only as the function's last statement"))).toBe(true);
   });
 
   it("still rejects a trailing tuple inside a UDF-final while loop body (C610 — loops have no tuple-return form)", () => {
     const prog = analyzeSource(
       ["h(x) =>", "    while x > 0", "        [1.0, 2.0]", "y = h(close)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("튜플 리터럴은 함수의 마지막 문장"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple literal supported only as the function's last statement"))).toBe(true);
   });
 
   it("still rejects a nested tuple literal as a discarded-tuple element (C610 — elements stay value positions)", () => {
     const prog = analyzeSource(["if close > open", "    [[1, 2], 3]", "x = close"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("튜플 리터럴은 함수의 마지막 문장"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple literal supported only as the function's last statement"))).toBe(true);
   });
 
   // ── UDT method(점 호출) 콜 결과의 튜플 디스트럭처(`[a,b] = w.m()`, C463) ──────────────
@@ -10897,14 +10897,14 @@ describe("Analyzer", () => {
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("arity mismatch"))).toBe(true);
   });
 
   it("still errors with the generic message when a method-call destructure targets a method that does not return a tuple", () => {
     const prog = analyzeSource(
       ["type Box", "    float v", "method f(Box this) =>", "    this.v", "var Box b = Box.new(1.0)", "[a, c] = b.f()"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링의 값은 튜플을 반환하는 UDF 호출이어야 함"))).toBe(
+    expect(prog.errors.some((e) => e.includes("tuple destructure value must be a UDF call returning a tuple"))).toBe(
       true,
     );
   });
@@ -10959,7 +10959,7 @@ describe("Analyzer", () => {
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("arity mismatch"))).toBe(true);
   });
 
   it("still errors with the generic message for an ambiguous scalar-receiver method (same name declared on two scalar types, no value-flow type tracking)", () => {
@@ -10973,7 +10973,7 @@ describe("Analyzer", () => {
         "[a, b] = x.m()",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("중복 선언"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("declared for multiple types"))).toBe(true);
   });
 
   it("declares each tuple destructure target as a new local, visible after the statement", () => {
@@ -11003,7 +11003,7 @@ describe("Analyzer", () => {
     const prog = analyzeSource(
       ["type Box", "    float v", "method f(Box this) =>", "    [this.v, this.v * 2]", "var Box b = Box.new(1.0)", "[a, c, d] = f(b)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("arity mismatch"))).toBe(true);
   });
 
   it("infers arity from a bare (non-dot) scalar-receiver extension method call (`[a,b] = m(x)`)", () => {
@@ -11017,31 +11017,31 @@ describe("Analyzer", () => {
     const prog = analyzeSource(
       ["method m(float f) =>", "    [f, f]", "method m(int i) =>", "    [i, i]", "var float x = 1.0", "[a, b] = m(x)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("중복 선언"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("declared for multiple types"))).toBe(true);
   });
 
   it("still errors with the generic message when a bare method call targets a method that does not return a tuple", () => {
     const prog = analyzeSource(
       ["type Box", "    float v", "method f(Box this) =>", "    this.v", "var Box b = Box.new(1.0)", "[a, c] = f(b)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링의 값은 튜플을 반환하는 UDF 호출이어야 함"))).toBe(
+    expect(prog.errors.some((e) => e.includes("tuple destructure value must be a UDF call returning a tuple"))).toBe(
       true,
     );
   });
 
   it("errors when the destructure target count does not match the UDF's tuple arity", () => {
     const prog = analyzeSource(["f(x) =>", "    [x, x * 2]", "[a, b, c] = f(close)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("arity mismatch"))).toBe(true);
   });
 
   it("errors when a tuple destructure target reuses an existing var name", () => {
     const prog = analyzeSource(["var float a = 0.0", "f(x) =>", "    [x, x * 2]", "[a, b] = f(close)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("재사용할 수 없음"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("cannot be reused"))).toBe(true);
   });
 
   it("errors when a tuple destructure target name repeats within the same statement", () => {
     const prog = analyzeSource(["f(x) =>", "    [x, x * 2]", "[a, a] = f(close)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("중복됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate name"))).toBe(true);
   });
 
   // ── '_' 플레이스홀더 반복(C270, corpus 실측 `[_, signalLine, _] = ta.macd(...)`) ──────
@@ -11059,7 +11059,7 @@ describe("Analyzer", () => {
 
   it("still errors when a non-'_' name repeats even alongside a repeated '_'", () => {
     const prog = analyzeSource(["f(x) =>", "    [x, x * 2, x * 3]", "[_, a, a] = f(close)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("중복됨") && e.includes("'a'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate name") && e.includes("'a'"))).toBe(true);
   });
 
   it("allows '_' to repeat more than twice in a single tuple destructure", () => {
@@ -11069,7 +11069,7 @@ describe("Analyzer", () => {
 
   it("errors when destructuring the result of a UDF that does not return a tuple", () => {
     const prog = analyzeSource(["f(x) => x + 1", "[a, b] = f(close)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("튜플을 반환하는 UDF 호출이어야 함"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("must be a UDF call returning a tuple"))).toBe(true);
   });
 
   it("accepts a single-element tuple literal return since C706 (no arity floor — the old '2개 이상' gate applied to the UDF body regardless of how the call site consumed it, wild `[average]` idiom)", () => {
@@ -11082,7 +11082,7 @@ describe("Analyzer", () => {
 
   it("rejects a bare TupleExpr outside of a UDF's trailing return position", () => {
     const prog = analyzeSource("x = [1, 2]");
-    expect(prog.errors.some((e) => e.includes("함수의 마지막 문장"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("as the function's last statement"))).toBe(true);
   });
 
   // ── 히스토리 참조(series[n]) ──────────────────────────────
@@ -11240,7 +11240,7 @@ describe("Analyzer", () => {
   it("does not extend the array[i] sugar to map values — map[n] still rejected as history indexing (C501 scope boundary)", () => {
     const prog = analyzeSource(["m = map.new<string, float>()", "n = 1", "y = m[n]"].join("\n"));
     expect(prog.arrayIndexReads.size).toBe(0);
-    expect(prog.errors.some((e) => e.includes("array/map 값을 담은"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("holding array/map value"))).toBe(true);
   });
 
   // CallExpr obj는 의도적으로 array-index sugar 범위 밖(analyzeIndexAccess C501 분기 주석 참조) —
@@ -11264,7 +11264,7 @@ describe("Analyzer", () => {
     const prog = analyzeSource(
       ['strategy("s")', "n = 1", "y = strategy.position_size[n]"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("strategy.* 속성에는 0 이상의 정수 리터럴 오프셋만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("on strategy.* properties supports only integer literal offsets >= 0"))).toBe(true);
   });
 
   // barstate.*/session.* 히스토리(C521, wild "히스토리 인덱스는 식별자에만 지원" 서브그룹 10건) —
@@ -11287,11 +11287,11 @@ describe("Analyzer", () => {
   it("keeps barstate.*/session.* history literal-only (dynamic offset rejected, C521 conservative gate)", () => {
     const progBar = analyzeSource(["n = 1", "y = barstate.isconfirmed[n]"].join("\n"));
     expect(
-      progBar.errors.some((e) => e.includes("barstate.*/session.* 값에는 0 이상의 정수 리터럴 오프셋만 지원")),
+      progBar.errors.some((e) => e.includes("on barstate.*/session.* values supports only integer literal offsets >= 0")),
     ).toBe(true);
     const progSess = analyzeSource(["n = 1", "y = session.ispremarket[n]"].join("\n"));
     expect(
-      progSess.errors.some((e) => e.includes("barstate.*/session.* 값에는 0 이상의 정수 리터럴 오프셋만 지원")),
+      progSess.errors.some((e) => e.includes("on barstate.*/session.* values supports only integer literal offsets >= 0")),
     ).toBe(true);
   });
 
@@ -11329,12 +11329,12 @@ describe("Analyzer", () => {
 
   it("still emits the exact literal-offset error text for a negative literal on a bar series (regression)", () => {
     const prog = analyzeSource("x = close[-1]");
-    expect(prog.errors).toEqual(["히스토리 인덱스 '[]'는 0 이상의 정수 리터럴만 지원(동적 오프셋 미구현): (L1:10)"]);
+    expect(prog.errors).toEqual(["history index '[]' supports only integer literals >= 0 (dynamic offset not implemented): (L1:10)"]);
   });
 
   it("errors when the history index is a negative literal", () => {
     const prog = analyzeSource("x = close[-1]");
-    expect(prog.errors.some((e) => e.includes("0 이상의 정수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("integer literals >= 0"))).toBe(true);
   });
 
   // C363: top-level(조건부 아님) '=' 로컬 히스토리(x[n], n>=1)가 신규 지원됐다 -- 이 테스트는
@@ -11381,12 +11381,12 @@ describe("Analyzer", () => {
 
   it("rejects history indexing on a nested '=' local read from outside its declaring block (JS let visibility)", () => {
     const prog = analyzeSource(["if true", "    x = close", "y = x[1]"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("선언된 중첩 블록 밖"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("outside the nested block where this name is declared"))).toBe(true);
   });
 
   it("rejects history indexing on a nested '=' local read from a sibling block", () => {
     const prog = analyzeSource(["if true", "    x = close", "if false", "    y = x[1]"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("선언된 중첩 블록 밖"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("outside the nested block where this name is declared"))).toBe(true);
   });
 
   // C714 계약 갱신: 이 자리는 "depth-0/중첩 블록 이름 충돌은 항상 거부"를 단언했으나, 슬롯을 이름이
@@ -11449,7 +11449,7 @@ describe("Analyzer", () => {
   // "선언된 중첩 블록 밖" 거부 그대로여야 한다 — 위 테스트가 이 가드를 과도하게 넓히지 않았는지 확인.
   it("still rejects history indexing at depth-0 when the name is only declared inside a nested block (no depth-0 declaration)", () => {
     const prog = analyzeSource(["if true", "    x = close", "y = x[1]"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("선언된 중첩 블록 밖"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("outside the nested block where this name is declared"))).toBe(true);
   });
 
   // 여러 형제 블록이 같은 이름을 선언해도, 그 이름을 전혀 선언하지 않은 또 다른 형제 블록에서의
@@ -11461,7 +11461,7 @@ describe("Analyzer", () => {
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("여러 번 '='로 선언/섀도잉돼 모호함"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("declared/shadowed with '=' multiple times"))).toBe(true);
   });
 
   // 읽기 지점이 선언과 같은 블록이 아니라 그 블록 안에 한 번 더 중첩된 자손 블록이어도(조상 스코프
@@ -11503,7 +11503,7 @@ describe("Analyzer", () => {
 
   it("rejects history indexing on a string-typed '=' local declared inside a top-level nested block", () => {
     const prog = analyzeSource(['if true', '    s = "abc"', "    y = s[1]"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("string 값을 담은 중첩 블록 '=' 로컬"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("nested-block '=' local holding string value"))).toBe(true);
   });
 
   // 배치25 (1) 계약 갱신: 이 자리는 "drawing 핸들 값을 담은 중첩 블록 '=' 로컬 거부"를 단언했으나,
@@ -11587,12 +11587,12 @@ describe("Analyzer", () => {
 
   it("rejects history indexing on a top-level '=' local holding a map", () => {
     const prog = analyzeSource(["x = map.new<string, float>()", "y = x[1]"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("array/map 값을 담은 '=' 로컬"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'=' local holding array/map value"))).toBe(true);
   });
 
   it("rejects history indexing on a top-level '=' local holding a matrix", () => {
     const prog = analyzeSource(["x = matrix.new<float>(1, 1)", "y = x[1]"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("matrix 값을 담은 '=' 로컬"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'=' local holding matrix value"))).toBe(true);
   });
 
   // C637 계약 갱신: 이 자리는 "UDT 값을 담은 '=' 로컬 거부"를 단언했으나, C637이 drawing 핸들과
@@ -11667,7 +11667,7 @@ describe("Analyzer", () => {
 
   it("rejects history indexing on a literal string-concatenation BinOp (C522)", () => {
     const prog = analyzeSource('x = ("a" + "b")[1]');
-    expect(prog.errors.some((e) => e.includes("문자열 결합"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("string concatenation"))).toBe(true);
   });
 
   // C720(hist-index(all) 재분류, next_hint(C719)): 위 "UDF 본문은 범위 밖" 하드 에러는 CallExpr의
@@ -11715,7 +11715,7 @@ describe("Analyzer", () => {
 
   it("still errors when history indexing is applied to an unsupported non-identifier expression kind (TernaryOp, C522 boundary)", () => {
     const prog = analyzeSource("x = (close > open ? close : open)[1]");
-    expect(prog.errors.some((e) => e.includes("식별자"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("identifier"))).toBe(true);
   });
 
   it("allows history indexing inside a conditional block (read-only, no incremental-state risk)", () => {
@@ -11775,7 +11775,7 @@ describe("Analyzer", () => {
       ["f() =>", "    if bar_index > 0", "        w = close", "        w", "    if bar_index > 1", "        z = w[1]", "        z", "    0.0", "z2 = f()"].join("\n"),
     );
     expect(prog.errors.length).toBeGreaterThan(0);
-    expect(prog.errors.some((e) => e.includes("재선언/섀도잉"))).toBe(false);
+    expect(prog.errors.some((e) => e.includes("redeclared/shadowed"))).toBe(false);
   });
 
   // C714 UDF 확장(C716)부터 형제 블록마다 독립적으로 같은 이름을 선언하는 이 패턴(alpha/a_trendline류,
@@ -11793,12 +11793,12 @@ describe("Analyzer", () => {
 
   it("rejects history on a parameter shadowed by a nested '=' local (not just body-root, C388)", () => {
     const prog = analyzeSource(["f(w) =>", "    if bar_index > 0", "        w = close", "        w[1]", "    0.0", "z4 = f(open)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("재선언/섀도잉"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("redeclared/shadowed"))).toBe(true);
   });
 
   it("rejects history indexing on a string-typed UDF parameter (Float64Array slot guard)", () => {
     const prog = analyzeSource(["f(string s) =>", "    s[1]", 'z = f("a")'].join("\n"));
-    expect(prog.errors.some((e) => e.includes("string 값을 담은 UDF 매개변수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("UDF parameter holding string value"))).toBe(true);
   });
 
   // C501 계약 갱신: array<T> 매개변수의 `[]`도 히스토리 인덱스가 아니라 array 원소 접근(위 top-level
@@ -11880,14 +11880,14 @@ describe("Analyzer", () => {
 
   it("still rejects history indexing on a drawing-handle-typed UDF parameter (C541 boundary — wild 실측 0건)", () => {
     const prog = analyzeSource(["f(line ln) =>", "    ln[1]", "z = f(line.new(bar_index, high, bar_index, low))"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("drawing 핸들 값을 담은 UDF 매개변수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("UDF parameter holding drawing handle value"))).toBe(true);
   });
 
   it("rejects history on a UDF drawing-handle name '=' shadowed in a nested block (ref-hist shadow conflict, C541)", () => {
     const prog = analyzeSource(
       ["g() =>", "    lb = label.new(bar_index, close)", "    q = na(lb[1])", "    if close > open", "        lb = label.new(bar_index, open)", "    q", "z = g()"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("재선언/섀도잉"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("redeclared/shadowed"))).toBe(true);
   });
 
   it("keeps numeric and drawing-handle history in the same UDF on separate counters/bases (C541)", () => {
@@ -11925,12 +11925,12 @@ describe("Analyzer", () => {
 
   it("rejects history on a name that is '=' shadowed in a nested block of the same function (record ambiguity)", () => {
     const prog = analyzeSource(["f() =>", "    y = 0.0", "    q = y[1]", "    if close > open", "        y = 9.0", "    q", "z = f()"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("재선언/섀도잉"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("redeclared/shadowed"))).toBe(true);
   });
 
   it("rejects history on a parameter redeclared as a body-root '=' local (entry record would go stale)", () => {
     const prog = analyzeSource(["f(x) =>", "    p = x[1]", "    x = x + 1", "    p", "z = f(close)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("재선언/섀도잉"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("redeclared/shadowed"))).toBe(true);
   });
 
   it("resolves a UDF '=' local shadowing a same-named top-level '=' local to the FUNC slot, not the global one (C363 gap fix)", () => {
@@ -12104,7 +12104,7 @@ describe("Analyzer", () => {
       ["f(x) =>", "    [x * 2, x + 1]", "if close > open", "    [a, b] = f(close)", "q2 = a[1]", "plot(q2)"].join("\n"),
     );
     expect(
-      prog.errors.some((e) => e.includes("이 이름이 선언된 중첩 블록 밖에서는 지원하지 않음")),
+      prog.errors.some((e) => e.includes("not supported outside the nested block where this name is declared")),
     ).toBe(true);
   });
 
@@ -12112,7 +12112,7 @@ describe("Analyzer", () => {
     const prog = analyzeSource(
       ["f(x) =>", '    [x * 2, "tag"]', "if close > open", "    [a, s] = f(close)", "    q = s[1]", "plot(q)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("string 값을 받은 중첩 블록 튜플 디스트럭처 로컬"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("nested-block tuple destructure local receiving string value"))).toBe(true);
   });
 
   it("accepts history on a drawing-handle element of a nested-block tuple destructure via the ref channel (C748)", () => {
@@ -12190,7 +12190,7 @@ describe("Analyzer", () => {
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("'=' Assignment 로컬에만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("supported only on '=' Assignment locals"))).toBe(true);
   });
 
   // C749: 위 drawing 핸들 형제(C719)와 동일 근거로 string도 func-relative localRefHistSlots로 확장.
@@ -12225,21 +12225,21 @@ describe("Analyzer", () => {
 
   it("rejects history on a UDF-body tuple name shadowed by a same-name parameter", () => {
     const prog = analyzeSource(["pair(x) =>", "    [x * 2, x + 1]", "f(a) =>", "    [a, b] = pair(close)", "    a[1] + b"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("재선언/섀도잉됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("redeclared/shadowed"))).toBe(true);
   });
 
   it("rejects history on a UDF-body name declared twice, once by tuple then once by '=' (order-independent shadow guard)", () => {
     const prog = analyzeSource(
       ["pair(x) =>", "    [x * 2, x + 1]", "f() =>", "    [a, b] = pair(close)", "    a = close", "    a[1] + b"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("재선언/섀도잉됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("redeclared/shadowed"))).toBe(true);
   });
 
   it("does not register the '_' placeholder for a UDF-body tuple history (reading '_[1]' still rejected)", () => {
     const prog = analyzeSource(["pair(x) =>", "    [x * 2, x + 1]", "f() =>", "    [_, a] = pair(close)", "    _[1] + a"].join("\n"));
     const func = prog.funcs.get("f")!;
     expect(func.localTupleElemKinds.has("_")).toBe(false);
-    expect(prog.errors.some((e) => e.includes("'=' Assignment 로컬에만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("supported only on '=' Assignment locals"))).toBe(true);
   });
 
   // C501의 "array 값에는 []가 히스토리가 아니라 원소 접근"이라는 재해석(containerKindHints)이
@@ -12324,7 +12324,7 @@ describe("Analyzer", () => {
     // 안 타 for로 교체 — if의 "분기가 튜플 리터럴로 안 끝남" 케이스는 이제 "Analyzer if-tuple
     // destructure" describe의 "falls back to the generic tuple-destructure error" 테스트가 대신 검증).
     const prog = analyzeSource(["[a, b] = for i = 1 to 3", "    1.0"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("제어문-식"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("control-flow expression"))).toBe(true);
   });
 
   // ── 제어문-식이 BinOp의 즉시 피연산자인 형태(C769, wild 실측: 복합 대입 데슈가링
@@ -12360,7 +12360,7 @@ describe("Analyzer", () => {
     const prog = analyzeSource(
       ["x = true and", "// comment", "if close > open", "    true", "else", "    false"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("제어문-식"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("control-flow expression"))).toBe(true);
   });
 
   it("accepts ta.* inside the branches of a BinOp-operand switch-expr (same cond-body class as the direct-value form)", () => {
@@ -12535,7 +12535,7 @@ describe("Analyzer", () => {
   it("still rejects a negative literal offset on a time variable", () => {
     const prog = analyzeSource("x = time[-1]");
     expect(prog.errors.length).toBeGreaterThan(0);
-    expect(prog.errors[0]).toContain("0 이상의 정수 리터럴");
+    expect(prog.errors[0]).toContain("integer literals >= 0");
   });
 
   it("accepts time-variable history inside a conditional block (stateless derivation — no positional restriction)", () => {
@@ -12634,7 +12634,7 @@ describe("Analyzer", () => {
     for (const name of TIME_FUNC_NAMES_FOR_TEST) {
       const prog = analyzeSource(`x = ${name}()`);
       expect(prog.errors.length).toBeGreaterThan(0);
-      expect(prog.errors[0]).toContain("time 인자가 필요");
+      expect(prog.errors[0]).toContain("requires a time argument");
     }
   });
 
@@ -12642,7 +12642,7 @@ describe("Analyzer", () => {
     for (const name of TIME_FUNC_NAMES_FOR_TEST) {
       const prog = analyzeSource(`x = ${name}(time, "UTC", 1)`);
       expect(prog.errors.length).toBeGreaterThan(0);
-      expect(prog.errors[0]).toContain("인자 개수 불일치");
+      expect(prog.errors[0]).toContain("argument count mismatch");
     }
   });
 
@@ -12673,18 +12673,18 @@ describe("Analyzer", () => {
   it("rejects an unknown keyword argument name", () => {
     const prog = analyzeSource('x = hour(time = time, bogus = "UTC")');
     expect(prog.errors.length).toBeGreaterThan(0);
-    expect(prog.errors[0]).toContain("time='/'timezone='만 지원");
+    expect(prog.errors[0]).toContain("keyword arguments 'time='/'timezone='");
   });
 
   it("rejects time given both positionally and by keyword (duplicate)", () => {
     const prog = analyzeSource('x = hour(time, time = time_close)');
     expect(prog.errors.length).toBeGreaterThan(0);
-    expect(prog.errors[0]).toContain("위치 인자와 키워드 인자로 중복 지정");
+    expect(prog.errors[0]).toContain("specified both positionally and as a keyword");
   });
 
   it("accepts time given both positionally and by keyword when syntactically identical (C654)", () => {
     const prog = analyzeSource('x = hour(time, time = time)');
-    expect(prog.errors.some((e) => e.includes("위치 인자와 키워드 인자로 중복 지정"))).toBe(false);
+    expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(false);
   });
 
   it("still analyzes the argument expression for downstream errors (e.g. an unknown identifier inside it)", () => {
@@ -12866,17 +12866,17 @@ describe("Analyzer", () => {
 
   it("kind-checks method sugar on a UDF-parameter receiver: a box parameter cannot call a label-only method (still 'unsupported')", () => {
     const prog = analyzeSource(["f(box b) =>", "    b.get_text()"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("does not route method-call sugar for a UDF parameter with a non-drawing typeHint (no regression)", () => {
     const prog = analyzeSource(["f(float acc) =>", "    acc.set_extend(extend.none)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("does not route method-call sugar for an untyped UDF parameter (no typeHint means still 'unsupported', matches C124 limitation)", () => {
     const prog = analyzeSource(["f(b) =>", "    b.set_extend(extend.none)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   // ── C496: 콜사이트 인자가 top-level UDT var의 drawing 필드(DotAccess, `f(c.line_mid1)`류)일 때
@@ -12971,13 +12971,13 @@ describe("Analyzer", () => {
         "z2 = g(c.boxField)",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
     expect(prog.funcs.get("g")?.paramDrawingKinds.has("h")).toBe(false);
   });
 
   it("leaves an untyped parameter with no matching top-level DotAccess call-site argument rejected (no regression)", () => {
     const prog = analyzeSource(["f(line_m) =>", "    line_m.get_y1()", "y = f(1.0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   // ── C505: paramArrayElemDrawingKinds — resolveArrayElemUdtType이 이미 갖춘 paramArrayElemUdtTypes
@@ -13022,7 +13022,7 @@ describe("Analyzer", () => {
         "flush(line1_ar)",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
     expect(prog.funcs.get("flush")?.paramArrayElemDrawingKinds.has("source")).toBe(false);
   });
 
@@ -13258,12 +13258,12 @@ describe("Analyzer", () => {
 
   it("errors when ta.kc is called in expression position (single assignment)", () => {
     const prog = analyzeSource("x = ta.kc(close, 20, 1.5, true)");
-    expect(prog.errors.some((e) => e.includes("'ta.kc'") && e.includes("튜플 디스트럭처링"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.kc'") && e.includes("tuple destructuring"))).toBe(true);
   });
 
   it("errors when tuple destructuring target count mismatches ta.kc's 3 returns", () => {
     const prog = analyzeSource("[b, u] = ta.kc(close, 20, 1.5, true)");
-    expect(prog.errors.some((e) => e.includes("개수 불일치") && e.includes("3개 반환"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("arity mismatch") && e.includes("returns 3"))).toBe(true);
   });
 
   it("accepts ta.kc 3-arg call (useTrueRange omitted, TV/pine2py default true — TA_REGISTRY.kc minArgCount:3, C227)", () => {
@@ -13274,7 +13274,7 @@ describe("Analyzer", () => {
 
   it("still errors on ta.kc call with 2 args (below minArgCount:3)", () => {
     const prog = analyzeSource("[b, u, l] = ta.kc(close, 20)");
-    expect(prog.errors.some((e) => e.includes("'ta.kc'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.kc'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.kc inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -13321,7 +13321,7 @@ describe("Analyzer", () => {
 
   it("still errors on ta.kcw call with 2 args (below minArgCount:3)", () => {
     const prog = analyzeSource("x = ta.kcw(close, 20)");
-    expect(prog.errors.some((e) => e.includes("'ta.kcw'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.kcw'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.kcw inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -13358,7 +13358,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.obv call with any arguments (Pine 문법상 인자 없음)", () => {
     const prog = analyzeSource("x = ta.obv(close)");
-    expect(prog.errors.some((e) => e.includes("'ta.obv'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.obv'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.obv inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -13386,7 +13386,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.accdist call with any arguments (Pine 문법상 인자 없음)", () => {
     const prog = analyzeSource("x = ta.accdist(close)");
-    expect(prog.errors.some((e) => e.includes("'ta.accdist'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.accdist'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.accdist inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -13418,7 +13418,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.ao call with any arguments (Pine 문법상 인자 없음 — wild ta.ao(close,5,34)류 3-인자 폼은 corpus 아티팩트, C544)", () => {
     const prog = analyzeSource("x = ta.ao(close, 5, 34)");
-    expect(prog.errors.some((e) => e.includes("'ta.ao'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.ao'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.ao inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -13449,7 +13449,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.pvt call with any arguments (Pine 문법상 인자 없음)", () => {
     const prog = analyzeSource("x = ta.pvt(close)");
-    expect(prog.errors.some((e) => e.includes("'ta.pvt'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.pvt'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.pvt inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -13477,7 +13477,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.wad call with any arguments (Pine 문법상 인자 없음)", () => {
     const prog = analyzeSource("x = ta.wad(high, low, close)");
-    expect(prog.errors.some((e) => e.includes("'ta.wad'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.wad'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.wad inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -13508,7 +13508,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.nvi call with any arguments (Pine 문법상 인자 없음)", () => {
     const prog = analyzeSource("x = ta.nvi(close)");
-    expect(prog.errors.some((e) => e.includes("'ta.nvi'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.nvi'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.nvi inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -13536,7 +13536,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.pvi call with any arguments (Pine 문법상 인자 없음)", () => {
     const prog = analyzeSource("x = ta.pvi(close, volume)");
-    expect(prog.errors.some((e) => e.includes("'ta.pvi'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.pvi'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.pvi inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -13567,7 +13567,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.wvad call with any arguments (Pine 문법상 인자 없음)", () => {
     const prog = analyzeSource("x = ta.wvad(open)");
-    expect(prog.errors.some((e) => e.includes("'ta.wvad'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.wvad'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.wvad inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -13595,7 +13595,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.iii call with any arguments (Pine 문법상 인자 없음)", () => {
     const prog = analyzeSource("x = ta.iii(high, low, close, volume)");
-    expect(prog.errors.some((e) => e.includes("'ta.iii'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.iii'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.iii inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -13632,7 +13632,7 @@ describe("Analyzer", () => {
   // 확장에 따른 전제 무효화, STEP 6.4 절차 적용).
   it("errors on ta.vwap call with wrong argument count (4개 초과 — TV 시그니처는 1~3개)", () => {
     const prog = analyzeSource("x = ta.vwap(close, close > open, 2.0, 0)");
-    expect(prog.errors.some((e) => e.includes("'ta.vwap'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.vwap'") && e.includes("argument count"))).toBe(true);
   });
 
   // ── C362: ta.vwap 다중 인자 오버로드 — 2-인자(anchor) 스칼라 / 3-인자 [vwap, upper, lower] 튜플.
@@ -13657,22 +13657,22 @@ describe("Analyzer", () => {
 
   it("errors on the 3-arg ta.vwap form in expression position (multi-return needs tuple destructure, C362)", () => {
     const prog = analyzeSource("x = ta.vwap(close, close > open, 2.0)");
-    expect(prog.errors.some((e) => e.includes("'ta.vwap'") && e.includes("3개 값을 반환"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.vwap'") && e.includes("returns 3 values"))).toBe(true);
   });
 
   it("errors on tuple destructure arity mismatch for the 3-arg ta.vwap form (2 targets vs 3 returns, C362)", () => {
     const prog = analyzeSource("[v, u] = ta.vwap(close, close > open, 2.0)");
-    expect(prog.errors.some((e) => e.includes("개수 불일치") && e.includes("3개 반환"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("arity mismatch") && e.includes("returns 3"))).toBe(true);
   });
 
   it("errors on tuple-destructuring the scalar 1-arg ta.vwap form (returnArityByArgCount excludes 1, C362)", () => {
     const prog = analyzeSource("[v, u, l] = ta.vwap(close)");
-    expect(prog.errors.some((e) => e.includes("튜플을 반환하는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("returning a tuple"))).toBe(true);
   });
 
   it("errors on tuple-destructuring the scalar 2-arg ta.vwap form (returnArityByArgCount excludes 2, C362)", () => {
     const prog = analyzeSource("[v, u, l] = ta.vwap(close, close > open)");
-    expect(prog.errors.some((e) => e.includes("튜플을 반환하는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("returning a tuple"))).toBe(true);
   });
 
   it("keeps taScratchSize at the max across mixed multi-return call sites (3-arg vwap + supertrend, C362)", () => {
@@ -13683,7 +13683,7 @@ describe("Analyzer", () => {
 
   it("rejects the 3-arg ta.vwap form inside a request.security expression (multi-return like ta.dmi, C362)", () => {
     const prog = analyzeSource('x = request.security("", "D", ta.vwap(close, true, 2.0))');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still accepts the 1-arg ta.vwap inside a request.security expression (scalar form unaffected, C362)", () => {
@@ -13693,7 +13693,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.vwap call with no arguments (source 필수 — bare 변수형 ta.vwap은 미지원)", () => {
     const prog = analyzeSource("x = ta.vwap()");
-    expect(prog.errors.some((e) => e.includes("'ta.vwap'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.vwap'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.vwap inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -13726,7 +13726,7 @@ describe("Analyzer", () => {
 
   it("errors on ta.sar call with wrong argument count", () => {
     const prog = analyzeSource("x = ta.sar(0.02, 0.02)");
-    expect(prog.errors.some((e) => e.includes("'ta.sar'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.sar'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.sar inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -13772,17 +13772,17 @@ describe("Analyzer", () => {
 
   it("errors when ta.dmi is called in expression position (single assignment)", () => {
     const prog = analyzeSource("x = ta.dmi(3, 2)");
-    expect(prog.errors.some((e) => e.includes("'ta.dmi'") && e.includes("튜플 디스트럭처링"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.dmi'") && e.includes("tuple destructuring"))).toBe(true);
   });
 
   it("errors when tuple destructuring target count mismatches ta.dmi's 3 returns", () => {
     const prog = analyzeSource("[p, m] = ta.dmi(3, 2)");
-    expect(prog.errors.some((e) => e.includes("개수 불일치") && e.includes("3개 반환"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("arity mismatch") && e.includes("returns 3"))).toBe(true);
   });
 
   it("errors on ta.dmi call with wrong argument count", () => {
     const prog = analyzeSource("[p, m, a] = ta.dmi(3)");
-    expect(prog.errors.some((e) => e.includes("'ta.dmi'") && e.includes("인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.dmi'") && e.includes("argument count"))).toBe(true);
   });
 
   it("accepts ta.dmi inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
@@ -13847,17 +13847,17 @@ describe("Analyzer UDT (type declarations, slice 1)", () => {
 
   it("errors on an unsupported/undeclared UDT field type (unknown name — 'Point' was never declared in this source; forward references are still rejected the same way, C123)", () => {
     const prog = analyzeSource(["type Wrapper", "    Point p"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("UDT 필드 타입은"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("UDT field type must be"))).toBe(true);
   });
 
   it("errors on a duplicate field name within a type", () => {
     const prog = analyzeSource(["type Bar", "    float x = 1.0", "    float x = 2.0"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("중복 UDT 필드"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate UDT field"))).toBe(true);
   });
 
   it("errors on redeclaring a type name", () => {
     const prog = analyzeSource(["type Bar", "    float x", "type Bar", "    int y"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("이미 사용 중인 이름"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("name already in use"))).toBe(true);
   });
 
   // C710(wild tv_verdict_v2 실측 21건 "type" 이름충돌 클러스터 재분류): TV는 `TypeName.new(...)`
@@ -13871,17 +13871,17 @@ describe("Analyzer UDT (type declarations, slice 1)", () => {
 
   it("still errors when a type name collides with a top-level var (unaffected by C710 — separate LIMITATIONS axis)", () => {
     const prog = analyzeSource(["var float f = 1.0", "type f", "    float x"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("이미 사용 중인 이름"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("name already in use"))).toBe(true);
   });
 
   it("still errors when a type name collides with an enum name (unaffected by C710)", () => {
     const prog = analyzeSource(["enum f", "    A", "type f", "    float x"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("이미 사용 중인 이름"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("name already in use"))).toBe(true);
   });
 
   it("errors on a nested type declaration (top-level only)", () => {
     const prog = analyzeSource(["if true", "    type Bar", "        float x"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("top-level에서만"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("only allowed at top level"))).toBe(true);
   });
 
   it("registers a UDT var from an explicit type hint + '.new()' constructor with no errors", () => {
@@ -13906,12 +13906,12 @@ describe("Analyzer UDT (type declarations, slice 1)", () => {
     const prog = analyzeSource(
       ["type Foo", "    float x = 1.0", "type Bar", "    float y = 2.0", "var Bar p = Foo.new(1.0)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("생성자 타입"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("constructor type"))).toBe(true);
   });
 
   it("errors on '.new()' called with more positional arguments than declared fields", () => {
     const prog = analyzeSource(["type Bar", "    float x = 1.0", "var p = Bar.new(1.0, 2.0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'Bar.new'") && e.includes("호출 인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'Bar.new'") && e.includes("call argument count"))).toBe(true);
   });
 
   it("accepts '.new()' called with fewer positional arguments than declared fields (trailing fields fall back to their defaults)", () => {
@@ -13926,7 +13926,7 @@ describe("Analyzer UDT (type declarations, slice 1)", () => {
 
   it("errors on an unknown field read on a UDT var", () => {
     const prog = analyzeSource(["type Bar", "    float x = 1.0", "var p = Bar.new(1.0)", "y = p.z"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("에 없는 필드") && e.includes("z"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("field not found on") && e.includes("z"))).toBe(true);
   });
 
   it("errors on a field read where the object isn't tracked as a UDT var", () => {
@@ -13941,7 +13941,7 @@ describe("Analyzer UDT (type declarations, slice 1)", () => {
 
   it("errors on a field write to an unknown field", () => {
     const prog = analyzeSource(["type Bar", "    float x = 1.0", "var p = Bar.new(1.0)", "p.z := 5.0"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("에 없는 필드") && e.includes("z"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("field not found in") && e.includes("z"))).toBe(true);
   });
 
   it("errors on a field write where the object isn't tracked as a UDT var", () => {
@@ -13956,7 +13956,7 @@ describe("Analyzer UDT (type declarations, slice 1)", () => {
   // "UDT 인스턴스로 추적되지 않음"으로 바뀌었다(의도적 스코프 확장 — 버그 수정 아님).
   it("errors on a field write target whose object path doesn't resolve to a tracked UDT instance (nested paths are supported since C123, but only when properly typed)", () => {
     const prog = analyzeSource("a.b.x := 5.0");
-    expect(prog.errors.some((e) => e.includes("UDT 인스턴스로 추적되지 않음"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("is not tracked as a UDT instance"))).toBe(true);
   });
 
   // C637 계약 갱신: 이 자리는 "UDT var 히스토리 인덱스 거부(array/map/matrix와 동일 가드)"를
@@ -13989,7 +13989,7 @@ describe("Analyzer UDT field compound assignment (C261)", () => {
 
   it("errors on '+=' to an unknown field", () => {
     const prog = analyzeSource(["type Bar", "    float x = 1.0", "var p = Bar.new(1.0)", "p.z += 5.0"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("에 없는 필드") && e.includes("z"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("field not found on") && e.includes("z"))).toBe(true);
   });
 
   it("errors on '+=' where the object isn't tracked as a UDT var", () => {
@@ -13999,7 +13999,7 @@ describe("Analyzer UDT field compound assignment (C261)", () => {
 
   it("still analyzes the desugared BinOp's RHS (an unknown identifier on the RHS is caught, proving the value is actually visited)", () => {
     const prog = analyzeSource(["type Bar", "    float x = 1.0", "var p = Bar.new(1.0)", "p.x += undeclaredVar"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자") && e.includes("undeclaredVar"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier") && e.includes("undeclaredVar"))).toBe(true);
   });
 });
 
@@ -14046,7 +14046,7 @@ describe("Analyzer UDT field control-flow-expr assignment (C265)", () => {
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("에 없는 필드") && e.includes("z"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("field not found in") && e.includes("z"))).toBe(true);
   });
 
   it("still analyzes each if-branch's value (an unknown identifier in a branch is caught, proving branches are visited)", () => {
@@ -14061,7 +14061,7 @@ describe("Analyzer UDT field control-flow-expr assignment (C265)", () => {
         "    2.0",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자") && e.includes("undeclaredVar"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier") && e.includes("undeclaredVar"))).toBe(true);
   });
 
   it("still analyzes each switch-case's value (an unknown identifier in a case is caught, proving cases are visited)", () => {
@@ -14070,13 +14070,13 @@ describe("Analyzer UDT field control-flow-expr assignment (C265)", () => {
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자") && e.includes("undeclaredVar"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier") && e.includes("undeclaredVar"))).toBe(true);
   });
 
   it("errors when the object isn't tracked as a UDT var, even with a control-flow-expr value (value is still fully visited)", () => {
     const prog = analyzeSource(["var float q = 1.0", "q.x := if close > open", "    1.0", "else", "    undeclaredVar"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("UDT 인스턴스로 추적되지 않음"))).toBe(true);
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자") && e.includes("undeclaredVar"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("is not tracked as a UDT instance"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier") && e.includes("undeclaredVar"))).toBe(true);
   });
 
   it("accepts an if/else control-flow-expr as a field write on a '=' local UDT instance (C224 combo)", () => {
@@ -14116,17 +14116,17 @@ describe("Analyzer '=' local UDT instance tracking (C224)", () => {
 
   it("errors on an unknown field read on a '=' local UDT instance (field validation still applies)", () => {
     const prog = analyzeSource(["type Bar", "    float x = 1.0", "p = Bar.new(2.0)", "y = p.z"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("에 없는 필드") && e.includes("z"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("field not found on") && e.includes("z"))).toBe(true);
   });
 
   it("errors on an unknown field write on a '=' local UDT instance", () => {
     const prog = analyzeSource(["type Bar", "    float x = 1.0", "p = Bar.new(2.0)", "p.z := 5.0"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("에 없는 필드") && e.includes("z"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("field not found in") && e.includes("z"))).toBe(true);
   });
 
   it("still rejects a field read on a '=' local that isn't a UDT constructor call (regression, plain scalar local)", () => {
     const prog = analyzeSource(["q = 1.0", "y = q.x"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("resolves a '=' local UDT instance declared and used within the same nested if-block", () => {
@@ -14212,7 +14212,7 @@ describe("Analyzer non-var '=' local explicit UDT type hint tracking (C386)", ()
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("에 없는 필드") && e.includes("z"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("field not found on") && e.includes("z"))).toBe(true);
   });
 
   it("registers the explicit type hint even when the RHS also happens to be a plain non-constructor value passed through a UDF call", () => {
@@ -14226,7 +14226,7 @@ describe("Analyzer non-var '=' local explicit UDT type hint tracking (C386)", ()
     const prog = analyzeSource(
       ["type Bar", "    float x = 1.0", "type Other", "    float z = 0.0", "Other p = Bar.new(1.0)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("선언 타입") && e.includes("생성자 타입"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("declared type") && e.includes("constructor type"))).toBe(true);
   });
 
   it("does not treat a plain (non-UDT) type hint as a UDT instance -- regression, `float x = 1.0` stays a normal scalar local", () => {
@@ -14236,7 +14236,7 @@ describe("Analyzer non-var '=' local explicit UDT type hint tracking (C386)", ()
 
   it("ignores an unregistered type name used as the hint (ordinary identifier misread as a type token) and falls back to the previous rejection instead of crashing", () => {
     const prog = analyzeSource(["Foo p = close", "y = p.x"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   // C637 계약 갱신: 명시 타입힌트 '=' 로컬도 위 두 사례와 동일한 참조형 원형 버퍼 축이라 함께
@@ -14327,12 +14327,12 @@ describe("Analyzer 'obj.copy()' as a '=' local / var UDT initializer (C225)", ()
     const prog = analyzeSource(
       ["type Foo", "    float x = 1.0", "type Bar", "    float y = 2.0", "var p = Foo.new(1.0)", "var Bar q = p.copy()"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("생성자 타입") && e.includes("다름"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("constructor type") && e.includes("differs"))).toBe(true);
   });
 
   it("errors on an unknown field read on a '=' local UDT instance produced via 'obj.copy()' (field validation still applies)", () => {
     const prog = analyzeSource(["type Bar", "    float x = 1.0", "p = Bar.new(2.0)", "q = p.copy()", "y = q.z"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("에 없는 필드") && e.includes("z"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("field not found on") && e.includes("z"))).toBe(true);
   });
 
   it("does not misidentify 'arrayVar.copy()' as a UDT initializer (regression, stays on the existing array-tracking path)", () => {
@@ -14343,7 +14343,7 @@ describe("Analyzer 'obj.copy()' as a '=' local / var UDT initializer (C225)", ()
 
   it("still rejects '.copy()' as a UDT initializer when the receiver itself isn't a tracked UDT instance (regression, no blanket acceptance of '.copy')", () => {
     const prog = analyzeSource(["q = 1.0", "r = q.copy()", "y = r.x"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("chains transitively: a '=' local that is a copy-of-a-copy still resolves its UDT type", () => {
@@ -14370,12 +14370,12 @@ describe("Analyzer top-level FuncDecl/EnumDecl forward-reference (C255)", () => 
 
   it("still validates argument count for a forward-referenced UDF call", () => {
     const prog = analyzeSource("x = helper(close, 1, 2)\nhelper(src) => src + 1");
-    expect(prog.errors.some((e) => e.includes("'helper' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'helper' call argument count mismatch"))).toBe(true);
   });
 
   it("still rejects two top-level FuncDecls sharing the same name regardless of declaration order", () => {
     const prog = analyzeSource("f(x) => x + 1\nf(y) => y + 2");
-    expect(prog.errors.some((e) => e.includes("이름이 이미 다른 선언과 충돌함") && e.includes("f"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("name conflicts with an existing declaration") && e.includes("f"))).toBe(true);
   });
 
   it("allows a top-level '=' local to reuse an existing UDF name (C413, wild 42건) — call-vs-value disambiguated by parens", () => {
@@ -14407,7 +14407,7 @@ describe("Analyzer top-level FuncDecl/EnumDecl forward-reference (C255)", () => 
 
   it("still validates argument count for a call to a UDF whose name is reused as a top-level '=' local (C413 — shadowing must not bypass arity checks)", () => {
     const prog = analyzeSource("x = 1.0\nx(y) => y + 1\nz = x(1, 2, 3)");
-    expect(prog.errors.some((e) => e.includes("'x' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'x' call argument count mismatch"))).toBe(true);
   });
 
   it("allows a top-level var to reuse an existing UDF name (C681, wild tv_verdict_v2 실측 5/32 accept) — TV separates function/value namespaces by call-vs-value syntax exactly like C413's '=' local case", () => {
@@ -14422,12 +14422,12 @@ describe("Analyzer top-level FuncDecl/EnumDecl forward-reference (C255)", () => 
 
   it("still validates argument count for a call to a UDF whose name is reused as a top-level var (C681)", () => {
     const prog = analyzeSource("var float osc = 1.0\nosc(len) => len + 1\nz = osc(1, 2, 3)");
-    expect(prog.errors.some((e) => e.includes("'osc' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'osc' call argument count mismatch"))).toBe(true);
   });
 
   it("still rejects two top-level FuncDecls sharing a name after the var-collision relaxation (C681 only touches the var-vs-func check, not func-vs-func)", () => {
     const prog = analyzeSource("f(x) => x + 1\nf(y) => y + 2");
-    expect(prog.errors.some((e) => e.includes("이름이 이미 다른 선언과 충돌함") && e.includes("f"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("name conflicts with an existing declaration") && e.includes("f"))).toBe(true);
   });
 
   it("a nested/conditional '=' local reusing a UDF name is now ALSO flagged (C576 correction — C413's original premise that 'let block-scope shadowing is inherently safe' for non-top-level locals turned out false: `avg = avg(x)` self-referential initializers TDZ-crash under plain JS 'let', wild exec evidence, LIMITATIONS C576). Widening the flag to every scope costs nothing (funcCodegenName mangles the function+all its call sites uniformly, never the local) and is the only fix cheap enough to also cover self-references buried inside if/for/switch-as-expression bodies within the same block (TDZ spans the whole block, not just the literal init line — a narrower same-statement-only check would miss those).", () => {
@@ -14467,7 +14467,7 @@ describe("Analyzer top-level FuncDecl/EnumDecl forward-reference (C255)", () => 
 
   it("still rejects a top-level '=' local reusing a name already declared as 'var' (unchanged — C413 only relaxed the func-name case, not var)", () => {
     const prog = analyzeSource("var float x = 1.0\nx = 2.0");
-    expect(prog.errors.some((e) => e.includes("var로 선언된 변수는 '='로 재대입할 수 없음"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("variable declared with var cannot be reassigned with '='"))).toBe(true);
   });
 
   it("allows a func-local '=' to reuse the name of an outer top-level var declared BEFORE the func (C679(a) — TV treats this as a new func-local shadow, not a var reassignment; previously hard-erred regardless of declaration order)", () => {
@@ -14478,7 +14478,7 @@ describe("Analyzer top-level FuncDecl/EnumDecl forward-reference (C255)", () => 
 
   it("still rejects a func reassigning its OWN 'var'-declared local with '=' (isFuncLocalVar case unaffected by C679(a))", () => {
     const prog = analyzeSource(["f() =>", "    var x = 1.0", "    x = 2.0", "    x"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("var로 선언된 변수는 '='로 재대입할 수 없음"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("variable declared with var cannot be reassigned with '='"))).toBe(true);
   });
 
   it("allows a top-level nested-block '=' to shadow an outer flat var instead of rejecting it (C729 — TV compiles this as a new block-scoped local, not a reassignment; tv_verdict_v2.jsonl accept, wild `var float entry_price=na` then nested-if `entry_price=(close+high)/2`; C679(b) subset this test used to assert as still-rejected)", () => {
@@ -14489,7 +14489,7 @@ describe("Analyzer top-level FuncDecl/EnumDecl forward-reference (C255)", () => 
 
   it("still rejects a top-level '=' reassignment of a var in the EXACT SAME scope as its declaration, even at depth>0 (C729 — TV rejects same-block redeclare regardless of nesting depth, only a strictly-descendant scope gets the shadow leniency)", () => {
     const prog = analyzeSource(["if close > open", "    var float x = 1.0", "    x = 2.0"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("var로 선언된 변수는 '='로 재대입할 수 없음"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("variable declared with var cannot be reassigned with '='"))).toBe(true);
   });
 
   it("a nested var (not just a flat top-level var) is also shadowable by '=' in a strictly-descendant scope (C729 — same principle applied to C728's nestedVarDeclSlots axis)", () => {
@@ -14539,7 +14539,7 @@ describe("Analyzer top-level FuncDecl/EnumDecl forward-reference (C255)", () => 
 
   it("still rejects two top-level EnumDecls sharing the same name regardless of declaration order", () => {
     const prog = analyzeSource(["enum Dir", "    Up", "enum Dir", "    Down"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("이미 사용 중인 이름과 충돌하는 'enum' 선언"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'enum' declaration conflicts with a name already in use"))).toBe(true);
   });
 
   it("still rejects a top-level EnumDecl whose name collides with an earlier top-level var", () => {
@@ -14547,7 +14547,7 @@ describe("Analyzer top-level FuncDecl/EnumDecl forward-reference (C255)", () => 
     // scopeHasLocal을 체크하지 않음 — 범위 밖, 이번 리팩터로 새로 생기거나 없어진 gap이 아님).
     // var는 prog.varIndex로 추적돼 checkEnumDeclConflict가 원래도/지금도 검사하는 대상이다.
     const prog = analyzeSource(["var float Dir = 1.0", "enum Dir", "    Up"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("이미 사용 중인 이름과 충돌하는 'enum' 선언"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'enum' declaration conflicts with a name already in use"))).toBe(true);
   });
 });
 
@@ -14584,27 +14584,27 @@ describe("Analyzer UDF call keyword arguments (C396)", () => {
 
   it("errors on an unknown keyword name", () => {
     const prog = analyzeSource(["f(a, b) =>", "    a + b", "x = f(a = 1.0, zzz = 2.0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'f'에 없는 매개변수 이름: 'zzz'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown parameter name for 'f': 'zzz'"))).toBe(true);
   });
 
   it("errors on a duplicate keyword name", () => {
     const prog = analyzeSource(["f(a, b) =>", "    a + b", "x = f(a = 1.0, a = 2.0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'a' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'a'"))).toBe(true);
   });
 
   it("errors when the same parameter is given both positionally and by keyword", () => {
     const prog = analyzeSource(["f(a, b) =>", "    a + b", "x = f(1.0, a = 2.0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("인자 'a'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("argument 'a' specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("errors when a required (no-default) parameter is covered by neither position nor keyword", () => {
     const prog = analyzeSource(["f(a, b) =>", "    a + b", "x = f(a = 1.0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'f' 호출에 필수 매개변수 'b' 누락"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'f' call is missing required parameter 'b'"))).toBe(true);
   });
 
   it("still reports the original positional-only argument-count message when no kwargs are used (regression, message format unchanged)", () => {
     const prog = analyzeSource("x = helper(close, 1, 2)\nhelper(src) => src + 1");
-    expect(prog.errors.some((e) => e.includes("'helper' 호출 인자 개수 불일치: 1~1개 필요, 3개 전달"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'helper' call argument count mismatch: requires 1~1, got 3"))).toBe(true);
   });
 
   it("still rejects keyword arguments on a bare method(receiver, ...) call (C267 scope unchanged — only direct top-level UDF identifier calls gained kwargs support, not method-as-function calls dispatched via dispatchUdtMethodCall)", () => {
@@ -14618,7 +14618,7 @@ describe("Analyzer UDF call keyword arguments (C396)", () => {
         "translate(pt, dx = 1.0, dy = 2.0)",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("키워드 인자('dx=...')는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("keyword arguments ('dx=...') are"))).toBe(true);
   });
 });
 
@@ -14662,22 +14662,22 @@ describe("Analyzer UDT method call keyword arguments (C408)", () => {
 
   it("errors on an unknown keyword name", () => {
     const prog = analyzeSource([...TYPE_DECL, ...METHOD_DECL, "var p = Bar.new()", "p.bump(dx = 1.0, zzz = 2.0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'Bar.bump'에 없는 매개변수 이름: 'zzz'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown parameter name for 'Bar.bump': 'zzz'"))).toBe(true);
   });
 
   it("errors on a duplicate keyword name", () => {
     const prog = analyzeSource([...TYPE_DECL, ...METHOD_DECL, "var p = Bar.new()", "p.bump(dx = 1.0, dx = 2.0, dy = 3.0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'dx' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'dx'"))).toBe(true);
   });
 
   it("errors when the same parameter is given both positionally and by keyword", () => {
     const prog = analyzeSource([...TYPE_DECL, ...METHOD_DECL, "var p = Bar.new()", "p.bump(1.0, dx = 2.0, dy = 3.0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("인자 'dx'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("argument 'dx' specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("errors when a required (no-default) parameter is covered by neither position nor keyword", () => {
     const prog = analyzeSource([...TYPE_DECL, ...METHOD_DECL, "var p = Bar.new()", "p.bump(dx = 1.0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'Bar.bump' 호출에 필수 매개변수 'dy' 누락"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'Bar.bump' call is missing required parameter 'dy'"))).toBe(true);
   });
 
   // C565: 메서드도 UDF와 동일하게 기본값 있는 매개변수가 필수 매개변수보다 앞에 와도 허용한다
@@ -14707,22 +14707,22 @@ describe("Analyzer UDT method call keyword arguments (C408)", () => {
         "p.scaleThenAdd(mult = 3.0)",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'Bar.scaleThenAdd' 호출에 필수 매개변수 'add' 누락"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'Bar.scaleThenAdd' call is missing required parameter 'add'"))).toBe(true);
   });
 
   it("rejects a keyword argument naming the receiver parameter itself (receiver is bound via callee.obj, not a nameable kwarg slot)", () => {
     const prog = analyzeSource([...TYPE_DECL, ...METHOD_DECL, "var p = Bar.new()", "p.bump(b = p, dx = 1.0, dy = 2.0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'Bar.bump'에 없는 매개변수 이름: 'b'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown parameter name for 'Bar.bump': 'b'"))).toBe(true);
   });
 
   it("still reports the original positional-only argument-count message when no kwargs are used (regression, message format unchanged)", () => {
     const prog = analyzeSource([...TYPE_DECL, ...METHOD_DECL, "var p = Bar.new()", "p.bump(1.0, 2.0, 3.0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'Bar.bump' 호출 인자 개수 불일치: 2~2개 필요, 3개 전달"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'Bar.bump' call argument count mismatch: requires 2~2, got 3"))).toBe(true);
   });
 
   it("still rejects keyword arguments on a bare method(receiver, ...) call (C267 scope unchanged — bare calls resolve through analyzeUserFuncCall via isUserFuncCall's Identifier-only guard, which doesn't recognize the mangled method name, so the blanket rejection still fires)", () => {
     const prog = analyzeSource([...TYPE_DECL, ...METHOD_DECL, "var p = Bar.new()", "bump(p, dx = 1.0, dy = 2.0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("키워드 인자('dx=...')는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("keyword arguments ('dx=...') are"))).toBe(true);
   });
 });
 
@@ -14779,14 +14779,14 @@ describe("Analyzer UDF-returned UDT instance tracking (C253)", () => {
         "z = sig.x",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("does not treat a ternary with one UDT branch and one plain-scalar branch as a UDT instance (no false positive)", () => {
     const prog = analyzeSource(
       ["type Foo", "    float x = 1.0", "sig = close > open ? Foo.new(1.0) : 2.0", "z = sig.x"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   // C636: wild "네임스페이스 접근은 호출식만 지원" 클러스터 재조사 — `plan1 = not na(planRaw1) ?
@@ -14844,7 +14844,7 @@ describe("Analyzer UDF-returned UDT instance tracking (C253)", () => {
         "z = sig.x",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("does not treat a ternary with one bare-identifier UDT branch and one plain-scalar identifier branch as a UDT instance (no false positive, C636)", () => {
@@ -14853,7 +14853,7 @@ describe("Analyzer UDF-returned UDT instance tracking (C253)", () => {
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("accepts a field read on a '=' local assigned from a UDF whose last statement is an if/else where both branches construct the same UDT (C264, corpus 540460278459.pine)", () => {
@@ -15011,7 +15011,7 @@ describe("Analyzer UDF-returned UDT instance tracking (C253)", () => {
         "z = sig.x",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("does not treat an if/else with one UDT branch and one plain-scalar branch as a UDT instance (no false positive, C264)", () => {
@@ -15028,7 +15028,7 @@ describe("Analyzer UDF-returned UDT instance tracking (C253)", () => {
         "z = sig.x",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("does not resolve an if/elif/else chain when one elif branch's UDT type mismatches the others (no false positive, C264)", () => {
@@ -15049,7 +15049,7 @@ describe("Analyzer UDF-returned UDT instance tracking (C253)", () => {
         "z = sig.x",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("computes FuncInfo.returnUdtType for a 'method' whose last statement is an if/else too (internal bookkeeping symmetry), without changing its bare-UDF-call consumption gap (method-call syntax remains a DotAccess callee, out of scope, C264)", () => {
@@ -15069,14 +15069,14 @@ describe("Analyzer UDF-returned UDT instance tracking (C253)", () => {
         "y = sig.value",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("does not treat a UDF that returns a plain scalar as a UDT instance (regression, no false positive on unrelated UDFs)", () => {
     const prog = analyzeSource(
       ["type Foo", "    float x = 1.0", "calcScalar(src) =>", "    src + 1.0", "sig = calcScalar(close)", "z = sig.x"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("applies symmetrically to a top-level 'var' initialized from a UDF call and registers it in prog.udtVarTypes", () => {
@@ -15101,7 +15101,7 @@ describe("Analyzer UDF-returned UDT instance tracking (C253)", () => {
         "var Other sig = calcSignal(close)",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("선언 타입") && e.includes("생성자 타입"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("declared type") && e.includes("constructor type"))).toBe(true);
   });
 
   it("allows a UDF returning a UDT instance to be called from inside another UDF's body (C267[part2] positive migration — isUdtConstructorCall lookup and the nested-call path compose without conflict)", () => {
@@ -15134,7 +15134,7 @@ describe("Analyzer UDF-returned UDT instance tracking (C253)", () => {
         "y = sig.value",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   // C392: 위 "bare identifier referencing its own '=' local UDT instance" 테스트(9748행)는 함수
@@ -15202,7 +15202,7 @@ describe("Analyzer UDF-returned UDT instance tracking (C253)", () => {
         "    x",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("선언 타입") && e.includes("생성자 타입"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("declared type") && e.includes("constructor type"))).toBe(true);
   });
 
   it("does not treat a func-local 'var' without any UDT type hint as a UDT instance (regression, no false positive on plain var, C392)", () => {
@@ -15250,7 +15250,7 @@ describe("Analyzer UDF-returned UDT instance tracking (C253)", () => {
         "z = y.value",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 });
 
@@ -15296,7 +15296,7 @@ describe("Analyzer UDF-returned UDT field access with no intermediate local (C63
         "y = f().pivot_upper",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 });
 
@@ -15340,14 +15340,14 @@ describe("Analyzer UDF tuple-returned UDT instance tracking (C387)", () => {
 
   it("does not register UDT hints for a numeric tuple-returning UDF (regression, no false positive)", () => {
     const prog = analyzeSource(["f(x) =>", "    [x * 2, x + 1]", "[a, b] = f(close)", "y = a.value"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("does not register a UDT hint for the numeric sibling of a tuple that also carries a UDT element", () => {
     const prog = analyzeSource(
       ["type Signal", "    float value = 0.0", "f(x) =>", "    [Signal.new(x), x * 2]", "[sig, n] = f(close)", "y = n.value"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("accepts a field read on the UDT sibling of that same mixed tuple", () => {
@@ -15400,7 +15400,7 @@ describe("Analyzer UDF tuple-returned UDT instance tracking (C387)", () => {
         "y = top.nope",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'Swing'에 없는 필드") && e.includes("'nope'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("field not found on 'Swing'") && e.includes("'nope'"))).toBe(true);
   });
 
   // C454: 위 케이스는 전부 `var Swing top = Swing.new(...)`처럼 명시 typeHint가 있다 — wild
@@ -15438,7 +15438,7 @@ describe("Analyzer UDF tuple-returned UDT instance tracking (C387)", () => {
         "y = new_fvg.nope",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'Fvg'에 없는 필드") && e.includes("'nope'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("field not found on 'Fvg'") && e.includes("'nope'"))).toBe(true);
   });
 });
 
@@ -15510,13 +15510,13 @@ describe("Analyzer UDF tuple-returned array/map container kind tracking (C649)",
         "z = n.size()",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출") && e.includes("'n.size'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call") && e.includes("'n.size'"))).toBe(true);
     expect(prog.errors.some((e) => e.includes("'a.size'"))).toBe(false);
   });
 
   it("still rejects a method-call sugar on a plain numeric tuple element (regression, no false-positive array tagging)", () => {
     const prog = analyzeSource(["f(x) =>", "    [x * 2, x + 1]", "[a, b] = f(close)", "y = a.size()"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출") && e.includes("'a.size'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call") && e.includes("'a.size'"))).toBe(true);
   });
 
   it("resolves array kind through a forward-reference UDF tuple destructure (C412 combined — call before FuncDecl)", () => {
@@ -15608,7 +15608,7 @@ describe("Analyzer UDF tuple-returned array element drawing/UDT kind tracking (C
         "z = n.get_top()",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출") && e.includes("'n.get_top'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call") && e.includes("'n.get_top'"))).toBe(true);
     expect(prog.errors.some((e) => e.includes("'b.get_top'"))).toBe(false);
   });
 
@@ -15616,7 +15616,7 @@ describe("Analyzer UDF tuple-returned array element drawing/UDT kind tracking (C
     const prog = analyzeSource(
       ["mk() =>", "    var arr = array.new_float(0)", "    [arr, 1]", "[a, n] = mk()", "b = a.get(0)", "y = b.get_top()"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출") && e.includes("'b.get_top'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call") && e.includes("'b.get_top'"))).toBe(true);
   });
 });
 
@@ -15648,19 +15648,19 @@ describe("Analyzer forward-reference UDF tuple destructure (C412)", () => {
 
   it("rejects an arity mismatch on a forward-ref tuple UDF call (target count != returned tuple size)", () => {
     const prog = analyzeSource(["[a, b, c] = f(close)", "f(x) =>", "    [x * 2, x + 1]"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple destructure arity mismatch"))).toBe(true);
   });
 
   it("rejects a forward-ref call whose UDF does not end in a tuple literal (same generic error as the non-forward-ref case)", () => {
     const prog = analyzeSource(["[a, b] = f(close)", "f(x) =>", "    x * 2"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링의 값은 튜플을 반환하는 UDF 호출이어야 함"))).toBe(
+    expect(prog.errors.some((e) => e.includes("tuple destructure value must be a UDF call returning a tuple"))).toBe(
       true,
     );
   });
 
   it("still rejects a tuple destructure whose value calls a name that is never declared at all (regression, not treated as pending)", () => {
     const prog = analyzeSource(["[a, b] = neverDeclared(close)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링의 값은 튜플을 반환하는 UDF 호출이어야 함"))).toBe(
+    expect(prog.errors.some((e) => e.includes("tuple destructure value must be a UDF call returning a tuple"))).toBe(
       true,
     );
   });
@@ -15724,26 +15724,26 @@ describe("Analyzer UDT constructor keyword arguments (C129)", () => {
 
   it("errors on a keyword argument naming a field that doesn't exist on the type", () => {
     const prog = analyzeSource(["type Bar", "    float x = 1.0", "var p = Bar.new(z=1.0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'Bar'에 없는 필드") && e.includes("z"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown field for 'Bar'") && e.includes("z"))).toBe(true);
   });
 
   it("errors on the same field specified twice by keyword", () => {
     const prog = analyzeSource(["type Bar", "    float x = 1.0", "var p = Bar.new(x=1.0, x=2.0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument"))).toBe(true);
   });
 
   it("errors when a field is specified both positionally and by keyword", () => {
     const prog = analyzeSource(
       ["type Bar", "    float x = 1.0", "    float y = 2.0", "var p = Bar.new(1.0, x=2.0)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("위치 인자와 키워드 인자로 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("accepts a field specified both positionally and by keyword when the values are syntactically identical (C654)", () => {
     const prog = analyzeSource(
       ["type Bar", "    float x = 1.0", "    float y = 2.0", "var p = Bar.new(1.0, x=1.0)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("위치 인자와 키워드 인자로 중복 지정"))).toBe(false);
+    expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(false);
   });
 
   it("does not flag a keyword arg naming a later field as a positional/keyword clash", () => {
@@ -15755,7 +15755,7 @@ describe("Analyzer UDT constructor keyword arguments (C129)", () => {
 
   it("errors on a keyword argument used on a non-UDT-constructor call (bare 'na', C405: 'nz' itself now accepts replacement= so it no longer probes the blanket rejection — swapped to 'na', which still has no kwarg support)", () => {
     const prog = analyzeSource("y = na(value=close)");
-    expect(prog.errors.some((e) => e.includes("키워드 인자") && e.includes("UDT 생성자"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("keyword argument") && e.includes("UDT constructor"))).toBe(true);
   });
 
   it("now accepts a keyword argument used on a plain top-level UDF call (C396 positive migration — TV v5 UDF calls genuinely support named arguments, analyzeUserFuncCall no longer ignores expr.kwargs)", () => {
@@ -15774,7 +15774,7 @@ describe("Analyzer UDT constructor keyword arguments (C129)", () => {
 
   it("still validates argument count when kwargs push the total under the field count but positional args alone already exceed it", () => {
     const prog = analyzeSource(["type Bar", "    float x = 1.0", "var p = Bar.new(1.0, 2.0, y=3.0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'Bar.new'") && e.includes("호출 인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'Bar.new'") && e.includes("call argument count"))).toBe(true);
   });
 });
 
@@ -15835,14 +15835,14 @@ describe("Analyzer UDT nested fields (C123)", () => {
         "y = o.inner.z",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("에 없는 필드") && e.includes("z"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("field not found on") && e.includes("z"))).toBe(true);
   });
 
   it("errors on chaining past a scalar field (a float field has no sub-fields to access)", () => {
     const prog = analyzeSource(
       ["type Outer", "    float price = 1.0", "var Outer o = Outer.new()", "y = o.price.foo"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("accepts a chained field write ('outer.inner.x := value') when every level resolves to a tracked UDT field", () => {
@@ -15870,7 +15870,7 @@ describe("Analyzer UDT nested fields (C123)", () => {
         "o.inner.z := 5.0",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("에 없는 필드") && e.includes("z"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("field not found in") && e.includes("z"))).toBe(true);
   });
 });
 
@@ -15931,7 +15931,7 @@ describe("Analyzer UDT enum-typed fields (C273)", () => {
     const prog = analyzeSource(
       ["enum Direction", "    Flat", "type TrendInfo", "    Direction dir = Direction.Missing"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("에 없는 enum 멤버") && e.includes("Missing"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("enum member not found on") && e.includes("Missing"))).toBe(true);
   });
 });
 
@@ -15972,27 +15972,27 @@ describe("Analyzer UDT generic container fields (array<T>/map<K,V>, C126)", () =
 
   it("rejects a generic base outside array/map/matrix (e.g. 'set<float>' — not in UDT_GENERIC_FIELD_BASES)", () => {
     const prog = analyzeSource(["type Basket", "    set<float> grid"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("UDT 필드 타입은"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("UDT field type must be"))).toBe(true);
   });
 
   it("rejects 'matrix<T>' given two type arguments instead of one", () => {
     const prog = analyzeSource(["type Basket", "    matrix<float, int> weird"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("UDT 필드 타입은"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("UDT field type must be"))).toBe(true);
   });
 
   it("rejects 'array<T>' given two type arguments instead of one", () => {
     const prog = analyzeSource(["type Basket", "    array<float, int> weird"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("UDT 필드 타입은"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("UDT field type must be"))).toBe(true);
   });
 
   it("rejects 'map<K,V>' given a single type argument instead of two", () => {
     const prog = analyzeSource(["type Basket", "    map<float> weird"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("UDT 필드 타입은"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("UDT field type must be"))).toBe(true);
   });
 
   it("rejects a generic field whose element type isn't a scalar or a declared UDT (unsupported element type)", () => {
     const prog = analyzeSource(["type Basket", "    array<Unknown> things"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("UDT 필드 타입은"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("UDT field type must be"))).toBe(true);
   });
 
   it("accepts two-level nested generics ('array<map<string, float>>', C127)", () => {
@@ -16018,12 +16018,12 @@ describe("Analyzer UDT generic container fields (array<T>/map<K,V>, C126)", () =
 
   it("rejects a nested generic whose inner arg count is wrong ('array<map<float>>' — map needs exactly 2)", () => {
     const prog = analyzeSource(["type Basket", "    array<map<float>> weird"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("UDT 필드 타입은"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("UDT field type must be"))).toBe(true);
   });
 
   it("rejects a nested generic whose inner element type is unsupported ('array<map<string, Unknown>>')", () => {
     const prog = analyzeSource(["type Basket", "    array<map<string, Unknown>> weird"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("UDT 필드 타입은"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("UDT field type must be"))).toBe(true);
   });
 
   it("accepts an already-declared UDT type nested two levels deep ('array<map<string, Point>>')", () => {
@@ -16051,7 +16051,7 @@ describe("Analyzer UDT generic container fields (array<T>/map<K,V>, C126)", () =
     const prog = analyzeSource(
       ["type Basket", "    array<float> prices", "var b = Basket.new()", "y = b.prices.foo"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("accepts a field read on a two-level nested generic field ('map<string, array<float>>', C127)", () => {
@@ -16165,7 +16165,7 @@ describe("Analyzer 'chart.point' field DotAccess reads (C487)", () => {
 
   it("errors on an unknown field name read from a chart.point-typed parameter", () => {
     const prog = analyzeSource(["f(chart.point p) =>", "    p.bogus"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'chart.point'에 없는 필드") && e.includes("bogus"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("field not found on 'chart.point'") && e.includes("bogus"))).toBe(true);
   });
 
   it("accepts '.price' field read on a 'series'-qualified chart.point parameter (qualifier-strip fix)", () => {
@@ -16209,12 +16209,12 @@ describe("Analyzer 'chart.point' field DotAccess reads (C487)", () => {
 
   it("errors (does not crash) on a direct field write to a chart.point value ('p.price := ...' unsupported, whole-value reassignment only)", () => {
     const prog = analyzeSource(["f(chart.point p) =>", "    p.price := 5.0"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'chart.point' 필드는 개별 재대입 미지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'chart.point' field-level reassignment is not supported"))).toBe(true);
   });
 
   it("still rejects an undeclared/untyped parameter's DotAccess as before (no over-broadening of the fix)", () => {
     const prog = analyzeSource(["f(p) =>", "    p.price"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 });
 
@@ -16237,7 +16237,7 @@ describe("Analyzer dotted-type bare local declaration field reads ('chart.point 
 
   it("errors on an unknown field name read from the local (regression guard, not silently accepted)", () => {
     const prog = analyzeSource(["chart.point end = chart.point.new(time, bar_index, close)", "end.bogus"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'chart.point'에 없는 필드") && e.includes("bogus"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("field not found on 'chart.point'") && e.includes("bogus"))).toBe(true);
   });
 
   it("accepts the exact wild pattern inside a method body ('chart.point point = findPivotPoint(...)', 29b3b91c4388.pine L271)", () => {
@@ -16292,7 +16292,7 @@ describe("Analyzer 'var'/'varip' dotted-type declaration field reads ('var chart
 
   it("errors on an unknown field name read from a top-level 'var chart.point' (regression guard, not silently accepted)", () => {
     const prog = analyzeSource(["var chart.point p = chart.point.new(time, bar_index, close)", "p.bogus"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'chart.point'에 없는 필드") && e.includes("bogus"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("field not found on 'chart.point'") && e.includes("bogus"))).toBe(true);
   });
 
   it("accepts 'var chart.point[] pivots = array.new<chart.point>()' with a chained '.get(i).price' field read (array-elem type inference from the var typeHint)", () => {
@@ -16352,7 +16352,7 @@ describe("Analyzer bare (no explicit typeHint) 'chart.point' constructor call ty
 
   it("still rejects field access through a bare var initialized from an unrelated 'now(...)'-named call (no over-broadening beyond the 'chart.point' namespace)", () => {
     const prog = analyzeSource(["var p = notchart.point.now(close)", "y = p.price"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 });
 
@@ -16406,12 +16406,12 @@ describe("Analyzer array<chart.point> element field reads via CallExpr chaining 
 
   it("errors on an unknown field name read from a chained array<chart.point> element (regression guard, not silently accepted)", () => {
     const prog = analyzeSource([LOW_PIVOTS_SETUP, "y = lowPivots.get(0).bogus"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'chart.point'에 없는 필드") && e.includes("bogus"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("field not found on 'chart.point'") && e.includes("bogus"))).toBe(true);
   });
 
   it("still rejects a direct field write through the chained CallExpr (whole-value reassignment only, FieldAssignment object stays Identifier/DotAccess-only)", () => {
     const prog = analyzeSource([LOW_PIVOTS_SETUP, "lowPivots.get(0).price := 5.0"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("UDT 필드 대입 대상은"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("UDT field assignment target must be"))).toBe(true);
   });
 
   it("still rejects array<UDT>(non-chart.point) elements unaffected by this fix (regression guard on the pre-existing arrayUdtElemType branch)", () => {
@@ -16436,7 +16436,7 @@ describe("Analyzer array<chart.point> element field reads via CallExpr chaining 
 
   it("still rejects an unknown field name read through constructor-only inference (regression guard)", () => {
     const prog = analyzeSource(["pts = array.new<chart.point>()", "y = pts.get(0).bogus"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'chart.point'에 없는 필드") && e.includes("bogus"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("field not found on 'chart.point'") && e.includes("bogus"))).toBe(true);
   });
 
   it("still rejects array<UDT>(non-chart.point) constructor-only inference unaffected by this fix (regression guard)", () => {
@@ -16456,32 +16456,32 @@ describe("Analyzer enum (literal members only, UDT slice 2)", () => {
 
   it("errors on a duplicate member name within an enum", () => {
     const prog = analyzeSource(["enum Direction", "    long", "    long"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("중복 enum 멤버"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate enum member"))).toBe(true);
   });
 
   it("errors on redeclaring an enum name", () => {
     const prog = analyzeSource(["enum Direction", "    long", "enum Direction", "    short"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("이미 사용 중인 이름"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("name already in use"))).toBe(true);
   });
 
   it("errors when an enum name collides with an existing 'type' name", () => {
     const prog = analyzeSource(["type Direction", "    float x", "enum Direction", "    long"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("이미 사용 중인 이름"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("name already in use"))).toBe(true);
   });
 
   it("errors when a 'type' name collides with an existing enum name (reverse direction)", () => {
     const prog = analyzeSource(["enum Direction", "    long", "type Direction", "    float x"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("이미 사용 중인 이름"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("name already in use"))).toBe(true);
   });
 
   it("errors when an enum name collides with an existing UDF name", () => {
     const prog = analyzeSource(["f(x) => x", "enum f", "    long"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("이미 사용 중인 이름"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("name already in use"))).toBe(true);
   });
 
   it("errors on a nested enum declaration (top-level only)", () => {
     const prog = analyzeSource(["if true", "    enum Direction", "        long"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("top-level에서만"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("only allowed at top level"))).toBe(true);
   });
 
   it("folds a known enum member access to a qualified string constant, with no errors", () => {
@@ -16493,7 +16493,7 @@ describe("Analyzer enum (literal members only, UDT slice 2)", () => {
 
   it("errors on an unknown enum member access", () => {
     const prog = analyzeSource(["enum Direction", "    long", "d = Direction.short"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("에 없는 enum 멤버") && e.includes("short"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("enum member not found on") && e.includes("short"))).toBe(true);
   });
 
   it("keeps two different enums' same-named members distinct (does not replicate pine2py's flat method-namespace bug)", () => {
@@ -16518,7 +16518,7 @@ describe("Analyzer enum (literal members only, UDT slice 2)", () => {
     const prog = analyzeSource(
       ["enum Direction", "    long", "var Direction d = Direction.long", "y = d[1]"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("히스토리 인덱스") && e.includes("enum"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("history index") && e.includes("enum"))).toBe(true);
   });
 
   it("allows an enum member used in an equality comparison, with no errors", () => {
@@ -16592,22 +16592,22 @@ describe("Analyzer method (UDT slice 4)", () => {
 
   it("errors when the first parameter has no type hint at all", () => {
     const prog = analyzeSource([POINT, "method area(p) => p"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("첫 매개변수는 이미 선언된 UDT 타입 힌트"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("requires an already-declared UDT type hint"))).toBe(true);
   });
 
   it("errors when the first parameter's type hint isn't an already-declared UDT type (forward-ref rejected the same way as UDT fields, C123)", () => {
     const prog = analyzeSource("method area(Point p) => p.x");
-    expect(prog.errors.some((e) => e.includes("첫 매개변수는 이미 선언된 UDT 타입 힌트"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("requires an already-declared UDT type hint"))).toBe(true);
   });
 
   it("errors on a nested method declaration (top-level only, mirroring FuncDecl/TypeDecl)", () => {
     const prog = analyzeSource([POINT, "if true", "    method area(Point p) => p.x"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("top-level에서만"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("only allowed at top level"))).toBe(true);
   });
 
   it("errors on redeclaring the same method name on the same UDT type", () => {
     const prog = analyzeSource([POINT, "method area(Point p) => p.x", "method area(Point p) => p.y"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("이미 정의된 method"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("method already defined"))).toBe(true);
   });
 
   it("keeps two different UDTs' same-named methods distinct (does not replicate pine2py's flat method-namespace collision bug)", () => {
@@ -16632,7 +16632,7 @@ describe("Analyzer method (UDT slice 4)", () => {
 
   it("errors reading an unknown field on the first parameter inside the method body", () => {
     const prog = analyzeSource([POINT, "method bump(Point p) => p.z"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("에 없는 필드") && e.includes("z"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("field not found on") && e.includes("z"))).toBe(true);
   });
 
   it("accepts an 'obj.method(args)' call with the correct argument count (excluding the bound first parameter)", () => {
@@ -16646,24 +16646,24 @@ describe("Analyzer method (UDT slice 4)", () => {
     const prog = analyzeSource(
       [POINT, "method translate(Point p, float dx, float dy) =>", "    p.x := p.x + dx", "var pt = Point.new()", "pt.translate(1.0)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'Point.translate'") && e.includes("호출 인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'Point.translate'") && e.includes("call argument count"))).toBe(true);
   });
 
   it("errors on an 'obj.method(args)' call with too many arguments", () => {
     const prog = analyzeSource(
       [POINT, "method translate(Point p, float dx) =>", "    p.x := p.x + dx", "var pt = Point.new()", "pt.translate(1.0, 2.0)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'Point.translate'") && e.includes("호출 인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'Point.translate'") && e.includes("call argument count"))).toBe(true);
   });
 
   it("errors calling a method name that doesn't exist on the object's UDT type", () => {
     const prog = analyzeSource([POINT, "var pt = Point.new()", "pt.missing()"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'Point'에 없는 method") && e.includes("missing"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown method for 'Point'") && e.includes("missing"))).toBe(true);
   });
 
   it("errors calling 'obj.method()' when obj isn't tracked as a UDT var", () => {
     const prog = analyzeSource([POINT, "method area(Point p) => p.x", "var float q = 1.0", "q.area()"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("registers a bare 'methodName(obj, args)' call as a call to the object's UDT method (C267, TV v5 real syntax — pine2py compiles method to a flat top-level function so both call forms are the same code)", () => {
@@ -16677,7 +16677,7 @@ describe("Analyzer method (UDT slice 4)", () => {
 
   it("does not register a 'TypeName.method(obj, args)' static-style call (only 'obj.method(args)' is supported in this slice)", () => {
     const prog = analyzeSource([POINT, "method area(Point p) => p.x", "var pt = Point.new()", "Point.area(pt)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("allows calling a method from inside another UDF's body (C267[part2] positive migration, mirroring UDF-in-UDF)", () => {
@@ -16783,7 +16783,7 @@ describe("Analyzer method with a generic container receiver (array<T>/map<K,V>/m
         "arr.addTwo(1.0)",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'array.addTwo'") && e.includes("호출 인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'array.addTwo'") && e.includes("call argument count"))).toBe(true);
   });
 
   it("errors on an array<T> extension method call with too many arguments", () => {
@@ -16796,7 +16796,7 @@ describe("Analyzer method with a generic container receiver (array<T>/map<K,V>/m
         "arr.addOne(1.0, 2.0)",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'array.addOne'") && e.includes("호출 인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'array.addOne'") && e.includes("call argument count"))).toBe(true);
   });
 
   it("errors when the same method name is declared twice for the same container base with different element types (TV compile-time generic overload not supported — dispatch collapses T away, out of scope by design)", () => {
@@ -16808,7 +16808,7 @@ describe("Analyzer method with a generic container receiver (array<T>/map<K,V>/m
         "    \"i\"",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("이미 정의된 method") && e.includes("array.str"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("method already defined") && e.includes("array.str"))).toBe(true);
   });
 
   it("still rejects a first parameter type hint that is neither a UDT, a generic container, a scalar, a drawing handle, nor an enum (C677 extended error message)", () => {
@@ -16816,7 +16816,7 @@ describe("Analyzer method with a generic container receiver (array<T>/map<K,V>/m
     expect(
       prog.errors.some((e) =>
         e.includes(
-          "첫 매개변수는 이미 선언된 UDT 타입 힌트, array<T>/map<K,V>/matrix<T> 컨테이너 타입 힌트, float/int/bool/string/color 스칼라 타입 힌트, label/line/box/table/polyline/linefill drawing 핸들 타입 힌트, 또는 이미 선언된 enum 타입 힌트가 필요함",
+          "requires an already-declared UDT type hint, an array<T>/map<K,V>/matrix<T> container type hint, a float/int/bool/string/color scalar type hint, a label/line/box/table/polyline/linefill drawing handle type hint, or an already-declared enum type hint",
         ),
       ),
     ).toBe(true);
@@ -16918,14 +16918,14 @@ describe("Analyzer method with a scalar receiver (float/int/bool/string/color, C
     const prog = analyzeSource(
       ["method scaled(float value, float factor) =>", "    value * factor", "var float x = 1.0", "x.scaled(2.0, 3.0)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'float.scaled'") && e.includes("호출 인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'float.scaled'") && e.includes("call argument count"))).toBe(true);
   });
 
   it("rejects an ambiguous call when the same method name is declared on two different scalar receiver types (TV compile-time overload not supported — no value-flow type tracking)", () => {
     const prog = analyzeSource(
       ["method f(float f) =>", "    str.tostring(f)", "method f(int i) =>", "    str.tostring(i)", "var float x = 1.0", "x.f()"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'f'") && e.includes("중복 선언"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'f'") && e.includes("declared for multiple types"))).toBe(true);
   });
 
   it("keeps a built-in namespace dispatch (e.g. str.tostring) unaffected when no same-named user scalar method exists", () => {
@@ -16951,24 +16951,24 @@ describe("Analyzer bare method(receiver, ...) call (C267)", () => {
     const prog = analyzeSource(
       [POINT, "method translate(Point p, float dx, float dy) =>", "    p.x := p.x + dx", "var pt = Point.new()", "translate(pt, 1.0)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("호출 인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("call argument count"))).toBe(true);
   });
 
   it("errors on a bare call with too many arguments", () => {
     const prog = analyzeSource(
       [POINT, "method translate(Point p, float dx) =>", "    p.x := p.x + dx", "var pt = Point.new()", "translate(pt, 1.0, 2.0)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("호출 인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("call argument count"))).toBe(true);
   });
 
   it("falls back to 'unknown function call' when the first argument isn't a tracked UDT instance", () => {
     const prog = analyzeSource([POINT, "method area(Point p) => p.x", "var float q = 1.0", "area(q)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("알 수 없는 함수 호출") && e.includes("area"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown function call") && e.includes("area"))).toBe(true);
   });
 
   it("falls back to 'unknown function call' when no method with that name exists on the argument's UDT type", () => {
     const prog = analyzeSource([POINT, "method area(Point p) => p.x", "var pt = Point.new()", "missing(pt)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("알 수 없는 함수 호출") && e.includes("missing"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown function call") && e.includes("missing"))).toBe(true);
   });
 
   it("prefers a same-named plain UDF over a UDT method when both exist (plain-function lookup runs first)", () => {
@@ -17039,19 +17039,19 @@ describe("Analyzer bare method(receiver, ...) call with a scalar receiver (C525)
     const prog = analyzeSource(
       ["method scaled(float value, float factor) =>", "    value * factor", "scaled(2.0)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("호출 인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("call argument count"))).toBe(true);
   });
 
   it("rejects an ambiguous bare call when the same method name is declared on two different scalar receiver types", () => {
     const prog = analyzeSource(
       ["method f(float f) =>", "    str.tostring(f)", "method f(int i) =>", "    str.tostring(i)", "f(1.0)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'f'") && e.includes("중복 선언"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'f'") && e.includes("declared for multiple types"))).toBe(true);
   });
 
   it("still falls back to 'unknown function call' for a name matching no scalar method and no UDT method", () => {
     const prog = analyzeSource(["method volAdj(int len) =>", "    len * 2", "totallyUnrelated(30)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("알 수 없는 함수 호출") && e.includes("totallyUnrelated"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown function call") && e.includes("totallyUnrelated"))).toBe(true);
   });
 
   it("prefers a UDT bare-method match over a same-named scalar method when the argument is a tracked UDT instance", () => {
@@ -17136,7 +17136,7 @@ describe("Analyzer method with a drawing handle receiver (label/line/box/table/p
     const prog = analyzeSource(
       ["method deleteit(box this) =>", "    box.delete(this)", "b = box.new(bar_index, high, bar_index, low)", "b.deleteit(1)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'box.deleteit'") && e.includes("호출 인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'box.deleteit'") && e.includes("call argument count"))).toBe(true);
   });
 
   it("keeps a built-in DRAWING_METHODS sugar call (e.g. line.set_color) unaffected when no same-named user drawing method exists", () => {
@@ -17197,7 +17197,7 @@ describe("Analyzer bare method(receiver, ...) call with a drawing handle receive
 
   it("still falls back to 'unknown function call' for a name matching no drawing method and no UDT/scalar method", () => {
     const prog = analyzeSource(["method deleteit(box this) =>", "    box.delete(this)", "totallyUnrelated(30)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("알 수 없는 함수 호출") && e.includes("totallyUnrelated"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown function call") && e.includes("totallyUnrelated"))).toBe(true);
   });
 });
 
@@ -17301,14 +17301,14 @@ describe("Analyzer method with an enum receiver (C677)", () => {
 
   it("does not infer an enum type from a plain 'input.enum' call whose first argument is not an enum-member DotAccess (unrelated call shape stays untouched)", () => {
     const prog = analyzeSource(["x = input.enum(\"A\", \"Choice\", array.from(\"A\", \"B\"))", "x.param()"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("알 수 없는 함수 호출") || e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown function call") || e.includes("unsupported call"))).toBe(true);
   });
 
   it("errors on an enum extension method call with too many arguments", () => {
     const prog = analyzeSource(
       [TF, "method param(simple Tf t, int extra) =>", "    \"x\"", "tf = input.enum(Tf.m1, \"tf\")", "tf.param(1, 2)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'Tf.param'") && e.includes("호출 인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'Tf.param'") && e.includes("call argument count"))).toBe(true);
   });
 
   it("dispatches independently for two different enum receiver types with the same method name (no collision, mirroring the box/line drawing test)", () => {
@@ -17338,7 +17338,7 @@ describe("Analyzer method with an enum receiver (C677)", () => {
 
   it("still rejects a method call on an enum var when no matching method name is declared", () => {
     const prog = analyzeSource([TF, "tf = input.enum(Tf.m1, \"tf\")", "tf.totallyUnrelated()"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'Tf'에 없는 method") && e.includes("totallyUnrelated"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown method for 'Tf'") && e.includes("totallyUnrelated"))).toBe(true);
   });
 
   it("keeps plain enum member DotAccess/switch dispatch unaffected when no method-call sugar is involved (regression guard)", () => {
@@ -17364,7 +17364,7 @@ describe("Analyzer copy (UDT slice 5)", () => {
 
   it("errors on 'obj.copy(...)' with any arguments (built-in pseudo-method takes none)", () => {
     const prog = analyzeSource([POINT, "var p = Point.new()", "p.copy(1.0)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'Point.copy'") && e.includes("호출 인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'Point.copy'") && e.includes("call argument count"))).toBe(true);
   });
 
   it("does not require a mangled 'TypeName$copy' function to exist (no FuncDecl for the built-in)", () => {
@@ -17415,12 +17415,12 @@ describe("Analyzer copy static form (TypeName.copy(instance), C645)", () => {
 
   it("errors on 'TypeName.copy()' with zero arguments (static form requires exactly the instance to copy)", () => {
     const prog = analyzeSource([POINT2, "Point.copy()"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'Point.copy'") && e.includes("호출 인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'Point.copy'") && e.includes("call argument count"))).toBe(true);
   });
 
   it("errors on 'TypeName.copy(instance, extra)' with two arguments (static form takes exactly one)", () => {
     const prog = analyzeSource([POINT2, "var Point p = Point.new()", "Point.copy(p, p)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'Point.copy'") && e.includes("호출 인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'Point.copy'") && e.includes("call argument count"))).toBe(true);
   });
 
   it("does not require a mangled 'TypeName$copy' function to exist for the static form either", () => {
@@ -17481,7 +17481,7 @@ describe("Analyzer input.* (first slice: int/float/bool/string, C131)", () => {
 
   it("rejects input.float with more than 6 positional args (defval,title,minval,maxval,step,tooltip)", () => {
     const prog = analyzeSource('x = input.float(14, "Length", 1, 100, 1, "tt", 999)');
-    expect(prog.errors.some((e) => e.includes("'input.float'") && e.includes("호출 인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'input.float'") && e.includes("call argument count"))).toBe(true);
   });
 
   // C344: 잔여 argcount 클러스터 재조사 결과 input.int도 bool/string/timeframe/color(C292/C293/
@@ -17497,7 +17497,7 @@ describe("Analyzer input.* (first slice: int/float/bool/string, C131)", () => {
 
   it("rejects input.int with more than 6 positional args (defval,title,minval,maxval,step,tooltip)", () => {
     const prog = analyzeSource('x = input.int(14, "Length", 1, 100, 1, "tt", "extra")');
-    expect(prog.errors.some((e) => e.includes("'input.int'") && e.includes("호출 인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'input.int'") && e.includes("call argument count"))).toBe(true);
   });
 
   it("accepts input.bool/string called with 0 up to 2 positional args (defval, title)", () => {
@@ -17520,7 +17520,7 @@ describe("Analyzer input.* (first slice: int/float/bool/string, C131)", () => {
 
   it("rejects input.bool with more than 5 positional args (defval,title,tooltip,inline,group)", () => {
     const prog = analyzeSource('x = input.bool(true, "Label", "tt", "il", "gr", "extra")');
-    expect(prog.errors.some((e) => e.includes("'input.bool'") && e.includes("호출 인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'input.bool'") && e.includes("call argument count"))).toBe(true);
   });
 
   it("accepts input.string positional args up to the new options/tooltip/inline slots (C292, wild-evidenced)", () => {
@@ -17538,7 +17538,7 @@ describe("Analyzer input.* (first slice: int/float/bool/string, C131)", () => {
 
   it("rejects input.string with more than 6 positional args (defval,title,options,tooltip,inline,group)", () => {
     const prog = analyzeSource('x = input.string("hi", "Label", ["A"], "tt", "il", "grp", "extra")');
-    expect(prog.errors.some((e) => e.includes("'input.string'") && e.includes("호출 인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'input.string'") && e.includes("call argument count"))).toBe(true);
   });
 
   // C293: 잔여 argcount 클러스터 재조사 결과 input.timeframe도 string(C292)과 동일한 패턴 —
@@ -17552,7 +17552,7 @@ describe("Analyzer input.* (first slice: int/float/bool/string, C131)", () => {
 
   it("rejects input.timeframe with more than 3 positional args (defval,title,options)", () => {
     const prog = analyzeSource('x = input.timeframe("D", "Label", ["D", "W"], "extra")');
-    expect(prog.errors.some((e) => e.includes("'input.timeframe'") && e.includes("호출 인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'input.timeframe'") && e.includes("call argument count"))).toBe(true);
   });
 
   // ── 키워드 인자(title=/minval=/maxval=/step=, C132 — 두 번째 슬라이스가 C129 UDT `.new()`와
@@ -17569,7 +17569,7 @@ describe("Analyzer input.* (first slice: int/float/bool/string, C131)", () => {
 
   it("rejects a keyword argument naming a slot already filled positionally", () => {
     const prog = analyzeSource('x = input.int(14, "Length", defval=99)');
-    expect(prog.errors.some((e) => e.includes("위치 인자와 키워드 인자로 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("accepts a duplicate 'title=' keyword argument regardless of value (C762 — title only feeds the empty-by-default override dict, runtime/input.ts)", () => {
@@ -17584,7 +17584,7 @@ describe("Analyzer input.* (first slice: int/float/bool/string, C131)", () => {
 
   it("still rejects a duplicate 'defval=' keyword argument with a different value (C762 exception — defval is the only actually-consumed slot)", () => {
     const prog = analyzeSource('x = input.float(2, title="T", defval=3)');
-    expect(prog.errors.some((e) => e.includes("'defval'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'defval' specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("rejects a keyword argument name that isn't in input.*'s fixed parameter table (a genuinely unknown name)", () => {
@@ -17592,7 +17592,7 @@ describe("Analyzer input.* (first slice: int/float/bool/string, C131)", () => {
     // "not modeled by this slice"라고 명시) C283이 tooltip 등 UI 메타데이터 kwargs를 정식
     // 지원하면서 예시만 진짜 미지의 이름으로 교체 — 테스트의 의도("모르는 이름은 거부")는 그대로다.
     const prog = analyzeSource('x = input.int(14, bogus="hint")');
-    expect(prog.errors.some((e) => e.includes("'input.int'에 없는 인자 이름") && e.includes("'bogus'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown argument name for 'input.int'") && e.includes("'bogus'"))).toBe(true);
   });
 
   it("accepts minval= as a kwarg-only metadata discard on input.bool (C349 — no longer a fixed-signature violation, see INPUT_META_KWARG_NAMES)", () => {
@@ -17640,7 +17640,7 @@ describe("Analyzer input.* (third slice: remaining (defval, title)-only 8 method
     for (const method of namespacedMethods) {
       if (method === "timeframe" || method === "color") continue;
       const prog = analyzeSource(`x = input.${method}(1, "Title", "extra")`);
-      expect(prog.errors.some((e) => e.includes(`'input.${method}'`) && e.includes("호출 인자 개수"))).toBe(true);
+      expect(prog.errors.some((e) => e.includes(`'input.${method}'`) && e.includes("call argument count"))).toBe(true);
     }
   });
 
@@ -17656,7 +17656,7 @@ describe("Analyzer input.* (third slice: remaining (defval, title)-only 8 method
 
   it("rejects input.color with more than 3 positional args (defval,title,tooltip)", () => {
     const prog = analyzeSource('x = input.color("#ff0000", "Line Color", "tt", "extra")');
-    expect(prog.errors.some((e) => e.includes("'input.color'") && e.includes("호출 인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'input.color'") && e.includes("call argument count"))).toBe(true);
   });
 
   it("accepts a 'title=' keyword argument on each third-slice input.* method (same kwargs support as bool/string)", () => {
@@ -17669,7 +17669,7 @@ describe("Analyzer input.* (third slice: remaining (defval, title)-only 8 method
   it("rejects a genuinely unknown keyword argument name on each third-slice input.* method (e.g. 'bogus')", () => {
     for (const method of namespacedMethods) {
       const prog = analyzeSource(`x = input.${method}(1, bogus=0)`);
-      expect(prog.errors.some((e) => e.includes(`'input.${method}'에 없는 인자 이름`) && e.includes("'bogus'"))).toBe(true);
+      expect(prog.errors.some((e) => e.includes(`unknown argument name for 'input.${method}'`) && e.includes("'bogus'"))).toBe(true);
     }
   });
 
@@ -17705,7 +17705,7 @@ describe("Analyzer input.* (third slice: remaining (defval, title)-only 8 method
 
   it("rejects bare 'input' with more than 3 positional args (defval,title,tooltip)", () => {
     const prog = analyzeSource('x = input(42, "Any Input", "tt", "extra")');
-    expect(prog.errors.some((e) => e.includes("'input()'") && e.includes("호출 인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'input()'") && e.includes("call argument count"))).toBe(true);
   });
 
   it("accepts a 'title=' keyword argument on bare 'input()'", () => {
@@ -17720,7 +17720,7 @@ describe("Analyzer input.* (third slice: remaining (defval, title)-only 8 method
 
   it("rejects a keyword argument naming a slot already filled positionally on bare 'input()'", () => {
     const prog = analyzeSource('x = input(42, "Any Input", defval=99)');
-    expect(prog.errors.some((e) => e.includes("위치 인자와 키워드 인자로 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
   // C762 (배치38 next_hint(C761) 지시 — kwarg중복지정 재분류): wild2 corpus_scan 최다 실사용
@@ -17751,7 +17751,7 @@ describe("Analyzer input.enum (C134 — parser fix unblocks the last input.* met
 
   it("rejects more than 3 positional args", () => {
     const prog = analyzeSource('x = input.enum("A", "Choice", array.from("A"), "extra")');
-    expect(prog.errors.some((e) => e.includes("'input.enum'") && e.includes("호출 인자 개수"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'input.enum'") && e.includes("call argument count"))).toBe(true);
   });
 
   it("accepts 'title='/'options=' keyword arguments, in any order relative to positional defval", () => {
@@ -17761,7 +17761,7 @@ describe("Analyzer input.enum (C134 — parser fix unblocks the last input.* met
 
   it("rejects a genuinely unknown keyword argument name (e.g. 'bogus', not in the (defval, title, options) signature)", () => {
     const prog = analyzeSource('x = input.enum("A", bogus=0)');
-    expect(prog.errors.some((e) => e.includes("'input.enum'에 없는 인자 이름") && e.includes("'bogus'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown argument name for 'input.enum'") && e.includes("'bogus'"))).toBe(true);
   });
 
   it("accepts minval= as a kwarg-only metadata discard on input.enum too (C349, INPUT_META_KWARG_NAMES applies via the shared analyzeInputCall path)", () => {
@@ -17776,7 +17776,7 @@ describe("Analyzer input.enum (C134 — parser fix unblocks the last input.* met
 
   it("rejects a keyword argument naming a slot already filled positionally", () => {
     const prog = analyzeSource('x = input.enum("A", "Choice", array.from("A"), options=array.from("B"))');
-    expect(prog.errors.some((e) => e.includes("위치 인자와 키워드 인자로 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 });
 
@@ -17815,7 +17815,7 @@ describe("Analyzer input.string/input.enum 'options=[...]' bracket-literal kwarg
 
   it("still analyzes elements inside a positional 'options' array on input.string (undeclared identifier still errors)", () => {
     const prog = analyzeSource('x = input.string("EMA", "MA Type", [undeclaredName, "SMA"])');
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자") && e.includes("undeclaredName"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier") && e.includes("undeclaredName"))).toBe(true);
   });
 
   // C293: string과 동일한 위치 TupleExpr 우회를 input.timeframe에도 적용(위 INPUT_PARAM_NAMES.timeframe
@@ -17827,32 +17827,32 @@ describe("Analyzer input.string/input.enum 'options=[...]' bracket-literal kwarg
 
   it("still analyzes elements inside a positional 'options' array on input.timeframe (undeclared identifier still errors)", () => {
     const prog = analyzeSource('x = input.timeframe("5", "Resolution", [undeclaredName, "D"])');
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자") && e.includes("undeclaredName"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier") && e.includes("undeclaredName"))).toBe(true);
   });
 
   it("rejects a duplicate 'options=' keyword argument on input.string", () => {
     const prog = analyzeSource('x = input.string("EMA", options=["EMA"], options=["SMA"])');
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'options' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'options'"))).toBe(true);
   });
 
   it("still rejects an unrelated unknown keyword argument name on input.string (exception is 'options'-only, not blanket)", () => {
     const prog = analyzeSource('x = input.string("EMA", bogus=0)');
-    expect(prog.errors.some((e) => e.includes("'input.string'에 없는 인자 이름") && e.includes("'bogus'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown argument name for 'input.string'") && e.includes("'bogus'"))).toBe(true);
   });
 
   it("still analyzes the individual elements inside 'options=[...]' (an undeclared identifier element still errors)", () => {
     const prog = analyzeSource("x = input.string(\"EMA\", options=[undeclaredName, \"SMA\"])");
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자") && e.includes("undeclaredName"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier") && e.includes("undeclaredName"))).toBe(true);
   });
 
   it("still rejects a bare bracket-literal expression outside the 'options=' kwarg position (exception does not widen TupleExpr generally)", () => {
     const prog = analyzeSource('x = [1, 2, 3]');
-    expect(prog.errors.some((e) => e.includes("튜플 리터럴은 함수의 마지막 문장"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple literal supported only as the function's last statement"))).toBe(true);
   });
 
   it("still rejects 'options' passed positionally as the 3rd arg to input.enum (out of scope — corpus uses kwarg form only)", () => {
     const prog = analyzeSource('x = input.enum("SMA", "MA Type", ["SMA", "EMA"])');
-    expect(prog.errors.some((e) => e.includes("튜플 리터럴은 함수의 마지막 문장"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple literal supported only as the function's last statement"))).toBe(true);
   });
 
   it("accepts a bare 'input(...)' call's 'options=[...]' the same way as namespaced input.string (isBareInputCall path)", () => {
@@ -17860,7 +17860,7 @@ describe("Analyzer input.string/input.enum 'options=[...]' bracket-literal kwarg
     // 이름이지만(진짜 TV에도 없음), TupleExpr 래퍼 우회는 이름 검증과 별개 단계라 여기서도 동작
     // 해야 한다 — 그 뒤 이름 검증에서 "없는 인자 이름"으로 정상 거부되는지 함께 확인.
     const prog = analyzeSource('x = input(42, options=["A", "B"])');
-    expect(prog.errors.some((e) => e.includes("'input()'에 없는 인자 이름") && e.includes("'options'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown argument name for 'input()'") && e.includes("'options'"))).toBe(true);
   });
 });
 
@@ -17940,14 +17940,14 @@ describe("Analyzer UI-metadata kwargs (C283: wild corpus top cluster — input.*
   it("still rejects options=[...] on methods outside the widened set (e.g. input.bool, input.color)", () => {
     for (const method of ["bool", "color"]) {
       const prog = analyzeSource(`x = input.${method}(1, options=[1, 2])`);
-      expect(prog.errors.some((e) => e.includes(`'input.${method}'에 없는 인자 이름`) && e.includes("'options'"))).toBe(true);
+      expect(prog.errors.some((e) => e.includes(`unknown argument name for 'input.${method}'`) && e.includes("'options'"))).toBe(true);
     }
   });
 
   it("still rejects a genuinely unknown kwarg name on every namespaced input.* method (metadata set is curated, not blanket)", () => {
     for (const method of allMethods) {
       const prog = analyzeSource(`x = input.${method}(1, bogus=1)`);
-      expect(prog.errors.some((e) => e.includes(`'input.${method}'에 없는 인자 이름`) && e.includes("'bogus'"))).toBe(true);
+      expect(prog.errors.some((e) => e.includes(`unknown argument name for 'input.${method}'`) && e.includes("'bogus'"))).toBe(true);
     }
   });
 
@@ -17958,12 +17958,12 @@ describe("Analyzer UI-metadata kwargs (C283: wild corpus top cluster — input.*
 
   it("still rejects a duplicate 'options=' metadata kwarg on input.int (C762 exception — array value, not compared)", () => {
     const prog = analyzeSource('x = input.int(1, options=array.from(1), options=array.from(2))');
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'options' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'options'"))).toBe(true);
   });
 
   it("still analyzes metadata kwarg value expressions (undeclared identifier inside tooltip= errors)", () => {
     const prog = analyzeSource('x = input.int(1, tooltip=undeclaredName)');
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자") && e.includes("undeclaredName"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier") && e.includes("undeclaredName"))).toBe(true);
   });
 
   it("keeps positional slots intact when metadata kwargs are appended after full positional args", () => {
@@ -17978,14 +17978,14 @@ describe("Analyzer UI-metadata kwargs (C283: wild corpus top cluster — input.*
 
   it("rejects a duplicate transp= on plot and still rejects unknown plot kwarg names", () => {
     const dup = analyzeSource("plot(close, transp=20, transp=30)");
-    expect(dup.errors.some((e) => e.includes("키워드 인자 'transp' 중복 지정"))).toBe(true);
+    expect(dup.errors.some((e) => e.includes("duplicate keyword argument 'transp'"))).toBe(true);
     const bogus = analyzeSource("plot(close, bogus=1)");
-    expect(bogus.errors.some((e) => e.includes("'plot'에 없는 인자 이름") && e.includes("bogus"))).toBe(true);
+    expect(bogus.errors.some((e) => e.includes("unknown argument name for 'plot'") && e.includes("bogus"))).toBe(true);
   });
 
   it("does not add transp to plot's positional arity (16 positional args still rejected with the 1~15 message)", () => {
     const prog = analyzeSource(`plot(close${", 1".repeat(15)})`);
-    expect(prog.errors.some((e) => e.includes("'plot' 호출 인자 개수") && e.includes("1~15개"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'plot' call argument count") && e.includes("1~15"))).toBe(true);
   });
 
   // plot linestyle=(C670, wild "네임스페이스 접근은 호출식만 지원" 클러스터 최다 서브그룹 32/32
@@ -17998,19 +17998,19 @@ describe("Analyzer UI-metadata kwargs (C283: wild corpus top cluster — input.*
 
   it("rejects a duplicate linestyle= on plot and still rejects unknown plot kwarg names", () => {
     const dup = analyzeSource("plot(close, linestyle=plot.linestyle_dashed, linestyle=plot.linestyle_dotted)");
-    expect(dup.errors.some((e) => e.includes("키워드 인자 'linestyle' 중복 지정"))).toBe(true);
+    expect(dup.errors.some((e) => e.includes("duplicate keyword argument 'linestyle'"))).toBe(true);
     const bogus = analyzeSource("plot(close, bogus=1)");
-    expect(bogus.errors.some((e) => e.includes("'plot'에 없는 인자 이름") && e.includes("bogus"))).toBe(true);
+    expect(bogus.errors.some((e) => e.includes("unknown argument name for 'plot'") && e.includes("bogus"))).toBe(true);
   });
 
   it("does not add linestyle to plot's positional arity (16 positional args still rejected with the 1~15 message)", () => {
     const prog = analyzeSource(`plot(close${", 1".repeat(15)})`);
-    expect(prog.errors.some((e) => e.includes("'plot' 호출 인자 개수") && e.includes("1~15개"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'plot' call argument count") && e.includes("1~15"))).toBe(true);
   });
 
   it("rejects an unrecognized plot.linestyle_* member (constant folding is a closed set)", () => {
     const prog = analyzeSource("x = plot.linestyle_bogus");
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("accepts dynamic_requests=/max_tables_count= kwargs on indicator() and strategy() as kwarg-only discard", () => {
@@ -18022,17 +18022,17 @@ describe("Analyzer UI-metadata kwargs (C283: wild corpus top cluster — input.*
 
   it("still rejects dynamic_requests= on library() (TV library signature is title/overlay only)", () => {
     const prog = analyzeSource('library("t", dynamic_requests=true)');
-    expect(prog.errors.some((e) => e.includes("'library'에 없는 인자 이름") && e.includes("'dynamic_requests'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown argument name for 'library'") && e.includes("'dynamic_requests'"))).toBe(true);
   });
 
   it("does not extend indicator()'s positional arity (17 positional args still rejected with the 0~16 message)", () => {
     const prog = analyzeSource(`indicator(${Array(17).fill("1").join(", ")})`);
-    expect(prog.errors.some((e) => e.includes("'indicator' 호출 인자 개수") && e.includes("0~16개"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'indicator' call argument count") && e.includes("0~16"))).toBe(true);
   });
 
   it("rejects a duplicate dynamic_requests= on indicator()", () => {
     const prog = analyzeSource('indicator("t", dynamic_requests=true, dynamic_requests=false)');
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'dynamic_requests' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'dynamic_requests'"))).toBe(true);
   });
 
   // C560: wild "'X'에 없는 인자 이름" 클러스터 잔여 — behind_chart(strategy() 5건, solo 3)/
@@ -18053,14 +18053,14 @@ describe("Analyzer UI-metadata kwargs (C283: wild corpus top cluster — input.*
 
   it("still rejects linktoseries=/behind_chart= on library() (TV library signature is title/overlay only)", () => {
     const prog1 = analyzeSource('library("t", linktoseries=true)');
-    expect(prog1.errors.some((e) => e.includes("'library'에 없는 인자 이름") && e.includes("'linktoseries'"))).toBe(true);
+    expect(prog1.errors.some((e) => e.includes("unknown argument name for 'library'") && e.includes("'linktoseries'"))).toBe(true);
     const prog2 = analyzeSource('library("t", behind_chart=true)');
-    expect(prog2.errors.some((e) => e.includes("'library'에 없는 인자 이름") && e.includes("'behind_chart'"))).toBe(true);
+    expect(prog2.errors.some((e) => e.includes("unknown argument name for 'library'") && e.includes("'behind_chart'"))).toBe(true);
   });
 
   it("rejects a duplicate linktoseries= on indicator()", () => {
     const prog = analyzeSource('indicator("t", linktoseries=true, linktoseries=false)');
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'linktoseries' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'linktoseries'"))).toBe(true);
   });
 });
 
@@ -18103,7 +18103,7 @@ describe("Analyzer plot() collection channel (PlotCollector, C135)", () => {
 
   it("rejects zero arguments", () => {
     const prog = analyzeSource("plot()");
-    expect(prog.errors.some((e) => e.includes("'plot' 호출 인자 개수") && e.includes("1~15개"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'plot' call argument count") && e.includes("1~15"))).toBe(true);
   });
 
   it("accepts a third positional argument now that PLOT_PARAM_NAMES(color) exists (C159 scope expansion)", () => {
@@ -18114,22 +18114,22 @@ describe("Analyzer plot() collection channel (PlotCollector, C135)", () => {
   it("rejects more than 1+PLOT_PARAM_NAMES.length (15) arguments", () => {
     // 인자 개수 상한만 검증하면 되므로 각 인자의 실제 타입 유효성(color/style 등)은 무관 — 리터럴로 채운다.
     const prog = analyzeSource(`plot(close${", 1".repeat(15)})`);
-    expect(prog.errors.some((e) => e.includes("'plot' 호출 인자 개수") && e.includes("1~15개"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'plot' call argument count") && e.includes("1~15"))).toBe(true);
   });
 
   it("rejects a call inside an if-branch body (v5: local scope forbidden, no cond-body exception unlike ta.*)", () => {
     const prog = analyzeSource("if close > 0\n    plot(close)");
-    expect(prog.errors.some((e) => e.includes("'plot' 호출은 스크립트 최상위"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'plot' call is only supported at script top-level"))).toBe(true);
   });
 
   it("rejects a call inside a for-loop body", () => {
     const prog = analyzeSource("for i = 0 to 3\n    plot(close)");
-    expect(prog.errors.some((e) => e.includes("'plot' 호출은 스크립트 최상위"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'plot' call is only supported at script top-level"))).toBe(true);
   });
 
   it("rejects a call inside a UDF body", () => {
     const prog = analyzeSource("f() =>\n    plot(close)\n    1");
-    expect(prog.errors.some((e) => e.includes("'plot' 호출은 스크립트 최상위"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'plot' call is only supported at script top-level"))).toBe(true);
   });
 
   it("accepts a 'title=' keyword argument and uses it as the plot title (C159 PLOT_PARAM_NAMES)", () => {
@@ -18146,29 +18146,29 @@ describe("Analyzer plot() collection channel (PlotCollector, C135)", () => {
 
   it("rejects an unknown keyword argument name", () => {
     const prog = analyzeSource("plot(close, bogus=1)");
-    expect(prog.errors.some((e) => e.includes("'plot'에 없는 인자 이름") && e.includes("bogus"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown argument name for 'plot'") && e.includes("bogus"))).toBe(true);
   });
 
   it("rejects a duplicate keyword argument", () => {
     const prog = analyzeSource('plot(close, color=color.red, color=color.blue)');
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'color' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'color'"))).toBe(true);
   });
 
   it("rejects a positional title combined with a 'title=' keyword argument (positional/keyword conflict)", () => {
     const prog = analyzeSource('plot(close, "Positional", title="Keyword")');
-    expect(prog.errors.some((e) => e.includes("위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("accepts a positional title combined with an identical 'title=' keyword argument (C654, wild 656fc2756ab9-adjacent pattern)", () => {
     const prog = analyzeSource('plot(close, "Same", title="Same")');
-    expect(prog.errors.some((e) => e.includes("위치 인자와 키워드 인자로 중복 지정됨"))).toBe(false);
+    expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(false);
   });
 
   // C654: wild 1b04bb1e2733.pine `plot(coint_stat, "...", color.yellow, color=color.yellow, ...)`
   // — 3번째 위치 인자(color)와 color= 키워드가 값까지 완전히 같은 실제 corpus 패턴.
   it("accepts a positional color combined with an identical 'color=' keyword argument (C654)", () => {
     const prog = analyzeSource('plot(close, "Title", color.yellow, color=color.yellow)');
-    expect(prog.errors.some((e) => e.includes("위치 인자와 키워드 인자로 중복 지정됨"))).toBe(false);
+    expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(false);
   });
 
   it("still analyzes nested expressions inside the series argument (surfaces unrelated errors)", () => {
@@ -18191,12 +18191,12 @@ describe("Analyzer plot() collection channel (PlotCollector, C135)", () => {
 
   it("rejects a duplicate 'series=' keyword argument", () => {
     const prog = analyzeSource("plot(series=close, series=open)");
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'series' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'series'"))).toBe(true);
   });
 
   it("rejects a positional series combined with a 'series=' keyword argument (positional/keyword conflict)", () => {
     const prog = analyzeSource("plot(close, series=open)");
-    expect(prog.errors.some((e) => e.includes("위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("still analyzes nested expressions inside a 'series=' keyword argument (surfaces unrelated errors)", () => {
@@ -18206,7 +18206,7 @@ describe("Analyzer plot() collection channel (PlotCollector, C135)", () => {
 
   it("still rejects zero arguments when no 'series=' keyword argument is given", () => {
     const prog = analyzeSource('plot(title="x")');
-    expect(prog.errors.some((e) => e.includes("'plot' 호출 인자 개수") && e.includes("1~15개"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'plot' call argument count") && e.includes("1~15"))).toBe(true);
   });
 });
 
@@ -18237,17 +18237,17 @@ describe("Analyzer indicator()/strategy() directive keyword arguments (C160, LIM
 
   it("rejects an unknown keyword argument name on indicator()", () => {
     const prog = analyzeSource('indicator("Foo", bogus=1)');
-    expect(prog.errors.some((e) => e.includes("'indicator'에 없는 인자 이름") && e.includes("bogus"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown argument name for 'indicator'") && e.includes("bogus"))).toBe(true);
   });
 
   it("rejects a duplicate keyword argument on indicator()", () => {
     const prog = analyzeSource('indicator("Foo", overlay=true, overlay=false)');
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'overlay' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'overlay'"))).toBe(true);
   });
 
   it("rejects a positional title combined with a 'title=' keyword argument on indicator()", () => {
     const prog = analyzeSource('indicator("Positional", title="Keyword")');
-    expect(prog.errors.some((e) => e.includes("위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
   // C654(배치33 (5)): TV 실측(scratch/tv_validation/results.jsonl kwarg_dup 버킷) 8/13 컴파일 수용
@@ -18257,12 +18257,12 @@ describe("Analyzer indicator()/strategy() directive keyword arguments (C160, LIM
   // 이 정확한 형태(값이 다름)는 여전히 거부하고 동일값만 수용한다.
   it("accepts a positional title combined with an identical 'title=' keyword argument on indicator() (C654)", () => {
     const prog = analyzeSource('indicator("Same Title", title="Same Title")');
-    expect(prog.errors.some((e) => e.includes("위치 인자와 키워드 인자로 중복 지정됨"))).toBe(false);
+    expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(false);
   });
 
   it("rejects more than INDICATOR_PARAM_NAMES.length (16) positional arguments on indicator()", () => {
     const prog = analyzeSource(`indicator("Foo"${", 1".repeat(16)})`);
-    expect(prog.errors.some((e) => e.includes("'indicator' 호출 인자 개수") && e.includes("0~16개"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'indicator' call argument count") && e.includes("0~16"))).toBe(true);
   });
 
   // C171 긍정 마이그레이션: default_qty_type이 파싱-후-버림에서 정식 소비로 바뀌며 값 검증이
@@ -18280,33 +18280,33 @@ describe("Analyzer indicator()/strategy() directive keyword arguments (C160, LIM
 
   it("rejects an unknown keyword argument name on strategy()", () => {
     const prog = analyzeSource('strategy("Foo", bogus=1)');
-    expect(prog.errors.some((e) => e.includes("'strategy'에 없는 인자 이름") && e.includes("bogus"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown argument name for 'strategy'") && e.includes("bogus"))).toBe(true);
   });
 
   it("rejects a duplicate keyword argument on strategy()", () => {
     const prog = analyzeSource('strategy("Foo", pyramiding=1, pyramiding=2)');
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'pyramiding' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'pyramiding'"))).toBe(true);
   });
 
   it("rejects a positional title combined with a 'title=' keyword argument on strategy()", () => {
     const prog = analyzeSource('strategy("Positional", title="Keyword")');
-    expect(prog.errors.some((e) => e.includes("위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("rejects more than STRATEGY_PARAM_NAMES.length (31) positional arguments on strategy()", () => {
     const prog = analyzeSource(`strategy("Foo"${", 1".repeat(31)})`);
-    expect(prog.errors.some((e) => e.includes("'strategy' 호출 인자 개수") && e.includes("0~31개"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'strategy' call argument count") && e.includes("0~31"))).toBe(true);
   });
 
   it("still analyzes nested expressions inside kwarg values (surfaces unrelated errors)", () => {
     const prog = analyzeSource("indicator(undefinedVar, shorttitle=alsoUndefined)");
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자") && e.includes("undefinedVar"))).toBe(true);
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자") && e.includes("alsoUndefined"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier") && e.includes("undefinedVar"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier") && e.includes("alsoUndefined"))).toBe(true);
   });
 
   it("still rejects indicator()/strategy() with kwargs called from inside an if-body (topLevel-only, regression check for the new isDirectiveCall blanket exception)", () => {
     const prog = analyzeSource('if close > open\n    indicator("nope", shorttitle="x")');
-    expect(prog.errors.some((e) => e.includes("알 수 없는 함수 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown function call"))).toBe(true);
     expect(prog.directives.size).toBe(0);
   });
 });
@@ -18328,22 +18328,22 @@ describe("Analyzer library() directive (C274, same no-op mechanism as indicator(
 
   it("rejects an unknown keyword argument name on library()", () => {
     const prog = analyzeSource('library("MathUtils", bogus=1)');
-    expect(prog.errors.some((e) => e.includes("'library'에 없는 인자 이름") && e.includes("bogus"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown argument name for 'library'") && e.includes("bogus"))).toBe(true);
   });
 
   it("rejects a duplicate keyword argument on library()", () => {
     const prog = analyzeSource('library("MathUtils", overlay=true, overlay=false)');
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'overlay' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'overlay'"))).toBe(true);
   });
 
   it("rejects more than LIBRARY_PARAM_NAMES.length (2) positional arguments on library()", () => {
     const prog = analyzeSource('library("MathUtils", true, 1)');
-    expect(prog.errors.some((e) => e.includes("'library' 호출 인자 개수") && e.includes("0~2개"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'library' call argument count") && e.includes("0~2"))).toBe(true);
   });
 
   it("still rejects library() called from inside an if-body (topLevel-only, mirrors indicator()/strategy())", () => {
     const prog = analyzeSource('if close > open\n    library("nope")');
-    expect(prog.errors.some((e) => e.includes("알 수 없는 함수 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown function call"))).toBe(true);
     expect(prog.directives.size).toBe(0);
   });
 
@@ -18372,27 +18372,27 @@ describe("Analyzer study() directive (C399, TV v4 legacy alias for indicator(), 
 
   it("rejects an unknown keyword argument name on study()", () => {
     const prog = analyzeSource('study("Foo", bogus=1)');
-    expect(prog.errors.some((e) => e.includes("'study'에 없는 인자 이름") && e.includes("bogus"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown argument name for 'study'") && e.includes("bogus"))).toBe(true);
   });
 
   it("rejects a duplicate keyword argument on study()", () => {
     const prog = analyzeSource('study("Foo", overlay=true, overlay=false)');
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'overlay' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'overlay'"))).toBe(true);
   });
 
   it("rejects a positional title combined with a 'title=' keyword argument on study()", () => {
     const prog = analyzeSource('study("Positional", title="Keyword")');
-    expect(prog.errors.some((e) => e.includes("위치 인자와 키워드 인자로 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("rejects more than INDICATOR_PARAM_NAMES.length (16) positional arguments on study(), same arity as indicator()", () => {
     const prog = analyzeSource(`study("Foo"${", 1".repeat(16)})`);
-    expect(prog.errors.some((e) => e.includes("'study' 호출 인자 개수") && e.includes("0~16개"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'study' call argument count") && e.includes("0~16"))).toBe(true);
   });
 
   it("still rejects study() called from inside an if-body (topLevel-only, mirrors indicator()/strategy()/library())", () => {
     const prog = analyzeSource('if close > open\n    study("nope")');
-    expect(prog.errors.some((e) => e.includes("알 수 없는 함수 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown function call"))).toBe(true);
     expect(prog.directives.size).toBe(0);
   });
 });
@@ -18445,10 +18445,10 @@ describe("Analyzer request.security (C176 first slice + C177 second slice — ba
 
   it("still rejects other timeframe.* namespace properties as the tf argument (only period/main_period fold to a string — multiplier is a number, isdaily is a boolean)", () => {
     const progMultiplier = analyzeSource('x = request.security("", timeframe.multiplier, close)');
-    expect(progMultiplier.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(progMultiplier.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
 
     const progIsDaily = analyzeSource('x = request.security("", timeframe.isdaily, close)');
-    expect(progIsDaily.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(progIsDaily.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   // C367 계약 갱신(STEP 6.4, C305/C363 선례): 이 테스트의 원래 거부 대상(`close + 1` — ta 콜
@@ -18495,12 +18495,12 @@ describe("Analyzer request.security (C176 first slice + C177 second slice — ba
 
   it("rejects a call with fewer than 3 arguments", () => {
     const prog = analyzeSource('x = request.security("", "D")');
-    expect(prog.errors.some((e) => e.includes("'request.security' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.security' call argument count mismatch"))).toBe(true);
   });
 
   it("rejects a call with more than 5 positional arguments (ignore_invalid_symbol/currency/calc_bars_count out of scope, C249)", () => {
     const prog = analyzeSource('x = request.security("", "D", close, false, false, true)');
-    expect(prog.errors.some((e) => e.includes("'request.security' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.security' call argument count mismatch"))).toBe(true);
   });
 
   it("does not register a security slot when validation fails (no half-registered slot on error)", () => {
@@ -18572,26 +18572,26 @@ describe("Analyzer request.security symbol=/timeframe=/expression= kwargs (C409,
 
   it("still rejects a call missing the required expression argument entirely (symbol/timeframe only, no kwarg fills it)", () => {
     const prog = analyzeSource('x = request.security(symbol="", timeframe="D")');
-    expect(prog.errors.some((e) => e.includes("'request.security' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.security' call argument count mismatch"))).toBe(true);
   });
 
   it("rejects an unsupported kwarg name unrelated to symbol/timeframe/expression/gaps/lookahead", () => {
     const prog = analyzeSource('x = request.security(symbol="", timeframe="D", expression=close, foo=true)');
     expect(
       prog.errors.some((e) =>
-        e.includes("'request.security' 키워드 인자는 'gaps='/'lookahead='/'ignore_invalid_symbol='/'currency='/'calc_bars_count='만 지원"),
+        e.includes("'request.security' only supports keyword arguments 'gaps='/'lookahead='/'ignore_invalid_symbol='/'currency='/'calc_bars_count='"),
       ),
     ).toBe(true);
   });
 
   it("rejects duplicate keyword lead names", () => {
     const prog = analyzeSource('x = request.security(symbol="", symbol="X", timeframe="D", expression=close)');
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'symbol' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'symbol'"))).toBe(true);
   });
 
   it("rejects a lead name given both positionally and as a keyword", () => {
     const prog = analyzeSource('x = request.security("", "D", close, symbol="X")');
-    expect(prog.errors.some((e) => e.includes("인자 'symbol'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("argument 'symbol' specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("does not register a security slot when the fully-keyword expression argument is invalid", () => {
@@ -18613,7 +18613,7 @@ describe("Analyzer request.security symbol=/timeframe=/expression= kwargs (C409,
 
   it("still detects a use-before-declaration error for a keyword timeframe argument (declared-before-use analysis parity with the positional form)", () => {
     const prog = analyzeSource('x = request.security(symbol="", timeframe=tf, expression=close)\ntf = "D"');
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자: 'tf'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier: 'tf'"))).toBe(true);
   });
 });
 
@@ -18705,12 +18705,12 @@ describe("Analyzer request.security expression hist-on-expr (C370)", () => {
 
   it("still rejects a dynamic offset on an expr obj built from an unsupported identifier", () => {
     const prog = analyzeSource('x = request.security("", "D", ta.sma(close, 5)[undeclaredName])');
-    expect(prog.errors.some((e) => e.includes("bare/파생 시리즈"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("bare/derived series"))).toBe(true);
   });
 
   it("rejects a substituted history whose definition is outside the narrow grammar (modulo '%' — 이전 필러였던 '==' 비교는 C602가 합법화해 교체, '%'는 SECURITY_EXPR_ARITH_OPS 밖이라 여전히 무효)", () => {
     const prog = analyzeSource('v = close % open\nx = request.security("", "D", v[1])');
-    expect(prog.errors.some((e) => e.includes("bare/파생 시리즈"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("bare/derived series"))).toBe(true);
   });
 
   // C439 계약 갱신: 중첩 ta 자체가 이제 허용되므로(위 "accepts a nested ta.* call..." 테스트),
@@ -18781,24 +18781,24 @@ describe("Analyzer request.security gaps=/lookahead= kwargs (C177, second slice)
     const prog = analyzeSource('x = request.security("", "D", close, bogus_kwarg=10)');
     expect(
       prog.errors.some((e) =>
-        e.includes("'request.security' 키워드 인자는 'gaps='/'lookahead='/'ignore_invalid_symbol='/'currency='/'calc_bars_count='만 지원"),
+        e.includes("'request.security' only supports keyword arguments 'gaps='/'lookahead='/'ignore_invalid_symbol='/'currency='/'calc_bars_count='"),
       ),
     ).toBe(true);
   });
 
   it("rejects a duplicate calc_bars_count= keyword argument", () => {
     const prog = analyzeSource('x = request.security("", "D", close, calc_bars_count=10, calc_bars_count=5)');
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'calc_bars_count' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'calc_bars_count'"))).toBe(true);
   });
 
   it("rejects a duplicate gaps= (or lookahead=) keyword argument", () => {
     const prog = analyzeSource('x = request.security("", "D", close, gaps=true, gaps=false)');
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'gaps' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'gaps'"))).toBe(true);
   });
 
   it("rejects a gaps=/lookahead= value that cannot be folded to a compile-time constant at all (bar-series comparison)", () => {
     const prog = analyzeSource('useGaps = close > open\nx = request.security("", "D", close, gaps=useGaps)');
-    expect(prog.errors.some((e) => e.includes("'request.security'의 'gaps=' 값은 컴파일타임"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.security' 'gaps=' value only supports a compile-time"))).toBe(true);
   });
 
   it("still rejects a variable for gaps=/lookahead= when it is ':=' reassigned anywhere (C707 folding requires uniqueTopEqVars — reassigned names are excluded)", () => {
@@ -18807,7 +18807,7 @@ describe("Analyzer request.security gaps=/lookahead= kwargs (C177, second slice)
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("'request.security'의 'gaps=' 값은 컴파일타임"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.security' 'gaps=' value only supports a compile-time"))).toBe(true);
   });
 
   it("does not register a security slot when a gaps=/lookahead= kwarg is invalid (no half-registered slot on error)", () => {
@@ -18889,12 +18889,12 @@ describe("Analyzer request.security gaps=/lookahead= 변수/삼항 컴파일타�
     const prog = analyzeSource(
       'x = request.security("", "D", close, gaps=close > open ? barmerge.gaps_on : barmerge.gaps_off)',
     );
-    expect(prog.errors.some((e) => e.includes("'request.security'의 'gaps=' 값은 컴파일타임"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.security' 'gaps=' value only supports a compile-time"))).toBe(true);
   });
 
   it("still rejects a ternary whose condition folds but whose branch value is not itself a compile-time boolean leaf", () => {
     const prog = analyzeSource('flag = true\nx = request.security("", "D", close, gaps=flag ? close : barmerge.gaps_off)');
-    expect(prog.errors.some((e) => e.includes("'request.security'의 'gaps=' 값은 컴파일타임"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.security' 'gaps=' value only supports a compile-time"))).toBe(true);
   });
 });
 
@@ -18937,10 +18937,10 @@ describe("Analyzer request.security ignore_invalid_symbol=/currency= kwargs (C37
 
   it("rejects a duplicate ignore_invalid_symbol= (or currency=) keyword argument", () => {
     const progIgnore = analyzeSource('x = request.security("", "D", close, ignore_invalid_symbol=true, ignore_invalid_symbol=false)');
-    expect(progIgnore.errors.some((e) => e.includes("키워드 인자 'ignore_invalid_symbol' 중복 지정"))).toBe(true);
+    expect(progIgnore.errors.some((e) => e.includes("duplicate keyword argument 'ignore_invalid_symbol'"))).toBe(true);
 
     const progCurrency = analyzeSource('x = request.security("", "D", close, currency=currency.USD, currency="USD")');
-    expect(progCurrency.errors.some((e) => e.includes("키워드 인자 'currency' 중복 지정"))).toBe(true);
+    expect(progCurrency.errors.some((e) => e.includes("duplicate keyword argument 'currency'"))).toBe(true);
   });
 
   it("still catches a real analysis error inside a discarded currency= value (undeclared identifier)", () => {
@@ -18987,7 +18987,7 @@ describe("Analyzer request.security gaps/lookahead as positional arguments (C249
 
   it("rejects a positional gaps/lookahead value that cannot be folded to a compile-time constant at all (bar-series comparison, C707 widened folding to variables/ternaries but not arbitrary runtime expressions)", () => {
     const prog = analyzeSource('useGaps = close > open\nx = request.security("", "D", close, useGaps)');
-    expect(prog.errors.some((e) => e.includes("'request.security'의 'gaps' 위치 인자 값은 컴파일타임"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.security' 'gaps' positional argument value only supports a compile-time"))).toBe(true);
   });
 
   it("still folds a plain top-level unique '=' bool variable for positional gaps/lookahead too (C707, same resolver as the keyword form)", () => {
@@ -18999,7 +18999,7 @@ describe("Analyzer request.security gaps/lookahead as positional arguments (C249
 
   it("rejects mixing a positional gaps argument with a gaps= keyword argument (duplicate)", () => {
     const prog = analyzeSource('x = request.security("", "D", close, true, gaps=false)');
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'gaps' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'gaps'"))).toBe(true);
   });
 
   it("does not register a security slot when a positional gaps/lookahead value is invalid (no half-registered slot on error)", () => {
@@ -19079,7 +19079,7 @@ describe("Analyzer request.security expression call site (C180, third slice sub-
 
   it("rejects a multi-return ta.* call (ta.dmi) even though its own args are plain literals", () => {
     const prog = analyzeSource('x = request.security("", "D", ta.dmi(14, 14))');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   // C543 계약 갱신(MEMORY C162 "거부→허용 전환" 원칙): math.sum은 TA_REGISTRY dispatch:"math"라
@@ -19101,7 +19101,7 @@ describe("Analyzer request.security expression call site (C180, third slice sub-
 
   it("still rejects math.random (dispatch:\"math\" sibling of math.sum) as the stateful call — no wild evidence for this form yet (C543 curation)", () => {
     const prog = analyzeSource('x = request.security("", "D", math.random(0.0, 1.0))');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("accepts a bare-dispatch stateful call (fixnan) as the stateful call (C740 — 거부->수용 전환, v1의 dot-call 'ta.*' 한정 계약을 bare fixnan까지 의도적으로 확장 — 상세 계약은 C740 describe가 승계)", () => {
@@ -19112,7 +19112,7 @@ describe("Analyzer request.security expression call site (C180, third slice sub-
 
   it("rejects a nested request.security call inside the expression", () => {
     const prog = analyzeSource('x = request.security("", "D", request.security("", "60", close))');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   // C436 계약 갱신: 이 시점(C180/C367)엔 UDF 콜이 buildSecurityExpr 좁은 문법 밖이라 거부됐으나,
@@ -19137,7 +19137,7 @@ describe("Analyzer request.security expression call site (C180, third slice sub-
 
   it("still runs the reused ta.* argument-count validation on the found call (proves analyzeStatefulCall is genuinely reused, not bypassed)", () => {
     const prog = analyzeSource('x = request.security("", "D", ta.sma(close))');
-    expect(prog.errors.some((e) => e.includes("'ta.sma' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.sma' call argument count mismatch"))).toBe(true);
   });
 
   it("does not register a security-expr slot when the outer expression shape is invalid (no half-registered slot on error)", () => {
@@ -19187,12 +19187,12 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     const prog = analyzeSource(
       ['var int len = 1', 'for i = 0 to 2', '    len := i', 'x = request.security("", "D", close[len])'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects a negative history offset (close[-1] parses as UnaryOp index)", () => {
     const prog = analyzeSource('x = request.security("", "D", close[-1])');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("substitutes a unique top-level '=' variable whose definition is a single ta.* call (ma = ta.sma(...))", () => {
@@ -19232,7 +19232,7 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     const prog = analyzeSource(
       ['var m = 20', 'len = input.int(200, "Len", minval = m)', 'x = request.security("", "D", ta.ema(close, len))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   // C438: defval이 위치 인자가 아니라 'defval=' 키워드로만 전달된 wild 관용구
@@ -19264,12 +19264,12 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
 
   it("rejects use-before-declaration (security call line precedes the definition line)", () => {
     const prog = analyzeSource('x = request.security("", "D", ma)\nma = ta.sma(close, 20)');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects a ':='-reassigned variable (not a constant binding)", () => {
     const prog = analyzeSource('v = close\nv := open\nx = request.security("", "D", v)');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   // C526: 이전엔 "전역 유일" 판정이 바인딩 총 개수로만 걸려, 무관한 다른 함수의 동명 매개변수가
@@ -19376,28 +19376,28 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     const prog = analyzeSource(
       ["var int st = 0", "sig = st * 2", "if close > open", "    st := 1", 'x = request.security("", "D", sig)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects a string-typed var (Float64Array 프리패스 캐시에 문자열을 실을 수 없음, C738)", () => {
     const prog = analyzeSource(
       ['var string dir = "n"', "if close > open", '    dir := "b"', 'x = request.security("", "D", dir)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects a var written after the security call line (샘플 시점이 갱신보다 앞 — C738)", () => {
     const prog = analyzeSource(
       ["var int st = 0", 'x = request.security("", "D", st)', "if close > open", "    st := 1"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects a ta.* call in a ':=' value inside an if body (조건부 위치 상태 갭 — C738)", () => {
     const prog = analyzeSource(
       ["var float v = 0.0", "if close > open", "    v := ta.sma(close, 3)", 'x = request.security("", "D", v)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects a ta.* call in an elif condition (앞 조건 거짓일 때만 평가되는 조건부 위치 — C738)", () => {
@@ -19411,28 +19411,28 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
         'x = request.security("", "D", st)',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects a closure var under a buffered history index (fill 타이밍이 갱신 전 값을 기록 — C738)", () => {
     const prog = analyzeSource(
       ["var int st = 0", "if close > open", "    st := 1", 'x = request.security("", "D", st[1])'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects a var whose name is also ':='-reassigned inside a function body (보수적 부적격 — C738)", () => {
     const prog = analyzeSource(
       ["var int st = 0", "f() =>", "    st = 0", "    st := 1", "    st", 'x = request.security("", "D", st)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects a var updated inside a while loop (C738 슬라이스가 리플레이할 수 없는 형태)", () => {
     const prog = analyzeSource(
       ["var int st = 0", "i = 0", "while i < 1", "    st := 1", "    i := i + 1", 'x = request.security("", "D", st)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   // ── C741(배치37 (3) series-arg VAR_DECL input-콜 init): var 슬라이스 buildAt inSubst=true 전환 —
@@ -19491,21 +19491,21 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     const prog = analyzeSource(
       ['var m2 = 20', 'var int len = input.int(200, "Len", minval = m2)', 'x = request.security("", "D", ta.ema(close, len))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects a string-typed var init input.string in a value position (C741 — Float64Array 캐시 부식 차단 유지)", () => {
     const prog = analyzeSource(
       ['var string t = input.string("a", "T")', 'x = request.security("", "D", t)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects an input-init var written after the security call line (C741 — 위치-안전성 게이트 불변)", () => {
     const prog = analyzeSource(
       ['var int p = input.int(2, "P")', 'x = request.security("", "D", ta.sma(volume, p))', "if close > open", "    p := 3"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   // ── C742(배치37 (3) series-arg SAME sym+tf 체인 passthrough): expression 트리가 "같은 symbol+tf의
@@ -19548,33 +19548,33 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     const prog = analyzeSource(
       [C742_UDF, 'bbwp = request.security(syminfo.ticker, "W", f())', 'm = request.security(syminfo.ticker, "D", ta.sma(bbwp, 3))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects a chained ref whose inner call has a different symbol (C742)", () => {
     const prog = analyzeSource(
       [C742_UDF, 'bbwp = request.security("OTHER", "D", f())', 'm = request.security(syminfo.ticker, "D", ta.sma(bbwp, 3))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects a tree mixing a bare HTF series leaf with the chained ref (C742 — 혼합 시맨틱 차단)", () => {
     const prog = analyzeSource(
       [C742_UDF, 'bbwp = request.security(syminfo.ticker, "D", f())', 'm = request.security(syminfo.ticker, "D", ta.sma(bbwp, 3) + close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects a tree containing timeframe.period alongside the chained ref (C742 — HTF 컨텍스트 의미 보존)", () => {
     const prog = analyzeSource(
       [C742_UDF, 'bbwp = request.security(syminfo.ticker, "D", f())', "m = request.security(syminfo.ticker, \"D\", timeframe.period == 'D' ? ta.sma(bbwp, 3) : bbwp)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects a non-inlinable UDF call nested in ta.* without any chained ref (C742 — 발동 조건 체인 참조 필수)", () => {
     const prog = analyzeSource([C742_UDF, 'm = request.security(syminfo.ticker, "D", ta.sma(f(), 3))'].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("keeps the inline-collapse HTF track for a chained var whose inner expression is narrow-grammar (C742 — 기존 C616 경로 불변)", () => {
@@ -19660,26 +19660,26 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     const prog = analyzeSource(
       ["g(n) =>", '    request.security(syminfo.tickerid, "D", close[n + ta.sma(close, 3)])', "x = g(1)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects division in the offset when actuals are loop variables (wild 근거 없음 — C739 큐레이션)", () => {
     const prog = analyzeSource(
       ["g(n) =>", '    request.security(syminfo.tickerid, "D", close[n / 2])', "q = 0.0", "for i = 0 to 3", "    q := q + g(i)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects a func-local (non-parameter) identifier in the offset across multiple callsites (C739 게이트 밖)", () => {
     const prog = analyzeSource(
       ["g(n) =>", "    k = n + 1", '    request.security(syminfo.tickerid, "D", close[k])', "a = g(1)", "b = g(2)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects a top-level ':='-reassigned variable offset (읽기-지점 폴백은 UDF 매개변수 전용 — C739)", () => {
     const prog = analyzeSource(["k = 0", "k := 1", 'x = request.security("", "D", close[k])'].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects the offset form when tf is a per-site parameter array (uniform 리터럴 tf 전용 — C739)", () => {
@@ -19694,12 +19694,12 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
         'b = g(k, "240")',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects an input.string definition (not a scalar const, no identity-passthrough exception)", () => {
     const progStr = analyzeSource('s = input.string("a", "S")\nx = request.security("", "D", s)');
-    expect(progStr.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(progStr.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   // C438: input.source(defval, ...)는 pine2py source_input(defval, title, **kwargs)가 title/kwargs를
@@ -19727,7 +19727,7 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     const prog = analyzeSource(
       ['f() =>', '    var a = close', '    a', 'src = input.source(f(), "Src")', 'x = request.security("", "D", src)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   // C440: bare input(defval, ...)(namespace 없는 일반 오버로드)도 pine2py any_input(defval, title,
@@ -19755,7 +19755,7 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     const prog = analyzeSource(
       ['f() =>', '    var a = close', '    a', 'src = input(f(), "Src")', 'x = request.security("", "D", src)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   // 리터럴 defval은 identity-passthrough 경로로 가로채지 않고 isSecurityScalarConstInputCall(원본
@@ -19769,7 +19769,7 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
 
   it("rejects an inline input call directly inside the expression (substitution-path only — builtinCalls 미등록이라 codegen 불가)", () => {
     const prog = analyzeSource('x = request.security("", "D", ta.sma(close, input.int(20, "L")))');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   // C439 계약 갱신: 치환 경로 안의 정의값이 ta.* 콜이어도 직접 중첩(위 "accepts a nested ta.*
@@ -19784,7 +19784,7 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
 
   it("rejects self-reference (x = request.security(..., x)) via the cycle/shape guard", () => {
     const prog = analyzeSource('x = request.security("", "D", x)');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("accepts a ta.*-containing expression form inside a UDF body since C533 (C367 게이트 해제 — 클론 ta 콜이 전역 슬롯을 받아 프리패스가 $.taSlots를 직접 참조)", () => {
@@ -19831,19 +19831,19 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
 
   it("still rejects nz() with kwargs inside the expression (positional-only leaf — no wild evidence for kwargs form yet)", () => {
     const prog = analyzeSource('x = request.security("", "D", nz(source=close, replacement=0.0))');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects nz() with more than 2 arguments inside the expression", () => {
     const prog = analyzeSource('x = request.security("", "D", nz(close, 0.0, 1.0))');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects nz() wrapping an unsupported inner form (선행 var 선언 UDF 본문 — C732 이후 다문장 '=' 본문 필러 대체)", () => {
     const prog = analyzeSource(
       ['f() =>', '    var a = close', '    a', 'x = request.security("", "D", nz(f(), 0.0))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   // C445: math.* 콜 리프 케이스 — next_hint(C443/C444) 2번 후보(wild 재확인으로 891103d44223.pine
@@ -19879,12 +19879,12 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
 
   it("still rejects math.* with kwargs inside the expression (positional-only leaf — no wild evidence for kwargs form yet)", () => {
     const prog = analyzeSource('x = request.security("", "D", math.round(number=close, precision=2))');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects a math.* call with the wrong arity for its method (math.max needs >= 2 args)", () => {
     const prog = analyzeSource('x = request.security("", "D", math.max(close))');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects an unrecognized math.* method (math.random is not in SECURITY_EXPR_MATH_METHODS — nor in matchSecurityExprTaCall's dispatch:'math' whitelist, C543)", () => {
@@ -19892,7 +19892,7 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     // dispatch:"math" 형제, wild 근거 없어 미포함)으로 교체해 "이 화이트리스트 밖 math.* 메서드는
     // 여전히 거부된다"는 원래 의도를 유지.
     const prog = analyzeSource('x = request.security("", "D", math.random(0.0, 1.0))');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   // C536: int(x)/float(x)/bool(x) 형변환 bare 콜 리프 케이스 — next_hint(C535) 저비용 승격 후보.
@@ -19926,19 +19926,19 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
 
   it("still rejects int(x) with more than 1 argument inside the expression (arity mismatch, same as main path)", () => {
     const prog = analyzeSource('x = request.security("", "D", int(close, 2))');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects float(x) with kwargs inside the expression (positional-only leaf — no wild evidence for kwargs form yet)", () => {
     const prog = analyzeSource('x = request.security("", "D", float(value=close))');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects bool() wrapping an unsupported inner form (선행 var 선언 UDF 본문 — C732 이후 다문장 '=' 본문 필러 대체)", () => {
     const prog = analyzeSource(
       ['f() =>', '    var a = close', '    a', 'x = request.security("", "D", bool(f()))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 });
 
@@ -19984,19 +19984,19 @@ describe("Analyzer request.security expression ternary offset (C446)", () => {
 
   it("still rejects a ternary offset whose condition is not a supported leaf (undeclared identifier)", () => {
     const prog = analyzeSource('x = request.security("", "D", close[someUndeclaredFlag ? 1 : 0])');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects a ternary offset with a ta.* call in a branch (allowTa=false at this position, same policy as the outer dynamic-offset recursion)", () => {
     const prog = analyzeSource('x = request.security("", "D", close[barstate.isrealtime ? ta.barssince(close > open) : 0])');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects a ternary offset with an unsupported branch (선행 var 선언 UDF 본문 — C732 이후 다문장 '=' 본문 필러 대체)", () => {
     const prog = analyzeSource(
       'f() =>\n    var a = 1\n    a\nx = request.security("", "D", close[barstate.isrealtime ? f() : 0])',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("accepts barstate.isconfirmed as a ternary offset condition too (C628 generalizes it from a root-only leaf to a generic one, wild `_exp[barstate.isconfirmed ? 0 : 1]`)", () => {
@@ -20011,7 +20011,7 @@ describe("Analyzer request.security expression ternary offset (C446)", () => {
 
   it("still rejects other barstate.* properties as a ternary offset condition (only isrealtime/isconfirmed/ishistory are curated — no wild evidence for the rest, C283)", () => {
     const prog = analyzeSource('x = request.security("", "D", close[barstate.isfirst ? 1 : 0])');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("registers the call site via securityExprCallSlots (expression/prepass mechanism), same as other narrow-grammar forms", () => {
@@ -20083,12 +20083,12 @@ describe("Analyzer request.security expression value-position ternary (C601)", (
 
   it("still rejects an undeclared identifier inside a ternary branch (leaf validation unchanged)", () => {
     const prog = analyzeSource('x = request.security("", "D", close > open ? mystery : 0)');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects a ta.* call inside an OFFSET-position ternary branch (allowTa=false 오프셋 정책 불변 — offsetCode 텍스트 중복 방출 위험)", () => {
     const prog = analyzeSource('x = request.security("", "D", close[barstate.isrealtime ? ta.barssince(close > open) : 0])');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 });
 
@@ -20145,12 +20145,12 @@ describe("Analyzer request.security expression barstate.isconfirmed / syminfo.* 
 
   it("still rejects syminfo.* string constants (SYMINFO_STRING_PROPS) as the expression — the prepass cache is Float64Array-only", () => {
     const prog = analyzeSource('x = request.security("", "D", syminfo.description)');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects an undeclared syminfo.* attribute name", () => {
     const prog = analyzeSource('x = request.security("", "D", syminfo.notARealProp)');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 });
 
@@ -20245,8 +20245,8 @@ describe("Analyzer request.security expression barstate.islast / session.* leave
   it("still rejects session.* attribute names without wild evidence (isfirstbar/islastbar/ispremarket/ispostmarket — C283 curation principle)", () => {
     const a = analyzeSource('x = request.security("", "D", session.isfirstbar)');
     const b = analyzeSource('x = request.security("", "D", session.ispremarket)');
-    expect(a.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
-    expect(b.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(a.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(b.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("reproduces the wild shape end-to-end (barstate.islast alongside bare bar series in a tuple)", () => {
@@ -20290,12 +20290,12 @@ describe("Analyzer request.security expression earnings.future_* number constant
 
   it("still rejects earnings.actual/estimate/standardized (EARNINGS_CONSTANTS string field-selectors) as the expression — the prepass cache is Float64Array-only", () => {
     const prog = analyzeSource('x = request.security("", "D", earnings.actual)');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects an undeclared earnings.* attribute name", () => {
     const prog = analyzeSource('x = request.security("", "D", earnings.notARealField)');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 });
 
@@ -20335,17 +20335,17 @@ describe("Analyzer request.security expression timeframe.* boolean constant leav
 
   it("still rejects timeframe.period/main_period (TIMEFRAME_STRING_PROPS) as the expression — the prepass cache is Float64Array-only", () => {
     const prog = analyzeSource('x = request.security("", "D", timeframe.period)');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects timeframe.multiplier (TIMEFRAME_NUMBER_PROPS, a separate map) as the expression", () => {
     const prog = analyzeSource('x = request.security("", "D", timeframe.multiplier)');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects an undeclared timeframe.* attribute name", () => {
     const prog = analyzeSource('x = request.security("", "D", timeframe.notARealProp)');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 });
 
@@ -20450,22 +20450,22 @@ describe("Analyzer request.security expression not/na() leaves (C733, 배치37 (
 
   it("rejects na() with two arguments (arity mirror of the main-path bare na call)", () => {
     const prog = analyzeSource('x = request.security("", "D", na(close, open) ? 0.0 : close)');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects na() with a keyword argument (kwargs are outside this leaf)", () => {
     const prog = analyzeSource('x = request.security("", "D", na(value=close) ? 0.0 : close)');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects na() whose inner argument is outside the narrow grammar ('%' operand)", () => {
     const prog = analyzeSource('x = request.security("", "D", na(close % 2) ? 0.0 : close)');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects 'not' whose operand is outside the narrow grammar ('%' operand)", () => {
     const prog = analyzeSource('x = request.security("", "D", not (close % 2 > 1))');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("registers the not-na form via securityExprCallSlots, same as other narrow-grammar forms", () => {
@@ -20526,12 +20526,12 @@ describe("Analyzer request.security expression fixnan stateful leaf (C740, 배�
 
   it("rejects fixnan whose inner argument is outside the narrow grammar ('%' operand)", () => {
     const prog = analyzeSource('x = request.security("", "D", fixnan(close % 2))');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects fixnan in a history-offset index position (allowTa=false gate, ta.*와 동일)", () => {
     const prog = analyzeSource('x = request.security("", "D", close[fixnan(volume)])');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("lets a same-named user UDF take the C516 inline path instead of the builtin leaf", () => {
@@ -20607,14 +20607,14 @@ describe("Analyzer request.security expression input-call const-folded emitted s
     const prog = analyzeSource(
       ["m = 20", "m := 30", 'len = input.int(200, "Len", minval = m)', 'x = request.security("", "D", ta.ema(close, len))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects when a title concat part is a genuinely non-const 'var' declaration", () => {
     const prog = analyzeSource(
       ['var p = "My"', 'len = input.int(20, p + "Len")', 'x = request.security("", "D", ta.ema(close, len))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("registers the folded form via securityExprCallSlots, same as the all-literal predicate path", () => {
@@ -20701,31 +20701,31 @@ describe("Analyzer request.security expression time()/time_close() session-call 
 
   it("rejects the kwargs form (timeframe=) — 좁은 문법은 위치 인자 전용", () => {
     const prog = analyzeSource('x = request.security("", "D", time(timeframe="D"))');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects the 4-arg bars_back form inside the security expression (메인 경로 C727과 별개 — secCtx 미지원)", () => {
     const prog = analyzeSource('x = request.security("", "D", time("D", "0000-0000", "UTC", 2))');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects an na literal in the session position (na→'D' tf 폴딩의 오적용 방지 — 보수 거부)", () => {
     const prog = analyzeSource('x = request.security("", "D", time(timeframe.period, na))');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects a ':='-reassigned session variable (컴파일타임 상수 아님 — uniqueTopEqVars 밖)", () => {
     const prog = analyzeSource(
       ['s = "0000-1200"', 's := "1200-1300"', 'x = request.security("", "D", time(timeframe.period, s))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects '+' concat when one side is an na literal (NaLiteral 피연산자 보수 거부)", () => {
     const prog = analyzeSource(
       ['s = "0930-" + na', 'x = request.security("", "D", time(timeframe.period, s))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 });
 
@@ -20793,21 +20793,21 @@ describe("Analyzer request.security time-call leaf paramEnv substitution folding
     const prog = analyzeSource(
       ["f(res) =>", "    time(res)", "x = request.security(syminfo.tickerid, '15', f(na) > 0 ? high : low)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects a ':='-reassigned actual arg through a param (컴파일타임 상수 아님 — 기존 거부 유지)", () => {
     const prog = analyzeSource(
       ["f(s2) =>", '    time("D", s2)', 's = "0000-1200"', 's := "1200-1300"', "x = request.security(syminfo.tickerid, '15', f(s) > 0 ? high : low)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects the kwargs time form inside an inlined UDF body (좁은 문법 위치 인자 전용 — 치환과 무관)", () => {
     const prog = analyzeSource(
       ["f(res) =>", "    time(timeframe=res)", "x = request.security(syminfo.tickerid, '15', f('D') > 0 ? high : low)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 });
 
@@ -20870,19 +20870,19 @@ describe("Analyzer request.security expression timeframe.period equality fold (C
 
   it("rejects a non-canonical outer tf ('1D' — TV period 표기 'D'와 raw 등식이 어긋날 수 있어 폴딩 거부)", () => {
     const prog = analyzeSource('x = request.security("", "1D", timeframe.period == "D" ? close : open)');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects timeframe.main_period in the condition (security 컨텍스트 무관 차트 tf 고정 가능성 — period 전용)", () => {
     const prog = analyzeSource('x = request.security("", "60", timeframe.main_period == "60" ? close : open)');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects a non-literal comparison side (변수 경유 폼 — C283 큐레이션, StringLiteral 직접 폼만)", () => {
     const prog = analyzeSource(
       ['p = "60"', 'x = request.security("", "60", timeframe.period == p ? close : open)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 });
 
@@ -20937,31 +20937,31 @@ describe("Analyzer request.security expression input.string var-subst equality l
 
   it("still rejects an input.string var-subst at the expression ROOT (value position — Float64Array cache would coerce the string to NaN)", () => {
     const prog = analyzeSource('maType = input.string("SMA", "T")\nx = request.security("", "D", maType)');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects an input.string var-subst in a ternary BRANCH (value position)", () => {
     const prog = analyzeSource('maType = input.string("SMA", "T")\nx = request.security("", "D", close > open ? maType : maType)');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects a string-constant var-subst as an ARITHMETIC operand (allowString stays false outside equality)", () => {
     const prog = analyzeSource('mode = "A"\nx = request.security("", "D", close + mode)');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects when the input.string defval is a genuinely non-const 'var' declaration (emitted slot must fold to a literal — prepass runs outside the bar loop, C598 ReferenceError class. C734 전환: '=' 상수 식별자는 폴딩 수용, var 선언으로 의도 보존)", () => {
     const prog = analyzeSource(
       'var base = "SMA"\nmaType = input.string(base, "T")\nx = request.security("", "D", maType == "SMA" ? ta.sma(close, 3) : ta.ema(close, 3))',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects when the input.string title (emitted slot) is a genuinely non-const 'var' declaration (C734 전환: '=' 상수 변수는 폴딩 수용, var 선언으로 의도 보존)", () => {
     const prog = analyzeSource(
       'var t = "MA Type"\nmaType = input.string("SMA", t)\nx = request.security("", "D", maType == "SMA" ? ta.sma(close, 3) : ta.ema(close, 3))',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 });
 
@@ -20997,7 +20997,7 @@ describe("Analyzer request.security expression TV time-component identifiers (C6
 
   it("still rejects an unrelated DotAccess on the 'dayofweek' identifier that isn't a known constant", () => {
     const prog = analyzeSource('x = request.security("", "D", dayofweek.bogus)');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("accepts the full wild shape: '==' comparison against dayofweek.friday nested inside a ta.* call argument (1783e8094cac.pine)", () => {
@@ -21048,26 +21048,26 @@ describe("Analyzer request.security expression via top-level unique tuple-destru
     const prog = analyzeSource(
       '[supertrend, stDir] = ta.supertrend(2.0, 10)\nif close > open\n    stDir := 0\nx = request.security("", "D", stDir == -1)',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects when the tuple destructure is NOT top-level (inside a UDF body — the reference at top level resolves to nothing, since UDF-local bindings never populate uniqueTopEqTuples)", () => {
     const prog = analyzeSource(
       'f() =>\n    [supertrend, stDir] = ta.supertrend(2.0, 10)\n    stDir\ny = f()\nx = request.security("", "D", stDir == -1)',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects when the same name is bound by a tuple destructure in TWO places (not globally unique)", () => {
     const prog = analyzeSource(
       '[supertrend, stDir] = ta.supertrend(2.0, 10)\n[supertrend2, stDir] = ta.supertrend(3.0, 14)\nx = request.security("", "D", stDir == -1)',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("enforces declared-before-use: rejects when the request.security call appears BEFORE the tuple destructure in source order", () => {
     const prog = analyzeSource('x = request.security("", "D", stDir == -1)\n[supertrend, stDir] = ta.supertrend(2.0, 10)');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects a bare multi-return ta.* call that ISN'T behind a top-level unique tuple destructure (e.g. never destructured at all — analyzer would reject the tuple-arity mismatch before this path is even reachable, so the narrow expression grammar itself must reject the raw identifier)", () => {
@@ -21132,7 +21132,7 @@ describe("Analyzer request.security expression via UDF parameter single-call-sit
     );
     // g의 매개변수 val이 top-level 유일 '=' 변수 val을 섀도잉 — C526 가드(funcName=g)가 잘못된
     // top-level 치환을 막고, g는 콜사이트 2개라 C452 transitive 치환도 불가 → 전체 거부.
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
     expect(prog.securityParamExprCalls.size).toBe(0);
   });
 
@@ -21170,7 +21170,7 @@ describe("Analyzer request.security expression via UDF parameter single-call-sit
     // y is declared AFTER the call site — must still be rejected (declared-after-use), confirming the
     // check isn't simply skipped/always-true once the call-site line is used.
     const rejected = analyzeSource('f_sec(val) =>\n    request.security("", "D", val)\nx = f_sec(y)\ny = close');
-    expect(rejected.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(rejected.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 });
 
@@ -21182,7 +21182,7 @@ describe("Analyzer request.security expression via UDF parameter single-call-sit
 // 17곳에서 전부 `which="close"`로만 호출되는 형태). C452와 동일하게 전원 top-level 콜사이트만
 // 후보로 삼는다. ──
 describe("Analyzer request.security expression via UDF parameter unanimous multi-call-site substitution (C695, C452 자매 축)", () => {
-  const EXPR_ERR = "'expression' 인자는 bare";
+  const EXPR_ERR = "'expression' argument only supports bare";
 
   it("substitutes a UDF parameter used inside the request.security() body statement when ALL 2+ call sites pass the identical argument for that parameter, even though another parameter varies per call site", () => {
     const prog = analyzeSource(
@@ -21305,7 +21305,7 @@ describe("Analyzer request.security expression via UDF parameter multi-call-site
     const prog = analyzeSource(
       'helper(x) =>\n    var y = 0.0\n    y := x + 1\n    y\nf_sec(val) =>\n    request.security("", "D", val)\na = f_sec(close)\nb = f_sec(helper(close))',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
     expect(prog.securityParamExprCalls.size).toBe(0);
     expect(prog.funcSecIdxArgs.size).toBe(0);
   });
@@ -21314,7 +21314,7 @@ describe("Analyzer request.security expression via UDF parameter multi-call-site
     const prog = analyzeSource(
       'f_sec(val = close) =>\n    request.security("", "D", val)\na = f_sec(close)\nb = f_sec()',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
     expect(prog.securityParamExprCalls.size).toBe(0);
   });
 
@@ -21328,7 +21328,7 @@ describe("Analyzer request.security expression via UDF parameter multi-call-site
     const rejected = analyzeSource(
       'f_sec(val) =>\n    request.security("", "D", val)\na = f_sec(y)\nb = f_sec(open)\ny = close',
     );
-    expect(rejected.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(rejected.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("keeps the single-call-site form on the C452 inline path (securityExprCallSlots), not the C453 multi-site path — path separation regression guard", () => {
@@ -21409,7 +21409,7 @@ describe("Analyzer request.security expression via UDF parameter multi-call-site
         "b = w2()",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
     expect(prog.securityParamExprCalls.size).toBe(0);
   });
 
@@ -21432,7 +21432,7 @@ describe("Analyzer request.security expression via UDF parameter multi-call-site
     const prog = analyzeSource(
       'f_sec(val = close) =>\n    request.security("", "D", val[1])\na = f_sec(close)\nb = f_sec()',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
     expect(prog.securityParamExprCalls.size).toBe(0);
   });
 
@@ -21526,7 +21526,7 @@ describe("Analyzer request.security expression via UDF parameter(s) nested insid
     const prog = analyzeSource(
       'f_sec(src, len = 14) =>\n    request.security("", "D", ta.rsi(src, len))\na = f_sec(close, 14)\nb = f_sec(open)',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
     expect(prog.securityParamExprCalls.size).toBe(0);
   });
 
@@ -21707,7 +21707,7 @@ describe("Analyzer request.security expression via UDF parameter whose call site
       "g(x) =>\n    var t = 0.0\n    t := x + 1\n    t\n" +
         'f_sec(val) =>\n    request.security(syminfo.tickerid, "D", val)\na = f_sec(g(close))\nb = f_sec(bar_index > 10 ? close : open)',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
     expect(prog.securityScalarBareUdfCallSlots.size).toBe(0);
   });
 
@@ -21716,7 +21716,7 @@ describe("Analyzer request.security expression via UDF parameter whose call site
       "pair(x) =>\n    [x, x + 1]\n" +
         'f_sec(val) =>\n    request.security(syminfo.tickerid, "D", val)\na = f_sec(pair(close))\nb = f_sec(pair(open))',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
     expect(prog.securityScalarBareUdfCallSlots.size).toBe(0);
   });
 
@@ -21778,7 +21778,7 @@ describe("Analyzer request.security expression ternary offset via top-level var 
     const prog = analyzeSource(
       'idxVar = barstate.isrealtime ? 1 : 0\nidxVar := 0\nx = request.security("", "D", close[idxVar])',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("accepts a top-level var substituted ternary used at the value position (C601 배치31 (c) 전환 — var-subst:eq-value:ternary, C600까지 거부)", () => {
@@ -21845,7 +21845,7 @@ describe("Analyzer request.security(...)[N] result history indexing (C448)", () 
 
   it("still rejects a non-security, non-ta.*, non-numeric-builtin CallExpr obj (e.g. str.tostring, C470 leaves reference-typed calls rejected)", () => {
     const prog = analyzeSource('x = str.tostring(close)[1]');
-    expect(prog.errors.some((e) => e.includes("stateful TA 콜(ta.*)/request.security 결과/순수 numeric 빌트인"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("stateful TA call (ta.*)/request.security results/pure numeric builtins"))).toBe(true);
   });
 
   it("accepts indexing the outer call of a bare-UDF security expression (C711 — securityScalarBareUdfCallSlots is a passthrough, genExpr(expr.obj) already redirects to the inner UDF call, so the generic taCallHistorySlots record+get mechanism is safe to reuse)", () => {
@@ -21917,7 +21917,7 @@ describe("Analyzer numeric-pure-builtin CallExpr history indexing (C470)", () =>
   // array.copy(비-스칼라 반환, 화이트리스트 의도적 제외)로 검증한다.
   it("does not accidentally admit a non-whitelisted array method (namespace check is exact, not name-only)", () => {
     const prog = analyzeSource('a = array.new_float(3)\nx = array.copy(a)[1]');
-    expect(prog.errors.some((e) => e.includes("stateful TA 콜(ta.*)/request.security 결과/순수 numeric 빌트인"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("stateful TA call (ta.*)/request.security results/pure numeric builtins"))).toBe(true);
   });
 });
 
@@ -21986,7 +21986,7 @@ describe("Analyzer na()/nz()/array.* pure-scalar-aggregate CallExpr history inde
     const prog = analyzeSource(
       ["nz(x) =>", "    array.new_float(1)", "y = nz(1.0)[1]"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("stateful TA 콜(ta.*)/request.security 결과/순수 numeric 빌트인"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("stateful TA call (ta.*)/request.security results/pure numeric builtins"))).toBe(true);
   });
 });
 
@@ -22195,24 +22195,24 @@ describe("Analyzer user-defined-function CallExpr history indexing (C520)", () =
 
   it("still rejects a tuple-returning UDF call (f()[N] doesn't make sense for a tuple)", () => {
     const prog = analyzeSource("g() =>\n    [1, 2]\ny = g()[1]");
-    expect(prog.errors.some((e) => e.includes("stateful TA 콜(ta.*)/request.security 결과/순수 numeric 빌트인"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("stateful TA call (ta.*)/request.security results/pure numeric builtins"))).toBe(true);
   });
 
   it("still rejects a UDT-returning UDF call", () => {
     const prog = analyzeSource(
       ["type Pt", "    float x = 0", "mk() =>", "    Pt.new(1.0)", "y = mk()[1]"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("stateful TA 콜(ta.*)/request.security 결과/순수 numeric 빌트인"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("stateful TA call (ta.*)/request.security results/pure numeric builtins"))).toBe(true);
   });
 
   it("still rejects a string-returning UDF call", () => {
     const prog = analyzeSource('s() =>\n    "abc"\ny = s()[1]');
-    expect(prog.errors.some((e) => e.includes("stateful TA 콜(ta.*)/request.security 결과/순수 numeric 빌트인"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("stateful TA call (ta.*)/request.security results/pure numeric builtins"))).toBe(true);
   });
 
   it("still rejects an array-returning UDF call (structural array-constructor-call check)", () => {
     const prog = analyzeSource("h() =>\n    array.new_float(3)\ny = h()[1]");
-    expect(prog.errors.some((e) => e.includes("stateful TA 콜(ta.*)/request.security 결과/순수 numeric 빌트인"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("stateful TA call (ta.*)/request.security results/pure numeric builtins"))).toBe(true);
   });
 
   it("accepts the call nested inside an if-block body via the compressed call-count slot (same relaxation as ta.*/math.*, C671)", () => {
@@ -22227,7 +22227,7 @@ describe("Analyzer user-defined-function CallExpr history indexing (C520)", () =
     const prog = analyzeSource(
       ["type Box", "    float v", "method get(Box this) =>", "    this.v", "b = Box.new(1.0)", "y = b.get()[1]"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("stateful TA 콜(ta.*)/request.security 결과/순수 numeric 빌트인"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("stateful TA call (ta.*)/request.security results/pure numeric builtins"))).toBe(true);
   });
 
   it("accepts a UDF whose last statement is an if/else implicit return with scalar branches (C712 — was rejected pre-C712)", () => {
@@ -22276,24 +22276,24 @@ describe("Analyzer user-defined-function CallExpr history indexing — Assignmen
 
   it("still rejects an array-returning assignment-tail UDF", () => {
     const prog = analyzeSource("h() =>\n    value = array.new_float(3)\ny = h()[1]");
-    expect(prog.errors.some((e) => e.includes("stateful TA 콜(ta.*)/request.security 결과/순수 numeric 빌트인"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("stateful TA call (ta.*)/request.security results/pure numeric builtins"))).toBe(true);
   });
 
   it("still rejects a UDT-returning assignment-tail UDF", () => {
     const prog = analyzeSource(
       ["type Pt", "    float x = 0", "mk() =>", "    value = Pt.new(1.0)", "y = mk()[1]"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("stateful TA 콜(ta.*)/request.security 결과/순수 numeric 빌트인"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("stateful TA call (ta.*)/request.security results/pure numeric builtins"))).toBe(true);
   });
 
   it("still rejects a string-returning assignment-tail UDF", () => {
     const prog = analyzeSource('s() =>\n    value = "abc"\ny = s()[1]');
-    expect(prog.errors.some((e) => e.includes("stateful TA 콜(ta.*)/request.security 결과/순수 numeric 빌트인"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("stateful TA call (ta.*)/request.security results/pure numeric builtins"))).toBe(true);
   });
 
   it("does not extend to a ':=' reassignment tail (narrow scope — first-declare '=' only)", () => {
     const prog = analyzeSource("f(x) =>\n    var float value = 0.0\n    value := x * 2\ny = f(close)[1]");
-    expect(prog.errors.some((e) => e.includes("stateful TA 콜(ta.*)/request.security 결과/순수 numeric 빌트인"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("stateful TA call (ta.*)/request.security results/pure numeric builtins"))).toBe(true);
   });
 });
 
@@ -22347,21 +22347,21 @@ describe("Analyzer user-defined-function CallExpr history indexing — if/switch
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("stateful TA 콜(ta.*)/request.security 결과/순수 numeric 빌트인"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("stateful TA call (ta.*)/request.security results/pure numeric builtins"))).toBe(true);
   });
 
   it("still rejects a switch UDF where one case returns a string", () => {
     const prog = analyzeSource(
       ['f(t) =>', '    switch t', '        "A" => "x"', '        => 1.0', "y = f(close)[1]"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("stateful TA 콜(ta.*)/request.security 결과/순수 numeric 빌트인"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("stateful TA call (ta.*)/request.security results/pure numeric builtins"))).toBe(true);
   });
 
   it("still rejects a tuple-returning if/else UDF (tupleArity gate takes priority)", () => {
     const prog = analyzeSource(
       ["f(t) =>", "    if t > 0", "        [1.0, 2.0]", "    else", "        [3.0, 4.0]", "y = f(close)[1]"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("stateful TA 콜(ta.*)/request.security 결과/순수 numeric 빌트인"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("stateful TA call (ta.*)/request.security results/pure numeric builtins"))).toBe(true);
   });
 
   it("accepts a dynamic (runtime) offset on an if-else scalar-safe UDF", () => {
@@ -22409,19 +22409,19 @@ describe("Analyzer array.get(...) CallExpr history indexing (C702)", () => {
     const prog = analyzeSource(
       ["var string[] arr = array.new_string(3)", "y = array.get(arr, 0)[1]"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("stateful TA 콜(ta.*)/request.security 결과/순수 numeric 빌트인"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("stateful TA call (ta.*)/request.security results/pure numeric builtins"))).toBe(true);
   });
 
   it("still rejects a UDT-element array", () => {
     const prog = analyzeSource(
       ["type Pt", "    float x = 0", "var array<Pt> arr = array.new<Pt>(3)", "y = array.get(arr, 0)[1]"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("stateful TA 콜(ta.*)/request.security 결과/순수 numeric 빌트인"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("stateful TA call (ta.*)/request.security results/pure numeric builtins"))).toBe(true);
   });
 
   it("conservatively rejects when the container has no explicit typeHint (no value-flow inference from the constructor call)", () => {
     const prog = analyzeSource(["arr = array.new_float(3)", "y = array.get(arr, 0)[1]"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("stateful TA 콜(ta.*)/request.security 결과/순수 numeric 빌트인"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("stateful TA call (ta.*)/request.security results/pure numeric builtins"))).toBe(true);
   });
 
   it("treats offset 0 the same as the un-indexed call (no history slot registered)", () => {
@@ -22468,7 +22468,7 @@ describe("Analyzer array.get(...) CallExpr history indexing (C702)", () => {
     const prog = analyzeSource(
       ["f(arr) =>", "    array.get(arr, 0)[1]", "var float[] arr = array.new_float(3)", "y = f(arr)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("stateful TA 콜(ta.*)/request.security 결과/순수 numeric 빌트인"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("stateful TA call (ta.*)/request.security results/pure numeric builtins"))).toBe(true);
   });
 
   it("accepts the call on a func-local '=' var explicitly typed array<float>", () => {
@@ -22499,7 +22499,7 @@ describe("Analyzer array.get(...) CallExpr history indexing (C702)", () => {
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("stateful TA 콜(ta.*)/request.security 결과/순수 numeric 빌트인"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("stateful TA call (ta.*)/request.security results/pure numeric builtins"))).toBe(true);
   });
 });
 
@@ -22542,7 +22542,7 @@ describe("Analyzer request.security expression time/bar_index built-ins (C441)",
 
   it("still rejects an unrelated undeclared bare identifier (scope wasn't widened beyond the 3 curated names)", () => {
     const prog = analyzeSource('x = request.security("", "D", someUndeclaredThing)');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("accepts 'time' nested inside a ta.* call argument (allowTa recursion reaches the new leaf case too, same as bare series)", () => {
@@ -22601,7 +22601,7 @@ describe("Analyzer request.security tuple literal expression (C306, wild top clu
 
   it("rejects an arity mismatch between tuple targets and tuple elements", () => {
     const prog = analyzeSource('[o, c] = request.security("", "D", [open, high, close])');
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple destructure arity mismatch"))).toBe(true);
   });
 
   it("accepts a tuple element that is a single ta.* call, mixed with bare fields (C349b, wild 033b0158c024.pine)", () => {
@@ -22646,7 +22646,7 @@ describe("Analyzer request.security tuple literal expression (C306, wild top clu
 
   it("still runs the reused ta.* argument-count validation on a tuple element (proves analyzeStatefulCall is genuinely reused)", () => {
     const prog = analyzeSource('[o, r] = request.security("", "D", [open, ta.sma(close)])');
-    expect(prog.errors.some((e) => e.includes("'ta.sma' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'ta.sma' call argument count mismatch"))).toBe(true);
   });
 
   // C439 계약 갱신: 튜플 원소도 스칼라 expression 경로와 동일한 buildSecurityExpr를 재사용하므로
@@ -22680,7 +22680,7 @@ describe("Analyzer request.security tuple literal expression (C306, wild top clu
 
   it("rejects a tuple literal expression argument outside a tuple-destructure value position", () => {
     const prog = analyzeSource('x = request.security("", "D", [open, close])');
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링('[a, b] = ...')의 값으로만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("only supported as the value of a tuple destructuring ('[a, b] = ...')"))).toBe(true);
   });
 
   it("does not register a tuple slot when validation fails (no half-registered slot on error)", () => {
@@ -22780,7 +22780,7 @@ describe("Analyzer request.security tuple literal expression (C306, wild top clu
     const prog = analyzeSource(
       '[o, c] = request.security(symbol="", timeframe="D", expression=[open, high, close])',
     );
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple destructure arity mismatch"))).toBe(true);
   });
 
   it("threads gaps=/lookahead= kwargs into a fully-keyword tuple call site", () => {
@@ -22824,7 +22824,7 @@ describe("Analyzer request.security bare UDF call expression (C432, wild 클러�
 
   it("rejects an arity mismatch between destructure targets and the UDF's tuple return count (matches the sibling top-level-UDF-call/ta.* pattern: shape is still recognized, the shared arity check produces the precise error)", () => {
     const prog = analyzeSource(SRC_MYFUNC + '[hi, lo, zz] = request.security(syminfo.tickerid, "D", myFunc(high, low))');
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple destructure arity mismatch"))).toBe(true);
   });
 
   // C436 계약 갱신: 이전엔 이 안쪽 UDF 콜이 buildSecurityExpr 좁은 문법 밖이라 generic
@@ -22834,7 +22834,7 @@ describe("Analyzer request.security bare UDF call expression (C432, wild 클러�
   // 자체는 여전히 securityBareUdfCallSlots(튜플 전용 맵)에는 등록되지 않는다.
   it("rejects a single-value-returning (non-tuple) UDF called bare inside a tuple destructure (precise arity-mismatch error now that C436 recognizes the inner call as a valid scalar passthrough)", () => {
     const prog = analyzeSource("single(x) =>\n    x + 1\n" + '[hi, lo] = request.security(syminfo.tickerid, "D", single(high))');
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링의 값은 튜플을 반환하는 UDF 호출이어야 함"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple destructure value must be a UDF call returning a tuple"))).toBe(true);
     expect(prog.securityBareUdfCallSlots.size).toBe(0);
   });
 
@@ -22842,7 +22842,7 @@ describe("Analyzer request.security bare UDF call expression (C432, wild 클러�
     const prog = analyzeSource(
       '[hi, lo] = request.security(syminfo.tickerid, "D", myFunc(high, low))\n' + SRC_MYFUNC,
     );
-    expect(prog.errors.some((e) => e.includes("'request.security'의 'expression' 인자는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
     expect(prog.securityBareUdfCallSlots.size).toBe(0);
   });
 
@@ -22907,7 +22907,7 @@ describe("Analyzer request.security SCALAR (non-tuple) bare UDF call expression 
       "pair(x, y) =>\n    a = x + 1\n    b = y + 2\n    [a, b]\n" +
         'ma = request.security(syminfo.tickerid, "D", pair(high, low))',
     );
-    expect(prog.errors.some((e) => e.includes("'request.security'의 'expression' 인자는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
     expect(prog.securityScalarBareUdfCallSlots.size).toBe(0);
   });
 
@@ -23004,7 +23004,7 @@ describe("Analyzer request.security SCALAR bare UDF call reached via top-level '
     const prog = analyzeSource(
       SRC_MYFUNC + 'source = myFunc(close)\nsource := source + 1\nma = request.security(syminfo.tickerid, "D", source)',
     );
-    expect(prog.errors.some((e) => e.includes("'request.security'의 'expression' 인자는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
     expect(prog.securityScalarBareUdfCallSlots.size).toBe(0);
   });
 
@@ -23013,7 +23013,7 @@ describe("Analyzer request.security SCALAR bare UDF call reached via top-level '
       SRC_MYFUNC +
         'source = myFunc(close)\nsource = myFunc(open)\nma = request.security(syminfo.tickerid, "D", source)',
     );
-    expect(prog.errors.some((e) => e.includes("'request.security'의 'expression' 인자는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
     expect(prog.securityScalarBareUdfCallSlots.size).toBe(0);
   });
 
@@ -23021,7 +23021,7 @@ describe("Analyzer request.security SCALAR bare UDF call reached via top-level '
     const prog = analyzeSource(
       SRC_MYFUNC + 'ma = request.security(syminfo.tickerid, "D", source)\nsource = myFunc(close)',
     );
-    expect(prog.errors.some((e) => e.includes("'request.security'의 'expression' 인자는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
     expect(prog.securityScalarBareUdfCallSlots.size).toBe(0);
   });
 
@@ -23030,7 +23030,7 @@ describe("Analyzer request.security SCALAR bare UDF call reached via top-level '
       SRC_MYFUNC +
         "flag = close > open\nsource = close\nif flag\n    source = myFunc(close)\nma = request.security(syminfo.tickerid, \"D\", source)",
     );
-    expect(prog.errors.some((e) => e.includes("'request.security'의 'expression' 인자는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
     expect(prog.securityScalarBareUdfCallSlots.size).toBe(0);
   });
 
@@ -23052,7 +23052,7 @@ describe("Analyzer request.security SCALAR bare UDF call reached via top-level '
       "pair(x, y) =>\n    a = x + 1\n    b = y + 2\n    [a, b]\n" +
         'src = pair(high, low)\nma = request.security(syminfo.tickerid, "D", src)',
     );
-    expect(prog.errors.some((e) => e.includes("'request.security'의 'expression' 인자는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
     expect(prog.securityScalarBareUdfCallSlots.size).toBe(0);
   });
 
@@ -23107,7 +23107,7 @@ describe("Analyzer request.security scalar bare-UDF result UDT field access (C62
     const prog = analyzeSource(
       ["myFunc(x) =>", "    x + 1", 'ma = request.security(syminfo.tickerid, "D", myFunc(close))', "y = ma.flag"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 });
 
@@ -23180,7 +23180,7 @@ describe("Analyzer request.security SCALAR bare UDF call wrapped in a history in
       "pair(x, y) =>\n    a = x + 1\n    b = y + 2\n    [a, b]\n" +
         'ma = request.security(syminfo.tickerid, "D", pair(high, low)[1])',
     );
-    expect(prog.errors.some((e) => e.includes("'request.security'의 'expression' 인자는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
     expect(prog.securityScalarBareUdfCallSlots.size).toBe(0);
   });
 
@@ -23278,7 +23278,7 @@ describe("Analyzer request.security expression via the ENCLOSING UDF's own param
         "get_sec(tf, exp) =>\n    request.security(syminfo.tickerid, tf, exp)\n" +
         'result = get_sec("D", pair(high, low))',
     );
-    expect(prog.errors.some((e) => e.includes("'request.security'의 'expression' 인자는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
     expect(prog.securityScalarBareUdfCallSlots.size).toBe(0);
   });
 });
@@ -23325,17 +23325,17 @@ describe("Analyzer request.security expression ta.* call kwargs form (C443, matc
     const prog = analyzeSource(
       'myFunc(x) =>\n    var y = 0.0\n    y := x + 1\n    y\nx = request.security("", "D", ta.atr(length = myFunc(close)))',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("rejects an unrecognized kwarg name on a function that DOES support kwargs (ta.ema has kwargParamNames=[source,length], but 'bogus' isn't one of them — resolveTaKwargPositions silently drops it, so buildSecurityExprNode still shapes a 0-arg clone and it's analyzeStatefulCall's own arg-count check downstream that surfaces the error, not a specific '이름 없음' message — matching the general narrow-grammar convention of losing message granularity on malformed edge cases)", () => {
     const prog = analyzeSource('x = request.security("", "D", ta.ema(bogus = close))');
-    expect(prog.errors.some((e) => e.includes("인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("argument count mismatch"))).toBe(true);
   });
 
   it("rejects when a required position is filled by neither a positional nor a keyword arg (hole in the middle — ta.sma(length=14) missing source)", () => {
     const prog = analyzeSource('x = request.security("", "D", ta.sma(length = 14))');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare") || e.includes("인자 개수 불일치"))).toBe(
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare") || e.includes("argument count mismatch"))).toBe(
       true,
     );
     expect(prog.securityExprCallSlots.size).toBe(0);
@@ -23343,13 +23343,13 @@ describe("Analyzer request.security expression ta.* call kwargs form (C443, matc
 
   it("still rejects a multi-return ta.* call (ta.dmi) even in kwarg form — the return-arity gate runs before the kwargs check", () => {
     const prog = analyzeSource('x = request.security("", "D", ta.dmi(length = 14, adxSmoothing = 14))');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
     expect(prog.securityExprCallSlots.size).toBe(0);
   });
 
   it("still rejects kwargs entirely for a ta.* function with no kwargParamNames entry at all (ta.hma — blanket rejection preserved, not just an unrecognized name; ta.wma gained kwargParamNames in C473)", () => {
     const prog = analyzeSource('x = request.security("", "D", ta.hma(close, length = 14))');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
     expect(prog.securityExprCallSlots.size).toBe(0);
   });
 
@@ -23418,13 +23418,13 @@ describe("Analyzer request.security bare multi-return ta.* call expression (C433
   it("rejects an arity mismatch between destructure targets and the ta.* call's return count (matches the sibling bareUdfCall/direct-ta.* pattern: shape is still recognized, the shared arity check produces the precise error)", () => {
     const prog = analyzeSource('[m, s] = request.security(syminfo.tickerid, "D", ta.macd(close, 12, 26, 9))');
     expect(
-      prog.errors.some((e) => e.includes("튜플 디스트럭처링 개수 불일치: 대상 2개, 함수는 3개 반환")),
+      prog.errors.some((e) => e.includes("tuple destructure arity mismatch: 2 targets, function returns 3")),
     ).toBe(true);
   });
 
   it("rejects a single-return ta.* call bare (arity stays unresolved, same generic 'must be a tuple-returning call' fallback as pre-C433 behavior — this axis is orthogonal to the scalar security-expr builder)", () => {
     const prog = analyzeSource('[a, b] = request.security(syminfo.tickerid, "D", ta.sma(close, 10))');
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링의 값은 튜플을 반환하는 UDF 호출이어야 함"))).toBe(
+    expect(prog.errors.some((e) => e.includes("tuple destructure value must be a UDF call returning a tuple"))).toBe(
       true,
     );
     expect(prog.securityBareTaCallSlots.size).toBe(0);
@@ -23509,14 +23509,14 @@ describe("Analyzer request.security_lower_tf tuple destructure (C434, wild next_
 
   it("rejects an arity mismatch for the TupleExpr literal form", () => {
     const prog = analyzeSource('[aH, aL, aV] = request.security_lower_tf(syminfo.tickerid, "1", [high, low])');
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링 개수 불일치: 대상 3개, 함수는 2개 반환"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple destructure arity mismatch: 3 targets, function returns 2"))).toBe(true);
   });
 
   it("rejects an arity mismatch for the bare UDF call form", () => {
     const src = "myFunc(x, y) =>\n    a = x + 1\n    b = y + 2\n    [a, b]\n" +
       '[hi, lo, zz] = request.security_lower_tf(syminfo.tickerid, "D", myFunc(high, low))';
     const prog = analyzeSource(src);
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링 개수 불일치: 대상 3개, 함수는 2개 반환"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple destructure arity mismatch: 3 targets, function returns 2"))).toBe(true);
   });
 
   it("does not match a forward-referenced UDF (declared after this call site) — falls back to the generic rejection", () => {
@@ -23524,7 +23524,7 @@ describe("Analyzer request.security_lower_tf tuple destructure (C434, wild next_
       '[hi, lo] = request.security_lower_tf(syminfo.tickerid, "D", myFunc(high, low))\n' +
         "myFunc(x, y) =>\n    a = x + 1\n    b = y + 2\n    [a, b]\n",
     );
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링의 값은 튜플을 반환하는 UDF 호출이어야 함"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple destructure value must be a UDF call returning a tuple"))).toBe(true);
     expect(prog.securityLowerTfBareUdfCallSlots.size).toBe(0);
   });
 
@@ -23532,7 +23532,7 @@ describe("Analyzer request.security_lower_tf tuple destructure (C434, wild next_
     const prog = analyzeSource(
       "single(x) =>\n    x + 1\n" + '[hi, lo] = request.security_lower_tf(syminfo.tickerid, "D", single(high))',
     );
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링의 값은 튜플을 반환하는 UDF 호출이어야 함"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple destructure value must be a UDF call returning a tuple"))).toBe(true);
     expect(prog.securityLowerTfBareUdfCallSlots.size).toBe(0);
   });
 
@@ -23599,7 +23599,7 @@ describe("Analyzer request.security_lower_tf tuple destructure (C434, wild next_
   it("still rejects for-in over a name that never resolved to a container kind (no false-positive widening from this fix)", () => {
     const prog = analyzeSource(["x = 1.0", "for a in x", "    b = a"].join("\n"));
     expect(
-      prog.errors.some((e) => e.includes("for-in 루프의 순회 대상 타입을 정적으로 판별할 수 없음")),
+      prog.errors.some((e) => e.includes("for-in loop iterable type cannot be statically determined")),
     ).toBe(true);
   });
 });
@@ -23631,12 +23631,12 @@ describe("Analyzer switch-tuple destructure (C410, wild 튜플 디스트럭처�
     const prog = analyzeSource(
       ["[a, b] = switch", "    close > open => [1.0, 2.0, 3.0]", "    => [0.0, 0.0]"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("switch 분기의 튜플 리터럴 원소 개수가 대상과 다름"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("switch branch tuple literal element count differs from target"))).toBe(true);
   });
 
   it("falls back to the generic tuple-destructure error when a branch doesn't end in a tuple literal at all", () => {
     const prog = analyzeSource(["[a, b] = switch", "    close > open => 1.0", "    => [0.0, 0.0]"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링의 값은 튜플을 반환하는 UDF 호출이어야 함"))).toBe(
+    expect(prog.errors.some((e) => e.includes("tuple destructure value must be a UDF call returning a tuple"))).toBe(
       true,
     );
   });
@@ -23660,7 +23660,7 @@ describe("Analyzer switch-tuple destructure (C410, wild 튜플 디스트럭처�
     const prog = analyzeSource(
       ["[a, b] = switch", "    close > open => [1.0, 2.0]", "    => [0.0, 0.0]", "    => [5.0, 6.0]"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("default(bare '=>') 분기가 최대 1개만 가능"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("allows at most one default (bare '=>') branch"))).toBe(true);
   });
 
   it("supports the '_' discard placeholder as a target name", () => {
@@ -23708,7 +23708,7 @@ describe("Analyzer switch-tuple destructure (C410, wild 튜플 디스트럭처�
     const prog = analyzeSource(
       ["f() =>", "    [1.0, 2.0, 3.0]", "[a, b] = switch", "    close > open => f()", "    => [0.0, 0.0]"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링의 값은 튜플을 반환하는 UDF 호출이어야 함"))).toBe(
+    expect(prog.errors.some((e) => e.includes("tuple destructure value must be a UDF call returning a tuple"))).toBe(
       true,
     );
   });
@@ -23753,12 +23753,12 @@ describe("Analyzer if-tuple destructure (C411, switch-tuple(C410)의 형제 폼 
     const prog = analyzeSource(
       ["[a, b] = if close > open", "    [1.0, 2.0, 3.0]", "else", "    [0.0, 0.0]"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("if 분기의 튜플 리터럴 원소 개수가 대상과 다름"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("if branch tuple literal element count differs from target"))).toBe(true);
   });
 
   it("falls back to the generic tuple-destructure error when a branch doesn't end in a tuple literal at all", () => {
     const prog = analyzeSource(["[a, b] = if close > open", "    1.0", "else", "    [0.0, 0.0]"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링의 값은 튜플을 반환하는 UDF 호출이어야 함"))).toBe(
+    expect(prog.errors.some((e) => e.includes("tuple destructure value must be a UDF call returning a tuple"))).toBe(
       true,
     );
   });
@@ -23826,7 +23826,7 @@ describe("Analyzer if-tuple destructure (C411, switch-tuple(C410)의 형제 폼 
         "    [0.0, 0.0]",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("조건부 블록 위치에서 아직 지원하지 않음"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("not yet supported at this conditional block position"))).toBe(true);
   });
 
   // C508: switch-튜플(위)과 동일한 형제 폼 확장 — 마지막 문장이 튜플 반환 UDF 콜인 branch도 허용
@@ -23851,7 +23851,7 @@ describe("Analyzer if-tuple destructure (C411, switch-tuple(C410)의 형제 폼 
     const prog = analyzeSource(
       ["f() =>", "    [1.0, 2.0, 3.0]", "[a, b] = if close > open", "    f()", "else", "    [0.0, 0.0]"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링의 값은 튜플을 반환하는 UDF 호출이어야 함"))).toBe(
+    expect(prog.errors.some((e) => e.includes("tuple destructure value must be a UDF call returning a tuple"))).toBe(
       true,
     );
   });
@@ -23890,14 +23890,14 @@ describe("Analyzer ternary-tuple destructure (C416, switch-tuple(C410)/if-tuple(
 
   it("rejects when one branch's tuple literal has a different element count than the destructure targets", () => {
     const prog = analyzeSource(["[a, b] = close > open ? [1.0, 2.0, 3.0] : [0.0, 0.0]"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("삼항(ternary) 분기의 튜플 리터럴 원소 개수가 대상과 다름"))).toBe(
+    expect(prog.errors.some((e) => e.includes("ternary branch tuple literal element count differs from target"))).toBe(
       true,
     );
   });
 
   it("falls back to the generic tuple-destructure error when a branch doesn't resolve to any recognized tuple value", () => {
     const prog = analyzeSource(["[a, b] = close > open ? 1.0 : [0.0, 0.0]"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링의 값은 튜플을 반환하는 UDF 호출이어야 함"))).toBe(
+    expect(prog.errors.some((e) => e.includes("tuple destructure value must be a UDF call returning a tuple"))).toBe(
       true,
     );
   });
@@ -24018,20 +24018,20 @@ describe("Analyzer request.security tf 상수 전파 (C366 — wild 1위 클러�
 
   it("still rejects when the variable is ':='-reassigned anywhere — even AFTER the call site (prescan은 소스 순서 무관)", () => {
     const before = analyzeSource('tf = "60"\ntf := "240"\nx = request.security("", tf, close)');
-    expect(before.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(before.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
 
     const after = analyzeSource('tf = "60"\nx = request.security("", tf, close)\ntf := "240"');
-    expect(after.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(after.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects a conditional ':=' reassignment inside an if block", () => {
     const prog = analyzeSource(['tf = "60"', "if close > open", '    tf := "240"', 'x = request.security("", tf, close)'].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects a ternary/dynamic value (진짜 동적 tf는 범위 밖)", () => {
     const prog = analyzeSource('tf = close > open ? "60" : "240"\nx = request.security("", tf, close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   // C526: 이전엔 "전역 유일" 판정이 바인딩 총 개수로만 걸려, 무관한 다른 함수의 동명 매개변수가
@@ -24039,7 +24039,7 @@ describe("Analyzer request.security tf 상수 전파 (C366 — wild 1위 클러�
   // 겹치지 않으므로(콜은 top-level, f는 별도 호출) 이제 정확히 top-level의 tf="60"으로 치환된다.
   it("accepts when an unrelated UDF's parameter shares the name (no real scope overlap — C526 fix)", () => {
     const prog = analyzeSource(['tf = "60"', "f(tf) => tf", 'x = request.security("", tf, close)', "y = f(1)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(false);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(false);
   });
 
   // C526: request.security 자신이 그 매개변수를 선언한 함수 본문 안에 있으면 진짜 섀도잉이라
@@ -24048,7 +24048,7 @@ describe("Analyzer request.security tf 상수 전파 (C366 — wild 1위 클러�
   // 원 테스트 의도(섀도잉된 top-level "60"을 절대 쓰지 않는 것)는 securityTfs 직접 단언으로 보존.
   it("resolves via the call site (\"240\") — never the shadowed top-level tf=\"60\" — when the security call is inside the shadowing function's own body (C526 guard + C529 fold)", () => {
     const prog = analyzeSource(['tf = "60"', "f(tf) =>", "    request.security(\"\", tf, close)", 'y = f("240")'].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(false);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(false);
     expect(prog.securityTfs).toEqual(["240"]);
   });
 
@@ -24056,7 +24056,7 @@ describe("Analyzer request.security tf 상수 전파 (C366 — wild 1위 클러�
     const prog = analyzeSource(
       ['tf = "60"', "s = 0.0", "for tf = 1 to 3", "    s := s + tf", 'x = request.security("", tf, close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   // C526: MethodDecl 매개변수도 FuncDecl과 동일한 shadowFuncs 자격(paramOfFunc)으로 등재된다 —
@@ -24065,14 +24065,14 @@ describe("Analyzer request.security tf 상수 전파 (C366 — wild 1위 클러�
     const prog = analyzeSource(
       ['type Box\n    float v', "method double(this Box, tf) =>\n    tf * 2", 'tf = "60"', 'x = request.security("", tf, close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(false);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(false);
   });
 
   it("still rejects two '=' bindings of the same name (top-level + 중첩 블록 재선언)", () => {
     const prog = analyzeSource(
       ['tf = "60"', "if close > open", '    tf = "240"', '    z = tf', 'x = request.security("", tf, close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("accepts input.timeframe with an Identifier defval that is itself a resolvable top-level string const (C667 — was rejected before, base is itself a const)", () => {
@@ -24085,7 +24085,7 @@ describe("Analyzer request.security tf 상수 전파 (C366 — wild 1위 클러�
     const prog = analyzeSource(
       ['base = close > open ? "60" : "240"', "tf = input.timeframe(base)", 'x = request.security("", tf, close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("rejects use-before-declaration of the tf variable on all three expression paths (early-return 경로도 tfArg를 부작용 분석)", () => {
@@ -24146,7 +24146,7 @@ describe("Analyzer request.security tf 함수-로컬 단일대입 변수 (C623)"
         "y = f()",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects when the same name has two '=' bindings inside the same function (top-of-func + nested block — 함수 안 유일성 위반)", () => {
@@ -24160,7 +24160,7 @@ describe("Analyzer request.security tf 함수-로컬 단일대입 변수 (C623)"
         "y = f()",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects a UDF-local var declared only inside a nested block (not at the function's own top level — funcTop 자격 위반)", () => {
@@ -24169,12 +24169,12 @@ describe("Analyzer request.security tf 함수-로컬 단일대입 변수 (C623)"
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects use-before-declaration of the UDF-local tf var (선언-후-사용 위반, 함수판)", () => {
     const prog = analyzeSource(["f() =>", '    request.security("", myTf, close)', '    myTf = "60"', "y = f()"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("registers a securityRuntimeTfSlots entry when the UDF-local tf var's definition needs the runtime path (direct input.bool/input.timeframe leaves)", () => {
@@ -24264,7 +24264,7 @@ describe("Analyzer request.security tf 함수-로컬 숫자/불리언 변수 (C6
         'x = request.security("", f(), close)',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects when the func-local numeric var used in the tf ternary condition is declared only inside a nested block (funcTop 자격 위반 — request.security 콜 자체를 그 블록 안에 둬 바깥 if 조건의 폴딩 가능 여부와 무관하게 검증)", () => {
@@ -24277,7 +24277,7 @@ describe("Analyzer request.security tf 함수-로컬 숫자/불리언 변수 (C6
         "y = f()",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 });
 
@@ -24340,7 +24340,7 @@ describe("Analyzer request.security expression 함수-로컬 단일대입 변수
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects when the same name has two '=' bindings inside the same function (함수 안 유일성 위반)", () => {
@@ -24349,21 +24349,21 @@ describe("Analyzer request.security expression 함수-로컬 단일대입 변수
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects a func-local var declared only inside a nested block (not at the function's own top level — funcTop 자격 위반)", () => {
     const prog = analyzeSource(
       ["f() =>", "    if high > low", '        val = close', '        request.security("", "D", val)', "y = f()"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects use-before-declaration of the func-local var (선언-후-사용 위반, 함수판)", () => {
     const prog = analyzeSource(
       ["f() =>", '    request.security("", "D", val)', "    val = close", "y = f()"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("does not let a func-local var name shadow an unrelated top-level uniqueTopEqVars binding of the same name (structurally exclusive namespaces)", () => {
@@ -24414,7 +24414,7 @@ describe("Analyzer request.security expression via chained security-var substitu
         "y = f(syminfo.tickerid, close)",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'request.security'의 'expression' 인자는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
   });
 
   it("rejects the same func-local chain when the outer call's symbol differs from the inner definition's symbol (unsafe — different HTF replay)", () => {
@@ -24426,7 +24426,7 @@ describe("Analyzer request.security expression via chained security-var substitu
         "y = f(close)",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'request.security'의 'expression' 인자는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
   });
 
   it("does not disturb the plain (non-chained) func-local substitution from C692 when the func-local var's value is not itself a request.security call (regression guard)", () => {
@@ -24525,7 +24525,7 @@ describe("Analyzer request.security tf: top-level 변수 vs 무관한 함수의 
 
   it("still rejects when the TOP-LEVEL binding itself (not a function-local one) is ':='-reassigned outside any function (진짜 동적 top-level 변수는 여전히 거부)", () => {
     const prog = analyzeSource(['resolution = "60"', 'resolution := "240"', 'x = request.security("", resolution, close)'].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects when the top-level name has a second '=' binding inside a top-level (non-function) nested block — scope boundary genuinely unclear, conservative reject preserved", () => {
@@ -24534,7 +24534,7 @@ describe("Analyzer request.security tf: top-level 변수 vs 무관한 함수의 
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects when a for-loop variable inside a DIFFERENT function shares the top-level name (for-loop/tuple/param axes remain symmetric — funcOwner extends the SAME shadowFuncs safety net)", () => {
@@ -24633,7 +24633,7 @@ describe("Analyzer request.security tf: input.string/timeframe(defval=Identifier
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("full wild idiom: get_pivot_resolution() accumulator tail whose branches compare against input.string(defval=AUTO)-sourced options", () => {
@@ -24692,7 +24692,7 @@ describe("Analyzer request.security tf 배치31 런타임 tf (C597, direct input
 
   it("rejects a non-literal defval inside the direct input.*(...) call (C598 버그 수정 전환: C597 초판은 이 폼을 수용했지만 프리앰블 rebuildSecurityCache가 per-bar '=' 로컬 'n'을 참조해 실행 시 ReferenceError — securityRuntimeTfInputCallSafe 게이트가 방출-슬롯 비리터럴을 거부, scratch 실행 재현으로 확정)", () => {
     const prog = analyzeSource('n = "60"\nx = request.security("", input.timeframe(n), close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("now accepts an indirect (variable-routed) input.timeframe(...) tf whose defval identifier is itself a const (C667 widened C366 const-propagation to chain through input defval Identifiers)", () => {
@@ -24718,7 +24718,7 @@ describe("Analyzer request.security tf 배치31 런타임 tf (C597, direct input
 
   it("still rejects a DotAccess simple-qualified non-string tf (timeframe.multiplier) even with a bare series argument — direct-input-call scoping, not a general qualifier-based relaxation", () => {
     const prog = analyzeSource('x = request.security("", timeframe.multiplier, close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still supports gaps=/lookahead= kwargs alongside a direct input.*(...) runtime tf", () => {
@@ -24811,40 +24811,40 @@ describe("Analyzer request.security tf 배치31 (a)-2 런타임 tf (C598, 변수
     const prog = analyzeSource(
       ['cond = ta.rising(close, 2)', 'tf = cond ? "60" : "D"', 'x = request.security("", tf, close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects numeric </> comparisons in the cond (==/!= 문자열 비교만 문법 안 — bar series 조건 경계 유지)", () => {
     const prog = analyzeSource(
       ['tf = input.int(5, "N") > 3 ? "60" : "D"', 'x = request.security("", tf, close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects a '+' concatenation tf (concatBinOps가 노드-키 Map이라 합성 노드는 숫자 덧셈으로 오방출 — 의도적 문법 밖)", () => {
     const prog = analyzeSource(['p = "6"', 'tf = p + "0"', 'x = request.security("", tf, close)'].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects a ':='-reassigned ternary variable (재대입 0회 전제 — uniqueTopEqVars 부적격)", () => {
     const prog = analyzeSource(
       ['u = input.bool(true, "U")', 'tf = u ? input.timeframe("60", "A") : "D"', 'tf := "W"', 'x = request.security("", tf, close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects a nested input.* leaf with a non-literal emitted arg (title 위치 '=' 로컬 — 프리앰블 ReferenceError 방지 게이트, C597 직접-콜 버그와 동일 클래스)", () => {
     const prog = analyzeSource(
       ['t = "Res"', 'u = input.bool(true, "U")', 'tf = u ? input.timeframe("60", t) : "D"', 'x = request.security("", tf, close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects a nested no-defval input call (rt.input.*($.inputs, undefined, ...) 방출로 undefined tf가 새는 것 방지 — C435 거부 의도 유지)", () => {
     const prog = analyzeSource(
       ['u = input.bool(true, "U")', 'tf = u ? input.timeframe(title="R") : "D"', 'x = request.security("", tf, close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("accepts a variable-routed ternary tf with a ta.* expression series argument — C599 전환(배치31 (b)-1): isBareSeries 게이트 해제, C598 치환 트리를 exprMatch 콜사이트가 그대로 소비한다", () => {
@@ -24935,31 +24935,31 @@ describe("Analyzer request.security tf str.tostring 조합자 + 삼항 폴딩 �
 
   it("still rejects str.tostring of an input.float leaf (isInt 미보장 — pyFloatStr 소수 표기가 tf 문자열을 오염)", () => {
     const prog = analyzeSource('x = request.security("", str.tostring(input.float(1.5, "F")), close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects str.tostring of a bar-series value (동적 tf 경계 유지)", () => {
     const prog = analyzeSource('x = request.security("", str.tostring(close), close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects a decimal format ('#.##' — SECURITY_TOSTRING_FMT_RE 밖, 소수 출력은 tf로 무의미)", () => {
     const prog = analyzeSource('x = request.security("", str.tostring(input.int(60, "T"), "#.##"), close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects a '/' in the numeric subtree (rt.idiv/pineDiv 노드-키 판별과 어긋날 수 있어 문법 밖)", () => {
     const prog = analyzeSource(
       ['mins = input.int(120, "M")', "tfStr = str.tostring(mins / 2)", 'x = request.security("", tfStr, close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects a bar-series ternary cond even with tostring branches (폴딩도 런타임 bool 문법도 불가 — 동적 tf 경계)", () => {
     const prog = analyzeSource(
       ['t = close > open ? str.tostring(input.int(5, "N")) : "60"', 'x = request.security("", t, close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 });
 
@@ -25021,21 +25021,21 @@ describe("Analyzer request.security tf 배치31 (b)-1 런타임 tf 확장 (C599,
 
   it("still rejects a genuinely dynamic (bar-series ternary) tf on an expression call site (C598 문법 밖 — 경계 유지)", () => {
     const prog = analyzeSource('x = request.security("", close > open ? "240" : "60", ta.sma(close, 5))');
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects a runtime-only tf when the expression is a UDF-parameter multi-site pending form (콜사이트별 슬롯 블록은 다음 슬라이스)", () => {
     const prog = analyzeSource(
       [...RT_TF, 'g(src) => request.security("", tf, src)', "a = g(close)", "b = g(open)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects a ':='-reassigned tf variable on an expression (non-passthrough) call site (재대입 0회 전제 유지)", () => {
     const prog = analyzeSource(
       ['tfv = "60"', 'tfv := "240"', 'x = request.security("", tfv, ta.sma(close, 5))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 });
 
@@ -25185,21 +25185,21 @@ describe("Analyzer request.security tf 배치31 (b)-2 (C600, tf-param 콜사이�
     const prog = analyzeSource(
       ['getS(tf) =>', '    request.security("", tf, close)', "wrap(t) => getS(t)", 'a = wrap("60")'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects when ANY call site is genuinely dynamic (bar-series ternary arg — 부분 지원 없음, 전체 하드 에러)", () => {
     const prog = analyzeSource(
       ['getS(tf) =>', '    request.security("", tf, close)', 'a = getS("D")', 'b = getS(close > open ? "60" : "240")'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects a ':='-reassigned variable site arg (재대입 0회 전제는 사이트 실인자에도 동일)", () => {
     const prog = analyzeSource(
       ['tfv = "60"', 'tfv := "240"', 'getS(tf) =>', '    request.security("", tf, close)', 'a = getS("D")', "b = getS(tfv)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("keeps the all-literal C529 path byte-identical (uniform collapse + no runtime slots — 리졸버 교체 회귀 가드)", () => {
@@ -25353,14 +25353,14 @@ describe("Analyzer request.security tf via UDF parameter call-site folding (C529
         'y = getS("D")',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects when a call site omits the argument (param default substitution 미지원 — C453과 동일한 보수 원칙)", () => {
     const prog = analyzeSource(
       'getS(tf = "D") =>\n    request.security("", tf, close)\nx = getS("60")\ny = getS()',
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   // C624 교체(next_hint(C623) "udf_param" 잔여 축 실측 — wild tf-literal 131건 중 29건이 이
@@ -25496,7 +25496,7 @@ describe("Analyzer request.security tf-param folding across in-func call sites (
         'y = wrap("60")',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
     expect(prog.securityCallSlots.size).toBe(0);
   });
 
@@ -25510,7 +25510,7 @@ describe("Analyzer request.security tf-param folding across in-func call sites (
         'y = wrap("240")',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
     expect(prog.securityTfs).toEqual([]);
   });
 
@@ -25541,7 +25541,7 @@ describe("Analyzer request.security tf-param folding across in-func call sites (
         'z = getS("D")',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 });
 
@@ -25634,19 +25634,19 @@ describe("Analyzer request.security tuple-return UDF (C530)", () => {
     const prog = analyzeSource(
       'f() =>\n    request.security(syminfo.tickerid, "60", [close, open])\n    close\nx = f()\nplot(x)',
     );
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링('[a, b] = ...')의 값으로만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("only supported as the value of a tuple destructuring ('[a, b] = ...')"))).toBe(true);
   });
 
   it("rejects a call-site arity mismatch with the precise count error (generic 에러가 아니라 개수 불일치)", () => {
     const prog = analyzeSource(
       'f() =>\n    request.security(syminfo.tickerid, "60", [close, open])\n[a, b, c] = f()',
     );
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링 개수 불일치: 대상 3개, 함수는 2개 반환"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple destructure arity mismatch: 3 targets, function returns 2"))).toBe(true);
   });
 
   it("still rejects a call-site arity mismatch against a 1-element tuple-returning UDF (C706 relaxed >=2 to >=1, not the equality check)", () => {
     const prog = analyzeSource(["f(x) =>", "    [x]", "[a, b] = f(close)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링 개수 불일치: 대상 2개, 함수는 1개 반환"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple destructure arity mismatch: 2 targets, function returns 1"))).toBe(true);
   });
 
   it("accepts a single-element tuple return since C706 (파서/pine2py 둘 다 arity>=2를 강제하지 않음 — wild `[average]` 단일원소 암시반환 17건 실측으로 자체발명 제약 제거)", () => {
@@ -25659,7 +25659,7 @@ describe("Analyzer request.security tuple-return UDF (C530)", () => {
     const prog = analyzeSource(
       'f() =>\n    request.security(syminfo.tickerid, "60", [close, close % 2])\n[a, b] = f()',
     );
-    expect(prog.errors.some((e) => e.includes("튜플 리터럴 'expression' 인자는 원소마다"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple-literal 'expression' argument elements each only support"))).toBe(true);
     expect(prog.securityTupleCallSlots.size).toBe(0);
   });
 
@@ -25673,7 +25673,7 @@ describe("Analyzer request.security tuple-return UDF (C530)", () => {
 
   it("keeps the top-level scalar-position rejection intact (`x = request.security(..., [..])` — C530은 UDF 마지막 문장만 연다)", () => {
     const prog = analyzeSource('x = request.security(syminfo.tickerid, "D", [open, close])');
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링('[a, b] = ...')의 값으로만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("only supported as the value of a tuple destructuring ('[a, b] = ...')"))).toBe(true);
   });
 });
 
@@ -25715,7 +25715,7 @@ describe("Analyzer TA-multi-return/UDF-chain tuple-destructure implicit re-retur
     const prog = analyzeSource(
       ["f() =>", "    [v, u, l] = ta.vwap(close, close > open, 2.0)", "[a, b] = f()"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링 개수 불일치: 대상 2개, 함수는 3개 반환"))).toBe(
+    expect(prog.errors.some((e) => e.includes("tuple destructure arity mismatch: 2 targets, function returns 3"))).toBe(
       true,
     );
   });
@@ -25826,14 +25826,14 @@ describe("Analyzer request.security tuple-destructure implicit re-return UDF (C5
     const prog = analyzeSource(
       'f() =>\n    [a, b] = request.security(syminfo.tickerid, "60", [close, open])\n[p, q, r] = f()',
     );
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링 개수 불일치: 대상 3개, 함수는 2개 반환"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple destructure arity mismatch: 3 targets, function returns 2"))).toBe(true);
   });
 
   it("rejects a body-level destructure/tuple-literal arity mismatch via the existing analyzeTupleDestructure check", () => {
     const prog = analyzeSource(
       'f() =>\n    [a, b, c] = request.security(syminfo.tickerid, "60", [close, open])\n[p, q] = f()',
     );
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링 개수 불일치: 대상 3개, 함수는 2개 반환"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple destructure arity mismatch: 3 targets, function returns 2"))).toBe(true);
   });
 
   it("accepts DISTINCT tf-param call sites for this form since C532 (C531 당시 거부 테스트를 허용+슬롯 단언으로 교체 — 디스트럭처 재반환 폼도 동일 블록 기구)", () => {
@@ -25988,7 +25988,7 @@ describe("Analyzer request.security distinct-tf tuple call-site slot blocks (C53
     const prog = analyzeSource(
       'f(tf) =>\n    request.security(syminfo.tickerid, tf, [close, open])\n[a, b] = f("60")\n[c, d] = f(close > 0 ? "60" : "D")',
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("keeps two independent multiSite tuple calls in different UDFs on disjoint slot blocks", () => {
@@ -26061,14 +26061,14 @@ describe("Analyzer tuple-UDF tail-call return propagation (C611)", () => {
     const prog = analyzeSource(
       `${INNER}wrap() => request.security(syminfo.tickerid, "60", inner())\n[a, b, c] = wrap()`,
     );
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링 개수 불일치: 대상 3개, 함수는 2개 반환"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple destructure arity mismatch: 3 targets, function returns 2"))).toBe(true);
   });
 
   it("still rejects a forward-referenced inner callee (bodyAnalyzed=false — C432 선례, 좁은-문법 에러 유지)", () => {
     const prog = analyzeSource(
       'wrap() => request.security(syminfo.tickerid, "60", inner())\ninner() =>\n    [close, open]\n[a, b] = wrap()',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument"))).toBe(true);
   });
 
   it("keeps a scalar inner callee on the scalar C436 path — wrapper stays non-tuple", () => {
@@ -26084,7 +26084,7 @@ describe("Analyzer tuple-UDF tail-call return propagation (C611)", () => {
     const prog = analyzeSource(
       `${INNER}wrap() =>\n    request.security(syminfo.tickerid, "60", inner())\n    close\nx = wrap()\nplot(x)`,
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument"))).toBe(true);
   });
 
   it("accepts a direct tuple-UDF call tail — arity inherited through the chain (zigzag→zigzagcore 관용구)", () => {
@@ -26095,7 +26095,7 @@ describe("Analyzer tuple-UDF tail-call return propagation (C611)", () => {
 
   it("rejects a direct-chain call-site arity mismatch with the precise count error", () => {
     const prog = analyzeSource("inner(x) =>\n    [x + 1.0, x * 2.0]\nouter(y) => inner(y)\n[a, b, c] = outer(close)");
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링 개수 불일치: 대상 3개, 함수는 2개 반환"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple destructure arity mismatch: 3 targets, function returns 2"))).toBe(true);
   });
 
   it("inherits tuple elem UDT types through a direct chain — field access on destructured names works", () => {
@@ -26157,7 +26157,7 @@ describe("Analyzer ta.* multi-return tail-call return propagation (C629)", () =>
     const prog = analyzeSource(
       "macd(source, fastLength, slowLength, signalSmoothing) =>\n    ta.macd(source, fastLength, slowLength, signalSmoothing)\n[macdLine, signalLine] = macd(close, 12, 26, 9)",
     );
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링 개수 불일치: 대상 2개, 함수는 3개 반환"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple destructure arity mismatch: 2 targets, function returns 3"))).toBe(true);
   });
 
   it("does not affect a single-return ta.* wrapper tail (ta.sma stays scalar)", () => {
@@ -26191,7 +26191,7 @@ describe("Analyzer ta.* multi-return tail-call return propagation (C629)", () =>
     const prog = analyzeSource(
       "macd(source, fastLength, slowLength, signalSmoothing) =>\n    ta.macd(source, fastLength, slowLength, signalSmoothing)\n    close\nx = macd(close, 12, 26, 9)\nplot(x)",
     );
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링") || e.includes("반환하므로"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple destructuring") || e.includes("so it can only be called"))).toBe(true);
   });
 });
 
@@ -26293,7 +26293,7 @@ describe("Analyzer method decl tuple-tail forms (C630)", () => {
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링 개수 불일치: 대상 3개, 함수는 2개 반환"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple destructure arity mismatch: 3 targets, function returns 2"))).toBe(true);
   });
 
   it("still rejects when the security tuple-literal call is NOT the last statement (게이트 원위치 유지)", () => {
@@ -26307,7 +26307,7 @@ describe("Analyzer method decl tuple-tail forms (C630)", () => {
         "plot(x)",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument"))).toBe(true);
   });
 
   it("resolves a ta.* multi-return wrapper nested inside an if-tail branch for method (detect/validate symmetry)", () => {
@@ -26353,18 +26353,18 @@ describe("Analyzer direct tuple literal destructure value (C631)", () => {
   it("rejects an arity mismatch between the literal and the destructure targets", () => {
     const prog = analyzeSource(["[a, b] = [close, open, high]", "plot(a)"].join("\n"));
     expect(
-      prog.errors.some((e) => e.includes("튜플 리터럴 대입 분기의 튜플 리터럴 원소 개수가 대상과 다름: 분기 3개, 대상 2개")),
+      prog.errors.some((e) => e.includes("tuple literal assignment branch tuple literal element count differs from target: branch 3, target 2")),
     ).toBe(true);
   });
 
   it("still analyzes each element as a value position (undeclared identifier still errors)", () => {
     const prog = analyzeSource(["[a, b] = [undeclaredName, close]", "plot(a)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("알 수 없는 식별자") && e.includes("undeclaredName"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier") && e.includes("undeclaredName"))).toBe(true);
   });
 
   it("still rejects a nested tuple literal as an element (elements stay value positions, C610 principle)", () => {
     const prog = analyzeSource(["[a, b] = [[1, 2], close]", "plot(a)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("튜플 리터럴은 함수의 마지막 문장"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("tuple literal supported only as the function's last statement"))).toBe(true);
   });
 
   it("registers top-level history-index tracking for the destructure targets (matches other tuple-value kinds)", () => {
@@ -26375,12 +26375,12 @@ describe("Analyzer direct tuple literal destructure value (C631)", () => {
 
   it("conservatively rejects history-index on a UDF-body tuple literal target (no func-local kind registration for this narrow value form)", () => {
     const prog = analyzeSource(["f() =>", "    [a, b] = [close, high]", "    a[1]", "x = f()", "plot(x)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("히스토리 인덱스"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("history index"))).toBe(true);
   });
 
   it("still rejects a var-declared name reused as a tuple literal destructure target (pre-existing restriction, unaffected by C631)", () => {
     const prog = analyzeSource(["var float a = na", "[a, b] = [close, high]", "plot(a)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("var로 선언된 변수는 튜플 디스트럭처링 대상으로 재사용할 수 없음"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("variable declared with var cannot be reused as a tuple destructure target"))).toBe(true);
   });
 });
 
@@ -26398,7 +26398,7 @@ describe("Analyzer tuple destructure var-shadow (C745)", () => {
 
   it("still rejects a tuple destructure target reusing a flat top-level var's name in the EXACT SAME (top-level) scope", () => {
     const prog = analyzeSource(["var bool x = false", "[x, y] = [close > open, high]", "plot(y)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("var로 선언된 변수는 튜플 디스트럭처링 대상으로 재사용할 수 없음"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("variable declared with var cannot be reused as a tuple destructure target"))).toBe(true);
   });
 
   it("a nested var (not just a flat top-level var) is also shadowable by a tuple destructure target in a strictly-descendant scope (C728 nestedVarDeclSlots axis)", () => {
@@ -26417,7 +26417,7 @@ describe("Analyzer tuple destructure var-shadow (C745)", () => {
     const prog = analyzeSource(
       ["if close > open", "    var bool x = false", "    [x, y] = [close > open, high]"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("var로 선언된 변수는 튜플 디스트럭처링 대상으로 재사용할 수 없음"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("variable declared with var cannot be reused as a tuple destructure target"))).toBe(true);
   });
 
   it("a read of the tuple-shadowed name inside the shadow's own block resolves to the plain local, not the var slot (marked via eqLocalShadowedVarReads)", () => {
@@ -26737,7 +26737,7 @@ describe("Analyzer tuple branch-tail forms — UDT/container/scalar method dispa
         "plot(a)",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링의 값은 튜플을 반환하는 UDF 호출이어야 함"))).toBe(
+    expect(prog.errors.some((e) => e.includes("tuple destructure value must be a UDF call returning a tuple"))).toBe(
       true,
     );
   });
@@ -26757,7 +26757,7 @@ describe("Analyzer tuple branch-tail forms — UDT/container/scalar method dispa
         "plot(a)",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("튜플 디스트럭처링의 값은 튜플을 반환하는 UDF 호출이어야 함"))).toBe(
+    expect(prog.errors.some((e) => e.includes("tuple destructure value must be a UDF call returning a tuple"))).toBe(
       true,
     );
   });
@@ -26861,7 +26861,7 @@ describe("Analyzer request.security ta-in-UDF expression (C533)", () => {
     const prog = analyzeSource(
       'f() =>\n    request.security(syminfo.tickerid, "D", ta.ema(close, close))\nx = f()\nplot(x)',
     );
-    expect(prog.errors.some((e) => e.includes("length 인자는 'series'일 수 없음"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("cannot be 'series'"))).toBe(true);
   });
 
   // C624 교체(위 "accepts and folds to chartTf" 테스트와 동일 근거 — bare-field 축에 이어 ta.*
@@ -26930,17 +26930,17 @@ describe("Analyzer request.security tf ternary 조건 폴딩 (C510, wild empty-s
 
   it("still rejects when the comparison operand is a genuinely runtime value (bar series), even directly in the tf argument", () => {
     const prog = analyzeSource('x = request.security("", close > open ? "60" : "240", close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects a bare boolean flag the resolver cannot fold (var 선언 bool — C513이 input.bool 폴딩을 열어 소스를 var 폼으로 전환, 거부 의도는 보존)", () => {
     const prog = analyzeSource('var useAlt = true\nalt = input.timeframe("60")\nx = request.security("", useAlt ? alt : timeframe.period, close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects when one comparison operand doesn't resolve to a compile-time string constant", () => {
     const prog = analyzeSource('tf = input.timeframe("")\ny = "reassigned"\ny := "other"\nx = request.security("", tf == y ? timeframe.period : tf, close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 });
 
@@ -26979,21 +26979,21 @@ describe("Analyzer request.security tf ternary 조건: bare bool 변수 재귀 �
     const prog = analyzeSource(
       'useAlt = barstate.isconfirmed\nalt = input.timeframe("60")\nx = request.security("", useAlt ? alt : timeframe.period, close)',
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects when the bool variable's comparison operand isn't a compile-time string constant", () => {
     const prog = analyzeSource(
       'tf = input.string("Chart", "Res")\ny = "reassigned"\ny := "other"\nuseAlt = tf != y\nx = request.security("", useAlt ? tf : timeframe.period, close)',
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects a forward-referenced bool variable (used-before-declared order guard)", () => {
     const prog = analyzeSource(
       'x = request.security("", useAlt ? tf : timeframe.period, close)\ntf = input.string("Chart", "Res")\nuseAlt = tf != "Chart"',
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 });
 
@@ -27093,26 +27093,26 @@ describe("Analyzer request.security tf ternary 조건: 산술 임계값 체인 �
 
     // 86400/7은 몫이 정수가 아니라 Pine int 절삭과 JS float가 갈릴 수 있어 보수적으로 미폴딩
     const inexact = analyzeSource('x = request.security("", timeframe.in_seconds() / 7 > 3 ? "60" : "D", close)');
-    expect(inexact.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(inexact.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects a threshold comparison over a genuinely runtime value (bar series)", () => {
     const prog = analyzeSource('x = request.security("", close > 10 ? "60" : "240", close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects when a numeric operand comes from input.int (런타임 오버라이드 가능 값은 미폴딩)", () => {
     const prog = analyzeSource(
       'n = input.int(3600)\nx = request.security("", timeframe.in_seconds() > n ? "60" : "D", close)',
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects a reassigned (:=) numeric variable in the condition", () => {
     const prog = analyzeSource(
       's = 7200\ns := 60\nx = request.security("", s > 3600 ? "60" : "D", close)',
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects a forward-referenced tf variable through the uniqueTopEqVars value recursion", () => {
@@ -27185,7 +27185,7 @@ describe("Analyzer request.security tf ternary 조건: timeframe.is*/bare input/
     const prog = analyzeSource(
       'useX = input("yes")\nx = request.security("", useX ? "60" : "D", close)',
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("folds boolean equality `mode == true` via the C537 bool fallback", () => {
@@ -27206,12 +27206,12 @@ describe("Analyzer request.security tf ternary 조건: timeframe.is*/bare input/
 
   it("still rejects a runtime boolean equality ((close > 0) == true)", () => {
     const prog = analyzeSource('x = request.security("", (close > 0) == true ? "60" : "D", close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects a non-boolean timeframe string prop in the condition position", () => {
     const prog = analyzeSource('x = request.security("", timeframe.period ? "60" : "D", close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 });
 
@@ -27223,7 +27223,7 @@ describe("Analyzer request.security tf ternary 조건: timeframe.is*/bare input/
 // JS·Kleene 양쪽 시맨틱에서 결과가 같은 조합만) / input.bool defval 상수(+런타임 오버라이드 가드,
 // input.timeframe C366과 동일 계약) / str.tonumber(런타임 함수 직접 import, C512 in_seconds 선례).
 describe("Analyzer request.security tf ternary 조건: 단일식 UDF 콜 평가 (C513)", () => {
-  const TF_ERR = "'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원";
+  const TF_ERR = "'timeframe' argument only supports a compile-time string literal";
 
   it("folds the wild tfActive idiom to true (86400<=86400) and resolves the tf branch, registering both input guards", () => {
     const prog = analyzeSource(
@@ -27417,7 +27417,7 @@ describe("Analyzer request.security tf ternary 조건: 단일식 UDF 콜 평가 
 // 코드젠 신규 경로 0 — 기존 문자열 리터럴과 동일하게 소비됨). Identifier 경유 재귀(uniqueTopEqVars)가
 // 이미 있어 `my_time = str.tostring(15)` 같은 간접 폼도 별도 배선 없이 공짜로 풀린다.
 describe("Analyzer request.security tf: str.tostring(숫자상수) 폴딩 (C538)", () => {
-  const TF_ERR = "'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원";
+  const TF_ERR = "'timeframe' argument only supports a compile-time string literal";
 
   it("folds str.tostring(NumberLiteral) directly in the tf position", () => {
     const prog = analyzeSource('x = request.security("", str.tostring(60), close)');
@@ -27550,7 +27550,7 @@ describe("Analyzer request.security tf ternary 조건: na(NaLiteral) 분기 폴�
 
   it("still rejects when the ternary condition itself cannot be folded, even if the false branch is na (보수 원칙 무회귀)", () => {
     const prog = analyzeSource('x = request.security("", close > 0 ? "60" : na, close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("propagates the na fold through the tuple-literal expression path", () => {
@@ -27567,7 +27567,7 @@ describe("Analyzer request.security tf ternary 조건: na(NaLiteral) 분기 폴�
 // 구조적으로 배제돼 있었다 — wild ad6cedfa0292.pine `string htfTF = getHTF()`가 이 갭에 걸림).
 // persistent(var/varip)는 once-only 초기화 시맨틱이라 계속 eq:false로 제외된다.
 describe("Analyzer request.security tf: fresh typed VarDecl 바인딩의 uniqueTopEqVars 자격 (C606)", () => {
-  const TF_ERR = "'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원";
+  const TF_ERR = "'timeframe' argument only supports a compile-time string literal";
 
   it("resolves request.security tf through a fresh typed VarDecl chained into a zero-arg UDF call", () => {
     const prog = analyzeSource(
@@ -27609,7 +27609,7 @@ describe("Analyzer request.security tf: fresh typed VarDecl 바인딩의 uniqueT
 // 7022->7026(+4, newly-broken 0). subject 없는 if-elif형 switch는 당시 wild 근거가 없어 범위 밖이었으나
 // C606이 wild getHTF() 관용구로 반증해 확장(아래 describe 블록 안에 함께 유지).
 describe("Analyzer request.security tf switch-as-expression 값 폴딩 (C515)", () => {
-  const TF_ERR = "'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원";
+  const TF_ERR = "'timeframe' argument only supports a compile-time string literal";
 
   it("folds a switch-body UDF call whose subject matches a literal case", () => {
     const prog = analyzeSource(
@@ -27818,7 +27818,7 @@ describe("Analyzer request.security tf switch-as-expression 값 폴딩 (C515)", 
 // 기존 resolveSecurityTfTernaryCondition을 그대로 재사용(timeframe.is*/산술·논리 이미 지원) —
 // 이 슬라이스가 신설한 것은 IfStmt 본문 자체를 "값이 있는 제어문-식"으로 재귀 평가하는 경로뿐이다.
 describe("Analyzer request.security tf IfStmt-as-expression 값 폴딩 (C607)", () => {
-  const TF_ERR = "'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원";
+  const TF_ERR = "'timeframe' argument only supports a compile-time string literal";
 
   it("folds an if/else UDF body via the then-branch when the condition resolves true", () => {
     const prog = analyzeSource(
@@ -27992,7 +27992,7 @@ describe("Analyzer request.security tf IfStmt-as-expression 값 폴딩 (C607)", 
 // 효과로 findSecurityFoldableFuncDecl의 "본문 정확히 1문장" 제약도 "마지막 문장만 본다"로
 // 완화된다(pine2py도 body[-1]만 보고 앞 문장은 값 결정에 관여 안 함).
 describe("Analyzer request.security tf UDF 마지막 문장 Assignment -> 대입값 그대로 (C608)", () => {
-  const TF_ERR = "'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원";
+  const TF_ERR = "'timeframe' argument only supports a compile-time string literal";
 
   it("folds the full wild 'timeframe_func()' idiom end-to-end (input.string-gated if/elif/else, every branch reassigns via ':=')", () => {
     const prog = analyzeSource(
@@ -28157,7 +28157,7 @@ describe("Analyzer request.security tf UDF 마지막 문장 Assignment -> 대입
 // (resolveSecurityAccumulatorTail/applyAccumulatorBlock/applyAccumulatorIfStmt/
 // applyAccumulatorSwitchStmt, call-expr.ts).
 describe("Analyzer request.security tf UDF 누산기 변수 값 폴딩 (C625)", () => {
-  const TF_ERR = "'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원";
+  const TF_ERR = "'timeframe' argument only supports a compile-time string literal";
 
   it("folds an if/elif chain with no else via the accumulator idiom (init + conditional ':=' reassigns)", () => {
     const prog = analyzeSource(
@@ -28314,7 +28314,7 @@ describe("Analyzer request.security tf UDF 누산기 변수 값 폴딩 (C625)", 
 // 중첩 인라인(치환된 본문 안에 또 다른 bare UDF 콜)은 범위 밖. wild ok-Set diff: 7026->7029(+3,
 // newly-broken 0).
 describe("Analyzer request.security expression bare UDF 콜 인라인 치환 (C516)", () => {
-  const EXPR_ERR = "'expression' 인자는 bare";
+  const EXPR_ERR = "'expression' argument only supports bare";
 
   it("inlines a single-expression UDF call used as the whole expression argument's ta.* source (nested inside ta.sma)", () => {
     const prog = analyzeSource(
@@ -28551,7 +28551,7 @@ describe("Analyzer request.security expression bare UDF 콜 인라인 치환 (C5
 // 필요한 런타임 분기와 구조적으로 다르다. input 유래 상수는 기존 constStringVars 경로가
 // securityTfConstGuards 오버라이드 throw 가드를 등록해 fail-loud. ──
 describe("Analyzer request.security expression UDF 콜 인라인 — switch/if 상수 분기 선택 (C732)", () => {
-  const EXPR_ERR = "'expression' 인자는 bare";
+  const EXPR_ERR = "'expression' argument only supports bare";
 
   // 참고: 아래 테스트들은 UDF 콜을 `+ 0`/ta.* 인자 위치로 감싼다 — 루트 bare UDF 콜은 기존
   // scalarBareUdfInner passthrough(C436, 더 넓은 본문 허용)가 먼저 흡수해 이 인라인 경로에 아예
@@ -28721,12 +28721,12 @@ describe("Analyzer request.security tf defval= 키워드 폼 + 빈 tf 정규화 
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("still rejects an input call with no defval at all (title=만 있는 콜은 폴딩 불가)", () => {
     const prog = analyzeSource('tf = input.timeframe(title="Res")\nx = request.security("", tf, close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("prefers the positional defval when both positional and unrelated kwargs are present (기존 위치 폼 무회귀)", () => {
@@ -28825,7 +28825,7 @@ describe("Analyzer request.security expression via chained security-var substitu
         'x = request.security(syminfo.tickerid, "D", weeklyRsi + 1)',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'request.security'의 'expression' 인자는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
   });
 
   it("rejects the same chain when the outer call's symbol differs from the inner definition's symbol (unsafe — different HTF replay)", () => {
@@ -28835,7 +28835,7 @@ describe("Analyzer request.security expression via chained security-var substitu
         'x = request.security(syminfo.tickerid, "W", weeklyRsi + 1)',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'request.security'의 'expression' 인자는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
   });
 
   it("rejects when the outer tf is a different (but value-equal) AST shape from the inner definition's tf (conservative — structural equality only, not value equality)", () => {
@@ -28846,7 +28846,7 @@ describe("Analyzer request.security expression via chained security-var substitu
         'x = request.security(syminfo.tickerid, tfW, weeklyRsi + 1)',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'request.security'의 'expression' 인자는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
   });
 
   it("does not disturb a plain top-level arithmetic use of a security-result variable outside any request.security call (regression guard — chained-security-var judgment only fires when outerSymbol/outerTf are set)", () => {
@@ -28929,7 +28929,7 @@ describe("Analyzer request.security expression via wrapper-UDF-mediated chained 
         'y = request.security(syminfo.tickerid, "W", ta.sma(a, 5))',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'request.security'의 'expression' 인자는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
   });
 
   it("still rejects the chain when the wrapper's own symbol differs from the outer call's symbol", () => {
@@ -28941,7 +28941,7 @@ describe("Analyzer request.security expression via wrapper-UDF-mediated chained 
         'y = request.security(syminfo.tickerid, "D", ta.sma(a, 5))',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'request.security'의 'expression' 인자는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
   });
 
   it("registers independent ta slots for the collapsed inner expression (site-2's bodyExpr re-registers the inner ta.sma clone — no state sharing with site-1)", () => {
@@ -29026,7 +29026,7 @@ describe("Analyzer UDF parameter UDT type inference from call sites (C394)", () 
         "    z2 = g(a)",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
     expect(prog.funcs.get("g")?.paramUdtTypes.has("v")).toBe(false);
   });
 
@@ -29036,7 +29036,7 @@ describe("Analyzer UDF parameter UDT type inference from call sites (C394)", () 
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
     expect(prog.funcs.get("f")?.paramUdtTypes.has("tr")).toBe(false);
   });
 
@@ -29197,7 +29197,7 @@ describe("Analyzer UDF parameter UDT type inference from array-elem-extracted ca
         "    z2 = g(v)",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
     expect(prog.funcs.get("g")?.paramUdtTypes.has("v")).toBe(false);
   });
 
@@ -29239,7 +29239,7 @@ describe("Analyzer UDF/method parameter reuses a top-level var name (C414, wild 
 
   it("still validates argument count for a call to a UDF whose parameter name collides with a top-level var (shadowing must not bypass arity checks)", () => {
     const prog = analyzeSource(["var int dir = 0", "f(int dir) =>", "    dir + 1", "y = f(1, 2, 3)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'f' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'f' call argument count mismatch"))).toBe(true);
   });
 
   it("registers the parameter as a normal local (bodyScope.names/prog.locals) exactly as any non-colliding parameter would", () => {
@@ -29313,12 +29313,12 @@ describe("Analyzer UDT method call on a nested DotAccess receiver (C505, 'ctx.fi
     const prog = analyzeSource(
       ["type Leaf", "    float value", "type Ctx", "    Leaf leaf", "f(Ctx ctx) =>", "    ctx.leaf.value.next(1.0)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("still errors with 'no such method' when the nested UDT field exists but the method name doesn't (receiver type resolves correctly, method lookup itself is the failure)", () => {
     const prog = analyzeSource([SMA_CTX_SETUP, "f(Ctx ctx) =>", "    ctx.sma.bogus()"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'Sma'에 없는 method") && e.includes("bogus"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown method for 'Sma'") && e.includes("bogus"))).toBe(true);
   });
 
   it("resolves an arbitrarily deeper chain (three UDT-field hops before the method call, C495 recursion generalizes)", () => {
@@ -29385,12 +29385,12 @@ describe("Analyzer UDT method call chained directly on a constructor call (C632,
 
   it("still rejects a method chained on a UDF call that does not return a UDT (regression guard, no false positive from the new CallExpr fallback)", () => {
     const prog = analyzeSource(["f() =>", "    close", "s = f().scalarSum()", "plot(s)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("still errors with 'no such method' when the constructed type is correct but the method name isn't (receiver type resolves, method lookup is the failure)", () => {
     const prog = analyzeSource([BOX_SETUP, "s = Box.new(close).bogus()", "plot(s)"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'Box'에 없는 method") && e.includes("bogus"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown method for 'Box'") && e.includes("bogus"))).toBe(true);
   });
 });
 

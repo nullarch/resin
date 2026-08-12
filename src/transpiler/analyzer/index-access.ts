@@ -118,7 +118,7 @@ function classifyNonNumericTypeHint(hint: string | null, prog: AnalyzedProgram):
   if (base === "array" || base.startsWith("array<")) return "array";
   if (base === "map" || base.startsWith("map<")) return "map";
   if (base === "matrix" || base.startsWith("matrix<")) return "matrix";
-  if (DRAWING_ALL_NAMESPACES.has(base)) return "drawing 핸들";
+  if (DRAWING_ALL_NAMESPACES.has(base)) return "drawing handle";
   if (prog.udtTypes.has(base)) return "UDT";
   if (prog.enumTypes.has(base)) return "enum";
   return null;
@@ -132,7 +132,7 @@ function resolveEqLocalNonNumericKind(obj: Expr, prog: AnalyzedProgram, scope: L
   if (resolveLocalStringHint(scope, name)) return "string";
   if (resolveContainerExprKind(obj, prog, scope) !== null) return "array/map";
   if (resolveMatrixExprKind(obj, prog, scope)) return "matrix";
-  if (resolveDrawingExprKind(obj, prog, scope) !== null) return "drawing 핸들";
+  if (resolveDrawingExprKind(obj, prog, scope) !== null) return "drawing handle";
   if (resolveUdtObjectType(obj, prog, scope) !== undefined) return "UDT";
   return null;
 }
@@ -158,7 +158,7 @@ export function classifyTupleElemNonNumericKind(el: Expr, prog: AnalyzedProgram,
         return (
           classifyNonNumericTypeHint(func.localVarTypeHints.get(el.name) ?? null, prog) ??
           func.localVarValueKinds.get(el.name) ??
-          (func.localVarDrawingKinds.has(el.name) ? "drawing 핸들" : null)
+          (func.localVarDrawingKinds.has(el.name) ? "drawing handle" : null)
         );
       }
     }
@@ -171,11 +171,11 @@ export function classifyTupleElemNonNumericKind(el: Expr, prog: AnalyzedProgram,
   // analyzeAssignment가 '=' 로컬 힌트 기입에 쓰는 순수 구조 판별을 원소 식에 직접 적용한다.
   if (isArrayConstructorCall(el, prog, scope) || isMapConstructorCall(el, prog, scope)) return "array/map";
   if (isMatrixConstructorCall(el)) return "matrix";
-  if (isDrawingConstructorCall(el) !== null) return "drawing 핸들";
+  if (isDrawingConstructorCall(el) !== null) return "drawing handle";
   if (isUdtConstructorCall(el, prog, scope) !== null) return "UDT";
   if (resolveContainerExprKind(el, prog, scope) !== null) return "array/map";
   if (resolveMatrixExprKind(el, prog, scope)) return "matrix";
-  if (resolveDrawingExprKind(el, prog, scope) !== null) return "drawing 핸들";
+  if (resolveDrawingExprKind(el, prog, scope) !== null) return "drawing handle";
   if (resolveUdtObjectType(el, prog, scope) !== undefined) return "UDT";
   return null;
 }
@@ -476,7 +476,7 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
   const offset = literalOffsetValue(expr.index);
   if (offset !== null && (offset < 0 || !Number.isInteger(offset))) {
     prog.errors.push(
-      `히스토리 인덱스 '[]'는 0 이상의 정수 리터럴만 지원(동적 오프셋 미구현): (L${expr.line}:${expr.col})`,
+      `history index '[]' supports only integer literals >= 0 (dynamic offset not implemented): (L${expr.line}:${expr.col})`,
     );
     return;
   }
@@ -500,7 +500,7 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
       // strategy.<prop>[동적]은 wild 실측 0건(scratch/probe_c364_dynoff_target.mjs dot-access 4건은
       // 전부 ta.tr/UDT 필드)이라 C365 게이트 확장 범위 밖 — C339 리터럴 전용을 보수 유지.
       prog.errors.push(
-        `히스토리 인덱스 '[]'는 strategy.* 속성에는 0 이상의 정수 리터럴 오프셋만 지원(동적 오프셋 미지원): (L${expr.line}:${expr.col})`,
+        `history index '[]' on strategy.* properties supports only integer literal offsets >= 0 (dynamic offset not supported): (L${expr.line}:${expr.col})`,
       );
       return;
     }
@@ -538,7 +538,7 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
     if (!prog.builtinRuntimeExprs.has(expr.obj)) return;
     if (offset === null) {
       prog.errors.push(
-        `히스토리 인덱스 '[]'는 barstate.*/session.* 값에는 0 이상의 정수 리터럴 오프셋만 지원(동적 오프셋 미구현): (L${expr.line}:${expr.col})`,
+        `history index '[]' on barstate.*/session.* values supports only integer literal offsets >= 0 (dynamic offset not implemented): (L${expr.line}:${expr.col})`,
       );
       return;
     }
@@ -567,7 +567,7 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
       // Float64Array 강제변환에서 null → 0으로 조용히 오염된다 — 범위 밖(하드 에러).
       if (recvType === CHART_POINT_FIELD_TYPE) {
         prog.errors.push(
-          `히스토리 인덱스 '[]'는 chart.point 필드에는 지원하지 않음(필드 na가 null이라 Float64Array 히스토리 슬롯에서 0으로 오염됨): '${recvName}.${fieldAttr}' (L${expr.line}:${expr.col})`,
+          `history index '[]' not supported on chart.point fields (field na is null and would corrupt to 0 in the Float64Array history slot): '${recvName}.${fieldAttr}' (L${expr.line}:${expr.col})`,
         );
         return;
       }
@@ -582,7 +582,7 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
       const funcRole = func !== null ? resolveFuncInternalRole(func, scope, recvName) : null;
       if (funcRole !== null && funcRole.role !== "param") {
         prog.errors.push(
-          `히스토리 인덱스 '[]'는 UDF/method 내부 UDT 수신자(매개변수/내부 var/'=' 로컬)의 필드에는 지원하지 않음(콜사이트별 독립 히스토리 미구현): '${recvName}.${fieldAttr}' (L${expr.line}:${expr.col})`,
+          `history index '[]' not supported on fields of UDF/method-internal UDT receivers (parameter/internal var/'=' local) (per-callsite independent history not implemented): '${recvName}.${fieldAttr}' (L${expr.line}:${expr.col})`,
         );
         return;
       }
@@ -600,7 +600,7 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
           isVarRecv === isEqLocalRecv
         ) {
           prog.errors.push(
-            `히스토리 인덱스 '[]'는 top-level var/varip 또는 무조건(depth-0) '=' 로컬 UDT 수신자의 필드에만 지원(중첩 블록 '='/섀도잉/튜플 수신자 미지원): '${recvName}.${fieldAttr}' (L${expr.line}:${expr.col})`,
+            `history index '[]' supported only on fields of top-level var/varip or unconditional (depth-0) '=' local UDT receivers (nested-block '='/shadowing/tuple receivers not supported): '${recvName}.${fieldAttr}' (L${expr.line}:${expr.col})`,
           );
           return;
         }
@@ -623,7 +623,7 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
       // 배열($.refHistSlots, RefSeries object 원형 버퍼)로 담을 수 있어 그 둘과 나란히 허용한다.
       // funcRole!==null(매개변수)이면 물리 배열은 같되 콜사이트별 함수-상대 슬롯(C750, C541
       // localRefHistSlots와 동일한 __refHistBase 카운터 공유)에 배정한다.
-      if (kind === "drawing 핸들") {
+      if (kind === "drawing handle") {
         if (offset === 0) {
           prog.historyOffsets.set(expr, 0);
           return;
@@ -643,7 +643,7 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
       }
       if (fieldHint === null || kind !== null) {
         prog.errors.push(
-          `히스토리 인덱스 '[]'는 ${kind ?? "타입 미확정"} 타입 UDT 필드에는 지원하지 않음(Float64Array 기반 히스토리 슬롯이 담을 수 없는 타입): '${recvName}.${fieldAttr}' (L${expr.line}:${expr.col})`,
+          `history index '[]' not supported on UDT fields of ${kind ?? "undetermined"} type (type cannot be stored in a Float64Array-based history slot): '${recvName}.${fieldAttr}' (L${expr.line}:${expr.col})`,
         );
         return;
       }
@@ -795,7 +795,7 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
       // 프로그램이 codegen 단계에서 크래시하는 회귀).
       if (prog.errors.length === errCountBefore) {
         prog.errors.push(
-          `히스토리 인덱스 '[]'는 stateful TA 콜(ta.*)/request.security 결과/순수 numeric 빌트인(math.*, time, time_close, timestamp, year·month·...·weekofyear)에만 지원 — 그 외 함수 호출(UDF 등)은 미지원: (L${expr.line}:${expr.col})`,
+          `history index '[]' supported only on stateful TA call (ta.*)/request.security results/pure numeric builtins (math.*, time, time_close, timestamp, year·month·...·weekofyear) — other function calls (UDF etc.) not supported: (L${expr.line}:${expr.col})`,
         );
       }
       return;
@@ -922,7 +922,7 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
     if (prog.errors.length > errCountBefore) return;
     if (expr.obj.kind === "BinOp" && expr.obj.op === "+" && isStringExpr(expr.obj)) {
       prog.errors.push(
-        `히스토리 인덱스 '[]'는 문자열 결합(+) 산술식에는 지원하지 않음(Float64Array 기반 히스토리 슬롯이 문자열을 담을 수 없음): (L${expr.line}:${expr.col})`,
+        `history index '[]' not supported on string concatenation (+) arithmetic expressions (Float64Array-based history slot cannot hold strings): (L${expr.line}:${expr.col})`,
       );
       return;
     }
@@ -994,7 +994,7 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
 
   if (expr.obj.kind !== "Identifier") {
     prog.errors.push(
-      `히스토리 인덱스 '[]'는 식별자(bar series 또는 top-level var)에만 지원 (L${expr.line}:${expr.col})`,
+      `history index '[]' supported only on identifiers (bar series or top-level var) (L${expr.line}:${expr.col})`,
     );
     analyzeExpr(expr.obj, prog, scope, false);
     return;
@@ -1070,8 +1070,8 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
           if (declStmt === null) {
             prog.errors.push(
               func.nestedHistShadowedNames.has(name)
-                ? `히스토리 인덱스 '[]' 대상 '${name}'이 함수 '${func.name}' 안에서 여러 번 '='로 선언/섀도잉돼 모호함 — 히스토리가 어느 선언을 가리키는지 판별 불가: (L${expr.line}:${expr.col})`
-                : `히스토리 인덱스 '[]'는 이 이름이 선언된 중첩 블록 밖에서는 지원하지 않음(JS let 블록 스코프 — 선언 스코프의 자손 위치에서만 참조 가능): '${name}' (L${expr.line}:${expr.col})`,
+                ? `history index '[]' target '${name}' is declared/shadowed with '=' multiple times in function '${func.name}' — cannot determine which declaration the history refers to: (L${expr.line}:${expr.col})`
+                : `history index '[]' not supported outside the nested block where this name is declared (JS let block scope — referable only from descendants of the declaring scope): '${name}' (L${expr.line}:${expr.col})`,
             );
             return;
           } else {
@@ -1080,13 +1080,13 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
             // (기존 C541 UDF drawing-핸들 '=' 로컬 지원을 단일 선언 케이스까지 이 새 경로로 통일한
             // 만큼 반드시 함께 이식해야 함 — 없으면 wild 실사용 다수가 회귀한다). 그 외(string/
             // array/map/matrix/UDT)는 여전히 Float64Array 슬롯에 담을 수 없어 하드 에러 유지.
-            if (kind !== null && kind !== "drawing 핸들") {
+            if (kind !== null && kind !== "drawing handle") {
               prog.errors.push(
-                `히스토리 인덱스 '[]'는 ${kind} 값을 담은 중첩 블록 '=' 로컬에는 지원하지 않음(Float64Array 기반 히스토리 슬롯이 담을 수 없는 타입): '${name}' (L${expr.line}:${expr.col})`,
+                `history index '[]' not supported on nested-block '=' local holding ${kind} value (type cannot be stored in a Float64Array-based history slot): '${name}' (L${expr.line}:${expr.col})`,
               );
               return;
             }
-            if (kind === "drawing 핸들") {
+            if (kind === "drawing handle") {
               if (!func.localAmbiguousNestedRefDeclSlots.has(declStmt)) {
                 func.localAmbiguousNestedRefDeclSlots.set(declStmt, func.localRefHistSlotCount);
                 func.localRefHistSlotCount += 1;
@@ -1113,7 +1113,7 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
           // 선언 자체는 깊이(udf-body 루트/if/for 중첩) 제약 없음(C388, resolveFuncInternalRole
           // 주석 참조 — 조상-스코프 탐색이 JS let 가시성과 같은 안전 조건을 이미 보장).
           prog.errors.push(
-            `히스토리 인덱스 '[]'는 UDF 본문의 '=' Assignment 로컬에만 지원(튜플/for-in 대상, 매개변수·재선언과 충돌하는 이름 미지원): '${name}' (L${expr.line}:${expr.col})`,
+            `history index '[]' in UDF bodies supported only on '=' Assignment locals (tuple/for-in targets and names colliding with parameters/redeclaration not supported): '${name}' (L${expr.line}:${expr.col})`,
           );
           return;
         }
@@ -1137,7 +1137,7 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
           kind =
             classifyNonNumericTypeHint(func.localVarTypeHints.get(name) ?? null, prog) ??
             func.localVarValueKinds.get(name) ??
-            (func.localVarDrawingKinds.has(name) ? "drawing 핸들" : null);
+            (func.localVarDrawingKinds.has(name) ? "drawing handle" : null);
         }
         // 배치25 (1) 잔여(C541): drawing 핸들 값을 담은 UDF 내부 var/'=' 로컬은 콜사이트별
         // $.refHistSlots 블록(__refHistBase 전파, funcRefHistBases)으로 허용 — localHistSlots와
@@ -1156,7 +1156,7 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
         // UDT(비-param) 및 param + drawing/string(비-UDT)은 이 실측 범위 밖 — 과욕 금지 원칙(C232)
         // 상 미확장 유지(각 조합은 wild 근거가 나오면 별도 슬라이스로).
         if (
-          ((kind === "drawing 핸들" || kind === "string") && (role.role === "var" || role.role === "local")) ||
+          ((kind === "drawing handle" || kind === "string") && (role.role === "var" || role.role === "local")) ||
           (kind === "UDT" && role.role === "param")
         ) {
           if (!func.localRefHistSlots.has(name)) {
@@ -1171,14 +1171,14 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
         if (kind !== null) {
           const roleWord =
             role.role === "param"
-              ? "매개변수"
+              ? "parameter"
               : role.role === "var"
-                ? "내부 var"
+                ? "internal var"
                 : func.tupleEqLocalNames.has(name)
-                  ? "내부 튜플 디스트럭처 로컬"
-                  : "내부 '=' 로컬";
+                  ? "internal tuple destructure local"
+                  : "internal '=' local";
           prog.errors.push(
-            `히스토리 인덱스 '[]'는 ${kind} 값을 담은 UDF ${roleWord}에는 지원하지 않음(Float64Array 기반 히스토리 슬롯이 담을 수 없는 타입): '${name}' (L${expr.line}:${expr.col})`,
+            `history index '[]' not supported on UDF ${roleWord} holding ${kind} value (type cannot be stored in a Float64Array-based history slot): '${name}' (L${expr.line}:${expr.col})`,
           );
           return;
         }
@@ -1219,11 +1219,11 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
         if (!prog.topLevelLocalNames.has(name)) {
           if (prog.nestedTopLevelHistShadowedNames.has(name)) {
             prog.errors.push(
-              `히스토리 인덱스 '[]' 대상 '${name}'이 top-level에서 여러 번 '='로 선언/섀도잉돼 모호함(중첩 블록 재선언 또는 다른 top-level '=' 로컬과 이름 충돌) — 히스토리가 어느 선언을 가리키는지 판별 불가: '${name}' (L${expr.line}:${expr.col})`,
+              `history index '[]' target '${name}' is declared/shadowed with '=' multiple times at top level (nested-block redeclaration or name collision with another top-level '=' local) — cannot determine which declaration the history refers to: '${name}' (L${expr.line}:${expr.col})`,
             );
           } else {
             prog.errors.push(
-              `히스토리 인덱스 '[]'는 이 이름이 선언된 중첩 블록 밖에서는 지원하지 않음(JS let 블록 스코프 — 선언 스코프의 자손 위치에서만 참조 가능): '${name}' (L${expr.line}:${expr.col})`,
+              `history index '[]' not supported outside the nested block where this name is declared (JS let block scope — referable only from descendants of the declaring scope): '${name}' (L${expr.line}:${expr.col})`,
             );
           }
           return;
@@ -1236,16 +1236,16 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
         const kind = elemKinds?.[declStmt.names.indexOf(name)] ?? null;
         // 배치25 (1)/C714와 동형 — drawing 핸들만 별도 object 원형 버퍼($.refHistSlots)로 허용, 그
         // 외(string/array/map/matrix/UDT)는 여전히 Float64Array 슬롯에 담을 수 없어 하드 에러 유지.
-        if (kind !== null && kind !== "drawing 핸들") {
+        if (kind !== null && kind !== "drawing handle") {
           prog.errors.push(
-            `히스토리 인덱스 '[]'는 ${kind} 값을 받은 중첩 블록 튜플 디스트럭처 로컬에는 지원하지 않음(Float64Array 기반 히스토리 슬롯이 담을 수 없는 타입): '${name}' (L${expr.line}:${expr.col})`,
+            `history index '[]' not supported on nested-block tuple destructure local receiving ${kind} value (type cannot be stored in a Float64Array-based history slot): '${name}' (L${expr.line}:${expr.col})`,
           );
           return;
         }
         // 노드 하나가 여러 이름을 동시에 선언하므로(declStmt만으로는 원소 구분 불가) declStmt+name
         // 2단 맵(ambiguousNestedTupleHistDeclSlots/RefDeclSlots)으로 슬롯을 배정 — 위 Assignment
         // 분기의 declStmt 단일 키와 달리 이름별 독립 슬롯이 필요하다(AnalyzedProgram 주석 참조).
-        if (kind === "drawing 핸들") {
+        if (kind === "drawing handle") {
           let slots = prog.ambiguousNestedTupleRefDeclSlots.get(declStmt);
           if (slots === undefined) {
             slots = new Map();
@@ -1277,13 +1277,13 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
         const kind = resolveEqLocalNonNumericKind(expr.obj, prog, scope, name);
         // 배치25 (1): drawing 핸들만 별도 object 원형 버퍼($.refHistSlots)로 허용 — 그 외(string/
         // array/map/matrix/UDT)는 여전히 Float64Array 슬롯에 담을 수 없어 하드 에러 유지.
-        if (kind !== null && kind !== "drawing 핸들") {
+        if (kind !== null && kind !== "drawing handle") {
           prog.errors.push(
-            `히스토리 인덱스 '[]'는 ${kind} 값을 담은 중첩 블록 '=' 로컬에는 지원하지 않음(Float64Array 기반 히스토리 슬롯이 담을 수 없는 타입): '${name}' (L${expr.line}:${expr.col})`,
+            `history index '[]' not supported on nested-block '=' local holding ${kind} value (type cannot be stored in a Float64Array-based history slot): '${name}' (L${expr.line}:${expr.col})`,
           );
           return;
         }
-        if (kind === "drawing 핸들") {
+        if (kind === "drawing handle") {
           if (!prog.ambiguousNestedRefDeclSlots.has(declStmt)) {
             prog.ambiguousNestedRefDeclSlots.set(declStmt, prog.refHistorySlotCount);
             prog.refHistorySlotCount += 1;
@@ -1323,7 +1323,7 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
       // 코드젠 변경 없이 그대로 커버한다. C749: string도 이 축에 포함 — 바로 아래(C675) top-level
       // '=' 로컬 string 분기와 동일한 물리 배열/무제약 근거(RefSeries는 plain unknown[]). 그 외
       // kind(array-map/matrix/판별 불가)는 여전히 Float64Array 슬롯에 담을 수 없어 하드 에러 유지.
-      if (tupleKind === "UDT" || tupleKind === "drawing 핸들" || tupleKind === "string") {
+      if (tupleKind === "UDT" || tupleKind === "drawing handle" || tupleKind === "string") {
         if (!prog.refHistorySlots.has(name)) {
           prog.refHistorySlots.set(name, prog.refHistorySlotCount);
           prog.refHistorySlotCount += 1;
@@ -1334,7 +1334,7 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
       }
       if (tupleKind !== undefined && tupleKind !== null) {
         prog.errors.push(
-          `히스토리 인덱스 '[]'는 ${tupleKind} 값을 받은 튜플 디스트럭처 로컬에는 지원하지 않음(Float64Array 기반 히스토리 슬롯이 담을 수 없는 타입): '${name}' (L${expr.line}:${expr.col})`,
+          `history index '[]' not supported on tuple destructure local receiving ${tupleKind} value (type cannot be stored in a Float64Array-based history slot): '${name}' (L${expr.line}:${expr.col})`,
         );
         return;
       }
@@ -1356,13 +1356,13 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
       }
       if (resolveContainerExprKind(expr.obj, prog, scope) !== null) {
         prog.errors.push(
-          `히스토리 인덱스 '[]'는 array/map 값을 담은 '=' 로컬에는 지원하지 않음(Float64Array 기반 히스토리 슬롯이 참조를 담을 수 없음): '${name}' (L${expr.line}:${expr.col})`,
+          `history index '[]' not supported on '=' local holding array/map value (Float64Array-based history slot cannot hold references): '${name}' (L${expr.line}:${expr.col})`,
         );
         return;
       }
       if (resolveMatrixExprKind(expr.obj, prog, scope)) {
         prog.errors.push(
-          `히스토리 인덱스 '[]'는 matrix 값을 담은 '=' 로컬에는 지원하지 않음(Float64Array 기반 히스토리 슬롯이 참조를 담을 수 없음): '${name}' (L${expr.line}:${expr.col})`,
+          `history index '[]' not supported on '=' local holding matrix value (Float64Array-based history slot cannot hold references): '${name}' (L${expr.line}:${expr.col})`,
         );
         return;
       }
@@ -1400,7 +1400,7 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
       return;
     }
     prog.errors.push(
-      `히스토리 인덱스 '[]'는 top-level var/varip 변수 또는 bar series에만 지원 (중첩 블록 '='/튜플 로컬/미선언·빌트인 이름 미지원): '${name}' (L${expr.line}:${expr.col})`,
+      `history index '[]' supported only on top-level var/varip variables or bar series (nested-block '='/tuple locals/undeclared·builtin names not supported): '${name}' (L${expr.line}:${expr.col})`,
     );
     return;
   }
@@ -1422,21 +1422,21 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
   // offset===0(`arr[0]` — 현재 배열 그 자체)은 위의 조기 반환이 이미 identifier 읽기로 처리해 허용.
   if (prog.arrayVars.has(name)) {
     prog.errors.push(
-      `히스토리 인덱스 '[]'는 array 타입 top-level var에는 지원하지 않음(Float64Array 기반 히스토리 슬롯이 배열 참조를 담을 수 없음): '${name}' (L${expr.line}:${expr.col})`,
+      `history index '[]' not supported on array-type top-level var (Float64Array-based history slot cannot hold array references): '${name}' (L${expr.line}:${expr.col})`,
     );
     return;
   }
   // map을 담는 var도 동일한 이유로 차단(C89, arrayVars 판단과 나란히 적용).
   if (prog.mapVars.has(name)) {
     prog.errors.push(
-      `히스토리 인덱스 '[]'는 map 타입 top-level var에는 지원하지 않음(Float64Array 기반 히스토리 슬롯이 map 참조를 담을 수 없음): '${name}' (L${expr.line}:${expr.col})`,
+      `history index '[]' not supported on map-type top-level var (Float64Array-based history slot cannot hold map references): '${name}' (L${expr.line}:${expr.col})`,
     );
     return;
   }
   // matrix를 담는 var도 동일한 이유로 차단(C90, arrayVars/mapVars 판단과 나란히 적용).
   if (prog.matrixVars.has(name)) {
     prog.errors.push(
-      `히스토리 인덱스 '[]'는 matrix 타입 top-level var에는 지원하지 않음(Float64Array 기반 히스토리 슬롯이 matrix 참조를 담을 수 없음): '${name}' (L${expr.line}:${expr.col})`,
+      `history index '[]' not supported on matrix-type top-level var (Float64Array-based history slot cannot hold matrix references): '${name}' (L${expr.line}:${expr.col})`,
     );
     return;
   }
@@ -1475,7 +1475,7 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
   const enumTypeHint = prog.varTypeHints.get(name);
   if (enumTypeHint != null && prog.enumTypes.has(enumTypeHint)) {
     prog.errors.push(
-      `히스토리 인덱스 '[]'는 enum 타입 top-level var에는 지원하지 않음(Float64Array 기반 히스토리 슬롯이 문자열 상수를 담을 수 없음): '${name}' (L${expr.line}:${expr.col})`,
+      `history index '[]' not supported on enum-type top-level var (Float64Array-based history slot cannot hold string constants): '${name}' (L${expr.line}:${expr.col})`,
     );
     return;
   }

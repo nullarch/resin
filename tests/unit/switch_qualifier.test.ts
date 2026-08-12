@@ -19,7 +19,7 @@ function analyzeSource(source: string) {
   return analyze(parse(source));
 }
 
-const EMA_SERIES_ERR = "'ta.ema'의 length 인자는 'series'일 수 없음";
+const EMA_SERIES_ERR = "length argument of 'ta.ema' cannot be 'series'";
 
 describe("switch-expression qualifier — TV-simple shapes are accepted as ta.* length (C554)", () => {
   it("accepts a switch over an input.string subject with int-literal arms (wild 45b3591f3452 preset idiom)", () => {

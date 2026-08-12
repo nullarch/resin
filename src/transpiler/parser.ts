@@ -188,7 +188,7 @@ export class Parser {
       }
       if (this.check("INDENT") || this.check("DEDENT")) {
         const t = this.peek();
-        throw new ParseError("예상치 못한 들여쓰기 블록", t.line, t.col);
+        throw new ParseError("unexpected indented block", t.line, t.col);
       }
       body.push(...this.parseStatementWithCommas());
       this.skipNewlines();
@@ -1248,7 +1248,7 @@ export class Parser {
       this.peek(2).type === "ASSIGN"
     ) {
       throw new ParseError(
-        `한정자('${this.peek().value}') 뒤에 타입과 변수 이름이 모두 필요함 — 타입을 빠뜨렸다면 'series TYPE name = ...' 형태로 쓸 것`,
+        `qualifier ('${this.peek().value}') requires both a type and a variable name after it — if the type was omitted, write 'series TYPE name = ...'`,
         this.peek().line,
         this.peek().col,
       );
@@ -1670,7 +1670,7 @@ export class Parser {
       if (this.check("LPAREN")) {
         if (node.kind !== "Identifier" && node.kind !== "DotAccess") {
           const t = this.peek();
-          throw new ParseError("호출 가능한 대상이 아님", t.line, t.col);
+          throw new ParseError("not a callable target", t.line, t.col);
         }
         const parenTok = this.advance();
         const args: Expr[] = [];
@@ -1808,13 +1808,13 @@ export class Parser {
       // 여기서 바로 명시 거부(statement 위치의 for-in은 parseStatement가 별도로 처리해 영향 없음).
       const node = this.parseFor();
       if (node.kind === "ForInStmt") {
-        throw new ParseError("for-in 루프는 제어문-식(값) 위치에서 아직 지원하지 않음", node.line, node.col);
+        throw new ParseError("for-in loop not yet supported in statement-expression (value) position", node.line, node.col);
       }
       return node;
     }
     if (t.type === "WHILE") return this.parseWhile();
     if (t.type === "SWITCH") return this.parseSwitch();
-    throw new ParseError(`예상치 못한 토큰 ${t.type} (${t.value || ""})`, t.line, t.col);
+    throw new ParseError(`unexpected token ${t.type} (${t.value || ""})`, t.line, t.col);
   }
 
   // [a, b, c] 표현식 파싱(statement-level LHS destructure `[a,b] = expr`는 isTupleDestructure()

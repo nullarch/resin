@@ -69,14 +69,14 @@ describe("Analyzer arity-disjoint method overloads (C687)", () => {
 
   it("still rejects redeclaring the same method with identical arity (needs type dispatch — out of scope)", () => {
     const prog = analyzeSource([PT, "method area(Pt p) => p.x", "method area(Pt p) => p.x + 1.0"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("이미 정의된 method") && e.includes("Pt.area"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("method already defined") && e.includes("Pt.area"))).toBe(true);
   });
 
   it("still rejects overloads whose arity ranges overlap through default parameters ([2,3] vs [3,3] incl. receiver)", () => {
     const prog = analyzeSource(
       [PT, "method f(Pt this, float a = na) => this.x", "method f(Pt this, float a) => this.x + a"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("이미 정의된 method") && e.includes("Pt.f"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("method already defined") && e.includes("Pt.f"))).toBe(true);
   });
 
   it("still rejects same-arity scalar-element overloads that fold to the same 'array' base (label[]/line[] 예시는 C688이 drawing-elem 판별자로 허용 전환 — 아래 C688 블록 참조, 값 흐름 추적이 필요한 스칼라 원소 축은 계속 거부)", () => {
@@ -88,7 +88,7 @@ describe("Analyzer arity-disjoint method overloads (C687)", () => {
         "    array.size(l)",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("이미 정의된 method") && e.includes("array.clearAll"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("method already defined") && e.includes("array.clearAll"))).toBe(true);
   });
 
   it("a dot call matching no overload's range reports the standard arity error against the first declaration", () => {
@@ -101,7 +101,7 @@ describe("Analyzer arity-disjoint method overloads (C687)", () => {
         "y = t.f(1.0)",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'Pt.f' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'Pt.f' call argument count mismatch"))).toBe(true);
   });
 
   it("dispatches dot-sugar, bare-call, and container-receiver call sites by provided argument count", () => {
@@ -242,7 +242,7 @@ describe("Analyzer same-arity drawing-elem method overloads (C688)", () => {
         "    array.size(m) + 200",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("이미 정의된 method") && e.includes("array.tag"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("method already defined") && e.includes("array.tag"))).toBe(true);
   });
 
   it("still rejects a same-arity pair where only one side is a drawing elem (label[] vs array<float>)", () => {
@@ -254,7 +254,7 @@ describe("Analyzer same-arity drawing-elem method overloads (C688)", () => {
         "    array.size(m) + 200",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("이미 정의된 method") && e.includes("array.tag"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("method already defined") && e.includes("array.tag"))).toBe(true);
   });
 
   it("still rejects same-arity element-type overloads on scalar/UDT elems mixed groups (wild arrayStorage string/bool/bar/int/label — one drawing member cannot rescue the group)", () => {
@@ -270,7 +270,7 @@ describe("Analyzer same-arity drawing-elem method overloads (C688)", () => {
         "    array.size(id) + cap",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("이미 정의된 method") && e.includes("array.store"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("method already defined") && e.includes("array.store"))).toBe(true);
   });
 
   it("dispatches dot-sugar call sites by receiver elem kind and caches the decision per call site (methodOverloadResolutions)", () => {
@@ -325,7 +325,7 @@ describe("Analyzer same-arity drawing-elem method overloads (C688)", () => {
         "    arr.tag()",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'array.tag' 오버로드가 같은 인자 개수로 여러 개 선언됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("multiple 'array.tag' overloads declared with the same argument count"))).toBe(true);
   });
 
   it("a call matching neither same-arity entry still reports the standard arity error against the first declaration", () => {
@@ -336,7 +336,7 @@ describe("Analyzer same-arity drawing-elem method overloads (C688)", () => {
         "z = labs.tag(1, 2, 3)",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'array.tag' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'array.tag' call argument count mismatch"))).toBe(true);
   });
 
   it("codegen emits two distinct top-level JS functions and binds each call site to its elemKind-selected overload", () => {

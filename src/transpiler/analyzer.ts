@@ -3599,7 +3599,7 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
   // pendingFuncCallSlots와 달리 이쪽은 이 시점 이후 재개할 방법이 없어 명시적으로 닫아야 한다).
   for (const list of prog.pendingTupleDestructures.values()) {
     for (const { stmt } of list) {
-      prog.errors.push(`튜플 디스트럭처링의 값은 튜플을 반환하는 UDF 호출이어야 함 (L${stmt.line}:${stmt.col})`);
+      prog.errors.push(`tuple destructure value must be a UDF call returning a tuple (L${stmt.line}:${stmt.col})`);
     }
   }
   // C267[part2]: 이 시점엔 모든 top-level FuncDecl/method의 calls 그래프가 완전히 채워져 있어
@@ -3651,12 +3651,12 @@ function analyzeStmt(stmt: Stmt, prog: AnalyzedProgram, scope: LexScope): void {
       return;
     case "BreakStmt":
       if (!scope.inLoop) {
-        prog.errors.push(`'break'는 반복문(while/for) 안에서만 사용 가능 (L${stmt.line}:${stmt.col})`);
+        prog.errors.push(`'break' can only be used inside a loop (while/for) (L${stmt.line}:${stmt.col})`);
       }
       return;
     case "ContinueStmt":
       if (!scope.inLoop) {
-        prog.errors.push(`'continue'는 반복문(while/for) 안에서만 사용 가능 (L${stmt.line}:${stmt.col})`);
+        prog.errors.push(`'continue' can only be used inside a loop (while/for) (L${stmt.line}:${stmt.col})`);
       }
       return;
     case "SwitchStmt":
@@ -3700,7 +3700,7 @@ function analyzeTupleDestructure(stmt: TupleDestructure, prog: AnalyzedProgram, 
   for (const name of stmt.names) {
     if (seen.has(name)) {
       if (name !== "_") {
-        prog.errors.push(`튜플 디스트럭처링 대상에 같은 이름이 중복됨: '${name}' (L${stmt.line}:${stmt.col})`);
+        prog.errors.push(`duplicate name in tuple destructure targets: '${name}' (L${stmt.line}:${stmt.col})`);
       }
       continue;
     }
@@ -3720,7 +3720,7 @@ function analyzeTupleDestructure(stmt: TupleDestructure, prog: AnalyzedProgram, 
         (nestedKind?.kind === "var" && scope.nestedVarDeclStmts.get(name) === nestedKind.decl));
     if (isFuncLocalVar || isOwnScopeVarReassign) {
       prog.errors.push(
-        `var로 선언된 변수는 튜플 디스트럭처링 대상으로 재사용할 수 없음: '${name}' (L${stmt.line}:${stmt.col})`,
+        `variable declared with var cannot be reused as a tuple destructure target: '${name}' (L${stmt.line}:${stmt.col})`,
       );
     } else {
       // 얕은 자손 스코프에서 조상의 var를 새로 섀도하는 튜플 대상이면(nestedKind?.kind==="var"인데
@@ -3800,7 +3800,7 @@ function analyzeTupleDestructure(stmt: TupleDestructure, prog: AnalyzedProgram, 
     // 실제로는 별개 direct_tuple_literal 버킷, 8/10은 라이브러리 오분류로 확정된 것과 무관).
     // resolveTupleValueBranch(switch/if/삼항 분기 판별과 동일 헬퍼)의 TupleExpr 케이스를 그대로
     // 재사용 — 원소별 analyzeExpr + kind 분류(elemKinds)까지 한 번에.
-    const result = resolveTupleValueBranch(stmt.value, stmt.names.length, prog, scope, "튜플 리터럴 대입");
+    const result = resolveTupleValueBranch(stmt.value, stmt.names.length, prog, scope, "tuple literal assignment");
     if (result.ok) {
       arity = stmt.names.length;
       ctrlFlowTupleElemKinds = result.elemKinds;
@@ -3968,10 +3968,10 @@ function analyzeTupleDestructure(stmt: TupleDestructure, prog: AnalyzedProgram, 
   // resolvePendingTupleDestructuresFor로 미룬다(위 pendingUdfFunc 선언부 주석 참조).
   if (pendingUdfFunc === null) {
     if (arity === null) {
-      prog.errors.push(`튜플 디스트럭처링의 값은 튜플을 반환하는 UDF 호출이어야 함 (L${stmt.line}:${stmt.col})`);
+      prog.errors.push(`tuple destructure value must be a UDF call returning a tuple (L${stmt.line}:${stmt.col})`);
     } else if (arity !== stmt.names.length) {
       prog.errors.push(
-        `튜플 디스트럭처링 개수 불일치: 대상 ${stmt.names.length}개, 함수는 ${arity}개 반환 (L${stmt.line}:${stmt.col})`,
+        `tuple destructure arity mismatch: ${stmt.names.length} targets, function returns ${arity} (L${stmt.line}:${stmt.col})`,
       );
     }
   }
@@ -4132,7 +4132,7 @@ function analyzeTupleDestructure(stmt: TupleDestructure, prog: AnalyzedProgram, 
       stmt.names.forEach((name, i) => {
         if (name === "_" || !registered.has(name)) return;
         // UDF인데 원소 kind가 없으면(불변식 위반 방어) 보수적으로 거부 문구를 남긴다.
-        const kind = udfElemKinds === undefined ? null : udfElemKinds === null ? "판별 불가한 타입" : (udfElemKinds[i] ?? null);
+        const kind = udfElemKinds === undefined ? null : udfElemKinds === null ? "indeterminate type" : (udfElemKinds[i] ?? null);
         prog.topLevelTupleElemKinds.set(name, kind);
       });
     } else if (scope.func === null && scope.depth > 0 && stmt.value.kind === "CallExpr" && arity === stmt.names.length) {
@@ -4157,7 +4157,7 @@ function analyzeTupleDestructure(stmt: TupleDestructure, prog: AnalyzedProgram, 
       const registered = new Set(registeredNames);
       const elemKinds: (string | null)[] = stmt.names.map((name, i) => {
         if (name === "_" || !registered.has(name)) return null;
-        return udfElemKinds === undefined ? null : udfElemKinds === null ? "판별 불가한 타입" : (udfElemKinds[i] ?? null);
+        return udfElemKinds === undefined ? null : udfElemKinds === null ? "indeterminate type" : (udfElemKinds[i] ?? null);
       });
       prog.nestedTupleElemKinds.set(stmt, elemKinds);
       stmt.names.forEach((name) => {
@@ -4192,7 +4192,7 @@ function analyzeTupleDestructure(stmt: TupleDestructure, prog: AnalyzedProgram, 
       const registered = new Set(registeredNames);
       stmt.names.forEach((name, i) => {
         if (name === "_" || !registered.has(name)) return;
-        const kind = udfElemKinds === undefined ? null : udfElemKinds === null ? "판별 불가한 타입" : (udfElemKinds[i] ?? null);
+        const kind = udfElemKinds === undefined ? null : udfElemKinds === null ? "indeterminate type" : (udfElemKinds[i] ?? null);
         func.localTupleElemKinds.set(name, kind);
         // eqLocalNames의 histShadowedNames 충돌 검사(analyzeAssignment)와 동일 원칙 — 매개변수/기존
         // '=' 로컬/기존 튜플 로컬과 이름이 겹치면 record 대상이 모호해지므로 섀도잉으로 격리한다.
@@ -4240,7 +4240,7 @@ function analyzeTupleDestructure(stmt: TupleDestructure, prog: AnalyzedProgram, 
 // 깨진다.
 function registerFuncSignature(stmt: FuncDecl, prog: AnalyzedProgram): void {
   if (prog.funcs.has(stmt.name)) {
-    prog.errors.push(`이름이 이미 다른 선언과 충돌함: '${stmt.name}' (L${stmt.line}:${stmt.col})`);
+    prog.errors.push(`name conflicts with an existing declaration: '${stmt.name}' (L${stmt.line}:${stmt.col})`);
     return;
   }
   const info: FuncInfo = {
@@ -5021,7 +5021,7 @@ function scanOwnParamContainerKindUsage(
 
 function analyzeFuncDecl(stmt: FuncDecl, prog: AnalyzedProgram, scope: LexScope): void {
   if (scope.depth !== 0) {
-    prog.errors.push(`함수 선언은 top-level에서만 가능 (중첩/재귀 UDF 미지원): '${stmt.name}' (L${stmt.line}:${stmt.col})`);
+    prog.errors.push(`function declarations are only allowed at top level (nested/recursive UDF not supported): '${stmt.name}' (L${stmt.line}:${stmt.col})`);
     return;
   }
   // C255: prog.funcs.has(stmt.name)는 prepass가 이미 이 이름을 등록해뒀으므로 항상 true라
@@ -5075,7 +5075,7 @@ function analyzeFuncDecl(stmt: FuncDecl, prog: AnalyzedProgram, scope: LexScope)
     }
   }
   if (stmt.body.length === 0) {
-    prog.errors.push(`함수 본문이 비어 있음: '${stmt.name}' (L${stmt.line}:${stmt.col})`);
+    prog.errors.push(`function body is empty: '${stmt.name}' (L${stmt.line}:${stmt.col})`);
     info.bodyAnalyzed = true;
     resolvePendingTupleDestructuresFor(info, prog);
     return;
@@ -5295,7 +5295,7 @@ function analyzeFuncDecl(stmt: FuncDecl, prog: AnalyzedProgram, scope: LexScope)
       const trailing = findTrailingTupleExprInStmt(s);
       if (trailing !== null) {
         prog.errors.push(
-          `튜플 리터럴은 함수의 마지막 문장(튜플 반환)에서만 지원 (L${trailing.line}:${trailing.col})`,
+          `tuple literal supported only as the function's last statement (tuple return) (L${trailing.line}:${trailing.col})`,
         );
       }
     }
@@ -5350,12 +5350,12 @@ function resolvePendingTupleDestructuresFor(func: FuncInfo, prog: AnalyzedProgra
   for (const { stmt, scope, registeredNames } of list) {
     const arity = func.tupleArity ?? null;
     if (arity === null) {
-      prog.errors.push(`튜플 디스트럭처링의 값은 튜플을 반환하는 UDF 호출이어야 함 (L${stmt.line}:${stmt.col})`);
+      prog.errors.push(`tuple destructure value must be a UDF call returning a tuple (L${stmt.line}:${stmt.col})`);
       continue;
     }
     if (arity !== stmt.names.length) {
       prog.errors.push(
-        `튜플 디스트럭처링 개수 불일치: 대상 ${stmt.names.length}개, 함수는 ${arity}개 반환 (L${stmt.line}:${stmt.col})`,
+        `tuple destructure arity mismatch: ${stmt.names.length} targets, function returns ${arity} (L${stmt.line}:${stmt.col})`,
       );
       continue;
     }
@@ -5404,7 +5404,7 @@ function resolvePendingTupleDestructuresFor(func: FuncInfo, prog: AnalyzedProgra
       const registered = new Set(registeredNames);
       stmt.names.forEach((name, i) => {
         if (name === "_" || !registered.has(name)) return;
-        const kind = udfElemKinds === null ? "판별 불가한 타입" : (udfElemKinds[i] ?? null);
+        const kind = udfElemKinds === null ? "indeterminate type" : (udfElemKinds[i] ?? null);
         prog.topLevelTupleElemKinds.set(name, kind);
       });
     }
@@ -5425,7 +5425,7 @@ function checkHistShadowConflicts(funcName: string, line: number, col: number, i
   for (const name of [...info.localHistSlots.keys(), ...info.localRefHistSlots.keys()]) {
     if (info.histShadowedNames.has(name) || info.nestedHistShadowedNames.has(name)) {
       prog.errors.push(
-        `히스토리 인덱스 대상 '${name}'이 함수 '${funcName}' 안에서 '='로 재선언/섀도잉됨 — 히스토리가 어느 변수를 가리키는지 모호해 미지원 (L${line}:${col})`,
+        `history index target '${name}' is redeclared/shadowed with '=' inside function '${funcName}' — ambiguous which variable the history refers to, not supported (L${line}:${col})`,
       );
     }
   }
@@ -5439,7 +5439,7 @@ function checkHistShadowConflicts(funcName: string, line: number, col: number, i
 // 구조상 UDT 필드 타입(C123)과 동일하게 "이미 앞서 선언된 타입만" 허용한다(forward-ref 불가).
 function analyzeMethodDecl(stmt: MethodDecl, prog: AnalyzedProgram, scope: LexScope): void {
   if (scope.depth !== 0) {
-    prog.errors.push(`'method' 선언은 top-level에서만 가능: '${stmt.name}' (L${stmt.line}:${stmt.col})`);
+    prog.errors.push(`'method' declarations are only allowed at top level: '${stmt.name}' (L${stmt.line}:${stmt.col})`);
     return;
   }
   const firstParam = stmt.params[0];
@@ -5461,7 +5461,7 @@ function analyzeMethodDecl(stmt: MethodDecl, prog: AnalyzedProgram, scope: LexSc
       : undefined;
   if (typeName === undefined) {
     prog.errors.push(
-      `'method ${stmt.name}'의 첫 매개변수는 이미 선언된 UDT 타입 힌트, array<T>/map<K,V>/matrix<T> 컨테이너 타입 힌트, float/int/bool/string/color 스칼라 타입 힌트, label/line/box/table/polyline/linefill drawing 핸들 타입 힌트, 또는 이미 선언된 enum 타입 힌트가 필요함 (L${stmt.line}:${stmt.col})`,
+      `first parameter of 'method ${stmt.name}' requires an already-declared UDT type hint, an array<T>/map<K,V>/matrix<T> container type hint, a float/int/bool/string/color scalar type hint, a label/line/box/table/polyline/linefill drawing handle type hint, or an already-declared enum type hint (L${stmt.line}:${stmt.col})`,
     );
     return;
   }
@@ -5501,7 +5501,7 @@ function analyzeMethodDecl(stmt: MethodDecl, prog: AnalyzedProgram, scope: LexSc
     const overlapping = entries.filter((e) => !(max < e.min || e.max < required));
     const elemDisjoint = newElemKind !== null && overlapping.every((e) => e.elemKind !== null && e.elemKind !== newElemKind);
     if (overlapping.length > 0 && !elemDisjoint) {
-      prog.errors.push(`이미 정의된 method: '${typeName}.${stmt.name}' (L${stmt.line}:${stmt.col})`);
+      prog.errors.push(`method already defined: '${typeName}.${stmt.name}' (L${stmt.line}:${stmt.col})`);
       return;
     }
     prog.methodOverloads.set(mangledName, entries);
@@ -5612,7 +5612,7 @@ function analyzeMethodDecl(stmt: MethodDecl, prog: AnalyzedProgram, scope: LexSc
     }
   }
   if (stmt.body.length === 0) {
-    prog.errors.push(`method 본문이 비어 있음: '${stmt.name}' (L${stmt.line}:${stmt.col})`);
+    prog.errors.push(`method body is empty: '${stmt.name}' (L${stmt.line}:${stmt.col})`);
     return;
   }
   const lastIdx = stmt.body.length - 1;
@@ -5775,7 +5775,7 @@ function analyzeMethodDecl(stmt: MethodDecl, prog: AnalyzedProgram, scope: LexSc
       const trailing = findTrailingTupleExprInStmt(s);
       if (trailing !== null) {
         prog.errors.push(
-          `튜플 리터럴은 함수의 마지막 문장(튜플 반환)에서만 지원 (L${trailing.line}:${trailing.col})`,
+          `tuple literal supported only as the function's last statement (tuple return) (L${trailing.line}:${trailing.col})`,
         );
       }
     }
@@ -6064,7 +6064,7 @@ function analyzeVarDecl(stmt: VarDecl, prog: AnalyzedProgram, scope: LexScope): 
   let registered = false;
   if (func) {
     if (func.localVarIndex.has(stmt.name) || prog.varIndex.has(stmt.name)) {
-      prog.errors.push(`중복 var 선언: '${stmt.name}' (L${stmt.line}:${stmt.col})`);
+      prog.errors.push(`duplicate var declaration: '${stmt.name}' (L${stmt.line}:${stmt.col})`);
     } else {
       const slot = func.localVarSlots.length;
       func.localVarSlots.push(stmt.name);
@@ -6159,7 +6159,7 @@ function analyzeVarDecl(stmt: VarDecl, prog: AnalyzedProgram, scope: LexScope): 
         const inferredUdtType = isUdtConstructorCall(stmt.value, prog, scope);
         if (explicitUdtType !== null && inferredUdtType !== null && explicitUdtType !== inferredUdtType) {
           prog.errors.push(
-            `선언 타입 '${explicitUdtType}'과 생성자 타입 '${inferredUdtType}'가 다름: '${stmt.name}' (L${stmt.line}:${stmt.col})`,
+            `declared type '${explicitUdtType}' differs from constructor type '${inferredUdtType}': '${stmt.name}' (L${stmt.line}:${stmt.col})`,
           );
         }
         const udtTypeName = explicitUdtType ?? inferredUdtType;
@@ -6182,7 +6182,7 @@ function analyzeVarDecl(stmt: VarDecl, prog: AnalyzedProgram, scope: LexScope): 
         prog.varIndex.has(stmt.name)
       : prog.varIndex.has(stmt.name)
   ) {
-    prog.errors.push(`중복 var 선언: '${stmt.name}' (L${stmt.line}:${stmt.col})`);
+    prog.errors.push(`duplicate var declaration: '${stmt.name}' (L${stmt.line}:${stmt.col})`);
   } else {
     const slot = prog.varSlots.length;
     prog.varSlots.push(stmt.name);
@@ -6265,7 +6265,7 @@ function analyzeVarDecl(stmt: VarDecl, prog: AnalyzedProgram, scope: LexScope): 
     const inferredUdtType = isUdtConstructorCall(stmt.value, prog, scope);
     if (explicitUdtType !== null && inferredUdtType !== null && explicitUdtType !== inferredUdtType) {
       prog.errors.push(
-        `선언 타입 '${explicitUdtType}'과 생성자 타입 '${inferredUdtType}'가 다름: '${stmt.name}' (L${stmt.line}:${stmt.col})`,
+        `declared type '${explicitUdtType}' differs from constructor type '${inferredUdtType}': '${stmt.name}' (L${stmt.line}:${stmt.col})`,
       );
     }
     const udtTypeName = explicitUdtType ?? inferredUdtType;
@@ -6340,7 +6340,7 @@ function analyzeAssignment(stmt: Assignment, prog: AnalyzedProgram, scope: LexSc
       if (prog.varIndex.has(stmt.name)) prog.eqLocalShadowedVarAssigns.add(stmt);
     } else if (!isFuncLocalVar && !prog.varIndex.has(stmt.name) && !scopeHasLocal(scope, stmt.name)) {
       prog.errors.push(
-        `':='는 이미 선언된 변수에만 사용 가능 (var 또는 '='로 먼저 선언): '${stmt.name}' (L${stmt.line}:${stmt.col})`,
+        `':=' can only be used on an already-declared variable (declare first with var or '='): '${stmt.name}' (L${stmt.line}:${stmt.col})`,
       );
     }
   } else {
@@ -6362,7 +6362,7 @@ function analyzeAssignment(stmt: Assignment, prog: AnalyzedProgram, scope: LexSc
         (nestedKind?.kind === "var" && scope.nestedVarDeclStmts.get(stmt.name) === nestedKind.decl));
     if (isFuncLocalVar || isOwnScopeVarReassign) {
       prog.errors.push(
-        `var로 선언된 변수는 '='로 재대입할 수 없음, ':=' 사용: '${stmt.name}' (L${stmt.line}:${stmt.col})`,
+        `variable declared with var cannot be reassigned with '=', use ':=': '${stmt.name}' (L${stmt.line}:${stmt.col})`,
       );
     } else {
       // C413(wild "이미 함수로 선언된 이름은 top-level '=' 변수로 재사용할 수 없음" 42건):
@@ -6560,7 +6560,7 @@ function analyzeAssignment(stmt: Assignment, prog: AnalyzedProgram, scope: LexSc
     const constructorUdtType = isUdtConstructorCall(stmt.value, prog, scope);
     if (explicitUdtType !== null && constructorUdtType !== null && explicitUdtType !== constructorUdtType) {
       prog.errors.push(
-        `선언 타입 '${explicitUdtType}'과 생성자 타입 '${constructorUdtType}'가 다름: '${stmt.name}' (L${stmt.line}:${stmt.col})`,
+        `declared type '${explicitUdtType}' differs from constructor type '${constructorUdtType}': '${stmt.name}' (L${stmt.line}:${stmt.col})`,
       );
     }
     const udtTypeName = explicitUdtType ?? constructorUdtType;
@@ -6710,7 +6710,7 @@ export function analyzeControlFlowOrExpr(
       const trailing = findTrailingTupleExprInStmt(value);
       if (trailing !== null) {
         prog.errors.push(
-          `튜플 리터럴은 함수의 마지막 문장(튜플 반환)에서만 지원 (L${trailing.line}:${trailing.col})`,
+          `tuple literal supported only as the function's last statement (tuple return) (L${trailing.line}:${trailing.col})`,
         );
       }
       break;
@@ -6807,7 +6807,7 @@ function analyzeForStmt(stmt: ForStmt, prog: AnalyzedProgram, scope: LexScope): 
   if (stmt.step) analyzeExpr(stmt.step, prog, scope, false);
 
   if (prog.varIndex.has(stmt.varName)) {
-    prog.errors.push(`for 루프 변수명이 이미 var로 선언됨: '${stmt.varName}' (L${stmt.line}:${stmt.col})`);
+    prog.errors.push(`for loop variable name already declared with var: '${stmt.varName}' (L${stmt.line}:${stmt.col})`);
   }
   prog.locals.add(stmt.varName);
 
@@ -6851,20 +6851,20 @@ function analyzeForInStmt(stmt: ForInStmt, prog: AnalyzedProgram, scope: LexScop
     containerKind ?? (resolveMatrixExprKind(stmt.iterable, prog, scope) ? "matrix" : null);
   if (kind === null) {
     prog.errors.push(
-      `for-in 루프의 순회 대상 타입을 정적으로 판별할 수 없음(top-level 또는 로컬 array/map/matrix ` +
-        `변수만 지원 — UDF 매개변수·로컬/복합식 이터러블은 아직 지원하지 않음): (L${stmt.line}:${stmt.col})`,
+      `for-in loop iterable type cannot be statically determined (only top-level or local array/map/matrix ` +
+        `variables supported — UDF parameter·local/compound-expression iterables not yet supported): (L${stmt.line}:${stmt.col})`,
     );
     return;
   }
   prog.forInKinds.set(stmt, kind);
 
   if (prog.varIndex.has(stmt.varName)) {
-    prog.errors.push(`for-in 루프 변수명이 이미 var로 선언됨: '${stmt.varName}' (L${stmt.line}:${stmt.col})`);
+    prog.errors.push(`for-in loop variable name already declared with var: '${stmt.varName}' (L${stmt.line}:${stmt.col})`);
   }
   prog.locals.add(stmt.varName);
   if (stmt.indexName !== null) {
     if (prog.varIndex.has(stmt.indexName)) {
-      prog.errors.push(`for-in 루프 변수명이 이미 var로 선언됨: '${stmt.indexName}' (L${stmt.line}:${stmt.col})`);
+      prog.errors.push(`for-in loop variable name already declared with var: '${stmt.indexName}' (L${stmt.line}:${stmt.col})`);
     }
     prog.locals.add(stmt.indexName);
   }
@@ -7472,7 +7472,7 @@ function analyzeSwitchStmt(stmt: SwitchStmt, prog: AnalyzedProgram, scope: LexSc
   for (const c of stmt.cases) {
     if (c.values === null) {
       if (sawDefault) {
-        prog.errors.push(`switch에는 default(bare '=>') 분기가 최대 1개만 가능 (L${stmt.line}:${stmt.col})`);
+        prog.errors.push(`switch allows at most one default (bare '=>') branch (L${stmt.line}:${stmt.col})`);
       }
       sawDefault = true;
     } else {
@@ -7554,7 +7554,7 @@ function analyzeSwitchTupleValue(
   for (const c of stmt.cases) {
     if (c.values === null) {
       if (sawDefault) {
-        prog.errors.push(`switch에는 default(bare '=>') 분기가 최대 1개만 가능 (L${stmt.line}:${stmt.col})`);
+        prog.errors.push(`switch allows at most one default (bare '=>') branch (L${stmt.line}:${stmt.col})`);
       }
       sawDefault = true;
     } else {
@@ -7793,7 +7793,7 @@ function analyzeFuncBodyTailWrappedCtrlFlow(
   if (tupleReturn !== null) return tupleReturn;
   const trailing = findTrailingTupleExprInStmt(inner);
   if (trailing !== null) {
-    prog.errors.push(`튜플 리터럴은 함수의 마지막 문장(튜플 반환)에서만 지원 (L${trailing.line}:${trailing.col})`);
+    prog.errors.push(`tuple literal supported only as the function's last statement (tuple return) (L${trailing.line}:${trailing.col})`);
   }
   if (inner.kind === "IfStmt") analyzeIfStmt(inner, prog, bodyScope);
   else analyzeSwitchStmt(inner, prog, bodyScope);
@@ -7820,9 +7820,9 @@ function analyzeTernaryTupleValue(
   // if/else로 직접 내려 실제로 한쪽만 실행됨 — lazy-expr 태그는 stateful 콜 검증용).
   analyzeExpr(stmt.condition, prog, scope, false);
   const trueScope = pushScope(scope, "lazy-expr");
-  const trueResult = resolveTupleValueBranch(stmt.trueExpr, arity, prog, trueScope, "삼항(ternary)");
+  const trueResult = resolveTupleValueBranch(stmt.trueExpr, arity, prog, trueScope, "ternary");
   const falseScope = pushScope(scope, "lazy-expr");
-  const falseResult = resolveTupleValueBranch(stmt.falseExpr, arity, prog, falseScope, "삼항(ternary)");
+  const falseResult = resolveTupleValueBranch(stmt.falseExpr, arity, prog, falseScope, "ternary");
   const elemKinds: (string | null)[] = new Array(arity).fill(null);
   for (let i = 0; i < arity; i++) elemKinds[i] = trueResult.elemKinds[i] ?? falseResult.elemKinds[i] ?? null;
   const elemContainerKinds: ("array" | "map" | null)[] = new Array(arity).fill(null);
@@ -7863,7 +7863,7 @@ function resolveTupleValueBranch(
     if (expr.elements.length !== arity) {
       ok = false;
       prog.errors.push(
-        `${branchLabel} 분기의 튜플 리터럴 원소 개수가 대상과 다름: 분기 ${expr.elements.length}개, 대상 ${arity}개 (L${expr.line}:${expr.col})`,
+        `${branchLabel} branch tuple literal element count differs from target: branch ${expr.elements.length}, target ${arity} (L${expr.line}:${expr.col})`,
       );
     }
     expr.elements.forEach((el, i) => {
@@ -8058,7 +8058,7 @@ export function analyzeExpr(expr: Expr, prog: AnalyzedProgram, scope: LexScope, 
       ) {
         return;
       }
-      prog.errors.push(`알 수 없는 식별자: '${name}' (L${expr.line}:${expr.col})`);
+      prog.errors.push(`unknown identifier: '${name}' (L${expr.line}:${expr.col})`);
       return;
     }
     case "UnaryOp":
@@ -8368,7 +8368,7 @@ export function analyzeExpr(expr: Expr, prog: AnalyzedProgram, scope: LexScope, 
           return;
         }
         prog.errors.push(
-          `지원하지 않는 strategy 속성: 'strategy.${expr.attr}' — long/short/fixed/cash/percent_of_equity/account_currency 상수와 position_size/position_avg_price/position_entry_name/netprofit/openprofit/equity/initial_capital/closedtrades/opentrades/wintrades/losstrades/grossprofit/grossloss/max_drawdown/max_drawdown_percent/max_runup/max_runup_percent/default_qty_value/netprofit_percent/openprofit_percent/eventrades/avg_winning_trade/avg_losing_trade/avg_winning_trade_percent/avg_losing_trade_percent/max_contracts_held_all/max_contracts_held_long/max_contracts_held_short만 지원 (L${expr.line}:${expr.col})`,
+          `unsupported strategy property: 'strategy.${expr.attr}' — only the long/short/fixed/cash/percent_of_equity/account_currency constants and position_size/position_avg_price/position_entry_name/netprofit/openprofit/equity/initial_capital/closedtrades/opentrades/wintrades/losstrades/grossprofit/grossloss/max_drawdown/max_drawdown_percent/max_runup/max_runup_percent/default_qty_value/netprofit_percent/openprofit_percent/eventrades/avg_winning_trade/avg_losing_trade/avg_winning_trade_percent/avg_losing_trade_percent/max_contracts_held_all/max_contracts_held_long/max_contracts_held_short are supported (L${expr.line}:${expr.col})`,
         );
         return;
       }
@@ -8412,7 +8412,7 @@ export function analyzeExpr(expr: Expr, prog: AnalyzedProgram, scope: LexScope, 
       if (expr.obj.kind === "Identifier" && prog.enumTypes.has(expr.obj.name)) {
         const enumInfo = prog.enumTypes.get(expr.obj.name)!;
         if (!enumInfo.members.includes(expr.attr)) {
-          prog.errors.push(`'${expr.obj.name}'에 없는 enum 멤버: '${expr.attr}' (L${expr.line}:${expr.col})`);
+          prog.errors.push(`enum member not found on '${expr.obj.name}': '${expr.attr}' (L${expr.line}:${expr.col})`);
           return;
         }
         prog.builtinStringConstants.set(expr, `${expr.obj.name}.${expr.attr}`);
@@ -8463,14 +8463,14 @@ export function analyzeExpr(expr: Expr, prog: AnalyzedProgram, scope: LexScope, 
         // 전부 number|null이라 더 이상 체이닝될 수 없음, LIMITATIONS.md C486 잔여 항목 해소).
         if (objTypeName === CHART_POINT_FIELD_TYPE) {
           if (!CHART_POINT_FIELDS.has(expr.attr)) {
-            prog.errors.push(`'chart.point'에 없는 필드: '${expr.attr}' (L${expr.line}:${expr.col})`);
+            prog.errors.push(`field not found on 'chart.point': '${expr.attr}' (L${expr.line}:${expr.col})`);
           }
           return;
         }
         const typeInfo = prog.udtTypes.get(objTypeName)!;
         const field = typeInfo.fields.find((f) => f.name === expr.attr);
         if (field === undefined) {
-          prog.errors.push(`'${objTypeName}'에 없는 필드: '${expr.attr}' (L${expr.line}:${expr.col})`);
+          prog.errors.push(`field not found on '${objTypeName}': '${expr.attr}' (L${expr.line}:${expr.col})`);
           return;
         }
         // 필드 자체가 다시 UDT 타입이거나 chart.point(C486, 중첩 chart.point 필드 -- `pivot.end.price`류
@@ -8484,7 +8484,7 @@ export function analyzeExpr(expr: Expr, prog: AnalyzedProgram, scope: LexScope, 
         return;
       }
       prog.errors.push(
-        `네임스페이스 접근은 호출식만 지원 (예: ta.sma(...)): '${describeDotAccess(expr)}' (L${expr.line}:${expr.col})`,
+        `namespace access supported only as a call expression (e.g. ta.sma(...)): '${describeDotAccess(expr)}' (L${expr.line}:${expr.col})`,
       );
       return;
     }
@@ -8501,7 +8501,7 @@ export function analyzeExpr(expr: Expr, prog: AnalyzedProgram, scope: LexScope, 
       // 자신의 값(`[a,b] = [e1,e2]`, C631 — analyzeTupleDestructure가 resolveTupleValueBranch로
       // 이 함수를 거치지 않고 원소별 직접 analyzeExpr)뿐이다. 여기 도달 = Assignment/VarDecl
       // 우변(스칼라 변수에 튜플 대입)·콜 인자 등 값이 소비되는 위치 — TV도 거부하는 폼(배치32(2)).
-      prog.errors.push(`튜플 리터럴은 함수의 마지막 문장(튜플 반환)에서만 지원 (L${expr.line}:${expr.col})`);
+      prog.errors.push(`tuple literal supported only as the function's last statement (tuple return) (L${expr.line}:${expr.col})`);
       return;
     case "IfStmt":
     case "ForStmt":
@@ -8511,7 +8511,7 @@ export function analyzeExpr(expr: Expr, prog: AnalyzedProgram, scope: LexScope, 
       // 이 함수를 거치지 않고 analyzeIfStmt/analyzeForStmt/analyzeWhileStmt/analyzeSwitchStmt로
       // 직접 보낸다 — TupleExpr와 동일한 "파서는 넓게, analyzer가 좁힌다" 패턴.
       prog.errors.push(
-        `제어문-식(if/for/while/switch)은 'var' 선언 또는 대입문의 값 위치에서만 지원 (L${expr.line}:${expr.col})`,
+        `control-flow expressions (if/for/while/switch) supported only in the value position of a 'var' declaration or assignment (L${expr.line}:${expr.col})`,
       );
       return;
   }

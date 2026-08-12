@@ -154,29 +154,29 @@ describe("UDT field history — analyzer gates (C523)", () => {
     const prog = analyzeSource(
       [...MARKER, "f() =>", "    var Marker x = Marker.new(1.0)", "    y = x.price[1]"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("UDF/method 내부 UDT 수신자"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("UDF/method-internal UDT receivers"))).toBe(true);
   });
 
   it("rejects a string-typed field (Float64Array slot cannot hold strings)", () => {
     const prog = analyzeSource(["type T", "    string s", 'var T x = T.new("a")', "y = x.s[1]"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("string 타입 UDT 필드"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("UDT fields of string type"))).toBe(true);
   });
 
   it("rejects a color-typed field (color values are strings in this engine)", () => {
     const prog = analyzeSource(["type T", "    color c", "var T x = T.new(color.red)", "y = x.c[1]"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("color 타입 UDT 필드"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("UDT fields of color type"))).toBe(true);
   });
 
   it("rejects a nested-UDT-typed field (reference type)", () => {
     const prog = analyzeSource(
       ["type Inner", "    float v", "type Outer", "    Inner core", "var Outer o = na", "y = o.core[1]"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("UDT 타입 UDT 필드"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("UDT fields of UDT type"))).toBe(true);
   });
 
   it("rejects a map-typed field (reference type; array fields stay element-access per C501)", () => {
     const prog = analyzeSource(["type T", "    map<string, float> mm", "var T x = na", "y = x.mm[1]"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("map 타입 UDT 필드"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("UDT fields of map type"))).toBe(true);
   });
 
   it("keeps array-typed fields on the C501 element-access path (no history slot, no error)", () => {
@@ -191,7 +191,7 @@ describe("UDT field history — analyzer gates (C523)", () => {
     const prog = analyzeSource(
       ["type T", "    float v", "if close > 0", "    x = T.new(1.0)", "    y = x.v[1]"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("top-level var/varip 또는 무조건(depth-0)"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("top-level var/varip or unconditional (depth-0)"))).toBe(true);
   });
 
   it("rejects a tuple-destructured receiver (no per-name record injection point)", () => {
@@ -207,17 +207,17 @@ describe("UDT field history — analyzer gates (C523)", () => {
         "z = x.v[1]",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("top-level var/varip 또는 무조건(depth-0)"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("top-level var/varip or unconditional (depth-0)"))).toBe(true);
   });
 
   it("rejects chart.point receivers (fields are number|null — null would corrupt to 0 in the slot)", () => {
     const prog = analyzeSource(["var chart.point p = na", "y = p.price[1]"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("chart.point 필드"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("chart.point fields"))).toBe(true);
   });
 
   it("keeps the legacy identifier-only rejection for non-UDT DotAccess receivers", () => {
     const prog = analyzeSource("y = foo.bar[1]");
-    expect(prog.errors.some((e) => e.includes("식별자(bar series 또는 top-level var)에만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("supported only on identifiers (bar series or top-level var)"))).toBe(true);
   });
 });
 

@@ -51,9 +51,9 @@ describe("string var reference history (s[N]) — analyzer gates (C675)", () => 
 
   it("still rejects map/matrix typed top-level vars (physical Float64Array constraint unchanged, C675 scope boundary)", () => {
     const mapProg = analyzeSource(["var mp = map.new<string,float>()", "y = mp[1]"].join("\n"));
-    expect(mapProg.errors.some((e) => e.includes("map 타입 top-level var"))).toBe(true);
+    expect(mapProg.errors.some((e) => e.includes("map-type top-level var"))).toBe(true);
     const matProg = analyzeSource(["var m = matrix.new<float>(1, 1, 0.0)", "y = m[1]"].join("\n"));
-    expect(matProg.errors.some((e) => e.includes("matrix 타입 top-level var"))).toBe(true);
+    expect(matProg.errors.some((e) => e.includes("matrix-type top-level var"))).toBe(true);
   });
 });
 

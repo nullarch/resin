@@ -3768,7 +3768,7 @@ export function pivotPointLevels(
   if (developing === true && (type === "Woodie" || type === "DM")) {
     // TV 공식 레퍼런스: developing은 Woodie/DM에서 불가 — runtime.error(log.ts)와 동일한 예외
     // 클래스로 던져 엔진의 self-halt 채널로 잡히게 한다.
-    runtimeError(`ta.pivot_point_levels: developing=true는 '${type}' 타입에서 지원되지 않음`);
+    runtimeError(`ta.pivot_point_levels: developing=true is not supported for type '${type}'`);
   }
   if (anchor === true) {
     if (developing !== true && state.hasPeriod === true) {

@@ -4323,7 +4323,7 @@ describe("CodeGen", () => {
     const result = transpile("x = doesNotExist");
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.errors[0]).toContain("알 수 없는 식별자");
+    expect(result.errors[0]).toContain("unknown identifier");
   });
 
   it("transpile() surfaces parse errors instead of throwing", () => {
@@ -4717,7 +4717,7 @@ describe("CodeGen", () => {
     const result = transpile("[a, b] = f()");
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.errors.some((e) => e.includes("튜플을 반환하는 UDF 호출이어야 함"))).toBe(true);
+    expect(result.errors.some((e) => e.includes("must be a UDF call returning a tuple"))).toBe(true);
   });
 
   // ── IfStmt codegen: 명시적 JS if/else-if/else + 블록 스코프 ─────
@@ -10700,7 +10700,7 @@ describe("CodeGen bare (no explicit typeHint) 'chart.point' constructor call typ
   it("emits a plain '.price' property access for a bare top-level 'var' (no typeHint) initialized via 'chart.point.new(...)'", () => {
     const code = codegenSource(["var p = chart.point.new(0, 0, 42.0)", "y = p.price"].join("\n"));
     expect(code).toContain(".price");
-    expect(code).not.toContain("네임스페이스");
+    expect(code).not.toContain("namespace");
   });
 
   it("end-to-end: exact wild pattern (bd08fee733ce.pine) — a bare 'var' reassigned via ':=' to 'chart.point.from_index(...)' reads '.price' back correctly", () => {
@@ -12910,7 +12910,7 @@ describe("CodeGen request.security tf 상수 전파 (C366)", () => {
     expect(() => runWith({})).not.toThrow();
     expect(() => runWith({ Res: "D" })).not.toThrow();
     // HTF 집계 캐시는 트랜스파일 시점 "D"로 이미 고정 — 다른 tf 오버라이드는 조용한 오답 대신 즉시 throw.
-    expect(() => runWith({ Res: "60" })).toThrow(/timeframe 입력 'tf'|고정됨/);
+    expect(() => runWith({ Res: "60" })).toThrow(/timeframe input 'tf'|is fixed to/);
   });
 });
 
@@ -13301,7 +13301,7 @@ describe("CodeGen request.security tf 배치31 (b)-2 (C600, tf-param 콜사이�
       "b := getS(dres)",
     ].join("\n");
     expect(() => runVars(SRC, { DRes: "D" }, ["a", "b"])).not.toThrow();
-    expect(() => runVars(SRC, { CRes: "D" }, ["a", "b"])).toThrow(/트랜스파일 시점에 '60'로 고정됨/);
+    expect(() => runVars(SRC, { CRes: "D" }, ["a", "b"])).toThrow(/is fixed to '60' at transpile time/);
   });
 
   it("hand-verified E2E: mixed sites on an exprMatch (ta.sma) call site equal the two-literal reference (per-site prepasses on rebuilt caches)", () => {
@@ -13542,7 +13542,7 @@ describe("CodeGen request.security tf 조건 input.bool 가드 (C513)", () => {
       );
     expect(() => runWith({})).not.toThrow();
     expect(() => runWith({ UseHTF: true })).not.toThrow();
-    expect(() => runWith({ UseHTF: false })).toThrow(/timeframe 입력 'en'|고정됨/);
+    expect(() => runWith({ UseHTF: false })).toThrow(/timeframe input 'en'|is fixed to/);
   });
 });
 
@@ -13589,7 +13589,7 @@ describe("CodeGen request.security tf 조건 bare input(bool) 가드 (C537)", ()
       );
     expect(() => runWith({})).not.toThrow();
     expect(() => runWith({ "Day Trading": false })).not.toThrow();
-    expect(() => runWith({ "Day Trading": true })).toThrow(/timeframe 입력 'day_trading'|고정됨/);
+    expect(() => runWith({ "Day Trading": true })).toThrow(/timeframe input 'day_trading'|is fixed to/);
   });
 });
 
@@ -13664,7 +13664,7 @@ describe("CodeGen request.security tf defval= kwarg 폼 + 빈 tf 정규화 (C435
     const source = 'tf = input.timeframe(defval="", title="Res")\nvar float x = na\nx := request.security("", tf, close)';
     expect(() => runOf435(source, {})).not.toThrow();
     expect(() => runOf435(source, { Res: "" })).not.toThrow();
-    expect(() => runOf435(source, { Res: "60" })).toThrow(/timeframe 입력 'tf'|고정됨/);
+    expect(() => runOf435(source, { Res: "60" })).toThrow(/timeframe input 'tf'|is fixed to/);
   });
 
   it("hand-verified E2E: defval= kwarg non-empty tf ('D') matches the positional form exactly", () => {
@@ -14175,7 +14175,7 @@ describe("CodeGen request.security expression 확장 좁은 문법 (C367)", () =
 
   it("still rejects syminfo.* string constants as the expression (Float64Array prepass cache can't carry a string)", () => {
     const program = analyzeSecuritySource('x = request.security("", "D", syminfo.description)');
-    expect(program.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(program.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("hand-verified E2E: syminfo.shares_outstanding_float as the whole expression is 0 on every confirmed HTF row (same lookahead=off 1-row lag)", () => {
@@ -14205,7 +14205,7 @@ describe("CodeGen request.security expression 확장 좁은 문법 (C367)", () =
 
   it("still rejects earnings.actual/estimate/standardized (EARNINGS_CONSTANTS string field-selectors) as the expression (Float64Array prepass cache can't carry a string)", () => {
     const program = analyzeSecuritySource('x = request.security("", "D", earnings.actual)');
-    expect(program.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(program.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("hand-verified E2E: earnings.future_time as the whole expression is NaN on every row (always-NaN stub, no lag distinction possible since untouched and touched values are the same)", () => {
@@ -14240,12 +14240,12 @@ describe("CodeGen request.security expression 확장 좁은 문법 (C367)", () =
 
   it("still rejects timeframe.period (TIMEFRAME_STRING_PROPS) as the expression (Float64Array prepass cache can't carry a string)", () => {
     const program = analyzeSecuritySource('x = request.security("", "D", timeframe.period)');
-    expect(program.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(program.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("still rejects timeframe.multiplier (TIMEFRAME_NUMBER_PROPS, a separate map) as the expression", () => {
     const program = analyzeSecuritySource('x = request.security("", "D", timeframe.multiplier)');
-    expect(program.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(program.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("hand-verified E2E: timeframe.isdaily as the whole expression is 1 on every confirmed HTF row (same lookahead=off 1-row lag as the other leaf tests above)", () => {
@@ -14579,7 +14579,7 @@ describe("CodeGen request.security expression equality operators (C602)", () => 
 
   it("still rejects a StringLiteral used outside an equality operand (ternary branch/root — Float64Array cache would silently coerce the string to NaN)", () => {
     const prog = analyzeSecuritySource('x = request.security("", "D", close > open ? "a" : "b")');
-    expect(prog.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   it("hand-verified E2E: an '==' comparison against a number literal resolves to the per-HTF-row boolean (high == 105 true only on the first confirmed HTF row)", () => {
@@ -15062,7 +15062,7 @@ describe("CodeGen request.security expression dynamic history offset (C437)", ()
 
   it("still rejects a ta.* call used as the offset expression itself (allowTa=false at the offset position — no state re-advance via repeated offsetCode emission)", () => {
     const program = analyzeSecuritySource('x = request.security("", "D", close[ta.sma(close, 1)])');
-    expect(program.errors.some((e) => e.includes("'expression' 인자는 bare"))).toBe(true);
+    expect(program.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
   const DATA: OHLCVData = {
@@ -16376,7 +16376,7 @@ describe("CodeGen request.security expression via chained security-var substitut
     const result = transpile(source);
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("unreachable");
-    expect(result.errors.some((e) => e.includes("'request.security'의 'expression' 인자는"))).toBe(true);
+    expect(result.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
   });
 });
 
@@ -17068,7 +17068,7 @@ describe("CodeGen request.security expression input-call const-folded emitted sl
         ['pfx = "My"', 'tf = input.timeframe("D", pfx + "TF")', 'x = request.security(syminfo.tickerid, tf, ta.sma(close, 3))', "plot(x)"].join("\n"),
         { MyTF: "60" },
       ),
-    ).toThrow(/고정됨/);
+    ).toThrow(/is fixed to/);
   });
 
   it("emits the folded literal title into the guard/prefetch code instead of the bare identifier", () => {
@@ -17408,7 +17408,7 @@ describe("CodeGen request.security expression time()/time_close() session-call l
         ['sess = input.string("0000-0000", "Sess")', 'x = request.security(syminfo.tickerid, "D", time(timeframe.period, sess))', "plot(x)"].join("\n"),
         { Sess: "0100-0200" },
       ),
-    ).toThrow(/고정됨/);
+    ).toThrow(/is fixed to/);
   });
 
   it("hand-verified E2E: input.int consumed by session arithmetic folds to the assembled literal and fails loud on override (숫자 가드)", () => {
@@ -17424,7 +17424,7 @@ describe("CodeGen request.security expression time()/time_close() session-call l
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");
     expect(result.code).toContain('"0930-1000"');
-    expect(() => runPlots(src, { "ORB Minutes": 45 })).toThrow(/고정됨/);
+    expect(() => runPlots(src, { "ORB Minutes": 45 })).toThrow(/is fixed to/);
   });
 });
 
@@ -20460,7 +20460,7 @@ describe("CodeGen int()/float()/bool()/string() bare type-cast builtins (C207, L
   it("errors on int()/float()/bool()/string() called with the wrong argument count", () => {
     for (const call of ["int()", "int(1, 2)", "float()", "bool(1, 2)", "string()", "string(1, 2)"]) {
       const prog = analyze(parse(`x = ${call}`));
-      expect(prog.errors.some((e) => e.includes("호출 인자 개수 불일치"))).toBe(true);
+      expect(prog.errors.some((e) => e.includes("call argument count mismatch"))).toBe(true);
     }
   });
 
@@ -20538,7 +20538,7 @@ describe("CodeGen timestamp() bare builtin (C210)", () => {
   it("errors on timestamp() called with fewer than 3 or more than 7 args", () => {
     for (const call of ["timestamp()", "timestamp(2024)", "timestamp(2024, 1)", "timestamp(1, 2, 3, 4, 5, 6, 7, 8)"]) {
       const prog = analyze(parse(`x = ${call}`));
-      expect(prog.errors.some((e) => e.includes("호출 인자 개수 불일치"))).toBe(true);
+      expect(prog.errors.some((e) => e.includes("call argument count mismatch"))).toBe(true);
     }
   });
 
@@ -20582,14 +20582,14 @@ describe("CodeGen timestamp(dateString) 1-arg overload (C289)", () => {
   it("still rejects a single non-string-literal argument (preserves timestamp(2024) contract)", () => {
     for (const call of ["timestamp(2024)", "timestamp(x)"]) {
       const prog = analyze(parse(`x = 5\ny = ${call}`));
-      expect(prog.errors.some((e) => e.includes("호출 인자 개수 불일치"))).toBe(true);
+      expect(prog.errors.some((e) => e.includes("call argument count mismatch"))).toBe(true);
     }
   });
 
   it("still rejects 0/2/8-arg calls (dateString exception is exactly 1-arg-string-literal, not a general relaxation)", () => {
     for (const call of ["timestamp()", "timestamp(2024, 1)", "timestamp(1, 2, 3, 4, 5, 6, 7, 8)"]) {
       const prog = analyze(parse(`x = ${call}`));
-      expect(prog.errors.some((e) => e.includes("호출 인자 개수 불일치"))).toBe(true);
+      expect(prog.errors.some((e) => e.includes("call argument count mismatch"))).toBe(true);
     }
   });
 
@@ -20656,7 +20656,7 @@ describe("CodeGen timestamp(...) kwargs (C406, next_hint(C405) 1순위)", () => 
 
   it("rejects a non-string-literal dateString= value (preserves the compile-time-literal constraint)", () => {
     const prog = analyze(parse('x = "2024-01-01"\ny = timestamp(dateString = x)'));
-    expect(prog.errors.some((e) => e.includes("'dateString' 인자는 컴파일타임 문자열 리터럴만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'dateString' argument only supports a compile-time string literal"))).toBe(true);
   });
 
   it("emits the positional-tz + full-keyword-rest form identically to the all-positional form (wild corpus shape, 30851f34b5cf.pine)", () => {
@@ -20696,27 +20696,27 @@ describe("CodeGen timestamp(...) kwargs (C406, next_hint(C405) 1순위)", () => 
 
   it("errors on an unknown keyword argument name", () => {
     const prog = analyze(parse("x = timestamp(year=2024, month=1, day=1, bogus=1)"));
-    expect(prog.errors.some((e) => e.includes("'timestamp'에 없는 인자 이름: 'bogus'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown argument name for 'timestamp': 'bogus'"))).toBe(true);
   });
 
   it("rejects year given both positionally and as a keyword (positional-tz form)", () => {
     const prog = analyze(parse("x = timestamp(syminfo.timezone, 2024, year=2025, month=1, day=1)"));
-    expect(prog.errors.some((e) => e.includes("'year'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'year' specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("rejects a duplicate keyword argument", () => {
     const prog = analyze(parse("x = timestamp(year=2024, month=1, day=1, day=2)"));
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'day' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'day'"))).toBe(true);
   });
 
   it("rejects timestamp(...) missing a required year argument", () => {
     const prog = analyze(parse("x = timestamp(month=1, day=1)"));
-    expect(prog.errors.some((e) => e.includes("'timestamp' 호출에는 'year' 인자가 필요"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timestamp' call requires argument 'year'"))).toBe(true);
   });
 
   it("rejects a hole left when an earlier slot is skipped but a later one is named (day omitted, hour named)", () => {
     const prog = analyze(parse("x = timestamp(year=2024, month=1, hour=9)"));
-    expect(prog.errors.some((e) => e.includes("'timestamp' 호출에 'day' 인자가 누락됨(뒤 인자가 이름으로 지정됨)"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timestamp' call is missing argument 'day' (a later argument was specified by name)"))).toBe(true);
   });
 
   it("allows timestamp(...) kwargs inside a conditional if-body (stateless, same as nz/na)", () => {
@@ -20747,7 +20747,7 @@ describe("CodeGen time() bare builtin (C299)", () => {
   it("errors on time() called with 0 or 5+ args", () => {
     for (const call of ['time()', 'time("D", "0930-1600", "UTC", 1, "extra")']) {
       const prog = analyze(parse(`x = ${call}`));
-      expect(prog.errors.some((e) => e.includes("호출 인자 개수 불일치"))).toBe(true);
+      expect(prog.errors.some((e) => e.includes("call argument count mismatch"))).toBe(true);
     }
   });
 
@@ -20945,7 +20945,7 @@ describe("CodeGen time_close() bare builtin (C400)", () => {
   it("errors on time_close() called with 0 or 5+ args", () => {
     for (const call of ['time_close()', 'time_close("D", "0930-1600", "UTC", 1, "extra")']) {
       const prog = analyze(parse(`x = ${call}`));
-      expect(prog.errors.some((e) => e.includes("호출 인자 개수 불일치"))).toBe(true);
+      expect(prog.errors.some((e) => e.includes("call argument count mismatch"))).toBe(true);
     }
   });
 
@@ -21087,7 +21087,7 @@ describe("CodeGen time()/time_close() keyword-argument form (C475)", () => {
     for (const call of ['time(timeframe.period, foo = -1)', 'time_close("", foo = 1)']) {
       const prog = analyze(parse(`x = ${call}`));
       expect(
-        prog.errors.some((e) => e.includes("키워드 인자는 'timeframe='/'session='/'timezone='/'bars_back='만 지원")),
+        prog.errors.some((e) => e.includes("only supports keyword arguments 'timeframe='/'session='/'timezone='/'bars_back='")),
       ).toBe(true);
     }
   });
@@ -21101,17 +21101,17 @@ describe("CodeGen time()/time_close() keyword-argument form (C475)", () => {
 
   it("rejects timeframe specified both positionally and by keyword", () => {
     const prog = analyze(parse('x = time("D", timeframe="60")'));
-    expect(prog.errors.some((e) => e.includes("위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("accepts timeframe specified both positionally and by keyword when syntactically identical (C654)", () => {
     const prog = analyze(parse('x = time("D", timeframe="D")'));
-    expect(prog.errors.some((e) => e.includes("위치 인자와 키워드 인자로 중복 지정됨"))).toBe(false);
+    expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(false);
   });
 
   it("rejects a kwarg-only call missing the required timeframe argument", () => {
     const prog = analyze(parse('x = time(session="0930-1600")'));
-    expect(prog.errors.some((e) => e.includes("'timeframe' 인자가 필요"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("requires a 'timeframe' argument"))).toBe(true);
   });
 
   it("hand-verified E2E: full triple-kwarg form gates a session identically to the positional form", () => {
@@ -21262,7 +21262,7 @@ describe("CodeGen color() bare type-cast builtin (C300)", () => {
   it("errors on color() called with 0 or 3+ args", () => {
     for (const call of ["color()", "color(#FF0000, 50, 1)"]) {
       const prog = analyze(parse(`x = ${call}`));
-      expect(prog.errors.some((e) => e.includes("호출 인자 개수 불일치"))).toBe(true);
+      expect(prog.errors.some((e) => e.includes("call argument count mismatch"))).toBe(true);
     }
   });
 
@@ -21327,7 +21327,7 @@ describe("CodeGen line/label/box/table() bare drawing type-cast builtin (C301)",
     for (const fn of ["line", "label", "box", "table"]) {
       for (const call of [`${fn}()`, `${fn}(na, na)`]) {
         const prog = analyze(parse(`x = ${call}`));
-        expect(prog.errors.some((e) => e.includes("호출 인자 개수 불일치"))).toBe(true);
+        expect(prog.errors.some((e) => e.includes("call argument count mismatch"))).toBe(true);
       }
     }
   });
@@ -21454,7 +21454,7 @@ describe("CodeGen visualization/alert no-op builtins (C208)", () => {
 
   it("errors on an unrecognized shape.*/location.* member (constant folding is a closed set, not a blanket namespace pass-through)", () => {
     const prog = analyze(parse("plotshape(close > open, style=shape.nonexistent)"));
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("rejects hline/bgcolor/plotshape/alertcondition/max_bars_back called from a local scope (v5 plotting-function restriction, same class as plot() C135)", () => {
@@ -21471,7 +21471,7 @@ describe("CodeGen visualization/alert no-op builtins (C208)", () => {
     ]) {
       const prog = analyze(parse(`if close > open\n    ${call}`));
       expect(
-        prog.errors.some((e) => e.includes("스크립트 최상위 문장 위치에서만 지원")),
+        prog.errors.some((e) => e.includes("only supported at script top-level statement position")),
         `expected a top-level-only error for: ${call}`,
       ).toBe(true);
     }
@@ -21485,7 +21485,7 @@ describe("CodeGen visualization/alert no-op builtins (C208)", () => {
   it("errors on a wrong argument count for these builtins (e.g. bgcolor() with 0 args, hline() with 0 args)", () => {
     for (const call of ["bgcolor()", "hline()", "plotcandle(open, high)"]) {
       const prog = analyze(parse(call));
-      expect(prog.errors.some((e) => e.includes("호출 인자 개수 불일치")), `expected an arity error for: ${call}`).toBe(
+      expect(prog.errors.some((e) => e.includes("call argument count mismatch")), `expected an arity error for: ${call}`).toBe(
         true,
       );
     }
@@ -21591,7 +21591,7 @@ describe("CodeGen no-op builtin arity ceiling widened to full TV signature (C290
         'plotshape(close > open, "T", shape.triangleup, location.belowbar, color.red, 0, "X", color.white, true, size.small, 10, display.all, false, "extra")',
       ),
     );
-    expect(prog.errors.some((e) => e.includes("호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("call argument count mismatch"))).toBe(true);
   });
 
   it("hand-verified E2E: wild-realistic plotshape()/bgcolor() calls (13/6-arg forms) transpile and run without crashing, values still fully discarded", () => {
@@ -21635,7 +21635,7 @@ describe("CodeGen alertcondition() arity ceiling widened 3->4 (C656, excess-arg 
 
   it("still rejects a 5th argument (tolerance is +1, not unbounded)", () => {
     const prog = analyze(parse('alertcondition(close > open, "T", "M", alert.freq_once_per_bar_close, 333)'));
-    expect(prog.errors.some((e) => e.includes("'alertcondition' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'alertcondition' call argument count mismatch"))).toBe(true);
   });
 
   it("hand-verified E2E: the 4-arg wild idiom transpiles and runs as a fully discarded no-op statement", () => {
@@ -21685,9 +21685,9 @@ describe("CodeGen plot.style_*/display.* namespace constants (C254)", () => {
 
   it("errors on an unrecognized plot.*/display.* member (constant folding is a closed set, not a blanket namespace pass-through)", () => {
     const prog1 = analyze(parse("plot(close, style=plot.style_nonexistent)"));
-    expect(prog1.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog1.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
     const prog2 = analyze(parse("plot(close, display=display.nonexistent)"));
-    expect(prog2.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog2.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("codegens a bare `s = plot.style_line` / `d = display.all` assignment as a folded string literal (corpus exact pattern, d0370747fc2d.pine/35b1cad60c96.pine)", () => {
@@ -21763,9 +21763,9 @@ describe("CodeGen currency.*/format.* namespace constants (C284)", () => {
 
   it("errors on an unrecognized currency.*/format.* member (constant folding is a closed set, not a blanket namespace pass-through)", () => {
     const prog1 = analyze(parse("x = currency.BOGUS"));
-    expect(prog1.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog1.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
     const prog2 = analyze(parse("x = format.nonexistent"));
-    expect(prog2.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog2.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("codegens a bare `c = currency.USD` / `f = format.price` assignment as a folded string literal (corpus exact pattern)", () => {
@@ -21857,9 +21857,9 @@ describe("CodeGen plot.style_linebr/label corner styles/display.price_scale name
 
   it("errors on an unrecognized plot.*/label.*/display.* member (constant folding is a closed set)", () => {
     const prog1 = analyze(parse("x = plot.style_bogus"));
-    expect(prog1.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog1.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
     const prog2 = analyze(parse("x = label.style_bogus"));
-    expect(prog2.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog2.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("codegens bare assignments as folded string literals (corpus exact pattern)", () => {
@@ -21976,7 +21976,7 @@ describe("CodeGen plot.style_areabr/style_steplinebr namespace constants (C336)"
 
   it("errors on an unrecognized plot.style_* member (constant folding is still a closed set)", () => {
     const prog = analyze(parse("x = plot.style_areadashed"));
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("codegens bare assignments as folded string literals (corpus exact pattern, 855d41cdea22.pine/075ac566c213.pine)", () => {
@@ -21989,7 +21989,7 @@ describe("CodeGen plot.style_areabr/style_steplinebr namespace constants (C336)"
     expect(codegenSource("x = plot.linestyle_dotted")).toBe('var x = "dotted";');
     expect(codegenSource("x = plot.linestyle_solid")).toBe('var x = "solid";');
     const prog3 = analyze(parse("x = plot.style_dashed"));
-    expect(prog3.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog3.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   // plot() linestyle= kwarg (C670) -- transp=와 동일한 kwarg 전용 discard(PLOT_PARAM_NAMES에는
@@ -22071,9 +22071,9 @@ describe("CodeGen scale.*/session.regular·extended namespace constants (C286)",
 
   it("errors on an unrecognized scale.*/session.* member (constant folding is a closed set, not a blanket namespace pass-through)", () => {
     const prog1 = analyze(parse("x = scale.bogus"));
-    expect(prog1.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog1.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
     const prog2 = analyze(parse("x = session.bogus"));
-    expect(prog2.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog2.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("codegens bare assignments as folded string literals (corpus exact pattern)", () => {
@@ -22140,9 +22140,9 @@ describe("CodeGen text.align_*/text.format_*/font.family_* namespace constants (
 
   it("errors on an unrecognized text.*/font.* member (constant folding is a closed set, not a blanket namespace pass-through)", () => {
     const prog1 = analyze(parse("x = text.bogus"));
-    expect(prog1.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog1.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
     const prog2 = analyze(parse("x = font.bogus"));
-    expect(prog2.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog2.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("codegens bare assignments as folded string literals (corpus exact pattern)", () => {
@@ -22210,10 +22210,10 @@ describe("CodeGen chart.* headless viewport/theme semantics (C287)", () => {
 
   it("errors on an unrecognized chart.* member (closed set, not a blanket namespace pass-through)", () => {
     const prog1 = analyze(parse("x = chart.bogus"));
-    expect(prog1.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog1.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
     // right_visible_bar_index는 wild 0건이라 의도적으로 미추가(C283 큐레이션 원칙) — 거부 유지가 계약
     const prog2 = analyze(parse("x = chart.right_visible_bar_index"));
-    expect(prog2.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog2.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("codegens theme colors as folded string literals identical to color.black/color.white", () => {
@@ -22363,34 +22363,34 @@ describe("CodeGen fill() + plot()/hline() assignment-RHS (C209)", () => {
 
   it("rejects `p1 = plot(...)` when not at script top level (still local scope, C135's restriction unchanged for non-depth-0 assignments)", () => {
     const prog = analyze(parse("if close > open\n    p1 = plot(close)\n    x = p1"));
-    expect(prog.errors.some((e) => e.includes("스크립트 최상위 문장 위치에서만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("only supported at script top-level statement position"))).toBe(true);
   });
 
   it("rejects `h1 = hline(...)` when not at script top level", () => {
     const prog = analyze(parse("if close > open\n    h1 = hline(70)\n    x = h1"));
-    expect(prog.errors.some((e) => e.includes("스크립트 최상위 문장 위치에서만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("only supported at script top-level statement position"))).toBe(true);
   });
 
   it("still rejects plot()/hline() buried in a larger expression on the RHS (not a bare call — plot handles aren't operands)", () => {
     const prog1 = analyze(parse("x = plot(close) + 1"));
-    expect(prog1.errors.some((e) => e.includes("스크립트 최상위 문장 위치에서만 지원"))).toBe(true);
+    expect(prog1.errors.some((e) => e.includes("only supported at script top-level statement position"))).toBe(true);
     const prog2 = analyze(parse('x = close > open ? hline(70) : hline(30)'));
-    expect(prog2.errors.some((e) => e.includes("스크립트 최상위 문장 위치에서만 지원"))).toBe(true);
+    expect(prog2.errors.some((e) => e.includes("only supported at script top-level statement position"))).toBe(true);
   });
 
   it("still rejects `var float p1 = plot(close)` (var initial value — unaffected, once-only gate would break plot()'s every-bar semantics)", () => {
     const prog = analyze(parse("var float p1 = plot(close)"));
-    expect(prog.errors.some((e) => e.includes("스크립트 최상위 문장 위치에서만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("only supported at script top-level statement position"))).toBe(true);
   });
 
   it("rejects fill() called from a local scope (same v5 plotting-function restriction as its siblings)", () => {
     const prog = analyze(parse("p1 = plot(close)\np2 = plot(open)\nif close > open\n    fill(p1, p2)"));
-    expect(prog.errors.some((e) => e.includes("스크립트 최상위 문장 위치에서만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("only supported at script top-level statement position"))).toBe(true);
   });
 
   it("errors on a wrong argument count for fill() (0 args)", () => {
     const prog = analyze(parse("fill()"));
-    expect(prog.errors.some((e) => e.includes("호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("call argument count mismatch"))).toBe(true);
   });
 
   it("accepts fill()'s color kwarg without tripping the blanket kwargs rejection", () => {
@@ -22471,12 +22471,12 @@ describe("CodeGen fill(plot(...), plot(...)) nested-argument idiom (C346)", () =
     const prog = analyze(
       parse(['p1 = plot(close)', 'p2 = plot(open)', "fill(p1, p2, plot(close))"].join("\n")),
     );
-    expect(prog.errors.some((e) => e.includes("스크립트 최상위 문장 위치에서만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("only supported at script top-level statement position"))).toBe(true);
   });
 
   it("does not extend the kwarg exception past plot1=/plot2= (e.g. a hypothetical title=plot(...) still rejects)", () => {
     const prog = analyze(parse('fill(plot(close), plot(open), title=plot(close))'));
-    expect(prog.errors.some((e) => e.includes("스크립트 최상위 문장 위치에서만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("only supported at script top-level statement position"))).toBe(true);
   });
 
   it("hand-verified E2E: fill(plot(fast), plot(slow), color) idiom (wild 16ea92ffe7d0.pine pattern) records both plots without an intermediate assignment", () => {
@@ -22551,21 +22551,21 @@ describe("CodeGen max_bars_back() allowed unconditionally at UDF-body top level 
     const prog = analyze(
       parse(["f(source, length) =>", "    if length > 1", "        max_bars_back(source, 5000)", "    source"].join("\n")),
     );
-    expect(prog.errors.some((e) => e.includes("스크립트 최상위 문장 위치에서만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("only supported at script top-level statement position"))).toBe(true);
   });
 
   it("still rejects max_bars_back() used as a value (VarDecl RHS) inside a UDF body, not just as a bare statement", () => {
     const prog = analyze(
       parse(["f(source, length) =>", "    x = max_bars_back(source, 5000)", "    source"].join("\n")),
     );
-    expect(prog.errors.some((e) => e.includes("스크립트 최상위 문장 위치에서만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("only supported at script top-level statement position"))).toBe(true);
   });
 
   it("does not extend the relaxation to sibling no-op builtins (hline/bgcolor/plotshape still reject inside a UDF body)", () => {
     for (const call of ['hline(70, "OB")', "bgcolor(color.red)", "plotshape(close > open)"]) {
       const prog = analyze(parse(["f() =>", `    ${call}`, "    close"].join("\n")));
       expect(
-        prog.errors.some((e) => e.includes("스크립트 최상위 문장 위치에서만 지원")),
+        prog.errors.some((e) => e.includes("only supported at script top-level statement position")),
         `expected max_bars_back's relaxation NOT to extend to: ${call}`,
       ).toBe(true);
     }
@@ -22671,12 +22671,12 @@ describe("CodeGen label/line/box/table/polyline drawing objects (C211)", () => {
 
   it("errors on an unrecognized member of these namespaces (closed-set constant folding, not a blanket pass-through)", () => {
     const prog = analyze(parse("l = label.new(bar_index, high, style=label.style_nonexistent)"));
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("errors on an unsupported method name within a drawing namespace", () => {
     const prog = analyze(parse("label.frobnicate(bar_index, high)"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("does NOT restrict these calls to script top level (unlike plot()/hline()/fill() — TV allows conditional label/line/box/table updates)", () => {
@@ -22963,19 +22963,19 @@ describe("CodeGen method-call style drawing objects (C232)", () => {
     const prog = analyze(
       parse(["ln = line.new(bar_index, high, bar_index, low)", 'ln.set_text("x")'].join("\n")),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("does not misfire for a plain (non-drawing) local sharing a common variable name", () => {
     const prog = analyze(parse(["lbl = close + 1", 'lbl.set_text("x")'].join("\n")));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("does not route method-call style drawing calls for a UDF parameter receiver (no value-flow tracking — still 'unsupported')", () => {
     const prog = analyze(
       parse(["f(a) =>", '    a.set_text("x")', "lbl = label.new(bar_index, high)", "s = f(lbl)"].join("\n")),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("coexists with the namespace-call form in the same script without dispatch interference", () => {
@@ -23071,14 +23071,14 @@ describe("CodeGen method-call style drawing objects (C232)", () => {
         ["ln1 = line.new(bar_index, high, bar_index, low)", "lf = linefill.new(ln1, ln1, color.blue)", 'lf.set_text("x")'].join("\n"),
       ),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("kind-checks method sugar: a label-typed receiver cannot call a linefill-only method (still 'unsupported')", () => {
     const prog = analyze(
       parse(["lbl = label.new(bar_index, high)", "lbl.get_line1()"].join("\n")),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("hand-verified E2E: linefill.new/delete (both namespace and method-call sugar forms) transpile and run without crashing, and a neighboring plot() still records the correct values", () => {
@@ -23199,12 +23199,12 @@ describe("CodeGen method-call style drawing objects: kwargs on the sugar receive
 
   it("still rejects a kwarg on array.push(...) sugar (a.push(id=..., value=...)) -- C222 scope unchanged, only drawing sugar was reversed", () => {
     const prog = analyze(parse(["a = array.new_float(1, 0.0)", "a.push(value=5.0)"].join("\n")));
-    expect(prog.errors.some((e) => e.includes("키워드 인자('value=...')는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("keyword arguments ('value=...') are"))).toBe(true);
   });
 
   it("still rejects a kwarg on map.put(...) sugar (m.put(key=..., value=...)) -- C222 scope unchanged, only drawing sugar was reversed", () => {
     const prog = analyze(parse(["m = map.new<int, float>()", "m.put(key=1, value=2.0)"].join("\n")));
-    expect(prog.errors.some((e) => e.includes("키워드 인자('key=...')는"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("keyword arguments ('key=...') are"))).toBe(true);
   });
 
   it("emits t.cell(...) with the kwargs fully discarded (only positional args reach the generated call, same as the literal namespace form)", () => {
@@ -23289,7 +23289,7 @@ describe("CodeGen method-call style drawing objects: func-local var receiver (C3
 
   it("kind-checks method sugar: a func-local box receiver cannot call a label-only method (still 'unsupported')", () => {
     const prog = analyze(parse(["f() =>", "    var box b = na", "    b.get_text()", "f()"].join("\n")));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("keeps drawing kind independent per function (same local var name 'b', box in one function, line in another)", () => {
@@ -23313,7 +23313,7 @@ describe("CodeGen method-call style drawing objects: func-local var receiver (C3
     const prog = analyze(
       parse(["f() =>", "    var float acc = na", "    acc.set_extend(extend.none)", "f()"].join("\n")),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("does not misfire when a top-level var of the same name pattern coexists (different scopes, no cross-talk)", () => {
@@ -23382,17 +23382,17 @@ describe("CodeGen method-call style drawing objects: UDF parameter receiver with
 
   it("kind-checks method sugar on a parameter receiver: a box parameter cannot call a label-only method (still 'unsupported')", () => {
     const prog = analyze(parse(["f(box b) =>", "    b.get_text()", "f(box.new(0, 0, 1, 1))"].join("\n")));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("does not route method-call sugar for a non-drawing parameter typeHint (no regression)", () => {
     const prog = analyze(parse(["f(float acc) =>", "    acc.set_extend(extend.none)", "f(1.0)"].join("\n")));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("does not route method-call sugar for an untyped parameter (no typeHint, matches the pre-existing C124 limitation)", () => {
     const prog = analyze(parse(["f(b) =>", "    b.set_extend(extend.none)", "f(box.new(0, 0, 1, 1))"].join("\n")));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("hand-verified E2E: transpile()+run() — a table-typed UDF parameter with method-call sugar (incl. discarded kwargs) runs across several bars without crashing", () => {
@@ -23461,7 +23461,7 @@ describe("CodeGen method-call style drawing objects: untyped UDF parameter infer
         ].join("\n"),
       ),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("hand-verified E2E: transpile()+run() — an untyped UDF parameter whose drawing kind is inferred from a top-level UDT-field call-site argument runs across several bars without crashing", () => {
@@ -23536,7 +23536,7 @@ describe("CodeGen method-call style drawing objects: top-level var with na initi
 
   it("kind-checks method sugar: a top-level na-initialized box receiver cannot call a label-only method (still 'unsupported')", () => {
     const prog = analyze(parse(["var box b = na", "b.get_text()"].join("\n")));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("does not register drawingVarKinds for a non-drawing top-level var typeHint (regression guard)", () => {
@@ -23645,7 +23645,7 @@ describe("CodeGen for-in loop over typed drawing arrays (C352)", () => {
     const prog = analyze(
       parse(["var boxes = array.new_box()", "for b in boxes", "    b.get_text()"].join("\n")),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("tags the loop var for a '=' local iterable too (C620 — arrayElemDrawingKindHints scope-chain hint closes this gap, same fix as the C353 drawing-handle-extraction axis)", () => {
@@ -23732,7 +23732,7 @@ describe("CodeGen array.new<box/line/label/table/linefill>() top-level var witho
     const prog = analyze(
       parse(["var boxes = array.new<box>()", "for b in boxes", "    b.get_text()"].join("\n")),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("tags the loop var for a '=' local iterable using the generic form too (C620, same scope-chain hint covers both the literal new_box()/... suffix form and the generic new<box>() form)", () => {
@@ -23757,7 +23757,7 @@ describe("CodeGen array.new<box/line/label/table/linefill>() top-level var witho
         ].join("\n"),
       ),
     );
-    expect(prog.errors.some((e) => e.includes("'Gap'에 없는 method"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown method for 'Gap'"))).toBe(true);
   });
 
   it("hand-verified E2E: for-in loop var drawing method-call sugar over the generic array.new<box>() form transpiles and runs across several bars without crashing, and a neighboring plot() still records the correct values", () => {
@@ -23850,7 +23850,7 @@ describe("CodeGen '=' local drawing handle from array element extraction (C353)"
     const prog = analyze(
       parse(["var boxes = array.new_box()", "activeBox = boxes.last()", "activeBox.get_text()"].join("\n")),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   // C620: 위 테스트는 이전엔 컨테이너 자체가 top-level `var boxes = ...`가 아니면(순수 '=' 로컬)
@@ -23908,7 +23908,7 @@ describe("CodeGen '=' local drawing handle from array element extraction (C353)"
         ),
       ),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("leaves a plain (non-drawing) array element extraction unaffected (no regression)", () => {
@@ -24064,7 +24064,7 @@ describe("CodeGen method-call sugar receiver that is itself an array-elem-return
 
   it("leaves a plain (non-drawing, non-UDT) array-elem CallExpr receiver unaffected when the chained method isn't a real builtin/UDT method (still 'unsupported', no false positive)", () => {
     const prog = analyze(parse(["var nums = array.new_float()", "array.push(nums, 5.0)", "nums.shift().bogus()"].join("\n")));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("hand-verified E2E: transpile()+run() -- the wild idiom (top-level array<box>, bare `.shift().delete()` chain with no intermediate local) runs across several bars without crashing", () => {
@@ -24147,7 +24147,7 @@ describe("CodeGen method-call sugar receiver that is itself a matrix-elem-return
 
   it("still rejects the chain when the matrix's element type isn't statically known (matrix.new(...) without the generic type arg, no new regression)", () => {
     const prog = analyze(parse(["var m = matrix.new(1, 1, na)", "m.get(0, 0).delete()"].join("\n")));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("hand-verified E2E: transpile()+run() -- the wild idiom (top-level matrix<line>, bare `.get(r,c).delete()` chain with no intermediate local) runs across several bars without crashing", () => {
@@ -24259,7 +24259,7 @@ describe("CodeGen method-call sugar receiver from a map<K, drawing> value extrac
         ].join("\n"),
       ),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("leaves a plain (non-drawing) map value extraction unaffected (no regression)", () => {
@@ -24437,12 +24437,12 @@ describe("Analyzer/CodeGen map<K, drawing/UDT> value-kind tracking by var name (
 
   it("still rejects drawing method-call sugar on a scalar-value map (`map.new<string, float>()` value is not a handle)", () => {
     const prog = analyze(parse(["var m = map.new<string, float>()", 'm.get("k").get_top()'].join("\n")));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("kind-checks the tracked value: a box-value map.get() cannot call a line-only method (still 'unsupported')", () => {
     const prog = analyze(parse(["var m = map.new<string, box>()", 'm.get("k").set_xy1(0, high)'].join("\n")));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("hand-verified E2E: transpile()+run() -- the wild getHighBox idiom runs across several bars without crashing", () => {
@@ -24548,7 +24548,7 @@ describe("Analyzer '=' local UDT/drawing kind hint from a bare UDT-field DotAcce
         ].join("\n"),
       ),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("hand-verified E2E: transpile()+run() -- the wild idiom (UDT field of drawing type reassigned to a bare '=' local via `this.<field>`, then get_top/set_top method-call sugar) runs across several bars without crashing", () => {
@@ -24661,7 +24661,7 @@ describe("CodeGen array.new<UDT>() top-level var without explicit typeHint now t
 
   it("does not spuriously register arrayElemUdtType when the generic type arg is not a declared UDT (regression guard, structural check only fires for known types)", () => {
     const prog = analyze(parse(["var allGaps = array.new<NotDeclared>()", "allGaps.shift().delete()"].join("\n")));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 });
 
@@ -24723,7 +24723,7 @@ describe("CodeGen field access directly chained on an array-elem-returning call 
         ].join("\n"),
       ),
     );
-    expect(prog.errors.some((e) => e.includes("네임스페이스 접근은 호출식만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
   it("hand-verified E2E: transpile()+run() -- two direct-chained field reads combined in one boolean expression (the exact wild idiom, `sequence.first().dir == -1 and sequence.get(1).dir == 1`)", () => {
@@ -24977,7 +24977,7 @@ describe("CodeGen for-in loop over typed UDT arrays (C356)", () => {
         ].join("\n"),
       ),
     );
-    expect(prog.errors.some((e) => e.includes("'Gap'에 없는 method"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown method for 'Gap'"))).toBe(true);
   });
 
   // C393: 이 테스트는 원래 "'=' 로컬 컨테이너는 arrayElemUdtType(top-level var 전용)에 안 잡혀
@@ -25108,7 +25108,7 @@ describe("CodeGen method-call style sugar on a UDT container/drawing field (C323
 
   it("kind-checks UDT-field sugar: a scalar (non-container/drawing) field cannot use method sugar (still 'unsupported')", () => {
     const prog = analyze(parse(["type Foo", "    float x", "f = Foo.new(1.0)", "f.x.push(1.0)"].join("\n")));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("routes UDT-field sugar for an untyped UDF parameter's field once the call-site UDT var's type is inferred from its constructor call, even without an explicit typeHint (C496 upgrade — was 'no typeHint means paramUdtTypes never sees it, unsupported' pre-C496: prepassInferParamUdtTypesFromCallSites now also registers top-level vars whose type comes from a bare `TypeName.new(...)` initializer, not just an explicit typeHint)", () => {
@@ -25204,7 +25204,7 @@ describe("CodeGen method-call style sugar on a UDT container/drawing field (C323
         ),
       ),
     );
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("coexists with the plain namespace-call form (array.push(f.d, x)) on the same field without dispatch interference", () => {
@@ -25639,7 +25639,7 @@ describe("CodeGen for-in loop over label.all/line.all/box.all/table.all/polyline
 
   it("kind-checks the elem hint from `.all` too: a box-typed loop var still cannot call a label-only method", () => {
     const prog = analyze(parse(["for bx in box.all", "    bx.get_text()"].join("\n")));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("still analyzes `.all` as a plain array (array.size) when used directly as a for-in iterable's sibling expression (no regression to C244)", () => {
@@ -25694,12 +25694,12 @@ describe("CodeGen strategy.commission.* namespace constants (C288)", () => {
 
   it("still rejects strategy.oca.* (OCA group cancellation unimplemented — discard would be a silent wrong answer)", () => {
     const prog = analyze(parse('strategy("t")\nx = strategy.oca.reduce'));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 strategy 속성: 'strategy.oca'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported strategy property: 'strategy.oca'"))).toBe(true);
   });
 
   it("errors on an unrecognized strategy.commission.* member (constant folding is a closed set)", () => {
     const prog = analyze(parse('strategy("t")\nx = strategy.commission.bogus'));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 strategy 속성: 'strategy.commission'"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported strategy property: 'strategy.commission'"))).toBe(true);
   });
 
   it("codegens a bare `x = strategy.commission.percent` assignment as a folded string literal (corpus exact pattern)", () => {
@@ -25809,17 +25809,17 @@ describe("CodeGen chart.point.* (C229)", () => {
 
   it("errors when more positional args are passed than the method accepts", () => {
     const prog = analyze(parse("p = chart.point.new(1, 2, 3, 4)"));
-    expect(prog.errors.some((e) => e.includes("'chart.point.new' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'chart.point.new' call argument count mismatch"))).toBe(true);
   });
 
   it("errors when chart.point.now()/copy() receive more than 1 arg", () => {
     const prog = analyze(parse("p = chart.point.now(1, 2)"));
-    expect(prog.errors.some((e) => e.includes("'chart.point.now' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'chart.point.now' call argument count mismatch"))).toBe(true);
   });
 
   it("still rejects an unrecognized chart.point method as an unsupported call (not silently accepted by the namespace match)", () => {
     const prog = analyze(parse("p = chart.point.frobnicate(1, 2)"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("hand-verified E2E: chart.point.new/from_index/now transpile()+run() without crashing across several bars, values reach a no-op drawing call, and a neighboring plot() still records correctly (corpus pattern: point created + `not na(pt)` check + fed to line.set_first_point)", () => {
@@ -25886,12 +25886,12 @@ describe("CodeGen log.*/runtime.* (C231)", () => {
   it("errors when more than 32 args are passed to log.* (C298)", () => {
     const args33 = Array.from({ length: 33 }, (_, i) => String(i + 1)).join(", ");
     const prog = analyze(parse(`log.info(${args33})`));
-    expect(prog.errors.some((e) => e.includes("'log.info' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'log.info' call argument count mismatch"))).toBe(true);
   });
 
   it("errors when more than 1 arg is passed to runtime.error/warning (pine2py signature is message-only, not variadic)", () => {
     const prog = analyze(parse('runtime.error("a", "b")'));
-    expect(prog.errors.some((e) => e.includes("'runtime.error' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'runtime.error' call argument count mismatch"))).toBe(true);
   });
 
   // ── runtime.error/warning(message=...) kwarg (C472, next_hint(C471) 지시대로 잔여 클러스터
@@ -25905,26 +25905,26 @@ describe("CodeGen log.*/runtime.* (C231)", () => {
 
   it("errors when runtime.error/warning is given a kwarg name other than 'message'", () => {
     const prog = analyze(parse('runtime.error(foo="x")'));
-    expect(prog.errors.some((e) => e.includes("'runtime.error' 키워드 인자는 'message='만 지원"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'runtime.error' only supports keyword argument 'message='"))).toBe(true);
   });
 
   it("errors when runtime.error/warning 'message' is given both positionally and as a kwarg", () => {
     const prog = analyze(parse('runtime.error("a", message="b")'));
-    expect(prog.errors.some((e) => e.includes("인자 'message'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(
+    expect(prog.errors.some((e) => e.includes("argument 'message' specified both positionally and as a keyword"))).toBe(
       true,
     );
   });
 
   it("errors on duplicate runtime.error/warning message= kwarg", () => {
     const prog = analyze(parse('runtime.error(message="a", message="b")'));
-    expect(prog.errors.some((e) => e.includes("키워드 인자 'message' 중복 지정"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'message'"))).toBe(true);
   });
 
   it("still rejects an unrecognized log./runtime. method as an unsupported call (not silently accepted by the namespace match)", () => {
     const prog = analyze(parse("log.frobnicate(1)"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
     const prog2 = analyze(parse("runtime.frobnicate(1)"));
-    expect(prog2.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog2.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("hand-verified E2E: log.*/runtime.warning calls transpile()+run() without crashing and don't perturb a neighboring plot() (oracle-verified no-op — see oracle/cases/log_runtime_noop.pine)", () => {
@@ -26404,7 +26404,7 @@ describe("CodeGen for-in loop over a call-site-inferred untyped UDF parameter (C
     const result = transpile(["f(arr) =>", "    for x in arr", "        y = x", "f(1.0)"].join("\n"));
     expect(result.ok).toBe(false);
     if (result.ok) return;
-    expect(result.errors.join(" ")).toMatch(/for-in.*정적으로 판별할 수 없음/);
+    expect(result.errors.join(" ")).toMatch(/for-in.*cannot be statically determined/);
   });
 
   it("transpiles an untyped parameter's for-in as array when the UDF has zero call sites anywhere in the script (C678 dead-code placeholder)", () => {
@@ -26620,12 +26620,12 @@ describe("CodeGen chart.is_* (C239)", () => {
 
   it("errors when chart.is_standard is called with an argument (TV signature is 0-arity)", () => {
     const prog = analyze(parse("x = chart.is_standard(1)"));
-    expect(prog.errors.some((e) => e.includes("'chart.is_standard' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'chart.is_standard' call argument count mismatch"))).toBe(true);
   });
 
   it("still rejects an unrecognized chart.* method as an unsupported call (not silently accepted by the namespace match)", () => {
     const prog = analyze(parse("x = chart.frobnicate()"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("hand-verified E2E: chart.is_heikinashi()/is_standard() transpile()+run() across several bars, reproducing the exact corpus pattern (`chart.is_heikinashi() ? 1.0 : 0.0`), and always resolve to the hardcoded standard-chart values", () => {
@@ -26675,12 +26675,12 @@ describe("CodeGen syminfo.ticker(symbol) (C430)", () => {
 
   it("errors when syminfo.ticker is called with 0 arguments (TV signature is exactly 1-arity)", () => {
     const prog = analyze(parse("x = syminfo.ticker()"));
-    expect(prog.errors.some((e) => e.includes("'syminfo.ticker' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'syminfo.ticker' call argument count mismatch"))).toBe(true);
   });
 
   it("still rejects an unrecognized syminfo.* method call as unsupported (not silently accepted by the namespace match)", () => {
     const prog = analyze(parse('x = syminfo.frobnicate("NASDAQ:AAPL")'));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("hand-verified E2E: syminfo.ticker(symbol) transpile()+run() across several bars, reproducing the exact corpus pattern (`ticker1 = syminfo.ticker(sym1)`), extracting the ticker part after the exchange colon", () => {
@@ -26755,7 +26755,7 @@ describe("CodeGen request.dividends/request.splits (C239 next_hint)", () => {
 
   it("errors when request.dividends is called with more than 4 arguments", () => {
     const prog = analyze(parse('x = request.dividends("a", "b", "c", "d", "e")'));
-    expect(prog.errors.some((e) => e.includes("'request.dividends' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.dividends' call argument count mismatch"))).toBe(true);
   });
 
   it("emits request.dividends(...) kwargs as positional args via the generic fallback, discarding kwarg names (C398, output is a constant 0.0 stub regardless of any arg)", () => {
@@ -26772,7 +26772,7 @@ describe("CodeGen request.dividends/request.splits (C239 next_hint)", () => {
 
   it("still rejects an unrecognized request.* method as an unsupported call (not silently accepted by the namespace match)", () => {
     const prog = analyze(parse("x = request.frobnicate()"));
-    expect(prog.errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 
   it("hand-verified E2E: request.dividends()/request.splits() transpile()+run() across several bars, reproducing the corpus pattern (`request.dividends(syminfo.tickerid, dividends.gross)`), and always resolve to 0.0", () => {
@@ -26825,7 +26825,7 @@ describe("CodeGen request.financial (C257)", () => {
 
   it("errors when request.financial is called with more than 5 arguments", () => {
     const prog = analyze(parse('x = request.financial("a", "b", "c", "d", "e", "f")'));
-    expect(prog.errors.some((e) => e.includes("'request.financial' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.financial' call argument count mismatch"))).toBe(true);
   });
 
   it("emits request.financial(...) kwargs as positional args via the generic fallback, discarding kwarg names (C385, output is a constant NaN stub regardless of any arg)", () => {
@@ -26887,7 +26887,7 @@ describe("CodeGen request.earnings (C397)", () => {
 
   it("errors when request.earnings is called with more than 4 arguments", () => {
     const prog = analyze(parse('x = request.earnings("a", "b", "c", "d", "e")'));
-    expect(prog.errors.some((e) => e.includes("'request.earnings' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.earnings' call argument count mismatch"))).toBe(true);
   });
 
   it("emits request.earnings(...) kwargs as positional args via the generic fallback, discarding kwarg names (C397, output is a constant 0.0 stub regardless of any arg)", () => {
@@ -26948,7 +26948,7 @@ describe("CodeGen request.quandl (C310)", () => {
 
   it("errors when request.quandl is called with more than 3 arguments", () => {
     const prog = analyze(parse('x = request.quandl("a", "b", "c", "d")'));
-    expect(prog.errors.some((e) => e.includes("'request.quandl' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.quandl' call argument count mismatch"))).toBe(true);
   });
 
   it("hand-verified E2E: request.quandl() transpile()+run() across several bars, always resolves to 0.0", () => {
@@ -26995,7 +26995,7 @@ describe("CodeGen request.security_lower_tf (C310)", () => {
 
   it("errors when request.security_lower_tf is called with more than 7 arguments", () => {
     const prog = analyze(parse('x = request.security_lower_tf("a", "b", close, true, "c", true, 5, "extra")'));
-    expect(prog.errors.some((e) => e.includes("'request.security_lower_tf' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.security_lower_tf' call argument count mismatch"))).toBe(true);
   });
 
   it("hand-verified E2E: request.security_lower_tf(...) transpile()+run() across several bars, wrapping the per-bar close value as a single-element array (array.get(sub, 0) recovers it, array.size(sub) is always 1)", () => {
@@ -27064,12 +27064,12 @@ describe("CodeGen request.seed (C321)", () => {
 
   it("errors when request.seed is called with fewer than 3 arguments", () => {
     const prog = analyze(parse('x = request.seed("a", "b")'));
-    expect(prog.errors.some((e) => e.includes("'request.seed' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.seed' call argument count mismatch"))).toBe(true);
   });
 
   it("errors when request.seed is called with more than 4 arguments", () => {
     const prog = analyze(parse('x = request.seed("a", "b", close, true, "extra")'));
-    expect(prog.errors.some((e) => e.includes("'request.seed' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.seed' call argument count mismatch"))).toBe(true);
   });
 
   it("hand-verified E2E: request.seed(...) transpile()+run() across several bars, always resolves to NaN (no seed data source exists in this engine)", () => {
@@ -27112,12 +27112,12 @@ describe("CodeGen request.currency_rate (C321)", () => {
 
   it("errors when request.currency_rate is called with fewer than 2 arguments", () => {
     const prog = analyze(parse('x = request.currency_rate("USD")'));
-    expect(prog.errors.some((e) => e.includes("'request.currency_rate' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.currency_rate' call argument count mismatch"))).toBe(true);
   });
 
   it("errors when request.currency_rate is called with more than 3 arguments", () => {
     const prog = analyze(parse('x = request.currency_rate("USD", "EUR", true, "extra")'));
-    expect(prog.errors.some((e) => e.includes("'request.currency_rate' 호출 인자 개수 불일치"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'request.currency_rate' call argument count mismatch"))).toBe(true);
   });
 
   it("hand-verified E2E: request.currency_rate(from, to) resolves to 1.0 when from===to (identity conversion, no external data needed) and NaN otherwise (no FX data source exists in this engine)", () => {
@@ -28029,7 +28029,7 @@ describe("ta.<fn>(...)[N] historical indexing analyzer/codegen (C340)", () => {
 
   it("rejects a non-stateful, non-numeric-builtin CallExpr obj (e.g. str.tostring) without an internal codegen crash", () => {
     const prog = analyze(parse("x = str.tostring(close)[1]"));
-    expect(prog.errors.some((e) => e.includes("stateful TA 콜(ta.*)/request.security 결과/순수 numeric 빌트인"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("stateful TA call (ta.*)/request.security results/pure numeric builtins"))).toBe(true);
   });
 
   // C520(ROADMAP P4 🔴🔴 (c)와 나란한 게이트 완화): 이 테스트는 원래 UDF CallExpr obj 전면 거부(C470
@@ -28662,7 +28662,7 @@ describe("array.get(container, idx)[N] historical indexing codegen + E2E (C702)"
 
   it("still rejects array.get(...) on a string-element array without an internal codegen crash", () => {
     const prog = analyze(parse(["var string[] arr = array.new_string(3)", "x = array.get(arr, 0)[1]"].join("\n")));
-    expect(prog.errors.some((e) => e.includes("stateful TA 콜(ta.*)/request.security 결과/순수 numeric 빌트인"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("stateful TA call (ta.*)/request.security results/pure numeric builtins"))).toBe(true);
   });
 });
 

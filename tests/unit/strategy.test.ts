@@ -83,8 +83,8 @@ describe("StrategyState (runtime, hand-verified)", () => {
   // short가 정식 지원되면서 거부 프로브를 진짜 무효 문자열로 회전(거부 의도 보존, C120/C163 관례).
   it("entry throws on an unknown direction string (long/short 외 — 런타임 이중 방어)", () => {
     const st = new StrategyState();
-    expect(() => st.entry("X", "sideways", 1)).toThrow(/지원하지 않는 direction/);
-    expect(() => st.entry("X", "LONG", 1)).toThrow(/지원하지 않는 direction/); // 대소문자 구분
+    expect(() => st.entry("X", "sideways", 1)).toThrow(/unsupported direction/);
+    expect(() => st.entry("X", "LONG", 1)).toThrow(/unsupported direction/); // 대소문자 구분
   });
 
   it("same-bar re-entry with same id modifies the pending order qty", () => {
@@ -604,18 +604,18 @@ describe("strategy.* analyzer validation", () => {
 
   it("rejects strategy.entry in a value position (반환값 없음)", () => {
     const errors = transpileErrors('strategy("s")\nx = strategy.entry("L", strategy.long)');
-    expect(errors.some((e) => e.includes("문장 위치에서만 지원"))).toBe(true);
+    expect(errors.some((e) => e.includes("only supported in statement position"))).toBe(true);
   });
 
   it("validates strategy.entry arg count (2~3개)", () => {
     expect(
       transpileErrors('strategy("s")\nstrategy.entry("L")').some((e) =>
-        e.includes("'strategy.entry' 호출 인자 개수 불일치"),
+        e.includes("'strategy.entry' call argument count mismatch"),
       ),
     ).toBe(true);
     expect(
       transpileErrors('strategy("s")\nstrategy.entry("L", strategy.long, 1, 2)').some((e) =>
-        e.includes("'strategy.entry' 호출 인자 개수 불일치"),
+        e.includes("'strategy.entry' call argument count mismatch"),
       ),
     ).toBe(true);
   });
@@ -623,12 +623,12 @@ describe("strategy.* analyzer validation", () => {
   it("validates strategy.close arg count (1~2개)", () => {
     expect(
       transpileErrors('strategy("s")\nstrategy.close()').some((e) =>
-        e.includes("'strategy.close' 호출 인자 개수 불일치"),
+        e.includes("'strategy.close' call argument count mismatch"),
       ),
     ).toBe(true);
     expect(
       transpileErrors('strategy("s")\nstrategy.close("L", "x", "y")').some((e) =>
-        e.includes("'strategy.close' 호출 인자 개수 불일치"),
+        e.includes("'strategy.close' call argument count mismatch"),
       ),
     ).toBe(true);
   });
@@ -666,12 +666,12 @@ describe("strategy.* analyzer validation", () => {
   it("rejects unsupported strategy.* properties and calls", () => {
     expect(
       transpileErrors('strategy("s")\nx = strategy.oca').some((e) =>
-        e.includes("지원하지 않는 strategy 속성"),
+        e.includes("unsupported strategy property"),
       ),
     ).toBe(true);
     expect(
       transpileErrors('strategy("s")\nstrategy.__unsupported_probe__(10)').some((e) =>
-        e.includes("지원하지 않는 호출: 'strategy.__unsupported_probe__'"),
+        e.includes("unsupported call: 'strategy.__unsupported_probe__'"),
       ),
     ).toBe(true);
   });
@@ -690,7 +690,7 @@ describe("strategy.* analyzer validation", () => {
       expect(
         errors.some((e) =>
           e.includes(
-            "'strategy.entry' 키워드 인자는 'id='/'direction='/'qty='/'comment='/'limit='/'stop='/'when='/'alert_message='/'disable_alert='만 지원",
+            "'strategy.entry' only supports keyword arguments 'id='/'direction='/'qty='/'comment='/'limit='/'stop='/'when='/'alert_message='/'disable_alert='",
           ),
         ),
       ).toBe(true);
@@ -706,7 +706,7 @@ describe("strategy.* analyzer validation", () => {
     const errors = transpileErrors(
       'strategy("s")\nstrategy.entry("L", strategy.long, disable_alert=true, disable_alert=false)',
     );
-    expect(errors.some((e) => e.includes("키워드 인자 'disable_alert' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'disable_alert'"))).toBe(true);
   });
 
   it("discards disable_alert= on strategy.entry codegen (C746, no KWARG_SLOTS entry)", () => {
@@ -732,12 +732,12 @@ describe("strategy.* analyzer validation", () => {
   it("rejects strategy.entry id=/direction= duplicated with positional args (C423)", () => {
     expect(
       transpileErrors('strategy("s")\nstrategy.entry("L", strategy.long, id="L2")').some((e) =>
-        e.includes("인자 'id'이(가) 위치 인자와 키워드 인자로 중복 지정됨"),
+        e.includes("argument 'id' specified both positionally and as a keyword"),
       ),
     ).toBe(true);
     expect(
       transpileErrors('strategy("s")\nstrategy.entry("L", strategy.long, direction=strategy.short)').some((e) =>
-        e.includes("인자 'direction'이(가) 위치 인자와 키워드 인자로 중복 지정됨"),
+        e.includes("argument 'direction' specified both positionally and as a keyword"),
       ),
     ).toBe(true);
   });
@@ -745,7 +745,7 @@ describe("strategy.* analyzer validation", () => {
   it("rejects strategy.entry with direction missing entirely (C423, id kwarg only)", () => {
     expect(
       transpileErrors('strategy("s")\nstrategy.entry(id="L")').some((e) =>
-        e.includes("'strategy.entry' 호출 인자 개수 불일치"),
+        e.includes("'strategy.entry' call argument count mismatch"),
       ),
     ).toBe(true);
   });
@@ -763,7 +763,7 @@ describe("strategy.* analyzer validation", () => {
 
   it("rejects duplicate when= kwarg on strategy.entry", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.entry("L", strategy.long, when=true, when=false)');
-    expect(errors.some((e) => e.includes("키워드 인자 'when' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'when'"))).toBe(true);
   });
 
   it("accepts strategy.entry alert_message= kwarg (C374, 순수 표시값 discard)", () => {
@@ -777,12 +777,12 @@ describe("strategy.* analyzer validation", () => {
     const errors = transpileErrors(
       'strategy("s")\nstrategy.entry("L", strategy.long, alert_message="a", alert_message="b")',
     );
-    expect(errors.some((e) => e.includes("키워드 인자 'alert_message' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'alert_message'"))).toBe(true);
   });
 
   it("rejects duplicate limit= kwarg", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.entry("L", strategy.long, limit=1, limit=2)');
-    expect(errors.some((e) => e.includes("키워드 인자 'limit' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'limit'"))).toBe(true);
   });
 
   it("accepts strategy.cancel/cancel_all at top level and inside an if body (C166)", () => {
@@ -804,25 +804,25 @@ describe("strategy.* analyzer validation", () => {
 
   it("rejects strategy.cancel in a value position (반환값 없음)", () => {
     const errors = transpileErrors('strategy("s")\nx = strategy.cancel("L")');
-    expect(errors.some((e) => e.includes("문장 위치에서만 지원"))).toBe(true);
+    expect(errors.some((e) => e.includes("only supported in statement position"))).toBe(true);
   });
 
   it("validates strategy.cancel arg count (정확히 1개)", () => {
     expect(
       transpileErrors('strategy("s")\nstrategy.cancel()').some((e) =>
-        e.includes("'strategy.cancel' 호출 인자 개수 불일치"),
+        e.includes("'strategy.cancel' call argument count mismatch"),
       ),
     ).toBe(true);
     expect(
       transpileErrors('strategy("s")\nstrategy.cancel("L", "M")').some((e) =>
-        e.includes("'strategy.cancel' 호출 인자 개수 불일치"),
+        e.includes("'strategy.cancel' call argument count mismatch"),
       ),
     ).toBe(true);
   });
 
   it("validates strategy.cancel_all arg count (0개)", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.cancel_all("L")');
-    expect(errors.some((e) => e.includes("'strategy.cancel_all' 호출 인자 개수 불일치"))).toBe(true);
+    expect(errors.some((e) => e.includes("'strategy.cancel_all' call argument count mismatch"))).toBe(true);
   });
 
   // C382: id는 위치 인자 또는 'id=' 키워드 인자 중 정확히 하나로만 지정 가능(wild 실측
@@ -834,19 +834,19 @@ describe("strategy.* analyzer validation", () => {
 
   it("rejects strategy.cancel with id given both positionally and as a keyword", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.cancel("L", id="M")');
-    expect(errors.some((e) => e.includes("'id'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(errors.some((e) => e.includes("'id' specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("rejects duplicate id= kwarg on strategy.cancel", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.cancel(id="L", id="M")');
-    expect(errors.some((e) => e.includes("키워드 인자 'id' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'id'"))).toBe(true);
   });
 
   // C708 재마이그레이션: when=(hand-verified 신규 지원)이 화이트리스트에 추가돼 이 substring도 갱신
   // (comment=는 여전히 진짜 미구현 파라미터).
   it("still rejects unsupported kwarg names on strategy.cancel (blanket 화이트리스트는 'id='/'when='만 허용)", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.cancel("L", comment="x")');
-    expect(errors.some((e) => e.includes("'strategy.cancel' 키워드 인자는 'id='/'when='만 지원"))).toBe(true);
+    expect(errors.some((e) => e.includes("'strategy.cancel' only supports keyword arguments 'id='/'when='"))).toBe(true);
   });
 
   it("accepts strategy.cancel when= kwarg (C708, wild 4건 — pine2py cancel(id, when=True)와 동일 게이트 신규 이식)", () => {
@@ -855,7 +855,7 @@ describe("strategy.* analyzer validation", () => {
 
   it("rejects duplicate when= kwarg on strategy.cancel", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.cancel("L", when=true, when=false)');
-    expect(errors.some((e) => e.includes("키워드 인자 'when' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'when'"))).toBe(true);
   });
 
   it("emits strategy.cancel when= folded into slot 1 after id (C708)", () => {
@@ -870,7 +870,7 @@ describe("strategy.* analyzer validation", () => {
 
   it("still rejects kwargs on strategy.cancel_all (blanket 거부 — id 파라미터가 TV에 없음, C382)", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.cancel_all(id="L")');
-    expect(errors.some((e) => e.includes("키워드 인자"))).toBe(true);
+    expect(errors.some((e) => e.includes("keyword argument"))).toBe(true);
   });
 
   it("accepts strategy.entry qty=/comment= kwargs (C164)", () => {
@@ -881,12 +881,12 @@ describe("strategy.* analyzer validation", () => {
 
   it("rejects qty specified both positionally and as a kwarg", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.entry("L", strategy.long, 2, qty=3)');
-    expect(errors.some((e) => e.includes("'qty'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(errors.some((e) => e.includes("'qty' specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("rejects duplicate qty= kwarg", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.entry("L", strategy.long, qty=2, qty=3)');
-    expect(errors.some((e) => e.includes("키워드 인자 'qty' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'qty'"))).toBe(true);
   });
 
   // C168 긍정 마이그레이션: 구 "still rejects kwargs on strategy.close(blanket 거부)" — close가
@@ -915,12 +915,12 @@ describe("strategy.* analyzer validation", () => {
   it("rejects non-literal or negative default_qty_value", () => {
     expect(
       transpileErrors('x = input.float(2)\nstrategy("s", default_qty_value=x)').some((e) =>
-        e.includes("'default_qty_value' 인자는 0 이상의 숫자 리터럴만 지원"),
+        e.includes("'default_qty_value' argument only supports a number literal >= 0"),
       ),
     ).toBe(true);
     expect(
       transpileErrors('strategy("s", default_qty_value=-1)').some((e) =>
-        e.includes("'default_qty_value' 인자는 0 이상의 숫자 리터럴만 지원"),
+        e.includes("'default_qty_value' argument only supports a number literal >= 0"),
       ),
     ).toBe(true);
   });
@@ -946,13 +946,13 @@ describe("strategy.* analyzer validation", () => {
   it("rejects non-integer or negative pyramiding", () => {
     expect(
       transpileErrors('strategy("s", pyramiding=1.5)').some((e) =>
-        e.includes("'pyramiding' 인자는 0 이상의 정수 리터럴만 지원"),
+        e.includes("'pyramiding' argument only supports an int literal >= 0"),
       ),
     ).toBe(true);
     // -1은 파서가 UnaryOp('-', 1)로 만들어 NumberLiteral이 아니므로 같은 에러로 떨어진다.
     expect(
       transpileErrors('strategy("s", pyramiding=-1)').some((e) =>
-        e.includes("'pyramiding' 인자는 0 이상의 정수 리터럴만 지원"),
+        e.includes("'pyramiding' argument only supports an int literal >= 0"),
       ),
     ).toBe(true);
   });
@@ -1422,12 +1422,12 @@ describe("strategy.* 계좌 속성 analyzer/codegen (C165)", () => {
 
   it("rejects non-literal initial_capital in strategy()", () => {
     const errors = transpileErrors('x = input.float(1000)\nstrategy("s", initial_capital=x)');
-    expect(errors.some((e) => e.includes("'initial_capital' 인자는 0 이상의 숫자 리터럴만 지원"))).toBe(true);
+    expect(errors.some((e) => e.includes("'initial_capital' argument only supports a number literal >= 0"))).toBe(true);
   });
 
   it("rejects negative initial_capital in strategy()", () => {
     const errors = transpileErrors('strategy("s", initial_capital=-1)');
-    expect(errors.some((e) => e.includes("'initial_capital' 인자는 0 이상의 숫자 리터럴만 지원"))).toBe(true);
+    expect(errors.some((e) => e.includes("'initial_capital' argument only supports a number literal >= 0"))).toBe(true);
   });
 
   // C764: wild 3건이 initial_capital=0(equity 기저를 명시적으로 0 고정)을 실사용 — runtime(equity =
@@ -1858,7 +1858,7 @@ describe("strategy.exit analyzer validation (C167)", () => {
 
   it("rejects strategy.exit in a value position (반환값 없음)", () => {
     const errors = transpileErrors('strategy("s")\nx = strategy.exit("X", limit=15)');
-    expect(errors.some((e) => e.includes("문장 위치에서만 지원"))).toBe(true);
+    expect(errors.some((e) => e.includes("only supported in statement position"))).toBe(true);
   });
 
   it("validates strategy.exit positional arg count (0~3개, id는 kwarg로도 가능 — C424)", () => {
@@ -1866,12 +1866,12 @@ describe("strategy.exit analyzer validation (C167)", () => {
     // 있으면 0개도 허용(아래 별도 테스트) — 여기는 id도 없이 0개(진짜 누락)와 4개 초과만 검증.
     expect(
       transpileErrors('strategy("s")\nstrategy.exit(limit=15)').some((e) =>
-        e.includes("'strategy.exit' 호출 인자 개수 불일치"),
+        e.includes("'strategy.exit' call argument count mismatch"),
       ),
     ).toBe(true);
     expect(
       transpileErrors('strategy("s")\nstrategy.exit("X", "L", 1, 2, limit=15)').some((e) =>
-        e.includes("'strategy.exit' 호출 인자 개수 불일치"),
+        e.includes("'strategy.exit' call argument count mismatch"),
       ),
     ).toBe(true);
   });
@@ -1890,12 +1890,12 @@ describe("strategy.exit analyzer validation (C167)", () => {
 
   it("rejects strategy.exit id= duplicated with a positional id (C424)", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.exit("X", id="Y", limit=15)');
-    expect(errors.some((e) => e.includes("'id'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(errors.some((e) => e.includes("'id' specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("rejects strategy.exit qty= duplicated with a positional qty (C424)", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.exit("X", "L", 1, qty=2, profit=10)');
-    expect(errors.some((e) => e.includes("'qty'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(errors.some((e) => e.includes("'qty' specified both positionally and as a keyword"))).toBe(true);
   });
 
   // C168 긍정 마이그레이션: qty=가 정식 지원되면서(부분 청산) 거부 프로브 목록에서 제거 —
@@ -1921,7 +1921,7 @@ describe("strategy.exit analyzer validation (C167)", () => {
       expect(
         errors.some((e) =>
           e.includes(
-            "'strategy.exit' 키워드 인자는 'id='/'from_entry='/'limit='/'stop='/'trail_points='/'trail_offset='/'trail_price='/'qty='/'comment='/'profit='/'loss='/'qty_percent='/'alert_message='/'comment_loss='/'comment_profit='/'comment_trailing='/'when='/'alert_profit='/'alert_loss='/'disable_alert='만 지원",
+            "'strategy.exit' only supports keyword arguments 'id='/'from_entry='/'limit='/'stop='/'trail_points='/'trail_offset='/'trail_price='/'qty='/'comment='/'profit='/'loss='/'qty_percent='/'alert_message='/'comment_loss='/'comment_profit='/'comment_trailing='/'when='/'alert_profit='/'alert_loss='/'disable_alert='",
           ),
         ),
       ).toBe(true);
@@ -1936,7 +1936,7 @@ describe("strategy.exit analyzer validation (C167)", () => {
     const errors = transpileErrors(
       'strategy("s")\nstrategy.exit("X", limit=15, alert_message="a", alert_message="b")',
     );
-    expect(errors.some((e) => e.includes("키워드 인자 'alert_message' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'alert_message'"))).toBe(true);
   });
 
   it("discards alert_message= on strategy.exit codegen (C374, no KWARG_SLOTS entry)", () => {
@@ -1953,17 +1953,17 @@ describe("strategy.exit analyzer validation (C167)", () => {
   it("rejects duplicate alert_profit=/alert_loss=/disable_alert= kwargs on strategy.exit", () => {
     expect(
       transpileErrors('strategy("s")\nstrategy.exit("X", limit=15, alert_profit="a", alert_profit="b")').some((e) =>
-        e.includes("키워드 인자 'alert_profit' 중복 지정"),
+        e.includes("duplicate keyword argument 'alert_profit'"),
       ),
     ).toBe(true);
     expect(
       transpileErrors('strategy("s")\nstrategy.exit("X", limit=15, alert_loss="a", alert_loss="b")').some((e) =>
-        e.includes("키워드 인자 'alert_loss' 중복 지정"),
+        e.includes("duplicate keyword argument 'alert_loss'"),
       ),
     ).toBe(true);
     expect(
       transpileErrors('strategy("s")\nstrategy.exit("X", limit=15, disable_alert=true, disable_alert=false)').some((e) =>
-        e.includes("키워드 인자 'disable_alert' 중복 지정"),
+        e.includes("duplicate keyword argument 'disable_alert'"),
       ),
     ).toBe(true);
   });
@@ -2003,12 +2003,12 @@ describe("strategy.exit analyzer validation (C167)", () => {
 
   it("rejects duplicate stop= kwarg on strategy.exit", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.exit("X", stop=9, stop=8)');
-    expect(errors.some((e) => e.includes("키워드 인자 'stop' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'stop'"))).toBe(true);
   });
 
   it("rejects from_entry specified both positionally and as a kwarg", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.exit("X", "L", from_entry="M", stop=9)');
-    expect(errors.some((e) => e.includes("'from_entry'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(errors.some((e) => e.includes("'from_entry' specified both positionally and as a keyword"))).toBe(true);
   });
 });
 
@@ -2583,7 +2583,7 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
 
   it("rejects duplicate comment specified both positionally and via comment= (C250, request.security C249와 동일 원칙)", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.close_all("bye", comment="bye2")');
-    expect(errors.some((e) => e.includes("키워드 인자 'comment' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'comment'"))).toBe(true);
   });
 
   // C467 재마이그레이션: pine2py engine.py `close_all(comment: str="", when: bool=True)`이 when도
@@ -2596,12 +2596,12 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
 
   it("rejects duplicate when specified both positionally and via when= (C467, comment C250과 동일 원칙)", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.close_all("bye", true, when=false)');
-    expect(errors.some((e) => e.includes("키워드 인자 'when' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'when'"))).toBe(true);
   });
 
   it("validates strategy.close_all arg count (위치 인자 0~2개 — 3개부터 거부, C467로 경계 확장)", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.close_all("bye", true, "extra")');
-    expect(errors.some((e) => e.includes("'strategy.close_all' 호출 인자 개수 불일치"))).toBe(true);
+    expect(errors.some((e) => e.includes("'strategy.close_all' call argument count mismatch"))).toBe(true);
   });
 
   // C724(배치37 (1) 잔여, next_hint(C723)): disable_alert=(exit()의 alert_profit=/alert_loss=/
@@ -2613,7 +2613,7 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
     expect(
       errors.some((e) =>
         e.includes(
-          "'strategy.close_all' 키워드 인자는 'comment='/'alert_message='/'when='/'immediately='/'disable_alert='만 지원",
+          "'strategy.close_all' only supports keyword arguments 'comment='/'alert_message='/'when='/'immediately='/'disable_alert='",
         ),
       ),
     ).toBe(true);
@@ -2628,7 +2628,7 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
     const errors = transpileErrors(
       'strategy("s")\nstrategy.close_all(disable_alert=true, disable_alert=false)',
     );
-    expect(errors.some((e) => e.includes("키워드 인자 'disable_alert' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'disable_alert'"))).toBe(true);
   });
 
   it("discards disable_alert= on strategy.close_all codegen (C724, no KWARG_SLOTS entry)", () => {
@@ -2645,7 +2645,7 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
     const errors = transpileErrors(
       'strategy("s")\nstrategy.close_all(alert_message="a", alert_message="b")',
     );
-    expect(errors.some((e) => e.includes("키워드 인자 'alert_message' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'alert_message'"))).toBe(true);
   });
 
   it("accepts strategy.close_all when= kwarg (C378, entry/order/close와 동일 게이트)", () => {
@@ -2655,7 +2655,7 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
 
   it("rejects duplicate when= kwarg on strategy.close_all", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.close_all(when=true, when=false)');
-    expect(errors.some((e) => e.includes("키워드 인자 'when' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'when'"))).toBe(true);
   });
 
   it("accepts strategy.close_all immediately= kwarg (C379, hand-verified 즉시체결)", () => {
@@ -2665,7 +2665,7 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
 
   it("rejects duplicate immediately= kwarg on strategy.close_all", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.close_all(immediately=true, immediately=false)');
-    expect(errors.some((e) => e.includes("키워드 인자 'immediately' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'immediately'"))).toBe(true);
   });
 
   it("discards alert_message= on strategy.close_all codegen (C374, comment= 슬롯만 유지)", () => {
@@ -2676,7 +2676,7 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
 
   it("rejects strategy.close_all in a value position (반환값 없음)", () => {
     const errors = transpileErrors('strategy("s")\nx = strategy.close_all()');
-    expect(errors.some((e) => e.includes("문장 위치에서만 지원"))).toBe(true);
+    expect(errors.some((e) => e.includes("only supported in statement position"))).toBe(true);
   });
 
   // C373 재마이그레이션: qty_percent=(hand-verified 신규 지원)가 목록에서 제거 — 별도 긍정
@@ -2690,7 +2690,7 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
     expect(
       errors.some((e) =>
         e.includes(
-          "'strategy.close' 키워드 인자는 'id='/'qty='/'comment='/'when='/'qty_percent='/'alert_message='/'immediately='만 지원",
+          "'strategy.close' only supports keyword arguments 'id='/'qty='/'comment='/'when='/'qty_percent='/'alert_message='/'immediately='",
         ),
       ),
     ).toBe(true);
@@ -2703,7 +2703,7 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
 
   it("rejects duplicate immediately= kwarg on strategy.close", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.close("L", immediately=true, immediately=false)');
-    expect(errors.some((e) => e.includes("키워드 인자 'immediately' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'immediately'"))).toBe(true);
   });
 
   it("accepts strategy.close alert_message= kwarg (C374, 순수 표시값 discard)", () => {
@@ -2712,7 +2712,7 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
 
   it("rejects duplicate alert_message= kwarg on strategy.close", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.close("L", alert_message="a", alert_message="b")');
-    expect(errors.some((e) => e.includes("키워드 인자 'alert_message' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'alert_message'"))).toBe(true);
   });
 
   // C293(wild argcount 클러스터): id는 위치 인자 또는 'id=' 키워드 인자 중 하나로만 지정 가능
@@ -2724,23 +2724,23 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
 
   it("rejects strategy.close with id given both positionally and as a keyword", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.close("L", id="M")');
-    expect(errors.some((e) => e.includes("'id'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(errors.some((e) => e.includes("'id' specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("rejects duplicate id= kwarg on strategy.close", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.close(id="L", id="M")');
-    expect(errors.some((e) => e.includes("키워드 인자 'id' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'id'"))).toBe(true);
   });
 
   it("rejects duplicate qty= kwarg on strategy.close", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.close("L", qty=1, qty=2)');
-    expect(errors.some((e) => e.includes("키워드 인자 'qty' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'qty'"))).toBe(true);
   });
 
   // C345: comment도 id(C293)와 동일하게 위치 2번째 슬롯 또는 'comment=' 키워드 중 하나로만 지정 가능.
   it("rejects strategy.close with comment given both positionally and as a keyword", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.close("L", "bye", comment="also bye")');
-    expect(errors.some((e) => e.includes("'comment'이(가) 위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+    expect(errors.some((e) => e.includes("'comment' specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("accepts strategy.exit qty= kwarg (부분 청산)", () => {
@@ -2750,7 +2750,7 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
 
   it("rejects duplicate qty= kwarg on strategy.exit", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.exit("X", limit=15, qty=1, qty=2)');
-    expect(errors.some((e) => e.includes("키워드 인자 'qty' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'qty'"))).toBe(true);
   });
 });
 
@@ -2985,8 +2985,8 @@ describe("StrategyState.order (C169, hand-verified)", () => {
 
   it("order throws on an unknown direction string (런타임 이중 방어)", () => {
     const st = new StrategyState();
-    expect(() => st.order("X", "sideways", 1)).toThrow(/지원하지 않는 direction/);
-    expect(() => st.order("X", "LONG", 1)).toThrow(/지원하지 않는 direction/);
+    expect(() => st.order("X", "sideways", 1)).toThrow(/unsupported direction/);
+    expect(() => st.order("X", "LONG", 1)).toThrow(/unsupported direction/);
   });
 
   it("order is a no-op when when=false (C372) — even with an invalid direction, no throw", () => {
@@ -3182,18 +3182,18 @@ describe("strategy.order analyzer (C169)", () => {
 
   it("rejects strategy.order in a value position (반환값 없음)", () => {
     const errors = transpileErrors('strategy("s")\nx = strategy.order("O", strategy.long)');
-    expect(errors.some((e) => e.includes("문장 위치에서만 지원"))).toBe(true);
+    expect(errors.some((e) => e.includes("only supported in statement position"))).toBe(true);
   });
 
   it("validates strategy.order arg count (2~3개)", () => {
     expect(
       transpileErrors('strategy("s")\nstrategy.order("O")').some((e) =>
-        e.includes("'strategy.order' 호출 인자 개수 불일치"),
+        e.includes("'strategy.order' call argument count mismatch"),
       ),
     ).toBe(true);
     expect(
       transpileErrors('strategy("s")\nstrategy.order("O", strategy.long, 1, 2)').some((e) =>
-        e.includes("'strategy.order' 호출 인자 개수 불일치"),
+        e.includes("'strategy.order' call argument count mismatch"),
       ),
     ).toBe(true);
   });
@@ -3217,7 +3217,7 @@ describe("strategy.order analyzer (C169)", () => {
     expect(
       errors.some((e) =>
         e.includes(
-          "'strategy.order' 키워드 인자는 'id='/'direction='/'qty='/'comment='/'limit='/'stop='/'when='/'alert_message='/'disable_alert='만 지원",
+          "'strategy.order' only supports keyword arguments 'id='/'direction='/'qty='/'comment='/'limit='/'stop='/'when='/'alert_message='/'disable_alert='",
         ),
       ),
     ).toBe(true);
@@ -3233,12 +3233,12 @@ describe("strategy.order analyzer (C169)", () => {
   it("rejects duplicate and positional-keyword conflicting qty", () => {
     expect(
       transpileErrors('strategy("s")\nstrategy.order("O", strategy.long, limit=1, limit=2)').some((e) =>
-        e.includes("키워드 인자 'limit' 중복 지정"),
+        e.includes("duplicate keyword argument 'limit'"),
       ),
     ).toBe(true);
     expect(
       transpileErrors('strategy("s")\nstrategy.order("O", strategy.long, 2, qty=3)').some((e) =>
-        e.includes("인자 'qty'이(가) 위치 인자와 키워드 인자로 중복 지정됨"),
+        e.includes("argument 'qty' specified both positionally and as a keyword"),
       ),
     ).toBe(true);
   });
@@ -3736,7 +3736,7 @@ describe("strategy.exit 트레일링 analyzer validation (C170)", () => {
 
   it("rejects duplicate trail_points= kwarg", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.exit("X", trail_points=2, trail_points=3)');
-    expect(errors.some((e) => e.includes("키워드 인자 'trail_points' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'trail_points'"))).toBe(true);
   });
 });
 
@@ -4012,7 +4012,7 @@ describe("strategy.exit profit=/loss= analyzer validation (hand-verified, DIVERG
 
   it("rejects duplicate profit= kwarg", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.exit("X", profit=2, profit=3)');
-    expect(errors.some((e) => e.includes("키워드 인자 'profit' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'profit'"))).toBe(true);
   });
 });
 
@@ -4302,7 +4302,7 @@ describe("strategy() default_qty_type analyzer validation (C171)", () => {
   it("rejects a number literal for default_qty_type (컴파일타임 상수 강제)", () => {
     expect(
       transpileErrors('strategy("s", default_qty_type=1)').some((e) =>
-        e.includes("'default_qty_type' 인자는 strategy.fixed/strategy.percent_of_equity/strategy.cash 상수"),
+        e.includes("'default_qty_type' argument only supports strategy.fixed/strategy.percent_of_equity/strategy.cash constants"),
       ),
     ).toBe(true);
   });
@@ -4310,7 +4310,7 @@ describe("strategy() default_qty_type analyzer validation (C171)", () => {
   it("rejects a non-strategy DotAccess value for default_qty_type", () => {
     expect(
       transpileErrors('strategy("s", default_qty_type=syminfo.ticker)').some((e) =>
-        e.includes("'default_qty_type' 인자는"),
+        e.includes("'default_qty_type' argument"),
       ),
     ).toBe(true);
   });
@@ -5084,8 +5084,8 @@ describe("StrategyState 트레이드 comment 실소비 (C173 열한째 슬라이
     st.processFills(10);
     st.close("L", undefined, "shut1");
     st.processFills(11); // closedTrades=1, 유효 index=0
-    expect(() => st.closedTradeEntryComment(1)).toThrow(/index 1는 미지원/);
-    expect(() => st.closedTradeExitComment(-1)).toThrow(/index -1는 미지원/);
+    expect(() => st.closedTradeEntryComment(1)).toThrow(/index 1 is out of range/);
+    expect(() => st.closedTradeExitComment(-1)).toThrow(/index -1 is out of range/);
   });
 
   it("returns empty string before any trade has closed (closedTrades=0 경계)", () => {
@@ -5111,12 +5111,12 @@ describe("strategy.closedtrades.entry_comment/exit_comment analyzer validation (
 
   it("rejects wrong arg count", () => {
     const errors = transpileErrors('strategy("s")\nx = strategy.closedtrades.entry_comment()');
-    expect(errors.some((e) => e.includes("1개(trade index) 필요"))).toBe(true);
+    expect(errors.some((e) => e.includes("requires 1 (trade index)"))).toBe(true);
   });
 
   it("rejects kwargs (no keyword params supported)", () => {
     const errors = transpileErrors('strategy("s")\nx = strategy.closedtrades.entry_comment(index=0)');
-    expect(errors.some((e) => e.includes("키워드 인자"))).toBe(true);
+    expect(errors.some((e) => e.includes("keyword argument"))).toBe(true);
   });
 });
 
@@ -5276,8 +5276,8 @@ describe("StrategyState 트레이드 접근자 확장 (C308, hand-verified — e
     st.processFills(10, undefined, undefined, 0);
     st.close("L");
     st.processFills(11, undefined, undefined, 1); // closedTrades=1, 유효 index=0
-    expect(() => st.closedTradeEntryPrice(1)).toThrow(/index 1는 미지원/);
-    expect(() => st.closedTradeProfit(-1)).toThrow(/index -1는 미지원/);
+    expect(() => st.closedTradeEntryPrice(1)).toThrow(/index 1 is out of range/);
+    expect(() => st.closedTradeProfit(-1)).toThrow(/index -1 is out of range/);
   });
 
   it("returns na-ish defaults before any trade has closed (closedTrades=0 경계, entry_comment와 동일 관례)", () => {
@@ -5327,7 +5327,7 @@ describe("StrategyState.opentrades 접근자 (C308, hand-verified — 단일 가
     const st = new StrategyState();
     st.entry("L1", "long", 1);
     st.processFills(10, undefined, undefined, 0);
-    expect(() => st.openTradeEntryPrice(1)).toThrow(/index 1는 미지원/);
+    expect(() => st.openTradeEntryPrice(1)).toThrow(/index 1 is out of range/);
   });
 
   it("entry_bar_index/entry_id/size/commission all return na (not a throw) when flat (C578)", () => {
@@ -5454,8 +5454,8 @@ describe("StrategyState.closedtrades/opentrades.max_drawdown/max_runup/profit_pe
     expect(Number.isNaN(st.openTradeMaxRunup(0))).toBe(true);
     st.entry("L", "long", 1);
     st.processFills(10, undefined, undefined, 0);
-    expect(() => st.openTradeProfit(10, 1)).toThrow(/index 1는 미지원/);
-    expect(() => st.openTradeMaxRunup(1)).toThrow(/index 1는 미지원/);
+    expect(() => st.openTradeProfit(10, 1)).toThrow(/index 1 is out of range/);
+    expect(() => st.openTradeMaxRunup(1)).toThrow(/index 1 is out of range/);
   });
 
   it("throws for closedtrades.profit_percent/max_drawdown/max_runup at a non-latest index", () => {
@@ -5464,8 +5464,8 @@ describe("StrategyState.closedtrades/opentrades.max_drawdown/max_runup/profit_pe
     st.processFills(10, undefined, undefined, 0);
     st.close("L");
     st.processFills(11, undefined, undefined, 1);
-    expect(() => st.closedTradeProfitPercent(1)).toThrow(/index 1는 미지원/);
-    expect(() => st.closedTradeMaxDrawdown(-1)).toThrow(/index -1는 미지원/);
+    expect(() => st.closedTradeProfitPercent(1)).toThrow(/index 1 is out of range/);
+    expect(() => st.closedTradeMaxDrawdown(-1)).toThrow(/index -1 is out of range/);
   });
 });
 
@@ -5519,9 +5519,9 @@ describe("StrategyState.closedtrades/opentrades.entry_time/exit_time/commission 
     st.processFills(10, undefined, undefined, 0, 1000);
     st.close("L");
     st.processFills(11, undefined, undefined, 1, 2000);
-    expect(() => st.closedTradeEntryTime(1)).toThrow(/index 1는 미지원/);
-    expect(() => st.closedTradeExitTime(-1)).toThrow(/index -1는 미지원/);
-    expect(() => st.closedTradeCommission(1)).toThrow(/index 1는 미지원/);
+    expect(() => st.closedTradeEntryTime(1)).toThrow(/index 1 is out of range/);
+    expect(() => st.closedTradeExitTime(-1)).toThrow(/index -1 is out of range/);
+    expect(() => st.closedTradeCommission(1)).toThrow(/index 1 is out of range/);
     expect(Number.isNaN(st.openTradeEntryTime(1))).toBe(true); // 이 시점 flat(posSize=0) — 잘못된 index가 아니라 "트레이드 없음"
   });
 
@@ -5566,7 +5566,7 @@ describe("strategy.closedtrades/opentrades.entry_time/exit_time/commission analy
 
   it("still rejects opentrades.exit_time (TV에 대응 함수 자체가 없음 — wild grep 0건)", () => {
     const errors = transpileErrors('strategy("s")\nx = strategy.opentrades.exit_time(0)');
-    expect(errors.some((e) => e.includes("지원하지 않는 호출"))).toBe(true);
+    expect(errors.some((e) => e.includes("unsupported call"))).toBe(true);
   });
 });
 
@@ -5602,9 +5602,9 @@ describe("strategy.closedtrades/opentrades 트레이드 접근자 확장 analyze
 
   it("rejects wrong arg count for the new methods (both namespaces)", () => {
     const errors1 = transpileErrors('strategy("s")\nx = strategy.closedtrades.entry_price()');
-    expect(errors1.some((e) => e.includes("1개(trade index) 필요"))).toBe(true);
+    expect(errors1.some((e) => e.includes("requires 1 (trade index)"))).toBe(true);
     const errors2 = transpileErrors('strategy("s")\nx = strategy.opentrades.size(0, 1)');
-    expect(errors2.some((e) => e.includes("1개(trade index) 필요"))).toBe(true);
+    expect(errors2.some((e) => e.includes("requires 1 (trade index)"))).toBe(true);
   });
 
   it("strategy.risk.max_drawdown is now implemented (C322) — no longer rejected as an unsupported call", () => {
@@ -5973,7 +5973,7 @@ describe("StrategyState.setAllowEntryIn/entry() 방향 게이트 (C309, hand-ver
     st.setAllowEntryIn("all");
     st.setAllowEntryIn("long");
     st.setAllowEntryIn("short");
-    expect(() => st.setAllowEntryIn("both")).toThrow(/지원하지 않는 value/);
+    expect(() => st.setAllowEntryIn("both")).toThrow(/unsupported value/);
   });
 
   it("a long entry from flat opens normally when only long is allowed", () => {
@@ -6077,19 +6077,19 @@ describe("strategy.direction.*/strategy.risk.allow_entry_in analyzer validation 
 
   it("rejects value-position use (assignment) — void-returning bare statement only", () => {
     const errors = transpileErrors('strategy("s")\nx = strategy.risk.allow_entry_in(strategy.direction.long)');
-    expect(errors.some((e) => e.includes("문장 위치에서만 지원"))).toBe(true);
+    expect(errors.some((e) => e.includes("only supported in statement position"))).toBe(true);
   });
 
   it("rejects wrong arg count (0 or 2+)", () => {
     const errors0 = transpileErrors('strategy("s")\nstrategy.risk.allow_entry_in()');
-    expect(errors0.some((e) => e.includes("1개(value, 위치 인자만 지원) 필요"))).toBe(true);
+    expect(errors0.some((e) => e.includes("requires 1 (value, positional only)"))).toBe(true);
     const errors2 = transpileErrors('strategy("s")\nstrategy.risk.allow_entry_in(strategy.direction.long, "msg")');
-    expect(errors2.some((e) => e.includes("1개(value, 위치 인자만 지원) 필요"))).toBe(true);
+    expect(errors2.some((e) => e.includes("requires 1 (value, positional only)"))).toBe(true);
   });
 
   it("rejects kwargs (wild 실측 0건 — 위치 인자만 지원)", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.risk.allow_entry_in(value = strategy.direction.long)');
-    expect(errors.some((e) => e.includes("1개(value, 위치 인자만 지원) 필요"))).toBe(true);
+    expect(errors.some((e) => e.includes("requires 1 (value, positional only)"))).toBe(true);
   });
 });
 
@@ -6268,24 +6268,24 @@ describe("strategy.risk.max_intraday_filled_orders analyzer validation (C320)", 
 
   it("rejects value-position use (assignment) — void-returning bare statement only", () => {
     const errors = transpileErrors('strategy("s")\nx = strategy.risk.max_intraday_filled_orders(3)');
-    expect(errors.some((e) => e.includes("문장 위치에서만 지원"))).toBe(true);
+    expect(errors.some((e) => e.includes("only supported in statement position"))).toBe(true);
   });
 
   it("rejects wrong arg count (0 or 2 positional)", () => {
     const errors0 = transpileErrors('strategy("s")\nstrategy.risk.max_intraday_filled_orders()');
-    expect(errors0.some((e) => e.includes("1개(count, 위치 인자 또는 'count=') 필요"))).toBe(true);
+    expect(errors0.some((e) => e.includes("requires 1 (count, positional or 'count=')"))).toBe(true);
     const errors2 = transpileErrors('strategy("s")\nstrategy.risk.max_intraday_filled_orders(3, "msg")');
-    expect(errors2.some((e) => e.includes("1개(count, 위치 인자 또는 'count=') 필요"))).toBe(true);
+    expect(errors2.some((e) => e.includes("requires 1 (count, positional or 'count=')"))).toBe(true);
   });
 
   it("rejects keyword argument names other than count=", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.risk.max_intraday_filled_orders(alert_message = "hi")');
-    expect(errors.some((e) => e.includes("1개(count, 위치 인자 또는 'count=') 필요"))).toBe(true);
+    expect(errors.some((e) => e.includes("requires 1 (count, positional or 'count=')"))).toBe(true);
   });
 
   it("rejects mixing a positional count with a count= keyword argument at once", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.risk.max_intraday_filled_orders(3, count = 4)');
-    expect(errors.some((e) => e.includes("1개(count, 위치 인자 또는 'count=') 필요"))).toBe(true);
+    expect(errors.some((e) => e.includes("requires 1 (count, positional or 'count=')"))).toBe(true);
   });
 });
 
@@ -6355,7 +6355,7 @@ describe("StrategyState.setMaxDrawdown/entry() 영구 드로다운 게이트 (C3
     const st = new StrategyState();
     st.setMaxDrawdown(1000, "cash");
     st.setMaxDrawdown(10, "percent_of_equity");
-    expect(() => st.setMaxDrawdown(10, "fixed")).toThrow(/지원하지 않는 type/);
+    expect(() => st.setMaxDrawdown(10, "fixed")).toThrow(/unsupported type/);
   });
 
   it("cash type: blocks a new entry once peak-to-current equity drawdown reaches the threshold", () => {
@@ -6448,7 +6448,7 @@ describe("StrategyState.setMaxIntradayLoss/entry() 일일 드로다운 게이트
     const st = new StrategyState();
     st.setMaxIntradayLoss(1000, "cash");
     st.setMaxIntradayLoss(10, "percent_of_equity");
-    expect(() => st.setMaxIntradayLoss(10, "both")).toThrow(/지원하지 않는 type/);
+    expect(() => st.setMaxIntradayLoss(10, "both")).toThrow(/unsupported type/);
   });
 
   it("cash type: blocks further same-day entries once the intraday peak-to-current loss reaches the threshold", () => {
@@ -6553,35 +6553,35 @@ describe("strategy.risk.max_intraday_loss/max_drawdown analyzer validation (C322
   it("rejects value-position use (assignment) — void-returning bare statement only", () => {
     for (const m of METHODS) {
       const errors = transpileErrors(`strategy("s")\nx = strategy.risk.${m}(10, strategy.cash)`);
-      expect(errors.some((e) => e.includes("문장 위치에서만 지원"))).toBe(true);
+      expect(errors.some((e) => e.includes("only supported in statement position"))).toBe(true);
     }
   });
 
   it("rejects too many positional arguments (3)", () => {
     for (const m of METHODS) {
       const errors = transpileErrors(`strategy("s")\nstrategy.risk.${m}(10, strategy.cash, "extra")`);
-      expect(errors.some((e) => e.includes("2개(value, type) 필요"))).toBe(true);
+      expect(errors.some((e) => e.includes("requires 2 (value, type)"))).toBe(true);
     }
   });
 
   it("rejects a call missing the type argument entirely", () => {
     for (const m of METHODS) {
       const errors = transpileErrors(`strategy("s")\nstrategy.risk.${m}(10)`);
-      expect(errors.some((e) => e.includes("value/type 인자가 모두 필요"))).toBe(true);
+      expect(errors.some((e) => e.includes("requires both value and type arguments"))).toBe(true);
     }
   });
 
   it("rejects unknown keyword argument names", () => {
     for (const m of METHODS) {
       const errors = transpileErrors(`strategy("s")\nstrategy.risk.${m}(value = 10, type = strategy.cash, alert_message = "hi")`);
-      expect(errors.some((e) => e.includes("'value='/'type='만 지원"))).toBe(true);
+      expect(errors.some((e) => e.includes("keyword arguments 'value='/'type='"))).toBe(true);
     }
   });
 
   it("rejects duplicate specification of value (positional + keyword at once)", () => {
     for (const m of METHODS) {
       const errors = transpileErrors(`strategy("s")\nstrategy.risk.${m}(10, strategy.cash, value = 20)`);
-      expect(errors.some((e) => e.includes("위치 인자와 키워드 인자로 중복 지정됨"))).toBe(true);
+      expect(errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
     }
   });
 });
@@ -6745,19 +6745,19 @@ describe("strategy.risk.max_position_size analyzer validation (C324)", () => {
 
   it("rejects value-position use (assignment) — void-returning bare statement only", () => {
     const errors = transpileErrors('strategy("s")\nx = strategy.risk.max_position_size(1000)');
-    expect(errors.some((e) => e.includes("문장 위치에서만 지원"))).toBe(true);
+    expect(errors.some((e) => e.includes("only supported in statement position"))).toBe(true);
   });
 
   it("rejects wrong arg count (0 or 2 positional — qty_type unsupported)", () => {
     const errors0 = transpileErrors('strategy("s")\nstrategy.risk.max_position_size()');
-    expect(errors0.some((e) => e.includes("1개(value, 위치 인자만 지원) 필요"))).toBe(true);
+    expect(errors0.some((e) => e.includes("requires 1 (value, positional only)"))).toBe(true);
     const errors2 = transpileErrors('strategy("s")\nstrategy.risk.max_position_size(1000, strategy.fixed)');
-    expect(errors2.some((e) => e.includes("1개(value, 위치 인자만 지원) 필요"))).toBe(true);
+    expect(errors2.some((e) => e.includes("requires 1 (value, positional only)"))).toBe(true);
   });
 
   it("rejects a value= keyword argument (positional-only, unlike max_intraday_loss/max_drawdown)", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.risk.max_position_size(value = 1000)');
-    expect(errors.some((e) => e.includes("1개(value, 위치 인자만 지원) 필요"))).toBe(true);
+    expect(errors.some((e) => e.includes("requires 1 (value, positional only)"))).toBe(true);
   });
 });
 
@@ -6948,19 +6948,19 @@ describe("strategy.risk.max_cons_loss_days analyzer validation (C325)", () => {
 
   it("rejects value-position use (assignment) — void-returning bare statement only", () => {
     const errors = transpileErrors('strategy("s")\nx = strategy.risk.max_cons_loss_days(3)');
-    expect(errors.some((e) => e.includes("문장 위치에서만 지원"))).toBe(true);
+    expect(errors.some((e) => e.includes("only supported in statement position"))).toBe(true);
   });
 
   it("rejects wrong arg count (0 or 2 positional)", () => {
     const errors0 = transpileErrors('strategy("s")\nstrategy.risk.max_cons_loss_days()');
-    expect(errors0.some((e) => e.includes("1개(count, 위치 인자만 지원) 필요"))).toBe(true);
+    expect(errors0.some((e) => e.includes("requires 1 (count, positional only)"))).toBe(true);
     const errors2 = transpileErrors('strategy("s")\nstrategy.risk.max_cons_loss_days(3, "msg")');
-    expect(errors2.some((e) => e.includes("1개(count, 위치 인자만 지원) 필요"))).toBe(true);
+    expect(errors2.some((e) => e.includes("requires 1 (count, positional only)"))).toBe(true);
   });
 
   it("rejects a count= keyword argument (positional-only, unlike max_intraday_filled_orders)", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.risk.max_cons_loss_days(count = 3)');
-    expect(errors.some((e) => e.includes("1개(count, 위치 인자만 지원) 필요"))).toBe(true);
+    expect(errors.some((e) => e.includes("requires 1 (count, positional only)"))).toBe(true);
   });
 });
 
@@ -7069,12 +7069,12 @@ describe("strategy.exit/close qty_percent= analyzer validation (hand-verified, C
 
   it("rejects duplicate qty_percent= on strategy.exit", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.exit("X", limit=15, qty_percent=50, qty_percent=60)');
-    expect(errors.some((e) => e.includes("키워드 인자 'qty_percent' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'qty_percent'"))).toBe(true);
   });
 
   it("rejects duplicate qty_percent= on strategy.close", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.close("L", qty_percent=50, qty_percent=60)');
-    expect(errors.some((e) => e.includes("키워드 인자 'qty_percent' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'qty_percent'"))).toBe(true);
   });
 });
 
@@ -7176,12 +7176,12 @@ describe("strategy.exit comment_loss=/comment_profit= analyzer validation (hand-
 
   it("rejects duplicate comment_loss=", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.exit("X", stop=10, comment_loss="a", comment_loss="b")');
-    expect(errors.some((e) => e.includes("키워드 인자 'comment_loss' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'comment_loss'"))).toBe(true);
   });
 
   it("rejects duplicate comment_profit=", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.exit("X", limit=15, comment_profit="a", comment_profit="b")');
-    expect(errors.some((e) => e.includes("키워드 인자 'comment_profit' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'comment_profit'"))).toBe(true);
   });
 });
 
@@ -7304,7 +7304,7 @@ describe("strategy.exit when= analyzer validation (hand-verified, C380)", () => 
 
   it("rejects duplicate when= on strategy.exit", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.exit("X", limit=15, when=true, when=false)');
-    expect(errors.some((e) => e.includes("키워드 인자 'when' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'when'"))).toBe(true);
   });
 });
 
@@ -7379,7 +7379,7 @@ describe("strategy.exit comment_trailing= analyzer validation (hand-verified, C6
     const errors = transpileErrors(
       'strategy("s")\nstrategy.exit("X", trail_points=1, comment_trailing="a", comment_trailing="b")',
     );
-    expect(errors.some((e) => e.includes("키워드 인자 'comment_trailing' 중복 지정"))).toBe(true);
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'comment_trailing'"))).toBe(true);
   });
 });
 
@@ -7492,14 +7492,14 @@ describe("strategy.default_entry_qty analyzer validation (hand-verified, C429)",
 
   it("rejects wrong arg count (0 or 2 positional)", () => {
     const errors0 = transpileErrors('strategy("s")\nx = strategy.default_entry_qty()');
-    expect(errors0.some((e) => e.includes("1개(price, 위치 인자만 지원) 필요"))).toBe(true);
+    expect(errors0.some((e) => e.includes("requires 1 (price, positional only)"))).toBe(true);
     const errors2 = transpileErrors('strategy("s")\nx = strategy.default_entry_qty(close, open)');
-    expect(errors2.some((e) => e.includes("1개(price, 위치 인자만 지원) 필요"))).toBe(true);
+    expect(errors2.some((e) => e.includes("requires 1 (price, positional only)"))).toBe(true);
   });
 
   it("rejects a price= keyword argument (positional-only)", () => {
     const errors = transpileErrors('strategy("s")\nx = strategy.default_entry_qty(price = close)');
-    expect(errors.some((e) => e.includes("1개(price, 위치 인자만 지원) 필요"))).toBe(true);
+    expect(errors.some((e) => e.includes("requires 1 (price, positional only)"))).toBe(true);
   });
 });
 
@@ -7555,14 +7555,14 @@ describe("strategy.convert_to_account/convert_to_symbol analyzer validation (han
 
   it("rejects wrong arg count (0 or 2 positional)", () => {
     const errors0 = transpileErrors('strategy("s")\nx = strategy.convert_to_account()');
-    expect(errors0.some((e) => e.includes("1개(value, 위치 인자만 지원) 필요"))).toBe(true);
+    expect(errors0.some((e) => e.includes("requires 1 (value, positional only)"))).toBe(true);
     const errors2 = transpileErrors('strategy("s")\nx = strategy.convert_to_symbol(close, open)');
-    expect(errors2.some((e) => e.includes("1개(value, 위치 인자만 지원) 필요"))).toBe(true);
+    expect(errors2.some((e) => e.includes("requires 1 (value, positional only)"))).toBe(true);
   });
 
   it("rejects a value= keyword argument (positional-only)", () => {
     const errors = transpileErrors('strategy("s")\nx = strategy.convert_to_account(value = close)');
-    expect(errors.some((e) => e.includes("1개(value, 위치 인자만 지원) 필요"))).toBe(true);
+    expect(errors.some((e) => e.includes("requires 1 (value, positional only)"))).toBe(true);
   });
 });
 
@@ -7645,8 +7645,8 @@ describe("StrategyState.closedTradeRecords — trade_num 전 인덱스 지원 (C
     st.processFills(12, undefined, undefined, 2);
     st.close("L2");
     st.processFills(13, undefined, undefined, 3); // closedTrades=2, 유효 index는 0/1뿐
-    expect(() => st.closedTradeProfit(2)).toThrow(/index 2는 미지원/);
-    expect(() => st.closedTradeProfit(-1)).toThrow(/index -1는 미지원/);
+    expect(() => st.closedTradeProfit(2)).toThrow(/index 2 is out of range/);
+    expect(() => st.closedTradeProfit(-1)).toThrow(/index -1 is out of range/);
   });
 
   it("closedTradeProfitPercent computes per-trade_num, not just the latest", () => {
@@ -7848,7 +7848,7 @@ describe("strategy.avg_winning_trade/avg_losing_trade/avg_winning_trade_percent/
 
   it("still rejects strategy.oca (out of scope — OCA 런타임 미구현, 값을 discard하면 조용한 오답)", () => {
     const errors = transpileErrors('strategy("s")\nx = strategy.oca');
-    expect(errors.some((e) => e.includes("지원하지 않는 strategy 속성: 'strategy.oca'"))).toBe(true);
+    expect(errors.some((e) => e.includes("unsupported strategy property: 'strategy.oca'"))).toBe(true);
   });
 });
 
