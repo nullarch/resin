@@ -240,13 +240,14 @@ oracle, the external arbiter for validity, and a standing rule that no claim
 counts until it has been re-measured are the reasons a machine could write this
 without quietly breaking it.
 
-One consequence is visible immediately, and you should know about it before you
-run anything:
+One consequence is visible in the source, and you should know about it before
+you read anything:
 
-- **Compiler error messages are still in Korean** — 378 of them. If your script
-  fails to compile, the reason will come back in a language you may not read.
-  This is the first thing being fixed, ahead of everything else on this list,
-  because it is the only one that affects using the tool rather than reading it.
+- **All 365 compiler and runtime error messages are English** — they began in
+  Korean, and they were translated first, ahead of everything else on this
+  list, because they were the only item that affected *using* the tool rather
+  than *reading* it. The full suite, including the 3,000-script differential
+  replay, pinned that change to zero behavioral movement.
 - **About a third of the comments in `src/` are in Korean**, roughly 14,000
   lines. Skipping them is not really an option — much of the reasoning behind an
   odd-looking branch lives there — so they are being translated rather than

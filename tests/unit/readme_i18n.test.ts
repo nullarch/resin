@@ -31,7 +31,7 @@ const FIGURES = [
   "263", // oracle scripts
   "1e-9", // oracle tolerance
   "22.18", // minimum Node
-  "378", // untranslated compiler messages
+  "365", // compiler messages (translated to English)
   "14,000", // untranslated comment lines
 ];
 
