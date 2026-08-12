@@ -10,7 +10,7 @@
 // this file, that document, and the shipped CLI consistent — change one alone
 // and it goes red.
 
-export const VERSION = "0.2.0";
+export const VERSION = "0.2.1";
 
 // --- Transpile: Pine source -> JavaScript module code ---
 export { transpile } from "./transpiler/pipeline";

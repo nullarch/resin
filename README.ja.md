@@ -178,6 +178,13 @@ console.log(ctx.plots[0].toArray());
 サポート対象の API 面は `src/index.ts` が export しているものが厳密にすべてです。
 それ以外の `src/` 配下は内部実装であり、変更されます。[API.md](API.md) を参照してください。
 
+パッケージは TypeScript ソースをそのまま配布しています。バンドラー（Next.js、Vite、webpack）は
+そのまま消費できます。素の Node では同梱のローダーフックを付けて実行してください:
+
+```sh
+node --import @nullarch/resin/register your-script.mjs
+```
+
 ## やらないこと
 
 - **チャートはありません。** Resin は plot の系列を計算します。それを描くのはあなたの仕事です。

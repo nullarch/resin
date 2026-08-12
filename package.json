@@ -1,6 +1,6 @@
 {
   "name": "@nullarch/resin",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Run TradingView Pine Script v5/v6 outside TradingView — a compiler and runtime for JavaScript",
   "license": "Apache-2.0",
   "type": "module",
@@ -21,14 +21,16 @@
   "bugs": "https://github.com/nullarch/resin/issues",
   "homepage": "https://github.com/nullarch/resin#readme",
   "bin": {
-    "resin": "./bin/resin.mjs"
+    "resin": "bin/resin.mjs"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./register": "./register.mjs"
   },
   "files": [
     "bin",
     "src",
+    "register.mjs",
     "scripts/ts-esm-loader-hook.mjs",
     "API.md",
     "README.zh-CN.md",

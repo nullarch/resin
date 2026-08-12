@@ -188,6 +188,13 @@ label/line/box/table the script created. The supported surface is exactly what
 `src/index.ts` exports and nothing else — everything under `src/` beyond that
 is internal and will change. See [API.md](API.md).
 
+The package ships TypeScript source. Bundlers (Next.js, Vite, webpack) consume
+it as-is; on plain Node, run your script with the bundled loader hook:
+
+```sh
+node --import @nullarch/resin/register your-script.mjs
+```
+
 ## What this does not do
 
 - **No charts.** Resin computes plot series. Drawing them is your problem.

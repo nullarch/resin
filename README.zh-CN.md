@@ -165,6 +165,13 @@ console.log(ctx.plots[0].toArray());
 创建的每一个 label/line/box/table。受支持的接口面恰好就是 `src/index.ts` 导出的内容，
 仅此而已——`src/` 下的其余一切都是内部实现，会发生变化。详见 [API.md](API.md)。
 
+包直接分发 TypeScript 源码。打包器（Next.js、Vite、webpack）可以原样消费；在纯 Node
+环境下，请带上随包附带的加载器钩子运行你的脚本：
+
+```sh
+node --import @nullarch/resin/register your-script.mjs
+```
+
 ## 不做的事
 
 - **没有图表。** Resin 计算 plot 序列。把它们画出来是你的事。

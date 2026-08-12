@@ -176,6 +176,13 @@ console.log(ctx.plots[0].toArray());
 표면은 정확히 `src/index.ts`가 export하는 것뿐이며, 그 밖의 `src/` 아래는 전부 내부
 구현이고 바뀝니다. [API.md](API.md)를 참고하세요.
 
+패키지는 TypeScript 소스를 그대로 배포합니다. 번들러(Next.js, Vite, webpack)는 그대로
+소비하고, 순수 Node에서는 동봉된 로더 훅으로 실행하세요:
+
+```sh
+node --import @nullarch/resin/register your-script.mjs
+```
+
 ## 하지 않는 것
 
 - **차트 없음.** Resin은 plot 시리즈를 계산합니다. 그리는 것은 당신의 몫입니다.
