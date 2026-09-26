@@ -3967,11 +3967,15 @@ function genCallExpr(
     }
     if (
       !stateCall.seriesLength &&
-      (stateCall.fn === "highest" || stateCall.fn === "lowest" || stateCall.fn === "highestbars" || stateCall.fn === "lowestbars")
+      (stateCall.fn === "highest" ||
+        stateCall.fn === "lowest" ||
+        stateCall.fn === "highestbars" ||
+        stateCall.fn === "lowestbars" ||
+        stateCall.fn === "range")
     ) {
-      // The extremes run a ring addressed by bar_index (runtime/ta.ts highest; pynecore lib/ta.py
-      // highest): $.idx, or the prepass row in request.security. A series length gets it with the
-      // *VarLen suffix below.
+      // The extremes (and ta.range, built on them) run a ring addressed by bar_index (runtime/ta.ts
+      // highest; pynecore lib/ta.py highest): $.idx, or the prepass row in request.security. A
+      // series length gets it with the *VarLen suffix below.
       args.push(secCtx === null ? "$.idx" : secCtx.loopVar);
     }
     if (stateCall.fn === "wpr") {

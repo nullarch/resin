@@ -12,11 +12,12 @@ indicator("ta_range_percentile_varlen")
 lenA = 5 - (bar_index % 5)
 var float __obs_range1 = na
 __obs_range1 := ta.range(close, lenA)
-// lenB: -1/0/2 3-way 순환 — range만 length<=0(0과 음수 둘 다)에서 pine2py가 크래시 없이 -inf를
-// 반환하는 실측 동작(hi=-inf/lo=+inf가 그대로 남아 hi-lo=-inf, python 직접 확인)의 literal port를
-// 골든으로 직접 검증(highest의 -inf #178과 동일 축) — percentile류는 length<1 전부 IndexError
-// 크래시라 이 축에 못 넣고 na 자체 결정(DIVERGENCES 신규 항목, tests/unit/runtime.test.ts로 커버).
-lenB = bar_index % 3 == 0 ? -1 : (bar_index % 3 == 1 ? 0 : 2)
+// lenB: 1/4/2 3-way 순환 — a series length that grows and shrinks every bar (the ring's "a GROWING
+// length re-reads the whole window" rescan). It was -1/0/2, pine2py's -inf for a length <= 0; the
+// oracle asserts `length > 0` there, so it has no answer to compare (resin returns na, tests/unit/
+// runtime.test.ts). The golden's __obs_range2 was hand-edited to the oracle's answer: resin-harness
+// state/repros/range-sample10.json runs these range channels through PyneCore.
+lenB = bar_index % 3 == 0 ? 1 : (bar_index % 3 == 1 ? 4 : 2)
 var float __obs_range2 = na
 __obs_range2 := ta.range(high, lenB)
 // percentile_nearest_rank: 2-인자 폼(percentage 생략, 기본 50 — varlen 경로의 codegen 패딩 분기를

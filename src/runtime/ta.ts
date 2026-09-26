@@ -1193,8 +1193,8 @@ export interface ExtremeState {
 // GOAL.md "bar loop 안 할당 제로"를 지킨다 - 고전적 sliding-window-maximum 증명(창 크기 length 안에서
 // deque가 담을 수 있는 원소 수는 항상 length 이하)이 capacity=length로도 오버플로가 없음을 보장한다.
 //
-// ta.highest itself no longer runs here (see highest() below, the oracle's ring). This deque keeps
-// the pine2py poison window for the machines still composed on it: ta.range, ta.stoch, ta.wpr and
+// ta.highest and ta.range no longer run here (see highest() and range(), the oracle's ring). This
+// deque keeps the pine2py poison window for the machines still composed on it: ta.stoch, ta.wpr and
 // ta.pivothigh/pivotlow, whose na rules are their own. Of several equal extremes the deque head holds
 // the newest (every element <= the new value is popped): ta.pivothigh reads that.
 function dequeHighest(state: ExtremeState, value: number, length: number): number {
@@ -2191,69 +2191,37 @@ export function pivotlowVarLen(
   return candidate;
 }
 
-// ta.range(source, length) - length가 series인 변형(배치25 (4) 계속, next_hint(C552) 잔여 싱글턴
-// 1순위). pine2py wavealgo/ta/range_func.py도 highest.py/lowest.py와 동일하게 상태 없이 매 호출
-// source.get(0..length-1)을 재스캔한다(get_ta_state 미사용, python 직접 실행으로 가변 length 정상
-// 동작 확인 2026-08-01: context 모드와 length 무관 direct 모드가 매 바 완전히 일치) - highest/lowest
-// (C547)와 동일 축으로 오라클 성립(oracle/cases/ta_range_percentile_varlen.pine). 버퍼/writeIdx/
-// barIdx 덮어쓰기 메커니즘은 highestVarLen과 완전 동형(ExtremeVarLenState 재사용) - 값 계산은 고정
-// range()처럼 highest/lowest를 재호출하는 합성이 아니라, 버퍼 하나를 한 번 스캔하며 hi/lo를 동시에
-// 구하는 highestVarLen+lowestVarLen 통합판(고정폭 버퍼 하나를 두 sub-state로 이중 관리할 필요가
-// 없어 series 축에서는 오히려 더 단순). 엣지(python 직접 실행 확인 2026-08-01): length<1(0/음수 둘
-// 다)은 `len(source) < length`가 length<=0에서 항상 False라 워밍업 게이트 자체가 안 걸리고
-// `range(length<=0)` 빈 루프로 hi=-inf/lo=+inf가 그대로 남아 hi-lo=-inf(크래시 없는 정의된 동작,
-// highest -inf(#178)와 동일 literal port - median/percentile류의 "length<1 크래시라 na 자체 결정"과
-// 다른 축이니 혼동 금지). length=NaN은 pine2py `range(nan)` TypeError 크래시라 highestVarLen과
-// 동일하게 na 전파 외삽(TV 미검증 가설). 창 안 NaN 하나면 즉시 NaN(고정 range()와 동일 poison
-// window).
-export function rangeVarLen(state: ExtremeVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
-  if (state.buffer === undefined) {
-    state.buffer = new Float64Array(barCount).fill(NaN);
-    state.writeIdx = -1;
-    state.lastBarIdx = -1;
-  }
-  if (barIdx !== state.lastBarIdx) {
-    state.writeIdx = state.writeIdx! + 1;
-    state.lastBarIdx = barIdx;
-  }
-  const writeIdx = state.writeIdx!;
-  state.buffer[writeIdx] = value;
-
-  const len = Math.trunc(length);
-  if (Number.isNaN(len)) return NaN;
-  if (len < 1) return -Infinity;
-  if (len > writeIdx + 1) return NaN;
-  let hi = -Infinity;
-  let lo = Infinity;
-  for (let i = writeIdx - len + 1; i <= writeIdx; i++) {
-    const v = state.buffer[i]!;
-    if (Number.isNaN(v)) return NaN;
-    if (v > hi) hi = v;
-    if (v < lo) lo = v;
-  }
-  return hi - lo;
-}
-
 export interface RangeState {
-  hi?: ExtremeState;
-  lo?: ExtremeState;
+  hi?: ExtremeRingState;
+  lo?: ExtremeRingState;
 }
 
-// ta.range(source, length) - 최근 length바(현재 포함) 중 최댓값-최솟값. pine2py
-// wavealgo/ta/range_func.py(wavealgo/ta/__init__.py L76 TA_REGISTRY에 등록된 진짜 TA 함수 —
-// array.range(id)와는 별개)는 매 호출 source.get(0..length-1) 전체를 O(length) 재스캔해 그 중
-// 하나라도 NaN이면 즉시 NaN, 아니면 max-min을 반환한다(highest.py/lowest.py와 동일한 poison
-// window). stoch()과 동일한 합성 원칙 — highest()/lowest()를 두 독립 ExtremeState로 재호출해
-// hi/lo를 얻은 뒤 뺄셈(hi/lo 각각의 nanCount 게이트가 이미 NaN을 반환하므로 전파는 자동, 둘 다
-// 같은 source/length로 매 바 무조건 호출돼 두 sub-state가 항상 동기 전진).
-export function range(state: RangeState, value: number, length: number): number {
+// ta.range(source, length), with a literal or a series length: the oracle's composition (pynecore
+// lib/ta.py range), `ta.highest(source, length) - ta.lowest(source, length)` on the extremes' own
+// machine (extremeRing), with its own na rule: an na source is na on its bar and does NOT run the
+// extremes, so it neither resets them nor writes its slot of their rings - the window carries on
+// over the valued bars (ref_v6_ta_math.txt ta.range: "`na` values in the `source` series are
+// ignored; the function calculates on the `length` quantity of non-`na` values"; repro
+// resin-harness state/repros/ta.serieslen-seed-36.json, where pine2py's poison window gave na for
+// `length` bars after each na). So a skipped bar's slot is whatever the ring held there, exactly as
+// for a gated ta.highest call (tier 1 ta_370_gated_lowest_window). na while bar_index < length - 1.
+// A length below 1 or na is na: the oracle asserts `length > 0`.
+export function range(state: RangeState, value: number, length: number, barIdx: number): number {
   if (state.hi === undefined) {
     state.hi = {};
     state.lo = {};
   }
-  const hi = dequeHighest(state.hi, value, length);
-  const lo = dequeLowest(state.lo!, value, length);
+  const len = Math.trunc(length);
+  if (!(len >= 1) || Number.isNaN(value)) return NaN;
+  const hi = extremeRing(state.hi, value, len, barIdx, false);
+  const lo = extremeRing(state.lo!, value, len, barIdx, true);
   return hi - lo;
+}
+
+// The series-length entry point (codegen VARLEN_RT_PATHS): the same machine; the rings size
+// themselves, so the bar count is unused.
+export function rangeVarLen(state: RangeState, value: number, length: number, _barCount: number, barIdx: number): number {
+  return range(state, value, length, barIdx);
 }
 
 export interface StochState {

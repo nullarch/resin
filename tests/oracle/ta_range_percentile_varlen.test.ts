@@ -4,11 +4,11 @@
 // percentileLinearInterpolationVarLen). 셋 다 pine2py가 상태 없이 매 호출 현재 length로
 // source.get(0..length-1)을 재구축하는 무상태 재스캔이라(range_func.py/percentrank.py,
 // get_ta_state 미사용) **length 값이 실제로 변하는 축을 골든이 직접 대조한다**(highest/lowest
-// C547·median C550과 동일 축). lenA(5,4,3,2,1 순환)로 워밍업/정상 구간을, range만 lenB(-1/0/2
-// 3-way 순환)로 pine2py range_func의 length<=0 크래시 없는 -inf literal port를 함께 검증.
-// percentile 2종의 length<1(크래시 축, IndexError)은 오라클 불가라 tests/unit/runtime.test.ts가
-// hand-verified na로 커버. The percentile channels follow the oracle, not pine2py (__obs_pli2
-// hand-edited; resin-harness twin state/repros/percentile-sample10.json).
+// C547·median C550과 동일 축). lenA(5,4,3,2,1 순환)로 워밍업/정상 구간을, range만 lenB(1/4/2
+// 3-way 순환)로 매 바 늘고 주는 series length를 검증. A length below 1 has no oracle answer (it
+// asserts `length > 0`); tests/unit/runtime.test.ts covers resin's na there. The range and
+// percentile channels follow the oracle, not pine2py (__obs_range2 and __obs_pli2 hand-edited;
+// resin-harness twins state/repros/range-sample10.json and percentile-sample10.json).
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";

@@ -594,12 +594,9 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // ta.range(source, length) — 최근 length바(현재 포함) 중 최댓값-최솟값. 다른 인자 개수/암묵
   // 주입 없이 sma와 동일한 표준 시그니처(C256, "지원하지 않는 호출" 클러스터 조사 중 발견 —
   // pine2py wavealgo/ta/range_func.py + wavealgo/ta/__init__.py L76 TA 함수 세트 대조로 실제
-  // 등록된 TA 함수임을 확인. array.range(id)와는 별개 함수). runtime/ta.ts range() 주석 참조 —
-  // highest/lowest 재호출 합성(stoch과 동일 원칙)이라 poison window(창 안 NaN 하나라도 있으면
-  // 전체 NaN)는 highest/lowest의 기존 nanCount 게이트로 자동 전파. length가 내부 ExtremeState
-  // 순환 버퍼 크기를 결정하므로 sma와 동일하게 lengthArgIndex: 1(series 하드 에러).
-  // C552(next_hint) 잔여 싱글턴 재실측 결과 range_func.py도 상태 없이 매 호출 재스캔이라
-  // seriesLengthOk: true(runtime/ta.ts rangeVarLen 참조, oracle/cases/ta_range_percentile_varlen.pine).
+  // 등록된 TA 함수임을 확인. array.range(id)와는 별개 함수). One machine for a literal and a series
+  // length (seriesLengthOk): the oracle's ta.highest - ta.lowest on their bar-addressed rings, an na
+  // source na without running them (runtime/ta.ts range); codegen appends the bar index.
   range: { dispatch: "ta", displayName: "ta.range", argCount: 2, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.range" },
   // ta.percentile_nearest_rank(source, length, percentage) / ta.percentile_linear_interpolation
   // (source, length, percentage) — one rolling rank machine for a literal and a series length, the

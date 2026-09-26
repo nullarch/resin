@@ -3799,9 +3799,9 @@ describe("CodeGen", () => {
     expect(code).toBe("var x = rt.ta.cog($.taSlots[0], $.close.get(0), 3);");
   });
 
-  it("emits ta.range call through $.taSlots[slot] (no codegen special-casing — 2 args pass through in order, C256)", () => {
+  it("emits ta.range call through $.taSlots[slot] with the bar index its extreme rings are addressed by (C256; runtime/ta.ts range)", () => {
     const code = codegenSource("x = ta.range(close, 3)");
-    expect(code).toBe("var x = rt.ta.range($.taSlots[0], $.close.get(0), 3);");
+    expect(code).toBe("var x = rt.ta.range($.taSlots[0], $.close.get(0), 3, $.idx);");
   });
 
   // C553(배치25 (4) 계속, next_hint(C552) 잔여 싱글턴 묶음) — range/percentile_nearest_rank/

@@ -1930,29 +1930,31 @@ describe("ta.dev", () => {
   });
 });
 
-// ta.range(source, length) — highest(source,length) - lowest(source,length) 재호출 합성(stoch과
-// 동일 원칙, C256). "지원하지 않는 호출" 클러스터 조사 중 발견된 실제 누락 TA 함수 —
-// wavealgo/ta/range_func.py + wavealgo/ta/__init__.py L76 TA 함수 세트에 등록됨(array.range(id)와는
-// 별개 함수).
+// ta.range(source, length) — the oracle's ta.highest(source, length) - ta.lowest(source, length) on
+// the extremes' bar-addressed rings (runtime/ta.ts range; pynecore lib/ta.py range), an na source na
+// on its bar without running them (ref_v6_ta_math.txt ta.range: "`na` values in the `source` series
+// are ignored"). Evidence: resin-harness state/repros/ta.serieslen-seed-36.json, twins
+// range-na-machine.json and range-sample10.json.
 describe("ta.range", () => {
-  it("returns NaN for the first length-1 calls (buffer warmup, length=3)", () => {
+  it("returns NaN while bar_index < length - 1 (warmup, length=3)", () => {
     const state = {};
-    expect(range(state, 101, 3)).toBeNaN();
-    expect(range(state, 102, 3)).toBeNaN();
+    expect(range(state, 101, 3, 0)).toBeNaN();
+    expect(range(state, 102, 3, 1)).toBeNaN();
+    expect(range(state, 103, 3, 2)).toBe(2);
   });
 
   it("returns exactly 0 when every value in the window is identical (tie case — highest and lowest agree on the same value)", () => {
     const state = {};
-    range(state, 7, 3);
-    range(state, 7, 3);
-    expect(range(state, 7, 3)).toBe(0);
-    expect(range(state, 7, 3)).toBe(0);
+    range(state, 7, 3, 0);
+    range(state, 7, 3, 1);
+    expect(range(state, 7, 3, 2)).toBe(0);
+    expect(range(state, 7, 3, 3)).toBe(0);
   });
 
-  it("matches the pine2py-verified sample10.json trace (close, length=3)", () => {
+  it("matches the oracle's sample10.json trace (close, length=3; twin range-sample10.json)", () => {
     const state = {};
     const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
-    const results = closes.map((c) => range(state, c, 3));
+    const results = closes.map((c, i) => range(state, c, 3, i));
     expect(results[0]).toBeNaN();
     expect(results[1]).toBeNaN();
     expect(results[2]).toBe(2);
@@ -1967,42 +1969,54 @@ describe("ta.range", () => {
 
   it("matches a hand-computed range once the window fills (length=2)", () => {
     const state = {};
-    range(state, 10, 2); // NaN, window [10, NaN]
-    expect(range(state, 12, 2)).toBe(2); // window [10,12], max-min=2
-    expect(range(state, 15, 2)).toBe(3); // window [12,15], max-min=3
-    expect(range(state, 20, 2)).toBe(5); // window [15,20], max-min=5
+    range(state, 10, 2, 0); // NaN (bar_index < length - 1)
+    expect(range(state, 12, 2, 1)).toBe(2); // window [10,12], max-min=2
+    expect(range(state, 15, 2, 2)).toBe(3); // window [12,15], max-min=3
+    expect(range(state, 20, 2, 3)).toBe(5); // window [15,20], max-min=5
   });
 
   it("returns exactly 0 for length=1 (a single-element window has zero range against itself)", () => {
     const state = {};
-    expect(range(state, 5, 1)).toBe(0);
-    expect(range(state, 7, 1)).toBe(0);
-    expect(range(state, 3, 1)).toBe(0);
+    expect(range(state, 5, 1, 0)).toBe(0);
+    expect(range(state, 7, 1, 1)).toBe(0);
+    expect(range(state, 3, 1, 2)).toBe(0);
   });
 
-  it("poisons the result while a NaN is inside the window, and the window keeps rolling forward (NaN is not frozen in place — mirrors ta.highest/ta.lowest's nanCount gate)", () => {
+  it("is na on an na bar and ignores it afterwards: the extremes do not run, so the window goes on over the valued bars (twin range-na-machine.json)", () => {
     const state = {};
-    range(state, 5, 3); // NaN (window incomplete), buffer [5, NaN, NaN]
-    range(state, 6, 3); // NaN (still incomplete), buffer [5, 6, NaN]
-    expect(range(state, NaN, 3)).toBeNaN(); // buffer [5, 6, NaN] - now a genuine NaN fills the last slot
-    expect(range(state, 7, 3)).toBeNaN(); // buffer [7, 6, NaN] - NaN slot still present
-    expect(range(state, 8, 3)).toBeNaN(); // buffer [7, 8, NaN] - NaN slot still present
-    expect(range(state, 9, 3)).toBe(2); // buffer [7, 8, 9] - NaN slot finally overwritten, max-min=2
+    range(state, 5, 3, 0);
+    range(state, 6, 3, 1);
+    expect(range(state, NaN, 3, 2)).toBeNaN();
+    expect(range(state, 7, 3, 3)).toBe(1); // bars 1..3: 6, (na, never written), 7
+    expect(range(state, 8, 3, 4)).toBe(1); // 7, 8 (the na bar's slot holds nothing)
+    expect(range(state, 9, 3, 5)).toBe(2); // 7, 8, 9
+  });
+
+  it("serves a skipped bar's slot from a whole ring earlier, as a gated ta.highest does (twin range-stale-slot.json)", () => {
+    // length 2: rings of 3 slots. Bar 3 is na and does not write slot 0, which still holds bar 0's 1;
+    // on bar 4 the lowest's kept extreme (10, bar 1) has aged out and its rescan reads that slot.
+    const closes = [1, 10, 11, NaN, 12, 13];
+    const state = {};
+    const results = closes.map((c, i) => range(state, c, 2, i));
+    expect(results[0]).toBeNaN();
+    expect(results.slice(1, 3)).toEqual([9, 1]);
+    expect(results[3]).toBeNaN();
+    expect(results.slice(4)).toEqual([11, 1]);
   });
 
   it("keeps independent state across two call sites", () => {
     const stateA = {};
     const stateB = {};
-    range(stateA, 10, 2);
-    expect(range(stateA, 12, 2)).toBe(2);
-    expect(range(stateB, 100, 2)).toBeNaN();
+    range(stateA, 10, 2, 0);
+    expect(range(stateA, 12, 2, 1)).toBe(2);
+    expect(range(stateB, 100, 2, 1)).toBe(0); // its first call: the window holds 100 alone
   });
 
   it("stays correct across many bars beyond the initial fill (circular buffer wraparound)", () => {
     const state = {};
     const length = 4;
     const values = Array.from({ length: 25 }, (_, i) => 100 + ((i * 7) % 11));
-    const results = values.map((v) => range(state, v, length));
+    const results = values.map((v, i) => range(state, v, length, i));
     function direct(idx: number): number {
       const window = [values[idx - 3]!, values[idx - 2]!, values[idx - 1]!, values[idx]!];
       return Math.max(...window) - Math.min(...window);
@@ -6709,49 +6723,43 @@ describe("ta.pivotlow variable(series) left/right (pivotlowVarLen)", () => {
   });
 });
 
-// ta.range(source, length) - length가 series인 변형(배치25 (4) 계속, next_hint(C552) 잔여 싱글턴
-// 묶음, C553 — runtime/ta.ts rangeVarLen). pine2py range_func.py도 상태 없이 매 호출 재스캔이라
-// python 직접 실행으로 가변 length 정상 동작(context 모드 == direct 모드) 확인됨(oracle/cases/
-// ta_range_percentile_varlen.pine 골든이 정상 구간 커버) - 여기서는 오라클 불가 축(length<1의
-// -inf literal port 자체는 오라클 커버, length=NaN 크래시 경계)과 고정 range()와의 등가성만 추가로
-// 확인한다.
+// ta.range(source, length) with a series length: the same machine as a literal length (runtime/ta.ts
+// rangeVarLen → range). oracle/cases/ta_range_percentile_varlen.pine covers a length moving every bar
+// (twin resin-harness state/repros/range-sample10.json); here the edges the oracle has no answer for.
 describe("ta.range variable(series) length (rangeVarLen)", () => {
-  it("matches the fixed-length range() for a constant length across the whole trace (varlen buffer vs fixed monotonic-deque composite)", () => {
+  it("matches the fixed-length range() for a constant length across the whole trace", () => {
     const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
     const fixedState = {};
     const varState = {};
     closes.forEach((c, i) => {
-      const fixed = range(fixedState, c, 3);
+      const fixed = range(fixedState, c, 3, i);
       const varlen = rangeVarLen(varState, c, 3, closes.length, i);
       if (Number.isNaN(fixed)) expect(varlen).toBeNaN();
       else expect(varlen).toBe(fixed);
     });
   });
 
-  it("length<1 (0 and negative) → -Infinity immediately, even during warmup (pine2py's `len(source)<length` gate never fires for length<=0, python 직접 실행 확인 — highest -inf #178과 동일 literal port)", () => {
+  it("length<1 (0 and negative) and length=NaN → NaN (the oracle asserts `length > 0`; TradingView's answer is not measured)", () => {
     const state = {};
-    expect(rangeVarLen(state, 10, 0, 10, 0)).toBe(-Infinity); // bar 0(워밍업 구간)인데도 즉시 -inf
-    expect(rangeVarLen(state, 20, -3, 10, 1)).toBe(-Infinity);
-  });
-
-  it("length=NaN → NaN (pine2py `range(nan)` TypeError crash → hand-verified na 전파 외삽, TV 미검증 가설)", () => {
+    expect(rangeVarLen(state, 10, 0, 10, 0)).toBeNaN();
+    expect(rangeVarLen(state, 20, -3, 10, 1)).toBeNaN();
     expect(rangeVarLen({}, 10, NaN, 10, 0)).toBeNaN();
   });
 
-  it("same-bar repeated calls overwrite the current slot instead of advancing (context.param() parity)", () => {
+  it("a same-bar repeated call (a loop call site) rewrites the bar's slot and keeps the extreme an earlier call found (the extremes' per-call rule)", () => {
     const state = {};
     rangeVarLen(state, 10, 2, 10, 0);
     rangeVarLen(state, 10, 2, 10, 1);
-    rangeVarLen(state, 100, 2, 10, 1); // barIdx(1)는 직전과 동일 → buffer[1]을 덮어쓰기(push 아님)
-    expect(rangeVarLen(state, 12, 2, 10, 2)).toBe(88); // window=[100(덮어써진 값),12] → 100-12
+    expect(rangeVarLen(state, 100, 2, 10, 1)).toBe(90); // highest 100, lowest still 10
+    expect(rangeVarLen(state, 12, 2, 10, 2)).toBe(88); // window [100 (the rewritten slot), 12]
   });
 
-  it("poisons the result while a NaN sits inside the trailing window, then recovers", () => {
+  it("an na bar is na and leaves the window to the valued bars", () => {
     const state = {};
     rangeVarLen(state, 5, 2, 10, 0);
     expect(rangeVarLen(state, NaN, 2, 10, 1)).toBeNaN();
-    expect(rangeVarLen(state, 6, 2, 10, 2)).toBeNaN(); // window=[NaN,6]
-    expect(rangeVarLen(state, 9, 2, 10, 3)).toBe(3); // window=[6,9]
+    expect(rangeVarLen(state, 6, 2, 10, 2)).toBe(0); // bars 1..2: (na, never written), 6
+    expect(rangeVarLen(state, 9, 2, 10, 3)).toBe(3); // 6, 9
   });
 });
 
