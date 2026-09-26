@@ -1,9 +1,13 @@
 // oracle/cases/ta_sma_varlen.pine: ta.sma series length 검증(배치25 (4) 두 번째, C548 —
 // runtime/ta.ts smaVarLen). **length 값이 실제로 변하는 축은 오라클 불가**(pine2py sma.py가
 // 첫 성공 호출 length로 윈도우를 영구 고정하는 latent 버그, DIVERGENCES #179) — 여기서는
-// "series 한정자 + 값은 상수" 퇴화 케이스로 버퍼/워밍업(len1)과 NaN 오염/회복(len2 + 바 3 na
-// 소스) 메커니즘만 골든 대조하고, 값이 변하는 축은 tests/unit/runtime.test.ts(smaVarLen)와
+// "series 한정자 + 값은 상수" 퇴화 케이스로 버퍼/워밍업(len1)과 na 소스(len2 + 바 3 na 소스)
+// 메커니즘만 골든 대조하고, 값이 변하는 축은 tests/unit/runtime.test.ts(smaVarLen)와
 // pipeline E2E(analyzer.test.ts/codegen.test.ts)가 hand-verified로 커버한다.
+// The golden's __obs_s2 at bars 4-6 is hand-edited over pine2py's poisoning to the tier-2
+// oracle's values (the window skips the bar-3 na: 102.5, 103.5, 104.5; PyneCore run of this case
+// via the resin-harness `case` tool; ref_v6_ta_math.txt "ta.sma": "`na` values in the `source`
+// series are ignored"; harness repro state/repros/ta.ma-seed-3.json).
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";

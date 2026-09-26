@@ -4,8 +4,11 @@
 // 미사용) **length 값이 실제로 변하는 축을 골든이 직접 대조한다**(highest/lowest C547·median/
 // linreg C550과 동일 축 — sma/wma #179 퇴화-오라클 축과 다름). lenA(5,4,3,2,1 순환)로 워밍업/
 // stdev 2-인자 폼(biased 기본 true)/math.sum 정상 구간을, lenB(-1/2 교대)로 pine2py stdev의
-// length<0 크래시 없는 0.0 literal port를, lenC(bar_index+3, 항상 워밍업 초과)로 math.sum 고유의
-// "워밍업 NaN 게이트 없음"(min(length, dataLen)로 있는 만큼만 합산) 시맨틱을 커버.
+// length<0 크래시 없는 0.0 literal port를, lenC(bar_index+3, 항상 워밍업 초과)로 math.sum의
+// 워밍업 na를 커버. The golden's math.sum channels are hand-edited over pine2py's warm-up partial
+// sums to the tier-2 oracle's values (__obs_sum1 na on bars 0-1, __obs_sum2 na throughout;
+// PyneCore run of this case via the resin-harness `case` tool; ref_v6_ta_math.txt "math.sum":
+// "the function calculates on the `length` quantity of non-`na` values").
 // length=0(pine2py ZeroDivisionError 크래시 축)과 biased=false(pine2py stdev.py에 없는 파라미터,
 // hand-verified 확장)은 오라클 불가라 tests/unit/runtime.test.ts가 hand-verified na/값으로
 // 커버(DIVERGENCES #182).

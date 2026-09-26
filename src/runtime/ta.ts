@@ -6,15 +6,23 @@
 import { runtimeError } from "./log";
 
 export interface SmaState {
-  buffer?: number[];
+  buffer?: number[]; // ring of the last `length` non-na values
   writeIdx?: number;
+  count?: number; // non-na values stored so far, capped at the length
   sum?: number;
 }
 
-// ta.sma - 고정폭 순환 버퍼(NaN 프라임) + 오염 시 전체 재계산.
-// pine2py wavealgo/ta/sma.py의 rolling-window 알고리즘과 동일한 결과를 내도록 검증됨:
-// 버퍼를 NaN으로 채워 시작하면 첫 (length-1)바는 NaN, 이후 오염 전파도 동일하게 재현된다.
-export function sma(state: SmaState, value: number, length: number): number {
+// The rolling sum ta.sma and math.sum share: the sum of the last `length` NON-na values of the
+// source, na until that many have arrived. The reference says so for both ("`na` values in the
+// `source` series are ignored; the function calculates on the `length` quantity of non-`na`
+// values", ref_v6_ta_math.txt "math.sum"; "ta.sma": "`na` values in the `source` series are
+// ignored"), and the oracle builds ta.sma as math.sum / length on exactly this window (pynecore
+// lib/_math_stateful.py sum: "The window is na-compacted: an na bar returns na and is not stored,
+// so the sum always covers the last ``length`` non-na values"; an na bar after the warm-up reports
+// the standing sum, "MEASURED, probe sumlen4"). So an na bar neither enters the ring nor evicts
+// from it, and a warm-up counts non-na values, not bars (math.sum used to return the partial sum
+// of the first bars, ta.sma used to poison its whole window for `length` bars after one na).
+function naSkipSum(state: SmaState, value: number, length: number): number {
   // C569: length는 TV에서 항상 'int' 타입이지만, analyzer.ts의 int/int idiv 판별(idivBinOps, C201
   // 잔여 범위)이 UDF 매개변수·삼항 체인처럼 top-level 리터럴 밖의 int 값을 못 잡으면 codegen이
   // 그 자리에 float division(rt.pineDiv)을 내려 여기 도달하는 length가 실제로는 정수인데 정수가
@@ -22,32 +30,31 @@ export function sma(state: SmaState, value: number, length: number): number {
   // (wild HMA(_src,_length)=>ta.wma(...,_length/2,...) 관용구, 배치27 exec 최다 클러스터) 여기서
   // 진짜 int 값으로 되돌린다(*VarLen 계열이 이미 쓰는 Math.trunc(length) 전례와 동일 원칙).
   length = Math.trunc(length);
+  if (!(length >= 1)) return NaN;
   if (state.buffer === undefined) {
-    state.buffer = new Array(length).fill(NaN);
+    state.buffer = new Array(length).fill(0);
     state.writeIdx = 0;
-    state.sum = NaN;
+    state.count = 0;
+    state.sum = 0;
   }
-  const buffer = state.buffer;
-  const writeIdx = state.writeIdx!;
-  const oldVal = buffer[writeIdx]!;
-  buffer[writeIdx] = value;
-  state.writeIdx = (writeIdx + 1) % length;
-
-  if (Number.isNaN(value) || Number.isNaN(oldVal) || Number.isNaN(state.sum!)) {
-    let total = 0;
-    let hasNaN = false;
-    for (const v of buffer) {
-      if (Number.isNaN(v)) {
-        hasNaN = true;
-        break;
-      }
-      total += v;
+  if (!Number.isNaN(value)) {
+    const buffer = state.buffer;
+    const writeIdx = state.writeIdx!;
+    if (state.count! < length) {
+      state.count = state.count! + 1;
+      state.sum = state.sum! + value;
+    } else {
+      state.sum = state.sum! - buffer[writeIdx]! + value;
     }
-    state.sum = hasNaN ? NaN : total;
-  } else {
-    state.sum = state.sum! - oldVal + value;
+    buffer[writeIdx] = value;
+    state.writeIdx = (writeIdx + 1) % length;
   }
-  return state.sum / length;
+  return state.count! < length ? NaN : state.sum!;
+}
+
+// ta.sma = the na-skipping rolling sum (naSkipSum) / length.
+export function sma(state: SmaState, value: number, length: number): number {
+  return naSkipSum(state, value, length) / Math.trunc(length);
 }
 
 export interface EmaState {
@@ -452,8 +459,8 @@ export interface AoState {
 // (codegen.ts genCallExpr의 obv/accdist implicit-injection 그룹과 동일 패턴). pine2py wavealgo/ta/에
 // 대응 구현이 전혀 없어 오라클 대조 자체가 불가능한 hand-verified 신규 함수(DIVERGENCES.md #175) —
 // 이미 오라클로 검증된 sma()를 두 겹(5바/34바) 독립 상태로 재사용한다(hma()의 다중 서브버퍼 패턴과
-// 동일). sma()는 NaN을 버퍼에 그대로 채워 넣고 오염 시 NaN을 반환하는 자체 처리를 이미 갖고 있어
-// (sma() 참조) 별도 가드 없이 뺄셈이 자연히 NaN을 전파한다.
+// 동일). sma()가 na hl2를 자체적으로 건너뛰고(naSkipSum 참조) 워밍업 중엔 NaN을 반환하므로 별도
+// 가드 없이 뺄셈이 워밍업 NaN을 자연히 전파한다.
 export function ao(state: AoState, hl2: number): number {
   if (state.fast === undefined) {
     state.fast = {};
@@ -1381,32 +1388,46 @@ export function lowestVarLen(state: ExtremeVarLenState, value: number, length: n
 // 퇴화 케이스, oracle/cases/ta_sma_varlen.pine)로만 버퍼/워밍업/NaN 메커니즘을 대조한다. 엣지:
 // length=NaN은 highestVarLen과 동일하게 na 전파(TV 미검증 가설), length<1은 pine2py가 크래시하는
 // 지점(len=0은 ZeroDivisionError, 음수는 다음 호출에서 빈 window pop IndexError - highest의
-// -inf처럼 "크래시 없이 정의된 동작"이 아예 없음)이라 na 반환으로 자체 결정. 창 안 NaN 하나면
-// 결과 NaN(고정 length sma의 오염 시맨틱과 동일), 워밍업(len > 관측 바 수)도 NaN.
-export function smaVarLen(state: ExtremeVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
+// -inf처럼 "크래시 없이 정의된 동작"이 아예 없음)이라 na 반환으로 자체 결정.
+// The window is the last `len` NON-na values, na until that many have arrived: the fixed-length
+// rule (naSkipSum), which the oracle keeps across length changes (pynecore lib/_math_stateful.py
+// sum). See naSkipSumVarLen.
+export function smaVarLen(state: NaSkipVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
+  const len = Math.trunc(length);
+  const total = naSkipSumVarLen(state, value, len, barCount, barIdx);
+  return len < 1 ? NaN : total / len;
+}
+
+export interface NaSkipVarLenState {
+  buffer?: Float64Array; // the non-na values in arrival order
+  count?: number; // values stored, this bar's included
+  barStart?: number; // values stored before this bar
+  lastBarIdx?: number;
+}
+
+// naSkipSum with a series length: every non-na value is kept (the window may grow again), and a
+// same-bar re-execution (a loop call site) replaces the bar's own value instead of advancing, like
+// the other *VarLen machines. A NaN length is na; a length <= 0 sums an empty window (0).
+function naSkipSumVarLen(state: NaSkipVarLenState, value: number, len: number, barCount: number, barIdx: number): number {
   if (state.buffer === undefined) {
-    state.buffer = new Float64Array(barCount).fill(NaN);
-    state.writeIdx = -1;
+    state.buffer = new Float64Array(barCount);
+    state.count = 0;
+    state.barStart = 0;
     state.lastBarIdx = -1;
   }
   if (barIdx !== state.lastBarIdx) {
-    state.writeIdx = state.writeIdx! + 1;
+    state.barStart = state.count;
     state.lastBarIdx = barIdx;
   }
-  const writeIdx = state.writeIdx!;
-  state.buffer[writeIdx] = value;
+  let count = state.barStart!;
+  if (!Number.isNaN(value)) state.buffer[count++] = value;
+  state.count = count;
 
-  const len = Math.trunc(length);
   if (Number.isNaN(len)) return NaN;
-  if (len < 1) return NaN;
-  if (len > writeIdx + 1) return NaN;
+  if (len > count) return NaN;
   let total = 0;
-  for (let i = writeIdx - len + 1; i <= writeIdx; i++) {
-    const v = state.buffer[i]!;
-    if (Number.isNaN(v)) return NaN;
-    total += v;
-  }
-  return total / len;
+  for (let i = count - Math.max(len, 0); i < count; i++) total += state.buffer[i]!;
+  return total;
 }
 
 // ta.highestbars/ta.lowestbars(source, length) - 최근 length바 중 최댓값/최솟값이 발생한 바의
@@ -1702,40 +1723,12 @@ export function stdevVarLen(
 }
 
 // math.sum(source, length) - length가 series인 변형(배치25 (4) 다섯 번째 묶음, stdevVarLen과 같은
-// ⚡번들, C551). 버퍼 메커니즘은 highestVarLen과 완전 동형(ExtremeVarLenState 재사용). pine2py
-// wavealgo/math/__init__.py sum()은 Series 분기(source가 실제 Series 객체일 때만, DIVERGENCES #15
-// 참조)에서 상태 없이 매 호출 `for i in range(min(length, len(source))): total += source.get(i)`로
-// 재스캔한다(get_ta_state 미사용, python 직접 실행 확인 2026-08-01) - **median/linreg/stdev와 달리
-// 워밍업 NaN 게이트 자체가 없다**: length가 지금까지 관측한 바 수보다 커도 그냥 있는 만큼만 합산
-// (min(length, dataLen) — 부족분은 조용히 무시, na 반환 없음). NaN 원소는 median/linreg/stdev처럼
-// poison하지 않고 항상 기여 0(고정 length sum() 주석 참조와 동일 규칙). length<=0은 range(<=0)가
-// 빈 루프라 크래시 없이 0.0(python 직접 확인 - length=0/-2 둘 다 0.0, 순양수/NaN 항만 더하는
-// 산술이라 stdevVarLen과 달리 -0 정규화 자체가 불필요). length=NaN만 pine2py `min(nan, dataLen)`이
-// 모든 대소비교가 False로 nan을 그대로 반환해 `range(nan)` TypeError로 크래시(python 직접 확인) -
-// highestVarLen과 동일 na 전파 외삽(TV 미검증 가설).
-export function sumVarLen(state: ExtremeVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
-  if (state.buffer === undefined) {
-    state.buffer = new Float64Array(barCount).fill(NaN);
-    state.writeIdx = -1;
-    state.lastBarIdx = -1;
-  }
-  if (barIdx !== state.lastBarIdx) {
-    state.writeIdx = state.writeIdx! + 1;
-    state.lastBarIdx = barIdx;
-  }
-  const writeIdx = state.writeIdx!;
-  state.buffer[writeIdx] = value;
-
-  const len = Math.trunc(length);
-  if (Number.isNaN(len)) return NaN;
-  const count = writeIdx + 1;
-  const iterCount = Math.max(0, Math.min(len, count));
-  let total = 0;
-  for (let i = 0; i < iterCount; i++) {
-    const v = state.buffer[writeIdx - i]!;
-    if (!Number.isNaN(v)) total += v;
-  }
-  return total;
+// ⚡번들, C551): the na-skipping rolling sum of the fixed-length math.sum (naSkipSum) with a
+// series length (naSkipSumVarLen). pine2py's variant counted na as 0 and summed whatever prefix
+// it had during the warm-up; the reference and the oracle do neither (see naSkipSum). length<=0
+// keeps its empty-window 0.0, length=NaN its na.
+export function sumVarLen(state: NaSkipVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
+  return naSkipSumVarLen(state, value, Math.trunc(length), barCount, barIdx);
 }
 
 // pivothighVarLen/pivotlowVarLen 전용 - idx가 [0, writeIdx] 밖(음수 = 아직 안 쌓인 과거, writeIdx
@@ -3524,38 +3517,14 @@ export function dmi(
   scratch[2] = rma(state.adx!, Math.abs(plusDi - minusDi) / (sum !== 0 ? sum : 1), adxSmoothing) * 100;
 }
 
-export interface SumState {
-  buffer?: number[];
-  writeIdx?: number;
-  sum?: number;
-}
+export type SumState = SmaState;
 
-// math.sum(source, length) - 고정폭 순환 버퍼(NaN 프라임), sma와 달리 오염(poison) 없음.
-// pine2py wavealgo/math.sum(source, length)의 실제(Series 인자일 때만 도달하는) 분기
-// `total=0.0; for v in source[0:min(length,len)]: if not isnan(v): total += v`와 동치 —
-// na는 항상 기여 0(창이 전부 na이거나 아직 안 채워졌어도 결과는 na가 아니라 0.0). NaN-프라임
-// 버퍼의 초기 슬롯(아직 안 쓰인 자리)도 값이 NaN이라 자연히 기여 0이 되므로
-// min(length, 지금까지 처리한 바 수)를 별도로 추적할 필요가 없다(sma의 nanCount/전체 재스캔
-// 포이즌 감지 로직 자체가 불필요 — 매 호출 O(1), 재스캔 없음).
-// **의도적 divergence**(analyzer.ts TA_REGISTRY.sum 주석 + DIVERGENCES.md #15 참조): pine2py
-// math.sum은 source가 실제 Series 객체(bare open/high/low/close/volume 등)일 때만 이 윈도우
-// 로직을 타고, 계산된 변수(스칼라)면 `builtins.sum((source, length))`로 폴백해 `source+length`를
-// 반환하는 별개의(잘못된) 값을 낸다 — pine2js는 모든 인자가 애초에 스칼라라 이 구분 자체가 없고
-// 항상 올바른 윈도우 합계를 계산한다(TV 실제 시맨틱과 일치, latent pine2py 버그는 미추종).
+// math.sum(source, length) - the na-skipping rolling sum ta.sma is built on (naSkipSum): the sum
+// of the last `length` non-na values, na until that many have arrived. pine2py's math.sum counted
+// na as 0 and summed whatever prefix it had during the warm-up (0.0 over an all-na window); both
+// contradict the reference and the oracle (see naSkipSum).
 export function sum(state: SumState, value: number, length: number): number {
-  length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조)
-  if (state.buffer === undefined) {
-    state.buffer = new Array(length).fill(NaN);
-    state.writeIdx = 0;
-    state.sum = 0;
-  }
-  const buffer = state.buffer;
-  const writeIdx = state.writeIdx!;
-  const oldVal = buffer[writeIdx]!;
-  buffer[writeIdx] = value;
-  state.writeIdx = (writeIdx + 1) % length;
-  state.sum = state.sum! - (Number.isNaN(oldVal) ? 0 : oldVal) + (Number.isNaN(value) ? 0 : value);
-  return state.sum;
+  return naSkipSum(state, value, length);
 }
 
 export interface RandomState {

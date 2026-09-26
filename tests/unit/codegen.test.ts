@@ -939,10 +939,11 @@ describe("CodeGen", () => {
     expect(bars[3]!["var:__obs_r"]).toBeGreaterThanOrEqual(0);
   });
 
-  it("transpile() end-to-end: math.sum(source, length) sums the last length non-na values, unlike ta.sma it never poisons to na on an embedded gap", () => {
-    // ta.sma(close,3)라면 close[1]=NaN이 창에 들어온 바(인덱스 2,3)에서 결과가 na가 되지만,
-    // math.sum은 na를 기여 0으로 스킵할 뿐이라 na가 아닌 값을 낸다(analyzer.ts TA_REGISTRY.sum
-    // 주석 참조 — pine2py 소스의 실제(Series 인자) 분기와 동일한 na-skip 원칙).
+  // math.sum is the sum of the last `length` NON-na values, na until that many have arrived
+  // (ref_v6_ta_math.txt "math.sum": "the function calculates on the `length` quantity of non-`na`
+  // values"; resin-harness indicators probes I01/I08). These two tests asserted pine2py's na-as-0
+  // and warm-up partial sums before.
+  it("transpile() end-to-end: math.sum(source, length) sums the last length non-na values, an embedded na is skipped", () => {
     const source = ["var float __obs_sum = na", "__obs_sum := math.sum(close, 3)"].join("\n");
     const result = transpile(source);
     expect(result.ok).toBe(true);
@@ -952,12 +953,12 @@ describe("CodeGen", () => {
     const data: OHLCVData = { open: close, high: close, low: close, close, volume: close };
     const { bars } = run(result.code, result.varSlots, result.taSlotCount, data, result.fnVarSlotCount);
 
-    // window(오프셋 0..2, NaN-프라임): bar0=[10]->10, bar1=[10,NaN]->10, bar2=[10,NaN,20]->30,
-    // bar3=[NaN,20,30]->50(bar0의 10이 창 밖으로 밀려남), bar4=[20,30,40]->90.
-    expect(bars.map((b) => b["var:__obs_sum"])).toEqual([10, 10, 30, 50, 90]);
+    // non-na window: bar0=[10]->na, bar1=[10]->na, bar2=[10,20]->na, bar3=[10,20,30]->60,
+    // bar4=[20,30,40]->90 (the 10 leaves; the na never entered).
+    expect(bars.map((b) => b["var:__obs_sum"])).toEqual([NaN, NaN, NaN, 60, 90]);
   });
 
-  it("transpile() end-to-end: math.sum returns 0 (not na) when every value in the window is na", () => {
+  it("transpile() end-to-end: math.sum returns na while the window holds only na", () => {
     const source = ["var float __obs_sum = na", "__obs_sum := math.sum(close, 2)"].join("\n");
     const result = transpile(source);
     expect(result.ok).toBe(true);
@@ -967,7 +968,7 @@ describe("CodeGen", () => {
     const data: OHLCVData = { open: close, high: close, low: close, close, volume: close };
     const { bars } = run(result.code, result.varSlots, result.taSlotCount, data, result.fnVarSlotCount);
 
-    expect(bars.map((b) => b["var:__obs_sum"])).toEqual([0, 0, 0]);
+    expect(bars.map((b) => b["var:__obs_sum"])).toEqual([NaN, NaN, NaN]);
   });
 
   it("allows math.sum inside a conditional if-body (per-call state advance, e2e run)", () => {
@@ -987,11 +988,11 @@ describe("CodeGen", () => {
     const { bars } = run(result.code, result.varSlots, result.taSlotCount, data, result.fnVarSlotCount);
 
     // bar0/bar1(close<=102): 조건 F, 콜 스킵 -> __obs_sum은 초기값 na 그대로.
-    // bar2(close=103>102): 첫 호출, window=[103] -> 103. bar3(close=104>102): 둘째 호출,
-    // window=[103,104] -> 207(바0/1이 스킵돼 창에 없다는 점이 스모킹 건).
+    // bar2(close=103>102): 첫 호출, window=[103] -> na (one value of 2). bar3(close=104>102): 둘째
+    // 호출, window=[103,104] -> 207(바0/1이 스킵돼 창에 없다는 점이 스모킹 건).
     expect(bars[0]!["var:__obs_sum"]).toBeNaN();
     expect(bars[1]!["var:__obs_sum"]).toBeNaN();
-    expect(bars[2]!["var:__obs_sum"]).toBe(103);
+    expect(bars[2]!["var:__obs_sum"]).toBeNaN();
     expect(bars[3]!["var:__obs_sum"]).toBe(207);
   });
 
@@ -5505,7 +5506,8 @@ describe("CodeGen", () => {
     expect(() => {
       bars = run(result.code, result.varSlots, result.taSlotCount, data, result.fnVarSlotCount, result.historySlotCount, result.taScratchSize).bars;
     }).not.toThrow();
-    expect(bars.map((b) => b["var:__obs"])).toEqual([0.5, 1.5, 2.5]);
+    // math.sum(close, 2) is na until two values have arrived (ref_v6_ta_math.txt "math.sum").
+    expect(bars.map((b) => b["var:__obs"])).toEqual([NaN, 1.5, 2.5]);
   });
 
   it("still leaves an unrelated func-local '=' local's codegen unchanged when its name does not collide with any UDF (C576 regression guard)", () => {
@@ -13876,17 +13878,18 @@ describe("CodeGen request.security expression 확장 좁은 문법 (C367)", () =
     expect(lines).toContain("out[h] = rt.ta.sum($.taSlots[0], close, 2);");
   });
 
-  it("hand-verified E2E: math.sum(close, 2) accumulates a running window over the HTF-native close sequence (na-skip semantics, never poisons)", () => {
+  it("hand-verified E2E: math.sum(close, 2) accumulates a running window over the HTF-native close sequence (na until the window fills)", () => {
     // HTF(daily) close 행별: row0=103(day1 완성), row1=109(day2 완성), row2=114(day3 완성),
-    // row3=116(day4 진행 중, forming). sum(close,2)의 슬라이딩 윈도우(never-NaN, C543/runtime.test.ts
-    // "math.sum" describe): row0=103(창 미충족이지만 na 포이즌 없음), row1=103+109=212(창 충족),
+    // row3=116(day4 진행 중, forming). sum(close,2)의 슬라이딩 윈도우(runtime.test.ts "math.sum"
+    // describe): row0=na(창 미충족 — ref_v6_ta_math.txt "math.sum" calculates on `length` non-na
+    // values; this test expected pine2py's partial 103 before), row1=103+109=212(창 충족),
     // row2=109+114=223(103 축출), row3=114+116=230(109 축출, 안 보임 — 아래 참조).
     // lookahead=off(기본)라 진행 중인 바는 "마지막으로 완성된" 이전 HTF row만 본다(day1 진행
-    // idx0-2는 완성된 이전 row가 없어 NaN, day2 진행 idx3-5는 row0=103, day3 진행 idx6-8은
+    // idx0-2는 완성된 이전 row가 없어 NaN, day2 진행 idx3-5는 row0=na, day3 진행 idx6-8은
     // row1=212, day4 진행(마지막 바) idx9는 row2=223 — row3은 아직 미완성이라 안 보임, 위 nested
     // ta.sma(ta.tr,2) 테스트와 동일한 가시성 패턴).
     const bars = runOf('var float x = na\nx := request.security("", "D", math.sum(close, 2))');
-    expect(bars).toEqual([NaN, NaN, NaN, 103, 103, 103, 212, 212, 212, 223]);
+    expect(bars).toEqual([NaN, NaN, NaN, NaN, NaN, NaN, 212, 212, 212, 223]);
   });
 
   it("emits the substituted definition with a re-evaluated rt.input lookup inside the prepass (len = input.int)", () => {

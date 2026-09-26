@@ -858,12 +858,10 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // latent 버그로 판단(GOAL.md "pine2py의 알려진 버그는 따르지 않는다", DIVERGENCES.md #15).
   // pine2js는 애초에 모든 인자가 codegen에서 스칼라로 낮춰지므로(GOAL.md "명시적 .get(0)") sma류와
   // 동일하게 taSlots 순환 버퍼로 이식 — length가 버퍼 크기를 고정하므로 sma와 동일하게
-  // lengthArgIndex: 1(series 하드 에러). NaN 처리는 sma(포이즌)와 달리 pine2py 소스의
-  // `if not isnan(val): total += val`를 그대로 따라 NaN은 항상 기여 0(runtime/ta.ts sum() 주석
-  // 참조) — 전부 na여도 na가 아니라 0.0을 반환한다.
-  // C551: seriesLengthOk true — pine2py math.sum도 상태 없이 매 호출 min(length, dataLen)만큼
-  // 재스캔하는 무상태 함수(get_ta_state 미사용, python 직접 실행 확인)라 가변 length 오라클
-  // 성립(runtime/ta.ts sumVarLen 참조, stdevVarLen과 다르게 워밍업 NaN 게이트 자체가 없음).
+  // lengthArgIndex: 1(series 하드 에러). The window is the last `length` non-na values and the sum
+  // is na until that many have arrived, as ta.sma's (runtime/ta.ts naSkipSum; ref_v6_ta_math.txt
+  // "math.sum"): pine2py's na-as-0 and warm-up partial sums are not followed.
+  // C551: seriesLengthOk true (runtime/ta.ts sumVarLen).
   sum: { dispatch: "math", displayName: "math.sum", argCount: 2, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.sum" },
   // math.random(min=0.0, max=1.0, seed) — C120, math.* 잔여 마지막 항목. pine2py wavealgo/math/
   // __init__.py L102-106: `random(min_val=0.0, max_val=1.0, seed=None)`가 Python 표준 random

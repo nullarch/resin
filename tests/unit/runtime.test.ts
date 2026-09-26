@@ -255,11 +255,18 @@ describe("ta.sma", () => {
     expect(sma(stateB, 100, 2)).toBeNaN();
   });
 
-  it("re-contaminates with NaN when a new value is NaN", () => {
+  // An na source is skipped, not a hole that poisons the window: the average covers the last
+  // `length` non-na values, and an na bar reports the standing average (ref_v6_ta_math.txt
+  // "ta.sma": "`na` values in the `source` series are ignored"; the oracle's na-compacted
+  // math.sum; resin-harness state/repros/ta.ma-seed-3.json, indicators probe I01). This test
+  // asserted the pine2py poisoning before.
+  it("skips an na value: the window is the last length non-na values, an na bar reports the standing average", () => {
     const state = {};
-    sma(state, 1, 2);
-    sma(state, 2, 2);
-    expect(sma(state, NaN, 2)).toBeNaN();
+    expect(sma(state, 1, 2)).toBeNaN();
+    expect(sma(state, NaN, 2)).toBeNaN(); // warm-up counts non-na values, not bars
+    expect(sma(state, 2, 2)).toBeCloseTo(1.5, 12);
+    expect(sma(state, NaN, 2)).toBeCloseTo(1.5, 12);
+    expect(sma(state, 4, 2)).toBeCloseTo(3, 12); // [2, 4]: the na never entered
   });
 });
 
@@ -3582,12 +3589,16 @@ describe("ta.sma variable(series) length (smaVarLen)", () => {
     expect(smaVarLen(state, 30, 3, 10, 2)).toBeCloseTo(20, 12);
   });
 
-  it("poisons the result while any value in the trailing window is NaN, then recovers (fixed-length sma parity)", () => {
+  // The fixed-length rule with a series length: the window is the last `length` non-na values
+  // (ref_v6_ta_math.txt "ta.sma"; resin-harness state/repros/ta.ma-seed-3.json). This test
+  // asserted the pine2py poisoning before.
+  it("skips na values: the window is the last length non-na values, whatever the length (fixed-length sma parity)", () => {
     const state = {};
     smaVarLen(state, 10, 2, 10, 0);
-    expect(smaVarLen(state, NaN, 2, 10, 1)).toBeNaN();
-    expect(smaVarLen(state, 20, 2, 10, 2)).toBeNaN(); // 창에 NaN 바 포함
-    expect(smaVarLen(state, 30, 2, 10, 3)).toBeCloseTo(25, 12); // [20,30]
+    expect(smaVarLen(state, NaN, 2, 10, 1)).toBeNaN(); // one non-na value so far
+    expect(smaVarLen(state, 20, 2, 10, 2)).toBeCloseTo(15, 12); // [10,20]
+    expect(smaVarLen(state, NaN, 1, 10, 3)).toBe(20); // [20]
+    expect(smaVarLen(state, 30, 3, 10, 4)).toBeCloseTo(20, 12); // [10,20,30]
   });
 
   it("keeps independent state across two call sites (per-call-site private history buffer)", () => {
@@ -4038,12 +4049,17 @@ describe("ta.stdev variable(series) length (stdevVarLen)", () => {
 });
 
 describe("math.sum variable(series) length (sumVarLen)", () => {
-  it("sums whatever's available with no warmup NaN gate — min(length, observed bars), NaN elements contribute 0 (not poison)", () => {
+  // The sum of the last `length` non-na values, na until that many have arrived
+  // (ref_v6_ta_math.txt "math.sum": "the function calculates on the `length` quantity of
+  // non-`na` values"; indicators probe I01/I08 in resin-harness). This test asserted pine2py's
+  // warm-up partial sums and na-as-0 before.
+  it("sums the last length non-na values, na until that many have arrived", () => {
     const state = {};
     expect(sumVarLen(state, 10, 1, 10, 0)).toBe(10);
-    expect(sumVarLen(state, NaN, 2, 10, 1)).toBe(10); // 창=[NaN,10] → NaN 기여 0
-    expect(sumVarLen(state, 30, 5, 10, 2)).toBe(40); // length(5) > 관측 3바 → min(5,3)=3, 창=[30,NaN,10]
-    expect(sumVarLen(state, 40, 3, 10, 3)).toBe(70); // 창=[40,30,NaN] → NaN 기여 0
+    expect(sumVarLen(state, NaN, 2, 10, 1)).toBeNaN(); // one non-na value so far
+    expect(sumVarLen(state, 30, 5, 10, 2)).toBeNaN(); // two non-na values so far
+    expect(sumVarLen(state, 40, 3, 10, 3)).toBe(80); // [10,30,40]: the na never entered
+    expect(sumVarLen(state, NaN, 2, 10, 4)).toBe(70); // [30,40]
   });
 
   it("length<=0 → 0 (pine2py crash-free 0.0 literal port, python 직접 확인 — no negative-zero concern, pure sum)", () => {
@@ -4061,8 +4077,9 @@ describe("math.sum variable(series) length (sumVarLen)", () => {
     const state = {};
     sumVarLen(state, 10, 2, 10, 0);
     sumVarLen(state, 90, 2, 10, 0);
-    expect(sumVarLen(state, 30, 2, 10, 0)).toBe(30); // 창=[30] (여전히 1바)
-    expect(sumVarLen(state, 50, 2, 10, 1)).toBe(80); // 창=[30(bar0 최종),50]
+    expect(sumVarLen(state, 30, 1, 10, 0)).toBe(30); // 창=[30] (여전히 1바)
+    expect(sumVarLen(state, NaN, 1, 10, 1)).toBe(30); // an na execution stores nothing...
+    expect(sumVarLen(state, 50, 2, 10, 1)).toBe(80); // ...and the bar's last one decides: 창=[30(bar0 최종),50]
   });
 
   it("fractional length truncates toward zero (Math.trunc, array-index rule)", () => {
@@ -7361,43 +7378,51 @@ describe("ta.dmi", () => {
   });
 });
 
+// math.sum is the sum of the last `length` NON-na values, na until that many have arrived
+// (ref_v6_ta_math.txt "math.sum": "`na` values in the `source` series are ignored; the function
+// calculates on the `length` quantity of non-`na` values"; PyneCore lib/_math_stateful.py sum;
+// resin-harness indicators probes I01/I08: `math.sum(close, 20)` is na on bar 0). These tests
+// asserted pine2py's warm-up partial sums and na-as-0 before.
 describe("ta.sum (math.sum runtime, TA_REGISTRY.sum dispatch:'math')", () => {
-  it("sums a full window once length values have been pushed", () => {
+  it("is na until length values have been pushed, then sums the full window", () => {
     const state: Parameters<typeof sum>[0] = {};
-    expect(sum(state, 10, 3)).toBe(10);
-    expect(sum(state, 20, 3)).toBe(30);
+    expect(sum(state, 10, 3)).toBeNaN();
+    expect(sum(state, 20, 3)).toBeNaN();
     expect(sum(state, 30, 3)).toBe(60);
     // 4th push evicts the first(10): window is now [20,30,40].
     expect(sum(state, 40, 3)).toBe(90);
   });
 
-  it("na values contribute 0 (no poisoning, unlike sma) — an embedded na still leaves a finite sum", () => {
+  it("skips na values: they neither enter the window nor evict from it", () => {
     const state: Parameters<typeof sum>[0] = {};
     sum(state, 10, 3); // window [10]
-    sum(state, NaN, 3); // window [10, NaN] -> na contributes 0
-    expect(sum(state, 20, 3)).toBe(30); // window [10, NaN, 20] -> 10+0+20
-    // next push evicts the leading 10 (not the na) — window [NaN, 20, 30].
-    expect(sum(state, 30, 3)).toBe(50);
+    expect(sum(state, NaN, 3)).toBeNaN(); // window [10]: warm-up counts non-na values
+    sum(state, 20, 3); // window [10, 20]
+    expect(sum(state, 30, 3)).toBe(60); // window [10, 20, 30]
+    expect(sum(state, NaN, 3)).toBe(60); // an na bar reports the standing sum
+    expect(sum(state, 40, 3)).toBe(90); // the 10 leaves, not the na: [20, 30, 40]
   });
 
-  it("returns 0 (not NaN) when the entire window is na", () => {
+  it("returns na while the window holds only na", () => {
     const state: Parameters<typeof sum>[0] = {};
-    expect(sum(state, NaN, 2)).toBe(0);
-    expect(sum(state, NaN, 2)).toBe(0);
+    expect(sum(state, NaN, 2)).toBeNaN();
+    expect(sum(state, NaN, 2)).toBeNaN();
   });
 
-  it("sums whatever has been pushed so far when length exceeds the number of calls made (no poisoning from the NaN-primed unwritten slots)", () => {
+  it("returns na while fewer than length values have been pushed", () => {
     const state: Parameters<typeof sum>[0] = {};
-    expect(sum(state, 5, 100)).toBe(5);
-    expect(sum(state, 7, 100)).toBe(12);
-    expect(sum(state, 3, 100)).toBe(15);
+    expect(sum(state, 5, 100)).toBeNaN();
+    expect(sum(state, 7, 100)).toBeNaN();
+    expect(sum(state, 3, 100)).toBeNaN();
   });
 
-  it("length=1 degenerates to the current value every call", () => {
+  // PyneCore lib/_math_stateful.py sum: "MEASURED, probe sumlen4: a length-1 sum on an na bar
+  // echoes the last NON-NA value instead of returning na".
+  it("length=1 degenerates to the current value every call, and echoes the last non-na value on an na bar", () => {
     const state: Parameters<typeof sum>[0] = {};
     expect(sum(state, 5, 1)).toBe(5);
     expect(sum(state, 9, 1)).toBe(9);
-    expect(sum(state, NaN, 1)).toBe(0);
+    expect(sum(state, NaN, 1)).toBe(9);
   });
 
   it("independent states don't share a buffer (regression guard, same pattern as ta.cmo)", () => {
@@ -7405,7 +7430,8 @@ describe("ta.sum (math.sum runtime, TA_REGISTRY.sum dispatch:'math')", () => {
     const stateB: Parameters<typeof sum>[0] = {};
     sum(stateA, 10, 2);
     sum(stateA, 20, 2);
-    expect(sum(stateB, 100, 2)).toBe(100);
+    expect(sum(stateB, 100, 2)).toBeNaN();
+    expect(sum(stateB, 1, 2)).toBe(101);
   });
 
   it("matches a brute-force windowed na-skip sum over a random fuzz (5,000 samples, length 1/3/7)", () => {
@@ -7419,13 +7445,15 @@ describe("ta.sum (math.sum runtime, TA_REGISTRY.sum dispatch:'math')", () => {
       for (let i = 0; i < 5000; i++) values.push(rng() < 0.1 ? NaN : rng() * 200 - 100);
 
       const state: Parameters<typeof sum>[0] = {};
+      const seen: number[] = [];
       for (let i = 0; i < values.length; i++) {
         const actual = sum(state, values[i]!, length);
-        let expected = 0;
-        for (let j = Math.max(0, i - length + 1); j <= i; j++) {
-          const v = values[j]!;
-          if (!Number.isNaN(v)) expected += v;
+        if (!Number.isNaN(values[i]!)) seen.push(values[i]!);
+        if (seen.length < length) {
+          expect(actual).toBeNaN();
+          continue;
         }
+        const expected = seen.slice(-length).reduce((a, b) => a + b, 0);
         expect(actual).toBeCloseTo(expected, 6);
       }
     }

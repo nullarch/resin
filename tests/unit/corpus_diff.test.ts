@@ -544,8 +544,15 @@ describe("corpus diff: sample bar-by-bar replay against pine2py golden", () => {
     // (length - 1 - offset), as do the PyneCore oracle (lib/ta.py linreg) and tier 1 resin-harness
     // suites/indicators/tv/ta_181_linreg (linreg(close, 20, 10)). Floor moved to the observed
     // matched 2331 / mismatch 584; nothing else changed.
-    expect(matched.length).toBeGreaterThanOrEqual(2331);
-    expect(mismatched.length).toBeLessThanOrEqual(584);
+    // 2026-09-26 math.sum and ta.sma sum the last `length` NON-na values and are na until that many
+    // have arrived: exactly three hashes went matched -> mismatch (163ec650b4fc math.sum(close, 3),
+    // 5e6f700f2ea4 and bb543447a2e6 math.sum(close, 5)), all on bar 0, where pine2py (not ground
+    // truth) returned the partial sum of the bars so far. ref_v6_ta_math.txt "math.sum" ("the
+    // function calculates on the `length` quantity of non-`na` values") and the PyneCore oracle
+    // (lib/_math_stateful.py sum) say na; resin-harness indicators probes I01/I08. Floor moved to
+    // the observed matched 2328 / mismatch 587; nothing else changed.
+    expect(matched.length).toBeGreaterThanOrEqual(2328);
+    expect(mismatched.length).toBeLessThanOrEqual(587);
     expect(transpileFailed.length).toBeLessThanOrEqual(86);
     expect(runtimeFailed.length, `runtime failures: ${runtimeFailed.map((o) => `${o.hash}: ${o.detail}`).join(" | ")}`).toBe(0);
     expect(noComparable.length, `no comparable key: ${noComparable.map((o) => o.hash).join(", ")}`).toBeLessThanOrEqual(2);

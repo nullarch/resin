@@ -18,8 +18,9 @@ __obs_stdev1 := ta.stdev(close, lenA)
 lenB = bar_index % 2 == 0 ? -1 : 2
 var float __obs_stdev2 = na
 __obs_stdev2 := ta.stdev(close, lenB)
-// math.sum: lenA를 재사용해 워밍업 구간(바 0/1)에서도 median/linreg/stdev와 달리 NaN 게이트가
-// 없음(있는 만큼만 합산)을 같은 바 나란히 대조. source는 bare series(high)여야만 한다 — pine2py
+// math.sum: lenA를 재사용해 워밍업 구간(바 0/1, na: fewer values than the length; golden
+// hand-edited over pine2py's partial sums, see tests/oracle/ta_stdev_sum_varlen.test.ts)을 같은 바
+// 나란히 대조. source는 bare series(high)여야만 한다 — pine2py
 // wa.math.sum은 (median.py/linreg.py/stdev.py와 달리) ensure_series/context 승격 자체가 없어
 // 계산된(스칼라) source를 넘기면 `builtins.sum(args)`(=source+length) 폴백으로 완전히 다른 값을
 // 내는 기존 latent 버그를 그대로 탄다(DIVERGENCES #15, oracle/cases/math_sum.pine과 동일 제약 —
@@ -27,9 +28,8 @@ __obs_stdev2 := ta.stdev(close, lenB)
 // 실측 재확인함).
 var float __obs_sum1 = na
 __obs_sum1 := math.sum(high, lenA)
-// lenC = bar_index + 3: 관측 바 수보다 항상 큰 length — pine2py가 min(length, dataLen)로 있는
-// 만큼만 합산하고 na를 반환하지 않는 축(sma/median/linreg/stdev의 워밍업 NaN 게이트와 대비되는
-// math.sum 고유 시맨틱)을 전 바에 걸쳐 직접 검증.
+// lenC = bar_index + 3: 관측 바 수보다 항상 큰 length — the window never fills, so math.sum is
+// na on every bar (the warm-up gate sma/median/linreg/stdev share).
 lenC = bar_index + 3
 var float __obs_sum2 = na
 __obs_sum2 := math.sum(close, lenC)
