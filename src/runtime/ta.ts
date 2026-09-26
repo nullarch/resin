@@ -787,9 +787,9 @@ export function cmo(state: CmoState, value: number, length: number): number {
 
   if (Number.isNaN(state.sumGains!)) return NaN;
 
-  const denom = state.sumGains! + state.sumLosses!;
-  if (denom === 0) return 0;
-  return (100 * (state.sumGains! - state.sumLosses!)) / denom;
+  // Both sums zero (a flat window) is the manual's `100 * (sm1 - sm2) / (sm1 + sm2)` at 0/0: NaN,
+  // na, not 0 (see "Division by zero" at ta.iii; oracle lib/ta.py cmo "TradingView's 0/0 is nan").
+  return (100 * (state.sumGains! - state.sumLosses!)) / (state.sumGains! + state.sumLosses!);
 }
 
 export interface CciState {
@@ -854,7 +854,8 @@ function cciFromBuffer(buffer: number[], length: number, current: number): numbe
   let meanDevSum = 0;
   for (const v of buffer) meanDevSum += Math.abs(v - smaVal);
   const meanDev = meanDevSum / length;
-  if (meanDev === 0) return 0;
+  // A zero deviation divides to a non-finite value, na on a plot, not 0 (see "Division by zero" at
+  // ta.iii; oracle lib/ta.py cci divides unguarded, as cciVarLen does).
   return (current - smaVal) / (0.015 * meanDev);
 }
 
@@ -2250,10 +2251,8 @@ export interface StochState {
 // conditional outer-wma skip, hh/ll here are stoch's *primary* window state (not a derived append
 // gated on an inner TA being non-NaN) - pine2py calls highest()/lowest() unconditionally every bar,
 // so both sub-calls must always advance regardless of whether source(close) is itself NaN this bar.
-// pine2py's branch order (stoch.py L44-55) matters and must be replicated exactly: hh/ll NaN check
-// first -> if diff(hh-ll)===0 return 50.0 **before** checking source for NaN (a flat hh===ll window
-// returns 50.0 even when the current bar's source/close happens to be NaN) -> only then check source
-// NaN -> divide.
+// A flat window (hh === ll) is 100 * (source - ll) / 0: non-finite, na on a plot, not pine2py's 50.0
+// (see "Division by zero" at ta.iii; oracle lib/ta.py stoch divides unguarded, as stochVarLen does).
 export function stoch(state: StochState, source: number, high: number, low: number, length: number): number {
   if (state.hh === undefined) {
     state.hh = {};
@@ -2262,10 +2261,8 @@ export function stoch(state: StochState, source: number, high: number, low: numb
   const hh = dequeHighest(state.hh, high, length);
   const ll = dequeLowest(state.ll!, low, length);
   if (Number.isNaN(hh) || Number.isNaN(ll)) return NaN;
-  const diff = hh - ll;
-  if (diff === 0) return 50.0;
   if (Number.isNaN(source)) return NaN;
-  return (100.0 * (source - ll)) / diff;
+  return (100.0 * (source - ll)) / (hh - ll);
 }
 
 export interface WprState {
@@ -2291,10 +2288,8 @@ export interface WprState {
 // unconditional-advance rule (hh/ll are wpr's primary window state, not a derived append gated on
 // another TA being non-NaN, so both sub-calls must run every bar).
 //
-// Branch order mirrors stoch (C43) rather than pine2py's own close-NaN-first order (which was only
-// correct for pine2py's particular skip-window design): hh/ll NaN check first -> flat window
-// (diff(hh-ll)===0) returns 0.0 **regardless of close's NaN state** (pine2py wpr.py L68-69 confirms 0.0,
-// not stoch's 50.0) -> only then check close for NaN -> divide.
+// A flat window (hh === ll) is 100 * (close - hh) / 0: non-finite, na on a plot, not pine2py's 0.0
+// (see "Division by zero" at ta.iii; oracle lib/ta.py wpr divides unguarded, as wprVarLen does).
 export function wpr(state: WprState, close: number, high: number, low: number, length: number): number {
   if (state.hh === undefined) {
     state.hh = {};
@@ -2304,7 +2299,6 @@ export function wpr(state: WprState, close: number, high: number, low: number, l
   const ll = dequeLowest(state.ll!, low, length);
   if (Number.isNaN(hh) || Number.isNaN(ll)) return NaN;
   const diff = hh - ll;
-  if (diff === 0) return 0.0;
   if (Number.isNaN(close)) return NaN;
   return (100.0 * (close - hh)) / diff;
 }
@@ -3056,8 +3050,9 @@ export interface TsiState {
 // + short=long=1 degenerate + source NaN gaps + zigzag + 5,000-sample fuzz across several
 // short/long pairs, all PASS). prevSource is raw-passthrough (mirrors change/cmo/crossover): it is
 // overwritten with the current value whenever value itself is non-NaN, even if the old prevSource
-// was NaN - only value being NaN skips the update. e2AbsVal===0 returns 0.0 (not NaN), matching
-// tsi.py L128-129.
+// was NaN - only value being NaN skips the update. e2AbsVal===0 (a flat source) divides to a
+// non-finite value, na on a plot, not pine2py's 0.0 (see "Division by zero" at ta.iii; oracle
+// lib/ta.py tsi returns `tsi_value / abs_value` unguarded).
 export function tsi(state: TsiState, value: number, shortLength: number, longLength: number): number {
   if (state.prevSource === undefined) {
     state.prevSource = NaN;
@@ -3081,7 +3076,6 @@ export function tsi(state: TsiState, value: number, shortLength: number, longLen
   const e2AbsVal = ema(state.e2Abs!, e1AbsVal, shortLength);
 
   if (Number.isNaN(e2PcVal) || Number.isNaN(e2AbsVal)) return NaN;
-  if (e2AbsVal === 0) return 0.0;
   return e2PcVal / e2AbsVal;
 }
 
@@ -3237,21 +3231,17 @@ export interface AccDistState {
   cum?: number;
 }
 
-// ta.accdist() - Accumulation/Distribution. Pine 문법상 인자가 없고(close/high/low/volume은 bar
-// series 암묵 사용, obv와 동일한 implicit unshift 패턴) codegen이 넷을 앞에 끼워 넣는다
-// (TA_REGISTRY.accdist argCount:0). pine2py wavealgo/ta/accdist.py 소스 대조 결과 상태 없는 순수
-// mfv=((close-low)-(high-close))/(high-low)*volume(high===low면 mfv=0.0) 계산 후 러닝 합계에
-// 누적하는 ta.cum(C37)과 같은 모양이지만, NaN 처리는 cum과 다르다 — cum은 NaN 입력을 0으로
-// 치환해 누적을 계속 이어가지만, accdist는 넷 중 하나라도 NaN이면 mfv 계산 자체를 건너뛰고 cum을
-// 갱신하지 않은 채 그대로 NaN을 반환한다(cum의 "NaN→0 치환" 패턴이 아니라 ema/rma류의 "NaN이면
-// 상태 불변" 패턴과 같은 부류 — probe_obv.mjs "accdist NaN gap" 케이스로 cum이 갭 이전 값을 그대로
-// 유지함을 확인).
+// ta.accdist() - Accumulation/Distribution. No arguments: codegen passes close/high/low/volume
+// (TA_REGISTRY.accdist argCount:0). A running total of the money flow volume
+// mfv = ((close - low) - (high - close)) / (high - low) * volume. A flat bar (high == low) is not
+// pine2py's mfv 0: it divides (see "Division by zero" at ta.iii), and a NaN mfv (0/0, or ±inf times
+// a zero volume) leaves the total alone while ±inf enters it (oracle lib/ta.py accdist:
+// `if mfv == mfv: ad += mfv`). An na input is na on its bar and leaves the total alone.
 export function accdist(state: AccDistState, close: number, high: number, low: number, volume: number): number {
   if (Number.isNaN(close) || Number.isNaN(high) || Number.isNaN(low) || Number.isNaN(volume)) return NaN;
-  const hlRange = high - low;
-  const mfv = hlRange === 0 ? 0 : ((close - low) - (high - close)) / hlRange * volume;
+  const mfv = (((close - low) - (high - close)) / (high - low)) * volume;
   if (state.cum === undefined) state.cum = 0;
-  state.cum += mfv;
+  if (!Number.isNaN(mfv)) state.cum += mfv;
   return state.cum;
 }
 
@@ -3374,32 +3364,31 @@ export function pvi(state: PviState, close: number, volume: number): number {
   return currentPvi;
 }
 
-// ta.wvad() - Williams Variable Accumulation/Distribution. Pine 문법상 인자가 없고(open/high/low/
-// close/volume은 bar series 암묵 사용) codegen이 다섯을 끼워 넣는다(TA_REGISTRY.wvad argCount:0,
-// 지금까지의 implicit-push 그룹 중 인자 개수가 가장 많음). pine2py wavealgo/ta/wvad.py 소스 대조
-// 결과 obv/pvt/wad/nvi/pvi(TA_IMPLICIT_CALL bare 그룹)와 달리 **완전히 stateless**인 순수 함수 —
-// tr(C53)과 동일 부류라 state 인자는 TA_REGISTRY 디스패치 일관성을 위해서만 받고 내부에서 전혀
-// 안 쓴다. open/high/low/close/volume 중 하나라도 NaN이면 즉시 NaN, high===low(range 0)이면
-// **0.0**(NaN 아님), 아니면 ((close-open)/(high-low))*volume(scratch/probe_wvad_iii.mjs로
-// 브루트포스 대조 완료).
+// ta.wvad() - Williams Variable Accumulation/Distribution, stateless. No arguments: codegen passes
+// open/high/low/close/volume (TA_REGISTRY.wvad argCount:0). The manual's
+// "f_wvad() => (close - open) / (high - low) * volume" (ref_v6_ta_math.txt ta.wvad), so a flat bar
+// divides by zero (see "Division by zero" at ta.iii; oracle lib/ta.py wvad), not pine2py's 0.
 export function wvad(_state: unknown, open: number, high: number, low: number, close: number, volume: number): number {
   if (Number.isNaN(open) || Number.isNaN(high) || Number.isNaN(low) || Number.isNaN(close) || Number.isNaN(volume)) return NaN;
-  const denom = high - low;
-  if (denom === 0) return 0;
-  return ((close - open) / denom) * volume;
+  return ((close - open) / (high - low)) * volume;
 }
 
-// ta.iii() - Intraday Intensity Index. Pine 문법상 인자가 없고(high/low/close/volume은 bar series
-// 암묵 사용) codegen이 넷을 끼워 넣는다(TA_REGISTRY.iii argCount:0). pine2py wavealgo/ta/iii.py
-// 소스 대조 결과 wvad와 동일하게 **완전히 stateless**(tr류) — high/low/close/volume 중 하나라도
-// NaN이면 즉시 NaN, (high-low)*volume===0(range가 0이거나 volume이 0)이면 **0.0**(NaN 아님, wvad와
-// 달리 volume===0만으로도 분모가 0이 될 수 있음 — scratch/probe_wvad_iii.mjs로 별도 검증),
-// 아니면 (2*close-high-low)/((high-low)*volume).
+// ta.iii() - Intraday Intensity Index, stateless. No arguments: codegen passes high/low/close/volume
+// (TA_REGISTRY.iii argCount:0). TradingView divides by the volume, (2 * close - high - low) /
+// ((high - low) * volume) (tier 1 ta_051_iii_nvi_obv; oracle lib/ta.py iii), although the manual's
+// f_iii multiplies by it (ref_v6_ta_math.txt ta.iii).
+//
+// Division by zero. Pine's `/` on a zero denominator is IEEE-754: x / 0 is +inf or -inf by x's sign
+// and 0 / 0 is NaN, and `na()` reads all three as na, so a plot shows none of them (oracle
+// pynecore core/safe_convert.py safe_div: "division by zero returns raw inf/-inf/nan, the `na()`
+// predicate (`not isfinite`) reports them as na"; lib/ta.py cmo: "TradingView's 0/0 is nan, so the
+// oscillator is na").
+// A builtin the reference defines as a quotient therefore returns that quotient, never pine2py's 0:
+// here a flat bar (high == low) or a zero-volume bar is na (indicators probe I07, bars 95 and 97,
+// volume 0). The same holds for ta.wvad, ta.accdist, ta.cmo, ta.cci, ta.stoch, ta.wpr and ta.tsi.
 export function iii(_state: unknown, high: number, low: number, close: number, volume: number): number {
   if (Number.isNaN(high) || Number.isNaN(low) || Number.isNaN(close) || Number.isNaN(volume)) return NaN;
-  const denom = (high - low) * volume;
-  if (denom === 0) return 0;
-  return (2 * close - high - low) / denom;
+  return (2 * close - high - low) / ((high - low) * volume);
 }
 
 export interface VwapState {

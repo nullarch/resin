@@ -1437,12 +1437,14 @@ describe("ta.cmo", () => {
     expect(cmo(stateB, 100, 2)).toBeNaN();
   });
 
-  it("returns 0 (not NaN) when the window has zero net movement (denominator guard)", () => {
+  // Both sums zero is 0/0: NaN, na, not pine2py's 0 (oracle lib/ta.py cmo "TradingView's 0/0 is
+  // nan, so the oscillator is na"; harness state/repros/div-zero-flat.json).
+  it("is NaN when the window has no movement at all (0/0)", () => {
     const state = {};
     cmo(state, 10, 2); // NaN, no prevValue
     cmo(state, 10, 2); // NaN, window len 1 < 2
-    expect(cmo(state, 10, 2)).toBe(0);
-    expect(cmo(state, 10, 2)).toBe(0);
+    expect(cmo(state, 10, 2)).toBeNaN();
+    expect(cmo(state, 10, 2)).toBeNaN();
   });
 
   it("skips (does not poison) the gain/loss window across a NaN gap, unlike ta.sma/ta.vwma/ta.swma's push-and-poison buffers", () => {
@@ -1501,11 +1503,13 @@ describe("ta.cci", () => {
     expect(results[9]).toBeCloseTo(80.0, 9);
   });
 
-  it("returns 0 (not NaN) when the window is perfectly flat (mean deviation guard)", () => {
+  // A zero mean deviation divides by zero (0/0 on a flat window): NaN, na, not pine2py's 0 (oracle
+  // lib/ta.py cci divides unguarded; harness state/repros/div-zero-flat.json).
+  it("is NaN when the window is perfectly flat (0/0)", () => {
     const state = {};
     cci(state, 10, 2);
-    expect(cci(state, 10, 2)).toBe(0);
-    expect(cci(state, 10, 2)).toBe(0);
+    expect(cci(state, 10, 2)).toBeNaN();
+    expect(cci(state, 10, 2)).toBeNaN();
   });
 
   // pine2py cci.py rebuilds its window from source history every bar until the first fully
@@ -2980,13 +2984,16 @@ describe("ta.stoch", () => {
     expect(stoch(state, NaN, 14, 9, 2)).toBeNaN();
   });
 
-  it("returns 50.0 for a fully flat window (hh===ll) even when source is NaN this bar (pine2py stoch.py L48-49: diff===0 short-circuits before the source NaN check)", () => {
+  // A flat window divides by zero: na, not pine2py's 50.0 (oracle lib/ta.py stoch divides unguarded;
+  // harness ta.osc seed 1 bar 35 and state/repros/div-zero-flat.json).
+  it("is NaN for a fully flat window (hh===ll), and for an NaN source", () => {
     const stateA = {};
     stoch(stateA, 100, 100, 100, 2);
-    expect(stoch(stateA, 100, 100, 100, 2)).toBe(50.0);
+    expect(stoch(stateA, 100, 100, 100, 2)).toBeNaN();
+    expect(stoch(stateA, 101, 100, 100, 2)).toBe(Infinity);
     const stateB = {};
     stoch(stateB, NaN, 100, 100, 2);
-    expect(stoch(stateB, NaN, 100, 100, 2)).toBe(50.0);
+    expect(stoch(stateB, NaN, 100, 100, 2)).toBeNaN();
   });
 
   it("matches a from-scratch O(length) brute-force cross-check (Math.max/min over the window) across a sequence with an embedded source NaN gap", () => {
@@ -3072,13 +3079,15 @@ describe("ta.wpr", () => {
     expect(wpr(state, NaN, 14, 9, 2)).toBeNaN();
   });
 
-  it("returns 0.0 for a fully flat window (hh===ll) even when close is NaN this bar (pine2py wpr.py L68-69: rng===0 returns 0.0, not stoch's 50.0 — and, mirroring stoch's branch order, short-circuits before the close NaN check)", () => {
+  // A flat window divides by zero: na, not pine2py's 0.0 (oracle lib/ta.py wpr divides unguarded;
+  // harness ta.osc seed 1 bar 35 and state/repros/div-zero-flat.json).
+  it("is NaN for a fully flat window (hh===ll), and for an NaN close", () => {
     const stateA = {};
     wpr(stateA, 100, 100, 100, 2);
-    expect(wpr(stateA, 100, 100, 100, 2)).toBe(0.0);
+    expect(wpr(stateA, 100, 100, 100, 2)).toBeNaN();
     const stateB = {};
     wpr(stateB, NaN, 100, 100, 2);
-    expect(wpr(stateB, NaN, 100, 100, 2)).toBe(0.0);
+    expect(wpr(stateB, NaN, 100, 100, 2)).toBeNaN();
   });
 
   it("poisons results for `length` bars after a NaN gap (unlike pine2py wpr.py's own skip-NaN window, which would only skip the NaN bar itself and resume immediately — the deliberate divergence documented in DIVERGENCES.md #7)", () => {
@@ -4681,15 +4690,13 @@ describe("ta.tsi", () => {
     expect(tsi(state, 105, 1, 1)).toBeCloseTo(1, 9); // pc=105-102=3, resumes immediately
   });
 
-  it("returns 0.0 (not NaN) when e2's abs-pc EMA is exactly zero (perfectly flat series)", () => {
+  // A flat series makes both smoothed EMAs 0: 0/0, NaN, na, not pine2py's 0.0 (oracle lib/ta.py tsi
+  // returns `tsi_value / abs_value` unguarded; harness state/repros/div-zero-flat.json).
+  it("is NaN when e2's abs-pc EMA is exactly zero (perfectly flat series, 0/0)", () => {
     const state = {};
     const flat = new Array(10).fill(100);
     const results = flat.map((v) => tsi(state, v, 2, 3));
-    expect(results.slice(0, 4).every((r) => Number.isNaN(r))).toBe(true);
-    for (let i = 4; i < 10; i++) {
-      expect(results[i]).toBe(0);
-      expect(Object.is(results[i], -0)).toBe(false);
-    }
+    expect(results.every((r) => Number.isNaN(r))).toBe(true);
   });
 
   it("matches a hand-computed degenerate trace (short_length=1, long_length=1)", () => {
@@ -5956,7 +5963,8 @@ describe("ta.pvi", () => {
   });
 });
 
-// ta.wvad() - Williams Variable A/D = ((close-open)/(high-low))*volume, 0.0 if high===low (not NaN).
+// ta.wvad() - Williams Variable A/D = ((close-open)/(high-low))*volume; high===low divides by zero
+// (Pine's IEEE `/`, oracle lib/ta.py wvad; harness state/repros/div-zero-flat.json).
 // Unlike obv/pvt/wad/nvi/pvi (TA_IMPLICIT_CALL bare group), this is confirmed **fully stateless**
 // (pine2py wavealgo/ta/wvad.py never calls context.get_ta_state) - same category as tr(C53): the
 // state arg exists only for TA_REGISTRY dispatch uniformity and is never read/written.
@@ -5974,9 +5982,12 @@ describe("ta.wvad", () => {
     expect(wvad({}, 100, 102, 99, 101, 1000)).toBeCloseTo(333.3333333333, 9);
   });
 
-  it("returns 0.0 (not NaN) when high===low, regardless of open/close/volume", () => {
-    expect(wvad({}, 100, 100, 100, 105, 1000)).toBe(0);
-    expect(Number.isNaN(wvad({}, 100, 100, 100, 105, 1000))).toBe(false);
+  // Pine's `/` on a zero denominator is IEEE (x/0 = ±inf, 0/0 = NaN), na on a plot; pine2py's 0.0
+  // was wrong (oracle lib/ta.py wvad; harness state/repros/div-zero-flat.json, ta.volume seed 1).
+  it("divides by zero when high===low: ±Infinity, or NaN when close===open", () => {
+    expect(wvad({}, 100, 100, 100, 105, 1000)).toBe(Infinity);
+    expect(wvad({}, 100, 100, 100, 95, 1000)).toBe(-Infinity);
+    expect(wvad({}, 100, 100, 100, 100, 1000)).toBeNaN();
   });
 
   it("propagates NaN when any of open/high/low/close/volume is NaN", () => {
@@ -5999,8 +6010,9 @@ describe("ta.wvad", () => {
   });
 });
 
-// ta.iii() - Intraday Intensity Index = (2*close-high-low)/((high-low)*volume), 0.0 if the
-// denominator ((high-low)*volume) is 0 (either high===low or volume===0). Also fully stateless
+// ta.iii() - Intraday Intensity Index = (2*close-high-low)/((high-low)*volume); a zero denominator
+// (high===low or volume===0) divides by zero (Pine's IEEE `/`, oracle lib/ta.py iii; harness
+// indicators probe I07 bars 95/97 and state/repros/div-zero-flat.json). Also fully stateless
 // like wvad (pine2py wavealgo/ta/iii.py never calls context.get_ta_state) - same tr(C53) category.
 // scratch/probe_wvad_iii.mjs cross-checked this against a literal port of iii.py.
 describe("ta.iii", () => {
@@ -6016,14 +6028,16 @@ describe("ta.iii", () => {
     expect(iii({}, 102, 99, 101, 1000)).toBeCloseTo(1 / 3000, 9);
   });
 
-  it("returns 0.0 (not NaN) when high===low, regardless of close/volume", () => {
-    expect(iii({}, 100, 100, 105, 1000)).toBe(0);
-    expect(Number.isNaN(iii({}, 100, 100, 105, 1000))).toBe(false);
+  // pine2py returned 0.0 here; TradingView's `/` is IEEE and na() reads ±inf/NaN as na (oracle
+  // core/safe_convert.py safe_div; harness indicators probe I07: bars 95 and 97, volume 0, are na).
+  it("divides by zero when high===low: ±Infinity, or NaN when 2*close===high+low", () => {
+    expect(iii({}, 100, 100, 105, 1000)).toBe(Infinity);
+    expect(iii({}, 100, 100, 100, 1000)).toBeNaN();
   });
 
-  it("returns 0.0 (not NaN) when volume===0 even though high!==low (denominator via volume, not range)", () => {
-    expect(iii({}, 102, 99, 101, 0)).toBe(0);
-    expect(Number.isNaN(iii({}, 102, 99, 101, 0))).toBe(false);
+  it("divides by zero when volume===0 even though high!==low (denominator via volume, not range)", () => {
+    expect(iii({}, 102, 99, 101, 0)).toBe(Infinity);
+    expect(iii({}, 102, 99, 100, 0)).toBe(-Infinity);
   });
 
   it("propagates NaN when any of high/low/close/volume is NaN", () => {
