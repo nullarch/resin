@@ -23,12 +23,7 @@ export function in_seconds(timeframe?: string): number {
   return 86400;
 }
 
-// timeframe.change — pine2py wavealgo/__init__.py L269 timeframe_change(timeframe='D')는 인자와
-// 무관하게 항상 False 고정(주석: "백테스트 기본 모드: 항상 False, 단일 타임프레임" — 실제 멀티
-// 타임프레임 경계 감지는 Context에서 이전/현재 바의 타임프레임 경계를 비교해야 하나 미구현).
-export function change(_timeframe: string = "D"): boolean {
-  return false;
-}
+// timeframe.change lives in calendar.ts: it reads the symbol's exchange calendar.
 
 export function from_seconds(seconds: number): string {
   if (seconds <= 0) return "D";

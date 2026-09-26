@@ -9,7 +9,8 @@ import { histGet, secHistGet, refHistGet } from "./series";
 import { length, contains, startswith, endswith, pos, lower, upper, trim, replace_all, replace, substring, repeat, tostring, tonumber, split, match, format, format_number, format_time } from "./str";
 import { rgb, colorNew, from_gradient, colorR, colorG, colorB, colorT, vizColor, vizFlag, vizNum } from "./color";
 import * as inputFns from "./input";
-import { in_seconds, from_seconds, change as timeframeChange } from "./timeframe";
+import { in_seconds, from_seconds } from "./timeframe";
+import { ExchangeCalendar, change as timeframeChange, type CalendarSpec } from "./calendar";
 import * as tickerFns from "./ticker";
 import * as securityFns from "./security";
 import * as requestFns from "./request";
@@ -291,7 +292,10 @@ export const rt = {
   timeframe: {
     in_seconds,
     from_seconds,
+    // timeframe.change(state, timeframe, barTimeMs, barIndex, calendar): a stateful call site; the
+    // calendar is built once per run from the program's symbol calendar (codegen preamble).
     change: timeframeChange,
+    calendar: (spec: CalendarSpec) => new ExchangeCalendar(spec),
   },
   // syminfo.ticker(symbol) 호출형(신규, C430) — bare syminfo.ticker(analyzer.ts
   // SYMINFO_STRING_PROPS 컴파일타임 폴딩)와 별개인 값-반환 콜. builtinCalls 값이

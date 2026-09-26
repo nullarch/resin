@@ -20,11 +20,11 @@
 // 유지) 새 npm 패키지 없이 그대로 쓸 수 있다. (b) 고정 UTC±offset 문자열("UTC-8"/"GMT+9"류,
 // DST 없음) — 정규식으로 직접 파싱. 인식 불가 문자열(오타/미지원 zone)은 조용히 UTC로 폴백
 // (기존 1-인자 동작과 동치 — 이 폴백 규칙 자체도 hand-verified 설계).
-const FIXED_OFFSET_TZ_RE = /^(?:UTC|GMT)([+-]\d{1,2})(?::?(\d{2}))?$/;
+export const FIXED_OFFSET_TZ_RE = /^(?:UTC|GMT)([+-]\d{1,2})(?::?(\d{2}))?$/;
 
 const IANA_ZONE_FORMATTER_CACHE = new Map<string, Intl.DateTimeFormat | null>();
 
-function getIanaZoneFormatter(zone: string): Intl.DateTimeFormat | null {
+export function getIanaZoneFormatter(zone: string): Intl.DateTimeFormat | null {
   const cached = IANA_ZONE_FORMATTER_CACHE.get(zone);
   if (cached !== undefined) return cached;
   let fmt: Intl.DateTimeFormat | null;

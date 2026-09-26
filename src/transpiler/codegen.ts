@@ -354,6 +354,12 @@ export function generateCode(program: AnalyzedProgram): string {
   const promoted = collectPreambleLocals([...funcDecls, ...methodDecls], others);
 
   const lines: string[] = [];
+  // The chart symbol's exchange calendar (AnalyzeOptions.syminfo), built once per run when a call
+  // reads it at run time (timeframe.change). `$calendar` cannot collide with a Pine identifier.
+  if (program.usesCalendar) {
+    const spec = { chartTf: program.chartTf, ...program.calendar };
+    lines.push(`const $calendar = rt.timeframe.calendar(${JSON.stringify(spec)});`);
+  }
   for (const td of typeDecls) lines.push(genTypeDecl(td, program));
   for (const fd of funcDecls) lines.push(genFuncDecl(fd, program));
   for (const md of methodDecls) lines.push(genMethodDecl(md, program));
@@ -4022,6 +4028,14 @@ function genCallExpr(
         genBarRef("low", 0, secCtx),
         genBarRef("close", 0, secCtx),
       );
+    }
+    if (stateCall.fn === "timeframe_change") {
+      // timeframe.change(timeframe) reads the bar's time and bar_index (the first bar never starts a
+      // period) and the run's exchange calendar, built once in the preamble ($calendar, generateCode).
+      // A missing timeframe is padded so the injected arguments keep their positions. request.security
+      // expressions do not take timeframe.change (matchSecurityExprTaCall), so secCtx is null here.
+      if (args.length === 0) args.push("undefined");
+      args.push("$.barTimeMs", "$.idx", "$calendar");
     }
     if (stateCall.fn === "random") {
       // math.random(min=0, max=1, seed=na) — 사용자 인자가 0~3개 가변이라(TA_REGISTRY.minArgCount:0,

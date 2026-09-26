@@ -70,7 +70,9 @@ const FORBIDDEN_KIND_DESC: Record<ScopePushKind, string> = {
 // `math.<name>(...)`이지만 math.round류(stateless)와 달리 고정폭 윈도우 상태가 필요한 함수(math.sum)
 // — "ta"와 처리 로직은 완전히 동일하고 namespace 문자열만 다르다(analyzeCallExpr DotAccess 분기 참조).
 export interface TaRegistryEntry {
-  dispatch: "ta" | "bare" | "math";
+  // "timeframe": `timeframe.change(...)`, registered under its own key (timeframe_change) because
+  // ta.change owns "change"; call-expr.ts routes it explicitly.
+  dispatch: "ta" | "bare" | "math" | "timeframe";
   displayName: string; // 에러 메시지용 (예: "ta.sma", "fixnan")
   argCount: number; // 최대(=기본, minArgCount 생략 시 정확히 이 개수) 인자 개수
   // 선택 인자를 갖는 첫 사례(math.random, C120) — 생략하면 기존 전부와 동일하게 argCount와
@@ -880,6 +882,12 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // site는 seed가 한 번도 안 주어졌을 때의 기본 시퀀스를 콜사이트마다 다르게 만드는 용도일 뿐 TV
   // 시맨틱과 무관한 pine2js 내부 구현 디테일.
   random: { dispatch: "math", displayName: "math.random", argCount: 3, minArgCount: 0, lengthArgIndex: null, conditionalForbidden: true, rtPath: "rt.ta.random" },
+  // timeframe.change(timeframe) — true on the first bar of a new `timeframe` period (ref_v6_lang.txt).
+  // Each call site remembers the period (or the replayed intraday bar) it last saw, so it is
+  // stateful like ta.change. codegen appends the bar's time, bar_index and the run's exchange
+  // calendar (runtime/calendar.ts change). The argument is required in Pine; a bare
+  // `timeframe.change()` is accepted as the chart's own timeframe, as an empty string is.
+  timeframe_change: { dispatch: "timeframe", displayName: "timeframe.change", argCount: 1, minArgCount: 0, lengthArgIndex: null, conditionalForbidden: true, rtPath: "rt.timeframe.change" },
 };
 
 // ta.* kwargs 지원 콜(entry.kwargParamNames)의 위치+키워드 인자를 위치 인자 배열 하나로 정규화한다

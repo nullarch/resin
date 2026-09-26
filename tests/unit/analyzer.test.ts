@@ -6270,24 +6270,28 @@ describe("Analyzer", () => {
     expect(prog.errors.some((e) => e.includes("'timeframe.in_seconds' call argument count mismatch"))).toBe(true);
   });
 
-  it("registers timeframe.change(tf) as a stateless builtinCall with no errors (C235 — pine2py timeframe_change is a hardcoded False constant, not stateful)", () => {
+  // timeframe.change remembers the period each call site last saw (resin-harness tier 1
+  // tf_010_change / tf_011_change2: TradingView's exports fire it on the first bar of each period
+  // only), so it is a stateful call site that reads the exchange calendar, not a constant.
+  it("registers timeframe.change(tf) as a stateful call site that reads the exchange calendar", () => {
     const prog = analyzeSource('x = timeframe.change("D")');
     expect(prog.errors).toEqual([]);
     const stmt = prog.script.body[0] as Assignment;
-    expect(prog.builtinCalls.get(stmt.value as CallExpr)).toBe("timeframe.change");
+    expect(prog.stateCallSlots.get(stmt.value as CallExpr)?.fn).toBe("timeframe_change");
+    expect(prog.usesCalendar).toBe(true);
   });
 
-  it("allows timeframe.change() called with 0 arguments (pine2py signature has a default 'D')", () => {
+  it("allows timeframe.change() called with 0 arguments (read as the chart's own timeframe, as an empty string is)", () => {
     const prog = analyzeSource("x = timeframe.change()");
     expect(prog.errors).toEqual([]);
   });
 
   it("errors on timeframe.change called with 2 arguments", () => {
     const prog = analyzeSource('x = timeframe.change("D", "W")');
-    expect(prog.errors.some((e) => e.includes("'timeframe.change'") && e.includes("requires 0~1"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe.change'") && e.includes("requires 0..1"))).toBe(true);
   });
 
-  it("allows timeframe.change inside a conditional if-body (stateless call, no HoistingPass constraint)", () => {
+  it("allows timeframe.change inside a conditional if-body (its state advances on the bars it is called)", () => {
     const prog = analyzeSource('if close > open\n    x = timeframe.change("D")');
     expect(prog.errors).toEqual([]);
   });

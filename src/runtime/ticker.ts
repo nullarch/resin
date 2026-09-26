@@ -51,7 +51,4 @@ export function inherit(_fromTickerid = "", symbol = ""): string {
   return symbol;
 }
 
-// timeframe.change — pine2py wavealgo/__init__.py L269 timeframe_change(timeframe='D')는 인자와
-// 무관하게 항상 False 고정(주석: "백테스트 기본 모드: 항상 False, 단일 타임프레임" — 실제 멀티
-// 타임프레임 경계 감지는 미구현). 이 함수는 timeframe 네임스페이스 소속이라 src/runtime/
-// timeframe.ts의 change()로 별도 export.
+// timeframe.change is not a ticker function: it lives in src/runtime/calendar.ts.

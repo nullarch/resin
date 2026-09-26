@@ -6113,17 +6113,10 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     }
     prog.builtinCalls.set(expr, `timeframe.${method}`);
   } else if (namespace === "timeframe" && method === "change") {
-    // timeframe.change(C235, ROADMAP P3 next_hint 1순위) — pine2py wavealgo/__init__.py L269
-    // timeframe_change(timeframe='D')는 인자와 무관하게 항상 False 고정(주석: "백테스트 기본 모드:
-    // 항상 False, 단일 타임프레임" — 실제 멀티 타임프레임 경계 감지는 미구현이라 진짜 stateful이
-    // 아니라 상수 반환). in_seconds/from_seconds와 시그니처 형태(단항, 기본값 있는 선택 인자)만
-    // 같아 minArgCount:0으로 0~1개 허용.
-    if (expr.args.length > 1) {
-      prog.errors.push(
-        `'timeframe.change' call argument count mismatch: requires 0~1, got ${expr.args.length} (L${expr.line}:${expr.col})`,
-      );
-    }
-    prog.builtinCalls.set(expr, "timeframe.change");
+    // timeframe.change(timeframe): a stateful call site on the symbol's exchange calendar
+    // (TA_REGISTRY.timeframe_change, runtime/calendar.ts).
+    analyzeStatefulCall(expr, "timeframe_change", TA_REGISTRY.timeframe_change!, prog, scope);
+    prog.usesCalendar = true;
   } else if (namespace === "syminfo" && method === "ticker") {
     // syminfo.ticker(symbol)(신규, C430 — next_hint(C429): wild 2건 6c0c2a7c04ab.pine/
     // a22502c376a6.pine, 둘 다 `ticker1 = syminfo.ticker(sym1)` 형태). bare `syminfo.ticker`

@@ -616,14 +616,22 @@ describe("CodeGen", () => {
     expect(code).toBe("var x = rt.timeframe.from_seconds(86400);");
   });
 
-  it("emits timeframe.change(tf) as rt.timeframe.change(...) (C235)", () => {
+  // timeframe.change is a stateful call site on the run's exchange calendar (resin-harness tier 1
+  // tf_010_change / tf_011_change2, tests/unit/timeframe_change.test.ts): it gets a ta slot, the
+  // bar's time and bar_index, and the calendar the preamble builds once.
+  it("emits timeframe.change(tf) as a stateful call on the preamble's exchange calendar", () => {
     const code = codegenSource('x = timeframe.change("D")');
-    expect(code).toBe('var x = rt.timeframe.change("D");');
+    expect(code).toBe(
+      [
+        'const $calendar = rt.timeframe.calendar({"chartTf":"D","timezone":"UTC","type":"stock","openingHours":[[0,0,86399],[1,0,86399],[2,0,86399],[3,0,86399],[4,0,86399],[5,0,86399],[6,0,86399]],"sessionStarts":[[0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0]]});',
+        'var x = rt.timeframe.change($.taSlots[0], "D", $.barTimeMs, $.idx, $calendar);',
+      ].join("\n"),
+    );
   });
 
-  it("emits timeframe.change() with 0 args as rt.timeframe.change() (C235, pine2py default 'D')", () => {
+  it("pads a bare timeframe.change() so the injected arguments keep their positions", () => {
     const code = codegenSource("x = timeframe.change()");
-    expect(code).toBe("var x = rt.timeframe.change();");
+    expect(code).toContain("var x = rt.timeframe.change($.taSlots[0], undefined, $.barTimeMs, $.idx, $calendar);");
   });
 
   it("emits ticker.new/standard/modify/heikinashi/renko/kagi/linebreak/pointfigure as rt.ticker.* nested calls (C235)", () => {

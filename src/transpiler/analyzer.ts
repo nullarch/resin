@@ -123,6 +123,7 @@ import {
 } from "./analyzer/index-access";
 export { resolveUdtObjectType } from "./analyzer/index-access";
 import { MINCONTRACT, MINMOVE, MINTICK, POINTVALUE, PRICESCALE } from "../runtime/syminfo";
+import { FIXED_OFFSET_TZ_RE, getIanaZoneFormatter } from "../runtime/datetime";
 
 // enum 타입명 -> 멤버 이름 목록(선언 순서) + 멤버별 title(C136, 표시 전용 메타데이터). 값 자체는
 // codegen 표현이 필요 없다 — 멤버 접근(Direction.long)이 analyzer에서 바로 "EnumName.MemberName"
@@ -2026,6 +2027,12 @@ export interface AnalyzedProgram {
   // The syminfo.* number constants of the chart symbol (AnalyzeOptions.syminfo over resin's
   // defaults) — what syminfo.mintick etc. fold to, and the grid codegen hands the strategy engine.
   syminfoNumbers: ReadonlyMap<string, number>;
+  // The syminfo.* string constants: resin's defaults with the symbol's timezone and type.
+  syminfoStrings: ReadonlyMap<string, string>;
+  // The chart symbol's exchange calendar (timezone, type, session schedule; SymbolCalendar), and
+  // whether a call reads it at run time (timeframe.change) so codegen builds it in the preamble.
+  calendar: SymbolCalendar;
+  usesCalendar: boolean;
   varSlots: string[]; // slot index -> 변수명 (선언 순서)
   varIndex: Map<string, number>;
   varTypeHints: Map<string, string | null>;
@@ -3367,19 +3374,94 @@ export interface AnalyzeOptions {
 // contracts/shares/lots/units required to trade the current symbol"), and every money amount taken
 // from a price is scaled by syminfo.pointvalue (faq.txt: "the cost of entering a futures contract
 // position is the chart price multiplied by the syminfo.pointvalue"). Each omitted property keeps
-// resin's default (SYMINFO_NUMBER_PROPS). The other syminfo properties (timezone, currency, ...) are
-// not configurable yet: they stay at resin's fixed values, and keys this type does not name are
-// ignored.
+// resin's default (SYMINFO_NUMBER_PROPS).
+//
+// The symbol's exchange calendar comes with them (SYMINFO_CALENDAR_KEYS): its timezone (an IANA
+// name or "UTC±h[:mm]"), its market type, and its weekly session schedule, `opening_hours`
+// ([{ day, start, end }]) and `session_starts` ([{ day, time }]) with day 0 = Monday … 6 = Sunday
+// and "HH:MM[:SS]" times in the symbol's timezone. syminfo.timezone and syminfo.type fold to them
+// and timeframe.change lays its periods on them (runtime/calendar.ts). The other time builtins
+// (hour, dayofweek, time(), timestamp(), str.format_time, ...) still default to UTC. Without a
+// schedule resin assumes a market open around the clock, every day starting at 00:00.
+//
+// Other syminfo properties (currency, ...) are not configurable yet: they stay at resin's fixed
+// values, and keys this type does not name are ignored.
 export interface SymbolGridOptions {
   mintick?: number;
   pricescale?: number;
   minmove?: number;
   mincontract?: number;
   pointvalue?: number;
+  timezone?: string;
+  type?: string;
+  opening_hours?: readonly { day: number; start: string; end: string }[];
+  session_starts?: readonly { day: number; time: string }[];
 }
 
 // The syminfo properties SymbolGridOptions sets, in StrategyState.setSymbol's argument order.
 export const SYMINFO_OPTION_KEYS: readonly string[] = ["mintick", "pricescale", "minmove", "mincontract", "pointvalue"];
+
+// The exchange-calendar properties SymbolGridOptions sets.
+export const SYMINFO_CALENDAR_KEYS: readonly string[] = ["timezone", "type", "opening_hours", "session_starts"];
+
+// The resolved exchange calendar of the chart symbol (times in seconds of the day), the spec
+// runtime/calendar.ts builds its ExchangeCalendar from.
+export interface SymbolCalendar {
+  timezone: string;
+  type: string;
+  openingHours: readonly (readonly [number, number, number])[];
+  sessionStarts: readonly (readonly [number, number])[];
+}
+
+// Around the clock: every day open from 00:00 to 23:59:59, a session starting at 00:00.
+const ROUND_THE_CLOCK_HOURS: readonly (readonly [number, number, number])[] = [0, 1, 2, 3, 4, 5, 6].map((d) => [d, 0, 86_399] as const);
+const ROUND_THE_CLOCK_STARTS: readonly (readonly [number, number])[] = [0, 1, 2, 3, 4, 5, 6].map((d) => [d, 0] as const);
+
+// "HH:MM[:SS]" -> seconds of the day, or null.
+function parseTimeOfDay(v: unknown): number | null {
+  const m = typeof v === "string" ? /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(v) : null;
+  if (m === null) return null;
+  const h = Number(m[1]);
+  const mi = Number(m[2]);
+  const s = m[3] !== undefined ? Number(m[3]) : 0;
+  return h < 24 && mi < 60 && s < 60 ? h * 3600 + mi * 60 + s : null;
+}
+
+function isWeekday(v: unknown): v is number {
+  return typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 6;
+}
+
+function resolveSymbolCalendar(opts: SymbolGridOptions | undefined, errors: string[]): SymbolCalendar {
+  const timezone = opts?.timezone ?? SYMINFO_STRING_PROPS.get("timezone")!;
+  if (typeof timezone !== "string" || (!FIXED_OFFSET_TZ_RE.test(timezone) && getIanaZoneFormatter(timezone) === null)) {
+    errors.push(`syminfo option 'timezone' must be an IANA timezone name or "UTC±h[:mm]", got ${String(timezone)}`);
+  }
+  const type = opts?.type ?? SYMINFO_STRING_PROPS.get("type")!;
+  if (typeof type !== "string") errors.push(`syminfo option 'type' must be a string, got ${String(type)}`);
+  if (opts?.opening_hours === undefined && opts?.session_starts === undefined) {
+    return { timezone, type, openingHours: ROUND_THE_CLOCK_HOURS, sessionStarts: ROUND_THE_CLOCK_STARTS };
+  }
+  const openingHours: [number, number, number][] = [];
+  for (const oh of opts.opening_hours ?? []) {
+    const start = parseTimeOfDay(oh?.start);
+    const end = parseTimeOfDay(oh?.end);
+    if (!isWeekday(oh?.day) || start === null || end === null) {
+      errors.push(`syminfo option 'opening_hours' entries must be { day: 0..6, start: "HH:MM[:SS]", end: "HH:MM[:SS]" }, got ${JSON.stringify(oh)}`);
+      continue;
+    }
+    openingHours.push([oh.day, start, end]);
+  }
+  const sessionStarts: [number, number][] = [];
+  for (const ss of opts.session_starts ?? []) {
+    const time = parseTimeOfDay(ss?.time);
+    if (!isWeekday(ss?.day) || time === null) {
+      errors.push(`syminfo option 'session_starts' entries must be { day: 0..6, time: "HH:MM[:SS]" }, got ${JSON.stringify(ss)}`);
+      continue;
+    }
+    sessionStarts.push([ss.day, time]);
+  }
+  return { timezone, type, openingHours, sessionStarts };
+}
 
 // The program's syminfo.* number constants: resin's defaults overlaid with the caller's symbol grid.
 // mintick is minmove / pricescale on TradingView ("mintick = minmove / pricescale" — the price grid
@@ -3422,6 +3504,10 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
   const chartTf = options?.chartTf ?? DEFAULT_CHART_TF;
   const syminfoErrors: string[] = [];
   const syminfoNumbers = resolveSyminfoNumbers(options?.syminfo, syminfoErrors);
+  const calendar = resolveSymbolCalendar(options?.syminfo, syminfoErrors);
+  const syminfoStrings = new Map(SYMINFO_STRING_PROPS);
+  syminfoStrings.set("timezone", calendar.timezone);
+  syminfoStrings.set("type", calendar.type);
   // C686: arity-disjoint 함수 오버로드를 AST 사전 개명으로 해소 — 다른 모든 prepass(아래
   // prescanConstVars 포함, 전부 이름 기반)보다 반드시 먼저 실행해야 전 파이프라인이 처음부터
   // 서로 다른 이름의 독립 함수만 본다(func-overloads.ts 주석 참조).
@@ -3440,6 +3526,9 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
     script,
     chartTf,
     syminfoNumbers,
+    syminfoStrings,
+    calendar,
+    usesCalendar: false,
     declaredTypeNames,
     varSlots: [],
     varIndex: new Map(),
@@ -8345,7 +8434,7 @@ export function analyzeExpr(expr: Expr, prog: AnalyzedProgram, scope: LexScope, 
       // 맵에 값 타입별로 나눠 등록(barstate/session의 builtinRuntimeExprs와 달리 새 병렬 맵
       // 불필요 — 위 SYMINFO_STRING_PROPS/SYMINFO_NUMBER_PROPS 주석 참조).
       if (expr.obj.kind === "Identifier" && expr.obj.name === "syminfo" && SYMINFO_STRING_PROPS.has(expr.attr)) {
-        prog.builtinStringConstants.set(expr, SYMINFO_STRING_PROPS.get(expr.attr)!);
+        prog.builtinStringConstants.set(expr, prog.syminfoStrings.get(expr.attr)!);
         return;
       }
       if (expr.obj.kind === "Identifier" && expr.obj.name === "syminfo" && SYMINFO_NUMBER_PROPS.has(expr.attr)) {

@@ -74,8 +74,9 @@ describe("ta.vwap multi-arg overloads through the full pipeline (C362)", () => {
 
   it("transpiles and runs the wild-shaped usage pattern (input source + timeframe.change anchor + plots)", () => {
     // 야생 코퍼스 지배 패턴의 합성 재현: `ta.vwap(src_input, new_session, sd_mult)` 3-인자 튜플
-    // 디스트럭처 + plot 3개. timeframe.change는 pine2py 스텁 동일하게 항상 false(C235)라 리셋
-    // 없는 전체 누적과 동치 — 여기서는 배선(transpile→실행) 관통만 고정한다.
+    // 디스트럭처 + plot 3개. DATA has no time channel, so every bar sits on the same trading day
+    // and timeframe.change("D") never fires: the vwap never resets. Only the wiring
+    // (transpile → run) is pinned here.
     const source = [
       'src_input = input.source(close, "Source")',
       'sd_mult = input.float(2.0, "StdDev mult")',
