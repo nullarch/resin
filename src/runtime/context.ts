@@ -268,8 +268,8 @@ export class Context {
     this.taSlots = Array.from({ length: taSlotCount }, () => ({}));
     this.taScratch = new Float64Array(taScratchSize);
     this.fnVars = new Array(fnVarSlotCount).fill(undefined);
-    this.histSlots = Array.from({ length: historySlotCount }, () => Series.preallocate(data.close.length));
-    this.refHistSlots = Array.from({ length: refHistorySlotCount }, () => RefSeries.preallocate(data.close.length));
+    this.histSlots = Array.from({ length: historySlotCount }, () => Series.history(data.close.length));
+    this.refHistSlots = Array.from({ length: refHistorySlotCount }, () => RefSeries.history(data.close.length));
     this.condCallHistSlots = Array.from({ length: condCallHistorySlotCount }, () => Series.preallocate(data.close.length));
     this.condCallRefHistSlots = Array.from({ length: condCallRefHistorySlotCount }, () => RefSeries.preallocate(data.close.length));
     this.open = new Series(data.open);

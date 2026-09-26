@@ -6654,19 +6654,24 @@ describe("CodeGen", () => {
     }
   });
 
-  // 조건부(호출 안 된 바) 중첩 로컬 히스토리는 그 바의 record가 아예 없어 Series 슬롯이 preallocate
-  // 시점의 NaN 그대로 남는다 -- UDF C364(b)와 동일한 "호출 안 된 바가 NaN 갭으로 남는다" 설계
-  // 그대로(ROADMAP (b) 슬라이스 주석 참조, TV 압축(per-call) 히스토리와는 다를 수 있는 미검증 축).
-  it("hand-verified E2E: a conditionally-executed nested '=' local's history has a NaN gap on bars where the block didn't run (C450)", () => {
+  // A bar on which the block did not run holds the local's last committed value:
+  // "the result of using the [] operator on a local variable ... represents the
+  // variable's last committed value as of the bar at the specified offset"
+  // (language_execution-model.txt "Time series in scopes"). The oracle agrees
+  // (resin-harness state/repros/local-history-carry.json a1/a3; this test used to
+  // assert na gaps).
+  it("hand-verified E2E: a conditionally-executed nested '=' local's history holds the last committed value on bars where the block didn't run (C450)", () => {
     const n = 6;
     const close = Array.from({ length: n }, (_, i) => 10 + i);
     const data: OHLCVData = { open: close, high: close, low: close, close, volume: new Array(n).fill(1) };
-    // 짝수 바에서만 블록 실행 -- x[1](직전 바)는 홀수 바(직전 실행이 없던 바)를 가리켜 항상 NaN.
+    // The block runs on even bars only: x[1] reads the odd bar before, which repeats
+    // the even bar before that.
     const src = ["var float __obs = na", "if bar_index % 2 == 0", "    x = close", "    __obs := x[1]"].join("\n");
     const result = runPipeline(src, data);
     const obs = result.bars.map((b) => b["var:__obs"] as number);
-    for (let i = 0; i < n; i += 2) {
-      expect(Number.isNaN(obs[i]!)).toBe(true);
+    expect(Number.isNaN(obs[0]!)).toBe(true);
+    for (let i = 2; i < n; i += 2) {
+      expect(obs[i]).toBe(close[i - 2]);
     }
   });
 
@@ -7124,11 +7129,16 @@ describe("CodeGen", () => {
     }
   });
 
-  it("hand-verified E2E: a conditionally-executed nested drawing handle's history has a null (na) gap on bars where the block didn't run", () => {
+  // A bar on which the block did not run holds the handle committed last
+  // (language_execution-model.txt "Time series in scopes"; oracle twin
+  // resin-harness state/repros/local-history-carry-ref.json o1 — this test used
+  // to assert na gaps).
+  it("hand-verified E2E: a conditionally-executed nested drawing handle's history holds the last committed handle on bars where the block didn't run", () => {
     const n = 6;
     const close = Array.from({ length: n }, (_, i) => 10 + i);
     const data: OHLCVData = { open: close, high: close, low: close, close, volume: new Array(n).fill(1) };
-    // 짝수 바에서만 블록 실행 -- x[1](직전 바)는 홀수 바(직전 실행이 없던 바)를 가리켜 항상 na(null).
+    // The block runs on even bars only: x[1] reads the odd bar before, which repeats
+    // the handle of the even bar before that (none on bar 0).
     const src = [
       "var float __obs = na",
       "if bar_index % 2 == 0",
@@ -7137,8 +7147,9 @@ describe("CodeGen", () => {
     ].join("\n");
     const result = runPipeline(src, data);
     const obs = result.bars.map((b) => b["var:__obs"] as number);
-    for (let i = 0; i < n; i += 2) {
-      expect(obs[i]).toBe(1.0);
+    expect(obs[0]).toBe(1.0);
+    for (let i = 2; i < n; i += 2) {
+      expect(obs[i]).toBe(0.0);
     }
   });
 
@@ -7231,13 +7242,15 @@ describe("CodeGen", () => {
     for (let i = 1; i < n; i++) expect(obs[i]).toBe(0.0);
   });
 
-  it("hand-verified E2E: a conditionally-called UDF '=' local drawing handle keeps per-call na gaps (C541)", () => {
+  // A bar without the call holds the handle of the last call (language_execution-model.txt
+  // "Time series in scopes"; oracle twin resin-harness state/repros/local-history-carry-ref.json
+  // o2 — this test used to assert na gaps).
+  it("hand-verified E2E: a conditionally-called UDF '=' local drawing handle holds the last call's handle on skipped bars (C541)", () => {
     const n = 6;
     const close = Array.from({ length: n }, (_, i) => 10 + i);
     const data: OHLCVData = { open: close, high: close, low: close, close, volume: new Array(n).fill(1) };
-    // 짝수 바에서만 호출 — lb[1](직전 바)는 호출이 없던 홀수 바를 가리켜 항상 na(null): same-site
-    // record가 호출된 바에만 일어나는 TV per-call 압축 히스토리 시맨틱 그대로(C540 조건부 중첩
-    // 케이스의 UDF 판).
+    // Called on even bars only: lb[1] reads the odd bar before, which repeats the
+    // handle of the call before that (none on bar 0).
     const src = [
       "g() =>",
       "    lb = label.new(bar_index, close)",
@@ -7248,7 +7261,8 @@ describe("CodeGen", () => {
     ].join("\n");
     const result = runPipeline(src, data);
     const obs = result.bars.map((b) => b["var:__obs"] as number);
-    for (let i = 0; i < n; i += 2) expect(obs[i]).toBe(1.0);
+    expect(obs[0]).toBe(1.0);
+    for (let i = 2; i < n; i += 2) expect(obs[i]).toBe(0.0);
   });
 
   it("hand-verified E2E: two call sites of the same UDF keep independent drawing-handle histories (C541)", () => {

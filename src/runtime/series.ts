@@ -5,6 +5,10 @@
 export class Series {
   private data: Float64Array;
   private cursor = -1;
+  // History mode (Series.history): the cursor of the last record(), or -1 before
+  // the first one. A bar with no record() reads the value committed last.
+  private carry = false;
+  private last = -1;
 
   constructor(values: ArrayLike<number>) {
     this.data = Float64Array.from(values);
@@ -16,6 +20,21 @@ export class Series {
   // 매 바 리스트를 늘리는 방식이라 이 원칙과 맞지 않아 그대로 이식하지 않았다).
   static preallocate(length: number): Series {
     return new Series(new Float64Array(length).fill(NaN));
+  }
+
+  // The history buffer of a script variable or expression ($.histSlots). It still
+  // advances one slot per bar, but a bar on which its scope did not run (a local
+  // in an if block, a UDF parameter or local of a call that was skipped) holds the
+  // value committed last instead of na: "the result of using the [] operator on a
+  // local variable ... represents the variable's last committed value as of the
+  // bar at the specified offset" (language_execution-model.txt "Time series in
+  // scopes"). PyneCore measured the same on TradingView (core/series.py add():
+  // "advances such a history by one slot per BAR and repeats the last value it
+  // did see"). Before the first record every read is na.
+  static history(length: number): Series {
+    const s = Series.preallocate(length);
+    s.carry = true;
+    return s;
   }
 
   advance(): void {
@@ -36,7 +55,10 @@ export class Series {
   get(offset = 0): number {
     const truncated = Math.trunc(offset);
     if (!(truncated >= 0)) return NaN;
-    const idx = this.cursor - truncated;
+    let idx = this.cursor - truncated;
+    // History mode: a bar after the last record has not been filled yet; its
+    // value is the last committed one (na before any).
+    if (this.carry && idx > this.last) idx = this.last;
     if (idx < 0 || idx >= this.data.length) return NaN;
     return this.data[idx]!;
   }
@@ -45,7 +67,13 @@ export class Series {
   // 문장을 모두 실행한 뒤 딱 한 번 호출, analyzeIndexAccess/genIndexAccess 주석 참조).
   record(value: number): void {
     if (this.cursor >= 0 && this.cursor < this.data.length) {
+      // History mode: the bars skipped since the last record repeat its value.
+      if (this.carry && this.last >= 0) {
+        const v = this.data[this.last]!;
+        for (let i = this.last + 1; i < this.cursor; i++) this.data[i] = v;
+      }
       this.data[this.cursor] = value;
+      this.last = this.cursor;
     }
   }
 
@@ -97,6 +125,9 @@ export function histGet(currentValue: number, slot: Series, offset: number): num
 export class RefSeries {
   private data: unknown[];
   private cursor = -1;
+  // History mode, as Series.history.
+  private carry = false;
+  private last = -1;
 
   constructor(length: number) {
     this.data = new Array(length).fill(null);
@@ -104,6 +135,14 @@ export class RefSeries {
 
   static preallocate(length: number): RefSeries {
     return new RefSeries(length);
+  }
+
+  // Series.history for reference values: a bar whose scope did not run holds the
+  // value committed last (language_execution-model.txt "Time series in scopes").
+  static history(length: number): RefSeries {
+    const s = new RefSeries(length);
+    s.carry = true;
+    return s;
   }
 
   advance(): void {
@@ -115,14 +154,20 @@ export class RefSeries {
   get(offset = 0): unknown {
     const truncated = Math.trunc(offset);
     if (!(truncated >= 0)) return null;
-    const idx = this.cursor - truncated;
+    let idx = this.cursor - truncated;
+    if (this.carry && idx > this.last) idx = this.last;
     if (idx < 0 || idx >= this.data.length) return null;
     return this.data[idx];
   }
 
   record(value: unknown): void {
     if (this.cursor >= 0 && this.cursor < this.data.length) {
+      if (this.carry && this.last >= 0) {
+        const v = this.data[this.last];
+        for (let i = this.last + 1; i < this.cursor; i++) this.data[i] = v;
+      }
       this.data[this.cursor] = value ?? null;
+      this.last = this.cursor;
     }
   }
 

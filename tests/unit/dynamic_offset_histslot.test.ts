@@ -87,7 +87,11 @@ describe("dynamic history offset on histSlot targets (C365 (c) gate relaxation, 
     expect(obs(src, "__obs_b")).toEqual([NaN, 1, 2, 3, 4]);
   });
 
-  it("leaves NaN gaps on skipped bars for a conditionally-called UDF param history with dynamic offset", () => {
+  // A skipped bar holds the parameter's last committed value (language_execution-model.txt
+  // "Time series in scopes": "the last committed value as of the bar at the specified
+  // offset"; oracle twin resin-harness state/repros/local-history-carry.json c1/c3 —
+  // this test used to assert na gaps).
+  it("holds the last committed value on skipped bars for a conditionally-called UDF param history with dynamic offset", () => {
     const src = [
       "f(src, k) =>",
       "    src[k]",
@@ -96,9 +100,9 @@ describe("dynamic history offset on histSlot targets (C365 (c) gate relaxation, 
       "if bar_index % 2 == 0",
       "    __obs := f(close, n)",
     ].join("\n");
-    // 짝수 바에만 호출: record는 bar 0/2/4 커서 위치에만. bar 2의 src[1]은 bar 1 커서(미기록 NaN),
-    // 홀수 바 __obs는 직전 짝수 바 값이 var로 유지(대입 없음).
-    expect(obs(src, "__obs")).toEqual([NaN, NaN, NaN, NaN, NaN]);
+    // Called on bars 0/2/4: src[1] on bar 2 reads bar 1, which repeats bar 0's close
+    // (10); on bar 4 it repeats bar 2's (30). Odd bars keep __obs (var, no assignment).
+    expect(obs(src, "__obs")).toEqual([NaN, NaN, 10, 10, 30]);
   });
 
   it("reads a UDF-internal '=' local history with a dynamic offset", () => {

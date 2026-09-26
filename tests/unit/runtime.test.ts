@@ -74,6 +74,55 @@ describe("Series", () => {
     const s = Series.preallocate(3);
     expect(() => s.record(1)).not.toThrow();
   });
+
+  // history() — a bar with no record() holds the value committed last
+  // (language_execution-model.txt "Time series in scopes"; resin-harness
+  // state/repros/local-history-carry.json).
+
+  it("history(): bars skipped between two records repeat the earlier record", () => {
+    const s = Series.history(6);
+    s.advance();
+    s.record(10); // bar 0
+    s.advance(); // bar 1: scope skipped
+    s.advance(); // bar 2: scope skipped
+    s.advance();
+    s.record(40); // bar 3
+    expect(s.get(0)).toBe(40);
+    expect(s.get(1)).toBe(10);
+    expect(s.get(2)).toBe(10);
+    expect(s.get(3)).toBe(10);
+    expect(s.get(4)).toBeNaN();
+  });
+
+  it("history(): a read on a bar not recorded yet sees the last committed value", () => {
+    const s = Series.history(4);
+    s.advance();
+    s.record(7);
+    s.advance();
+    s.advance();
+    expect(s.get(1)).toBe(7);
+    expect(s.get(0)).toBe(7);
+  });
+
+  it("history(): every read before the first record is NaN", () => {
+    const s = Series.history(4);
+    s.advance();
+    s.advance();
+    expect(s.get(0)).toBeNaN();
+    expect(s.get(1)).toBeNaN();
+    s.record(3);
+    expect(s.get(1)).toBeNaN();
+  });
+
+  it("preallocate() keeps NaN on bars without a record (plot channels)", () => {
+    const s = Series.preallocate(3);
+    s.advance();
+    s.record(1);
+    s.advance();
+    s.advance();
+    s.record(3);
+    expect(s.toArray()).toEqual([1, NaN, 3]);
+  });
 });
 
 // RefSeries(배치25 (1), drawing 핸들 '=' 로컬 히스토리) — Series와 동형이나 기본값이 NaN 대신 null,
@@ -131,6 +180,21 @@ describe("RefSeries", () => {
   it("record() before the first advance() is a no-op (cursor still -1)", () => {
     const s = RefSeries.preallocate(3);
     expect(() => s.record({ kind: "label", id: 1 })).not.toThrow();
+  });
+
+  it("history(): skipped bars repeat the handle committed last (resin-harness state/repros/local-history-carry-ref.json)", () => {
+    const s = RefSeries.history(4);
+    const first = { kind: "label", id: 1 };
+    const second = { kind: "label", id: 2 };
+    s.advance();
+    s.record(first);
+    s.advance();
+    expect(s.get(1)).toBe(first);
+    s.advance();
+    s.record(second);
+    expect(s.get(1)).toBe(first);
+    expect(s.get(2)).toBe(first);
+    expect(s.get(3)).toBeNull();
   });
 });
 
