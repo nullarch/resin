@@ -435,6 +435,10 @@ export class StrategyState {
   private freshLegs: ExitLeg[];
   // Reused by fillExitLegs to order one pass of exit fills without allocating.
   private legScratch: ExitLeg[];
+  // The bar processFills is filling: its assumed intrabar path (open, the extreme nearer the open,
+  // the other extreme, close; see walkLeg) and whether it runs to the high first.
+  private barPath: number[];
+  private pathUpFirst: boolean;
   // What the strategy.exit() call being run states, reused across calls (see exit()).
   private legTemplate: ExitLeg;
   // pending order(넷팅 주문) 슬롯(C169 일곱째 슬라이스) — entry 주문과 별개: entry의 체결 판정
@@ -594,6 +598,8 @@ export class StrategyState {
     this.exitSeq = 0;
     this.freshLegs = [];
     this.legScratch = [];
+    this.barPath = [NaN, NaN, NaN, NaN];
+    this.pathUpFirst = false;
     this.legTemplate = {
       id: "", entryId: "", binding: null, reserved: 0, boundSize: NaN, qty: NaN, qtyPercent: NaN,
       limit: NaN, stop: NaN, profitPoints: NaN, lossPoints: NaN, trailPoints: NaN, trailOffset: NaN,
@@ -2223,7 +2229,19 @@ export class StrategyState {
   // barTimeMs(C320, C129/C308과 동일 원칙 — 뒤쪽 슬롯 추가로 기존 4-인자 호출부 exact-string
   // 무변화)는 strategy.risk.max_intraday_filled_orders의 "거래일" 경계 판정 유일한 소스라, 없으면
   // (단위 테스트 기본값) 그 게이트 자체가 무해하게 no-op(아래 NaN 가드).
-  processFills(openPrice: number, high: number = NaN, low: number = NaN, barIndex: number = NaN, barTimeMs: number = NaN): void {
+  // closePrice ends the bar's path, whose closing segment a trailing stop can still be hit on
+  // (walkLeg); without it (unit tests) that segment fills nothing.
+  processFills(
+    openPrice: number, high: number = NaN, low: number = NaN, barIndex: number = NaN, barTimeMs: number = NaN,
+    closePrice: number = NaN,
+  ): void {
+    // strategies.txt ("Broker emulator"): open → high → low → close when the open is closer to the
+    // high, else open → low → high → close (halfway walks down first, as in the oracle).
+    this.pathUpFirst = high - openPrice < openPrice - low;
+    this.barPath[0] = openPrice;
+    this.barPath[1] = this.pathUpFirst ? high : low;
+    this.barPath[2] = this.pathUpFirst ? low : high;
+    this.barPath[3] = closePrice;
     if (!Number.isNaN(barTimeMs)) {
       const d = new Date(barTimeMs);
       const dayKey = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
@@ -2279,7 +2297,7 @@ export class StrategyState {
     // (같은 바에 exit 체결+재진입 entry 체결이 순차 발생 가능 — TV 실측 미검증 가설, DIVERGENCES #70).
     // These are the legs bound to entries filled on earlier bars; the legs an entry fill of this bar
     // binds are judged after that fill (fillPendingEntries).
-    this.fillExitLegs(openPrice, high, low, barIndex, barTimeMs, false);
+    this.fillExitLegs(barIndex, barTimeMs, false, 0);
     if (this.pendingEntries.length > 0) this.fillPendingEntries(openPrice, high, low, barIndex, barTimeMs);
     // order 넷팅 주문(C169)은 마지막에 판정한다 — 처리 순서 close→exit→entry→order: 청산 계열
     // 먼저 원칙(기존 순서 불변) + 같은 바에 entry와 order가 둘 다 체결되면 entry가 만든 포지션에
@@ -2290,7 +2308,8 @@ export class StrategyState {
       const orderFill = this.directionalFillPrice(this.orderDirection, this.orderLimit, this.orderStop, openPrice, high, low);
       if (!Number.isNaN(orderFill)) {
         this.fillPendingOrder(orderFill, barIndex, barTimeMs);
-        this.fillExitLegs(openPrice, high, low, barIndex, barTimeMs, true);
+        const seg = orderFill === openPrice ? 0 : orderFill > openPrice === this.pathUpFirst ? 1 : 2;
+        this.fillExitLegs(barIndex, barTimeMs, true, seg);
       }
     }
     this.updateTradeExcursion(high, low);
@@ -2368,18 +2387,19 @@ export class StrategyState {
     // stop-loss demo" places both on one bar). The fills at the open all happen before any intrabar
     // price, so such legs are judged once they are all done (a second market entry meets the
     // position the first one opened, not the exit's close; repro resin-harness
-    // state/repros/mixed-seed-475.json), and after each intrabar fill. The legs of entries filled on
-    // earlier bars were judged before the entries, so they are not judged twice.
+    // state/repros/mixed-seed-475.json), and after each intrabar fill, over the path from that fill on
+    // (walkLeg). The legs of entries filled on earlier bars were judged before the entries, so they
+    // are not judged twice.
     // An order an earlier fill of this bar cancelled through its OCA group is no longer in the book.
     let i = 0;
     for (; i < due.length && due[i]!.pathLeg === 0; i++) {
       if (this.pendingEntries.includes(due[i]!)) this.fillPendingEntry(due[i]!, due[i]!.fillPrice, barIndex, barTimeMs);
     }
-    this.fillExitLegs(openPrice, high, low, barIndex, barTimeMs, true);
+    this.fillExitLegs(barIndex, barTimeMs, true, 0);
     for (; i < due.length; i++) {
       if (!this.pendingEntries.includes(due[i]!)) continue;
       this.fillPendingEntry(due[i]!, due[i]!.fillPrice, barIndex, barTimeMs);
-      this.fillExitLegs(openPrice, high, low, barIndex, barTimeMs, true);
+      this.fillExitLegs(barIndex, barTimeMs, true, due[i]!.pathLeg);
     }
     due.length = 0;
   }
@@ -2540,27 +2560,22 @@ export class StrategyState {
   }
 
   // Judges live exit legs against this bar — every leg bound to a filled entry (`onlyFresh` false), or
-  // only the legs this bar's last entry fill bound (freshLegs) — and fills the triggered ones in the
-  // order the bar's path reaches their fill prices, as for entry orders (fillPendingEntries: a fill at
-  // the open first, then the leg to the extreme nearer the open before the leg to the farther one,
-  // nearer the open first on one leg, placement order at one point). Each fill meets the position the
-  // previous one left, so a leg whose entry an earlier fill spent is gone by its turn.
-  private fillExitLegs(
-    openPrice: number, high: number, low: number, barIndex: number, barTimeMs: number, onlyFresh: boolean,
-  ): void {
+  // only the legs this bar's last entry fill bound (freshLegs), which fill from that entry's fill on
+  // path segment `seg` (0 = at the open) — and fills the triggered ones in the order the bar's path
+  // reaches them (walkLeg: the first tick, then segment by segment, nearer the segment's start first,
+  // placement order at one point). Each fill meets the position the previous one left, so a leg
+  // whose entry an earlier fill spent is gone by its turn.
+  private fillExitLegs(barIndex: number, barTimeMs: number, onlyFresh: boolean, seg: number): void {
     const legs = onlyFresh ? this.freshLegs : this.exitLegs;
     if (legs.length === 0) return;
     const due = this.legScratch;
     due.length = 0;
     if (this.posSize !== 0) {
-      const upFirst = high - openPrice < openPrice - low;
       for (const l of legs) {
         if (l.consumed || l.binding === null) continue;
-        const price = this.legFillPrice(l, openPrice, high, low);
+        const price = this.walkLeg(l, seg, seg === 0 ? this.barPath[0]! : l.binding.entryPrice);
         if (Number.isNaN(price)) continue;
         l.fillPrice = price;
-        l.pathLeg = price === openPrice ? 0 : price > openPrice === upFirst ? 1 : 2;
-        l.pathDist = Math.abs(price - openPrice);
         due.push(l);
       }
     }
@@ -2631,8 +2646,8 @@ export class StrategyState {
   // 이하/이상(or better)", stop을 "트리거 시점 시장가"로 채우므로 open 체결이 정합 — TV 실측
   // 미검증 가설, DIVERGENCES #69). 한 주문의 체결가는 "open 스냅샷 → 바 전체 H/L" 2단 모델로 정하고
   // (stop-limit의 트리거-후-limit 시차도 같은 바 결합 조건으로 접는다), 여러 entry가 한 바에서
-  // 트리거되면 그 순서는 fillPendingEntries가 봉 내 경로로 정한다. exit의 부등호 반전판
-  // (legFillPrice)과는 별개.
+  // 트리거되면 그 순서는 fillPendingEntries가 봉 내 경로로 정한다. exit leg의 판정(walkLeg)과는
+  // 별개.
   private directionalFillPrice(
     direction: string, limitV: number, stopV: number, openPrice: number, high: number, low: number,
   ): number {
@@ -2667,118 +2682,110 @@ export class StrategyState {
     return NaN;
   }
 
-  // exit leg `l`의 이번 바 체결가(C167, C186에서 intrabar 우선순위 정정) — NaN이면
-  // 미체결(이월). pine2py _check_fill의 from_entry 분기(entry의 부등호 반전판: 롱 포지션 exit
-  // limit(익절)은 high>=limit → limit 체결, exit stop(손절)은 low<=stop → stop 체결, 숏은 반전)를
-  // 기본으로 하되 두 가지를 의도적으로 바꾼다(DIVERGENCES #70): (1) limit+stop 동시 지정을
-  // pine2py는 entry와 같은 stop-limit 결합 조건(둘 다 충족해야 limit 체결)으로 접는데, exit
-  // 브래킷의 TV 의미는 OCA(익절/손절 각각 독립 트리거, 한쪽 체결 시 반대쪽 소멸)라 결합 조건은
-  // #66급 비경제 동작으로 판단해 미추종 — 각 축을 독립 판정한다. (2) 갭 오픈은 open 체결
-  // (or-better/트리거 시점 시장가 — entryFillPrice의 #69 (a)와 동일 축).
+  // Walks exit leg `l` over the rest of this bar's assumed path (barPath) and returns the price it
+  // fills at (NaN = it rests), with l.fillKind naming the level that filled it ("profit", "loss",
+  // null = the trailing line) and l.pathLeg/l.pathDist where the path reaches it (the segment: 0 =
+  // the first tick, 1 and 2 = the segments to the two extremes, 3 = the closing one; the distance
+  // from where that segment starts). The manual (strategies.txt, "Broker emulator"): "If the opening
+  // price of a bar is closer to the high than it is to the low, the emulator assumes that the market
+  // price moved in this order: open → high → low → close. If the opening price of a bar is closer to
+  // the low than it is to the high, the emulator assumes that the market price moved in this order:
+  // open → low → high → close." So a leg's levels are met in that order, and the one reached first
+  // fills: a long's take-profit is reached on a rising segment and its stop-loss on a falling one,
+  // so a long's take-profit wins on an open → high → low → close bar that reaches both, its
+  // stop-loss on an open → low → high → close bar (a short the other way round). The trailing line
+  // arms and follows the extreme on the segments running in the position's favour, and is hit only
+  // on a segment running against it after that, the closing one included; the oracle walks it the
+  // same way (`_process_trailing_stop`). Repros: resin-harness state/repros/mixed-seed-14.json (a
+  // long's take-profit and stop-loss both reached on an open → high → low → close bar: the
+  // take-profit fills), trail-seed-3.json (a short's line armed on the way down is not hit by the
+  // high that bar reached before it).
   //
-  // **같은 바에 두 축이 모두 트리거될 때의 우선순위(C186, VERIFIED_SEMANTICS.md CONFIRMED
-  // "intrabar 체결 경로 = 무조건 O→L→H→C" 적용)**: low는 항상 high보다 먼저 지나므로, 두 축 중
-  // **low 쪽 조건으로 트리거되는 축이 항상 먼저 체결**된다 — "stop이 우선"이 아니라 "low-anchored
-  // 축이 우선"이 진짜 규칙이다. 롱은 stop/trail(손절 계열)이 low 쪽(low<=stop), limit(익절)이
-  // high 쪽(high>=limit)이라 stop/trail 우선이 O-L-H-C와 그대로 일치(기존 "보수적 stop 우선"
-  // 가정이 우연히 정답이었음, DIVERGENCES #70 (c)/#73 (c) promote). **숏은 정반대**: limit(익절)이
-  // low 쪽(low<=limit), stop/trail(손절)이 high 쪽(high>=stop)이라 **limit이 stop/trail보다 먼저
-  // 체결**된다 — 기존 "숏도 stop 우선"이던 근사는 틀렸으므로 이 사이클에서 정정(단순 손 계산으로
-  // open→low→high→close 4점 경로를 그려보면: 두 축 모두 open에서 미트리거 상태라면 stop/limit이
-  // 각각 open의 반대편에 있고, low로 내려가는 첫 구간(leg1)에서 open보다 낮은 쪽 임계값이 먼저
-  // 닿고, 그 다음 low에서 high로 오르는 구간(leg2)에서 open보다 높은 쪽 임계값이 닿는다 — 롱은
-  // stop<open<limit이라 stop이 leg1, limit이 leg2, 숏은 limit<open<stop이라 limit이 leg1, stop이
-  // leg2). 판정 순서: stop@open > trail@open > limit@open(둘 다 open 트리거는 결합이 비정상
-  // 브래킷에서만 가능 — 순서 유지) > **롱: stop·trail intrabar 먼저, limit 나중 / 숏: limit
-  // intrabar 먼저, stop·trail 나중**. NaN open/high/low 비교는 전부 false로 안전(C91).
+  // The walk starts at `first` on segment `seg`: the open (seg 0) for a leg resting from an earlier
+  // bar or bound by an entry filled at the open, or the fill price of the entry that bound the leg
+  // mid-bar (seg 1 or 2), whose trade does not exist at the prices the bar reached before it (the
+  // oracle's `_activate_brackets_on_fill`, `_walk_activated_brackets`, `_check_close_leg_up`). A
+  // level the first tick is already past fills there: a gap at the open, or an entry filling beyond
+  // it. The stop-loss and trailing legs are stop orders and the take-profit a limit order
+  // (executeLeg prices the slippage).
   //
-  // 트레일링 축(C170, pine2py _check_trailing_fill 이식 + 갭 open 체결 적응)은 **상태를 뮤테이션**
-  // 한다(l.trailPrice 래칫) — 살아있는 leg마다 바당 정확히 1회 호출되는 위치(fillExitLegs
-  // exit 분기)라 순수 판정 함수에 갱신을 함께 두는 것이 pine2py(_check_fill 안에서 order.trail_price
-  // 갱신)와 동형. 바 내 순서는 pine2py literal port: 유리 극값(롱 high)으로 라인을 먼저 래칫한 뒤
-  // 반대 극값(롱 low)과 대조 — "유리 극값이 시간상 먼저"라는 intrabar 가설(활성화 바에서 즉시 체결도
-  // 가능). 같은 바에 stop과 trail이 둘 다 트리거되면 롱은 max(stop, 라인)/숏은 min — 두 레벨 모두
-  // 같은(손절) 방향이라 하락(상승) 경로에서 항상 높은(낮은) 쪽이 먼저 닿는 기하학적 순서(축 간
-  // 우선순위와 별개 — 같은 축 안에서는 순서가 결정적). trail은 stop과 같은 축(손절 계열, 위 우선순위
-  // 규칙 그대로 적용 — 롱은 limit보다 먼저, 숏은 limit보다 나중). 전부 TV 실측 미검증 가설(DIVERGENCES #73).
-  // 갭 open 적응: open이 **이전 바까지의** 라인을 이미 관통했으면 open 체결(라인 래칫 전 판정 —
-  // pine2py는 갭에서도 정확히 라인 가격을 반환해 "시장에 없던 가격" 체결, #69 (a) 축이라 미추종).
-  private legFillPrice(l: ExitLeg, openPrice: number, high: number, low: number): number {
-    // profit=/loss=/trail_points= are tick distances from the entry price, not price distances.
-    // The manual (strategies.txt, "Take-profit and stop-loss"): "The profit and loss parameters
-    // accept relative values representing the number of ticks by which the market price must move
-    // away from the entry price to trigger an exit"; trail_points is "the tick distance from the
-    // entry price required to activate the trailing stop", and trail_offset is "a specified number
-    // of ticks". The base is the fill price of the entry the leg is bound to (a pyramid add gets a
-    // leg of its own, bindLegs), and each level is snapped to the tick grid away from that price, as the
-    // oracle resolves them. Repro: resin-harness state/repros/ticks-seed-1.json (and
-    // ticks-pyramid-add.json for the base). When both of a pair are given, limit=/stop= is used.
+  // The walk runs in the position's favourable direction: x = dir × price rises when the market moves
+  // the position's way, so one pass serves longs and shorts. A trailing stop mutates l.trailPrice (its
+  // line, NaN until it arms): it arms where the path reaches the activation level (trail_price=, or
+  // trail_points ticks from the bound entry's fill), sits trail_offset ticks behind the best price
+  // since, and with an offset of 0 fills on the arming tick itself. On one segment reaching both, the
+  // hard stop-loss and the line fill at whichever the path reaches first (the stop-loss at a tie), and
+  // the take-profit precedes the line's arming unless that arming fills at a level not beyond the
+  // take-profit (the oracle's `_process_trailing_stop`). NaN prices (unit tests without high/low/close)
+  // compare false, so their segments fill nothing (C91).
+  private walkLeg(l: ExitLeg, seg: number, first: number): number {
     const isLong = this.posSize > 0;
+    const dir = isLong ? 1 : -1;
     const base = l.binding!.entryPrice;
-    const limit = this.exitLimitLevel(l, isLong, base);
-    const stop = this.exitStopLevel(l, isLong, base);
-    const hasLimit = !Number.isNaN(limit);
-    const hasStop = !Number.isNaN(stop);
     const hasTrail = !Number.isNaN(l.trailPoints) || !Number.isNaN(l.trailPriceArg);
-    // comment_loss=/comment_profit=/comment_trailing=(C375+C673) 선택은 이 함수가 어느 축(stop=
-    // loss, limit=profit, 라인=null)이 체결가를 결정했는지 l.fillKind에 부작용으로 남긴다 —
-    // 순수 트레일링(라인이 결정)은 null로 남겨 executeLeg가 comment_trailing=을 선택(
-    // ExitLeg.commentTrailing 참조).
-    if (this.posSize > 0) {
-      if (hasStop && openPrice <= stop) { l.fillKind = "loss"; return openPrice; }
-      if (hasTrail && openPrice <= l.trailPrice) { l.fillKind = null; return openPrice; } // 라인 미활성(NaN)이면 비교 false — 안전(C91)
-      if (hasLimit && openPrice >= limit) { l.fillKind = "profit"; return openPrice; }
-      if (hasTrail) {
-        // 활성화(high가 entry+trail_points, 또는 trail_price가 지정됐으면 그 절대가 그대로 도달)
-        // 또는 기활성이면 이번 바 high로 라인 래칫(단조 max). high가 NaN(마켓 전용 단위 테스트
-        // 경로)이면 활성화 비교/래칫 비교 전부 false — 안전 소멸.
-        const offset = (Number.isNaN(l.trailOffset) ? l.trailPoints : l.trailOffset) * this.mintick;
-        const activation = Number.isNaN(l.trailPriceArg)
-          ? this.snapToTick(base + l.trailPoints * this.mintick, true)
-          : l.trailPriceArg;
-        if (!Number.isNaN(l.trailPrice) || high >= activation) {
-          const newTrail = high - offset;
-          if (Number.isNaN(l.trailPrice) || newTrail > l.trailPrice) l.trailPrice = newTrail;
-        }
+    const lim = dir * this.exitLimitLevel(l, isLong, base);
+    const stp = dir * this.exitStopLevel(l, isLong, base);
+    const offset = hasTrail ? (Number.isNaN(l.trailOffset) ? l.trailPoints : l.trailOffset) * this.mintick : NaN;
+    const act = !hasTrail
+      ? NaN
+      : dir * (Number.isNaN(l.trailPriceArg) ? this.snapToTick(base + dir * l.trailPoints * this.mintick, isLong) : l.trailPriceArg);
+    let line = dir * l.trailPrice;
+    let x = dir * first;
+    let hit = NaN;
+    let kind: "profit" | "loss" | null = null;
+    // The first tick.
+    if (x <= stp) {
+      hit = x;
+      kind = "loss";
+    } else if (x <= line) {
+      hit = x;
+    } else if (x >= lim) {
+      hit = x;
+      kind = "profit";
+    } else if (hasTrail) {
+      if (Number.isNaN(line)) {
+        if (x >= act) line = x - offset;
+      } else if (x - offset > line) {
+        line = x - offset;
       }
-      const stopHit = hasStop && low <= stop;
-      const trailHit = hasTrail && low <= l.trailPrice;
-      if (stopHit && trailHit) {
-        const stopWins = stop > l.trailPrice;
-        l.fillKind = stopWins ? "loss" : null;
-        return stopWins ? stop : l.trailPrice;
-      }
-      if (stopHit) { l.fillKind = "loss"; return stop; }
-      if (trailHit) { l.fillKind = null; return l.trailPrice; }
-      if (hasLimit && high >= limit) { l.fillKind = "profit"; return limit; }
-    } else {
-      if (hasStop && openPrice >= stop) { l.fillKind = "loss"; return openPrice; }
-      if (hasTrail && openPrice >= l.trailPrice) { l.fillKind = null; return openPrice; }
-      if (hasLimit && openPrice <= limit) { l.fillKind = "profit"; return openPrice; }
-      if (hasTrail) {
-        const offset = (Number.isNaN(l.trailOffset) ? l.trailPoints : l.trailOffset) * this.mintick;
-        const activation = Number.isNaN(l.trailPriceArg)
-          ? this.snapToTick(base - l.trailPoints * this.mintick, false)
-          : l.trailPriceArg;
-        if (!Number.isNaN(l.trailPrice) || low <= activation) {
-          const newTrail = low + offset;
-          if (Number.isNaN(l.trailPrice) || newTrail < l.trailPrice) l.trailPrice = newTrail;
-        }
-      }
-      // 숏은 limit(익절)이 low 쪽이라 O-L-H-C 경로상 stop/trail(high 쪽)보다 먼저 도달한다(C186,
-      // 위 클래스 주석 참조 — 롱의 "stop/trail 먼저"와 정확히 대칭 반전).
-      if (hasLimit && low <= limit) { l.fillKind = "profit"; return limit; }
-      const stopHit = hasStop && high >= stop;
-      const trailHit = hasTrail && high >= l.trailPrice;
-      if (stopHit && trailHit) {
-        const stopWins = stop < l.trailPrice;
-        l.fillKind = stopWins ? "loss" : null;
-        return stopWins ? stop : l.trailPrice;
-      }
-      if (stopHit) { l.fillKind = "loss"; return stop; }
-      if (trailHit) { l.fillKind = null; return l.trailPrice; }
+      if (x <= line) hit = line;
     }
-    return NaN;
+    let s = seg;
+    let from = x;
+    if (Number.isNaN(hit)) {
+      for (s = seg === 0 ? 1 : seg; s <= 3; s++) {
+        const nxt = dir * this.barPath[s]!;
+        if (nxt > x) {
+          const armsAt = hasTrail && Number.isNaN(line) && nxt >= act ? act : NaN;
+          if (nxt >= lim && !(offset <= 0 && armsAt <= lim)) {
+            hit = lim;
+            kind = "profit";
+          } else if (hasTrail) {
+            if (!Number.isNaN(armsAt)) {
+              line = armsAt - offset;
+              if (armsAt <= line) hit = line;
+            }
+            if (Number.isNaN(hit) && nxt - offset > line) line = nxt - offset;
+          }
+        } else if (nxt < x) {
+          const trailHit = nxt <= line;
+          if (nxt <= stp && !(trailHit && line > stp)) {
+            hit = stp;
+            kind = "loss";
+          } else if (trailHit) {
+            hit = line;
+          }
+        }
+        if (!Number.isNaN(hit)) break;
+        from = x = nxt;
+      }
+    }
+    if (hasTrail) l.trailPrice = dir * line;
+    if (Number.isNaN(hit)) return NaN;
+    l.fillKind = kind;
+    l.pathLeg = s;
+    l.pathDist = Math.abs(hit - from);
+    return dir * hit;
   }
 
   // A leg's take-profit level: limit=, else `profit` ticks from `base` (the bound

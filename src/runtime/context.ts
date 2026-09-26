@@ -312,11 +312,14 @@ export class Context {
     for (const p of this.plots) p.advance();
     // Fill market orders queued on the previous bar at this bar's open, which
     // is TradingView's rule. Limit and stop orders are tested against this
-    // bar's open (for a gap fill) and its high/low (for an intrabar trigger);
-    // untriggered ones stay in the slot and carry to the next bar. advance()
+    // bar's open (for a gap fill) and its high/low (for an intrabar trigger;
+    // an exit's trailing stop also on the path's closing segment, to the
+    // close); untriggered ones stay in the slot and carry to the next bar. advance()
     // runs before barFn(), so this bar's script code sees the post-fill
     // position.
-    this.strategy.processFills(this.open.get(0), this.high.get(0), this.low.get(0), this.idx, this.barTimeMs);
+    this.strategy.processFills(
+      this.open.get(0), this.high.get(0), this.low.get(0), this.idx, this.barTimeMs, this.close.get(0),
+    );
     // The close the script body runs at: orders it places without a qty are sized at this price.
     this.strategy.barClose = this.close.get(0);
     // Updating drawdown here, before barFn, gives the same answer as updating

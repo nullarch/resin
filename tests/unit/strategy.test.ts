@@ -1777,24 +1777,55 @@ describe("StrategyState exit 브래킷 청산 (C167 다섯째 슬라이스, hand
     expect(st.realizedPnl).toBe(-3); // (9-12)*1 — stop이었다면 -2
   });
 
-  it("bracket: 같은 바에 limit/stop 둘 다 트리거되면 stop(손절) 우선 (C186: O-L-H-C 확정 — 롱은 stop이 low 쪽이라 그대로 일치)", () => {
+  // A bar that reaches both levels fills the one its assumed path reaches first: open → high →
+  // low → close when the open is closer to the high, else open → low → high → close (strategies.txt,
+  // "Broker emulator"; resin-harness state/repros/mixed-seed-14.json).
+  it("bracket: a bar reaching both fills the level its path reaches first (open nearer the low: the stop-loss)", () => {
     const st = longAt12();
     st.exit("X", "", 15, 10);
-    st.processFills(12, 16, 9); // high 16 >= 15(TP)이고 low 9 <= 10(SL) — low가 high보다 먼저라 stop 우선
+    st.processFills(12, 16, 9); // open → low → high: the low 9 reaches the stop 10 first
     expect(st.posSize).toBe(0);
-    expect(st.realizedPnl).toBe(-2); // stop 10 체결: (10-12)*1
+    expect(st.realizedPnl).toBe(-2); // stop 10: (10-12)*1
     expect(st.lossTrades).toBe(1);
   });
 
-  it("short bracket: 같은 바에 limit/stop 둘 다 트리거되면 limit(익절) 우선 (C186: O-L-H-C 확정 — 숏은 limit이 low 쪽이라 stop보다 먼저)", () => {
+  it("bracket: a bar reaching both fills the level its path reaches first (open nearer the high: the take-profit)", () => {
+    const st = longAt12();
+    st.exit("X", "", 15, 10);
+    st.processFills(13, 16, 9); // open → high → low: the high 16 reaches the take-profit 15 first
+    expect(st.posSize).toBe(0);
+    expect(st.realizedPnl).toBe(3); // limit 15: (15-12)*1
+    expect(st.winTrades).toBe(1);
+  });
+
+  it("short bracket: a bar reaching both fills the level its path reaches first", () => {
     const st = new StrategyState();
     st.entry("S", "short", 1);
-    st.processFills(12); // 숏 1 @ 12
-    st.exit("X", "", 9, 15); // limit 9(익절)/stop 15(손절)
-    st.processFills(12, 16, 8); // low 8 <= 9(TP)이고 high 16 >= 15(SL) — low가 high보다 먼저라 limit 우선
+    st.processFills(12); // short 1 @ 12
+    st.exit("X", "", 9, 15); // limit 9 (take-profit) / stop 15 (stop-loss)
+    // The open halfway between the extremes walks down first: the low 8 reaches the limit 9 first.
+    st.processFills(12, 16, 8);
     expect(st.posSize).toBe(0);
-    expect(st.realizedPnl).toBe(3); // limit 9 체결: (9-12)*(-1) — stop 우선이었다면 -3
+    expect(st.realizedPnl).toBe(3); // limit 9: (9-12)*(-1)
     expect(st.winTrades).toBe(1);
+    const st2 = new StrategyState();
+    st2.entry("S", "short", 1);
+    st2.processFills(12);
+    st2.exit("X", "", 9, 15);
+    st2.processFills(13, 16, 8); // open → high → low: the high 16 reaches the stop 15 first
+    expect(st2.posSize).toBe(0);
+    expect(st2.realizedPnl).toBe(-3); // stop 15: (15-12)*(-1)
+  });
+
+  it("a bracket bound by an intrabar entry fill walks the path from that fill on", () => {
+    const st = new StrategyState();
+    st.entry("L", "long", 1, undefined, 101); // buy stop 101
+    st.exit("X", "L", 110, 100.5);
+    // open → high → low → close: the entry fills at 101 on the way up; the open 100 lies before the
+    // trade existed, so the stop 100.5 is not a gap fill at the open but is reached on the fall.
+    st.processFills(100, 102, 97, 0, NaN, 98);
+    expect(st.posSize).toBe(0);
+    expect(st.closedTradeRecords[0]!.exitPrice).toBe(100.5);
   });
 
   it("short exit TP: low <= limit → limit 체결, 갭 다운은 open 체결", () => {
@@ -2210,10 +2241,10 @@ describe("strategy.* E2E 다섯째 슬라이스 (hand-verified: 갭 다운 SL op
   });
 });
 
-describe("strategy.* E2E intrabar O-L-H-C 우선순위 (C186, hand-verified: 숏 브래킷 동시 트리거)", () => {
-  // 손 계산 시나리오(VERIFIED_SEMANTICS.md CONFIRMED "intrabar 체결 경로 = 무조건 O-L-H-C" 적용
-  // — 숏 브래킷은 limit(익절)이 low 쪽, stop(손절)이 high 쪽이라 low가 high보다 먼저 지나는
-  // O-L-H-C 경로상 limit이 stop보다 먼저 체결돼야 한다):
+describe("strategy.* E2E intrabar path order (C186, hand-verified: a short bracket reached on both sides)", () => {
+  // Hand-computed. The bar's path runs to the extreme nearer the open first (strategies.txt,
+  // "Broker emulator"); bar2 opens nearer its low, so it runs open → low → high → close and the
+  // short's take-profit (below) is reached before its stop-loss (above):
   //   bar0: O=12 C=11(음봉)&flat → entry("S",1) 큐잉. (ps=0, np=0)
   //   bar1: O=11 → 숏 1@11 체결. ps<0 → exit("X","S",limit=avg-2=9,stop=avg+3=14) 등록. (ps=-1, np=0)
   //   bar2: O=10 H=15 L=8 → open은 9/14 사이(갭 아님), low 8<=9(TP)이고 high 15>=14(SL) 동시 도달 —
@@ -3439,7 +3470,9 @@ describe("strategy.order E2E — 부호 반전 (C169, hand-verified 5바)", () =
 // 전부 TV 실측 미검증 가설(DIVERGENCES #73), hand-verified.
 // trail_points/trail_offset are counts of ticks (strategies.txt), so at mintick 0.01 the arguments
 // below are 100x the price distances the comments reason in (trail_points=200 is 2.00).
-// Oracle-checked: resin-harness state/repros/trail-seed-1.json.
+// Oracle-checked: resin-harness state/repros/trail-seed-1.json. The line follows the bar's assumed
+// path (open, the extreme nearer the open, the other one, close; state/repros/trail-seed-3.json), so
+// a bar that needs its closing segment passes the close.
 describe("StrategyState exit 트레일링 스톱 (C170 여덟째 슬라이스, hand-verified)", () => {
   function longAt12(): StrategyState {
     const st = new StrategyState();
@@ -3458,7 +3491,9 @@ describe("StrategyState exit 트레일링 스톱 (C170 여덟째 슬라이스, h
     st.processFills(14.5, 15, 14.2); // high 15 >= 14 활성화 → 라인 = 15-1 = 14, low 14.2 > 14 미체결
     expect(st.exitTrailPrice).toBe(14);
     expect(st.posSize).toBe(1);
-    st.processFills(14.8, 16.5, 14.6); // 라인 = max(14, 16.5-1) = 15.5, low 14.6 <= 15.5 → 15.5 체결
+    // open → low → high → close: the low 14.6 comes first and stays above the line 14, the high
+    // lifts it to 16.5-1 = 15.5, and the close 15 falls through it → 15.5.
+    st.processFills(14.8, 16.5, 14.6, NaN, NaN, 15);
     expect(st.posSize).toBe(0);
     expect(st.realizedPnl).toBe(3.5); // (15.5-12)*1
     expect(st.exitPending).toBe(false); // 주문 소비
@@ -3471,7 +3506,9 @@ describe("StrategyState exit 트레일링 스톱 (C170 여덟째 슬라이스, h
     st.processFills(14, 15, 13.5);
     expect(st.exitPending).toBe(true);
     expect(st.exitTrailPrice).toBeNaN(); // 두 바 모두 미활성 이월
-    st.processFills(16, 17, 15.5); // high 17 >= 17(경계) → 라인 = 17-1 = 16, low 15.5 <= 16 → 16 체결
+    // open → low → high → close: the high 17 (the boundary, >=) arms the line at 17-1 = 16 after
+    // the low, and the close 16 reaches it → 16.
+    st.processFills(16, 17, 15.5, NaN, NaN, 16);
     expect(st.posSize).toBe(0);
     expect(st.realizedPnl).toBe(4);
   });
@@ -3556,7 +3593,9 @@ describe("StrategyState exit 트레일링 스톱 (C170 여덟째 슬라이스, h
     st.exit("X", "", NaN, NaN, undefined, 200, 100); // 활성화 12-2=10, 오프셋 1
     st.processFills(10.5, 10.7, 9.8); // low 9.8 <= 10 활성화 → 라인 = 9.8+1 = 10.8, high 10.7 < 10.8 미체결
     expect(st.exitTrailPrice).toBe(10.8);
-    st.processFills(10, 10.5, 9); // 라인 = min(10.8, 9+1) = 10, high 10.5 >= 10 → 10 체결
+    // open → high → low → close: the high 10.5 comes first and stays below the line 10.8, the low
+    // lowers it to 9+1 = 10, and the close 10.2 rises through it → 10.
+    st.processFills(10, 10.5, 9, NaN, NaN, 10.2);
     expect(st.posSize).toBe(0);
     expect(st.realizedPnl).toBe(2); // (10-12)*(-1)
   });
@@ -3581,25 +3620,41 @@ describe("StrategyState exit 트레일링 스톱 (C170 여덟째 슬라이스, h
     expect(st.realizedPnl).toBe(2); // (14-12)*1 — stop 우선이었다면 -2
   });
 
-  it("같은 바에 trail과 limit 둘 다 트리거되면 trail(손절 계열) 우선 (C186: O-L-H-C 확정 — 롱은 trail이 low 쪽이라 그대로 일치)", () => {
+  // A bar is not always open → low → high → close: the path runs to the extreme nearer the open
+  // first (strategies.txt, "Broker emulator"; resin-harness state/repros/mixed-seed-14.json).
+  it("trail and limit on one bar: the one the bar's path reaches first fills", () => {
     const st = longAt12();
-    st.exit("X", "", 16, NaN, undefined, 200, 100); // limit 16 + 트레일링
-    st.processFills(14.5, 15, 14.2); // 라인 14, high 15 < 16
-    st.processFills(15, 16.5, 14.5); // 라인 → 15.5, high 16.5 >= 16(TP)이고 low 14.5 <= 15.5(trail) → 15.5
+    st.exit("X", "", 16, NaN, undefined, 200, 100); // limit 16 + a trailing stop
+    st.processFills(14.5, 15, 14.2); // line 14, high 15 < 16
+    // open → low → high → close: the low 14.5 stays above the line 14, and the rise reaches the
+    // take-profit 16 before any retrace could reach the line → 16.
+    st.processFills(15, 16.5, 14.5, NaN, NaN, 15);
     expect(st.posSize).toBe(0);
-    expect(st.realizedPnl).toBe(3.5); // limit 우선이었다면 4
+    expect(st.realizedPnl).toBe(4);
+    // open → high → low → close: the rise lifts the line to 14.9 short of the take-profit, and the
+    // fall reaches it → 14.9.
+    const st2 = longAt12();
+    st2.exit("X", "", 16, NaN, undefined, 200, 100);
+    st2.processFills(14.5, 15, 14.2); // line 14
+    st2.processFills(15.5, 15.9, 14, NaN, NaN, 14.5);
+    expect(st2.posSize).toBe(0);
+    expect(st2.realizedPnl).toBeCloseTo(2.9, 12);
   });
 
-  it("short: 같은 바에 trail과 limit 둘 다 트리거되면 limit(익절) 우선 (C186: O-L-H-C 확정 — 숏은 limit이 low 쪽이라 trail보다 먼저)", () => {
+  // Both bars below run open → high → low → close; the fall reaches the take-profit 8 before any
+  // rebound could reach the line.
+  it("short: trail and limit on one bar: the take-profit the fall reaches first fills", () => {
     const st = new StrategyState();
     st.entry("S", "short", 1);
     st.processFills(12); // 숏 1 @ 12
     st.exit("X", "", 8, NaN, undefined, 200, 200); // limit 8 + 트레일링(활성화 12-2=10, 오프셋 2)
     st.processFills(9.5, 9.8, 9); // low 9 <= 10 활성화 → 라인 = 9+2 = 11, high 9.8 < 11 미체결
     expect(st.exitTrailPrice).toBe(11);
-    st.processFills(8.5, 9.5, 7); // 라인 → min(11, 7+2=9) = 9, high 9.5 >= 9(trail)이고 low 7 <= 8(limit) → limit 8
+    // The open moves the line to 8.5+2 = 10.5, the high 9.5 stays below it, the fall reaches the
+    // limit 8 → 8.
+    st.processFills(8.5, 9.5, 7);
     expect(st.posSize).toBe(0);
-    expect(st.realizedPnl).toBe(4); // (8-12)*(-1) — trail 우선이었다면 (9-12)*(-1)=3
+    expect(st.realizedPnl).toBe(4); // (8-12)*(-1)
   });
 
   it("같은 id 재호출(매 바 표준 패턴)은 달성된 라인을 보존한다 (pine2py의 매 바 리셋 실버그 미추종)", () => {
@@ -3688,7 +3743,9 @@ describe("StrategyState exit 트레일링 스톱 trail_price= (C178, hand-verifi
     expect(st.exitTrailPrice).toBeNaN();
     st.processFills(14.5, 15, 14.2); // high 15 >= 14 활성화 → 라인 = 15-1 = 14, low 14.2 > 14 미체결
     expect(st.exitTrailPrice).toBe(14);
-    st.processFills(14.8, 16.5, 14.6); // 라인 = max(14, 16.5-1) = 15.5, low 14.6 <= 15.5 → 15.5 체결
+    // open → low → high → close: the low 14.6 comes first and stays above the line 14, the high
+    // lifts it to 16.5-1 = 15.5, and the close 15 falls through it → 15.5.
+    st.processFills(14.8, 16.5, 14.6, NaN, NaN, 15);
     expect(st.posSize).toBe(0);
     expect(st.realizedPnl).toBe(3.5); // (15.5-12)*1
   });
@@ -3699,7 +3756,9 @@ describe("StrategyState exit 트레일링 스톱 trail_price= (C178, hand-verifi
     st.processFills(13, 14, 12.5);
     st.processFills(14, 15, 13.5);
     expect(st.exitTrailPrice).toBeNaN(); // 두 바 모두 미활성 이월
-    st.processFills(16, 17, 15.5); // high 17 >= 17(경계) → 라인 = 17-1 = 16, low 15.5 <= 16 → 16 체결
+    // open → low → high → close: the high 17 (the boundary, >=) arms the line at 17-1 = 16 after
+    // the low, and the close 16 reaches it → 16.
+    st.processFills(16, 17, 15.5, NaN, NaN, 16);
     expect(st.posSize).toBe(0);
     expect(st.realizedPnl).toBe(4);
   });
@@ -3728,7 +3787,9 @@ describe("StrategyState exit 트레일링 스톱 trail_price= (C178, hand-verifi
     st.exit("X", "", NaN, NaN, undefined, NaN, 100, undefined, 10); // 활성화 10, 오프셋 1
     st.processFills(10.5, 10.7, 9.8); // low 9.8 <= 10 활성화 → 라인 = 9.8+1 = 10.8, high 10.7 < 10.8 미체결
     expect(st.exitTrailPrice).toBe(10.8);
-    st.processFills(10, 10.5, 9); // 라인 = min(10.8, 9+1) = 10, high 10.5 >= 10 → 10 체결
+    // open → high → low → close: the high 10.5 comes first and stays below the line 10.8, the low
+    // lowers it to 9+1 = 10, and the close 10.2 rises through it → 10.
+    st.processFills(10, 10.5, 9, NaN, NaN, 10.2);
     expect(st.posSize).toBe(0);
     expect(st.realizedPnl).toBe(2); // (10-12)*(-1)
   });
@@ -7513,7 +7574,9 @@ describe("StrategyState exit comment_loss=/comment_profit= (hand-verified, C375)
     // trail_points=1(stop=/limit= 없음) — comment_loss가 지정돼도 순수 트레일링 체결엔 안 붙는다
     // (comment_trailing= 미지정이라 C673 오버라이드도 적용 안 됨 — 아래 별도 describe 참조).
     st.exit("X", "", undefined, undefined, undefined, 1, undefined, "base", undefined, undefined, undefined, undefined, "SL", "TP");
-    st.processFills(13, 15, 14); // high 15 활성화(avg12+1=13<=15) -> 라인=15-1=14, low 14<=14 -> 트레일 체결
+    // Arms at the open (12.01 <= 13), the line rises to 15-0.01 at the high, and the close 14
+    // falls through it -> a trailing fill.
+    st.processFills(13, 15, 13, NaN, NaN, 14);
     expect(st.lastClosedExitComment).toBe("base");
   });
 
@@ -7705,7 +7768,9 @@ describe("StrategyState exit comment_trailing= (hand-verified, C673)", () => {
       "X", "", undefined, undefined, undefined, 1, undefined, "base", undefined,
       undefined, undefined, undefined, undefined, undefined, true, "TR",
     );
-    st.processFills(13, 15, 14); // high 15 활성화(avg12+1=13<=15) -> 라인=15-1=14, low 14<=14 -> 트레일 체결
+    // Arms at the open (12.01 <= 13), the line rises to 15-0.01 at the high, and the close 14
+    // falls through it -> a trailing fill.
+    st.processFills(13, 15, 13, NaN, NaN, 14);
     expect(st.posSize).toBe(0);
     expect(st.lastClosedExitComment).toBe("TR");
   });
@@ -7734,7 +7799,7 @@ describe("StrategyState exit comment_trailing= (hand-verified, C673)", () => {
       "X", "", undefined, undefined, undefined, 1, undefined, "base", undefined,
       undefined, undefined, undefined, undefined, undefined, true, "TR2",
     ); // 같은 id 재호출 = 수정
-    st.processFills(13, 15, 14); // 트레일 체결
+    st.processFills(13, 15, 13, NaN, NaN, 14); // a trailing fill (see above)
     expect(st.lastClosedExitComment).toBe("TR2");
   });
 });
@@ -8604,7 +8669,8 @@ describe("StrategyState slippage (market and stop fills move N ticks against the
     st.processFills(100, 100.5, 99.8, 0); // fills at 100.03
     // trail_points=100 activates at 101.03; trail_offset=100 trails 1.00 under the high.
     st.exit("T", "L", undefined, undefined, undefined, 100, 100);
-    st.processFills(101, 105, 100.5, 1); // the line reaches 104, the low crosses it
+    // open → low → high → close: the line reaches 104 at the high, the close 103.5 crosses it.
+    st.processFills(101, 105, 100.5, 1, NaN, 103.5);
     expect(st.closedTradeRecords[0]!.exitPrice).toBe(103.97);
   });
 
