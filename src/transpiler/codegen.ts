@@ -3818,6 +3818,21 @@ const VARLEN_RT_PATHS: Readonly<Record<string, string>> = {
   percentile_nearest_rank: "rt.ta.percentileNearestRankVarLen",
   percentile_linear_interpolation: "rt.ta.percentileLinearInterpolationVarLen",
   vwma: "rt.ta.vwmaVarLen",
+  change: "rt.ta.changeVarLen",
+  mom: "rt.ta.changeVarLen",
+  roc: "rt.ta.rocVarLen",
+  cmo: "rt.ta.cmoVarLen",
+  cci: "rt.ta.cciVarLen",
+  dev: "rt.ta.devVarLen",
+  variance: "rt.ta.varianceVarLen",
+  bb: "rt.ta.bbVarLen",
+  bbw: "rt.ta.bbwVarLen",
+  mfi: "rt.ta.mfiVarLen",
+  stoch: "rt.ta.stochVarLen",
+  wpr: "rt.ta.wprVarLen",
+  percentrank: "rt.ta.percentrankVarLen",
+  mode: "rt.ta.modeVarLen",
+  correlation: "rt.ta.correlationVarLen",
 };
 
 // The builtins whose machine TradingView advances once per EXECUTION of a loop call site, instead
@@ -4134,10 +4149,10 @@ function genCallExpr(
       if (stateCall.fn === "linreg" && args.length === 2) {
         args.push("0");
       }
-      // stdev(C551) — length 뒤에 선택 인자 biased(기본 true)가 있어(minArgCount 2) linreg의
+      // stdev(C551), variance — length 뒤에 선택 인자 biased(기본 true)가 있어(minArgCount 2) linreg의
       // offset 패딩과 동일 원리로 2-인자 폼만 명시적으로 true를 패딩해 런타임 시그니처
       // (state, value, length, biased, barCount, barIdx)를 맞춘다.
-      if (stateCall.fn === "stdev" && args.length === 2) {
+      if ((stateCall.fn === "stdev" || stateCall.fn === "variance") && args.length === 2) {
         args.push("true");
       }
       // percentile_nearest_rank/percentile_linear_interpolation(C553) — length 뒤에 선택 인자

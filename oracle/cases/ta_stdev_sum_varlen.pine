@@ -11,10 +11,9 @@ indicator("ta_stdev_sum_varlen")
 lenA = 5 - (bar_index % 5)
 var float __obs_stdev1 = na
 __obs_stdev1 := ta.stdev(close, lenA)
-// lenB: -1/2 교대 — length<0에서 pine2py stdev가 크래시 없이 0.0을 반환하는 실측 동작
-// (빈 창 → mean=variance=-0.0 → precision()이 +0.0으로 정규화, python 직접 확인)의 literal port를
-// 골든으로 직접 검증(length=0은 ZeroDivisionError 크래시라 여기 못 넣고 na 자체 결정,
-// tests/unit/runtime.test.ts로 커버).
+// lenB: -1/2 교대 — an invalid length between valid ones: na on the -1 bars (the golden is
+// hand-edited over pine2py's 0.0; see tests/oracle/ta_stdev_sum_varlen.test.ts), the last two
+// closes on the length-2 bars.
 lenB = bar_index % 2 == 0 ? -1 : 2
 var float __obs_stdev2 = na
 __obs_stdev2 := ta.stdev(close, lenB)

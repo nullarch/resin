@@ -4,7 +4,7 @@
  "bars": [
   {
    "var:__obs_stdev1": "NaN",
-   "var:__obs_stdev2": 0.0,
+   "var:__obs_stdev2": "NaN",
    "var:__obs_sum1": "NaN",
    "var:__obs_sum2": "NaN"
   },
@@ -16,7 +16,7 @@
   },
   {
    "var:__obs_stdev1": 0.8164965809,
-   "var:__obs_stdev2": 0.0,
+   "var:__obs_stdev2": "NaN",
    "var:__obs_sum1": 309.0,
    "var:__obs_sum2": "NaN"
   },
@@ -28,7 +28,7 @@
   },
   {
    "var:__obs_stdev1": 0.0,
-   "var:__obs_stdev2": 0.0,
+   "var:__obs_stdev2": "NaN",
    "var:__obs_sum1": 105.0,
    "var:__obs_sum2": "NaN"
   },
@@ -40,7 +40,7 @@
   },
   {
    "var:__obs_stdev1": 1.4790199458,
-   "var:__obs_stdev2": 0.0,
+   "var:__obs_stdev2": "NaN",
    "var:__obs_sum1": 421.0,
    "var:__obs_sum2": "NaN"
   },
@@ -52,7 +52,7 @@
   },
   {
    "var:__obs_stdev1": 1.0,
-   "var:__obs_stdev2": 0.0,
+   "var:__obs_stdev2": "NaN",
    "var:__obs_sum1": 214.0,
    "var:__obs_sum2": "NaN"
   },

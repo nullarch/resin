@@ -3,9 +3,11 @@
 // 현재 length로 창을 재구축하는 무상태 재스캔이라(stdev.py/math.__init__.sum, get_ta_state
 // 미사용) **length 값이 실제로 변하는 축을 골든이 직접 대조한다**(highest/lowest C547·median/
 // linreg C550과 동일 축 — sma/wma #179 퇴화-오라클 축과 다름). lenA(5,4,3,2,1 순환)로 워밍업/
-// stdev 2-인자 폼(biased 기본 true)/math.sum 정상 구간을, lenB(-1/2 교대)로 pine2py stdev의
-// length<0 크래시 없는 0.0 literal port를, lenC(bar_index+3, 항상 워밍업 초과)로 math.sum의
-// 워밍업 na를 커버. The golden's math.sum channels are hand-edited over pine2py's warm-up partial
+// stdev 2-인자 폼(biased 기본 true)/math.sum 정상 구간을, lenB(-1/2 교대)로 an invalid length
+// between valid ones, lenC(bar_index+3, 항상 워밍업 초과)로 math.sum의 워밍업 na를 커버.
+// __obs_stdev2 is na on the length -1 bars (hand-edited over pine2py's 0.0): the oracle has no value
+// there (PyneCore lib/ta.py variance asserts `length > 0`), resin reports na for a length below 1
+// (runtime/ta.ts varianceVarLen), and the length-2 bars keep reading the last two closes. The golden's math.sum channels are hand-edited over pine2py's warm-up partial
 // sums to the tier-2 oracle's values (__obs_sum1 na on bars 0-1, __obs_sum2 na throughout;
 // PyneCore run of this case via the resin-harness `case` tool; ref_v6_ta_math.txt "math.sum":
 // "the function calculates on the `length` quantity of non-`na` values").

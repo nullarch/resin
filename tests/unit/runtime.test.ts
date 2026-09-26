@@ -3969,11 +3969,9 @@ describe("ta.median/ta.linreg/ta.wma variable(series) length (medianVarLen/linre
   });
 });
 
-// ta.stdev/math.sum series(가변) length (배치25 (4) 다섯 번째 묶음, C551 — stdevVarLen/sumVarLen).
-// 버퍼 메커니즘은 highestVarLen과 완전 동형. pine2py stdev.py/math.sum 둘 다 상태 없이 매 호출
-// 현재 length로 창을 재구축하는 무상태 재스캔이라(median/linreg #181과 동일 축) 가변 length
-// 오라클이 성립한다(oracle/cases/ta_stdev_sum_varlen.pine 골든이 정상 구간을 이미 대조) — 여기서는
-// 오라클이 못 미치는 크래시 경계(length=0/NaN, biased=false)를 hand-verified로 커버한다.
+// ta.stdev/math.sum series(가변) length (stdevVarLen/sumVarLen). stdevVarLen is the square root of
+// varianceVarLen, the oracle's variance over two math.sum windows of the last `length` non-na values
+// (PyneCore lib/ta.py variance/stdev; oracle/cases/ta_stdev_sum_varlen.pine for the varying length).
 describe("ta.stdev variable(series) length (stdevVarLen)", () => {
   it("matches a from-scratch population variance/stdev recomputed over the trailing window as length varies", () => {
     const state = {};
@@ -4006,11 +4004,9 @@ describe("ta.stdev variable(series) length (stdevVarLen)", () => {
     expect(stdevVarLen(state, 10, 0, true, 10, 0)).toBeNaN();
   });
 
-  it("length<0 → +0 (pine2py crash-free 0.0 literal port, python 직접 확인 — negative zero normalized to +0, MEMORY C45)", () => {
+  it("a length below 1 is na (the oracle asserts `length > 0`; pine2py's 0.0 for a negative length is not a rule)", () => {
     const state = {};
-    const result = stdevVarLen(state, 10, -2, true, 10, 0);
-    expect(result).toBe(0);
-    expect(Object.is(result, 0)).toBe(true);
+    expect(stdevVarLen(state, 10, -2, true, 10, 0)).toBeNaN();
   });
 
   it("length=NaN → NaN (TV 미검증 가설, highestVarLen과 동일 na 전파 외삽)", () => {
@@ -4025,12 +4021,14 @@ describe("ta.stdev variable(series) length (stdevVarLen)", () => {
     expect(stdevVarLen(state, 30, 3, true, 10, 2)).toBeCloseTo(8.164965809, 9);
   });
 
-  it("poisons while a NaN value sits inside the trailing window, then recovers", () => {
+  it("skips an na source: the window is the last `length` non-na values, and an na bar reports it", () => {
+    // ref_v6_ta_math.txt ta.stdev: "`na` values in the `source` series are ignored; the function
+    // calculates on the `length` quantity of non-`na` values". pine2py's window went na here.
     const state = {};
     stdevVarLen(state, 10, 1, true, 10, 0);
-    expect(stdevVarLen(state, NaN, 1, true, 10, 1)).toBeNaN();
-    expect(stdevVarLen(state, 20, 2, true, 10, 2)).toBeNaN(); // 창=[NaN,20]
-    expect(stdevVarLen(state, 30, 2, true, 10, 3)).toBeCloseTo(5, 9); // 창=[20,30]
+    expect(stdevVarLen(state, NaN, 1, true, 10, 1)).toBe(0); // window [10]
+    expect(stdevVarLen(state, 20, 2, true, 10, 2)).toBeCloseTo(5, 9); // window [10, 20]
+    expect(stdevVarLen(state, 30, 2, true, 10, 3)).toBeCloseTo(5, 9); // window [20, 30]
   });
 
   it("same-bar repeated calls overwrite the current slot instead of advancing (context.param() parity)", () => {

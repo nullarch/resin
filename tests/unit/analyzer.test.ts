@@ -218,9 +218,12 @@ describe("Analyzer", () => {
     expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
-  it("errors when ta.stoch's length argument (0-based index 3) is a bar series identifier directly, even via kwarg-only form", () => {
+  it("routes ta.stoch's series length to the series-length machine, even via kwarg-only form", () => {
+    // The reference types it `series int` (ref_v6_ta_math.txt ta.stoch); runtime/ta.ts stochVarLen.
     const prog = analyzeSource("x = ta.stoch(source=close, high=high, low=low, length=close)");
-    expect(prog.errors.some((e) => e.includes("'ta.stoch'") && e.includes("length"))).toBe(true);
+    expect(prog.errors).toEqual([]);
+    const stmt = prog.script.body[0] as Assignment;
+    expect(prog.stateCallSlots.get(stmt.value as CallExpr)).toEqual({ fn: "stoch", slot: 0, seriesLength: true });
   });
 
   it("accepts ta.alma(src, lengthFast, offset=0.85, sigma=6) mixed form (wild corpus shape, c6726411e98d.pine)", () => {
@@ -630,9 +633,12 @@ describe("Analyzer", () => {
     expect(prog.errors.some((e) => e.includes("argument name not found in 'ta.cci'") && e.includes("'len='"))).toBe(true);
   });
 
-  it("errors when ta.cci's length argument is a bar series identifier directly, even via kwarg-only form", () => {
+  it("routes ta.cci's series length to the series-length machine, even via kwarg-only form", () => {
+    // The reference types it `series int` (ref_v6_ta_math.txt ta.cci); runtime/ta.ts cciVarLen.
     const prog = analyzeSource("x = ta.cci(source=close, length=close)");
-    expect(prog.errors.some((e) => e.includes("'ta.cci'") && e.includes("length"))).toBe(true);
+    expect(prog.errors).toEqual([]);
+    const stmt = prog.script.body[0] as Assignment;
+    expect(prog.stateCallSlots.get(stmt.value as CallExpr)).toEqual({ fn: "cci", slot: 0, seriesLength: true });
   });
 
   // C557: fixnan(source=)/ta.valuewhen(condition=,source=,occurrence=) — next_hint(C556)이 재조사
@@ -1697,11 +1703,13 @@ describe("Analyzer", () => {
     expect(prog.taSlotCount).toBe(1);
   });
 
-  it("errors when ta.stoch's length argument (4th, 0-based index 3) is a bar series identifier directly", () => {
-    // highest/lowest(C42)와 동일한 이유 — length가 hh/ll의 monotonic deque backing array 크기를
-    // 결정하므로 첫 호출 값으로 한 번만 굳힌다(runtime/ta.ts stoch 주석 참조).
+  it("routes ta.stoch's series length (4th, 0-based index 3) to the series-length machine", () => {
+    // The fixed machine sizes its windows on the first call, so a series length takes
+    // runtime/ta.ts stochVarLen (the reference types the length `series int`).
     const prog = analyzeSource("x = ta.stoch(close, high, low, close)");
-    expect(prog.errors.some((e) => e.includes("'ta.stoch'") && e.includes("length"))).toBe(true);
+    expect(prog.errors).toEqual([]);
+    const stmt = prog.script.body[0] as Assignment;
+    expect(prog.stateCallSlots.get(stmt.value as CallExpr)).toEqual({ fn: "stoch", slot: 0, seriesLength: true });
   });
 
   it("accepts literal length arguments for ta.stoch (regression guard)", () => {
@@ -1737,11 +1745,12 @@ describe("Analyzer", () => {
     expect(prog.taSlotCount).toBe(1);
   });
 
-  it("errors when ta.wpr's length argument (1st, 0-based index 0) is a bar series identifier directly", () => {
-    // highest/lowest/stoch(C42/C43)와 동일한 이유 — length가 hh/ll의 monotonic deque backing array
-    // 크기를 결정하므로 첫 호출 값으로 한 번만 굳힌다(runtime/ta.ts wpr 주석 참조).
+  it("routes ta.wpr's series length (1st, 0-based index 0) to the series-length machine", () => {
+    // runtime/ta.ts wprVarLen (the reference types the length `series int`).
     const prog = analyzeSource("x = ta.wpr(close)");
-    expect(prog.errors.some((e) => e.includes("'ta.wpr'") && e.includes("length"))).toBe(true);
+    expect(prog.errors).toEqual([]);
+    const stmt = prog.script.body[0] as Assignment;
+    expect(prog.stateCallSlots.get(stmt.value as CallExpr)).toEqual({ fn: "wpr", slot: 0, seriesLength: true });
   });
 
   it("accepts literal length arguments for ta.wpr (regression guard)", () => {
@@ -1921,9 +1930,12 @@ describe("Analyzer", () => {
     expect(prog.taSlotCount).toBe(1);
   });
 
-  it("errors when ta.mfi's length argument is a bar series identifier directly", () => {
+  it("routes ta.mfi's series length to the series-length machine", () => {
+    // runtime/ta.ts mfiVarLen (the reference types the length `series int`).
     const prog = analyzeSource("x = ta.mfi(close, close)");
-    expect(prog.errors.some((e) => e.includes("'ta.mfi'") && e.includes("length"))).toBe(true);
+    expect(prog.errors).toEqual([]);
+    const stmt = prog.script.body[0] as Assignment;
+    expect(prog.stateCallSlots.get(stmt.value as CallExpr)).toEqual({ fn: "mfi", slot: 0, seriesLength: true });
   });
 
   it("accepts a literal length argument for ta.mfi (regression guard)", () => {
@@ -1959,7 +1971,7 @@ describe("Analyzer", () => {
     expect(prog.taSlotCount).toBe(1);
   });
 
-  it("errors when ta.cog's length argument is a bar series identifier directly", () => {
+  it("errors when ta.cog's length argument is a bar series identifier directly (series lengths under dispute: the oracle keeps the first length's running weighted sum)", () => {
     const prog = analyzeSource("x = ta.cog(close, close)");
     expect(prog.errors.some((e) => e.includes("'ta.cog'") && e.includes("length"))).toBe(true);
   });
@@ -2045,11 +2057,12 @@ describe("Analyzer", () => {
     expect(prog.taSlotCount).toBe(1);
   });
 
-  it("errors when ta.correlation's length argument is a bar series identifier directly", () => {
+  it("routes ta.correlation's series length to the series-length machine", () => {
+    // runtime/ta.ts correlationVarLen (the reference types the length `series int`).
     const prog = analyzeSource("x = ta.correlation(close, open, close)");
-    expect(prog.errors.some((e) => e.includes("'ta.correlation'") && e.includes("length"))).toBe(
-      true
-    );
+    expect(prog.errors).toEqual([]);
+    const stmt = prog.script.body[0] as Assignment;
+    expect(prog.stateCallSlots.get(stmt.value as CallExpr)).toEqual({ fn: "correlation", slot: 0, seriesLength: true });
   });
 
   it("accepts a literal length argument for ta.correlation (regression guard)", () => {
@@ -2462,9 +2475,12 @@ describe("Analyzer", () => {
     expect(prog.taSlotCount).toBe(1);
   });
 
-  it("errors when ta.bb's length argument (not mult) is a bar series identifier directly", () => {
+  it("routes ta.bb's series length (not mult) to the series-length machine", () => {
+    // runtime/ta.ts bbVarLen (the reference types the length `series int`).
     const prog = analyzeSource("[m, u, l] = ta.bb(close, close, 2)");
-    expect(prog.errors.some((e) => e.includes("'ta.bb'") && e.includes("length"))).toBe(true);
+    expect(prog.errors).toEqual([]);
+    const stmt = prog.script.body[0] as TupleDestructure;
+    expect(prog.stateCallSlots.get(stmt.value as CallExpr)).toEqual({ fn: "bb", slot: 0, seriesLength: true });
   });
 
   it("allows ta.bb's mult argument to be a series (only length is a hard error, regression guard)", () => {
@@ -2509,9 +2525,12 @@ describe("Analyzer", () => {
     expect(prog.taSlotCount).toBe(1);
   });
 
-  it("errors when ta.bbw's length argument (not mult) is a bar series identifier directly", () => {
+  it("routes ta.bbw's series length (not mult) to the series-length machine", () => {
+    // runtime/ta.ts bbwVarLen (the reference types the length `series int`).
     const prog = analyzeSource("x = ta.bbw(close, close, 2)");
-    expect(prog.errors.some((e) => e.includes("'ta.bbw'") && e.includes("length"))).toBe(true);
+    expect(prog.errors).toEqual([]);
+    const stmt = prog.script.body[0] as Assignment;
+    expect(prog.stateCallSlots.get(stmt.value as CallExpr)).toEqual({ fn: "bbw", slot: 0, seriesLength: true });
   });
 
   it("allows ta.bbw's mult argument to be a series (only length is a hard error, regression guard)", () => {
@@ -2682,9 +2701,12 @@ describe("Analyzer", () => {
     expect(prog.taSlotCount).toBe(1);
   });
 
-  it("errors when ta.cmo's length argument is a bar series identifier directly", () => {
+  it("routes ta.cmo's series length to the series-length machine", () => {
+    // runtime/ta.ts cmoVarLen (the reference types the length `series int`).
     const prog = analyzeSource("x = ta.cmo(close, close)");
-    expect(prog.errors.some((e) => e.includes("'ta.cmo'") && e.includes("length"))).toBe(true);
+    expect(prog.errors).toEqual([]);
+    const stmt = prog.script.body[0] as Assignment;
+    expect(prog.stateCallSlots.get(stmt.value as CallExpr)).toEqual({ fn: "cmo", slot: 0, seriesLength: true });
   });
 
   it("accepts a literal length argument for ta.cmo (regression guard)", () => {
@@ -8373,9 +8395,13 @@ describe("Analyzer", () => {
     expect(prog.taSlotCount).toBe(1);
   });
 
-  it("errors when ta.change's length argument is a bar series identifier directly", () => {
-    const prog = analyzeSource("x = ta.change(close, close)");
-    expect(prog.errors.some((e) => e.includes("'ta.change'") && e.includes("length"))).toBe(true);
+  it("routes the series length of ta.change and ta.mom to the series-length machine", () => {
+    // runtime/ta.ts changeVarLen (the reference types both lengths `series int`).
+    const prog = analyzeSource("x = ta.change(close, close)\ny = ta.mom(close, bar_index % 3 + 1)");
+    expect(prog.errors).toEqual([]);
+    const [xStmt, yStmt] = prog.script.body as Assignment[];
+    expect(prog.stateCallSlots.get(xStmt!.value as CallExpr)).toEqual({ fn: "change", slot: 0, seriesLength: true });
+    expect(prog.stateCallSlots.get(yStmt!.value as CallExpr)).toEqual({ fn: "mom", slot: 1, seriesLength: true });
   });
 
   it("accepts a literal length argument for ta.change (regression guard)", () => {
@@ -8496,9 +8522,12 @@ describe("Analyzer", () => {
     expect(prog.taSlotCount).toBe(1);
   });
 
-  it("errors when ta.roc's length argument is a bar series identifier directly", () => {
+  it("routes ta.roc's series length to the series-length machine", () => {
+    // runtime/ta.ts rocVarLen (the reference types the length `series int`).
     const prog = analyzeSource("x = ta.roc(close, close)");
-    expect(prog.errors.some((e) => e.includes("'ta.roc'") && e.includes("length"))).toBe(true);
+    expect(prog.errors).toEqual([]);
+    const stmt = prog.script.body[0] as Assignment;
+    expect(prog.stateCallSlots.get(stmt.value as CallExpr)).toEqual({ fn: "roc", slot: 0, seriesLength: true });
   });
 
   it("accepts a literal length argument for ta.roc (regression guard)", () => {
@@ -8818,9 +8847,14 @@ describe("Analyzer", () => {
     expect(prog.taSlotCount).toBe(1);
   });
 
-  it("still errors when ta.variance's length argument is a bar series identifier directly (variance stays unextended — wild series-length 실사용 근거 0건, C551)", () => {
-    const prog = analyzeSource("x = ta.variance(close, close)");
-    expect(prog.errors.some((e) => e.includes("'ta.variance'") && e.includes("length"))).toBe(true);
+  it("routes ta.variance's series length to the series-length machine and takes its optional biased argument", () => {
+    // ref_v6_ta_math.txt "ta.variance(source, length, biased)": length `series int`, biased
+    // "Optional. The default is true"; runtime/ta.ts varianceVarLen.
+    const prog = analyzeSource("x = ta.variance(close, close)\ny = ta.variance(close, 5, false)");
+    expect(prog.errors).toEqual([]);
+    const [xStmt, yStmt] = prog.script.body as Assignment[];
+    expect(prog.stateCallSlots.get(xStmt!.value as CallExpr)).toEqual({ fn: "variance", slot: 0, seriesLength: true });
+    expect(prog.stateCallSlots.get(yStmt!.value as CallExpr)).toEqual({ fn: "variance", slot: 1 });
   });
 
   it("no longer errors when ta.stdev's length argument is a bar series identifier directly (C551 전환: seriesLengthOk — 이전엔 하드 에러였음, stdevVarLen 경로로 codegen된다)", () => {

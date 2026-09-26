@@ -1405,12 +1405,12 @@ export interface NaSkipVarLenState {
   lastBarIdx?: number;
 }
 
-// naSkipSum with a series length: every non-na value is kept (the window may grow again), and a
-// same-bar re-execution (a loop call site) replaces the bar's own value instead of advancing, like
-// the other *VarLen machines. A NaN length is na; a length <= 0 sums an empty window (0).
-function naSkipSumVarLen(state: NaSkipVarLenState, value: number, len: number, barCount: number, barIdx: number): number {
+// Appends a non-na value to the call site's na-compacted history (an na stores nothing) and
+// returns how many values it holds. A same-bar re-execution (a loop call site) replaces the bar's
+// own value instead of advancing, like the other *VarLen machines.
+function recordNonNa(state: NaSkipVarLenState, value: number, barCount: number, barIdx: number): number {
   if (state.buffer === undefined) {
-    state.buffer = new Float64Array(barCount);
+    state.buffer = new Float64Array(Math.max(1, barCount));
     state.count = 0;
     state.barStart = 0;
     state.lastBarIdx = -1;
@@ -1422,11 +1422,18 @@ function naSkipSumVarLen(state: NaSkipVarLenState, value: number, len: number, b
   let count = state.barStart!;
   if (!Number.isNaN(value)) state.buffer[count++] = value;
   state.count = count;
+  return count;
+}
 
+// naSkipSum with a series length: every non-na value is kept (the window may grow again). A NaN
+// length is na; a length <= 0 sums an empty window (0).
+function naSkipSumVarLen(state: NaSkipVarLenState, value: number, len: number, barCount: number, barIdx: number): number {
+  const count = recordNonNa(state, value, barCount, barIdx);
   if (Number.isNaN(len)) return NaN;
   if (len > count) return NaN;
   let total = 0;
-  for (let i = count - Math.max(len, 0); i < count; i++) total += state.buffer[i]!;
+  const buffer = state.buffer!;
+  for (let i = count - Math.max(len, 0); i < count; i++) total += buffer[i]!;
   return total;
 }
 
@@ -1661,34 +1668,41 @@ export function wmaVarLen(state: ExtremeVarLenState, value: number, length: numb
   return weightedTotal / ((len * (len + 1)) / 2);
 }
 
-// ta.stdev(source, length[, biased]) - length가 series인 변형(배치25 (4) 다섯 번째 묶음, C551).
-// 버퍼 메커니즘은 highestVarLen과 완전 동형(ExtremeVarLenState 재사용). pine2py
-// wavealgo/ta/stdev.py의 stdev()/variance() 둘 다 상태 없이 매 호출 source.get(0..length-1)을
-// 현재 length로 재구축해 mean/variance를 처음부터 다시 계산하는 무상태 재스캔이다
-// (get_ta_state 미사용, python 직접 실행 확인 2026-08-01) - median/linreg(#181)와 동일 축이라
-// 오라클 성립. 고정 length variance()가 쓰는 "sumSq 러닝 합 + E[X²]-(E[X])² 항등식"(C36) 대신
-// 직접 Σ(v-mean)²를 매 호출 재계산하므로(median/linreg처럼 O(length) 재스캔 - GOAL.md O(1)/bar
-// 예외에 이미 편입된 트레이드오프) 그 항등식이 유발하던 부동소수점 캔슬레이션 자체가 없어
-// population variance 음수 클램프가 불필요(각 항이 (v-mean)² ≥ 0인 순수 제곱합이라 캔슬레이션이
-// 구조적으로 발생할 수 없음). biased(기본 true)는 pine2py stdev.py에 아예 없는 파라미터라
-// (2-positional 고정, DIVERGENCES #110 고정 length판과 동일 근거) 3번째 인자 패스스루는
-// hand-verified 확장 - 고정 length variance()와 동일한 population→Bessel 보정 공식을 재사용한다.
-// 엣지(전부 python 직접 실행 확인 2026-08-01): length=0은 pine2py `sum(values)/length`의
-// ZeroDivisionError 크래시라 na 자체 결정, **length<0은 크래시 없이 0.0 반환**(range(length) 빈
-// 루프 → mean=0/length=-0.0, variance도 -0.0 → precision()이 round(-0.0*1e10)/1e10=0/1e10=+0.0으로
-// 정규화됨을 python 직접 확인 - highest -inf(#178)와 달리 이쪽은 +0 literal port, MEMORY C45대로
-// JS도 `result===0` 분기로 +0 고정), length=NaN은 highestVarLen과 동일 na 전파 외삽(TV 미검증
-// 가설). 창 안 NaN 하나면 즉시 NaN(고정 stdev()/variance()와 동일 게이트).
-export function stdevVarLen(
-  state: ExtremeVarLenState,
-  value: number,
-  length: number,
-  biased: boolean,
-  barCount: number,
-  barIdx: number,
-): number {
+// math.sum(source, length) - length가 series인 변형(배치25 (4) 다섯 번째 묶음, C551): the
+// na-skipping rolling sum of the fixed-length math.sum (naSkipSum) with a series length
+// (naSkipSumVarLen). pine2py's variant counted na as 0 and summed whatever prefix it had during the
+// warm-up; the reference and the oracle do neither (see naSkipSum). length<=0 keeps its
+// empty-window 0.0, length=NaN its na.
+export function sumVarLen(state: NaSkipVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
+  return naSkipSumVarLen(state, value, Math.trunc(length), barCount, barIdx);
+}
+
+// ── Series lengths: the oracle's machines, with the length read on every bar ──────────────────
+//
+// The v6 reference types the length of these builtins `series int` (ref_v6_ta_math.txt, "ARG
+// length [series int]" under ta.change, ta.mom, ta.roc, ta.cmo, ta.cci, ta.dev, ta.variance,
+// ta.stdev, ta.bb, ta.bbw, ta.mfi, ta.stoch, ta.wpr, ta.percentrank, ta.mode, ta.correlation), so a
+// length that changes from bar to bar is valid Pine and every bar computes with its own. The oracle
+// runs one machine for a literal and a series length alike (pynecore lib/ta.py reads `length` on
+// every call), built from three parts, each ported here once:
+//   - the call site's own bar history of its source, na included (`source[i]` of a Pine function
+//     parameter): recordVarLen;
+//   - math.sum's rolling window over the last `length` NON-na values, which follows the length
+//     without restarting (lib/_math_stateful.py sum: "Pine's machine does not restart when the
+//     length moves (MEASURED, probe sumlen2: a length grown 1..610 reproduces a constant 610
+//     bit-for-bit)"): naSkipSumVarLen;
+//   - ta.highest/ta.lowest's bar-addressed ring (lib/ta.py highest: "a GROWING length re-reads the
+//     whole window ... Probed on the wild script "Ichimoku Kinko hyo" ... whose adaptive Senkou
+//     length dips to 50 and climbs back"): extremeRing.
+// Every machine is bar-keyed like the other *VarLen variants: a second execution on the same bar
+// (a loop call site) replaces the bar's entry. A length below 1 or na is na (the oracle asserts
+// `length > 0`).
+
+// Records the call site's value for this bar in its history of every bar it ran on (na included)
+// and returns the bar's position in it.
+function recordVarLen(state: ExtremeVarLenState, value: number, barCount: number, barIdx: number): number {
   if (state.buffer === undefined) {
-    state.buffer = new Float64Array(barCount).fill(NaN);
+    state.buffer = new Float64Array(Math.max(1, barCount)).fill(NaN);
     state.writeIdx = -1;
     state.lastBarIdx = -1;
   }
@@ -1696,39 +1710,479 @@ export function stdevVarLen(
     state.writeIdx = state.writeIdx! + 1;
     state.lastBarIdx = barIdx;
   }
-  const writeIdx = state.writeIdx!;
-  state.buffer[writeIdx] = value;
-
-  const len = Math.trunc(length);
-  if (Number.isNaN(len)) return NaN;
-  if (len === 0) return NaN;
-  if (len > writeIdx + 1) return NaN;
-  const start = writeIdx - len + 1;
-  let sum = 0;
-  for (let i = start; i <= writeIdx; i++) {
-    const v = state.buffer[i]!;
-    if (Number.isNaN(v)) return NaN;
-    sum += v;
-  }
-  const mean = sum / len;
-  let sumSqDev = 0;
-  for (let i = start; i <= writeIdx; i++) {
-    const d = state.buffer[i]! - mean;
-    sumSqDev += d * d;
-  }
-  const population = sumSqDev / len;
-  const variance = biased ? population : (population * len) / (len - 1);
-  const result = Math.sqrt(variance);
-  return result === 0 ? 0 : result;
+  state.buffer[state.writeIdx!] = value;
+  return state.writeIdx!;
 }
 
-// math.sum(source, length) - length가 series인 변형(배치25 (4) 다섯 번째 묶음, stdevVarLen과 같은
-// ⚡번들, C551): the na-skipping rolling sum of the fixed-length math.sum (naSkipSum) with a
-// series length (naSkipSumVarLen). pine2py's variant counted na as 0 and summed whatever prefix
-// it had during the warm-up; the reference and the oracle do neither (see naSkipSum). length<=0
-// keeps its empty-window 0.0, length=NaN its na.
-export function sumVarLen(state: NaSkipVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
-  return naSkipSumVarLen(state, value, Math.trunc(length), barCount, barIdx);
+// ta.change/ta.mom(source, length) with a series length: source - source[length], na when either is
+// na or the history is shorter than the length (lib/ta.py change; ta.mom "is exactly the same as
+// change function").
+export function changeVarLen(state: ExtremeVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
+  const w = recordVarLen(state, value, barCount, barIdx);
+  const len = Math.trunc(length);
+  if (!(len >= 1) || Number.isNaN(value) || len > w) return NaN;
+  return value - state.buffer![w - len]!;
+}
+
+export interface RocVarLenState {
+  src?: ExtremeVarLenState;
+  chg?: ExtremeVarLenState;
+}
+
+// ta.roc(source, length) with a series length: "100 * change(src, length) / src[length]"
+// (ref_v6_ta_math.txt ta.roc), as the oracle runs it (lib/ta.py roc): an na source returns first,
+// so the inner ta.change call site only sees the non-na bars and its `src[length]` counts those,
+// while the divisor src[length] is roc's own history of every bar. A zero divisor gives a
+// non-finite value, na on a plot, as the oracle's safe division does.
+export function rocVarLen(state: RocVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
+  if (state.src === undefined) {
+    state.src = {};
+    state.chg = {};
+  }
+  const w = recordVarLen(state.src, value, barCount, barIdx);
+  const len = Math.trunc(length);
+  if (!(len >= 1) || Number.isNaN(value)) return NaN;
+  const prev = len > w ? NaN : state.src.buffer![w - len]!;
+  const chg = changeVarLen(state.chg!, value, len, barCount, barIdx);
+  return (100 * chg) / prev;
+}
+
+export interface CmoVarLenState {
+  chg?: ExtremeVarLenState;
+  up?: NaSkipVarLenState;
+  down?: NaSkipVarLenState;
+}
+
+// ta.cmo(series, length) with a series length (lib/ta.py cmo; ref_v6_ta_math.txt f_cmo): the
+// momentum is ta.change(src), taken every bar; an na momentum is na and feeds neither sum; a
+// momentum within Pine's tolerance of zero counts as rising (probe m548); the rising and falling
+// momenta go to two math.sum windows of `length`; both sums zero is 0/0, na.
+export function cmoVarLen(state: CmoVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
+  if (state.chg === undefined) {
+    state.chg = {};
+    state.up = {};
+    state.down = {};
+  }
+  const mom = changeVarLen(state.chg, value, 1, barCount, barIdx);
+  if (Number.isNaN(mom)) return NaN;
+  const len = Math.trunc(length);
+  const rising = mom >= -PINE_EPS;
+  const sum1 = naSkipSumVarLen(state.up!, rising ? mom : 0, len, barCount, barIdx);
+  const sum2 = naSkipSumVarLen(state.down!, rising ? 0 : -mom, len, barCount, barIdx);
+  const total = sum1 + sum2;
+  if (total === 0) return NaN;
+  return (100 * (sum1 - sum2)) / total;
+}
+
+// The mean absolute deviation of the last `len` bars of a history around `mean`, summed newest
+// first (lib/ta.py dev: "TradingView computes the plain newest-first loop ``sum(abs(source[i] -
+// sma)) / length``"). A na bar in the window, or a window longer than the history, is na.
+function meanAbsDev(buffer: Float64Array, w: number, len: number, mean: number): number {
+  if (len > w + 1) return NaN;
+  let sum = 0;
+  for (let i = w; i > w - len; i--) sum += Math.abs(buffer[i]! - mean);
+  return sum / len;
+}
+
+export interface DevVarLenState {
+  src?: ExtremeVarLenState;
+  mean?: NaSkipVarLenState;
+}
+
+// ta.dev(source, length) with a series length (ref_v6_ta_math.txt pine_dev: mean = ta.sma(source,
+// length), then sum |source[i] - mean| over i = 0..length-1, / length; lib/ta.py dev). Length 1 is 0
+// without running the sma, so that bar never enters the sma's window (the oracle returns first).
+export function devVarLen(state: DevVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
+  if (state.src === undefined) {
+    state.src = {};
+    state.mean = {};
+  }
+  const w = recordVarLen(state.src, value, barCount, barIdx);
+  const len = Math.trunc(length);
+  if (len === 1) return 0;
+  if (!(len >= 1)) return NaN;
+  const mean = naSkipSumVarLen(state.mean!, value, len, barCount, barIdx) / len;
+  if (Number.isNaN(mean)) return NaN;
+  return meanAbsDev(state.src.buffer!, w, len, mean);
+}
+
+// ta.cci(source, length) with a series length (lib/ta.py cci): mean = ta.sma(source, length), mdev
+// = ta.dev(source, length) around that mean (0 for length 1), (source - mean) / (0.015 * mdev). The
+// sma runs every bar here, length 1 included; a zero deviation divides to a non-finite value, na on
+// a plot, like the oracle's safe division.
+export function cciVarLen(state: DevVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
+  if (state.src === undefined) {
+    state.src = {};
+    state.mean = {};
+  }
+  const len = Math.trunc(length);
+  if (!(len >= 1)) return NaN;
+  const mean = naSkipSumVarLen(state.mean!, value, len, barCount, barIdx) / len;
+  const w = recordVarLen(state.src, value, barCount, barIdx);
+  const mdev = len === 1 ? 0 : Number.isNaN(mean) ? NaN : meanAbsDev(state.src.buffer!, w, len, mean);
+  if (Number.isNaN(mdev)) return NaN;
+  return (value - mean) / (0.015 * mdev);
+}
+
+export interface VarianceVarLenState {
+  p?: NaSkipVarLenState;
+  q?: NaSkipVarLenState;
+  sum?: number; // the last bar's math.sum(source, length): ta.bb's basis is it / length
+}
+
+// ta.variance(source, length, biased) with a series length (lib/ta.py variance, "Measured law
+// (probes m556 ...)"): p = math.sum(source, length), q = math.sum(source * source, length), m = p /
+// length; biased max(0, q / length - m * m), unbiased max(0, q / (length - 1) - p * m / (length -
+// 1)), an unbiased length 1 na. Both sums skip na ("`na` values in the `source` series are ignored;
+// the function calculates on the `length` quantity of non-`na` values", ref_v6_ta_math.txt
+// ta.variance).
+export function varianceVarLen(
+  state: VarianceVarLenState,
+  value: number,
+  length: number,
+  biased: boolean,
+  barCount: number,
+  barIdx: number,
+): number {
+  if (state.p === undefined) {
+    state.p = {};
+    state.q = {};
+  }
+  const len = Math.trunc(length);
+  const p = naSkipSumVarLen(state.p, value, len, barCount, barIdx);
+  const q = naSkipSumVarLen(state.q!, value * value, len, barCount, barIdx);
+  state.sum = p;
+  if (!(len >= 1) || Number.isNaN(p) || Number.isNaN(q)) return NaN;
+  if (!biased && len === 1) return NaN;
+  const m = p / len;
+  const v = biased ? q / len - m * m : q / (len - 1) - (p * m) / (len - 1);
+  // Python's max(0.0, var): the clamp keeps 0.0 unless var is greater.
+  return v > 0 ? v : 0;
+}
+
+// ta.stdev(source, length[, biased]) with a series length: the square root of ta.variance
+// (lib/ta.py stdev, "TradingView's stdev is exactly sqrt of its variance on both paths", probes
+// m556). pine2py's window, which went na for `length` bars after one na source, is not the rule.
+export function stdevVarLen(
+  state: VarianceVarLenState,
+  value: number,
+  length: number,
+  biased: boolean,
+  barCount: number,
+  barIdx: number,
+): number {
+  return Math.sqrt(varianceVarLen(state, value, length, biased, barCount, barIdx));
+}
+
+// ta.bb(series, length, mult) with a series length (lib/ta.py bb): basis = ta.sma(series, length),
+// deviation = mult * ta.stdev(series, length); na basis is the na triple. The sma's window is the
+// variance's first sum, so the basis is read from it.
+export function bbVarLen(
+  state: VarianceVarLenState,
+  value: number,
+  length: number,
+  mult: number,
+  scratch: Float64Array,
+  barCount: number,
+  barIdx: number,
+): void {
+  const sd = Math.sqrt(varianceVarLen(state, value, length, true, barCount, barIdx));
+  const len = Math.trunc(length);
+  const middle = len >= 1 ? state.sum! / len : NaN;
+  if (Number.isNaN(middle)) {
+    scratch[0] = NaN;
+    scratch[1] = NaN;
+    scratch[2] = NaN;
+    return;
+  }
+  const dev = sd * mult;
+  scratch[0] = middle;
+  scratch[1] = middle + dev;
+  scratch[2] = middle - dev;
+}
+
+// ta.bbw(series, length, mult) with a series length (lib/ta.py bbw): ((upper - lower) / basis) *
+// 100 of ta.bb, na when the basis is na or zero.
+export function bbwVarLen(
+  state: VarianceVarLenState,
+  value: number,
+  length: number,
+  mult: number,
+  barCount: number,
+  barIdx: number,
+): number {
+  const sd = Math.sqrt(varianceVarLen(state, value, length, true, barCount, barIdx));
+  const len = Math.trunc(length);
+  const basis = len >= 1 ? state.sum! / len : NaN;
+  if (Number.isNaN(basis) || basis === 0) return NaN;
+  const dev = sd * mult;
+  return ((basis + dev - (basis - dev)) / basis) * 100;
+}
+
+export interface MfiVarLenState {
+  chg?: ExtremeVarLenState;
+  up?: NaSkipVarLenState;
+  down?: NaSkipVarLenState;
+}
+
+// ta.mfi(series, length) with a series length: the rule of the fixed-length mfi() (see there; lib/ta.py
+// mfi) on math.sum windows that follow the length. An na source returns first, so neither the change
+// nor the sums see that bar.
+export function mfiVarLen(state: MfiVarLenState, source: number, volume: number, length: number, barCount: number, barIdx: number): number {
+  if (state.chg === undefined) {
+    state.chg = {};
+    state.up = {};
+    state.down = {};
+  }
+  if (Number.isNaN(source)) return NaN;
+  const len = Math.trunc(length);
+  const chg = changeVarLen(state.chg, source, 1, barCount, barIdx);
+  const chgNa = Number.isNaN(chg);
+  let upper = naSkipSumVarLen(state.up!, volume * (!chgNa && chg <= PINE_EPS ? 0 : source), len, barCount, barIdx);
+  let lower = naSkipSumVarLen(state.down!, volume * (!chgNa && chg >= -PINE_EPS ? 0 : source), len, barCount, barIdx);
+  if (Number.isNaN(upper) || Number.isNaN(lower)) return NaN;
+  if (Math.abs(upper) <= PINE_EPS) upper = 0;
+  if (Math.abs(lower) <= PINE_EPS) lower = 0;
+  if (lower === 0) return 100.0;
+  return 100.0 - 100.0 / (1.0 + upper / lower);
+}
+
+export interface ExtremeRingState {
+  capacity?: number;
+  window?: number[];
+  extreme?: number;
+  extremeIndex?: number;
+  lastBar?: number;
+  avail?: number;
+  prevLength?: number;
+}
+
+// Python's modulo: the result takes the divisor's sign.
+function floorMod(a: number, n: number): number {
+  const r = a % n;
+  return r !== 0 && r < 0 !== n < 0 ? r + n : r;
+}
+
+// ta.highest/ta.lowest as the oracle measured them on TradingView (lib/ta.py highest/lowest; the
+// value form, source given): a ring of `length + 1` slots addressed by bar_index and written only on
+// the bars the call runs (a skipped bar leaves the slot of a whole ring earlier), grown - never
+// shrunk - when the length reaches it, each slot remapped onto the bar it was written on; the kept
+// extreme ages in bars and is rescanned when it leaves the window or the length grows ("a GROWING
+// length re-reads the whole window"); a later equal value moves the index back; an na source resets
+// the extreme and the rescan's reach ("A na input RESETS the machine"); na while bar_index <
+// length - 1. `low` selects ta.lowest. The ring is per-call: several executions on one bar rewrite
+// one slot and keep the extreme an earlier one found (the oracle's `per_call`).
+function extremeRing(state: ExtremeRingState, value: number, len: number, bi: number, low: boolean): number {
+  if (state.capacity === undefined) {
+    state.capacity = 0;
+    state.window = [];
+    state.extreme = NaN;
+    state.extremeIndex = 0;
+    state.lastBar = -1;
+    state.avail = 0;
+    state.prevLength = 0;
+  }
+  let capacity = state.capacity;
+  if (len >= capacity) {
+    const grown = len + 1;
+    const next: number[] = new Array(grown).fill(NaN);
+    for (let j = 0; j < capacity; j++) {
+      const b = bi - floorMod(bi - j, capacity);
+      next[floorMod(b, grown)] = state.window![j]!;
+    }
+    state.window = next;
+    state.capacity = capacity = grown;
+  }
+  const window = state.window!;
+  const gap = bi - state.lastBar!;
+  if (state.lastBar! >= 0 && gap > 0) {
+    state.extremeIndex = state.extremeIndex! + gap;
+    state.avail = Math.min(state.avail! + gap, capacity - 1);
+  }
+  state.lastBar = bi;
+  window[floorMod(bi, capacity)] = value;
+  if (Number.isNaN(value)) {
+    state.extreme = NaN;
+    state.extremeIndex = 0;
+    state.avail = 0;
+    return NaN;
+  }
+  let extreme = state.extreme!;
+  let extremeIndex = state.extremeIndex!;
+  if (Number.isNaN(extreme) || (low ? value < extreme : value > extreme)) {
+    extreme = value;
+    extremeIndex = 0;
+  }
+  const grownLength = len > state.prevLength!;
+  state.prevLength = len;
+  if (extremeIndex >= len || grownLength) {
+    extreme = value;
+    extremeIndex = 0;
+    const end = state.avail! >= len ? len : state.avail! + 1;
+    for (let i = 1; i < end; i++) {
+      const s = window[floorMod(bi - i, capacity)]!;
+      if (low ? s < extreme : s > extreme) {
+        extreme = s;
+        extremeIndex = i;
+      } else if (s === extreme) {
+        extremeIndex = i;
+      }
+    }
+  }
+  state.extreme = extreme;
+  state.extremeIndex = extremeIndex;
+  return bi < len - 1 ? NaN : extreme;
+}
+
+export interface StochVarLenState {
+  hh?: ExtremeRingState;
+  ll?: ExtremeRingState;
+}
+
+// ta.stoch(source, high, low, length) with a series length (lib/ta.py stoch): na when any input is
+// na (the extremes do not run that bar); hh = ta.highest(high, length), ll = ta.lowest(low, length);
+// na while bar_index < length - 1; 100 * (source - ll) / (hh - ll), unclamped ("Measured law (probes
+// m561)"), a flat window dividing to a non-finite value, na on a plot.
+export function stochVarLen(
+  state: StochVarLenState,
+  source: number,
+  high: number,
+  low: number,
+  length: number,
+  _barCount: number,
+  barIdx: number,
+): number {
+  if (state.hh === undefined) {
+    state.hh = {};
+    state.ll = {};
+  }
+  const len = Math.trunc(length);
+  if (!(len >= 1) || Number.isNaN(source) || Number.isNaN(high) || Number.isNaN(low)) return NaN;
+  const hh = extremeRing(state.hh, high, len, barIdx, false);
+  const ll = extremeRing(state.ll!, low, len, barIdx, true);
+  if (barIdx < len - 1) return NaN;
+  return (100 * (source - ll)) / (hh - ll);
+}
+
+// ta.wpr(length) with a series length (lib/ta.py wpr): length 1 is the close (the extremes do not run
+// that bar); otherwise 100 * (close - hh) / (hh - ll) over ta.highest(length) / ta.lowest(length).
+export function wprVarLen(
+  state: StochVarLenState,
+  close: number,
+  high: number,
+  low: number,
+  length: number,
+  _barCount: number,
+  barIdx: number,
+): number {
+  if (state.hh === undefined) {
+    state.hh = {};
+    state.ll = {};
+  }
+  const len = Math.trunc(length);
+  if (!(len >= 1)) return NaN;
+  if (len === 1) return close;
+  const hh = extremeRing(state.hh, high, len, barIdx, false);
+  const ll = extremeRing(state.ll!, low, len, barIdx, true);
+  return (100 * (close - hh)) / (hh - ll);
+}
+
+// ta.percentrank(source, length) with a series length (lib/ta.py percentrank: array.percentrank of
+// source[0..length], index 0): na when the source is na or bar_index < length; otherwise the share of
+// the `length` previous values within Pine's tolerance at or below the current one ("Percent rank is
+// the percents of how many previous values was less than or equal to the current value",
+// ref_v6_ta_math.txt), counting the current value too, (count - 1) * 100 / length. A past na counts
+// toward the length and not toward the rank (lib/array.py percentrank: "na elements are ignored when
+// counting values at or below the target, but still count toward the array length").
+export function percentrankVarLen(state: ExtremeVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
+  const w = recordVarLen(state, value, barCount, barIdx);
+  const len = Math.trunc(length);
+  if (!(len >= 1) || Number.isNaN(value) || barIdx < len) return NaN;
+  const n = Math.min(len + 1, w + 1);
+  if (n < 2) return NaN;
+  const buffer = state.buffer!;
+  let count = 0;
+  for (let i = w; i > w - n; i--) {
+    const x = buffer[i]!;
+    if (x <= value || x - value <= PINE_EPS) count++;
+  }
+  return ((count - 1) * 100) / (n - 1);
+}
+
+// ta.mode(source, length) with a series length (lib/ta.py mode): the most frequent of the last
+// `length` NON-na values, the smallest on a tie ("If there are several values with the same
+// frequency, it returns the smallest value"); na until `length` non-na values exist; an na bar
+// answers from the values already held ("an na bar neither enters the window nor blanks the
+// answer").
+export function modeVarLen(state: NaSkipVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
+  const count = recordNonNa(state, value, barCount, barIdx);
+  const len = Math.trunc(length);
+  if (!(len >= 1) || len > count) return NaN;
+  const values = Array.from(state.buffer!.subarray(count - len, count)).sort((a, b) => a - b);
+  let mode = values[0]!;
+  let current = values[0]!;
+  let maxFreq = 1;
+  let freq = 1;
+  for (let i = 1; i < len; i++) {
+    if (values[i] === current) {
+      freq++;
+      if (freq > maxFreq) {
+        maxFreq = freq;
+        mode = current;
+      }
+    } else {
+      current = values[i]!;
+      freq = 1;
+    }
+  }
+  return mode;
+}
+
+export interface CorrelationVarLenState {
+  sx?: NaSkipVarLenState;
+  sy?: NaSkipVarLenState;
+  sxy?: NaSkipVarLenState;
+  sx2?: NaSkipVarLenState;
+  sy2?: NaSkipVarLenState;
+}
+
+// ta.correlation(source1, source2, length) with a series length (lib/ta.py correlation, "Measured
+// law (probes m557 ...)"): five math.sum windows of `length` (each skipping its own na), cov = sxy /
+// length - mx * my, 0 when the covariance is within Pine's tolerance of zero, otherwise cov /
+// sqrt(vx * vy) with each variance clamped at 0, na when that product is 0.
+export function correlationVarLen(
+  state: CorrelationVarLenState,
+  x: number,
+  y: number,
+  length: number,
+  barCount: number,
+  barIdx: number,
+): number {
+  if (state.sx === undefined) {
+    state.sx = {};
+    state.sy = {};
+    state.sxy = {};
+    state.sx2 = {};
+    state.sy2 = {};
+  }
+  const len = Math.trunc(length);
+  const sx = naSkipSumVarLen(state.sx, x, len, barCount, barIdx);
+  const sy = naSkipSumVarLen(state.sy!, y, len, barCount, barIdx);
+  const sxy = naSkipSumVarLen(state.sxy!, x * y, len, barCount, barIdx);
+  const sx2 = naSkipSumVarLen(state.sx2!, x * x, len, barCount, barIdx);
+  const sy2 = naSkipSumVarLen(state.sy2!, y * y, len, barCount, barIdx);
+  if (!(len >= 1) || Number.isNaN(sx) || Number.isNaN(sy) || Number.isNaN(sxy) || Number.isNaN(sx2) || Number.isNaN(sy2)) {
+    return NaN;
+  }
+  const mx = sx / len;
+  const my = sy / len;
+  const cov = sxy / len - mx * my;
+  if (cov >= -PINE_EPS && cov <= PINE_EPS) return 0;
+  const vx = sx2 / len - mx * mx;
+  const vy = sy2 / len - my * my;
+  const product = (vx > 0 ? vx : 0) * (vy > 0 ? vy : 0);
+  if (product === 0) return NaN;
+  return cov / Math.sqrt(product);
 }
 
 // pivothighVarLen/pivotlowVarLen 전용 - idx가 [0, writeIdx] 밖(음수 = 아직 안 쌓인 과거, writeIdx

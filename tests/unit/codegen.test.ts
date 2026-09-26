@@ -3651,6 +3651,22 @@ describe("CodeGen", () => {
     expect(code).toBe("var x = rt.ta.linregVarLen($.taSlots[0], $.close.get(0), $.idx, 2, $.barCount, $.idx);");
   });
 
+  // Every `series int` length of the v6 reference takes its *VarLen machine (runtime/ta.ts "Series
+  // lengths: the oracle's machines"); the implicit inputs, the tuple scratch and the optional biased
+  // go before the trailing $.barCount, $.idx.
+  it("emits the series-length machines with their implicit inputs, scratch and padding before $.barCount, $.idx", () => {
+    expect(codegenSource("x = ta.change(close, bar_index)")).toBe("var x = rt.ta.changeVarLen($.taSlots[0], $.close.get(0), $.idx, $.barCount, $.idx);");
+    expect(codegenSource("x = ta.mom(close, bar_index)")).toBe("var x = rt.ta.changeVarLen($.taSlots[0], $.close.get(0), $.idx, $.barCount, $.idx);");
+    expect(codegenSource("x = ta.variance(close, bar_index)")).toBe("var x = rt.ta.varianceVarLen($.taSlots[0], $.close.get(0), $.idx, true, $.barCount, $.idx);");
+    expect(codegenSource("x = ta.variance(close, bar_index, false)")).toBe("var x = rt.ta.varianceVarLen($.taSlots[0], $.close.get(0), $.idx, false, $.barCount, $.idx);");
+    expect(codegenSource("x = ta.mfi(close, bar_index)")).toBe("var x = rt.ta.mfiVarLen($.taSlots[0], $.close.get(0), $.volume.get(0), $.idx, $.barCount, $.idx);");
+    expect(codegenSource("x = ta.stoch(close, high, low, bar_index)")).toBe("var x = rt.ta.stochVarLen($.taSlots[0], $.close.get(0), $.high.get(0), $.low.get(0), $.idx, $.barCount, $.idx);");
+    expect(codegenSource("x = ta.wpr(bar_index)")).toBe("var x = rt.ta.wprVarLen($.taSlots[0], $.close.get(0), $.high.get(0), $.low.get(0), $.idx, $.barCount, $.idx);");
+    expect(codegenSource("x = ta.correlation(close, open, bar_index)")).toBe("var x = rt.ta.correlationVarLen($.taSlots[0], $.close.get(0), $.open.get(0), $.idx, $.barCount, $.idx);");
+    expect(codegenSource("[m, u, l] = ta.bb(close, bar_index, 2)")).toContain("rt.ta.bbVarLen($.taSlots[0], $.close.get(0), $.idx, 2, $.taScratch, $.barCount, $.idx)");
+    expect(codegenSource("[m, u, l] = ta.bb(close, 4, 2)")).not.toContain("VarLen");
+  });
+
   it("keeps emitting the state-fixed rt.ta.linreg with the JS-default omitted offset for a literal length (C550 — 고정 경로 출력 바이트 불변)", () => {
     const code = codegenSource("x = ta.linreg(close, 4)");
     expect(code).toBe("var x = rt.ta.linreg($.taSlots[0], $.close.get(0), 4);");

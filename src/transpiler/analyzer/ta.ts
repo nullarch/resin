@@ -110,10 +110,11 @@ export interface TaRegistryEntry {
   lengthArgIndex: number | number[] | null;
   // true면 lengthArgIndex 위치가 series여도 하드 에러를 내지 않고 대신 codegen이 다른 rtPath(state에
   // 고정폭 버퍼를 굳히지 않는 변형, 예: highestVarLen)로 분기한다(배치25 (4), wild "length
-  // 인자는 series일 수 없음" 클러스터 대상 — runtime/ta.ts highestVarLen 주석 참조). 현재
-  // highest/lowest(C547)/sma(C548)/highestbars/lowestbars(C549)/median/linreg/wma(C550)/
-  // stdev/sum(C551)/pivothigh/pivotlow(C552)/range/percentile_nearest_rank/
-  // percentile_linear_interpolation(C553)만 해당 변형이 존재 — 다른 함수에 true를 놓으면
+  // 인자는 series일 수 없음" 클러스터 대상 — runtime/ta.ts highestVarLen 주석 참조). Every
+  // builtin whose length the v6 reference types `series int` has one, except ta.alma and ta.cog: the
+  // oracle's machines for those keep what the first length built (alma's weights, cog's running
+  // weighted sum), where the manual's Pine equivalents recompute with each bar's length — an open
+  // dispute, so they still reject a series length — 다른 함수에 true를 놓으면
   // codegen의 VARLEN_RT_PATHS(codegen.ts genCallExpr)에
   // 대응 항목이 없어 컴파일 산출물이 존재하지 않는 런타임 함수를 참조하게 되니 반드시 그 표와
   // 런타임 변형 함수를 함께 추가할 것(linreg처럼 length 뒤에 선택 인자가 있으면 genCallExpr의
@@ -177,7 +178,9 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // "TA는 전부 incremental O(1)/bar" 원칙의 첫 명시적 예외(가중치 배열은 캐시, 가중합만 매 바
   // O(length) 재계산, runtime/ta.ts alma() 주석 참조). length/offset/sigma 셋 다 최초 호출 값으로
   // weight 배열 크기/모양을 고정하므로(tsi/macd의 다중 length와 동일 이유) lengthArgIndex를 배열
-  // [1, 2, 3]으로 등록(series면 하드 에러) — TV 실제 시그니처도 이 셋 다 simple(non-series) 한정.
+  // [1, 2, 3]으로 등록(series면 하드 에러). The reference types the length `series int`; a series
+  // length stays rejected while the oracle's machine for it is disputed (it keeps the weights the
+  // first call's length built, where the manual's pine_alma recomputes them from each bar's length).
   alma: { dispatch: "ta", displayName: "ta.alma", argCount: 4, lengthArgIndex: [1, 2, 3], conditionalForbidden: true, rtPath: "rt.ta.alma", kwargParamNames: ["source", "length", "offset", "sigma"] },
   // ta.hma(source, length) — pine2py wavealgo/ta/hma.py 소스 대조 결과 HMA = WMA(2*WMA(src,half_len)
   // - WMA(src,length), sqrt_len)(half_len/sqrt_len는 length의 순수 파생값). runtime/ta.ts hma()가
@@ -271,8 +274,9 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
     rtPath: "rt.fixnan",
     kwargParamNames: ["source"],
   },
-  // ta.cmo(source, length) — 다른 인자 개수/암묵 주입 없이 sma와 동일한 표준 시그니처.
-  cmo: { dispatch: "ta", displayName: "ta.cmo", argCount: 2, lengthArgIndex: 1, conditionalForbidden: true, rtPath: "rt.ta.cmo" },
+  // ta.cmo(source, length) — 다른 인자 개수/암묵 주입 없이 sma와 동일한 표준 시그니처. A series
+  // length takes runtime/ta.ts cmoVarLen (the reference types it `series int`).
+  cmo: { dispatch: "ta", displayName: "ta.cmo", argCount: 2, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.cmo" },
   // ta.cci(source, length) — 다른 인자 개수/암묵 주입 없이 sma와 동일한 표준 시그니처. pine2py
   // wavealgo/ta/cci.py 소스 대조 결과 alma(C113)에 이은 두 번째 GOAL.md O(1)/bar 명시적 예외
   // (runtime/ta.ts cci() 주석 참조 — sum조차 캐시하지 않는 완전한 매 바 재계산, 러닝 합계 최적화가
@@ -280,19 +284,22 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // C477: source=/length= 완전 키워드 폼(wild 10c6fbc3696f.pine/257fa4fb6137.pine, next_hint(C476)
   // 지시대로 착수). pine2py wavealgo/ta/cci.py의 첫 두 파라미터명이 정확히 "source"/"length"라
   // sma/ema/rsi(C400)·rma/wma/vwma/stdev(C473)와 동일한 진짜 오라클 대조 축.
-  cci: { dispatch: "ta", displayName: "ta.cci", argCount: 2, lengthArgIndex: 1, conditionalForbidden: true, rtPath: "rt.ta.cci", kwargParamNames: ["source", "length"] },
+  // A series length takes runtime/ta.ts cciVarLen.
+  cci: { dispatch: "ta", displayName: "ta.cci", argCount: 2, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.cci", kwargParamNames: ["source", "length"] },
   // ta.change(source, length) — pine2py wavealgo/ta/change.py 소스 대조 결과 ta.mom이 change()에
   // 인자를 그대로 전달해 호출하는 완전한 별칭(로직 0줄 차이)임을 확인 — mom은 별도 런타임 구현 없이
   // 이 rtPath(rt.ta.change)를 그대로 재사용한다(runtime/ta.ts change() 주석 참조). pine2py 시그니처는
   // length가 선택 인자(기본값 1, TV corpus 실측 10건이 `ta.change(close)` 1-인자 관용구 — C227)라
   // minArgCount:1 신설(math.random C120과 동일 패턴). mom은 TV 실제 시그니처에 length 기본값이
   // 없어(corpus에도 1-인자 ta.mom 관용구 없음) 그대로 2-인자 고정 유지.
-  change: { dispatch: "ta", displayName: "ta.change", argCount: 2, minArgCount: 1, lengthArgIndex: 1, conditionalForbidden: true, rtPath: "rt.ta.change", kwargParamNames: ["source", "length"] },
-  mom: { dispatch: "ta", displayName: "ta.mom", argCount: 2, lengthArgIndex: 1, conditionalForbidden: true, rtPath: "rt.ta.change" },
+  // A series length takes runtime/ta.ts changeVarLen (both; the reference types it `series int`).
+  change: { dispatch: "ta", displayName: "ta.change", argCount: 2, minArgCount: 1, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.change", kwargParamNames: ["source", "length"] },
+  mom: { dispatch: "ta", displayName: "ta.mom", argCount: 2, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.change" },
   // ta.roc(source, length) — pine2py wavealgo/ta/roc.py 소스 대조 결과 change와 완전히 동일한
   // NaN-프라임 순환 버퍼 상태(source.get(0)/source.get(length))를 쓰지만 반환 산식이 다르다
   // (100*(curr-prev)/prev, prev===0이면 NaN) — alias 재사용(mom처럼) 불가, 별도 rt.ta.roc 신규 필요.
-  roc: { dispatch: "ta", displayName: "ta.roc", argCount: 2, lengthArgIndex: 1, conditionalForbidden: true, rtPath: "rt.ta.roc" },
+  // A series length takes runtime/ta.ts rocVarLen.
+  roc: { dispatch: "ta", displayName: "ta.roc", argCount: 2, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.roc" },
   // ta.rising(source, length)/ta.falling(source, length) — pine2py wavealgo/ta/cross.py 소스 대조
   // 결과 매 호출 O(length) 재스캔이 O(1) streak 카운터와 동치임을 확인(runtime/ta.ts rising/falling
   // 주석 참조). sma류와 달리 고정폭 버퍼를 전혀 쓰지 않아 length가 바마다 바뀌어도(series) 결과가
@@ -303,23 +310,22 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // 결과 둘 다 population variance/stdev로 완전히 동일한 로직(가중치 없는 단순 윈도우, stdev만
   // sqrt 추가)이라 sma와 동일한 표준 시그니처(source, length). stdev는 variance와 반환 산식이
   // 달라 별도 rt.ta.stdev가 필요(roc/change와 동일 원칙 — runtime/ta.ts stdev 주석 참조).
-  variance: { dispatch: "ta", displayName: "ta.variance", argCount: 2, lengthArgIndex: 1, conditionalForbidden: true, rtPath: "rt.ta.variance" },
+  // ta.variance(source, length, biased) takes the optional `biased` the reference gives it
+  // (ref_v6_ta_math.txt "ta.variance(source, length, biased)", "Optional. The default is true"),
+  // like ta.stdev below. A series length takes runtime/ta.ts varianceVarLen.
+  variance: { dispatch: "ta", displayName: "ta.variance", argCount: 3, minArgCount: 2, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.variance" },
   // C296: stdev만 argCount 3(minArgCount 2)로 확장 — TV 공식 3번째 위치 인자 biased(bool, 기본
   // true, wild corpus 실사용 2건 확인)를 hand-verified로 지원(DIVERGENCES #110, pine2py
   // stdev(source, length, **kwargs)가 2-positional 고정이라 오라클 구조적 불가, C291/C292급 패턴).
   // args가 genCallExpr에서 expr.args.map으로 그대로 순서 보존돼 넘어가(codegen.ts L1736) 별도
   // unshift/push 분기 없이 runtime stdev(state, value, length, biased)에 그대로 맞는다.
-  // ta.variance는 wild에 3-인자 실사용 근거가 0건이라 argCount 2 그대로 유지(C283 "wild 실측에
-  // 나온 이름만 큐레이션" 원칙 — variance()에 biased 파라미터 자체는 stdev가 내부 호출하므로
-  // runtime/ta.ts에 이미 추가돼 있지만 TA_REGISTRY 노출은 근거 없이 앞당기지 않는다).
+  // (ta.variance takes `biased` too now, see its entry.)
   // C473: stdev도 source=/length= 완전 키워드 폼 지원(pine2py wavealgo/ta/stdev.py 시그니처
   // `stdev(source, length: int, **kwargs)` — 앞 두 파라미터명이 정확히 일치, python 직접 호출로
   // `stdev(source=s, length=3)`이 위치 폼과 동일한 값을 냄을 확인, C296 주석의 "2-positional 고정"은
   // 3번째 biased의 **kwargs 무시 축을 가리킨 것일 뿐 source/length 키워드 바인딩 자체와는 무관 —
   // biased는 wild kwarg 실사용 0건이라 표에 미등재(argCount:3 그대로, 3번째는 위치 인자 전용 유지).
-  // C551: seriesLengthOk true — pine2py stdev.py가 median/linreg(#181)와 동일한 무상태 재스캔
-  // (get_ta_state 미사용, python 직접 실행 확인)이라 가변 length 오라클 성립(runtime/ta.ts
-  // stdevVarLen 참조). ta.variance는 wild series-length 실사용 근거 0건이라 미확장.
+  // A series length takes runtime/ta.ts stdevVarLen, the square root of varianceVarLen.
   stdev: { dispatch: "ta", displayName: "ta.stdev", argCount: 3, minArgCount: 2, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.stdev", kwargParamNames: ["source", "length"] },
   // ta.cum(source) — Pine 문법상 length 인자가 없는(고정 없음) 누적 합계. swma와 동일하게
   // lengthArgIndex: null(길이 자체가 없어 series length 하드 에러 검사 대상이 아님). NaN 처리는
@@ -409,11 +415,13 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // 재확인(C406에서 이미 확인, C407 재검증) — high/low/length는 TV 공식 이름과 정확히 일치해 부분
   // 오라클 가능(atr/C402와 동일), 'source='만 pine2py 'close'와 이름 불일치(crossover/pivothigh류와
   // 동일 축)라 hand-verified 필요.
+  // A series length takes runtime/ta.ts stochVarLen.
   stoch: {
     dispatch: "ta",
     displayName: "ta.stoch",
     argCount: 4,
     lengthArgIndex: 3,
+    seriesLengthOk: true,
     conditionalForbidden: true,
     rtPath: "rt.ta.stoch",
     kwargParamNames: ["source", "high", "low", "length"],
@@ -427,8 +435,8 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // 동일한 NaN-poison window)와 다른 pine2py 자체의 latent 비일관성으로 판단해 포팅하지 않고 C42의
   // rt.ta.highest/rt.ta.lowest를 stoch(C43)과 동일하게 재사용한다. argCount는 사용자가 실제로 쓰는
   // 1개(length)뿐이고, length가 hh/ll의 창 폭을 결정하므로 sma와 동일하게 lengthArgIndex: 0(series
-  // 하드 에러).
-  wpr: { dispatch: "ta", displayName: "ta.wpr", argCount: 1, lengthArgIndex: 0, conditionalForbidden: true, rtPath: "rt.ta.wpr" },
+  // 하드 에러). A series length takes runtime/ta.ts wprVarLen.
+  wpr: { dispatch: "ta", displayName: "ta.wpr", argCount: 1, lengthArgIndex: 0, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.wpr" },
   // ta.tr(handle_na) — True Range. Pine 문법상 인자가 없거나(bare `ta.tr` 프로퍼티 접근/`ta.tr()`,
   // C248) handle_na(선택, bool, 기본 true) 하나뿐(TV 실제 시그니처, C291) — high/low/close는 둘 다
   // bar series 암묵 사용(codegen이 $.high.get(0)/$.low.get(0)/$.close.get(1)(prevClose)을
@@ -518,23 +526,27 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // 암묵 사용한다(vwma와 동일한 특수 케이스 — codegen.genCallExpr이 $.volume.get(0)을 source와
   // length 사이에 끼워 넣는다). length는 upperBuffer/lowerBuffer의 고정폭 순환 버퍼 크기를 결정하므로
   // sma와 동일하게 lengthArgIndex: 1(series 하드 에러). The rule (first bar in both sums, na source
-  // skipped, na volume stores nothing) is in the runtime/ta.ts mfi() comment.
-  mfi: { dispatch: "ta", displayName: "ta.mfi", argCount: 2, lengthArgIndex: 1, conditionalForbidden: true, rtPath: "rt.ta.mfi" },
+  // skipped, na volume stores nothing) is in the runtime/ta.ts mfi() comment. A series length takes
+  // mfiVarLen.
+  mfi: { dispatch: "ta", displayName: "ta.mfi", argCount: 2, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.mfi" },
   // ta.cog(source, length) — Center of Gravity. pine2py wavealgo/ta/cog.py 소스 대조 결과
   // num=Σsource.get(i)*(i+1)/denom=Σsource.get(i)에 대해 result=-num/denom(음수 부호), 창 안
   // 하나라도 NaN이거나 데이터 부족이면 NaN(highest.py와 동일한 poison window 계열). runtime/ta.ts
   // cog() 주석 참조 — rt.ta.wma의 내부 state.sum/weightedSum을 항등식으로 읽는 linreg(C41)와
   // 동일한 합성 원칙. length가 내부 WmaState 버퍼 크기를 결정하므로 sma와 동일하게 lengthArgIndex: 1
   // (series 하드 에러). codegen 특수 분기 불필요(source/length 2개 인자 그대로 순서대로 전달, volume
-  // 등 암묵 주입 없음 — mfi/vwma/wpr과 다른 지점).
+  // 등 암묵 주입 없음 — mfi/vwma/wpr과 다른 지점). The reference types the length `series int`; a
+  // series length stays rejected while the oracle's machine for it is disputed (its running weighted
+  // sum assumes the length never changes, where the manual's pine_cog recomputes each bar).
   cog: { dispatch: "ta", displayName: "ta.cog", argCount: 2, lengthArgIndex: 1, conditionalForbidden: true, rtPath: "rt.ta.cog" },
   // ta.correlation(source1, source2, length) — 피어슨 상관계수. pine2py wavealgo/ta/correlation.py
   // 소스 대조 결과 sum_x/sum_y/sum_xy/sum_x2/sum_y2 다섯 러닝 합계로만 구성됨(runtime/ta.ts
   // correlation() 주석 참조) — vwma(C29, 두 신호 병렬 버퍼)와 stdev(C36, sumSq 항등식)를 합친 형태로
   // codegen 특수 분기 없이 구현. length가 x/yBuffer 고정폭 순환 버퍼 크기를 결정하므로 sma와 동일하게
   // lengthArgIndex: 2(0-based 세 번째 인자, series 하드 에러). source1/source2는 버퍼 크기와 무관해
-  // series 허용(linreg의 offset과 동일한 이유로 lengthArgIndex 대상 아님).
-  correlation: { dispatch: "ta", displayName: "ta.correlation", argCount: 3, lengthArgIndex: 2, conditionalForbidden: true, rtPath: "rt.ta.correlation" },
+  // series 허용(linreg의 offset과 동일한 이유로 lengthArgIndex 대상 아님). A series length takes
+  // runtime/ta.ts correlationVarLen.
+  correlation: { dispatch: "ta", displayName: "ta.correlation", argCount: 3, lengthArgIndex: 2, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.correlation" },
   // ta.tsi(source, short_length, long_length) — True Strength Index. pine2py wavealgo/ta/tsi.py
   // 소스 대조 결과 자체 _ema_step 인라인 재구현(count/running_sum/prev_ema)이 rt.ta.ema와 완전히
   // 동일한 2단계 상태 전이라 이미 구현된 rt.ta.ema를 함수 본문 안에서 4벌(e1_pc/e1_abs/e2_pc/
@@ -554,14 +566,14 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // ta.mode(source, length) — median과 동일한 표준 시그니처지만 워밍업 게이트(순수 호출 횟수
   // 카운터, median의 "버퍼 NaN-프라임 잔존" 판정과 다름)와 NaN 처리(개별 NaN 스킵, median의
   // "하나라도 있으면 전체 NaN"과 다름)가 갈린다 — runtime/ta.ts mode() 주석 참조. median(C115)에
-  // 이은 GOAL.md O(1)/bar 네 번째 명시적 예외.
-  mode: { dispatch: "ta", displayName: "ta.mode", argCount: 2, lengthArgIndex: 1, conditionalForbidden: true, rtPath: "rt.ta.mode" },
+  // 이은 GOAL.md O(1)/bar 네 번째 명시적 예외. A series length takes runtime/ta.ts modeVarLen.
+  mode: { dispatch: "ta", displayName: "ta.mode", argCount: 2, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.mode" },
   // ta.percentrank(source, length) — median/mode와 동일한 표준 시그니처지만 창이 현재 바 포함
   // length개가 아니라 **1~length바 전(현재 제외) length개**라 읽기가 쓰기보다 먼저 오는 순환 버퍼
   // 변형(runtime/ta.ts percentrank() 주석 참조). ta.* 44종 완주(alma C113/cci C114/median C115/
   // mode C116에 이은 다섯 번째이자 마지막 GOAL.md O(1)/bar 명시적 예외 — 버퍼 스캔 자체는
-  // median/mode와 동일하게 O(length)/bar).
-  percentrank: { dispatch: "ta", displayName: "ta.percentrank", argCount: 2, lengthArgIndex: 1, conditionalForbidden: true, rtPath: "rt.ta.percentrank" },
+  // median/mode와 동일하게 O(length)/bar). A series length takes runtime/ta.ts percentrankVarLen.
+  percentrank: { dispatch: "ta", displayName: "ta.percentrank", argCount: 2, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.percentrank" },
   // ta.dev(source, length) — Mean Absolute Deviation. 다른 인자 개수/암묵 주입 없이 sma와 동일한
   // 표준 시그니처. ROADMAP.md의 "ta.* 44종 완주"(C118) 정정 시점에도 인라인으로만 남아있던 실제
   // 누락 항목이었음(TA_REGISTRY/rt.ts/ta.ts 어디에도 없었음을 grep으로 확인 후 이번에 추가) — pine2py
@@ -569,8 +581,8 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // 전혀 쓰지 않는 완전 무상태 함수(cci류의 phase1/phase2 구분조차 없음)라, alma/cci/median/mode/
   // percentrank에 이은 **여섯 번째** GOAL.md O(1)/bar 명시적 예외(runtime/ta.ts dev() 주석 참조 —
   // mean이 매 바 바뀌어 mad_sum을 러닝 합계로 캐시할 수 없음, cci와 동일 이유로 sum도 함께
-  // O(length) 재계산).
-  dev: { dispatch: "ta", displayName: "ta.dev", argCount: 2, lengthArgIndex: 1, conditionalForbidden: true, rtPath: "rt.ta.dev" },
+  // O(length) 재계산). A series length takes runtime/ta.ts devVarLen.
+  dev: { dispatch: "ta", displayName: "ta.dev", argCount: 2, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.dev" },
   // ta.rci(source, length) — Rank Correlation Index. 다른 인자 개수/암묵 주입 없이 sma와 동일한
   // 표준 시그니처. pine2py에 대응 구현이 전혀 없는 hand-verified 신규 함수(배치25 (3),
   // DIVERGENCES.md #177) — runtime/ta.ts rci() 주석 참조. alma/cci/median/mode/percentrank/dev에
@@ -631,11 +643,13 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // 에만 쓰여 series 허용(linreg의 offset과 동일 이유로 lengthArgIndex 대상 아님). codegen 특수
   // 분기 불필요 — 이 항목이 macd와 다른 필드는 rtPath/displayName뿐이라는 사실 자체가 다중 반환
   // 인프라(C50)가 macd 전용이 아니라 일반화됐다는 증거(analyzer/codegen 코드 변경 0줄).
+  // A series length takes runtime/ta.ts bbVarLen.
   bb: {
     dispatch: "ta",
     displayName: "ta.bb",
     argCount: 3,
     lengthArgIndex: 1,
+    seriesLengthOk: true,
     conditionalForbidden: true,
     rtPath: "rt.ta.bb",
     returnArity: 3,
@@ -645,8 +659,9 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // (basis가 NaN이거나 정확히 0이면 NaN)임을 확인 — runtime/ta.ts bbw() 주석 참조. bb와 달리
   // 단일 스칼라 반환이라 returnArity 없이 macd/bb 이전 33종과 동일한 표준 패턴. length는 bb와
   // 동일하게 내부 StdevState 순환 버퍼 크기를 결정하므로 lengthArgIndex: 1(series 하드 에러);
-  // mult은 최종 산술에만 쓰여 series 허용(bb와 동일 이유).
-  bbw: { dispatch: "ta", displayName: "ta.bbw", argCount: 3, lengthArgIndex: 1, conditionalForbidden: true, rtPath: "rt.ta.bbw" },
+  // mult은 최종 산술에만 쓰여 series 허용(bb와 동일 이유). A series length takes runtime/ta.ts
+  // bbwVarLen.
+  bbw: { dispatch: "ta", displayName: "ta.bbw", argCount: 3, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.bbw" },
   // ta.kc(source, length, mult, useTrueRange) — Keltner Channels, the third multi-return TA
   // (returnArity: 3, [basis, upper, lower]). pine2py wavealgo/ta/kc.py composes basis=ema(source,
   // length) with range=atr(high,low,close,length) when useTrueRange(default true) — both already
@@ -1030,9 +1045,7 @@ export function analyzeStatefulCall(
     // 조용히 건너뛴다(series 하드 에러까지 중복 보고할 필요 없음).
     if (resolvedArgs.length > idx && resolvedArgs[idx] !== undefined && inferQualifier(resolvedArgs[idx]!, prog, scope) === "series") {
       if (entry.seriesLengthOk) {
-        // seriesLengthOk 함수(highest/lowest/sma/highestbars/lowestbars/median/linreg/wma/stdev/sum/
-        // pivothigh/pivotlow) 전용 —
-        // 하드 에러 대신 codegen이 state-fixed rtPath를 우회하도록 표시만 한다(genCallExpr의
+        // seriesLengthOk 함수 전용 — 하드 에러 대신 codegen이 state-fixed rtPath를 우회하도록 표시만 한다(genCallExpr의
         // stateCall.seriesLength 분기, runtime/ta.ts highestVarLen/smaVarLen 참조).
         prog.stateCallSlots.get(expr)!.seriesLength = true;
         continue;
