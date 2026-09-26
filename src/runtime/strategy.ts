@@ -2594,8 +2594,16 @@ export class StrategyState {
 
   // The pending exit's take-profit level: limit=, else `profit` ticks from `base` (the bound
   // entry's fill price) in the position's favour. NaN when it has neither.
+  // An absolute limit=/stop= is put on the tick grid like an entry's levels, on the side the market
+  // has to travel further to reach: a long's take-profit rounds up and its stop-loss down, a
+  // short's the other way (a level within 1e-4 tick of a grid point is on it; snapToTick). The
+  // oracle rounds exit levels this way at the call (`_exit_leg` → `_price_round`, measured on
+  // TradingView). Tier 1: resin-harness suites/strategy/tv/slippage_limit trade 1, a short's stop
+  // `position_avg_price * 1.01` = 1.13323 * 1.01 = 1.1445623 fills at 1.14477 with 20 ticks of
+  // slippage, i.e. at 1.14457 + 0.0002; trade 2, a long's 1.14213 * 0.99 = 1.1307087, at
+  // 1.1307 - 0.0002 = 1.1305. The unsnapped level filled at 1.1447623 and 1.1305087.
   private exitLimitLevel(isLong: boolean, base: number): number {
-    if (!Number.isNaN(this.exitLimit)) return this.exitLimit;
+    if (!Number.isNaN(this.exitLimit)) return this.snapToTick(this.exitLimit, isLong);
     if (Number.isNaN(this.exitProfitPoints)) return NaN;
     return isLong
       ? this.snapToTick(base + this.exitProfitPoints * this.mintick, true)
@@ -2605,7 +2613,7 @@ export class StrategyState {
   // The pending exit's stop-loss level: stop=, else `loss` ticks from `base` against the position.
   // NaN when it has neither.
   private exitStopLevel(isLong: boolean, base: number): number {
-    if (!Number.isNaN(this.exitStop)) return this.exitStop;
+    if (!Number.isNaN(this.exitStop)) return this.snapToTick(this.exitStop, !isLong);
     if (Number.isNaN(this.exitLossPoints)) return NaN;
     return isLong
       ? this.snapToTick(base - this.exitLossPoints * this.mintick, false)

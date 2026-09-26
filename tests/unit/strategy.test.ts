@@ -9118,6 +9118,48 @@ describe("StrategyState entry orders per id + pyramiding gate at the call", () =
     g.entry("SS", "short", 1, undefined, 100.005);
     expect(g.pendingEntries.map((e) => e.stop)).toEqual([100.01, 100]);
   });
+
+  it("puts an exit's stop on the tick grid away from the market before slipping it (tier 1 slippage_limit trades 1-2)", () => {
+    // slippage=20, mintick 0.00001. Trade 1: a short at 1.13323, stop = avg * 1.01 = 1.1445623,
+    // TradingView exits at 1.14477 = 1.14457 + 20 ticks.
+    const short = new StrategyState();
+    short.configure(1, 1, 10000, false, false, false, 20);
+    short.setSymbol(0.00001, 100000, 1, 0.0001);
+    short.entry("Short Limit", "short", 1, 1.13323); // a limit fill takes no slippage
+    short.processFills(1.133, 1.1335, 1.1329);
+    short.exit("Short Stop", "Short Limit", undefined, short.posAvgPrice * 1.01);
+    short.processFills(1.14385, 1.14526, 1.14381); // bar 189
+    expect(short.closedTradeRecords[0]!.exitPrice).toBeCloseTo(1.14477, 12);
+    // Trade 2: a long at 1.14213, stop 1.1307087, exits at 1.1305 = 1.1307 - 20 ticks.
+    const long = new StrategyState();
+    long.configure(1, 1, 10000, false, false, false, 20);
+    long.setSymbol(0.00001, 100000, 1, 0.0001);
+    long.entry("Long Limit", "long", 1, 1.14213);
+    long.processFills(1.1425, 1.143, 1.142);
+    long.exit("Long Stop", "Long Limit", undefined, long.posAvgPrice * 0.99);
+    long.processFills(1.1315, 1.1316, 1.13);
+    expect(long.closedTradeRecords[0]!.exitPrice).toBeCloseTo(1.1305, 12);
+  });
+
+  it("an exit's take-profit rounds away from the market too: a long's up, a short's down (repro exit-level-snap.json)", () => {
+    // A bar reaching the nearest tick (104.56) but not the snapped level (104.57) does not fill.
+    const long = new StrategyState();
+    long.entry("L", "long", 1);
+    long.processFills(100, 101, 99);
+    long.exit("XL", "L", 104.561);
+    long.processFills(101, 104.56, 100);
+    expect(long.posSize).toBe(1);
+    long.processFills(104, 104.6, 103);
+    expect(long.closedTradeRecords[0]!.exitPrice).toBe(104.57);
+    const short = new StrategyState();
+    short.entry("S", "short", 1);
+    short.processFills(95, 96, 94);
+    short.exit("XS", "S", 90.019);
+    short.processFills(94, 95, 90.02);
+    expect(short.posSize).toBe(-1);
+    short.processFills(91, 92, 89);
+    expect(short.closedTradeRecords[0]!.exitPrice).toBe(90.01);
+  });
 });
 
 // OCA groups (strategy.entry/strategy.order oca_name=, oca_type=). strategies.txt, "OCA groups":
