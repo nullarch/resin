@@ -4440,6 +4440,46 @@ describe("CodeGen", () => {
     );
   });
 
+  // The hoisting above is v5 (and earlier, incl. no //@version) strict evaluation. Pine v6
+  // short-circuits `and`/`or` (rn.txt Pine v6: "If the first expression of an or operation is
+  // true, or the first expression of an and operation is false, the script does not evaluate the
+  // second expression"; mig6.txt "Lazy evaluation of conditions"): the right operand becomes a
+  // thunk and its calls stay in it. resin-harness state/repros/lang.ternary-seed-3.json,
+  // short-circuit-and-or.json.
+  it("v5: still hoists a stateful call in an 'and' rhs (strict evaluation)", () => {
+    const code = codegenSource("//@version=5\nx = close > open and ta.crossover(close, close)");
+    expect(code).toBe(
+      "let __lazy0 = rt.ta.crossover($.taSlots[0], $.close.get(0), $.close.get(0));\n" +
+        "var x = rt.pineAnd(rt.pineGt($.close.get(0), $.open.get(0)), __lazy0);",
+    );
+  });
+
+  it("v6: keeps a stateful call in an 'and' rhs in a thunk, run only when the lhs is true", () => {
+    const code = codegenSource("//@version=6\nx = close > open and ta.crossover(close, close)");
+    expect(code).toBe(
+      "var x = rt.pineAndLazy(rt.pineGt($.close.get(0), $.open.get(0)), () => (rt.ta.crossover($.taSlots[0], $.close.get(0), $.close.get(0))));",
+    );
+  });
+
+  it("v6: keeps a var-stateful UDF call in an 'or' rhs in a thunk, run only when the lhs is not true", () => {
+    const code = codegenSource(
+      ["//@version=6", "counter() =>", "    var int n = 0", "    n := n + 1", "    n", "x = close > open or counter() > 0"].join("\n"),
+    );
+    expect(code).toContain("var x = rt.pineOrLazy(rt.pineGt($.close.get(0), $.open.get(0)), () => (rt.pineGt(counter(0), 0)));");
+    expect(code).not.toContain("__lazy");
+  });
+
+  it("v6: still hoists a call-result history in an 'and' rhs (a history reference advances every bar)", () => {
+    // PyneCore transformers/inline_series_hoist.py: "Verified against TradingView v6 bar-by-bar:
+    // ternary branches and and/or operands always yield fresh history" (twin channel h1 of
+    // short-circuit-and-or.json).
+    const code = codegenSource("//@version=6\nx = close > open and ta.sma(close, 2)[1] > 0");
+    expect(code).toBe(
+      "let __lazy0 = ($.histSlots[0].record(rt.ta.sma($.taSlots[0], $.close.get(0), 2)), $.histSlots[0].get(1));\n" +
+        "var x = rt.pineAndLazy(rt.pineGt($.close.get(0), $.open.get(0)), () => (rt.pineGt(__lazy0, 0)));",
+    );
+  });
+
   it("keeps a nested stateful call chain inline in its ternary branch", () => {
     const code = codegenSource("x = close > open ? ta.sma(ta.ema(close, 2), 2) : 0.0");
     expect(code).toBe(

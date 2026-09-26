@@ -4,7 +4,7 @@ import * as ta from "./ta";
 import * as array from "./array";
 import * as mapFns from "./map";
 import * as matrixFns from "./matrix";
-import { na, pineNot, pineLt, pineGt, pineLe, pineGe, pineAnd, pineOr, pineEq, pineNeq, pineDiv, pineMod, idiv, round, round_to_mintick, abs, max, min, clamp, avg, floor, ceil, sqrt, pow, log, log10, exp, sign, sin, cos, tan, asin, acos, atan, atan2, todegrees, toradians, nz, concat, udtCopy, int, float, bool, timestamp, barIndexHistory, histConst } from "./numeric";
+import { na, pineNot, pineLt, pineGt, pineLe, pineGe, pineAnd, pineOr, pineAndLazy, pineOrLazy, pineEq, pineNeq, pineDiv, pineMod, idiv, round, round_to_mintick, abs, max, min, clamp, avg, floor, ceil, sqrt, pow, log, log10, exp, sign, sin, cos, tan, asin, acos, atan, atan2, todegrees, toradians, nz, concat, udtCopy, int, float, bool, timestamp, barIndexHistory, histConst } from "./numeric";
 import { histGet, secHistGet, refHistGet } from "./series";
 import { length, contains, startswith, endswith, pos, lower, upper, trim, replace_all, replace, substring, repeat, tostring, tonumber, split, match, format, format_number, format_time } from "./str";
 import { rgb, colorNew, from_gradient, colorR, colorG, colorB, colorT, vizColor, vizFlag, vizNum } from "./color";
@@ -175,6 +175,9 @@ export const rt = {
   pineGe,
   pineAnd,
   pineOr,
+  // v6 short-circuit `and`/`or` (numeric.ts pineAndLazy).
+  pineAndLazy,
+  pineOrLazy,
   // C812: '=='/'!=' — 히스토리 슬롯을 왕복한 bool(1/0)과 원시 boolean의 동치 판정(numeric.ts
   // pineEq 주석, pineAnd/pineOr의 C449와 같은 계열).
   pineEq,

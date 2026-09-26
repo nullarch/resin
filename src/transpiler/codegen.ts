@@ -279,10 +279,24 @@ function genDerivedPriceExpr(name: "hl2" | "hlc3" | "ohlc4" | "hlcc4", o: string
 // (rn.txt Pine v4 "only the branch corresponding to the evaluated condition is calculated";
 // mig6.txt "except for the ?: ternary operator"), which the native JS `?:` already does
 // (walkForLazyHoist TernaryOp; resin-harness state/repros/lang.ternary-seed-5.json).
+// All of the above is Pine v5 and earlier ("Pine v5 evaluates all bool expressions except for the
+// ?: ternary operator strictly", mig6.txt). Pine v6 evaluates `and`/`or` lazily (lazyBoolOps): the
+// right operand runs only when the left one does not decide the result, so its calls are not
+// hoisted and genBinOp passes it as a thunk. Only a history reference on a call or an expression
+// there (`ta.sma(close, 2)[1]`, lazyHistCallSites) is still hoisted: PyneCore's
+// transformers/inline_series_hoist.py, "Verified against TradingView v6 bar-by-bar: ternary
+// branches and and/or operands always yield fresh history".
 // 콜사이트 AST 노드 identity는 프로그램 전체에서 유일하므로 노드→임시변수명 맵은 generateCode당
 // 하나로 충분하다(중첩 문장 간 저장/복원 불필요).
 let lazyTempCounter = 0;
 const lazyTemps = new Map<Expr, string>();
+
+// Whether `and`/`or` short-circuit: from Pine v6 on (rn.txt, Pine v6: "the or and and operators
+// now feature short-circuit (“lazy”) evaluation"; mig6.txt "Lazy evaluation of conditions"). A
+// script without a //@version annotation is a v1 script, strict like v5.
+function lazyBoolOps(program: AnalyzedProgram): boolean {
+  return (program.script.version ?? 1) >= 6;
+}
 
 // 제어문-식 결과 임시변수(`let __cfrN = NaN`) 이름 카운터 — lazyTempCounter와 동일하게
 // generateCode 호출 단위로 리셋한다. 임시변수를 거치는 이유(C266): target에 NaN을 선대입한 뒤
@@ -1559,6 +1573,8 @@ function walkForLazyHoist(
       walkForLazyHoist(expr.condition, inLazy, program, funcCtx, out);
       return;
     case "BinOp":
+      // An `and`/`or` right operand is a lazy position: v5 hoists its calls, v6 only its history
+      // references (CallExpr case below; lazyBoolOps).
       walkForLazyHoist(expr.left, inLazy, program, funcCtx, out);
       walkForLazyHoist(expr.right, inLazy || expr.op === "and" || expr.op === "or", program, funcCtx, out);
       return;
@@ -1636,6 +1652,12 @@ function walkForLazyHoist(
     }
     case "CallExpr": {
       for (const a of expr.args) walkForLazyHoist(a, inLazy, program, funcCtx, out);
+      // In v6 the lazy position is a short-circuited `and`/`or` operand (a `?:` branch is not
+      // walked at all): the call runs only when that operand is evaluated, so it stays inline in
+      // genBinOp's thunk (resin-harness state/repros/lang.ternary-seed-3.json, `bar_index % 2 == 1
+      // or ta.falling(close, 2)`: the falling call skips the odd bars). History references in it
+      // are still hoisted above (IndexAccess).
+      if (lazyBoolOps(program)) return;
       if (inLazy && (program.stateCallSlots.has(expr) || isVarStatefulUdfCall(expr, program) || isMutatingArrayCall(expr, program))) {
         const name = `__lazy${lazyTempCounter}`;
         lazyTempCounter += 1;
@@ -3672,10 +3694,12 @@ function genBinOp(
     // AND를, true가 OR를 다른 피연산자의 na 여부와 무관하게 결정) — JS 네이티브 &&/||는 NaN을
     // falsy로만 취급해 `na && false`(NaN 반환, true 이면 false여야 함) 등 여러 조합에서 어긋나므로
     // rt.pineAnd/pineOr로 우회(numeric.ts 주석 참조, ROADMAP P2 "C67 발견" 항목).
+    // Pine v6 short-circuits them (lazyBoolOps): the right operand is a thunk the runtime calls
+    // only when the left one does not decide the result (numeric.ts pineAndLazy/pineOrLazy).
     case "and":
-      return `rt.pineAnd(${l}, ${r})`;
+      return lazyBoolOps(program) ? `rt.pineAndLazy(${l}, () => (${r}))` : `rt.pineAnd(${l}, ${r})`;
     case "or":
-      return `rt.pineOr(${l}, ${r})`;
+      return lazyBoolOps(program) ? `rt.pineOrLazy(${l}, () => (${r}))` : `rt.pineOr(${l}, ${r})`;
   }
 }
 

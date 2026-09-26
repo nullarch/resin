@@ -13,8 +13,8 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { runPipeline } from "../helpers/pipeline";
 import { loadGolden, loadOracleData, decodeSentinel, nearlyEqual } from "../helpers/golden";
-import { ema, sma, crossover } from "../../src/runtime/ta";
-import type { EmaState, SmaState, CrossState } from "../../src/runtime/ta";
+import { ema, sma, crossover, change } from "../../src/runtime/ta";
+import type { EmaState, SmaState, CrossState, ChangeState } from "../../src/runtime/ta";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..", "..");
@@ -126,6 +126,73 @@ describe("oracle: cond_lazy_ta (stateful calls in ternary branches and and/or op
     }
     // bar8에서만 1(lhs T && 교차) — lazy였다면 crossover가 lhs T인 바만 봐서 다른 궤적이 된다.
     expect(result.bars[8]!["var:__obs"]).toBeCloseTo(1.0, 9);
+  });
+
+  // The test above is v5 (no //@version: strict). Pine v6 short-circuits `and`/`or`: "If the first
+  // expression of an or operation is true, or the first expression of an and operation is false,
+  // the script does not evaluate the second expression" (rn.txt, Pine v6); a skipped ta call "is
+  // not evaluated on every bar, which interferes with the internal history" it stores (mig6.txt
+  // "Lazy evaluation of conditions"). PyneCore agrees: resin-harness
+  // state/repros/short-circuit-and-or.json (a1-a7), lang.ternary-seed-3.json.
+  it("v6: advances an and-rhs change(+nested sma) only on the bars the lhs is true", () => {
+    const data = loadOracleData(CASE_NAME);
+    const result = runPipeline(
+      [
+        "//@version=6",
+        "indicator('t')",
+        "c = close > 104 and ta.change(ta.sma(close, 2)) > 0",
+        "var float __obs = na",
+        "__obs := c ? 1.0 : 0.0",
+      ].join("\n"),
+      data,
+    );
+    // close > 104 on bars 5, 6, 8, 9. Called there only, the sma is na on bar 5 (its first call)
+    // and the change is na on bar 6 (no previous sma): both false. Called every bar (v5), the
+    // change is 1.5 and 1 there.
+    const stC = {} as ChangeState;
+    const stS = {} as SmaState;
+    for (let i = 0; i < data.close.length; i++) {
+      let expected = 0.0;
+      if (data.close[i]! > 104) {
+        const s = sma(stS, data.close[i]!, 2);
+        expected = change(stC, s) > 0 ? 1.0 : 0.0;
+      }
+      expect(result.bars[i]!["var:__obs"], `bar ${i}`).toBe(expected);
+    }
+    expect(result.bars.map((b) => b["var:__obs"])).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 1, 1]);
+  });
+
+  it("v6: an or-rhs ta.cum counts only the bars the lhs is not true", () => {
+    const data = loadOracleData(CASE_NAME);
+    const result = runPipeline(
+      [
+        "//@version=6",
+        "indicator('t')",
+        "var float n = 0.0",
+        "if close > 102 or ta.cum(1) > 100",
+        "    n := n + 1",
+        "c = bar_index % 2 == 0 or ta.cum(1) >= 3",
+        "var float __obs = na",
+        "__obs := c ? 1.0 : 0.0",
+      ].join("\n"),
+      data,
+    );
+    // The second cum runs on the odd bars only: its 1st, 2nd, 3rd calls are bars 1, 3, 5. The if
+    // condition's cum (never above 100 here) leaves n counting the bars with close > 102.
+    let calls = 0;
+    let n = 0;
+    for (let i = 0; i < data.close.length; i++) {
+      if (data.close[i]! > 102) n += 1;
+      expect(result.bars[i]!["var:n"], `bar ${i} n`).toBe(n);
+      let expected = 1.0;
+      if (i % 2 !== 0) {
+        calls += 1;
+        expected = calls >= 3 ? 1.0 : 0.0;
+      }
+      expect(result.bars[i]!["var:__obs"], `bar ${i}`).toBe(expected);
+    }
+    expect(result.bars[3]!["var:__obs"]).toBe(0.0);
+    expect(result.bars[5]!["var:__obs"]).toBe(1.0);
   });
 
   it("an if-body ternary's emas advance only on the bars the if body runs and their branch is selected", () => {

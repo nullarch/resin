@@ -102,6 +102,24 @@ export function pineOr(a: boolean | number, b: boolean | number): boolean | numb
   return false;
 }
 
+// Pine v6 `and`/`or` (codegen genBinOp for //@version=6): the right operand is a thunk, evaluated
+// only when the left one does not decide the result. rn.txt (Pine v6): "If the first expression of
+// an or operation is true, or the first expression of an and operation is false, the script does
+// not evaluate the second expression"; mig6.txt "Lazy evaluation of conditions": a skipped
+// `ta.rsi()` "is not evaluated on every bar, which interferes with the internal history that the
+// RSI function stores". A na left operand of `and` is false in v6 ("Values of the bool type are
+// now strictly true or false. They are never na in v6", rn.txt), so it skips the right one too;
+// otherwise the value is pineAnd/pineOr's.
+export function pineAndLazy(a: boolean | number, b: () => boolean | number): boolean | number {
+  if (a === false || a === 0 || a !== a) return false;
+  return pineAnd(a, b());
+}
+
+export function pineOrLazy(a: boolean | number, b: () => boolean | number): boolean | number {
+  if (a === true || a === 1) return true;
+  return pineOr(a, b());
+}
+
 // '=='/'!=' — C602(C811 실측 확정, C812 수정). pineAnd/pineOr가 C449에서 고친 것과 정확히 같은
 // 원인: bool 값이 Float64Array 히스토리 슬롯($.histSlots/$.fnHistSlots/security expr 캐시)을 한 번
 // 왕복하면 JS 숫자 강제변환으로 true→1/false→0이 되는데, genEquality가 방출하던 네이티브 `===`는

@@ -8449,6 +8449,10 @@ export function analyzeExpr(expr: Expr, prog: AnalyzedProgram, scope: LexScope, 
         // firstForbiddenKind에서 cond-body와 동일 취급, 체인의 condition/loop-body/udf-body는
         // 여전히 거부). 값 결합은 JS '&&'/'||' 그대로 — 호이스팅된 임시변수는 이미 평가가 끝난
         // 뒤라 단락 평가가 값에만 적용되고 상태 전진에는 영향을 주지 않는다.
+        // That is v5 and earlier. From v6 the operand is short-circuited (rn.txt Pine v6; mig6.txt
+        // "Lazy evaluation of conditions"): codegen keeps its calls in a thunk (lazyBoolOps) and
+        // hoists only its history references (lazyHistCallSites, fresh every bar). The tag stays
+        // "lazy-expr" for both versions.
         const rightScope = pushScope(scope, "lazy-expr");
         analyzeExpr(expr.right, prog, rightScope, false);
       } else {

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { Series, histGet, RefSeries, refHistGet } from "../../src/runtime/series";
 import { Context } from "../../src/runtime/context";
 import { sma, ema, rsi, rma, wma, alma, hma, dema, linreg, vwma, swma, crossover, crossunder, cross, fixnan, cmo, cci, change, roc, rising, falling, variance, stdev, cum, cumMax, cumMin, barssince, valuewhen, highest, lowest, highestVarLen, lowestVarLen, smaVarLen, highestbars, lowestbars, highestbarsVarLen, lowestbarsVarLen, medianVarLen, linregVarLen, wmaVarLen, stdevVarLen, sumVarLen, stoch, wpr, mfi, cog, correlation, tsi, macd, bb, bbw, tr, atr, kc, kcw, obv, accdist, pvt, wad, nvi, pvi, wvad, iii, ao, vwap, pivothigh, pivotlow, pivothighVarLen, pivotlowVarLen, supertrend, sar, dmi, sum, median, mode, percentrank, dev, rci, random, range, rangeVarLen, percentileNearestRank, percentileLinearInterpolation, percentileNearestRankVarLen, percentileLinearInterpolationVarLen, vwmaVarLen } from "../../src/runtime/ta";
-import { na, pineNot, pineLt, pineGt, pineLe, pineGe, pineAnd, pineOr, pineDiv, pineMod, idiv, barIndexHistory, histConst, round, round_to_mintick, abs, max, min, clamp, avg, floor, ceil, sqrt, pow, log, log10, exp, sign, sin, cos, tan, asin, acos, atan, atan2, todegrees, toradians, nz, concat, udtCopy } from "../../src/runtime/numeric";
+import { na, pineNot, pineLt, pineGt, pineLe, pineGe, pineAnd, pineOr, pineAndLazy, pineOrLazy, pineDiv, pineMod, idiv, barIndexHistory, histConst, round, round_to_mintick, abs, max, min, clamp, avg, floor, ceil, sqrt, pow, log, log10, exp, sign, sin, cos, tan, asin, acos, atan, atan2, todegrees, toradians, nz, concat, udtCopy } from "../../src/runtime/numeric";
 import { length, contains, startswith, endswith, pos, lower, upper, trim, replace_all, replace, substring, repeat, split, match, format, format_number, format_time, tonumber, tostring } from "../../src/runtime/str";
 import { rgb, colorNew, from_gradient, colorR, colorG, colorB, colorT } from "../../src/runtime/color";
 import * as parray from "../../src/runtime/array";
@@ -8151,6 +8151,52 @@ describe("numeric helpers", () => {
     expect(pineOr(NaN, 0)).toBeNaN();
     expect(pineOr(1, NaN)).toBe(true);
     expect(pineOr(NaN, 1)).toBe(true);
+  });
+
+  // ── pineAndLazy/pineOrLazy(a, () => b) — Pine v6 short-circuit `and`/`or`: the right operand
+  // is evaluated only when the left one does not decide the result (rn.txt Pine v6; mig6.txt "Lazy
+  // evaluation of conditions"; resin-harness state/repros/short-circuit-and-or.json).
+
+  it("pineAndLazy() evaluates the right operand only when the left one is true", () => {
+    let calls = 0;
+    const rhs = (v: boolean | number) => () => {
+      calls += 1;
+      return v;
+    };
+    expect(pineAndLazy(false, rhs(true))).toBe(false);
+    expect(pineAndLazy(0, rhs(true))).toBe(false);
+    expect(calls).toBe(0);
+    expect(pineAndLazy(true, rhs(true))).toBe(true);
+    expect(pineAndLazy(1, rhs(false))).toBe(false);
+    expect(pineAndLazy(true, rhs(NaN))).toBeNaN();
+    expect(calls).toBe(3);
+  });
+
+  it("pineAndLazy(): a na left operand is false in v6 (bools are never na), so the right one is skipped", () => {
+    let calls = 0;
+    expect(
+      pineAndLazy(NaN, () => {
+        calls += 1;
+        return true;
+      }),
+    ).toBe(false);
+    expect(calls).toBe(0);
+  });
+
+  it("pineOrLazy() evaluates the right operand only when the left one is not true, with pineOr's value", () => {
+    let calls = 0;
+    const rhs = (v: boolean | number) => () => {
+      calls += 1;
+      return v;
+    };
+    expect(pineOrLazy(true, rhs(false))).toBe(true);
+    expect(pineOrLazy(1, rhs(false))).toBe(true);
+    expect(calls).toBe(0);
+    expect(pineOrLazy(false, rhs(true))).toBe(true);
+    expect(pineOrLazy(0, rhs(false))).toBe(false);
+    expect(pineOrLazy(NaN, rhs(true))).toBe(true);
+    expect(pineOrLazy(NaN, rhs(false))).toBeNaN();
+    expect(calls).toBe(4);
   });
 
   // ── concat(a, b) — '+' 문자열 연결(na-safe), "na/수치 2c-ii" ────
