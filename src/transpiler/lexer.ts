@@ -74,6 +74,35 @@ const LEADING_CONTINUATION_SYMBOLS: ReadonlySet<TokenType> = new Set([
   "COMMA",
 ]);
 
+// A literal string's value is the character sequence the escapes spell, wherever it is
+// read: the code emitted for it, and every compile-time consumer (plot and enum titles,
+// symbols, timeframes, format strings). language_type-system.txt: "applying a backslash to
+// a quotation mark or apostrophe adds that character directly into a literal string's
+// sequence"; tier 1 ta_301_vwap titles a plot "ta.vwap(close, timeframe.change(\"240\"))"
+// and TradingView exports the column as `ta.vwap(close, timeframe.change("240"))`.
+// Decoded here, once, so the AST never carries the source spelling. Only the core four
+// (`\n`, `\\`, `\'`, `\"`) are decoded; any other backslash pair (`\t`, `\d`, a regex
+// escape) is kept as written, as before (DIVERGENCES.md #44).
+function decodePineStringEscapes(raw: string): string {
+  let out = "";
+  for (let i = 0; i < raw.length; i++) {
+    const ch = raw[i]!;
+    if (ch === "\\" && i + 1 < raw.length) {
+      const next = raw[i + 1]!;
+      if (next === "n" || next === "\\" || next === "'" || next === '"') {
+        out += next === "n" ? "\n" : next;
+        i += 1;
+        continue;
+      }
+      out += ch + next;
+      i += 1;
+      continue;
+    }
+    out += ch;
+  }
+  return out;
+}
+
 export class Lexer {
   private source: string;
   private pos = 0;
@@ -443,7 +472,7 @@ export class Lexer {
       this.pos += 1;
       this.col += 1;
     }
-    this.tokens.push({ type: "STRING", value, line: startLine, col: startCol });
+    this.tokens.push({ type: "STRING", value: decodePineStringEscapes(value), line: startLine, col: startCol });
     return curLine;
   }
 

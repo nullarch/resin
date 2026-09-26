@@ -527,7 +527,10 @@ describe("Lexer - string literal edge cases", () => {
   it("treats a backslash-escaped quote as string content, not the closing quote", () => {
     const toks = tokenize('a = "He said \\"hi\\""\nb = 1');
     const str = toks.find((t) => t.type === "STRING");
-    expect(str?.value).toBe('He said \\"hi\\"');
+    // The token holds the string the escapes spell (language_type-system.txt: a backslash "adds
+    // that character directly into a literal string's sequence"); tier 1 ta_301_vwap's plot title
+    // "timeframe.change(\"240\")" is exported by TradingView as `timeframe.change("240")`.
+    expect(str?.value).toBe('He said "hi"');
     // confirms the scan resynced correctly and did not consume the next statement
     expect(types('a = "He said \\"hi\\""\nb = 1')).toEqual([
       "IDENTIFIER", "ASSIGN", "STRING", "NEWLINE",

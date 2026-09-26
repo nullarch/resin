@@ -20,16 +20,19 @@ const DATA = {
   volume: [1000, 1000, 500, 1500, 1000],
 };
 
-// 손계산 기대값(source=close, anchor=close<open → bar 2 리셋):
+// 손계산 기대값(source=close, anchor=bar_index == 0 or close<open → bar 0 시작, bar 2 리셋):
 // bar0: 100 / bar1: (100·1000+110·1000)/2000 = 105 / bar2(리셋): 50 /
 // bar3: (50·500+60·1500)/2000 = 57.5 / bar4: (25000+90000+70·1000)/3000 = 61.666…
+// (The anchor includes bar 0 because calculations only begin at the first anchor bar,
+// ref_v6_ta_math.txt ta.vwap; tier 1 ta_301_vwap.)
 const EXPECTED_VWAP = [100, 105, 50, 57.5, 185000 / 3000];
+const ANCHOR = "bar_index == 0 or close < open";
 
 describe("ta.vwap multi-arg overloads through the full pipeline (C362)", () => {
   it("2-arg scalar form resets the accumulation on the anchor bar (hand-computed)", () => {
     const source = [
       "var float obs = na",
-      "v = ta.vwap(close, close < open)",
+      `v = ta.vwap(close, ${ANCHOR})`,
       "obs := v",
     ].join("\n");
     const result = runPipeline(source, DATA);
@@ -43,7 +46,7 @@ describe("ta.vwap multi-arg overloads through the full pipeline (C362)", () => {
       "var float obs_v = na",
       "var float obs_u = na",
       "var float obs_l = na",
-      "[v, u, l] = ta.vwap(close, close < open, 2.0)",
+      `[v, u, l] = ta.vwap(close, ${ANCHOR}, 2.0)`,
       "obs_v := v",
       "obs_u := u",
       "obs_l := l",
@@ -64,19 +67,30 @@ describe("ta.vwap multi-arg overloads through the full pipeline (C362)", () => {
     expect(result.bars[2]!["var:obs_l"]).toBe(50);
   });
 
-  it("2-arg form with a never-true anchor matches the 1-arg full accumulation form bar-by-bar", () => {
-    const oneArg = runPipeline(["var float obs = na", "obs := ta.vwap(close)"].join("\n"), DATA);
+  it("2-arg form with a never-true anchor is na on every bar", () => {
     const twoArg = runPipeline(["var float obs = na", "obs := ta.vwap(close, false)"].join("\n"), DATA);
+    for (let i = 0; i < DATA.close.length; i++) expect(twoArg.bars[i]!["var:obs"]).toBeNaN();
+  });
+
+  it("the 1-arg form is the 2-arg form anchored on session.isfirstbar", () => {
+    // Hourly bars from 22:00 UTC: the default (UTC, 00:00 session start) calendar starts a
+    // session on bar 2. pynecore lib/ta.py vwap: `anchor = session.isfirstbar`.
+    const data = { ...DATA, time: [22, 23, 24, 25, 26].map((h) => Date.UTC(2024, 0, 1, h)) };
+    const opts = { chartTf: "60" };
+    const oneArg = runPipeline(["var float obs = na", "obs := ta.vwap(close)"].join("\n"), data, {}, opts);
+    const twoArg = runPipeline(["var float obs = na", "obs := ta.vwap(close, session.isfirstbar)"].join("\n"), data, {}, opts);
+    const expected = [NaN, NaN, 50, 57.5, 185000 / 3000];
     for (let i = 0; i < DATA.close.length; i++) {
-      expect(twoArg.bars[i]!["var:obs"]).toBe(oneArg.bars[i]!["var:obs"]);
+      expect(oneArg.bars[i]!["var:obs"]).toBe(twoArg.bars[i]!["var:obs"]);
+      if (Number.isNaN(expected[i]!)) expect(oneArg.bars[i]!["var:obs"]).toBeNaN();
+      else expect(oneArg.bars[i]!["var:obs"]).toBeCloseTo(expected[i]!, 9);
     }
   });
 
   it("transpiles and runs the wild-shaped usage pattern (input source + timeframe.change anchor + plots)", () => {
     // 야생 코퍼스 지배 패턴의 합성 재현: `ta.vwap(src_input, new_session, sd_mult)` 3-인자 튜플
-    // 디스트럭처 + plot 3개. DATA has no time channel, so every bar sits on the same trading day
-    // and timeframe.change("D") never fires: the vwap never resets. Only the wiring
-    // (transpile → run) is pinned here.
+    // 디스트럭처 + plot 3개, on hourly bars that cross midnight UTC at bar 2: timeframe.change("D")
+    // fires there, and the vwap is na until then (calculations only begin at the first anchor).
     const source = [
       'src_input = input.source(close, "Source")',
       'sd_mult = input.float(2.0, "StdDev mult")',
@@ -86,25 +100,25 @@ describe("ta.vwap multi-arg overloads through the full pipeline (C362)", () => {
       "plot(upperBand)",
       "plot(lowerBand)",
     ].join("\n");
-    const result = runPipeline(source, DATA);
+    const data = { ...DATA, time: [22, 23, 24, 25, 26].map((h) => Date.UTC(2024, 0, 1, h)) };
+    const result = runPipeline(source, data, {}, { chartTf: "60" });
     expect(result.plots).toHaveLength(3);
-    // anchor가 항상 false → 1-인자 전체 누적과 동일한 vwap 채널
-    const expectedNoReset = [100, 105, (210000 + 25000) / 2500, (235000 + 90000) / 4000, (325000 + 70000) / 5000];
-    for (let i = 0; i < expectedNoReset.length; i++) {
-      expect(result.plots[0]!.values[i]!).toBeCloseTo(expectedNoReset[i]!, 9);
+    for (let i = 0; i < 2; i++) for (const p of result.plots) expect(p.values[i]!).toBeNaN();
+    for (let i = 2; i < EXPECTED_VWAP.length; i++) {
+      expect(result.plots[0]!.values[i]!).toBeCloseTo(EXPECTED_VWAP[i]!, 9);
     }
     // upper ≥ vwap ≥ lower 불변식(같은 바, sd ≥ 0 · mult=2.0 ≥ 0)
-    for (let i = 0; i < DATA.close.length; i++) {
+    for (let i = 2; i < DATA.close.length; i++) {
       expect(result.plots[1]!.values[i]!).toBeGreaterThanOrEqual(result.plots[0]!.values[i]!);
       expect(result.plots[2]!.values[i]!).toBeLessThanOrEqual(result.plots[0]!.values[i]!);
     }
   });
 
-  it("still transpiles the 1-arg form to the exact pre-C362 output (volume splice(1,·) === push for a trailing source)", () => {
+  it("transpiles the 1-arg form with volume after source and session.isfirstbar as the anchor", () => {
     const result = transpile("x = ta.vwap(close)");
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.code).toContain("rt.ta.vwap($.taSlots[0], $.close.get(0), $.volume.get(0))");
+      expect(result.code).toContain("rt.ta.vwap($.taSlots[0], $.close.get(0), $.volume.get(0), $calendar.isSessionFirstBar($.timeOfBar($.idx)))");
     }
   });
 

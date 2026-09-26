@@ -28,6 +28,7 @@ import {
   resolveTaKwargPositions,
   resolveTimestampKwargSlots,
   RUNTIME_KWARG_PARAM_NAMES,
+  SESSION_PROPS,
   STRATEGY_RUNTIME_PROPS,
   strategyMargins,
   SYMINFO_NUMBER_PROPS,
@@ -2957,34 +2958,6 @@ function genFuncLocalValueCode(value: Expr, varName: string, program: AnalyzedPr
   return genExpr(value, program, funcCtx);
 }
 
-// 렉서(readString)는 pine2py와 동일하게 raw-passthrough(백슬래시+다음글자를 그대로 2글자 보존,
-// ROADMAP.md L1186/DIVERGENCES.md #44 참조)라 여기서 명시적으로 디코딩해야 한다. pine2py는
-// _gen_string_literal이 raw 텍스트를 실제 Python 소스에 그대로 재방출해 Python 자신의 문자열
-// 리터럴 문법이 부수적으로 이스케이프를 해석해버리는데(모든 C-style 이스케이프를 무차별
-// 재해석 — `\b`가 word-boundary 정규식을 백스페이스로 오염시키는 실제 버그가 그 예, DIVERGENCES
-// #44), TV/Python/JS 세 언어가 이견 없이 일치하는 코어 4종(`\n`/`\\`/`\'`/`\"`)만 여기서 명시적으로
-// 디코딩하고 나머지(`\t`/`\b`/`\d` 등 정규식 이스케이프 포함)는 raw 그대로 보존한다 — TV의 실제
-// 확장 이스케이프 집합은 아직 미확정(WebSearch 권한 거부, C62)이라 추측 디코딩 금지.
-function decodePineStringEscapes(raw: string): string {
-  let out = "";
-  for (let i = 0; i < raw.length; i++) {
-    const ch = raw[i]!;
-    if (ch === "\\" && i + 1 < raw.length) {
-      const next = raw[i + 1]!;
-      if (next === "n" || next === "\\" || next === "'" || next === '"') {
-        out += next === "n" ? "\n" : next;
-        i += 1;
-        continue;
-      }
-      out += ch + next;
-      i += 1;
-      continue;
-    }
-    out += ch;
-  }
-  return out;
-}
-
 function genExpr(
   expr: Expr,
   program: AnalyzedProgram,
@@ -3009,11 +2982,13 @@ function genExpr(
       // false(descending)도 유효한 값이라 존재 여부는 반드시 !==undefined로 확인.
       const strBoolConstVal = program.builtinBooleanConstants.get(expr);
       if (strBoolConstVal !== undefined) return String(strBoolConstVal);
-      return JSON.stringify(decodePineStringEscapes(expr.value));
+      // The lexer already decoded the literal's escapes (lexer.ts decodePineStringEscapes),
+      // so the value is the string itself.
+      return JSON.stringify(expr.value);
     }
     case "ColorLiteral":
       // #RRGGBB/#RRGGBBAA -- COLOR_CONSTANTS(color.red 등)와 동일하게 hex 문자열 그대로 방출
-      // (이스케이프 해석 대상 아님, 항상 [0-9a-fA-F]만 담음 -- decodePineStringEscapes 불필요).
+      // (이스케이프 해석 대상 아님, 항상 [0-9a-fA-F]만 담음).
       return JSON.stringify(expr.value);
     case "Identifier": {
       // C728: 중첩 top-level var(depth>0) 읽기 — analyzer가 이 Identifier 노드 자신에 이미
@@ -3903,6 +3878,12 @@ function genCallExpr(
       // 끼워 넣어 런타임 시그니처 (state, source, volume[, anchor[, stdevMult[, scratch]]])를 맞춘다.
       // 1-인자 폼에서는 splice(1,0,·)===push라 기존 방출 문자열과 바이트 동일(회귀 없음).
       args.splice(1, 0, genBarRef("volume", 0, secCtx));
+      // Without an anchor the VWAP resets on the first bar of each session (ref_v6_ta_math.txt:
+      // anchor "The default is equivalent to passing timeframe.change() with "1D""; pynecore
+      // lib/ta.py vwap: `anchor = session.isfirstbar`; tier 1 ta_301_vwap resets
+      // ta.vwap(close) on the 17:00 New York bar). Inside a request.security prepass the
+      // session is not modelled: the first row anchors, as session.isfirstbar_regular reads there.
+      if (args.length === 2) args.push(secCtx === null ? SESSION_PROPS.get("isfirstbar")! : `(${secCtx.loopVar} === 0)`);
     }
     if (stateCall.fn === "wpr") {
       // ta.wpr(length) — Pine 문법에 close/high/low 인자가 없고 내장 bar series를 암묵 사용한다

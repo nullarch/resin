@@ -1,15 +1,18 @@
-// oracle/cases/ta_vwap.pine: ta.vwap(source) 검증(ROADMAP P2 "ta.* 44종" — vwap). Pine 문법상
-// volume 인자가 없어 내장 bar series volume을 암묵 사용(vwma/mfi와 동일). 세션/anchor 리셋 없는
-// 바0부터 전체 누적(pine2py vwap.py 동일 시맨틱 — LIMITATIONS.md "ta.vwap 세션 리셋" 참조).
-// 워밍업 NaN 구간이 없어 바0부터 전 구간이 골든과 대조된다. 콜사이트 2개(close/high)로 상태
-// 슬롯 독립도 함께 검증.
+// oracle/cases/ta_vwap.pine: ta.vwap(source) on sample10.json (a daily chart with no time channel,
+// the default calendar opening a session at 00:00 every day). The pine2py golden is NOT ground truth
+// here: it accumulates from bar 0 and never resets. ref_v6_ta_math.txt ta.vwap: the default anchor
+// "is equivalent to passing timeframe.change() with "1D" as its argument"; PyneCore (lib/ta.py vwap,
+// `anchor = session.isfirstbar`) and TradingView's tier 1 export (resin-harness
+// suites/indicators/tv/ta_301_vwap: ta.vwap(close) restarts on the first bar of each session) agree.
+// On a daily chart every bar holds a session start, so every bar is its own period and the VWAP is
+// the bar's source. Two call sites (close/high) also pin independent state per site.
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { runPipeline } from "../helpers/pipeline";
-import { compareToGolden, loadGolden, loadOracleData } from "../helpers/golden";
+import { loadGolden, loadOracleData } from "../helpers/golden";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..", "..");
@@ -20,26 +23,21 @@ function loadCaseSource(name: string): string {
 }
 
 describe("oracle: ta_vwap", () => {
-  it("matches the pine2py golden bar-by-bar for ta.vwap", () => {
+  it("the pine2py golden (not ground truth) never resets: bar 1 averages bars 0 and 1", () => {
     const golden = loadGolden(CASE_NAME);
-    const data = loadOracleData(CASE_NAME);
-    const source = loadCaseSource(CASE_NAME);
-
-    const result = runPipeline(source, data);
-
-    expect(result.bars).toHaveLength(golden.bars.length);
-    compareToGolden(result.bars, golden);
+    expect(golden.bars[1]!["var:__obs_vwap_c"]).toBeCloseTo((101 * 1000 + 102 * 1100) / 2100, 9);
   });
 
-  it("matches the pine2py golden final var state", () => {
-    const golden = loadGolden(CASE_NAME);
+  it("resets on every daily bar (each one starts a session): the vwap is the bar's source", () => {
     const data = loadOracleData(CASE_NAME);
     const source = loadCaseSource(CASE_NAME);
 
     const result = runPipeline(source, data);
 
-    for (const [key, expected] of Object.entries(golden.finalVarState)) {
-      expect(result.finalVarState[key]).toBeCloseTo(expected as number, 6);
+    expect(result.bars).toHaveLength(data.close.length);
+    for (let i = 0; i < data.close.length; i++) {
+      expect(result.bars[i]!["var:__obs_vwap_c"]).toBe(data.close[i]);
+      expect(result.bars[i]!["var:__obs_vwap_h"]).toBe(data.high[i]);
     }
   });
 });

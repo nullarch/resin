@@ -735,11 +735,11 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // codegen.genCallExpr이 $.volume.get(0)을 source(index 0) 바로 뒤에 splice해 런타임 시그니처
   // (state, source, volume[, anchor[, stdevMult[, scratch]]])를 맞춘다). length 자체가 없어
   // lengthArgIndex: null(고정폭 버퍼 없이 러닝 합계만 무한 누적). C362: TV 공식 다중 인자
-  // 오버로드 — 1-인자 폼은 리셋 없는 전체 누적(pine2py vwap.py 동일 시맨틱, 오라클 골든 유지,
-  // LIMITATIONS.md "ta.vwap 세션 리셋" 참조), 2-인자 폼은 anchor(series bool)가 true인 바마다
-  // 누적 리셋(스칼라 반환), 3-인자 폼은 [vwap, upper, lower] 3-튜플 반환(stdev_mult 밴드 —
-  // returnArityByArgCount {3:3}, 첫 인자-개수 의존 반환 arity). 2/3-인자 폼은 pine2py에 anchor
-  // 개념 자체가 없어 오라클 구조적 불가 — hand-verified, DIVERGENCES 'TV 미검증(가설)' 등재.
+  // 오버로드 — 1-인자 폼은 session.isfirstbar를 anchor로 받고(codegen이 주입, analyzeStatefulCall이
+  // usesCalendar 설정), 2-인자 폼은 anchor(series bool)가 true인 바마다 누적 리셋(스칼라 반환),
+  // 3-인자 폼은 [vwap, upper, lower] 3-튜플 반환(stdev_mult 밴드 — returnArityByArgCount {3:3},
+  // 첫 인자-개수 의존 반환 arity). 모든 폼이 첫 anchor 전에는 na(runtime/ta.ts vwap; tier 1
+  // resin-harness ta_301_vwap, PyneCore lib/ta.py vwap).
   // anchor/stdev_mult는 length가 아니라 series 허용(lengthArgIndex 확장 불필요).
   // kwargParamNames: ["source"](C471, next_hint(C470) 지시대로 wild 재스캔 후 신규 "키워드 인자"
   // 잔여 클러스터 세분화 — `ta.vwap(source = close)` 6건이 전량 1-인자 폼. C294가 전체 kwarg
@@ -961,6 +961,9 @@ export function analyzeStatefulCall(
       }
     }
   }
+  // ta.vwap without an anchor resets on session.isfirstbar, which reads the exchange calendar
+  // (codegen genCallExpr vwap).
+  if (name === "vwap" && resolvedArgs.length === 1) prog.usesCalendar = true;
   const minArgCount = entry.minArgCount ?? entry.argCount;
   if (resolvedArgs.length < minArgCount || resolvedArgs.length > entry.argCount) {
     const need =

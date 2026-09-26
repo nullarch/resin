@@ -3954,7 +3954,14 @@ describe("CodeGen", () => {
 
   it("emits ta.vwap call with the implicit volume arg pushed after source (Pine 문법상 volume 인자 없음)", () => {
     const code = codegenSource("x = ta.vwap(close)");
-    expect(code).toBe("var x = rt.ta.vwap($.taSlots[0], $.close.get(0), $.volume.get(0));");
+    // Without an anchor the VWAP resets on session.isfirstbar (ref_v6_ta_math.txt default anchor
+    // timeframe.change("1D"); pynecore lib/ta.py vwap; harness state/repros/tv-ta_301_vwap.json).
+    expect(code).toBe(
+      [
+        DEFAULT_CALENDAR_PREAMBLE,
+        "var x = rt.ta.vwap($.taSlots[0], $.close.get(0), $.volume.get(0), $calendar.isSessionFirstBar($.timeOfBar($.idx)));",
+      ].join("\n"),
+    );
   });
 
   // ── C362: ta.vwap 다중 인자 오버로드 — volume은 push가 아니라 source 바로 뒤 splice(1,·)로
@@ -4038,6 +4045,8 @@ describe("CodeGen", () => {
     );
     expect(code).toBe(
       [
+        // ta.vwap(close) resets on session.isfirstbar, a calendar read (tv-ta_301_vwap).
+        DEFAULT_CALENDAR_PREAMBLE,
         "var a = rt.ta.sma($.taSlots[0], $.close.get(0), 3);",
         "var b = rt.ta.ema($.taSlots[1], $.close.get(0), 3);",
         "var c = rt.ta.rsi($.taSlots[2], $.close.get(0), 3);",
@@ -4088,7 +4097,7 @@ describe("CodeGen", () => {
         "var x20 = rt.ta.pvi($.taSlots[44], $.close.get(0), $.volume.get(0));",
         "var x21 = rt.ta.wvad($.taSlots[45], $.open.get(0), $.high.get(0), $.low.get(0), $.close.get(0), $.volume.get(0));",
         "var x22 = rt.ta.iii($.taSlots[46], $.high.get(0), $.low.get(0), $.close.get(0), $.volume.get(0));",
-        "var x23 = rt.ta.vwap($.taSlots[47], $.close.get(0), $.volume.get(0));",
+        "var x23 = rt.ta.vwap($.taSlots[47], $.close.get(0), $.volume.get(0), $calendar.isSessionFirstBar($.timeOfBar($.idx)));",
         "var x24 = rt.ta.pivothigh($.taSlots[48], $.close.get(0), 1, 1);",
         "var x25 = rt.ta.pivotlow($.taSlots[49], $.close.get(0), 1, 1);",
         "rt.ta.supertrend($.taSlots[50], $.high.get(0), $.low.get(0), $.close.get(0), $.close.get(1), 2.0, 10, $.taScratch);",

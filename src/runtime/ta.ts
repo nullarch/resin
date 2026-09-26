@@ -3039,32 +3039,32 @@ export interface VwapState {
   // Σ(volume·source²) — 3-인자 밴드 폼(C362)의 분산 계산용. 폼과 무관하게 항상 함께 유지한다
   // (분기 제거 — 1/2-인자 폼에서는 읽히지 않는 여분 러닝 합계일 뿐 반환값에 영향 없음).
   cumPv2?: number;
+  // The anchor has been true once: the sums hold a period.
+  anchored?: boolean;
 }
 
 // ta.vwap(source[, anchor[, stdev_mult]]) - Volume Weighted Average Price. Pine 문법상 volume
 // 인자가 없고 내장 bar series volume을 암묵 사용한다(vwma/mfi와 동일 — codegen이 $.volume.get(0)을
 // source 바로 뒤에 splice, TA_REGISTRY.vwap 주석 참조).
 //
-// [1-인자 폼, C59 — 오라클 검증] pine2py wavealgo/ta/vwap.py 소스 대조: cum_pv(Σ price*vol)/
-// cum_vol(Σ vol) 러닝 합계의 전체 누적, **세션/anchor 리셋 없음**('no session reset in backtest
-// mode' — LIMITATIONS.md "ta.vwap 세션 리셋" 참조). NaN 처리는 obv류(price/vol 어느 쪽이든 NaN이면
-// state를 전혀 건드리지 않고 즉시 NaN)이지만 cum_vol===0(거래량 0 프리픽스)일 때는 **누적은 이미
-// 반영한 채** NaN만 반환(vwap.py의 cum_vol==0 가드가 state 대입 뒤 — scratch/probe_vwap.mjs
-// 브루트포스 대조 완료). 워밍업 구간 없음: 바0부터 유효(vol>0이면). anchor 기본값 false라 이 폼의
-// 동작은 C362 이후에도 바이트 동일.
-//
-// [2/3-인자 폼, C362 — TV 미검증(가설), DIVERGENCES 참조] pine2py에 anchor 개념 자체가 없어 오라클
-// 구조적 불가 — TV 공식 VWAP 지표의 공개 소스 패턴(`sumSrcVol := isNewPeriod ? src*volume :
-// src*volume + sumSrcVol[1]`)을 hand-verified 이식:
-// - anchor(series bool)가 true인 바에서 세 러닝 합계를 0으로 리셋하고 **그 바 자신이 새 누적의 첫
-//   원소**가 된다. na(NaN) anchor는 false 취급(리셋 아님). NaN 데이터 바에서도 리셋 자체는 수행해
-//   (아래 NaN-skip은 누적 접기만 건너뜀) 리셋 신호가 조용히 유실되지 않게 한다.
+// - anchor(series bool)가 true인 바에서 세 러닝 합계가 그 바 자신에서 새로 시작한다. na(NaN)
+//   anchor는 false 취급(리셋 아님). (The earlier 1-argument form, pine2py's never-reset running sum,
+//   and the reset on a na-source bar are gone: see the anchor contract below.)
 // - 3-인자 폼(stdevMult + scratch 존재)은 반환 대신 scratch[0..2]=[vwap, upper, lower]를 쓴다
 //   (다중 반환 TA 공유 스크래치 규약, GOAL.md). 분산은 TV 소스와 동일한 volume-가중 모멘트 공식
 //   Var = Σ(vol·src²)/Σvol − vwap² (음수는 0으로 클램프 — TV 소스 자체가 동일 클램프 보유),
 //   upper/lower = vwap ± stdevMult·sqrt(Var). vwap가 NaN이면 밴드도 전부 NaN.
 // 튜플 순서 [vwap, upper, lower]는 TV 레퍼런스 시그니처 및 wild 실사용
 // (`[vwap, upper, lower] = ta.vwap(...)` 변수명 관행)과 일치 — 웹 미검증이라 가설로 등재.
+//
+// The anchor contract (ref_v6_ta_math.txt ta.vwap): "Calculations only begin the first time the
+// anchor condition becomes true. Until then, the function returns na." The value is na, and
+// nothing is accumulated, until an anchor bar; an anchor bar starts the sums from its own
+// source·volume. A bar whose source is na returns na and leaves the sums and the anchor alone
+// (it neither resets nor accumulates); a na volume turns the sums na until the next anchor.
+// codegen passes session.isfirstbar when the call gives no anchor. pynecore lib/ta.py vwap
+// implements exactly this; tier 1 ta_301_vwap (timeframe.change("240"/"360") anchors are na
+// until the first 4h/6h boundary).
 export function vwap(
   state: VwapState,
   value: number,
@@ -3073,39 +3073,38 @@ export function vwap(
   stdevMult: number = NaN,
   scratch?: Float64Array,
 ): number {
-  if (state.cumPv === undefined || anchor === true) {
-    state.cumPv = 0;
-    state.cumVol = 0;
-    state.cumPv2 = 0;
-  }
-  if (Number.isNaN(value) || Number.isNaN(volume)) {
+  const na = (): number => {
     if (scratch !== undefined) {
       scratch[0] = NaN;
       scratch[1] = NaN;
       scratch[2] = NaN;
     }
     return NaN;
+  };
+  if (Number.isNaN(value)) return na();
+  // A numeric anchor (v5 casts int/float to bool) is true when non-zero; na is false.
+  if (anchor) {
+    state.cumPv = value * volume;
+    state.cumVol = volume;
+    state.cumPv2 = volume * value * value;
+    state.anchored = true;
+  } else if (state.anchored === true) {
+    state.cumPv! += value * volume;
+    state.cumVol! += volume;
+    state.cumPv2! += volume * value * value;
+  } else {
+    return na();
   }
-  const cumPv = state.cumPv + value * volume;
-  const cumVol = state.cumVol! + volume;
-  const cumPv2 = state.cumPv2! + volume * value * value;
-  state.cumPv = cumPv;
-  state.cumVol = cumVol;
-  state.cumPv2 = cumPv2;
-  const v = cumVol === 0 ? NaN : cumPv / cumVol;
+  const cumVol = state.cumVol!;
+  const v = state.cumPv! / cumVol;
+  if (Number.isNaN(v)) return na();
   if (scratch !== undefined) {
-    if (Number.isNaN(v)) {
-      scratch[0] = NaN;
-      scratch[1] = NaN;
-      scratch[2] = NaN;
-    } else {
-      let variance = cumPv2 / cumVol - v * v;
-      if (variance < 0) variance = 0;
-      const sd = Math.sqrt(variance);
-      scratch[0] = v;
-      scratch[1] = v + stdevMult * sd;
-      scratch[2] = v - stdevMult * sd;
-    }
+    let variance = state.cumPv2! / cumVol - v * v;
+    if (variance < 0) variance = 0;
+    const sd = Math.sqrt(variance);
+    scratch[0] = v;
+    scratch[1] = v + stdevMult * sd;
+    scratch[2] = v - stdevMult * sd;
   }
   return v;
 }

@@ -5828,108 +5828,112 @@ describe("ta.iii", () => {
   });
 });
 
-// ta.vwap(source) - Volume Weighted Average Price = Σ(price*vol)/Σ(vol) accumulated from bar 0
-// with NO session/anchor reset (pine2py vwap.py identical semantics - 'no session reset in
-// backtest mode'; LIMITATIONS.md). NaN handling is the sixth (obv-style) pattern: NaN price or
-// volume leaves state completely untouched and returns NaN outright. Unlike obv, the cumVol===0
-// guard fires AFTER the accumulation is already applied (vwap.py's cum_vol==0 check comes after
-// the state writes). scratch/probe_vwap.mjs cross-checked this against a literal rescan port.
+// ta.vwap(source, anchor) - Volume Weighted Average Price = Σ(price*vol)/Σ(vol) since the last
+// anchor bar. ref_v6_ta_math.txt: "Calculations only begin the first time the anchor condition
+// becomes true. Until then, the function returns na." A na-source bar returns na and leaves the
+// sums and the anchor alone; a na volume turns the sums na until the next anchor (pynecore
+// lib/ta.py vwap, the tier-2 oracle, which passes tier 1 ta_301_vwap). The default anchor of
+// `ta.vwap(source)` is supplied by codegen (session.isfirstbar), so the runtime always gets one.
+// (This block used to assert pine2py's never-reset running sum; tier 1 ta_301_vwap contradicts
+// it — state/repros/tv-ta_301_vwap.json in the harness.)
 describe("ta.vwap", () => {
-  it("is valid from bar 0 with no warmup period (vwap of one bar === that bar's price)", () => {
+  it("returns na until the first anchor bar; the anchor bar's vwap is its own price", () => {
     const state = {};
-    expect(vwap(state, 101, 1000)).toBe(101);
+    expect(vwap(state, 100, 1000, false)).toBeNaN();
+    expect(vwap(state, 101, 1000, true)).toBe(101);
   });
 
-  it("accumulates price*volume / volume across bars (hand-computed)", () => {
+  it("accumulates price*volume / volume across bars after the anchor (hand-computed)", () => {
     const state = {};
-    vwap(state, 101, 1000);
+    vwap(state, 101, 1000, true);
     // (101*1000 + 102*1100) / (1000+1100) = 213200/2100
-    expect(vwap(state, 102, 1100)).toBeCloseTo(213200 / 2100, 12);
+    expect(vwap(state, 102, 1100, false)).toBeCloseTo(213200 / 2100, 12);
   });
 
-  it("returns NaN on NaN price or volume without touching state", () => {
+  it("a na-source bar returns na and leaves the sums alone", () => {
     const state: { cumPv?: number; cumVol?: number } = {};
-    vwap(state, 100, 10); // cumPv=1000, cumVol=10
-    expect(vwap(state, NaN, 20)).toBeNaN();
-    expect(vwap(state, 200, NaN)).toBeNaN();
+    vwap(state, 100, 10, true); // cumPv=1000, cumVol=10
+    expect(vwap(state, NaN, 20, false)).toBeNaN();
     expect(state.cumPv).toBe(1000);
     expect(state.cumVol).toBe(10);
     // next valid bar continues from the pre-gap accumulation: (1000+2000)/(10+10)=150
-    expect(vwap(state, 200, 10)).toBe(150);
+    expect(vwap(state, 200, 10, false)).toBe(150);
   });
 
-  it("returns NaN while the cumulative volume is 0, but still advances state (guard fires after accumulation)", () => {
+  it("a na volume turns the sums na until the next anchor", () => {
+    const state = {};
+    vwap(state, 100, 10, true);
+    expect(vwap(state, 200, NaN, false)).toBeNaN();
+    expect(vwap(state, 200, 10, false)).toBeNaN();
+    expect(vwap(state, 300, 10, true)).toBe(300);
+  });
+
+  it("returns NaN while the volume since the anchor is 0", () => {
     const state: { cumPv?: number; cumVol?: number } = {};
-    expect(vwap(state, 101, 0)).toBeNaN();
-    expect(vwap(state, 102, 0)).toBeNaN();
-    // state advanced during the zero-vol prefix (cumPv += price*0 = 0 contributions)
+    expect(vwap(state, 101, 0, true)).toBeNaN();
+    expect(vwap(state, 102, 0, false)).toBeNaN();
     expect(state.cumVol).toBe(0);
     // first vol>0 bar: vwap === exactly that bar's price (zero-vol bars contributed 0 to cumPv)
-    expect(vwap(state, 104, 1000)).toBe(104);
+    expect(vwap(state, 104, 1000, false)).toBe(104);
   });
 
   it("returns NaN for every bar when volume is 0 throughout", () => {
     const state = {};
-    expect(vwap(state, 101, 0)).toBeNaN();
-    expect(vwap(state, 102, 0)).toBeNaN();
-    expect(vwap(state, 103, 0)).toBeNaN();
+    expect(vwap(state, 101, 0, true)).toBeNaN();
+    expect(vwap(state, 102, 0, false)).toBeNaN();
+    expect(vwap(state, 103, 0, false)).toBeNaN();
   });
 
   it("keeps independent state per call site (separate state objects don't interfere)", () => {
     const a = {};
     const b = {};
-    vwap(a, 100, 10);
-    expect(vwap(b, 200, 10)).toBe(200); // b unaffected by a's accumulation
-    expect(vwap(a, 100, 10)).toBe(100); // a unaffected by b's
+    vwap(a, 100, 10, true);
+    expect(vwap(b, 200, 10, true)).toBe(200); // b unaffected by a's accumulation
+    expect(vwap(a, 100, 10, false)).toBe(100); // a unaffected by b's
   });
 
-  it("never resets: bar 0 still contributes to the accumulation arbitrarily far into the series", () => {
-    const state: { cumPv?: number; cumVol?: number } = {};
-    const volumes = [1000, 1100, 1200, 1150, 1300, 1250, 1400, 1350, 1500, 1450];
-    volumes.forEach((v, i) => vwap(state, 100 + i, v));
-    // cumVol is the full-series volume sum - no session window ever dropped old bars
-    expect(state.cumVol).toBe(volumes.reduce((s, v) => s + v, 0));
-  });
-
-  it("matches the pine2py oracle golden sample10.json trace", () => {
+  it("anchored on bar 0 only, it is the running average of the whole series", () => {
     const state = {};
     const close = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
     const volume = [1000, 1100, 1200, 1150, 1300, 1250, 1400, 1350, 1500, 1450];
-    const out = close.map((c, i) => vwap(state, c, volume[i]!));
+    const out = close.map((c, i) => vwap(state, c, volume[i]!, i === 0));
     const expected = [101.0, 101.5238095238, 102.0606060606, 102.0449438202, 102.4869565217, 102.9357142857, 103.4464285714, 103.6615384615, 104.1066666667, 104.5511811024];
     out.forEach((v, i) => expect(v).toBeCloseTo(expected[i]!, 9));
   });
 
-  it("matches a literal rescan port of vwap.py on a fuzzed series (NaN + zero-vol mixed)", () => {
-    // literal port: rescan all valid bars j<=i in order (same addition order as the streaming state)
-    const brute = (prices: number[], vols: number[], i: number): number => {
-      if (Number.isNaN(prices[i]!) || Number.isNaN(vols[i]!)) return NaN;
-      let cumPv = 0;
-      let cumVol = 0;
-      for (let j = 0; j <= i; j++) {
-        if (Number.isNaN(prices[j]!) || Number.isNaN(vols[j]!)) continue;
-        cumPv += prices[j]! * vols[j]!;
-        cumVol += vols[j]!;
+  it("matches a literal port of pynecore's vwap on a fuzzed series (na source/volume, zero volume, random anchors)", () => {
+    // pynecore lib/ta.py vwap, bar by bar (same addition order as the streaming state).
+    let sumVol = 0;
+    let sumPv = 0;
+    let had = false;
+    const port = (src: number, vol: number, anchor: boolean): number => {
+      if (Number.isNaN(src)) return NaN;
+      if (anchor) {
+        sumVol = vol;
+        sumPv = src * vol;
+        had = true;
+      } else if (had) {
+        sumVol += vol;
+        sumPv += src * vol;
+      } else {
+        return NaN;
       }
-      return cumVol === 0 ? NaN : cumPv / cumVol;
+      return sumPv / sumVol;
     };
     let seed = 42;
     const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
-    const prices: number[] = [];
-    const vols: number[] = [];
-    for (let i = 0; i < 500; i++) {
-      prices.push(rnd() < 0.05 ? NaN : 50 + rnd() * 100);
-      const r = rnd();
-      vols.push(r < 0.05 ? NaN : r < 0.12 ? 0 : Math.floor(rnd() * 2000));
-    }
     const state = {};
-    for (let i = 0; i < prices.length; i++) {
-      const c = vwap(state, prices[i]!, vols[i]!);
-      const b = brute(prices, vols, i);
+    for (let i = 0; i < 500; i++) {
+      const price = rnd() < 0.05 ? NaN : 50 + rnd() * 100;
+      const r = rnd();
+      const vol = r < 0.02 ? NaN : r < 0.12 ? 0 : Math.floor(rnd() * 2000);
+      const anchor = i > 3 && rnd() < 0.08;
+      const c = vwap(state, price, vol, anchor);
+      const b = port(price, vol, anchor);
       if (Number.isNaN(b)) {
         expect(c).toBeNaN();
       } else {
-        expect(c).toBe(b); // identical addition order -> bit-identical
+        expect(c).toBe(b);
       }
     }
   });
@@ -5938,34 +5942,35 @@ describe("ta.vwap", () => {
 // C362: ta.vwap 다중 인자 오버로드 — 2-인자(anchor 리셋) 스칼라 / 3-인자 [vwap, upper, lower] 밴드.
 // pine2py에 anchor 개념이 없어 오라클 구조적 불가 — TV 공식 VWAP 지표 공개 소스 패턴
 // (isNewPeriod 리셋 + Var = Σ(vol·src²)/Σvol − vwap², 음수 클램프)의 hand-verified 이식.
-// TV 미검증(가설) — DIVERGENCES 참조. runtime/ta.ts vwap() 주석의 시맨틱 결정 사항:
+// runtime/ta.ts vwap() 주석의 시맨틱 결정 사항:
 // (1) anchor===true인 바에서 리셋 후 그 바가 새 누적의 첫 원소, (2) na(NaN) anchor는 false 취급,
-// (3) NaN 데이터 바에서도 anchor 리셋 자체는 수행(신호 유실 방지), (4) 밴드는 vwap NaN이면 전부 NaN.
+// (3) na-source 바는 anchor여도 리셋하지 않는다(pynecore lib/ta.py vwap returns before the anchor;
+// tier 1 ta_301_vwap), (4) 첫 anchor 전과 vwap NaN이면 밴드도 전부 NaN.
 describe("ta.vwap (multi-arg overloads, C362)", () => {
-  it("2-arg with anchor always false is bit-identical to the 1-arg form", () => {
-    const a = {};
-    const b = {};
+  it("an anchor that is never true returns na on every bar", () => {
+    const state = {};
     const close = [101, 102, 103, 102, 104];
     const volume = [1000, 1100, 1200, 1150, 1300];
-    for (let i = 0; i < close.length; i++) {
-      expect(vwap(a, close[i]!, volume[i]!, false)).toBe(vwap(b, close[i]!, volume[i]!));
-    }
+    for (let i = 0; i < close.length; i++) expect(vwap(state, close[i]!, volume[i]!, false)).toBeNaN();
   });
 
   it("anchor=true resets the accumulation and the reset bar itself seeds the new period", () => {
     const state = {};
-    vwap(state, 100, 1000);
-    vwap(state, 200, 1000);
+    vwap(state, 100, 1000, true);
+    vwap(state, 200, 1000, false);
     // reset bar: cumulative history dropped, vwap === this bar's price
     expect(vwap(state, 300, 500, true)).toBe(300);
     // next bar continues the NEW period only: (300*500 + 310*1500)/(500+1500)
     expect(vwap(state, 310, 1500, false)).toBeCloseTo((300 * 500 + 310 * 1500) / 2000, 12);
   });
 
-  it("anchor=true on the very first bar is a no-op (sums were already empty)", () => {
-    const a = {};
-    const b = {};
-    expect(vwap(a, 101, 1000, true)).toBe(vwap(b, 101, 1000, false));
+  it("calculations begin at the first anchor, not at the first bar", () => {
+    const state = {};
+    expect(vwap(state, 101, 1000, false)).toBeNaN();
+    expect(vwap(state, 102, 1000, false)).toBeNaN();
+    // bars before the first anchor are not part of the period
+    expect(vwap(state, 103, 1000, true)).toBe(103);
+    expect(vwap(state, 105, 1000, false)).toBe(104);
   });
 
   it("anchor=true on every bar makes vwap track the per-bar price exactly", () => {
@@ -5976,24 +5981,30 @@ describe("ta.vwap (multi-arg overloads, C362)", () => {
 
   it("na (NaN) anchor is treated as no-reset (false)", () => {
     const state = {};
-    vwap(state, 100, 1000);
+    vwap(state, 100, 1000, true);
     // NaN anchor: accumulation continues — (100*1000 + 200*1000)/2000 = 150
     expect(vwap(state, 200, 1000, NaN)).toBe(150);
   });
 
-  it("performs the anchor reset even on a NaN data bar (reset signal is not silently lost)", () => {
+  it("a na-source bar does not reset, even when it is an anchor bar", () => {
     const state = {};
-    vwap(state, 100, 1000);
-    vwap(state, 200, 1000);
-    // NaN bar with anchor=true: returns NaN, but the sums are cleared
+    vwap(state, 100, 1000, true);
+    vwap(state, 200, 1000, false);
+    // na-source bar with anchor=true: returns na, the period goes on
     expect(vwap(state, NaN, 1000, true)).toBeNaN();
-    // next valid bar starts a fresh period: vwap === its own price, old bars gone
-    expect(vwap(state, 500, 800, false)).toBe(500);
+    // (100*1000 + 200*1000 + 500*1000)/3000
+    expect(vwap(state, 500, 1000, false)).toBeCloseTo(800 / 3, 12);
   });
 
-  it("does not touch accumulation on a NaN data bar without anchor (1-arg NaN-skip rule preserved)", () => {
+  it("a na-source bar before the first anchor does not start the period", () => {
+    const state = {};
+    expect(vwap(state, NaN, 1000, true)).toBeNaN();
+    expect(vwap(state, 500, 800, false)).toBeNaN();
+  });
+
+  it("does not touch accumulation on a NaN data bar without anchor", () => {
     const state: { cumPv?: number; cumVol?: number; cumPv2?: number } = {};
-    vwap(state, 100, 10, false);
+    vwap(state, 100, 10, true);
     expect(vwap(state, NaN, 20, false)).toBeNaN();
     expect(state.cumPv).toBe(1000);
     expect(state.cumVol).toBe(10);
@@ -6004,7 +6015,7 @@ describe("ta.vwap (multi-arg overloads, C362)", () => {
     const state = {};
     const scratch = new Float64Array(3);
     // two bars, then read the bands: vwap = (100*1000 + 110*1000)/2000 = 105
-    vwap(state, 100, 1000, false, 2.0, scratch);
+    vwap(state, 100, 1000, true, 2.0, scratch);
     const ret = vwap(state, 110, 1000, false, 2.0, scratch);
     const v = (100 * 1000 + 110 * 1000) / 2000;
     // Var = Σ(vol·src²)/Σvol − vwap² = (100²+110²)/2 − 105² = 25 → sd = 5
@@ -6018,7 +6029,7 @@ describe("ta.vwap (multi-arg overloads, C362)", () => {
   it("3-arg band form with a constant source has zero stdev (upper === lower === vwap)", () => {
     const state = {};
     const scratch = new Float64Array(3);
-    for (let i = 0; i < 5; i++) vwap(state, 100, 1000 + i * 37, false, 3.0, scratch);
+    for (let i = 0; i < 5; i++) vwap(state, 100, 1000 + i * 37, i === 0, 3.0, scratch);
     expect(scratch[0]).toBe(100);
     expect(scratch[1]).toBe(100);
     expect(scratch[2]).toBe(100);
@@ -6027,7 +6038,7 @@ describe("ta.vwap (multi-arg overloads, C362)", () => {
   it("3-arg band form with stdev_mult=0 collapses both bands onto vwap", () => {
     const state = {};
     const scratch = new Float64Array(3);
-    vwap(state, 100, 1000, false, 0, scratch);
+    vwap(state, 100, 1000, true, 0, scratch);
     vwap(state, 120, 500, false, 0, scratch);
     expect(scratch[1]).toBe(scratch[0]);
     expect(scratch[2]).toBe(scratch[0]);
@@ -6040,7 +6051,7 @@ describe("ta.vwap (multi-arg overloads, C362)", () => {
     expect(scratch[0]).toBeNaN();
     expect(scratch[1]).toBeNaN();
     expect(scratch[2]).toBeNaN();
-    expect(vwap(state, 100, 0, false, 2.0, scratch)).toBeNaN();
+    expect(vwap(state, 100, 0, true, 2.0, scratch)).toBeNaN();
     expect(scratch[0]).toBeNaN();
     expect(scratch[1]).toBeNaN();
     expect(scratch[2]).toBeNaN();
@@ -6050,7 +6061,7 @@ describe("ta.vwap (multi-arg overloads, C362)", () => {
     const state = {};
     const scratch = new Float64Array(3);
     // wildly different pre-reset regime that would dominate the variance if not dropped
-    vwap(state, 10, 1000, false, 1.0, scratch);
+    vwap(state, 10, 1000, true, 1.0, scratch);
     vwap(state, 990, 1000, false, 1.0, scratch);
     // reset, then two post-reset bars: vwap = (100+110)/2 = 105, sd = 5 (equal volumes)
     vwap(state, 100, 700, true, 1.0, scratch);
@@ -6065,7 +6076,7 @@ describe("ta.vwap (multi-arg overloads, C362)", () => {
     const scratch = new Float64Array(3);
     // bars: (100, vol 3000), (110, vol 1000) → vwap = (300000+110000)/4000 = 102.5
     // Var = (3000·100² + 1000·110²)/4000 − 102.5² = (30000000+12100000)/4000 − 10506.25 = 18.75
-    vwap(state, 100, 3000, false, 2.0, scratch);
+    vwap(state, 100, 3000, true, 2.0, scratch);
     vwap(state, 110, 1000, false, 2.0, scratch);
     const v = 102.5;
     const sd = Math.sqrt(18.75);
@@ -6077,7 +6088,7 @@ describe("ta.vwap (multi-arg overloads, C362)", () => {
   it("na stdev_mult poisons only the bands, not the vwap itself", () => {
     const state = {};
     const scratch = new Float64Array(3);
-    vwap(state, 100, 1000, false, NaN, scratch);
+    vwap(state, 100, 1000, true, NaN, scratch);
     const ret = vwap(state, 110, 1000, false, NaN, scratch);
     expect(ret).toBe(105);
     expect(scratch[0]).toBe(105);

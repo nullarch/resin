@@ -512,8 +512,17 @@ describe("corpus diff: sample bar-by-bar replay against pine2py golden", () => {
     // first and last bar, as the PyneCore oracle (lib/session.py on 24/7 sessions) says too.
     // Tier 1: resin-harness suites/indicators/tv/session_001_properties and session_002_24x7.
     // Floor moved to the observed matched 2644 / mismatch 271; nothing else changed.
-    expect(matched.length).toBeGreaterThanOrEqual(2644);
-    expect(mismatched.length).toBeLessThanOrEqual(271);
+    // 2026-09-26 ta.vwap restarts on its anchor, by default the first bar of each session: exactly
+    // seven hashes went matched -> mismatch (06578b1090e3, 1d436f01072c, 3779905fdfc9, 5863bdfdda6f,
+    // 65d43e89e57b, 79cf14d27252, 975709799652), every one a ta.vwap(src) (or ta.vwap(close,
+    // volume), a numeric anchor true on every bar) on this daily data. pine2py (not ground truth)
+    // never resets; ref_v6_ta_math.txt gives the default anchor as timeframe.change("1D"), the
+    // PyneCore oracle (lib/ta.py vwap) as session.isfirstbar, so every bar of a daily chart open
+    // around the clock is its own period and the VWAP is the bar's source. Tier 1: resin-harness
+    // suites/indicators/tv/ta_301_vwap (ta.vwap(close) restarts on each session's first bar).
+    // Floor moved to the observed matched 2637 / mismatch 278; nothing else changed.
+    expect(matched.length).toBeGreaterThanOrEqual(2637);
+    expect(mismatched.length).toBeLessThanOrEqual(278);
     expect(transpileFailed.length).toBeLessThanOrEqual(86);
     expect(runtimeFailed.length, `runtime failures: ${runtimeFailed.map((o) => `${o.hash}: ${o.detail}`).join(" | ")}`).toBe(0);
     expect(noComparable.length, `no comparable key: ${noComparable.map((o) => o.hash).join(", ")}`).toBeLessThanOrEqual(2);
