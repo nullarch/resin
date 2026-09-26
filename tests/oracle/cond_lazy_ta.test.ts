@@ -33,7 +33,9 @@ function loadCaseSource(name: string): string {
 // and tier 1 ta_211_mfi_rsi_stoch agree. That channel is asserted from the oracle.
 const ORACLE_OBS_O: readonly number[] = [0, 0, 1, 0, 1, 1, 1, 0, 1, 1];
 
-describe("oracle: cond_lazy_ta (stateful calls in ternary/and/or lazy positions, eager-hoisted)", () => {
+// The ternary channels of the case keep a constant condition, so they read the same under the
+// lazy `?:` (only the selected branch runs) as under the old eager hoisting.
+describe("oracle: cond_lazy_ta (stateful calls in ternary branches and and/or operands)", () => {
   it("matches golden bar-for-bar on all four constant-condition channels (__obs_o from the oracle)", () => {
     const data = loadOracleData(CASE_NAME);
     const source = loadCaseSource(CASE_NAME);
@@ -65,10 +67,14 @@ describe("oracle: cond_lazy_ta (stateful calls in ternary/and/or lazy positions,
 
   // ── hand-verified: 조건이 변하는 갭 시나리오(오라클 무효 구간 — DIVERGENCES.md #12) ──
 
-  it("advances a ternary true-branch ema on EVERY bar even when the condition interleaves (eager, hand-verified)", () => {
-    // close > 102: F F T F T T T T T T. TV-eager(=pine2js)는 ema(close,2)를 매 바 호출한다 —
-    // 스모킹 건은 bar2: lazy(호출된 바에서만 전진)였다면 bar2가 첫 호출이라 NaN이어야 하지만,
-    // eager는 bar1에서 이미 시드가 끝나 bar2 = 102.5가 나온다.
+  // A `?:` runs only the branch its condition selects: "only the branch corresponding to the
+  // evaluated condition is calculated" (rn.txt, Pine v4); "Pine v5 evaluates all bool expressions
+  // except for the ?: ternary operator strictly" (mig6.txt). The ta call in a branch advances only
+  // on the bars that branch runs. PyneCore agrees (resin-harness state/repros/lang.ternary-seed-5.json:
+  // `bar_index % 5 == 4 ? ta.sma(close, 2) : ...` is na on bar 4, the sma's first call). These
+  // tests asserted the old eager hoisting (both branches every bar) until then.
+  it("advances a ternary true-branch ema only on the bars that branch runs", () => {
+    // close > 102: F F T F T T T T T T. bar2 is the ema's first call, so it is na there.
     const data = loadOracleData(CASE_NAME);
     const result = runPipeline(
       ["e = close > 102 ? ta.ema(close, 2) : -1.0", "var float __obs = na", "__obs := e"].join("\n"),
@@ -76,18 +82,15 @@ describe("oracle: cond_lazy_ta (stateful calls in ternary/and/or lazy positions,
     );
     const st = {} as EmaState;
     for (let i = 0; i < data.close.length; i++) {
-      const v = ema(st, data.close[i]!, 2); // 레퍼런스: 매 바 무조건 호출(eager)
-      const expected = data.close[i]! > 102 ? v : -1.0;
+      const expected = data.close[i]! > 102 ? ema(st, data.close[i]!, 2) : -1.0;
       const actual = result.bars[i]!["var:__obs"]!;
       if (Number.isNaN(expected)) expect(actual, `bar ${i}`).toBeNaN();
       else expect(actual, `bar ${i}`).toBeCloseTo(expected, 9);
     }
-    // bar2 = 102.5(eager 시드 완료)를 명시 고정 — lazy였다면 NaN(첫 호출 워밍업).
-    expect(result.bars[2]!["var:__obs"]).toBeCloseTo(102.5, 9);
+    expect(result.bars[2]!["var:__obs"]).toBeNaN();
   });
 
-  it("advances a ternary false-branch ema on bars where the condition is TRUE too (eager, hand-verified)", () => {
-    // 반대 방향: false 분기의 ema는 조건이 true인 바에도 상태가 전진해야 한다.
+  it("advances a ternary false-branch ema only on the bars the condition is false", () => {
     const data = loadOracleData(CASE_NAME);
     const result = runPipeline(
       ["e = close > 102 ? -1.0 : ta.ema(close, 2)", "var float __obs = na", "__obs := e"].join("\n"),
@@ -95,15 +98,11 @@ describe("oracle: cond_lazy_ta (stateful calls in ternary/and/or lazy positions,
     );
     const st = {} as EmaState;
     for (let i = 0; i < data.close.length; i++) {
-      const v = ema(st, data.close[i]!, 2);
-      const expected = data.close[i]! > 102 ? -1.0 : v;
+      const expected = data.close[i]! > 102 ? -1.0 : ema(st, data.close[i]!, 2);
       const actual = result.bars[i]!["var:__obs"]!;
       if (Number.isNaN(expected)) expect(actual, `bar ${i}`).toBeNaN();
       else expect(actual, `bar ${i}`).toBeCloseTo(expected, 9);
     }
-    // bar3(조건 F, close=102): eager로 bar0~3 네 번 호출된 값 102.5 - 1/3 = 102.1666...이어야
-    // 한다(lazy였다면 F 바인 bar0/1/3만 호출돼 다른 궤적).
-    expect(result.bars[3]!["var:__obs"]).toBeCloseTo(102.5 - 1 / 3, 9);
   });
 
   it("advances an and-rhs crossover(+nested sma) on EVERY bar under a varying lhs (eager, hand-verified)", () => {
@@ -129,9 +128,7 @@ describe("oracle: cond_lazy_ta (stateful calls in ternary/and/or lazy positions,
     expect(result.bars[8]!["var:__obs"]).toBeCloseTo(1.0, 9);
   });
 
-  it("keeps per-call semantics for the owning statement: an if-body ternary's hoisted ema advances only on if-true bars", () => {
-    // 호이스팅은 문장 직전(같은 블록 안)이므로 if 분기 본문의 per-call 시맨틱(C64)은 유지된다:
-    // if 조건이 F인 바에는 삼항 양쪽 모두 호출되지 않아야 한다.
+  it("an if-body ternary's emas advance only on the bars the if body runs and their branch is selected", () => {
     const data = loadOracleData(CASE_NAME);
     const result = runPipeline(
       [
@@ -142,16 +139,13 @@ describe("oracle: cond_lazy_ta (stateful calls in ternary/and/or lazy positions,
       ].join("\n"),
       data,
     );
-    // 레퍼런스: 두 ema 콜사이트 모두 if-true 바(close>102: bar2,4,5,6,7,8,9)에서만 호출(eager로
-    // 양쪽 다), 내부 삼항 조건과 무관.
+    // Each ema call site runs on the if-true bars (close > 102) where its branch is selected.
     const stA = {} as EmaState;
     const stB = {} as EmaState;
     for (let i = 0; i < data.close.length; i++) {
       let expected = NaN;
       if (data.close[i]! > 102) {
-        const a = ema(stA, data.close[i]!, 2);
-        const b = ema(stB, data.close[i]!, 2);
-        expected = data.close[i]! > 104 ? a : b * 1.0;
+        expected = data.close[i]! > 104 ? ema(stA, data.close[i]!, 2) : ema(stB, data.close[i]!, 2) * 1.0;
       }
       const actual = result.bars[i]!["var:__obs"]!;
       if (Number.isNaN(expected)) expect(actual, `bar ${i}`).toBeNaN();

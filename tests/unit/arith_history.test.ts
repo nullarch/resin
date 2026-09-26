@@ -57,7 +57,7 @@ describe("arithmetic-expression history: (high-low)[1] etc. (C522, hand-verified
   // "선택되지 않은" 바에도 record가 무조건 실행돼야 한다(TV는 삼항 양쪽을 항상 평가) — 인라인
   // record가 원 표현식 위치에 그대로 남으면(호이스팅 누락) 분기가 스킵된 바의 histSlot이 NaN으로
   // 비어 다음 읽기에서 조용히 틀린 값(또는 stale NaN)을 낸다.
-  it("eager-hoists a lazy-branch arithmetic history to record every bar regardless of branch selection", () => {
+  it("records a ternary-branch arithmetic history only on the bars that branch runs (if-body rule)", () => {
     const lazyData: OHLCVData = {
       open: [0, 0, 0, 0, 0],
       high: [10, 20, 30, 40, 50],
@@ -68,8 +68,10 @@ describe("arithmetic-expression history: (high-low)[1] etc. (C522, hand-verified
     const source = ["var float __obs_a = na", "__obs_a := close > 5 ? (high - low)[1] : na"].join("\n");
     const result = runPipeline(source, lazyData);
     // condition (close>5): [F,T,F,T,F]. high-low: [10,20,30,40,50].
-    // idx3 reads idx2's (high-low)=30 -- idx2's branch was NOT selected (F), proving the record
-    // fired unconditionally (a non-hoisted inline record would leave idx2's slot at NaN instead).
-    expect(result.bars.map((b) => b["var:__obs_a"])).toEqual([NaN, 10, NaN, 30, NaN]);
+    // Only the selected branch runs (rn.txt Pine v4; mig6.txt "except for the ?: ternary
+    // operator"; resin-harness state/repros/lang.ternary-seed-5.json), so the expression is
+    // recorded on idx1 and idx3 only, like the same expression in an if body: idx3 reads idx1's 20.
+    // This asserted the old eager hoisting ([NaN, 10, NaN, 30, NaN]) until then.
+    expect(result.bars.map((b) => b["var:__obs_a"])).toEqual([NaN, NaN, NaN, 20, NaN]);
   });
 });

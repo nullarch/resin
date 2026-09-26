@@ -1413,12 +1413,14 @@ describe("CodeGen", () => {
     expect(code).toContain("rt.array.push($.vars[0], $.close.get(0));");
   });
 
-  it("hoists a mutating array call (pop) out of a ternary lazy branch (TV evaluates both sides — C66 principle)", () => {
+  // A `?:` runs only the branch its condition selects ("only the branch corresponding to the
+  // evaluated condition is calculated", rn.txt Pine v4; mig6.txt "except for the ?: ternary
+  // operator"; resin-harness state/repros/lang.ternary-seed-5.json). The ternary tests below
+  // asserted the old eager hoisting of branch calls until then.
+  it("keeps a mutating array call (pop) inline in its ternary branch (runs only when selected)", () => {
     const code = codegenSource("var a = array.new_float(0)\nx = close > open ? array.pop(a) : 0.0");
-    expect(code).toContain(
-      "let __lazy0 = rt.array.pop($.vars[0]);\n" +
-        "var x = (rt.pineGt($.close.get(0), $.open.get(0)) ? __lazy0 : 0.0);",
-    );
+    expect(code).toContain("var x = (rt.pineGt($.close.get(0), $.open.get(0)) ? rt.array.pop($.vars[0]) : 0.0);");
+    expect(code).not.toContain("__lazy");
   });
 
   it("hoists a mutating array call (push) out of an 'and' lazy right operand", () => {
@@ -1991,7 +1993,7 @@ describe("CodeGen", () => {
     expect(bars[1]!["var:__obs_ret"]).toBe(2);
   });
 
-  it("transpile() end-to-end: a hoisted lazy array.pop executes on every bar even when the condition is always false (TV eager semantics)", () => {
+  it("transpile() end-to-end: an array.pop in a ternary branch never runs when the condition is always false", () => {
     const source = [
       "var arr = array.new_float(0)",
       "array.push(arr, close)",
@@ -2006,10 +2008,11 @@ describe("CodeGen", () => {
     const data: OHLCVData = { open: [1, 1], high: [1, 1], low: [1, 1], close: [1, 2], volume: [1, 1] };
     const { bars } = run(result.code, result.varSlots, result.taSlotCount, data, result.fnVarSlotCount);
 
-    // JS lazy 그대로였다면 조건이 항상 false라 pop이 한 번도 안 돌아 size가 1, 2로 자랐을 것 —
-    // eager 호이스팅 덕에 매 바 push 직후 pop이 무조건 실행돼 size가 항상 0이다.
-    expect(bars[0]!["var:__obs_size"]).toBe(0);
-    expect(bars[1]!["var:__obs_size"]).toBe(0);
+    // Only the selected branch runs (rn.txt Pine v4; resin-harness
+    // state/repros/lang.ternary-seed-5.json): the pop never runs, so the array grows 1, 2. This
+    // asserted the old eager hoisting (size 0 on every bar) until then.
+    expect(bars[0]!["var:__obs_size"]).toBe(1);
+    expect(bars[1]!["var:__obs_size"]).toBe(2);
   });
 
   // ── array.first/last/shift/unshift/insert/remove/clear/fill(C80) — C79가 확정한 패턴의
@@ -2047,9 +2050,10 @@ describe("CodeGen", () => {
     expect(code).toContain("rt.array.fill($.vars[0], $.close.get(0));");
   });
 
-  it("hoists a mutating array call (insert) out of a ternary lazy branch (TV evaluates both sides — C66 principle)", () => {
+  it("keeps a mutating array call (insert) inline in its ternary branch (runs only when selected, lang.ternary-seed-5)", () => {
     const code = codegenSource("var a = array.new_float(0)\nx = close > open ? array.insert(a, 0, close) : 0.0");
-    expect(code).toContain("let __lazy0 = rt.array.insert($.vars[0], 0, $.close.get(0));");
+    expect(code).toContain("? rt.array.insert($.vars[0], 0, $.close.get(0)) : 0.0");
+    expect(code).not.toContain("__lazy");
   });
 
   it("hoists a mutating array call (fill) out of an 'or' lazy right operand", () => {
@@ -2465,9 +2469,10 @@ describe("CodeGen", () => {
     expect(code).toContain("var cp = rt.array.copy($.vars[0]);");
   });
 
-  it("hoists a mutating array call (sort) out of a ternary lazy branch (TV evaluates both sides — C66 principle)", () => {
+  it("keeps a mutating array call (sort) inline in its ternary branch (runs only when selected, lang.ternary-seed-5)", () => {
     const code = codegenSource("var a = array.new_float(0)\nx = close > open ? array.sort(a) : 0.0");
-    expect(code).toContain("let __lazy0 = rt.array.sort($.vars[0]);");
+    expect(code).toContain("? rt.array.sort($.vars[0]) : 0.0");
+    expect(code).not.toContain("__lazy");
   });
 
   it("hoists a mutating array call (reverse) out of an 'or' lazy right operand", () => {
@@ -2875,11 +2880,12 @@ describe("CodeGen", () => {
     expect(code).toContain("rt.map.put_all($.vars[0], m2);");
   });
 
-  it("hoists a mutating map call (put) out of a ternary lazy branch (TV evaluates both sides — C66 principle)", () => {
+  it("keeps a mutating map call (put) inline in its ternary branch (runs only when selected, lang.ternary-seed-5)", () => {
     const code = codegenSource(
       ["var m = map.new<string, float>()", 'x = close > open ? map.put(m, "k", 1.0) : 0.0'].join("\n"),
     );
-    expect(code).toContain('let __lazy0 = rt.map.put($.vars[0], "k", 1.0);');
+    expect(code).toContain('? rt.map.put($.vars[0], "k", 1.0) : 0.0');
+    expect(code).not.toContain("__lazy");
   });
 
   it("hoists a mutating map call (put_all) out of an 'and' lazy right operand", () => {
@@ -2962,11 +2968,12 @@ describe("CodeGen", () => {
     expect(code).toContain("var n = rt.matrix.elements_count($.vars[0]);");
   });
 
-  it("hoists a mutating matrix call (set) out of a ternary lazy branch (TV evaluates both sides — C66 principle)", () => {
+  it("keeps a mutating matrix call (set) inline in its ternary branch (runs only when selected, lang.ternary-seed-5)", () => {
     const code = codegenSource(
       ["var m = matrix.new<float>(2, 2, 0.0)", "x = close > open ? matrix.set(m, 0, 0, 1.0) : 0.0"].join("\n"),
     );
-    expect(code).toContain("let __lazy0 = rt.matrix.set($.vars[0], 0, 0, 1.0);");
+    expect(code).toContain("? rt.matrix.set($.vars[0], 0, 0, 1.0) : 0.0");
+    expect(code).not.toContain("__lazy");
   });
 
   it("does not hoist non-mutating matrix calls (get/rows/columns/elements_count) in a lazy branch (pure reads)", () => {
@@ -3095,27 +3102,22 @@ describe("CodeGen", () => {
     expect(code).toContain("var c = rt.matrix.remove_col($.vars[0], 0);");
   });
 
-  it("hoists a mutating matrix call (add_row) out of a ternary lazy branch (TV evaluates both sides — C66 principle)", () => {
-    const code = codegenSource(
+  it("keeps mutating matrix calls (add_row, remove_row, swap_rows) inline in their ternary branch (lang.ternary-seed-5)", () => {
+    const addRow = codegenSource(
       ["var m = matrix.new<float>(2, 2, 0.0)", "x = close > open ? matrix.add_row(m, 0) : 0.0"].join("\n"),
     );
-    expect(code).toContain("let __lazy0 = rt.matrix.add_row($.vars[0], 0);");
-  });
-
-  it("hoists a mutating matrix call (remove_row, wrote+read) out of a ternary lazy branch", () => {
-    const code = codegenSource(
+    expect(addRow).toContain("? rt.matrix.add_row($.vars[0], 0) : 0.0");
+    const removeRow = codegenSource(
       ["var m = matrix.new<float>(2, 2, 0.0)", "x = close > open ? matrix.remove_row(m, 0) : array.new_float(0)"].join(
         "\n",
       ),
     );
-    expect(code).toContain("let __lazy0 = rt.matrix.remove_row($.vars[0], 0);");
-  });
-
-  it("hoists a mutating matrix call (swap_rows) out of a ternary lazy branch", () => {
-    const code = codegenSource(
+    expect(removeRow).toContain("? rt.matrix.remove_row($.vars[0], 0) : ");
+    const swapRows = codegenSource(
       ["var m = matrix.new<float>(2, 2, 0.0)", "x = close > open ? matrix.swap_rows(m, 0, 1) : 0.0"].join("\n"),
     );
-    expect(code).toContain("let __lazy0 = rt.matrix.swap_rows($.vars[0], 0, 1);");
+    expect(swapRows).toContain("? rt.matrix.swap_rows($.vars[0], 0, 1) : 0.0");
+    for (const code of [addRow, removeRow, swapRows]) expect(code).not.toContain("__lazy");
   });
 
   it("allows a conditional if-body call to matrix.add_row/remove_row/swap_rows (stateless dispatch, no HoistingPass constraint)", () => {
@@ -3203,13 +3205,14 @@ describe("CodeGen", () => {
     expect(code).toContain("rt.matrix.sort($.vars[0], 0, false);");
   });
 
-  it("hoists matrix.fill/matrix.reverse/matrix.sort out of a lazy ternary position (C66 — 관측 가능한 뮤테이션이라 array.fill/reverse/sort와 동일 원칙)", () => {
+  it("keeps matrix.fill/matrix.reverse/matrix.sort inline in their ternary branch (runs only when selected, lang.ternary-seed-5)", () => {
     const codeFill = codegenSource(["var m = matrix.new<float>(2, 2, 0.0)", "x = close > open ? matrix.fill(m, 1.0) : 0.0"].join("\n"));
-    expect(codeFill).toContain("let __lazy0 = rt.matrix.fill($.vars[0], 1.0);");
+    expect(codeFill).toContain("? rt.matrix.fill($.vars[0], 1.0) : 0.0");
     const codeReverse = codegenSource(["var m = matrix.new<float>(2, 2, 0.0)", "x = close > open ? matrix.reverse(m) : 0.0"].join("\n"));
-    expect(codeReverse).toContain("let __lazy0 = rt.matrix.reverse($.vars[0]);");
+    expect(codeReverse).toContain("? rt.matrix.reverse($.vars[0]) : 0.0");
     const codeSort = codegenSource(["var m = matrix.new<float>(2, 2, 0.0)", "x = close > open ? matrix.sort(m) : 0.0"].join("\n"));
-    expect(codeSort).toContain("let __lazy0 = rt.matrix.sort($.vars[0]);");
+    expect(codeSort).toContain("? rt.matrix.sort($.vars[0]) : 0.0");
+    for (const code of [codeFill, codeReverse, codeSort]) expect(code).not.toContain("__lazy");
   });
 
   it("allows a conditional if-body call to matrix.fill/reverse/sort/copy/concat/submatrix/reshape/diff (stateless dispatch, no HoistingPass constraint)", () => {
@@ -4413,17 +4416,19 @@ describe("CodeGen", () => {
     expect(code).toBe("var x = (rt.pineGt($.close.get(0), $.open.get(0)) ? 1 : 0);");
   });
 
-  // ── C66: 삼항/and·or lazy 위치의 stateful 콜 eager 호이스팅 ───────────
-  // (TV v5는 양쪽을 항상 평가 — 콜을 문장 직전 `let __lazyN = ...`으로 끌어올리고 본식은 임시변수를
-  // 읽는다. 값 결합 구조 자체는 그대로 유지 — 삼항은 네이티브 `?:`, and/or는 rt.pineAnd/pineOr
-  // 호출(C69) — hoistLazyStatefulCalls 주석 참조.)
+  // ── Stateful calls under `?:` and `and`/`or` ───────────
+  // An `and`/`or` operand's stateful call is hoisted to a statement-level `let __lazyN = ...` (C66,
+  // the and/or value itself is rt.pineAnd/pineOr, C69). A `?:` branch is NOT: only the branch its
+  // condition selects runs ("only the branch corresponding to the evaluated condition is
+  // calculated", rn.txt Pine v4; "Pine v5 evaluates all bool expressions except for the ?:
+  // ternary operator strictly", mig6.txt; resin-harness state/repros/lang.ternary-seed-5.json),
+  // so branch calls stay inline in the native JS `?:`. The ternary tests here asserted the old
+  // eager hoisting of branch calls until then.
 
-  it("hoists stateful calls in both ternary branches to statement-level temps, keeping the ternary shape (C66)", () => {
+  it("keeps stateful calls inline in both ternary branches (each runs only when selected)", () => {
     const code = codegenSource("x = close > open ? ta.sma(close, 3) : ta.ema(close, 2)");
     expect(code).toBe(
-      "let __lazy0 = rt.ta.sma($.taSlots[0], $.close.get(0), 3);\n" +
-        "let __lazy1 = rt.ta.ema($.taSlots[1], $.close.get(0), 2);\n" +
-        "var x = (rt.pineGt($.close.get(0), $.open.get(0)) ? __lazy0 : __lazy1);",
+      "var x = (rt.pineGt($.close.get(0), $.open.get(0)) ? rt.ta.sma($.taSlots[0], $.close.get(0), 3) : rt.ta.ema($.taSlots[1], $.close.get(0), 2));",
     );
   });
 
@@ -4435,52 +4440,47 @@ describe("CodeGen", () => {
     );
   });
 
-  it("hoists a nested stateful call chain inner-first so the outer temp's args reference the inner temp (C66)", () => {
+  it("keeps a nested stateful call chain inline in its ternary branch", () => {
     const code = codegenSource("x = close > open ? ta.sma(ta.ema(close, 2), 2) : 0.0");
     expect(code).toBe(
-      "let __lazy0 = rt.ta.ema($.taSlots[1], $.close.get(0), 2);\n" +
-        "let __lazy1 = rt.ta.sma($.taSlots[0], __lazy0, 2);\n" +
-        "var x = (rt.pineGt($.close.get(0), $.open.get(0)) ? __lazy1 : 0.0);",
+      "var x = (rt.pineGt($.close.get(0), $.open.get(0)) ? rt.ta.sma($.taSlots[0], rt.ta.ema($.taSlots[1], $.close.get(0), 2), 2) : 0.0);",
     );
   });
 
-  it("hoists a stateful call under a nested ternary's condition too (everything under a lazy position goes eager)", () => {
+  it("keeps a stateful call under a nested ternary's condition inline in the outer branch (it runs whenever that branch does)", () => {
     const code = codegenSource("x = close > open ? (ta.sma(close, 3) > 0 ? 1.0 : 2.0) : 0.0");
     expect(code).toBe(
-      "let __lazy0 = rt.ta.sma($.taSlots[0], $.close.get(0), 3);\n" +
-        "var x = (rt.pineGt($.close.get(0), $.open.get(0)) ? (rt.pineGt(__lazy0, 0) ? 1.0 : 2.0) : 0.0);",
+      "var x = (rt.pineGt($.close.get(0), $.open.get(0)) ? (rt.pineGt(rt.ta.sma($.taSlots[0], $.close.get(0), 3), 0) ? 1.0 : 2.0) : 0.0);",
     );
   });
 
-  it("keeps the lazy prelude inside the owning if-block so per-call semantics survive (C64 + C66)", () => {
+  it("keeps an if-body ternary's branch call inline in the if block", () => {
     const code = codegenSource("if close > open\n    x = close > low ? ta.ema(close, 2) : 0.0");
     expect(code).toBe(
       "if (rt.pineGt($.close.get(0), $.open.get(0))) {\n" +
-        "let __lazy0 = rt.ta.ema($.taSlots[0], $.close.get(0), 2);\n" +
-        "let x = (rt.pineGt($.close.get(0), $.low.get(0)) ? __lazy0 : 0.0);\n" +
+        "let x = (rt.pineGt($.close.get(0), $.low.get(0)) ? rt.ta.ema($.taSlots[0], $.close.get(0), 2) : 0.0);\n" +
         "}",
     );
   });
 
-  it("keeps the lazy prelude inside a var decl's once-only gate (initializer runs on the first bar only)", () => {
+  it("keeps a var decl initializer's ternary branch call inline in the once-only gate", () => {
     const code = codegenSource("var float x = close > open ? ta.ema(close, 2) : 0.0");
     expect(code).toBe(
-      "if ($.vars[0] === undefined) {\n" +
-        "let __lazy0 = rt.ta.ema($.taSlots[0], $.close.get(0), 2);\n" +
-        "$.vars[0] = (rt.pineGt($.close.get(0), $.open.get(0)) ? __lazy0 : 0.0);\n" +
-        "}",
+      "if ($.vars[0] === undefined) { $.vars[0] = (rt.pineGt($.close.get(0), $.open.get(0)) ? rt.ta.ema($.taSlots[0], $.close.get(0), 2) : 0.0); }",
     );
   });
 
-  it("hoists lazy stateful calls in a for header / switch subject into the wrapping block's prelude", () => {
+  it("keeps ternary branch calls inline in a for header / switch subject", () => {
     const forCode = codegenSource(["s = 0.0", "for i = 1 to (close > open ? ta.sma(close, 2) : 2.0)", "    s := s + i"].join("\n"));
-    expect(forCode).toContain("{\nlet __lazy0 = rt.ta.sma($.taSlots[0], $.close.get(0), 2);\nlet __forStart = 1;");
+    expect(forCode).toContain("? rt.ta.sma($.taSlots[0], $.close.get(0), 2) : 2.0");
+    expect(forCode).not.toContain("__lazy");
     const swCode = codegenSource(
       ["y = 0.0", "switch close > open ? ta.ema(close, 2) : 0.0", "    102.5 =>", "        y := 1.0"].join("\n"),
     );
     expect(swCode).toContain(
-      "let __lazy0 = rt.ta.ema($.taSlots[0], $.close.get(0), 2);\nlet __switchSubject = (rt.pineGt($.close.get(0), $.open.get(0)) ? __lazy0 : 0.0);",
+      "let __switchSubject = (rt.pineGt($.close.get(0), $.open.get(0)) ? rt.ta.ema($.taSlots[0], $.close.get(0), 2) : 0.0);",
     );
+    expect(swCode).not.toContain("__lazy");
   });
 
   it("does not hoist a stateful call in a ternary's condition (non-lazy position renders inline)", () => {
@@ -4540,27 +4540,26 @@ describe("CodeGen", () => {
     expect(() => new Function("$", "rt", result.code)).not.toThrow();
   });
 
-  it("transpile() hoists a lazy-position ta.* to just before the owning statement inside a while-body (C161)", () => {
-    // loop-body가 C161부터 허용 위치가 되면서, lazy 호이스팅 프리루드는 소유 문장과 함께 루프 본문
-    // **안**에 방출된다 — 반복마다 1회 eager 호출. The loop call site's state goes through
+  it("transpile() keeps a ternary-branch ta.* inline inside a while-body (C161)", () => {
+    // The branch call runs only when selected (resin-harness state/repros/lang.ternary-seed-5.json),
+    // inline in the loop body. The loop call site's state goes through
     // rt.ta.loopState: every same-bar execution re-derives from the bar-start state (tier 1
     // ta_373_sma_loop_shared_window, PyneCore __loop_state__; see runtime/ta.ts loopState).
     const result = transpile("while close > open\n    x = close > high ? ta.sma(close, 3) : 0.0");
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.code).toContain(
-      "let __lazy0 = rt.ta.sma(rt.ta.loopState($.taSlots[0], $.idx), $.close.get(0), 3);\nlet x = (rt.pineGt($.close.get(0), $.high.get(0)) ? __lazy0 : 0.0);",
+      "let x = (rt.pineGt($.close.get(0), $.high.get(0)) ? rt.ta.sma(rt.ta.loopState($.taSlots[0], $.idx), $.close.get(0), 3) : 0.0);",
     );
     // eslint-disable-next-line @typescript-eslint/no-implied-eval
     expect(() => new Function("$", "rt", result.code)).not.toThrow();
   });
 
-  // ── ROADMAP "(C66 발견) lazy 위치의 var-stateful UDF 콜": var/varip를 가진 UDF 콜도 ta.*/fixnan과
-  // 동일하게 문장 직전 임시변수로 eager 호이스팅한다(walkForLazyHoist 확장, C66 인프라 재사용).
-  // analyzer는 UDF 콜의 위치를 애초에 제약한 적이 없어(analyzeUserFuncCall이 scope.func만 검사)
-  // 이 슬라이스는 순수 codegen 변경이다(analyzer.ts 무수정).
+  // ── Var-stateful UDF calls under `and`/`or` are hoisted like ta.*/fixnan (walkForLazyHoist);
+  // under a `?:` branch they stay inline and run only when the branch is selected (see the
+  // ternary block above, lang.ternary-seed-5). ──
 
-  it("hoists a var-stateful UDF call in both ternary branches, each keeping its own call-site slotBase (C66 UDF gap)", () => {
+  it("keeps a var-stateful UDF call inline in both ternary branches, each keeping its own call-site slotBase", () => {
     const code = codegenSource(
       ["counter() =>", "    var int n = 0", "    n := n + 1", "    n", "x = close > open ? counter() : counter()"].join("\n"),
     );
@@ -4570,9 +4569,7 @@ describe("CodeGen", () => {
         "$.fnVars[__slotBase + 0] = ($.fnVars[__slotBase + 0] + 1);\n" +
         "return $.fnVars[__slotBase + 0];\n" +
         "}\n" +
-        "let __lazy0 = counter(0);\n" +
-        "let __lazy1 = counter(1);\n" +
-        "var x = (rt.pineGt($.close.get(0), $.open.get(0)) ? __lazy0 : __lazy1);",
+        "var x = (rt.pineGt($.close.get(0), $.open.get(0)) ? counter(0) : counter(1));",
     );
   });
 
@@ -4602,19 +4599,29 @@ describe("CodeGen", () => {
     expect(code).not.toContain("__lazy");
   });
 
-  it("hoists a var-stateful UDF call nested inside a ta.* call's argument, inner temp declared first (post-order)", () => {
+  it("keeps a var-stateful UDF call nested inside a ternary branch's ta.* argument inline", () => {
     const code = codegenSource(
       ["counter() =>", "    var int n = 0", "    n := n + 1", "    n", "x = close > open ? ta.sma(counter(), 3) : 0.0"].join(
         "\n",
       ),
     );
+    expect(code).toContain("var x = (rt.pineGt($.close.get(0), $.open.get(0)) ? rt.ta.sma($.taSlots[0], counter(0), 3) : 0.0);");
+    expect(code).not.toContain("__lazy");
+  });
+
+  it("hoists a var-stateful UDF call nested inside an 'and' operand's ta.* argument, inner temp declared first (post-order)", () => {
+    const code = codegenSource(
+      ["counter() =>", "    var int n = 0", "    n := n + 1", "    n", "x = close > open and ta.sma(counter(), 3) > 0"].join(
+        "\n",
+      ),
+    );
     expect(code).toContain(
       "let __lazy0 = counter(0);\nlet __lazy1 = rt.ta.sma($.taSlots[0], __lazy0, 3);\n" +
-        "var x = (rt.pineGt($.close.get(0), $.open.get(0)) ? __lazy1 : 0.0);",
+        "var x = rt.pineAnd(rt.pineGt($.close.get(0), $.open.get(0)), rt.pineGt(__lazy1, 0));",
     );
   });
 
-  it("keeps the lazy prelude for a var-stateful UDF call inside the owning if-block (per-call semantics survive)", () => {
+  it("keeps a var-stateful UDF call in an if-body ternary branch inline in the if block", () => {
     const code = codegenSource(
       [
         "counter() =>",
@@ -4627,27 +4634,23 @@ describe("CodeGen", () => {
     );
     expect(code).toContain(
       "if (rt.pineGt($.close.get(0), $.open.get(0))) {\n" +
-        "let __lazy0 = counter(0);\n" +
-        "let x = (rt.pineGt($.close.get(0), $.low.get(0)) ? __lazy0 : 0.0);\n" +
+        "let x = (rt.pineGt($.close.get(0), $.low.get(0)) ? counter(0) : 0.0);\n" +
         "}",
     );
   });
 
-  it("keeps the lazy prelude for a var-stateful UDF call inside a var decl's once-only gate", () => {
+  it("keeps a var-stateful UDF call in a var decl initializer's ternary branch inline in the once-only gate", () => {
     const code = codegenSource(
       ["counter() =>", "    var int n = 0", "    n := n + 1", "    n", "var float x = close > open ? counter() : 0.0"].join(
         "\n",
       ),
     );
     expect(code).toContain(
-      "if ($.vars[0] === undefined) {\n" +
-        "let __lazy0 = counter(0);\n" +
-        "$.vars[0] = (rt.pineGt($.close.get(0), $.open.get(0)) ? __lazy0 : 0.0);\n" +
-        "}",
+      "if ($.vars[0] === undefined) { $.vars[0] = (rt.pineGt($.close.get(0), $.open.get(0)) ? counter(0) : 0.0); }",
     );
   });
 
-  it("hoists a lazy-position var-stateful UDF call in a for header / switch subject into the wrapping block's prelude", () => {
+  it("keeps a var-stateful UDF call in a ternary branch inline in a for header / switch subject", () => {
     const forCode = codegenSource(
       [
         "counter() =>",
@@ -4659,7 +4662,8 @@ describe("CodeGen", () => {
         "    s := s + i",
       ].join("\n"),
     );
-    expect(forCode).toContain("{\nlet __lazy0 = counter(0);\nlet __forStart = 1;");
+    expect(forCode).toContain("? counter(0) : 2.0");
+    expect(forCode).not.toContain("__lazy");
     const swCode = codegenSource(
       [
         "counter() =>",
@@ -4672,9 +4676,8 @@ describe("CodeGen", () => {
         "        y := 1.0",
       ].join("\n"),
     );
-    expect(swCode).toContain(
-      "let __lazy0 = counter(0);\nlet __switchSubject = (rt.pineGt($.close.get(0), $.open.get(0)) ? __lazy0 : 0.0);",
-    );
+    expect(swCode).toContain("let __switchSubject = (rt.pineGt($.close.get(0), $.open.get(0)) ? counter(0) : 0.0);");
+    expect(swCode).not.toContain("__lazy");
   });
 
   it("does not hoist a var-stateful UDF call in a ternary's condition (non-lazy position renders inline)", () => {
@@ -4694,13 +4697,12 @@ describe("CodeGen", () => {
     expect(() => new Function("$", "rt", result.code)).not.toThrow();
   });
 
-  // pine2py도 삼항/and·or를 Python lazy 구문으로 내리므로(C66 DIVERGENCES #12) 조건이 변하는
-  // 시나리오는 오라클 무효 — 게다가 UDF의 var/varip 자체가 pine2js 고유 slotBase 설계(GOAL.md)라
-  // pine2py와 1:1 대응이 없다(pine2py는 이름 문자열 공유 버그가 있음, MEMORY.md 참조). 그래서 이
-  // 시나리오는 cond_lazy_ta.test.ts와 동일한 방식으로 hand-verified(레퍼런스: 매 바 무조건 호출되는
-  // 카운터 증가값을 손으로 계산)로만 검증한다.
+  // A UDF call in a `?:` branch runs only on the bars that branch is selected (rn.txt Pine v4;
+  // PyneCore: resin-harness lang.ternary `ternary_udf`, e.g. `c ? f(close) : na` with a `var`
+  // accumulator reads its first call's value on the first selected bar). These asserted the old
+  // eager hoisting (the counter advanced on every bar) until then.
 
-  it("advances a ternary true-branch counter UDF on EVERY bar even when the condition interleaves (eager, hand-verified)", () => {
+  it("advances a ternary true-branch counter UDF only on the bars that branch runs", () => {
     const source = [
       "counter() =>",
       "    var int n = 0",
@@ -4713,17 +4715,13 @@ describe("CodeGen", () => {
     const result = transpile(source);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    // close>open: bar0 T(2>1) / bar1 F(1>2) / bar2 T(3>1) — eager라면 counter()는 매 바 호출되므로
-    // n은 1,2,3으로 전진(F인 bar1에도 호출은 되지만 값은 -1.0이 선택됨).
+    // close>open: bar0 T(2>1) / bar1 F(1>2) / bar2 T(3>1). counter() runs on bar0 and bar2 only.
     const data: OHLCVData = { open: [1, 2, 1], high: [2, 2, 3], low: [1, 1, 1], close: [2, 1, 3], volume: [1, 1, 1] };
     const { bars } = run(result.code, result.varSlots, result.taSlotCount, data, result.fnVarSlotCount);
-    expect(bars.map((b) => b["var:__obs"])).toEqual([1, -1.0, 3]);
-    // bar2가 스모킹 건: lazy였다면 bar1(F)에서 counter가 호출 안 돼 n이 1에 머물다 bar2에서야
-    // 두 번째 호출로 n=2가 됐을 것 — eager는 bar1에도 이미 호출돼 n=3이 나온다.
-    expect(bars[2]!["var:__obs"]).toBe(3);
+    expect(bars.map((b) => b["var:__obs"])).toEqual([1, -1.0, 2]);
   });
 
-  it("advances a ternary false-branch counter UDF on bars where the condition is TRUE too (eager, hand-verified)", () => {
+  it("advances a ternary false-branch counter UDF only on the bars the condition is false", () => {
     const source = [
       "counter() =>",
       "    var int n = 0",
@@ -4738,10 +4736,8 @@ describe("CodeGen", () => {
     if (!result.ok) return;
     const data: OHLCVData = { open: [1, 2, 1], high: [2, 2, 3], low: [1, 1, 1], close: [2, 1, 3], volume: [1, 1, 1] };
     const { bars } = run(result.code, result.varSlots, result.taSlotCount, data, result.fnVarSlotCount);
-    expect(bars.map((b) => b["var:__obs"])).toEqual([-1.0, 2, -1.0]);
-    // bar1(첫 F 바)이 스모킹 건: lazy였다면 이때가 counter()의 첫 호출이라 n=1이었을 것 —
-    // eager는 bar0(T)에도 이미 호출돼 n=2가 나온다.
-    expect(bars[1]!["var:__obs"]).toBe(2);
+    // bar1 is the only false bar: counter()'s first call.
+    expect(bars.map((b) => b["var:__obs"])).toEqual([-1.0, 1, -1.0]);
   });
 
   it("transpile() surfaces an analyzer error for TupleDestructure of an unknown function", () => {
@@ -5738,18 +5734,28 @@ describe("CodeGen", () => {
     expect(code).toContain("var b = f(1, 1, $.open.get(0));");
   });
 
-  it("hoists a lazy stateful call in the implicit return expression before the return statement (C162)", () => {
+  it("keeps a ternary-branch stateful call inline in the implicit return expression (runs only when selected, lang.ternary-seed-5)", () => {
     const code = codegenSource(["f(src) =>", "    close > open ? ta.ema(src, 2) : 0.0", "y = f(close)"].join("\n"));
+    expect(code).toContain(
+      "function f(__slotBase, __taBase, src) {\nreturn (rt.pineGt($.close.get(0), $.open.get(0)) ? rt.ta.ema($.taSlots[__taBase + 0], src, 2) : 0.0);",
+    );
+  });
+
+  it("hoists an and-operand stateful call in the implicit return expression before the return statement (C162)", () => {
+    const code = codegenSource(["f(src) =>", "    close > open and ta.ema(src, 2) > 0", "y = f(close)"].join("\n"));
     expect(code).toMatch(
       /function f\(__slotBase, __taBase, src\) \{\nlet __lazy\d+ = rt\.ta\.ema\(\$\.taSlots\[__taBase \+ 0\], src, 2\);\nreturn /,
     );
   });
 
-  it("hoists a lazy-position call of a ta-only UDF eagerly (ta state alone makes the UDF stateful, C162)", () => {
-    // var/varip가 하나도 없어도 본문 ta 상태(localTaSlotCount>0)가 있으면 isVarStatefulUdfCall이
-    // 참 — lazy로 두면 조건이 갈리는 바에서 그 콜사이트의 ta 상태가 조용히 전진을 건너뛴다.
-    const code = codegenSource(["f(src) =>", "    ta.ema(src, 2)", "x = close > open ? f(close) : 0.0"].join("\n"));
+  it("hoists an and-operand call of a ta-only UDF eagerly (ta state alone makes the UDF stateful, C162)", () => {
+    // With no var/varip, the body's ta state (localTaSlotCount > 0) still makes isVarStatefulUdfCall
+    // true. (In a ternary branch the same call stays inline: it runs only when selected.)
+    const code = codegenSource(["f(src) =>", "    ta.ema(src, 2)", "x = close > open and f(close) > 0"].join("\n"));
     expect(code).toMatch(/let __lazy\d+ = f\(0, 0, \$\.close\.get\(0\)\);/);
+    const ternary = codegenSource(["f(src) =>", "    ta.ema(src, 2)", "x = close > open ? f(close) : 0.0"].join("\n"));
+    expect(ternary).toContain("? f(0, 0, $.close.get(0)) : 0.0");
+    expect(ternary).not.toContain("__lazy");
   });
 
   it("emits a method body stateful call through __taBase and passes the base at the method call site (C162)", () => {
@@ -11123,19 +11129,17 @@ describe("CodeGen method (UDT slice 4)", () => {
     expect(code).toContain("Point$tick(1, $.vars[1]);");
   });
 
-  it("hoists a var-stateful method call in a ternary lazy branch, same as a var-stateful UDF call (C197 — isVarStatefulUdfCall only checked Identifier callees, silently skipping DotAccess method calls)", () => {
-    const code = codegenSource(
-      [
-        "type Counter",
-        "    float dummy = 0.0",
-        "method next(Counter c) =>",
-        "    var int state = 0",
-        "    state := state + 1",
-        "    state",
-        "var obj = Counter.new()",
-        "x = close > open ? obj.next() : -1.0",
-      ].join("\n"),
-    );
+  it("hoists a var-stateful method call in an 'and' operand, same as a var-stateful UDF call (C197 — isVarStatefulUdfCall only checked Identifier callees, silently skipping DotAccess method calls)", () => {
+    const lines = [
+      "type Counter",
+      "    float dummy = 0.0",
+      "method next(Counter c) =>",
+      "    var int state = 0",
+      "    state := state + 1",
+      "    state",
+      "var obj = Counter.new()",
+    ];
+    const code = codegenSource([...lines, "x = close > open and obj.next() > 0"].join("\n"));
     expect(code).toContain(
       "function Counter$next(__slotBase, c) {\n" +
         "if ($.fnVars[__slotBase + 0] === undefined) { $.fnVars[__slotBase + 0] = 0; }\n" +
@@ -11145,11 +11149,14 @@ describe("CodeGen method (UDT slice 4)", () => {
     );
     expect(code).toContain(
       "let __lazy0 = Counter$next(0, $.vars[0]);\n" +
-        "var x = (rt.pineGt($.close.get(0), $.open.get(0)) ? __lazy0 : (-1.0));",
+        "var x = rt.pineAnd(rt.pineGt($.close.get(0), $.open.get(0)), rt.pineGt(__lazy0, 0));",
     );
+    // In a ternary branch it stays inline: the branch runs only when selected (lang.ternary-seed-5).
+    const ternary = codegenSource([...lines, "x = close > open ? obj.next() : -1.0"].join("\n"));
+    expect(ternary).toContain("var x = (rt.pineGt($.close.get(0), $.open.get(0)) ? Counter$next(0, $.vars[0]) : (-1.0));");
   });
 
-  it("transpile() end-to-end: a var-stateful method's state advances every bar even on bars where the ternary picks the other branch (lazy-hoisting parity with UDF calls)", () => {
+  it("transpile() end-to-end: a var-stateful method in a ternary branch advances only on the bars that branch runs", () => {
     const source = [
       "type Counter",
       "    float dummy = 0.0",
@@ -11170,10 +11177,9 @@ describe("CodeGen method (UDT slice 4)", () => {
     const close = [1, 0, 1, 0, 1];
     const data: OHLCVData = { open, high: close, low: open, close, volume: close };
     const { bars } = run(result.code, result.varSlots, result.taSlotCount, data, result.fnVarSlotCount);
-    // state increments every bar regardless of branch (1,2,3,4,5) — observed x is state's value on
-    // true bars (1,_,3,_,5) and -1.0 on false bars. Without hoisting, state would only advance on
-    // true bars, producing [1,-1,2,-1,3] instead (call is skipped by JS's lazy '?:' on false bars).
-    expect(bars.map((b) => b["var:__obs_x"])).toEqual([1, -1, 3, -1, 5]);
+    // Only the selected branch runs (rn.txt Pine v4; resin-harness lang.ternary-seed-5), so state
+    // advances on the true bars only. This asserted the old eager hoisting ([1, -1, 3, -1, 5]).
+    expect(bars.map((b) => b["var:__obs_x"])).toEqual([1, -1, 2, -1, 3]);
   });
 
   it("end-to-end: a method mutates the object's field via ':=', and the mutation is visible to the caller afterward (reference semantics)", () => {
@@ -11340,7 +11346,7 @@ describe("CodeGen bare method(receiver, ...) call (C267)", () => {
     expect(dot).toContain("Point$area(0, $.vars[0]);");
   });
 
-  it("hoists a var-stateful method call reached via the bare form in a ternary lazy branch (mirrors the C197 dot-call fix — isVarStatefulUdfCall must resolve the mangled name via udtMethodCallTypes for Identifier callees too)", () => {
+  it("hoists a var-stateful method call reached via the bare form in an 'and' operand (mirrors the C197 dot-call fix — isVarStatefulUdfCall must resolve the mangled name via udtMethodCallTypes for Identifier callees too)", () => {
     const code = codegenSource(
       [
         "type Counter",
@@ -11350,16 +11356,16 @@ describe("CodeGen bare method(receiver, ...) call (C267)", () => {
         "    state := state + 1",
         "    state",
         "var obj = Counter.new()",
-        "x = close > open ? next(obj) : -1.0",
+        "x = close > open and next(obj) > 0",
       ].join("\n"),
     );
     expect(code).toContain(
       "let __lazy0 = Counter$next(0, $.vars[0]);\n" +
-        "var x = (rt.pineGt($.close.get(0), $.open.get(0)) ? __lazy0 : (-1.0));",
+        "var x = rt.pineAnd(rt.pineGt($.close.get(0), $.open.get(0)), rt.pineGt(__lazy0, 0));",
     );
   });
 
-  it("end-to-end: a var-stateful method reached via the bare form advances state every bar even on bars where the ternary picks the other branch", () => {
+  it("end-to-end: a var-stateful method reached via the bare form in a ternary branch advances only on the bars that branch runs", () => {
     const source = [
       "type Counter",
       "    float dummy = 0.0",
@@ -11379,7 +11385,9 @@ describe("CodeGen bare method(receiver, ...) call (C267)", () => {
     const close = [1, 0, 1, 0, 1];
     const data: OHLCVData = { open, high: close, low: open, close, volume: close };
     const { bars } = run(result.code, result.varSlots, result.taSlotCount, data, result.fnVarSlotCount);
-    expect(bars.map((b) => b["var:__obs_x"])).toEqual([1, -1, 3, -1, 5]);
+    // Only the selected branch runs (rn.txt Pine v4; resin-harness lang.ternary-seed-5). This
+    // asserted the old eager hoisting ([1, -1, 3, -1, 5]) until then.
+    expect(bars.map((b) => b["var:__obs_x"])).toEqual([1, -1, 2, -1, 3]);
   });
 
   it("end-to-end: a method mutates the object's field via ':=' when called through the bare form, and the mutation is visible to the caller afterward", () => {
@@ -27699,12 +27707,16 @@ describe("ta.<fn>(...)[N] historical indexing analyzer/codegen (C340)", () => {
     expect(code).toContain("rt.pineOr(rt.pineGt($.close.get(0), $.high.get(0)), rt.pineLe($.low.get(0), __lazy0))");
   });
 
-  it("accepts the call in a ternary's lazy branch via eager-hoisted prelude", () => {
+  // A ternary branch runs only when selected (rn.txt Pine v4; mig6.txt "except for the ?: ternary
+  // operator"; resin-harness state/repros/lang.ternary-seed-5.json): a call history in a branch
+  // takes the if-body's compressed slot inline, no longer the eager-hoisted every-bar prelude
+  // these ternary tests asserted until then.
+  it("accepts the call in a ternary branch via the if-body compressed slot, inline in the branch", () => {
     const code = codegenSource('x = close > open ? ta.lowest(low, 11)[1] : 1.0');
     expect(code).toContain(
-      "let __lazy0 = ($.histSlots[0].record(rt.ta.lowest($.taSlots[0], $.low.get(0), 11)), $.histSlots[0].get(1));",
+      "(rt.pineGt($.close.get(0), $.open.get(0)) ? ($.condCallHistSlots[0].push(rt.ta.lowest($.taSlots[0], $.low.get(0), 11)), $.condCallHistSlots[0].get(1)) : 1.0)",
     );
-    expect(code).toContain("(rt.pineGt($.close.get(0), $.open.get(0)) ? __lazy0 : 1.0)");
+    expect(code).not.toContain("__lazy");
   });
 
   // C671 (배치34 6순위 'hist-stateful'): cond-body/loop-body(if/for/while 본문)에 있는 stateful
@@ -27765,12 +27777,12 @@ describe("ta.<fn>(...)[N] historical indexing analyzer/codegen (C340)", () => {
     expect(code).toContain("return rt.pineOr(true, rt.pineGt(__lazy0, 0.0));");
   });
 
-  it("accepts a doubly-nested lazy-expr chain (ternary branch containing an 'or' whose lazy operand holds the call)", () => {
+  it("accepts an 'or' operand call inside a ternary branch (the branch's compressed slot, inline in the branch)", () => {
     const code = codegenSource("x = close > open ? (true or ta.highest(high, 5)[1] > 0.0) : false");
     expect(code).toContain(
-      "let __lazy0 = ($.histSlots[0].record(rt.ta.highest($.taSlots[0], $.high.get(0), 5)), $.histSlots[0].get(1));",
+      "? rt.pineOr(true, rt.pineGt(($.condCallHistSlots[0].push(rt.ta.highest($.taSlots[0], $.high.get(0), 5)), $.condCallHistSlots[0].get(1)), 0.0)) : false",
     );
-    expect(code).toContain("rt.pineOr(true, rt.pineGt(__lazy0, 0.0))");
+    expect(code).not.toContain("__lazy");
   });
 
   it("gives independent history slots and lazy temp names to two distinct ta.*(...)[N] calls sharing one lazy 'or' chain", () => {
@@ -27786,14 +27798,12 @@ describe("ta.<fn>(...)[N] historical indexing analyzer/codegen (C340)", () => {
     expect(code.indexOf("let __lazy0 =")).toBeLessThan(code.indexOf("rt.pineOr("));
   });
 
-  it("hand-verified E2E: ternary lazy branch — the history slot advances every bar even when that branch is never selected on the current bar", () => {
-    // sel alternates true/false by bar_index parity; the ta.highest(...)[1] branch is read only on
-    // odd bars, but eager-hoisting (C468) must still record it on EVERY bar (matching TV's "always
-    // evaluate both sides" semantic, C66) -- otherwise the odd-bar reads would see stale/gapped values.
+  it("E2E: a ternary-branch call and its history advance only on the bars that branch runs (if-body rule)", () => {
+    // sel alternates true/false by bar_index parity; the false branch runs on odd bars only.
     const source = [
       "var float __obs = na",
       "sel = bar_index % 2 == 0",
-      "__obs := sel ? 0.0 : ta.highest(high, 2)[1]",
+      "__obs := sel ? 0.0 : ta.sma(high, 2)[1]",
     ].join("\n");
     const result = transpile(source);
     expect(result.ok).toBe(true);
@@ -27801,13 +27811,13 @@ describe("ta.<fn>(...)[N] historical indexing analyzer/codegen (C340)", () => {
 
     const high = [1, 5, 2, 8, 3, 10];
     const data: OHLCVData = { open: high, high, low: high, close: high, volume: high };
-    const { bars } = run(result.code, result.varSlots, result.taSlotCount, data, result.fnVarSlotCount, result.historySlotCount, result.taScratchSize);
+    const { bars } = run(result, data);
 
     const values = bars.map((b) => b["var:__obs"] as number);
-    // ta.highest(high,2) needs a full 2-bar window before it stops returning NaN (runtime/ta.ts
-    // nanCount warmup gate) -> per-bar series is [NaN,5,5,8,8,10]; offset[1] shifts one bar later ->
-    // [NaN,NaN,5,5,8,8], read only on odd bars (sel=false).
-    expect(values).toEqual([0.0, NaN, 0.0, 5, 0.0, 8]);
+    // ta.sma(high, 2) runs on bars 1, 3, 5 (high 5, 8, 10): NaN, 6.5, 9. [1] reads the previous
+    // call's value, as in an if body (C671): NaN, NaN, 6.5. This asserted the old eager hoisting
+    // (a ta.highest recorded on every bar) until the ternary became lazy (lang.ternary-seed-5).
+    expect(values).toEqual([0.0, NaN, 0.0, NaN, 0.0, 6.5]);
   });
 
   it("hand-verified E2E: 'or' lazy branch — the recorded history reflects the true windowed value on every read, not a stale/NaN gap", () => {
@@ -27903,14 +27913,16 @@ describe("ta.<fn>(...)[N] historical indexing analyzer/codegen (C340)", () => {
     expect(code).not.toContain("$.histSlots[__histBase");
   });
 
-  it("accepts the call inside a ternary branch INSIDE a UDF body via the __histBase-relative eager-hoisted prelude (C484)", () => {
+  it("accepts the call inside a ternary branch INSIDE a UDF body via the call-site-relative compressed slot, inline in the branch", () => {
+    // The branch runs only when selected (lang.ternary-seed-5), like an if body (C672); this
+    // asserted the old eager-hoisted __histBase prelude (C484) until then.
     const code = codegenSource(
       ["f(x) =>", "    x > 0.0 ? ta.highest(x, 5)[1] : 0.0"].join("\n") + "\ny = f(close)",
     );
     expect(code).toContain(
-      "let __lazy0 = ($.histSlots[__histBase + 0].record(rt.ta.highest($.taSlots[__taBase + 0], x, 5)), $.histSlots[__histBase + 0].get(1));",
+      "return (rt.pineGt(x, 0.0) ? ($.condCallHistSlots[__condHistBase + 0].push(rt.ta.highest($.taSlots[__taBase + 0], x, 5)), $.condCallHistSlots[__condHistBase + 0].get(1)) : 0.0);",
     );
-    expect(code).toContain("return (rt.pineGt(x, 0.0) ? __lazy0 : 0.0);");
+    expect(code).not.toContain("__lazy");
   });
 
   it("accepts a lazy-expr call ALSO nested inside an if-block INSIDE a UDF body (mixed kinds route through the compressed slot, C484 rejection lifted by C672)", () => {
@@ -28087,10 +28099,10 @@ describe("ta.<fn>(...)[N] historical indexing analyzer/codegen (C340)", () => {
     expect(Number.isNaN(obsLo[1]!)).toBe(true);
   });
 
-  it("hand-verified E2E (C484): a UDF-body ternary lazy branch's history slot advances every bar even when that branch is never selected", () => {
+  it("E2E: a UDF-body ternary-branch call and its history advance only on the bars that branch runs (if-body rule)", () => {
     const source = [
       "f(x, sel) =>",
-      "    sel ? 0.0 : ta.highest(x, 2)[1]",
+      "    sel ? 0.0 : ta.sma(x, 2)[1]",
       "var float __obs = na",
       "sel = bar_index % 2 == 0",
       "__obs := f(high, sel)",
@@ -28101,12 +28113,13 @@ describe("ta.<fn>(...)[N] historical indexing analyzer/codegen (C340)", () => {
 
     const high = [1, 5, 2, 8, 3, 10];
     const data: OHLCVData = { open: high, high, low: high, close: high, volume: high };
-    const { bars } = run(result.code, result.varSlots, result.taSlotCount, data, result.fnVarSlotCount, result.historySlotCount, result.taScratchSize);
+    const { bars } = run(result, data);
 
     const values = bars.map((b) => b["var:__obs"] as number);
-    // Same per-bar arithmetic as the top-level parity test above, just routed through a UDF call
-    // (__histBase-relative slot instead of the global slot) — identical expected values.
-    expect(values).toEqual([0.0, NaN, 0.0, 5, 0.0, 8]);
+    // Same per-bar arithmetic as the top-level ternary test above, routed through a UDF call
+    // (__condHistBase-relative slot) — identical expected values. This asserted the old eager
+    // hoisting until the ternary became lazy (lang.ternary-seed-5).
+    expect(values).toEqual([0.0, NaN, 0.0, NaN, 0.0, 6.5]);
   });
 
   it("hand-verified E2E (C484): a UDF-body 'or' lazy branch's recorded history reflects the true windowed value on every read", () => {

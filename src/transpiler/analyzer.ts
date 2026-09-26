@@ -1344,6 +1344,9 @@ export interface FuncInfo {
 // 본문/switch case 본문)은 거부를 풀기만 하면 TV/pine2py와 동형이다(oracle/cases/cond_if_ta.pine +
 // cond_switch_ta.pine으로 수치 확정, C65). switch case 본문도 cond-body로 태그한다 — pine2py가
 // switch를 if/elif 체인으로 트랜스파일(codegen.py _gen_switch)해 if 분기 본문과 동형이기 때문.
+// A `?:` branch is "cond-body", not "lazy-expr": only the selected branch runs (rn.txt Pine v4;
+// mig6.txt "except for the ?: ternary operator"; see analyzeExpr TernaryOp). What follows about
+// lazy-expr now concerns and/or operands.
 // lazy-expr(삼항 분기/and·or 우변)도 C66부터 허용한다: TV v5는 양쪽을 모두 평가(C24)하므로 JS
 // 단락 평가(?:/&&/||)로 그대로 내리면 갈리지만, codegen이 lazy 위치 아래의 stateful 콜을 문장
 // 직전 `let __lazyN = ...` 임시변수로 eager 호이스팅해(codegen.ts hoistLazyStatefulCalls) "문장이
@@ -8188,13 +8191,13 @@ function analyzeTernaryTupleValue(
   prog: AnalyzedProgram,
   scope: LexScope,
 ): TupleBranchValueResult {
-  // analyzeExpr TernaryOp case와 동일하게 조건은 무조건 1회 평가(kind push 없음), 두 분기는 조건에
-  // 따라 하나만 실행되는 lazy 위치(C66 eager 호이스팅 대상, codegen genTernaryTupleDestructure가
-  // if/else로 직접 내려 실제로 한쪽만 실행됨 — lazy-expr 태그는 stateful 콜 검증용).
+  // As in analyzeExpr's TernaryOp case: the condition is evaluated whenever the ternary is (no
+  // tag), and each branch is a conditionally executed scope ("cond-body") — codegen
+  // genTernaryTupleDestructure lowers it to if/else, so only the selected branch runs.
   analyzeExpr(stmt.condition, prog, scope, false);
-  const trueScope = pushScope(scope, "lazy-expr");
+  const trueScope = pushScope(scope, "cond-body");
   const trueResult = resolveTupleValueBranch(stmt.trueExpr, arity, prog, trueScope, "ternary");
-  const falseScope = pushScope(scope, "lazy-expr");
+  const falseScope = pushScope(scope, "cond-body");
   const falseResult = resolveTupleValueBranch(stmt.falseExpr, arity, prog, falseScope, "ternary");
   const elemKinds: (string | null)[] = new Array(arity).fill(null);
   for (let i = 0; i < arity; i++) elemKinds[i] = trueResult.elemKinds[i] ?? falseResult.elemKinds[i] ?? null;
@@ -8459,13 +8462,16 @@ export function analyzeExpr(expr: Expr, prog: AnalyzedProgram, scope: LexScope, 
       }
       return;
     case "TernaryOp": {
-      // 삼항의 두 분기는 조건에 따라 하나만 실행되는 lazy 위치 — and/or 우변과 동일하게
-      // kind:"lazy-expr"로 태그하고 C66부터 codegen eager 호이스팅으로 허용한다(위 and/or 주석
-      // 참조). 조건은 삼항이 평가될 때 항상 평가되므로 태그 없이 현재 scope 그대로.
+      // A `?:` runs only the branch its condition selects (rn.txt: "only the branch corresponding
+      // to the evaluated condition is calculated"; mig6.txt: v5 evaluates every bool expression
+      // strictly "except for the ?: ternary operator"). Each branch is therefore a conditionally
+      // executed scope like an if branch body ("cond-body"): its stateful calls advance only on
+      // the bars it runs, and codegen keeps it inline in the native JS `?:` (walkForLazyHoist no
+      // longer hoists it). The condition is evaluated whenever the ternary is: no tag.
       analyzeExpr(expr.condition, prog, scope, false);
-      const trueScope = pushScope(scope, "lazy-expr");
+      const trueScope = pushScope(scope, "cond-body");
       analyzeExpr(expr.trueExpr, prog, trueScope, false);
-      const falseScope = pushScope(scope, "lazy-expr");
+      const falseScope = pushScope(scope, "cond-body");
       analyzeExpr(expr.falseExpr, prog, falseScope, false);
       return;
     }

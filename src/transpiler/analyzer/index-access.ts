@@ -677,6 +677,8 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
   // 일어나야 한다(genIndexAccess 참조). 이 인라인 record는 "그 코드 위치가 이 바에 실제로
   // 실행되는가"에 그대로 종속되므로, 스크립트 top-level의 무조건 위치(scope 체인에 kind가 하나도
   // 없고 UDF 밖)에서만 안전이 보장된다:
+  // (A `?:` branch is tagged "cond-body", not "lazy-expr": it runs only when selected, so its
+  // call histories take the compressed if-body slots below — analyzeExpr TernaryOp.)
   // - lazy-expr(삼항/and·or 우변): hoistLazyStatefulCalls가 콜 자체는 문장 앞으로 매 바 무조건
   //   실행되도록 eager 호이스팅하지만(C66), 우리 인라인 record는 원래 표현식 위치(그 삼항 분기 안)에
   //   그대로 남아 그 분기가 선택된 바에만 실행된다 — "콜은 매 바 전진하는데 그 출력 히스토리는

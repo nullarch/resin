@@ -9232,13 +9232,17 @@ describe("Analyzer", () => {
     expect(prog.errors.some((e) => e.includes("conditional block") && e.includes("lazy"))).toBe(true);
   });
 
-  it("still rejects a ta.* call in a ternary branch nested inside an elif condition (ternary branches stay lazy-expr under condition)", () => {
-    // C260은 lazy-expr을 하나도 거치지 않은 직접 호출만 허용한다 — 삼항의 두 분기는 여전히
-    // kind:"lazy-expr"(analyzer.ts TernaryOp 분기)라 elif 조건 안에서도 그대로 거부된다.
+  it("allows a ta.* call in a ternary branch nested inside an elif condition (the branch runs only when selected)", () => {
+    // A ternary branch is a conditionally executed scope ("cond-body"): only the selected branch
+    // runs (rn.txt Pine v4; mig6.txt "except for the ?: ternary operator"), and the elif condition
+    // stays inline in the native JS `else if`, whose `?:` evaluates exactly that way. This asserted
+    // the rejection while branches were eager-hoisted "lazy-expr" (resin-harness
+    // state/repros/lang.ternary-seed-5.json).
     const prog = analyzeSource(
       ["if close > open", "    x = 1.0", "else if (close > 0 ? ta.sma(close, 3) : 0.0) > 0", "    y = 2.0"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("conditional block") && e.includes("lazy"))).toBe(true);
+    expect(prog.errors).toEqual([]);
+    expect(prog.taSlotCount).toBe(1);
   });
 
   it("allows a direct ta.* call in an elif condition inside a UDF body (condition-under-udf-body chain, C260 + C162)", () => {
@@ -11724,10 +11728,14 @@ describe("Analyzer", () => {
     expect(prog.taCallHistorySlots.size).toBe(0);
   });
 
-  it("allows history indexing on a BinOp arithmetic expression inside a ternary lazy branch (C522, eager-hoist)", () => {
+  it("allows history indexing on a BinOp arithmetic expression inside a ternary branch (C522, if-body rule)", () => {
+    // A ternary branch runs only when selected (resin-harness state/repros/lang.ternary-seed-5.json),
+    // so its expression history takes the if-body slot (condCallHistorySlots), no longer the
+    // every-bar slot of the old eager hoisting.
     const prog = analyzeSource("x = close > open ? (close - open)[1] : 0.0");
     expect(prog.errors).toEqual([]);
-    expect(prog.taCallHistorySlots.size).toBe(1);
+    expect(prog.taCallHistorySlots.size).toBe(0);
+    expect(prog.condCallHistorySlots.size).toBe(1);
   });
 
   it("still errors when history indexing is applied to an unsupported non-identifier expression kind (TernaryOp, C522 boundary)", () => {

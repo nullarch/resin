@@ -270,14 +270,15 @@ function genDerivedPriceExpr(name: "hl2" | "hlc3" | "ohlc4" | "hlcc4", o: string
   }
 }
 
-// 삼항/and·or의 lazy 위치(단락 평가로 스킵될 수 있는 피연산자) 아래의 stateful 콜(ta.*/fixnan)은
-// TV v5가 양쪽을 항상 평가하므로(MEMORY.md Pitfalls, C24) JS ?:/&&/||로 그대로 내리면 조건 false
-// 바에 상태 갭이 생긴다 — 콜 자체를 소유 문장 바로 앞 `let __lazyN = rt....(...)`로 eager
-// 호이스팅하고(hoistLazyStatefulCalls), 본식에서는 그 임시변수를 읽는다(C66, ROADMAP P2 조건부
-// stateful call lazy 슬라이스). 값을 결합하는 구조 자체는 그대로 유지(삼항은 네이티브 `?:`, and/or는
-// rt.pineAnd/pineOr 호출 — C69) — 임시변수는 이미 평가가 끝난 뒤라 단락 평가는 값 선택에만 남고
-// 상태 전진은 문장당 무조건 1회가 된다. 프리루드가 문장과 같은 블록(if 분기 본문/VarDecl 게이트 안
-// 등)에 붙으므로 per-call 시맨틱(C64/C65 — 문장이 실행되는 바에서만 호출)은 그대로 유지된다.
+// Stateful calls (ta.*/fixnan, stateful UDFs, mutating collection calls) in an `and`/`or` operand
+// are hoisted to a `let __lazyN = rt....(...)` just before the owning statement
+// (hoistLazyStatefulCalls), and the expression reads the temp (C66). The and/or value itself is
+// rt.pineAnd/pineOr (C69), whose operands are already evaluated. The prelude sits in the
+// statement's own block (if body, VarDecl gate, ...), so the statement's per-call semantics
+// (C64/C65) hold. A `?:` branch is NOT hoisted: only the branch its condition selects runs
+// (rn.txt Pine v4 "only the branch corresponding to the evaluated condition is calculated";
+// mig6.txt "except for the ?: ternary operator"), which the native JS `?:` already does
+// (walkForLazyHoist TernaryOp; resin-harness state/repros/lang.ternary-seed-5.json).
 // 콜사이트 AST 노드 identity는 프로그램 전체에서 유일하므로 노드→임시변수명 맵은 generateCode당
 // 하나로 충분하다(중첩 문장 간 저장/복원 불필요).
 let lazyTempCounter = 0;
@@ -1380,7 +1381,8 @@ function genReturnBlock(body: Stmt[], program: AnalyzedProgram, funcCtx: FuncGen
 // promoted는 top-level(generateCode의 직접 호출)에서만 non-null이다 — 중첩 재귀는 항상 `let`
 // 경로라 승격과 무관하므로 전달하지 않는다.
 // funcCtx!==null: UDF 본문 안 — var/varip는 $.vars[]가 아니라 $.fnVars[__slotBase+i]로 내린다.
-// 문장이 소유한 표현식 하나를 걸어 lazy 위치(삼항 분기/and·or 우변) 아래의 stateful 콜 전부를
+// (A `?:` branch is not a hoisted position: it runs only when selected — walkForLazyHoist.)
+// 문장이 소유한 표현식 하나를 걸어 lazy 위치(and·or 우변) 아래의 stateful 콜 전부를
 // `let __lazyN = <콜>;` 프리루드 줄로 out에 수집하고 lazyTemps에 노드→임시변수명을 등록한다
 // (파일 상단 lazyTemps 주석 참조 — 이후 이 문장의 본식을 genExpr로 렌더링하면 등록된 콜 노드가
 // 임시변수명으로 대체된다). 호출 지점: 표현식을 소유한 모든 문장 생성부 중 stateful 콜이 허용될
@@ -1439,6 +1441,7 @@ function isVarStatefulUdfCall(expr: CallExpr, program: AnalyzedProgram): boolean
   return false;
 }
 
+// (Under a `?:` branch none of these is hoisted: the branch runs only when selected.)
 // lazy 위치의 array 뮤테이터(push/pop/set(C79), shift/unshift/insert/remove/clear/fill(C80))도
 // eager 호이스팅 대상이다 — TV는 삼항/and·or 양쪽을 항상 평가하므로(C66과 동일 근거) 관측 가능한
 // 뮤테이션이 있는 콜을 JS lazy 그대로 두면 조건이 갈리는 바에서 배열 내용이 TV와 조용히 갈린다.
@@ -1544,9 +1547,16 @@ function walkForLazyHoist(
 ): void {
   switch (expr.kind) {
     case "TernaryOp":
+      // Only the condition is walked. A `?:` runs only the branch its condition selects, so a
+      // stateful call in a branch advances only on the bars that branch runs: "only the branch
+      // corresponding to the evaluated condition is calculated" (rn.txt, Pine v4 "Changes to the
+      // evaluation of ternary operator branches"); "Pine v5 evaluates all bool expressions except
+      // for the ?: ternary operator strictly" (mig6.txt "Lazy evaluation of conditions"). The
+      // branches stay inline in the native JS `?:`, which evaluates exactly that way; anything
+      // nested in a branch (a v5 `and`/`or` included) then runs whenever the branch does.
+      // Evidence: harness state/repros/lang.ternary-seed-5.json (`c ? ta.sma(close, 2) : ...`
+      // on bars 4, 9, ...: na on bar 4, the sma's first call).
       walkForLazyHoist(expr.condition, inLazy, program, funcCtx, out);
-      walkForLazyHoist(expr.trueExpr, true, program, funcCtx, out);
-      walkForLazyHoist(expr.falseExpr, true, program, funcCtx, out);
       return;
     case "BinOp":
       walkForLazyHoist(expr.left, inLazy, program, funcCtx, out);

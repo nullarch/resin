@@ -55,7 +55,7 @@ const FORBIDDEN_KIND_DESC: Record<ScopePushKind, string> = {
   condition:
     "and/or lazy branch of a condition expression (short-circuit evaluation position — and/or right-hand side inside an elif condition/switch case value/while condition. direct calls allowed since C260, initial if condition allowed since C246)",
   "loop-body": "loop body (allowed since C161 — unreachable)",
-  "lazy-expr": "ternary/and/or lazy branch (allowed since C66 — unreachable)",
+  "lazy-expr": "and/or operand or switch case value (allowed since C66 — unreachable)",
   "udf-body": "UDF body (allowed since C162 — unreachable)",
 };
 
