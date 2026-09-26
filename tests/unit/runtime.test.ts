@@ -3058,11 +3058,14 @@ describe("ta.wpr", () => {
 });
 
 // ta.tr() - True Range = max(high-low, |high-prevClose|, |low-prevClose|); prevClose NaN (first bar
-// included) falls back to hl alone (pine2py wavealgo/ta/atr.py's tr(), confirmed stateless - the
-// state arg exists only for TA_REGISTRY dispatch uniformity and is never read/written).
+// included) is na for ta.tr() / bare ta.tr (handle_na defaults to false: ref_v6_ta_math.txt "VAR
+// ta.tr" "equivalent to `ta.tr(handle_na = false)`"; harness state/repros/tv-ta_031_tr.json) and
+// hl alone for ta.tr(true). Stateless - the state arg exists only for TA_REGISTRY dispatch
+// uniformity and is never read/written.
 describe("ta.tr", () => {
-  it("returns high-low on the first bar (prevClose NaN)", () => {
-    expect(tr({}, 12, 8, NaN)).toBeCloseTo(4, 9);
+  it("returns na on the first bar (prevClose NaN), high-low with handle_na=true", () => {
+    expect(tr({}, 12, 8, NaN)).toBeNaN();
+    expect(tr({}, 12, 8, NaN, true)).toBeCloseTo(4, 9);
   });
 
   it("matches a hand-computed TR once prevClose is available", () => {
@@ -3089,7 +3092,7 @@ describe("ta.tr", () => {
     const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
     const highs = closes.map((c) => c + 1);
     const lows = closes.map((c) => c - 2);
-    const results = closes.map((c, i) => tr({}, highs[i]!, lows[i]!, i === 0 ? NaN : closes[i - 1]!));
+    const results = closes.map((c, i) => tr({}, highs[i]!, lows[i]!, i === 0 ? NaN : closes[i - 1]!, true));
     for (const r of results) expect(r).toBeCloseTo(3, 9);
   });
 
@@ -3097,9 +3100,12 @@ describe("ta.tr", () => {
   // user_arg_count>0이면 injection을 스킵해 `ta.tr(true)` 자체가 오라클에서 크래시, analyzer.ts
   // TA_REGISTRY.tr 주석 참조) 오라클 불가, hand-verified("TV 미검증(가설)", 이 세션 웹 접근 없음).
   describe("ta.tr handle_na parameter (C291)", () => {
-    it("defaults to true (5th arg omitted) - identical to the pre-C291 no-arg behavior on the first bar", () => {
-      expect(tr({}, 12, 8, NaN)).toBeCloseTo(4, 9); // hl fallback, unchanged regression guard
-      expect(tr({}, 12, 8, NaN, true)).toBeCloseTo(4, 9); // explicit true == default
+    // The default is false: bare `ta.tr` is ta.tr(false) (ref_v6_ta_math.txt "VAR ta.tr":
+    // "equivalent to `ta.tr(handle_na = false)`"; harness state/repros/tv-ta_031_tr.json, tier 1
+    // bar 0 plot "ta.tr" na).
+    it("defaults to false (5th arg omitted): na when prevClose is NaN, like bare ta.tr", () => {
+      expect(tr({}, 12, 8, NaN)).toBeNaN();
+      expect(tr({}, 12, 8, NaN, true)).toBeCloseTo(4, 9); // explicit true keeps the hl fallback
     });
 
     it("handle_na=false returns NaN (instead of the hl fallback) when prevClose is NaN", () => {

@@ -2424,14 +2424,18 @@ export function wpr(state: WprState, close: number, high: number, low: number, l
 
 // ta.tr(handle_na) - True Range = max(high-low, |high-prevClose|, |low-prevClose|); prevClose가
 // NaN(첫 바 포함 - Series.get(1)이 워밍업 중 NaN을 자연히 반환하는 관례와 동치, pine2py atr.py의
-// `data_len<2` 분기를 별도 이식할 필요가 없다)일 때 handleNa(기본 true, TV 실제 파라미터명
-// handle_na)가 true면 hl 그대로, false면 NaN(C291 — TV 공식 시그니처 `ta.tr(handle_na)`, pine2py
-// tr()은 이 파라미터 자체가 없어(analyzer.ts TA_REGISTRY.tr 주석 참조) 오라클 불가, TV 미검증
-// 가설 hand-verified). Pine 문법에 high/low/close 인자가 없어 codegen이 $.high.get(0)/
+// `data_len<2` 분기를 별도 이식할 필요가 없다)일 때 handleNa(TV 실제 파라미터명 handle_na)가
+// true면 hl 그대로, false면 NaN. Pine 문법에 high/low/close 인자가 없어 codegen이 $.high.get(0)/
 // $.low.get(0)/$.close.get(1)(prevClose)을 handle_na 앞에 암묵 주입한다. 완전히 stateless인
 // 순수 함수라 첫 state 인자는 TA_REGISTRY 디스패치 경로의 일관성을 위해서만 받고 내부에서 전혀
 // 쓰지 않는다("상태가 진짜로 불필요한 첫 사례").
-export function tr(_state: unknown, high: number, low: number, prevClose: number, handleNa: boolean = true): number {
+//
+// handle_na defaults to false: the bare variable `ta.tr` (the parser desugars it to `ta.tr()`) is
+// ta.tr(false), na on the first bar (ref_v6_ta_math.txt "VAR ta.tr": "True range, equivalent to
+// `ta.tr(handle_na = false)`"; "ta.tr": "ta.tr(false) is exactly the same as ta.tr"; tier 1
+// tv-ta_031_tr bar 0 plot "ta.tr" is na; oracle lib/ta.py `def tr(handle_na: bool = False)`).
+// resin had true (C291 hypothesis). ta.atr is the one caller that wants true (see atr below).
+export function tr(_state: unknown, high: number, low: number, prevClose: number, handleNa: boolean = false): number {
   const hl = high - low;
   if (Number.isNaN(prevClose)) return handleNa ? hl : NaN;
   return Math.max(hl, Math.abs(high - prevClose), Math.abs(low - prevClose));
@@ -2461,7 +2465,9 @@ export interface AtrState {
 // hand-verified 테스트로 대체(runtime.test.ts).
 export function atr(state: AtrState, high: number, low: number, prevClose: number, length: number): number {
   if (state.rma === undefined) state.rma = {};
-  const trVal = tr(undefined, high, low, prevClose);
+  // ta.atr smooths ta.tr(true): the first bar enters the rma as high - low (ref_v6_ta_math.txt
+  // "ta.atr": "trueRange = na(high[1])? high-low : ..."; oracle lib/ta.py `rma(tr(True), length)`).
+  const trVal = tr(undefined, high, low, prevClose, true);
   return rma(state.rma, trVal, length);
 }
 

@@ -1,6 +1,8 @@
 // oracle/cases/ta_atr_tr.pine: ta.tr()/ta.atr(3) 검증(ROADMAP P2 "ta.* 44종" — atr/tr). ta.tr()는
-// pine2py wavealgo/ta/atr.py의 tr()과 완전히 동일한 stateless 순수 함수라 골든과 바이트 단위로
-// 일치한다. ta.atr(3)은 **의도적으로 골든과 다르다**(DIVERGENCES.md, runtime/ta.ts atr() 주석
+// stateless 순수 함수. The golden's bar 0 __obs_tr is hand-edited over pine2py's hl fallback (3)
+// to na, the tier-2 oracle's value: ta.tr() is ta.tr(handle_na = false) (ref_v6_ta_math.txt "VAR
+// ta.tr"; resin-harness state/repros/tr-default-na.json runs this data through PyneCore, and
+// state/repros/tv-ta_031_tr.json is TradingView's bar 0 na). ta.atr(3)은 **의도적으로 골든과 다르다**(DIVERGENCES.md, runtime/ta.ts atr() 주석
 // 참조) — pine2py atr.py는 매 호출 length+10폭까지 tr_values를 재스캔하는 독자 구현인데, 이
 // 재스캔이 실제 필요한 워밍업(dataLen>=length)보다 한 바 항상 늦게(dataLen>=length+1) 첫 값을
 // 낸다는 latent 버그를 golden 자체가 보여준다(바0~2 NaN, 바3부터 3.0 — scratch/probe_atr.mjs로

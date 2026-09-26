@@ -5,6 +5,9 @@
 // parsePostfix에서 desugar한 괄호 없는 문법이 명시 호출형과 완전히 동일한 값을 내는지만 확인.
 // ta.atr과 달리 이 9종은 pine2py 쪽에도 재스캔 워밍업 latent 버그가 없어(runtime/ta.ts 각 함수
 // 주석 참조) 전 채널이 바0부터 골든과 바이트 단위로 일치한다(hand-verified 분기 불필요).
+// The golden's bar 0 __obs_tr is hand-edited over pine2py's hl fallback (3) to na, the tier-2
+// oracle's value: bare ta.tr is ta.tr(handle_na = false) (ref_v6_ta_math.txt "VAR ta.tr";
+// resin-harness state/repros/tr-default-na.json, tier 1 state/repros/tv-ta_031_tr.json).
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";

@@ -3,7 +3,7 @@
  "data": "sample10.json",
  "bars": [
   {
-   "var:__obs_tr": 3,
+   "var:__obs_tr": "NaN",
    "var:__obs_atr": "NaN"
   },
   {

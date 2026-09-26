@@ -561,8 +561,15 @@ describe("corpus diff: sample bar-by-bar replay against pine2py golden", () => {
     // “series”" (in v5 `var seriesLen = 0` then `seriesLen += 1` is "erroneously qualified as
     // “const”"); resin-harness lang.division (state/repros/lang.division-seed-8.json). Floor moved to
     // the observed matched 2323 / mismatch 592; nothing else changed.
-    expect(matched.length).toBeGreaterThanOrEqual(2323);
-    expect(mismatched.length).toBeLessThanOrEqual(592);
+    // 2026-09-26 bare ta.tr (and ta.tr()) is ta.tr(handle_na = false), na on the first bar: exactly
+    // one hash went matched -> mismatch (83bd85d4b4fd, `last_tr := nz(ta.tr)`: 0 on bar 0 where
+    // pine2py (not ground truth) fell back to high - low = 7). ref_v6_ta_math.txt "VAR ta.tr" ("True
+    // range, equivalent to `ta.tr(handle_na = false)`"), tier 1 resin-harness
+    // suites/indicators/tv/ta_031_tr (plot "ta.tr" na on bar 0) and the PyneCore oracle (lib/ta.py
+    // `def tr(handle_na: bool = False)`). Floor moved to the observed matched 2322 / mismatch 593;
+    // nothing else changed.
+    expect(matched.length).toBeGreaterThanOrEqual(2322);
+    expect(mismatched.length).toBeLessThanOrEqual(593);
     expect(transpileFailed.length).toBeLessThanOrEqual(86);
     expect(runtimeFailed.length, `runtime failures: ${runtimeFailed.map((o) => `${o.hash}: ${o.detail}`).join(" | ")}`).toBe(0);
     expect(noComparable.length, `no comparable key: ${noComparable.map((o) => o.hash).join(", ")}`).toBeLessThanOrEqual(2);

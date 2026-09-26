@@ -13924,13 +13924,14 @@ describe("CodeGen request.security expression 확장 좁은 문법 (C367)", () =
 
   it("hand-verified E2E: nested ta.* call (ta.sma(ta.tr, 2)) re-executes both incrementally over the HTF-native OHLC sequence", () => {
     // HTF(daily) 행별 OHLC(day1=idx0-2/day2=idx3-5/day3=idx6-8/day4=idx9 forming): high=[105,110,115,117],
-    // low=[99,103,108,113], close=[103,109,114,116]. tr row0=hl(prevClose NaN,handle_na)=105-99=6,
+    // low=[99,103,108,113], close=[103,109,114,116]. tr row0=na (prevClose NaN; bare ta.tr is
+    // ta.tr(false): ref_v6_ta_math.txt "VAR ta.tr", harness state/repros/tv-ta_031_tr.json),
     // row1=max(110-103,|110-103|,|103-103|)=7, row2=max(115-108,|115-109|,|108-109|)=7,
-    // row3(forming)=max(117-113,|117-114|,|113-114|)=4. sma(tr,2): row0=NaN(창 미충족),
-    // row1=(6+7)/2=6.5, row2=(7+7)/2=7. lookahead=off라 idx0-2는 htf_idx=0 na 예외, idx3-5는
-    // row0(NaN), idx6-8은 row1(6.5), idx9는 row2(7) 관측.
+    // row3(forming)=max(117-113,|117-114|,|113-114|)=4. sma(tr,2) over the last 2 non-na values:
+    // row0=NaN, row1=NaN(one value), row2=(7+7)/2=7. lookahead=off라 idx0-2는 htf_idx=0 na 예외,
+    // idx3-5는 row0(NaN), idx6-8은 row1(NaN), idx9는 row2(7) 관측.
     const bars = runOf('var float x = na\nx := request.security("", "D", ta.sma(ta.tr, 2))');
-    expect(bars).toEqual([NaN, NaN, NaN, NaN, NaN, NaN, 6.5, 6.5, 6.5, 7]);
+    expect(bars).toEqual([NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, 7]);
   });
 
   // C543: math.sum(source, length) — TA_REGISTRY dispatch:"math", 매 바 상태(슬라이딩 윈도우 합계)가
@@ -20145,9 +20146,11 @@ describe("CodeGen generateSecurityExprPreamble() (C181, request.security third s
     expect(ctx.securityCache[0]!.high).toEqual(new Float64Array([12, 22]));
     expect(ctx.securityCache[0]!.low).toEqual(new Float64Array([5, 15]));
     expect(ctx.securityCache[0]!.close).toEqual(new Float64Array([9, 19]));
-    // h=0: prevClose=NaN(첫 HTF 행) -> tr=high-low=12-5=7. h=1: prevClose=cache.close[0]=9(직전
-    // *HTF* 바, 차트 타임프레임의 이전 값이 아님) -> tr=max(22-15=7, |22-9|=13, |15-9|=6)=13.
-    expect(ctx.securityExprCache[0]).toEqual(new Float64Array([7, 13]));
+    // h=0: prevClose=NaN(첫 HTF 행) -> ta.tr() is ta.tr(false), na (ref_v6_ta_math.txt "VAR ta.tr"
+    // "equivalent to `ta.tr(handle_na = false)`"; harness state/repros/tv-ta_031_tr.json).
+    // h=1: prevClose=cache.close[0]=9(직전 *HTF* 바, 차트 타임프레임의 이전 값이 아님)
+    // -> tr=max(22-15=7, |22-9|=13, |15-9|=6)=13.
+    expect(ctx.securityExprCache[0]).toEqual(new Float64Array([NaN, 13]));
   });
 });
 

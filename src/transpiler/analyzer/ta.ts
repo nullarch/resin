@@ -438,7 +438,7 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // 하드 에러). A series length takes runtime/ta.ts wprVarLen.
   wpr: { dispatch: "ta", displayName: "ta.wpr", argCount: 1, lengthArgIndex: 0, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.wpr" },
   // ta.tr(handle_na) — True Range. Pine 문법상 인자가 없거나(bare `ta.tr` 프로퍼티 접근/`ta.tr()`,
-  // C248) handle_na(선택, bool, 기본 true) 하나뿐(TV 실제 시그니처, C291) — high/low/close는 둘 다
+  // C248) handle_na(선택, bool, 기본 false — bare `ta.tr` is ta.tr(false), runtime/ta.ts tr()) 하나뿐(TV 실제 시그니처, C291) — high/low/close는 둘 다
   // bar series 암묵 사용(codegen이 $.high.get(0)/$.low.get(0)/$.close.get(1)(prevClose)을
   // handle_na **앞**에 끼워 넣는다 — wpr과 동일한 unshift 패턴, handle_na는 유일한 사용자 인자라
   // 그대로 맨 뒤에 남는다). minArgCount:0으로 0~1개 허용(math.random류 트레일링 선택 인자 패턴,
