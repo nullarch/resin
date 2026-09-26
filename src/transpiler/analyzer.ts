@@ -1401,6 +1401,11 @@ export interface LexScope {
   // 의도적으로 미기입(과욕 금지, LIMITATIONS.md 잔여 스코프 참조) — 이 맵에 없으면 항상 "모른다"로
   // 보수 처리.
   numTypeHints: Map<string, NumType>;
+  // Names this scope declares ('=' locals and var/typed declarations) as "const int": their
+  // declaration gives them an int value built only from constants (isConstIntExpr). Read by
+  // resolveConstIntName for v5 integer division; a name declared here without being const int
+  // stops the lookup through scope.names/qualifiers instead.
+  constIntNames: Set<string>;
   // '=' 로컬(top-level 포함, UDF 로컬은 미기입 — 과욕 금지 원칙은 numTypeHints와 동일)이 array/map
   // 생성자 콜을 대입받으면 여기 기록(C216, for-in 루프 이터러블 종류 정적 판별 전용 — qualifiers/
   // numTypeHints와 나란한 체인 조회). prog.arrayVars/mapVars는 top-level `var` 선언만 추적해
@@ -1609,6 +1614,7 @@ function pushScope(
     names: new Set(),
     qualifiers: new Map(),
     numTypeHints: new Map(),
+    constIntNames: new Set(),
     containerKindHints: new Map(),
     udtKindHints: new Map(),
     arrayElemUdtKindHints: new Map(),
@@ -1936,14 +1942,84 @@ export function inferQualifier(expr: Expr, prog: AnalyzedProgram, scope: LexScop
   }
 }
 
-// idiv 대상 판별을 위한 컴파일타임 int/float 타입("na/수치 (2c)", pine2py에는 대응이 없는 pine2js
-// 고유 설계 — pine2py는 모든 수를 float로만 다뤄 int/float 구분 자체가 없다). 의도적으로 아주 좁게만
-// 판별한다: (a) 정수 리터럴(소수점/지수 표기가 없는 NumberLiteral.raw), (b) 명시적으로
-// `var int x = ...`로 선언된 top-level var(prog.varTypeHints). 그 외(UDF 매개변수, '=' 로컬,
-// BinOp/TernaryOp/CallExpr 등 산술식 결과, UnaryOp 음수 리터럴)는 전부 "unknown"으로 보수 처리해
-// genBinOp이 기존 rt.pineDiv(float)를 그대로 쓰게 한다 — 오판의 최악의 결과가 여전히 기존과 동일한
-// float 나눗셈이지 잘못된 truncate가 되지 않도록(PROGRESS.md C19 next_hint의 권장 스코프 그대로).
+// Compile-time int/float type of a literal or a top-level var declared `int`/`float`, for
+// isStaticIntExpr (str.tostring's int formatting). Deliberately narrow: anything else is "unknown".
+// `/` no longer reads it: integer division follows the const-int rule below (isIntDivision).
 export type NumType = "int" | "float" | "unknown";
+
+// Pine divides two ints as integers only before v6, and only when both are "const int": "If both
+// values are qualified as “const”, the script performs what is known as integer division, and
+// discards any fractional remainder in the result, e.g., 5/2 = 2. However, if at least one of the
+// integers is qualified as “input”, “simple”, or “series”, the script preserves the fractional
+// remainder" (mig6.txt "Fractional division of constants"); from v6 "dividing two “int” values ...
+// always results in a number with a fractional value, regardless of the type and qualifier". A
+// script without //@version is pre-v6.
+export function isIntDivision(expr: BinOp, prog: AnalyzedProgram, scope: LexScope): boolean {
+  return (
+    expr.op === "/" &&
+    (prog.script.version ?? 1) < 6 &&
+    isConstIntExpr(expr.left, prog, scope) &&
+    isConstIntExpr(expr.right, prog, scope)
+  );
+}
+
+// Whether an expression is a "const int": an int literal, or an int built only from const values
+// ("All literal values and the results of expressions that use only values qualified as “const”
+// automatically inherit the “const” qualifier", language_type-system.txt "const"), including a
+// variable declared with one (resolveConstIntName) and `int()` of a constant (mig6.txt lists
+// `int(5) / int(2)` among its const-int divisions). Before v6 the quotient of two const ints is
+// itself a const int; from v6 it is a float.
+export function isConstIntExpr(expr: Expr, prog: AnalyzedProgram, scope: LexScope): boolean {
+  switch (expr.kind) {
+    case "NumberLiteral":
+      return !/[.eE]/.test(expr.raw);
+    case "UnaryOp":
+      return expr.op === "-" && isConstIntExpr(expr.operand, prog, scope);
+    case "BinOp":
+      if (expr.op === "/") return isIntDivision(expr, prog, scope);
+      return (
+        (expr.op === "+" || expr.op === "-" || expr.op === "*" || expr.op === "%") &&
+        isConstIntExpr(expr.left, prog, scope) &&
+        isConstIntExpr(expr.right, prog, scope)
+      );
+    case "TernaryOp":
+      return (
+        inferQualifier(expr.condition, prog, scope) === "const" &&
+        isConstIntExpr(expr.trueExpr, prog, scope) &&
+        isConstIntExpr(expr.falseExpr, prog, scope)
+      );
+    case "CallExpr":
+      return (
+        expr.callee.kind === "Identifier" &&
+        expr.callee.name === "int" &&
+        expr.args.length === 1 &&
+        expr.kwargs.length === 0 &&
+        inferQualifier(expr.args[0]!, prog, scope) === "const"
+      );
+    case "Identifier":
+      return resolveConstIntName(scope, expr.name);
+    default:
+      return false;
+  }
+}
+
+// The nearest scope declaring `name` decides: const int when that declaration recorded it in
+// constIntNames. A variable keeps the qualifier its declaration gave it: in v5 "some mutable
+// variables are qualified as “series” values but are erroneously qualified as “const”" (mig6.txt
+// "Mutable variables are always “series”", `var seriesLen = 0` then `seriesLen += 1`), so a
+// later `:=` does not revoke it. v6 never divides as integers, so its stricter rule changes no
+// division.
+function resolveConstIntName(scope: LexScope, name: string): boolean {
+  let s: LexScope | null = scope;
+  while (s) {
+    if (s.constIntNames.has(name)) return true;
+    if (s.names.has(name) || s.qualifiers.has(name)) return false;
+    // A UDF's own var declarations shadow the script's names in its whole body.
+    if (s.kind === "udf-body" && s.func !== null && s.func.localVarIndex.has(name)) return false;
+    s = s.parent;
+  }
+  return false;
+}
 
 export function inferNumType(expr: Expr, prog: AnalyzedProgram): NumType {
   if (expr.kind === "NumberLiteral") {
@@ -2660,7 +2736,7 @@ export interface AnalyzedProgram {
   // 동형이나 카운터가 condCallRefHistorySlotCount(별도 물리 배열)다. codegen이 호출 인자
   // `__condRefHistBase`로 전달(genBaseParams/genCallExpr — __condHistBase 뒤, __secIdx 앞 순서).
   funcCondRefHistBases: Map<CallExpr, number>;
-  idivBinOps: Set<BinOp>; // '/' BinOp 노드 중 두 피연산자 모두 컴파일타임에 확실히 int인 것(rt.idiv 대상)
+  idivBinOps: Set<BinOp>; // '/' nodes Pine divides as integers (rt.idiv): pre-v6, both operands const int (isIntDivision)
   concatBinOps: Set<BinOp>; // '+' BinOp 노드 중 isStringExpr가 문자열로 판별한 것(rt.concat 대상, na/수치 2c-ii)
   // str.tostring(value[, format_str]) 콜사이트 중 value가 isStaticIntExpr로 확정된 것(C201,
   // LIMITATIONS.md "str.tostring int/float 갭" 근본 수정) — codegen이 rt.tostring에 isInt=true를
@@ -3880,6 +3956,7 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
     names: new Set(),
     qualifiers: new Map(),
     numTypeHints: new Map(),
+    constIntNames: new Set(),
     containerKindHints: new Map(),
     udtKindHints: new Map(),
     arrayElemUdtKindHints: new Map(),
@@ -6688,6 +6765,10 @@ function analyzeVarDecl(stmt: VarDecl, prog: AnalyzedProgram, scope: LexScope): 
     const qualifier = inferQualifier(stmt.value, prog, scope);
     if (func) func.localVarQualifiers.set(stmt.name, qualifier);
     else prog.varQualifiers.set(stmt.name, qualifier);
+    // A declared `int` takes the initializer's qualifier; an undeclared type takes its type too.
+    const constInt =
+      stmt.typeHint === null ? isConstIntExpr(stmt.value, prog, scope) : stmt.typeHint === "int" && qualifier === "const";
+    if (constInt) scope.constIntNames.add(stmt.name);
   }
 }
 
@@ -6828,7 +6909,12 @@ function analyzeAssignment(stmt: Assignment, prog: AnalyzedProgram, scope: LexSc
   // corpus에도 이 조합은 없음).
   analyzeControlFlowOrExpr(stmt.value, prog, scope, scope.depth === 0);
   if (isNewLocal) {
-    scope.qualifiers.set(stmt.name, inferQualifier(stmt.value, prog, scope));
+    const qualifier = inferQualifier(stmt.value, prog, scope);
+    scope.qualifiers.set(stmt.name, qualifier);
+    // `Type x = expr`: a declared `int` takes the initializer's qualifier, as in analyzeVarDecl.
+    const constInt =
+      stmt.typeHint === null ? isConstIntExpr(stmt.value, prog, scope) : stmt.typeHint === "int" && qualifier === "const";
+    if (constInt) scope.constIntNames.add(stmt.name);
     // str.tostring int/float 갭 잔여 스코프 (4, C201/LIMITATIONS.md): '=' 로컬이 정수 리터럴 또는
     // (for 루프 카운터를 경유해) 이미 int로 확정된 다른 '=' 로컬을 직접 대입받으면 이 로컬도 int로
     // 표시 -- isStaticIntExpr의 Identifier 분기(resolveLocalNumType)가 그대로 체이닝을 처리하므로
@@ -8458,9 +8544,7 @@ export function analyzeExpr(expr: Expr, prog: AnalyzedProgram, scope: LexScope, 
       } else {
         analyzeExpr(expr.right, prog, scope, false);
       }
-      if (expr.op === "/" && inferNumType(expr.left, prog) === "int" && inferNumType(expr.right, prog) === "int") {
-        prog.idivBinOps.add(expr);
-      }
+      if (isIntDivision(expr, prog, scope)) prog.idivBinOps.add(expr);
       if (expr.op === "+" && (isStringExpr(expr.left) || isStringExpr(expr.right))) {
         prog.concatBinOps.add(expr);
       }

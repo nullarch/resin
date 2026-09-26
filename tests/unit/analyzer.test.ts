@@ -13100,7 +13100,8 @@ describe("Analyzer", () => {
     expect(prog.errors.some((e) => e.includes("'ta.ema'") && e.includes("length"))).toBe(true);
   });
 
-  // ── idivBinOps: '/' 판별을 확실히 int인 경우로만 좁힘("na/수치 (2c)", MEMORY.md 참조) ────
+  // ── idivBinOps: before v6, '/' of two "const int" values divides as integers (mig6.txt
+  //    "Fractional division of constants"); a script without //@version is pre-v6 ────
 
   it("registers a '/' between two integer literals as an idiv target", () => {
     const prog = analyzeSource("x = 7 / 2");
@@ -13134,10 +13135,11 @@ describe("Analyzer", () => {
     expect(prog.idivBinOps.has(stmt.value as BinOp)).toBe(false);
   });
 
-  it("does not register '/' when a top-level var has no explicit type hint (implicit type)", () => {
+  it("registers '/' when a top-level var has no explicit type hint but a const int initial value", () => {
+    // `var a = 7` holds a "const int" (mig6.txt: `var seriesLen = 1` "is now of `const int` type").
     const prog = analyzeSource(["var a = 7", "x = a / 2"].join("\n"));
     const stmt = prog.script.body[1] as Assignment;
-    expect(prog.idivBinOps.has(stmt.value as BinOp)).toBe(false);
+    expect(prog.idivBinOps.has(stmt.value as BinOp)).toBe(true);
   });
 
   it("does not register '/' for a UDF parameter hinted 'int' (out of this slice's scope)", () => {
@@ -13147,22 +13149,54 @@ describe("Analyzer", () => {
     expect(fnBody).toBeDefined();
   });
 
-  it("does not register '/' for a '=' local (not tracked by varTypeHints, even if assigned an int literal)", () => {
+  it("registers '/' for a '=' local assigned an int literal (a const int variable)", () => {
+    // resin-harness state/repros/lang.division-seed-8.json: v5 `n0 = -9`, `n0 / 100` is 0.
     const prog = analyzeSource(["n = 7", "x = n / 2"].join("\n"));
     const stmt = prog.script.body[1] as Assignment;
-    expect(prog.idivBinOps.has(stmt.value as BinOp)).toBe(false);
+    expect(prog.idivBinOps.has(stmt.value as BinOp)).toBe(true);
   });
 
-  it("does not register '/' when an operand is a nested arithmetic expression, even if both leaves are int literals", () => {
+  it("registers '/' when an operand is a nested arithmetic expression of int literals (still const int)", () => {
     const prog = analyzeSource("x = (3 + 2) / 2");
     const stmt = prog.script.body[0] as Assignment;
-    expect(prog.idivBinOps.has(stmt.value as BinOp)).toBe(false);
+    expect(prog.idivBinOps.has(stmt.value as BinOp)).toBe(true);
   });
 
-  it("does not register '/' for a negative int literal written as a UnaryOp (documented narrow-scope limitation)", () => {
+  it("registers '/' for a negative int literal written as a UnaryOp", () => {
     const prog = analyzeSource("x = -7 / 2");
     const stmt = prog.script.body[0] as Assignment;
-    expect(prog.idivBinOps.has(stmt.value as BinOp)).toBe(false);
+    expect(prog.idivBinOps.has(stmt.value as BinOp)).toBe(true);
+  });
+
+  it("registers '/' between int() casts of constants (mig6.txt `int(5) / int(2)`)", () => {
+    const prog = analyzeSource("//@version=5\nx = int(5) / int(2)");
+    const stmt = prog.script.body[0] as Assignment;
+    expect(prog.idivBinOps.has(stmt.value as BinOp)).toBe(true);
+  });
+
+  it("registers '/' for a v5 counter declared const and only ever incremented (v5 keeps it const)", () => {
+    // mig6.txt "Mutable variables are always “series”": in v5 `var seriesLen = 0` then
+    // `seriesLen += 1` is "erroneously qualified as “const”".
+    const prog = analyzeSource(["//@version=5", "var c = 0", "c += 1", "x = c / 2"].join("\n"));
+    const stmt = prog.script.body[2] as Assignment;
+    expect(prog.idivBinOps.has(stmt.value as BinOp)).toBe(true);
+  });
+
+  it("does not register '/' in v6, even between two int literals", () => {
+    // mig6.txt: "In v6, dividing two “int” values ... always results in a number with a fractional value".
+    const prog = analyzeSource("//@version=6\nx = 7 / 2\nn = 7\ny = n / 2");
+    expect(prog.idivBinOps.has((prog.script.body[0] as Assignment).value as BinOp)).toBe(false);
+    expect(prog.idivBinOps.has((prog.script.body[2] as Assignment).value as BinOp)).toBe(false);
+  });
+
+  it("does not register '/' in v5 when an operand is an input, simple or series int", () => {
+    // mig6.txt: "if at least one of the integers is qualified as “input”, “simple”, or “series”, the
+    // script preserves the fractional remainder in the division result".
+    const prog = analyzeSource(["//@version=5", "n = input.int(2)", "a = 5 / n", "b = bar_index / 2", "float f = 7", "c = f / 2"].join("\n"));
+    expect(prog.errors).toEqual([]);
+    for (const i of [1, 2, 4]) {
+      expect(prog.idivBinOps.has((prog.script.body[i] as Assignment).value as BinOp)).toBe(false);
+    }
   });
 
   // ── concatBinOps: '+' 판별을 pine2py `_is_string_expr`과 동일한 순수 구문 판별로 좁힘
