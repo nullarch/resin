@@ -393,6 +393,13 @@ export function generateCode(program: AnalyzedProgram): string {
       `$.strategy.configure(${program.strategyDefaultQty ?? 1}, ${program.strategyPyramiding ?? 1}${capArg}${tailArgs});`,
     );
   }
+  // strategy(commission_type=, commission_value=): handed to the strategy engine once per run, only
+  // when a fee is actually charged.
+  if (program.isStrategy && program.strategyCommissionValue > 0) {
+    lines.push(
+      `$.strategy.setCommission(${JSON.stringify(program.strategyCommissionType)}, ${program.strategyCommissionValue});`,
+    );
+  }
   // The chart symbol's tick and lot grids (AnalyzeOptions.syminfo), handed to the strategy engine
   // once per run. Emitted only when they differ from resin's defaults, which the engine starts with.
   if (program.isStrategy && SYMINFO_OPTION_KEYS.some((k) => program.syminfoNumbers.get(k) !== SYMINFO_NUMBER_PROPS.get(k))) {

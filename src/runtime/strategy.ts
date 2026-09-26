@@ -25,10 +25,12 @@ interface ClosedTradeRecord {
   exitTime: number;
   entryId: string;
   exitId: string;
-  profit: number;
+  profit: number; // net of the trade's commission (entry and exit legs)
   size: number;
   maxRunup: number;
   maxDrawdown: number;
+  commission: number; // the entry leg's share plus the exit leg
+  profitPercent: number;
 }
 
 // One open trade. The manual (strategies.txt, "Orders and trades"): "a trade is the resulting
@@ -44,6 +46,7 @@ interface OpenTrade {
   size: number;
   maxRunup: number;
   maxDrawdown: number;
+  commission: number; // the entry fee still carried by the open part of the trade
 }
 
 // One filled entry as the order commands see it: it holds a pyramiding slot and sizes the exits
@@ -117,6 +120,49 @@ function sig10(money: number): number {
   return Number(`${kept}e${Number(exp) - 9}`);
 }
 
+// A double's shortest decimal form as an exact decimal: mantissa × 10^exp.
+function toDecimal(x: number): { m: bigint; e: number } {
+  const [mantissa, exp] = x.toExponential().split("e");
+  const dot = mantissa!.indexOf(".");
+  const frac = dot < 0 ? 0 : mantissa!.length - dot - 1;
+  return { m: BigInt(mantissa!.replace(".", "")), e: Number(exp) - frac };
+}
+
+// num / den × 10^e (num, den > 0) rounded half-up to 10 significant digits, in exact decimal
+// arithmetic, as a double.
+function divideToCash(num: bigint, den: bigint, e: number): number {
+  if (num === 0n) return 0;
+  // Scale so that the integer quotient has exactly 10 digits.
+  let s = 9 - (num.toString().length - den.toString().length);
+  let q = s >= 0 ? (num * 10n ** BigInt(s)) / den : num / (den * 10n ** BigInt(-s));
+  if (q >= 10000000000n) s -= 1;
+  else if (q < 1000000000n) s += 1;
+  const n = s >= 0 ? num * 10n ** BigInt(s) : num;
+  const d = s >= 0 ? den : den * 10n ** BigInt(-s);
+  q = n / d;
+  if ((n % d) * 2n >= d) q += 1n;
+  return Number(`${q}e${e - s}`);
+}
+
+// Commission is booked as a cash flow rounded half-up to 10 significant digits of the amount's
+// shortest decimal form (the oracle's `_round_cash`, tier 2, measured on TradingView: "TV books each
+// commission cash flow rounded HALF-UP to TEN SIGNIFICANT DIGITS").
+function roundCash(amount: number): number {
+  if (!(amount > 0) || amount === Infinity) return amount;
+  const d = toDecimal(amount);
+  return divideToCash(d.m, 1n, d.e);
+}
+
+// The per-contract fee of strategy.commission.percent at `price`: price × value%, taken in exact
+// decimal arithmetic on the two shortest decimal forms and only then made a double (the oracle's
+// `_book_commission`, measured on TradingView: "the percent rate is the fill price times the rate in
+// EXACT DECIMAL arithmetic, converted to a double").
+function percentRate(price: number, value: number): number {
+  const p = toDecimal(price);
+  const v = toDecimal(value);
+  return Number(`${p.m * v.m}e${p.e + v.e - 2}`);
+}
+
 // pine2py wavealgo/strategy/engine.py의 주문 상태머신 구조(pending 주문 → 체결 → Position
 // 갱신, entry()의 반대 포지션 청산/pyramiding 가드, _fill_entry의 가중평균 추가 진입)를 시맨틱
 // 참조로 이식하되, **체결 시점은 pine2py를 따르지 않는다**: pine2py StrategyEngine은 market 주문을
@@ -169,6 +215,19 @@ export class StrategyState {
   processOrdersOnClose: boolean;
   // strategy(slippage=N): ticks every market or stop fill is moved against the order (see slipped).
   slippage: number;
+  // strategy(commission_type=, commission_value=): the fee every filled order pays (see
+  // bookCommission). commissionType is "percent" | "cash_per_contract" | "cash_per_order";
+  // commissionValue 0 charges nothing.
+  commissionType: string;
+  commissionValue: number;
+  // The entry fees of the open trades. They are already taken off strategy.netprofit (see
+  // updateNetProfit) and move into a closed trade's own commission when it closes.
+  openCommission: number;
+  // The commission pool of the order being filled (beginOrder/bookCommission): one TradingView
+  // order is charged one fee, however many fills (trades closed, reversal legs) it executes as.
+  private commLegs: number[];
+  private commBooked: number;
+  private commOrderQty: number;
   // The chart symbol's grids (setSymbol): syminfo.mintick, the tick grid minmove / pricescale, and
   // the lot grid 1 / lotsPerContract (syminfo.mincontract).
   mintick: number;
@@ -176,12 +235,11 @@ export class StrategyState {
   minmove: number;
   lotsPerContract: number;
 
-  // 계좌 속성 누적기(C165 셋째 슬라이스) — pine2py는 청산마다 Trade 객체를 리스트에 쌓고 속성을
-  // 매번 리스트 스캔(sum/len)으로 계산하지만, 여기서는 GOAL.md "bar loop 안 할당 제로"에 따라
-  // Trade 객체 없이 스칼라 누적기 6개로 동일한 관측값을 유지한다(commission 0 고정이라
-  // Trade.profit = (체결가-진입가)*qty*방향부호 하나면 충분 — engine.py _close_position/
-  // types.py Trade.profit 대조). 트레이드 개별 기록(entry/exit bar, comment)은 이후 슬라이스.
-  realizedPnl: number; // strategy.netprofit — 실현 손익 합(engine.py _realized_pnl)
+  // Account counters, updated as trades close (recordClosedTrade), on each closed trade's profit
+  // after commission.
+  // strategy.netprofit: the closed trades' net profit, less the entry fees of the open trades
+  // (see updateNetProfit).
+  realizedPnl: number;
   closedTrades: number; // strategy.closedtrades — 청산된 트레이드 수(리버스 1회도 1건)
   winTrades: number; // strategy.wintrades — profit > 0 트레이드 수(0은 win도 loss도 아님 — pine2py 부등호 동일)
   lossTrades: number; // strategy.losstrades — profit < 0 트레이드 수
@@ -286,6 +344,8 @@ export class StrategyState {
   pendingEntries: PendingEntry[];
   // Reused by processFills/processFillsAtClose to order one bar's entry fills without allocating.
   private entryScratch: PendingEntry[];
+  // Reused by closeAt to collect one closing order's closed trades before they are booked.
+  private closedScratch: ClosedTradeRecord[];
   // Counts order placements (entry orders and the close slot); orders placed on one bar are walked
   // in this order (positionAfterPlacedMarketOrders).
   orderSeq: number;
@@ -456,6 +516,12 @@ export class StrategyState {
     this.barClose = NaN;
     this.processOrdersOnClose = false;
     this.slippage = 0;
+    this.commissionType = "percent";
+    this.commissionValue = 0;
+    this.openCommission = 0;
+    this.commLegs = [];
+    this.commBooked = 0;
+    this.commOrderQty = 0;
     this.mintick = MINTICK;
     this.pricescale = PRICESCALE;
     this.minmove = MINMOVE;
@@ -546,6 +612,7 @@ export class StrategyState {
     this.consLossDayStartRealizedPnl = NaN;
     this.consLossLimitReached = false;
     this.entryScratch = [];
+    this.closedScratch = [];
   }
 
   // The position's entry as a single name: the oldest open trade's (strategy.position_entry_name —
@@ -644,14 +711,18 @@ export class StrategyState {
     return NaN;
   }
 
-  // An entry fill opens a new trade (never merges into an existing one) and a binding for it.
+  // An entry fill opens a new trade (never merges into an existing one) and a binding for it. Its
+  // fee is booked on the order being filled (beginOrder) and taken off strategy.netprofit at once.
   private openTradeAt(
     entryId: string, entryComment: string, fillPrice: number, signedQty: number,
     barIndex: number, barTimeMs: number,
   ): void {
+    const commission = this.bookCommission(Math.abs(signedQty), fillPrice);
+    this.openCommission += commission;
+    this.updateNetProfit();
     this.openTrades.push({
       entryId, entryComment, entryPrice: fillPrice, entryBarIndex: barIndex, entryTime: barTimeMs,
-      size: signedQty, maxRunup: 0, maxDrawdown: 0,
+      size: signedQty, maxRunup: 0, maxDrawdown: 0, commission,
     });
     this.entryBook.push({ entryId, bound: Math.abs(signedQty), entryPrice: fillPrice });
     this.posSize += signedQty;
@@ -722,6 +793,74 @@ export class StrategyState {
     this.pricescale = pricescale;
     this.minmove = minmove;
     this.lotsPerContract = lotsPerContract(mincontract);
+  }
+
+  // strategy(commission_type=, commission_value=) (codegen emits this once, before the first bar,
+  // when commission_value is not 0). props.txt: "Note that commission is applied on both entries and
+  // exits"; strategies.txt ("Commission"): "the broker emulator now applies a commission of 1% of the
+  // transaction size to each filled order".
+  setCommission(type: string, value: number): void {
+    if (type !== "percent" && type !== "cash_per_contract" && type !== "cash_per_order") {
+      throw new Error(`strategy(): unsupported commission_type '${String(type)}'`);
+    }
+    this.commissionType = type;
+    this.commissionValue = value;
+  }
+
+  // Starts the commission pool of one order's fill. `orderQty` is the order's whole quantity when it
+  // is known ahead of its legs — a reversal, whose closing and opening legs are one order — and 0
+  // otherwise (the legs are summed as they come).
+  private beginOrder(orderQty: number = 0): void {
+    this.commLegs.length = 0;
+    this.commBooked = 0;
+    this.commOrderQty = orderQty;
+  }
+
+  // Books one leg (`qty` contracts at `price`) of the order being filled and returns the fee to charge
+  // it. TradingView charges ONE fee per order over the order's whole quantity, rounded once
+  // (roundCash): percent is price × value% per contract, cash_per_contract is value per contract,
+  // cash_per_order is value once. That fee is split over the legs in proportion to their quantity,
+  // each share rounded again, and every leg is charged what its share adds to the shares already
+  // booked — so a single-leg order pays exactly the rounded fee. This is the oracle's
+  // `_book_commission`/`_book_flat_commission`/`_apply_booking` (tier 2, probe-measured on
+  // TradingView: a reversal's two legs share one fee; a cash_per_order reversal "pays it once and
+  // splits it over the two legs in qty proportion"). Proportions are taken over exact counts of 1e-8
+  // units, as TradingView carries every quantity (see toUnits).
+  private bookCommission(qty: number, price: number): number {
+    if (this.commissionValue === 0) return 0;
+    this.commLegs.push(qty);
+    let qtyTotal = this.commOrderQty;
+    if (qtyTotal === 0) {
+      let sum = 0n;
+      for (const q of this.commLegs) sum += BigInt(Math.round(q / 1e-8));
+      qtyTotal = Number(`${sum}e-8`);
+    }
+    const total =
+      this.commissionType === "percent"
+        ? roundCash(percentRate(price, this.commissionValue) * qtyTotal)
+        : this.commissionType === "cash_per_contract"
+          ? roundCash(this.commissionValue * qtyTotal)
+          : roundCash(this.commissionValue);
+    let target: number;
+    if (this.commLegs.length === 1 && this.commLegs[0] === qtyTotal) {
+      target = total;
+    } else {
+      const t = toDecimal(total);
+      const den = BigInt(Math.round(qtyTotal / 1e-8));
+      target = 0;
+      for (const q of this.commLegs) target += divideToCash(t.m * BigInt(Math.round(q / 1e-8)), den, t.e);
+    }
+    const amount = target - this.commBooked;
+    this.commBooked = target;
+    return amount;
+  }
+
+  // strategy.netprofit derived from the gross totals, the open trades' entry fees counted as a loss
+  // already. The oracle keeps no running netprofit either (tier 2, measured on TradingView: "TV keeps
+  // NO running netprofit accumulator: it derives netprofit from the gross totals, with an open
+  // position's entry commissions still pending"). grossLoss is kept negative here.
+  private updateNetProfit(): void {
+    this.realizedPnl = this.grossProfit - (-this.grossLoss + this.openCommission);
   }
 
   // Snaps an order's price level (an entry's limit/stop, or a level derived from a tick distance)
@@ -844,11 +983,13 @@ export class StrategyState {
   // 미실현 손익을 구해 러닝 최대/최소에 반영 — 둘 다 0 미만으로는 안 내려간다(TV: 한 번도 유리(불리)
   // 했던 적이 없으면 runup(drawdown)은 0). high/low가 NaN(마켓 전용 단위 테스트 기본값)이면 모든
   // 비교가 false라 안전하게 no-op(MEMORY.md C91 축).
-  // Per open trade, against its own entry price and size.
+  // Per open trade, against its own entry price and size, with its entry fee counted in (the oracle,
+  // tier 2, measured on TradingView at 0.05% commission: a long of 1 at 93761.9 whose worst low is
+  // 93500.0 "reports max_drawdown 308.78095 = (93761.9 - 93500.0) + 46.88095").
   updateTradeExcursion(high: number, low: number): void {
     for (const t of this.openTrades) {
-      const pnlAtHigh = (high - t.entryPrice) * t.size;
-      const pnlAtLow = (low - t.entryPrice) * t.size;
+      const pnlAtHigh = (high - t.entryPrice) * t.size - t.commission;
+      const pnlAtLow = (low - t.entryPrice) * t.size - t.commission;
       const bestPnl = pnlAtHigh > pnlAtLow ? pnlAtHigh : pnlAtLow;
       const worstPnl = pnlAtHigh < pnlAtLow ? pnlAtHigh : pnlAtLow;
       if (bestPnl > t.maxRunup) t.maxRunup = bestPnl;
@@ -879,6 +1020,7 @@ export class StrategyState {
     entryComment: "", exitComment: "", entryPrice: NaN, exitPrice: NaN,
     entryBarIndex: NaN, exitBarIndex: NaN, entryTime: NaN, exitTime: NaN,
     entryId: "", exitId: "", profit: NaN, size: NaN, maxRunup: NaN, maxDrawdown: NaN,
+    commission: NaN, profitPercent: NaN,
   };
 
   private closedTradeRecordAt(index: number): ClosedTradeRecord {
@@ -948,25 +1090,17 @@ export class StrategyState {
     return this.closedTradeRecordAt(index).exitTime;
   }
 
-  // strategy.closedtrades.commission(index)(C418) — commission 0 고정 기존 결정 그대로(주석
-  // "Trade 객체 없이 스칼라 누적기 6개로 동일한 관측값을 유지한다(commission 0 고정...)" 참조,
-  // engine.py Trade.commission도 항상 0.0). index 유효성만 다른 접근자와 동일하게 검증.
+  // strategy.closedtrades.commission(index): the fees the trade paid, entry and exit (see closeAt).
   closedTradeCommission(index: number): number {
     this.assertValidClosedTradeIndex("commission", index);
-    return 0;
+    return this.closedTradeRecordAt(index).commission;
   }
 
-  // strategy.closedtrades.profit_percent(index)(C312) — pine2py types.py Trade.profit_percent
-  // literal port(entry_price==0이면 0 — division-by-zero 방지, pine2py도 동일 가드 없이 ZeroDivisionError
-  // 크래시하므로 이 가드 자체는 TV 미검증 가설이지만 "조용한 오답 방지"보다 "크래시 방지"가 안전한
-  // 방향이라 채택). direction은 size의 부호로 판별(양수=롱, 음수=숏 — closedTradeSize와 동일 규약).
+  // strategy.closedtrades.profit_percent(index): the profit after commission over the trade's entry
+  // cost, its value plus its entry fee (see closeAt); 0 when that cost is 0.
   closedTradeProfitPercent(index: number): number {
     this.assertValidClosedTradeIndex("profit_percent", index);
-    const rec = this.closedTradeRecordAt(index);
-    if (rec.entryPrice === 0) return 0;
-    return rec.size >= 0
-      ? ((rec.exitPrice - rec.entryPrice) / rec.entryPrice) * 100
-      : ((rec.entryPrice - rec.exitPrice) / rec.entryPrice) * 100;
+    return this.closedTradeRecordAt(index).profitPercent;
   }
 
   closedTradeMaxRunup(index: number): number {
@@ -1020,25 +1154,36 @@ export class StrategyState {
     return this.openTradeAtIndex("size", index)?.size ?? NaN;
   }
 
-  // Commission is not modelled yet (always 0), the same as closedTradeCommission.
+  // strategy.opentrades.commission(index): the entry fee the open part of the trade carries.
   openTradeCommission(index: number): number {
-    return this.openTradeAtIndex("commission", index) === undefined ? NaN : 0;
+    return this.openTradeAtIndex("commission", index)?.commission ?? NaN;
   }
 
   // Unrealized profit of one open trade at the current close (codegen injects `$.close.get(0)`,
-  // see codegen.ts OPEN_TRADE_CLOSE_PRICE_METHODS).
+  // see codegen.ts OPEN_TRADE_CLOSE_PRICE_METHODS), net of its entry fee and of the fee an exit at
+  // that close would pay (a cash_per_order fee stays whole). This is the oracle's per-bar open trade
+  // profit (tier 2), and what TradingView plots (tier 1 resin-harness
+  // suites/strategy/tv/opentrades_profit_percent, one run per commission mode).
   openTradeProfit(closePrice: number, index: number): number {
     const t = this.openTradeAtIndex("profit", index);
-    return t === undefined ? NaN : (closePrice - t.entryPrice) * t.size;
+    return t === undefined ? NaN : this.openTradeNetProfit(t, closePrice);
   }
 
+  private openTradeNetProfit(t: OpenTrade, closePrice: number): number {
+    const v = this.commissionValue;
+    const exitFee =
+      this.commissionType === "cash_per_order"
+        ? v
+        : Math.abs(t.size) * (this.commissionType === "percent" ? closePrice * v * 0.01 : v);
+    return t.size * (closePrice - t.entryPrice) - t.commission - exitFee;
+  }
+
+  // The open profit over the trade's entry cost, its value plus its entry fee, as closedtrades.
   openTradeProfitPercent(closePrice: number, index: number): number {
     const t = this.openTradeAtIndex("profit_percent", index);
     if (t === undefined) return NaN;
-    if (t.entryPrice === 0) return 0;
-    return t.size > 0
-      ? ((closePrice - t.entryPrice) / t.entryPrice) * 100
-      : ((t.entryPrice - closePrice) / t.entryPrice) * 100;
+    const entryCost = Math.abs(t.size) * t.entryPrice + t.commission;
+    return entryCost === 0 ? 0 : (this.openTradeNetProfit(t, closePrice) / entryCost) * 100;
   }
 
   openTradeMaxRunup(index: number): number {
@@ -1054,15 +1199,31 @@ export class StrategyState {
   // ("Position sizing"): the default order size applies to "orders from strategy.entry() and
   // strategy.order() calls that do not include a qty argument". The oracle freezes the budget at
   // placement, also for a limit/stop order that fills bars later (tier 2, `_default_entry_budget`).
-  // Commission is not modeled, so the percent_of_equity budget carries no fee allowance yet.
+  // A percent_of_equity budget pays the order's commission out of itself: a cash_per_order fee comes
+  // off the budget here, a per-contract fee goes into the unit cost (unitCost).
   private defaultBudget(): number {
-    return this.qtyIsPercent ? this.equity(this.barClose) * this.defaultQty * 0.01 : this.defaultQty;
+    if (!this.qtyIsPercent) return this.defaultQty;
+    const money = this.equity(this.barClose) * this.defaultQty * 0.01;
+    if (this.commissionType === "cash_per_order") return Math.max(0, money - this.commissionValue);
+    return money;
+  }
+
+  // What one contract costs a default-sized order at `price`. Under percent_of_equity the budget is
+  // the whole investment, commission included, so a contract costs its price plus its fee. The
+  // oracle's `_default_entry_budget` (tier 2, measured on TradingView): "TradingView calculates the
+  // position size so that the total investment (position value + commission) equals the specified
+  // percentage of equity". A cash budget buys at the bare price.
+  private unitCost(price: number): number {
+    if (!this.qtyIsPercent) return price;
+    if (this.commissionType === "percent") return price * (1.0 + this.commissionValue * 0.01);
+    if (this.commissionType === "cash_per_contract") return price + this.commissionValue;
+    return price;
   }
 
   // Contracts a frozen money budget buys at `price`, floored to whole lots; NaN when nothing
   // sizable comes out (a non-positive budget, or no price to divide it by).
   private moneyQtyAt(money: number, price: number): number {
-    const raw = sig10(money) / price;
+    const raw = sig10(money) / this.unitCost(price);
     return raw > 0 && raw < Infinity ? this.floorToLots(raw) : NaN;
   }
 
@@ -1110,7 +1271,7 @@ export class StrategyState {
   // A fixed default_qty_value is returned as stated (see defaultOrderQty).
   defaultEntryQty(price: number): number {
     if (!this.qtyIsPercent && !this.qtyIsCash) return this.defaultQty;
-    const raw = sig10(this.defaultBudget()) / (Math.floor(price / this.mintick + 0.5) * this.mintick);
+    const raw = sig10(this.defaultBudget()) / this.unitCost(Math.floor(price / this.mintick + 0.5) * this.mintick);
     return Math.abs(raw) < Infinity ? this.floorToLots(raw) : 0;
   }
 
@@ -1137,14 +1298,39 @@ export class StrategyState {
     const exitWasBound = this.exitPending && (this.exitFromEntry === "" || this.hasBound(this.exitFromEntry));
     let remaining = qty >= size ? Infinity : qty;
     let closedQty = 0;
+    // Commission: each closed trade carries its share of the trade's entry fee (which leaves
+    // openCommission) plus the exit fee of the order being filled (beginOrder). percent and
+    // cash_per_contract book the exit fee trade by trade; a cash_per_order fee is one flat amount for
+    // the order, split over the closed trades in proportion to their quantity once all are known.
+    // The profit percent divides by the trade's entry cost: its value plus its entry fee. This is the
+    // oracle's closing fill (tier 2, measured on TradingView: closedtrades.profit_percent is
+    // "36.01317999999651 / (93761.90000000001 + 46.88095)" for 1 BTC at 0.05%).
+    const flatFee = this.commissionType === "cash_per_order";
+    const records = this.closedScratch;
+    records.length = 0;
     while (this.openTrades.length > 0 && remaining > dust) {
       const t = this.openTrades[0]!;
       const tradeQty = Math.abs(t.size);
       const whole = remaining >= tradeQty - dust;
       const take = whole ? tradeQty : remaining;
       const share = take / tradeQty;
-      const profit = (fillPrice - t.entryPrice) * sign * take;
-      this.recordClosedTrade({
+      let entryFee = t.commission;
+      if (!whole) {
+        const keep = 1 - take / tradeQty;
+        entryFee = t.commission * (1 - keep);
+        t.commission *= keep;
+      }
+      this.openCommission -= entryFee;
+      let profit = (fillPrice - t.entryPrice) * sign * take;
+      let commission = entryFee;
+      if (!flatFee) {
+        const exitFee = this.bookCommission(take, fillPrice);
+        profit -= entryFee;
+        commission += exitFee;
+        profit -= exitFee;
+      }
+      const entryCost = take * t.entryPrice + entryFee;
+      records.push({
         entryComment: t.entryComment,
         exitComment,
         entryPrice: t.entryPrice,
@@ -1159,6 +1345,8 @@ export class StrategyState {
         size: sign * take,
         maxRunup: t.maxRunup * share,
         maxDrawdown: t.maxDrawdown * share,
+        commission,
+        profitPercent: entryCost === 0 ? 0 : (profit / entryCost) * 100,
       });
       if (whole) {
         this.openTrades.shift();
@@ -1171,7 +1359,23 @@ export class StrategyState {
       remaining -= take;
       closedQty += take;
     }
-    if (this.openTrades.length === 0) this.posSize = 0;
+    if (flatFee && records.length > 0) {
+      const fee = this.bookCommission(closedQty, fillPrice);
+      for (const rec of records) {
+        const entryFee = rec.commission;
+        rec.commission += (fee * Math.abs(rec.size)) / closedQty;
+        rec.profit -= rec.commission;
+        const entryCost = Math.abs(rec.size) * rec.entryPrice + entryFee;
+        rec.profitPercent = entryCost === 0 ? 0 : (rec.profit / entryCost) * 100;
+      }
+    }
+    for (const rec of records) this.recordClosedTrade(rec);
+    records.length = 0;
+    if (this.openTrades.length === 0) {
+      this.posSize = 0;
+      this.openCommission = 0;
+    }
+    this.updateNetProfit();
     this.settleEntryBook(closedQty, bindingId);
     this.recalcAvgPrice();
     if (this.posSize === 0) this.entryBook.length = 0;
@@ -1188,9 +1392,9 @@ export class StrategyState {
   }
 
   // Books one closed trade: the record behind strategy.closedtrades.*(trade_num), the latest-trade
-  // snapshot fields, and the account counters.
+  // snapshot fields, and the account counters. The counters classify the trade on its profit after
+  // commission, as the oracle does in every commission mode. netprofit follows (updateNetProfit).
   private recordClosedTrade(rec: ClosedTradeRecord): void {
-    this.realizedPnl += rec.profit;
     this.closedTrades += 1;
     this.lastClosedEntryComment = rec.entryComment;
     this.lastClosedExitComment = rec.exitComment;
@@ -1207,19 +1411,14 @@ export class StrategyState {
     this.lastClosedMaxRunup = rec.maxRunup;
     this.lastClosedMaxDrawdown = rec.maxDrawdown;
     this.closedTradeRecords.push(rec);
-    // avg_winning_trade_percent/avg_losing_trade_percent(C674) — closedTradeProfitPercent와 동일 공식.
-    const profitPercent =
-      rec.entryPrice === 0 ? 0 : rec.size > 0
-        ? ((rec.exitPrice - rec.entryPrice) / rec.entryPrice) * 100
-        : ((rec.entryPrice - rec.exitPrice) / rec.entryPrice) * 100;
     if (rec.profit > 0) {
       this.winTrades += 1;
       this.grossProfit += rec.profit;
-      this.sumWinProfitPercent += profitPercent;
+      this.sumWinProfitPercent += rec.profitPercent;
     } else if (rec.profit < 0) {
       this.lossTrades += 1;
       this.grossLoss += rec.profit;
-      this.sumLossProfitPercent += profitPercent;
+      this.sumLossProfitPercent += rec.profitPercent;
     } else {
       this.evenTrades += 1;
     }
@@ -1670,6 +1869,7 @@ export class StrategyState {
     if (immediately) {
       // A market order at the close: slipped against the position (closing a long sells).
       const fill = this.slipped(currentClose ?? NaN, this.posSize > 0 ? -1 : 1);
+      this.beginOrder();
       this.closeAt(fill, q, cmt, currentBarIndex ?? NaN, StrategyState.closeExitId(id), currentBarTimeMs ?? NaN, id);
       return;
     }
@@ -1701,6 +1901,7 @@ export class StrategyState {
     const cmt = comment ?? "";
     if (immediately) {
       const fill = this.slipped(currentClose ?? NaN, this.posSize > 0 ? -1 : 1); // as in close()
+      this.beginOrder();
       this.closeAt(fill, Infinity, cmt, currentBarIndex ?? NaN, "", currentBarTimeMs ?? NaN);
       return;
     }
@@ -1826,6 +2027,7 @@ export class StrategyState {
     this.closeAllPending = false;
     if (this.posSize !== 0 && (ignoreId || this.hasBound(this.closeOrderId))) {
       // close_all has no entry id: its exit id is "" as on its immediately= path.
+      this.beginOrder();
       this.closeAt(
         this.slipped(fillPrice, this.posSize > 0 ? -1 : 1), this.closeQty, this.closeOrderComment, barIndex,
         ignoreId ? "" : StrategyState.closeExitId(this.closeOrderId), barTimeMs,
@@ -1928,7 +2130,18 @@ export class StrategyState {
     // max_intraday_filled_orders와 동일한 "위 리버스 청산까지만 허용" 게이트에 합류.
     const drawdownForbidden =
       this.drawdownLimitReached || this.intradayLossLimitReached || this.consLossLimitReached;
-    if (this.posSize !== 0 && this.posSize > 0 !== sign > 0) {
+    // A reversal is one order executed as two legs, so both share one commission pool stamped with
+    // the order's whole quantity: the position it closes plus what it opens (nothing when a gate
+    // below keeps it from opening). The oracle measured it on TradingView (see bookCommission).
+    const reverses = this.posSize !== 0 && this.posSize > 0 !== sign > 0;
+    let orderQty = 0;
+    if (reverses) {
+      const openQty = Number.isNaN(this.maxPositionSizeValue) ? qty : Math.max(0, Math.min(qty, this.maxPositionSizeValue));
+      const opens = !(directionForbidden || intradayLimitReached || drawdownForbidden) && openQty > 0;
+      orderQty = toUnits(Math.abs(this.posSize) + (opens ? openQty : 0), this.lotsPerContract);
+    }
+    this.beginOrder(orderQty);
+    if (reverses) {
       // 반대 방향이면 리버스(TV: 반대 direction entry는 기존 포지션 청산 후 진입 — pine2py
       // entry()의 콜타임 `_close_position` + `_fill_entry` "새 Position" 분기를 체결 시점으로
       // 옮긴 것, DIVERGENCES #67). 청산을 실현 손익으로 기록(closedtrades 1건)한 뒤 flat이 되어
@@ -1979,7 +2192,11 @@ export class StrategyState {
     // consume it unfilled.
     let qty = this.orderQtyAuto ? this.moneyQtyAt(this.orderQty, orderFill) : this.orderQty;
     if (!(qty > 0)) return;
-    if (this.posSize !== 0 && this.posSize > 0 !== sign > 0) {
+    const opposite = this.posSize !== 0 && this.posSize > 0 !== sign > 0;
+    // An order that nets through an opposite position into a new one is a reversal: its two legs
+    // share one commission pool over its whole quantity, as in fillPendingEntry.
+    this.beginOrder(opposite && qty > Math.abs(this.posSize) ? qty : 0);
+    if (opposite) {
       // 반대 방향은 |posSize|와 상쇄 — 축소분을 실현 손익으로 기록(closeAt 부분 산식 재사용,
       // C168 인프라의 자연 확장: avg/entryId/entryCount 유지, 전량 도달 시 flat 리셋 + 브래킷
       // 소멸까지 기존 경로와 동치). qty가 |posSize|를 초과하면 잔여분이 아래 분기에서 반대
@@ -2050,6 +2267,7 @@ export class StrategyState {
             : this.exitOrderComment;
     // An exit with from_entry closes at most its entry id's bound quantity; the fill itself
     // is FIFO like every closing fill (closeAt).
+    this.beginOrder();
     if (from === "") {
       this.closeAt(exitFill, this.exitQty, exitCmt, barIndex, this.exitOrderId, barTimeMs);
     } else {

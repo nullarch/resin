@@ -941,14 +941,8 @@ export const STRATEGY_RUNTIME_PROPS: ReadonlyMap<string, string> = new Map([
   ["max_runup_percent", "$.strategy.maxRunup / $.strategy.troughEquityAtMaxRunup * 100"],
 ]);
 
-// strategy.commission.*(C288, wild 1위 클러스터 지배 서브군 — 1,023/1,034건)는 strategy()의
-// commission_type= kwarg 값 전용 2단 중첩 네임스페이스 상수 — pine2py
-// wavealgo/strategy/constants.py COMMISSION_PERCENT="percent"/COMMISSION_CASH_PER_ORDER=
-// "cash_per_order"/COMMISSION_CASH_PER_CONTRACT="cash_per_contract" 리터럴 포트(python 소스 직접
-// 확인). pine2py 엔진 자체는 이 값을 실제 커미션 계산에 쓰지만(_calc_commission) codegen이
-// strategy() 선언 전체를 주석으로만 방출해 commission_type=/commission_value=를 엔진에 배선하지
-// 않는 갭이 있음 — pine2js도 동일하게 순수 discard(commission 0 고정, C173 주석 참조)라 값
-// 자체는 currency/format(C284)과 동일한 컴파일타임 문자열 폴딩이면 충분.
+// strategy.commission.*: the values of strategy()'s commission_type= argument, folded to strings at
+// compile time. The strategy() call hands the chosen one to the engine (StrategyState.setCommission).
 export const STRATEGY_COMMISSION_CONSTANTS: ReadonlyMap<string, string> = new Map([
   ["percent", "percent"],
   ["cash_per_order", "cash_per_order"],
@@ -2186,6 +2180,11 @@ export interface AnalyzedProgram {
   // strategy(slippage=N): ticks added against the order to every market and stop fill (0 = none).
   // codegen passes it as configure()'s seventh argument.
   strategySlippage: number;
+  // strategy(commission_type=, commission_value=): the fee every filled order pays. The type is
+  // "percent" (TradingView's default), "cash_per_contract" or "cash_per_order"; a value of 0 charges
+  // nothing. codegen passes both to $.strategy.setCommission when the value is not 0.
+  strategyCommissionType: string;
+  strategyCommissionValue: number;
   // strategy() 지시어의 currency= kwarg(C332, next_hint(C331) 1순위) — 위 세 숫자 필드와 달리
   // '지원하지 않는 strategy 속성' 에러를 내던 strategy.account_currency의 값 소스. TV 기본값은
   // currency.NONE("계좌 통화 = 심볼 통화")인데 이 엔진의 syminfo.currency/basecurrency가 이미
@@ -3469,6 +3468,8 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
     strategyQtyIsCash: false,
     strategyProcessOrdersOnClose: false,
     strategySlippage: 0,
+    strategyCommissionType: "percent",
+    strategyCommissionValue: 0,
     strategyCurrency: SYMINFO_STRING_PROPS.get("currency")!,
     stmtCalls: new Set(),
     funcs: new Map(),

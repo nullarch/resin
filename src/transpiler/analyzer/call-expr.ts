@@ -38,6 +38,7 @@ import {
   SYMINFO_NUMBER_PROPS,
   EARNINGS_NUMBER_PROPS,
   DAYOFWEEK_CONSTANTS,
+  STRATEGY_COMMISSION_CONSTANTS,
 } from "../analyzer";
 import { literalOffsetValue } from "./index-access";
 import { isUdtConstructorCall } from "./constructors";
@@ -4983,6 +4984,39 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           } else {
             prog.errors.push(
               `'strategy()' 'slippage' argument only supports an int literal >= 0 (requires a compile-time constant) (L${expr.line}:${expr.col})`,
+            );
+          }
+        }
+        // commission_type/commission_value charge a fee on every filled order (StrategyState
+        // bookCommission). Both must be compile-time constants: dropping them would silently
+        // overstate every trade's profit. The type defaults to percent, as in TradingView.
+        const ctype = directiveArgExpr(expr, STRATEGY_PARAM_NAMES, "commission_type");
+        if (ctype !== undefined) {
+          let commissionType: string | undefined;
+          if (
+            ctype.kind === "DotAccess" && ctype.obj.kind === "DotAccess" && ctype.obj.obj.kind === "Identifier" &&
+            ctype.obj.obj.name === "strategy" && ctype.obj.attr === "commission"
+          ) {
+            commissionType = STRATEGY_COMMISSION_CONSTANTS.get(ctype.attr);
+          } else if (ctype.kind === "StringLiteral") {
+            commissionType = STRATEGY_COMMISSION_CONSTANTS.get(ctype.value);
+          }
+          if (commissionType !== undefined) {
+            prog.strategyCommissionType = commissionType;
+          } else {
+            prog.errors.push(
+              `'strategy()' 'commission_type' argument only supports strategy.commission.percent/cash_per_contract/cash_per_order (requires a compile-time constant) (L${expr.line}:${expr.col})`,
+            );
+          }
+        }
+        const cval = directiveArgExpr(expr, STRATEGY_PARAM_NAMES, "commission_value");
+        if (cval !== undefined) {
+          const cvalNum = resolveDirectiveConstNumber(cval, prog);
+          if (cvalNum !== undefined && cvalNum >= 0) {
+            prog.strategyCommissionValue = cvalNum;
+          } else {
+            prog.errors.push(
+              `'strategy()' 'commission_value' argument only supports a number literal >= 0 (requires a compile-time constant) (L${expr.line}:${expr.col})`,
             );
           }
         }

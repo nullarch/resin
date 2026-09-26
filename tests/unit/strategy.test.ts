@@ -8440,6 +8440,226 @@ describe("strategy(slippage=N) E2E", () => {
   });
 });
 
+// ── strategy(commission_type=, commission_value=) ──
+// props.txt: "Note that commission is applied on both entries and exits ... Percentage of the
+// transacted value (argument: strategy.commission.percent) - imposes a commission on each order equal
+// to the specified percentage. Currency per contract (argument: strategy.commission.cash_per_contract)
+// - imposes a commission on each contract. Currency per order (argument:
+// strategy.commission.cash_per_order) - imposes a commission on each order."
+// Evidence: probes C15a/C15b/C15c (the manual's arithmetic), tier 1 resin-harness
+// suites/strategy/tv/slippage_direction (2303 trades at 0.1%) and tv/opentrades_profit_percent (one
+// run per mode), and the oracle's measured booking (one fee per order, rounded to 10 significant
+// digits, a reversal's legs sharing it; entry fees counted into netprofit at once).
+describe("StrategyState commission (a fee on every filled order)", () => {
+  function withFee(type: string, value: number): StrategyState {
+    const st = new StrategyState();
+    st.configure(1, 1, 100000);
+    st.setCommission(type, value);
+    return st;
+  }
+
+  it("percent: 0.1% of each order's value, entry and exit (probe C15a: 100 - 1.0 - 1.1 = 97.9)", () => {
+    const st = withFee("percent", 0.1);
+    st.entry("L", "long", 10);
+    st.processFills(100, 101, 99, 1);
+    // The entry fee is taken off netprofit as soon as the trade opens.
+    expect(st.openTradeCommission(0)).toBe(1);
+    expect(st.realizedPnl).toBe(-1);
+    expect(st.equity(100)).toBe(99999);
+    st.close("L");
+    st.processFills(110, 111, 109, 3);
+    expect(st.closedTradeProfit(0)).toBeCloseTo(97.9, 12);
+    expect(st.closedTradeCommission(0)).toBeCloseTo(2.1, 12);
+    // profit_percent divides by the entry cost: the trade's value plus its entry fee.
+    expect(st.closedTradeProfitPercent(0)).toBeCloseTo((97.9 / 1001) * 100, 12);
+    expect(st.realizedPnl).toBeCloseTo(97.9, 12);
+    expect(st.winTrades).toBe(1);
+  });
+
+  it("cash_per_contract: 2 per contract on both legs (probe C15b: 100 - 2*10*2 = 60)", () => {
+    const st = withFee("cash_per_contract", 2);
+    st.entry("L", "long", 10);
+    st.processFills(100, 101, 99, 1);
+    st.close("L");
+    st.processFills(110, 111, 109, 3);
+    expect(st.closedTradeProfit(0)).toBe(60);
+    expect(st.closedTradeCommission(0)).toBe(40);
+  });
+
+  it("cash_per_order: 5 per order (probe C15c: 100 - 5*2 = 90)", () => {
+    const st = withFee("cash_per_order", 5);
+    st.entry("L", "long", 10);
+    st.processFills(100, 101, 99, 1);
+    st.close("L");
+    st.processFills(110, 111, 109, 3);
+    expect(st.closedTradeProfit(0)).toBe(90);
+    expect(st.closedTradeCommission(0)).toBe(10);
+  });
+
+  it("a trade that loses only its fees is a losing trade", () => {
+    const st = withFee("cash_per_order", 5);
+    st.entry("L", "long", 1);
+    st.processFills(100, 101, 99, 1);
+    st.close("L");
+    st.processFills(100, 101, 99, 2);
+    expect(st.closedTradeProfit(0)).toBe(-10);
+    expect(st.lossTrades).toBe(1);
+    expect(st.evenTrades).toBe(0);
+  });
+
+  it("a cash_per_order reversal pays one fee, split over its two legs by quantity (15 / 10 / 15)", () => {
+    // The oracle's CommCashOrderProbe, measured on TradingView (fee 10, 1-contract long -> short ->
+    // long -> close_all): "netprofit steps by -10 per reversal (total commission 40 over 4 orders),
+    // and the closed trades report 15 / 10 / 15".
+    const st = withFee("cash_per_order", 10);
+    st.entry("L", "long", 1);
+    st.processFills(100, 101, 99, 1);
+    expect(st.realizedPnl).toBe(-10);
+    st.entry("S", "short", 1);
+    st.processFills(101, 102, 100, 2);
+    expect(st.realizedPnl).toBe(-19); // (1 - 15) closed, less the 5 the open short carries
+    st.entry("L2", "long", 1);
+    st.processFills(102, 103, 101, 3);
+    st.close_all();
+    st.processFills(103, 104, 102, 4);
+    expect([0, 1, 2].map((i) => st.closedTradeCommission(i))).toEqual([15, 10, 15]);
+    expect([0, 1, 2].map((i) => st.closedTradeProfit(i))).toEqual([-14, -11, -14]);
+    expect(st.realizedPnl).toBe(-39);
+  });
+
+  it("a percent reversal books one fee over the order's whole quantity", () => {
+    const st = withFee("percent", 1);
+    st.entry("L", "long", 1);
+    st.processFills(100, 101, 99, 1); // fee 1
+    st.entry("S", "short", 3);
+    st.processFills(110, 111, 109, 2); // one order of 4 at 110: fee 4.4, 1.1 closing + 3.3 opening
+    expect(st.closedTradeCommission(0)).toBeCloseTo(2.1, 12);
+    expect(st.openTradeCommission(0)).toBeCloseTo(3.3, 12);
+    expect(st.realizedPnl).toBeCloseTo(10 - 2.1 - 3.3, 12);
+  });
+
+  it("a partial close takes its share of the entry fee; the rest stays with the open trade", () => {
+    const st = withFee("percent", 1);
+    st.entry("L", "long", 4);
+    st.processFills(100, 101, 99, 1); // fee 4
+    st.close("L", 2);
+    st.processFills(110, 111, 109, 2); // exit fee 2 * 110 * 1% = 2.2
+    expect(st.closedTradeCommission(0)).toBeCloseTo(4.2, 12);
+    expect(st.closedTradeProfit(0)).toBeCloseTo(20 - 2 - 2.2, 12);
+    expect(st.openTradeCommission(0)).toBe(2);
+    expect(st.realizedPnl).toBeCloseTo(15.8 - 2, 12);
+  });
+
+  it("an exit closing several trades is one order: one fee over its whole quantity", () => {
+    const st = withFee("cash_per_order", 6);
+    st.configure(1, 2, 100000);
+    st.entry("A", "long", 1);
+    st.processFills(100, 101, 99, 1);
+    st.entry("B", "long", 2);
+    st.processFills(100, 101, 99, 2);
+    st.close_all();
+    st.processFills(100, 101, 99, 3); // 6 split 1:2 over the two closed trades
+    expect(st.closedTradeCommission(0)).toBe(8);
+    expect(st.closedTradeCommission(1)).toBe(10);
+  });
+
+  it("each fee is rounded half-up to 10 significant digits of its shortest decimal form", () => {
+    const third = withFee("cash_per_contract", 0.3333333333333333);
+    third.entry("L", "long", 1);
+    third.processFills(100, 101, 99, 1);
+    expect(third.openTradeCommission(0)).toBe(0.3333333333);
+    const half = withFee("cash_per_contract", 0.12345678905);
+    half.entry("L", "long", 1);
+    half.processFills(100, 101, 99, 1);
+    expect(half.openTradeCommission(0)).toBe(0.1234567891);
+  });
+
+  it("opentrades.profit/profit_percent count the entry fee and the fee of an exit at the close", () => {
+    // Tier 1 resin-harness suites/strategy/tv/opentrades_profit_percent (80/80 bars per mode).
+    const pct = withFee("percent", 1);
+    pct.entry("L", "long", 4);
+    pct.processFills(100, 101, 99, 1); // entry fee 4
+    expect(pct.openTradeProfit(101, 0)).toBeCloseTo(4 - 4 - 4 * 1.01, 12);
+    expect(pct.openTradeProfitPercent(101, 0)).toBeCloseTo((-4.04 / 404) * 100, 12);
+    const flat = withFee("cash_per_order", 0.12);
+    flat.entry("L", "long", 4);
+    flat.processFills(100, 101, 99, 1);
+    flat.close("L", 2);
+    flat.processFills(100, 101, 99, 2);
+    // The remaining half carries half the entry fee, but an exit would still pay the whole fee.
+    expect(flat.openTradeProfit(101, 0)).toBeCloseTo(2 - 0.06 - 0.12, 12);
+  });
+
+  it("a trade's max drawdown and run-up count its entry fee", () => {
+    const st = withFee("cash_per_contract", 1);
+    st.entry("L", "long", 1);
+    st.processFills(100, 101, 99, 1);
+    st.processFills(100, 105, 97, 2);
+    expect(st.openTradeMaxDrawdown(0)).toBe(4); // (100 - 97) + 1
+    expect(st.openTradeMaxRunup(0)).toBe(4); // (105 - 100) - 1
+  });
+
+  describe("percent_of_equity sizing pays the fee out of the budget (10% of 100000 at 100)", () => {
+    function sized(type: string | null, value: number, qtyIsCash = false): number {
+      const st = new StrategyState();
+      st.configure(qtyIsCash ? 10000 : 10, 1, 100000, !qtyIsCash, qtyIsCash);
+      if (type !== null) st.setCommission(type, value);
+      st.barClose = 100;
+      st.entry("L", "long");
+      st.processFills(100, 101, 99, 1);
+      return st.posSize;
+    }
+    // The oracle's _default_entry_budget (tier 2, measured on TradingView): "the total investment
+    // (position value + commission) equals the specified percentage of equity".
+    it("no fee: 10000 / 100 = 100", () => expect(sized(null, 0)).toBe(100));
+    it("percent 0.1: 10000 / (100 * 1.001) = 99.9 → 99", () => expect(sized("percent", 0.1)).toBe(99));
+    it("cash_per_contract 1: 10000 / 101 = 99.01 → 99", () => expect(sized("cash_per_contract", 1)).toBe(99));
+    it("cash_per_order 5: (10000 - 5) / 100 = 99.95 → 99", () => expect(sized("cash_per_order", 5)).toBe(99));
+    it("a cash budget buys at the bare price: 10000 / 100 = 100", () => expect(sized("percent", 0.1, true)).toBe(100));
+  });
+});
+
+describe("strategy(commission_type=, commission_value=) E2E", () => {
+  const data: OHLCVData = {
+    open: [100, 101, 103, 102],
+    high: [101, 102, 104, 103],
+    low: [99, 100, 102, 101],
+    close: [100.5, 101.5, 103.5, 102.5],
+    volume: [1, 1, 1, 1],
+  };
+  const src = (args: string) =>
+    [
+      `strategy("s", initial_capital=100000, ${args})`,
+      "if bar_index == 0",
+      '    strategy.entry("L", strategy.long, qty=2)',
+      "if bar_index == 1",
+      '    strategy.close("L")',
+      "var float __net = na",
+      "__net := strategy.netprofit",
+    ].join("\n");
+
+  it("hands the fee to the engine; the type defaults to percent", () => {
+    expect(transpileCode(src("commission_type=strategy.commission.cash_per_order, commission_value=5"))).toContain(
+      '$.strategy.setCommission("cash_per_order", 5);',
+    );
+    expect(transpileCode(src("commission_value=0.1"))).toContain('$.strategy.setCommission("percent", 0.1);');
+    expect(transpileCode(src("commission_type=strategy.commission.percent, commission_value=0"))).not.toContain(
+      "setCommission",
+    );
+  });
+
+  it("netprofit drops by the entry fee on the fill bar and by the exit fee on the close", () => {
+    const result = runPipeline(src("commission_type=strategy.commission.cash_per_order, commission_value=5"), data);
+    expect(result.bars.map((b) => b["var:__net"])).toEqual([0, -5, (103 - 101) * 2 - 10, -6]);
+  });
+
+  it("rejects a commission_type or commission_value that is not a compile-time constant", () => {
+    const errs = transpileErrors(['t = "percent"', 'strategy("s", commission_type=t, commission_value=close)'].join("\n"));
+    expect(errs.some((e) => e.includes("'commission_type' argument only supports"))).toBe(true);
+    expect(errs.some((e) => e.includes("'commission_value' argument only supports"))).toBe(true);
+  });
+});
+
 // The chart symbol's tick and lot grids come in through transpile's syminfo option. A TradingView
 // run happens on a symbol: tier 1 resin-harness suites/strategy/tv/barupdn runs on EURUSD (mintick
 // 0.00001, mincontract 0.0001), and its first 10%-of-equity short buys 87927.5 units at 1.1373 —
