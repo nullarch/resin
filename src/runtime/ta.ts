@@ -271,22 +271,77 @@ export function cross(state: CrossState, a: number, b: number): boolean {
 export interface WmaState {
   buffer?: number[];
   writeIdx?: number;
+  count?: number;
+  last?: number;
+}
+
+// ta.wma - Weighted Moving Average, weight(oldest)=1 ... weight(newest)=length. The reference only
+// says "`na` values in the `source` series are ignored" (ref_v6_ta_math.txt ta.wma); TradingView
+// runs it as the oracle measured it (pynecore lib/ta.py wma, probes m560):
+//   - an na source is na on its bar and does NOT compact the window: the call still advances it by
+//     one, carrying the last non-na value forward ("an na bar carries the previous value forward, so
+//     the average runs over the last `length` bars, not over the last `length` non-na values");
+//   - na until `length` non-na values have arrived (a leading na stays out of every window);
+//   - the window advances once per execution of the call site, not once per bar (a builtin's own
+//     series count its executions: pynecore core/series.py `compacted`, set for the lib machines,
+//     turns off the per-bar fill script series get), so a gated call averages its own last `length`
+//     executions (twin gated_wma); a loop site re-derives each same-bar execution from the bar-start
+//     state (rt.ta.loopState);
+//   - the weighted sum is re-run over the whole window on every bar, oldest first
+//     (`summ = summ + y * weight`, weight 1, 2, ... length): "summing newest-first, or weighting
+//     with (length - i) * length the way the reference pseudocode does, drifts on more than half of
+//     the bars ... an O(1) rolling update gives different last bits" (tier 1 ta_246_wma_exact
+//     prints the difference to TradingView's value times 1e15). The divisor is 1 + 2 + ... + length,
+//     an integer the double holds exactly.
+export function wma(state: WmaState, value: number, length: number): number {
+  length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조)
+  if (!(length >= 1)) return NaN; // the oracle asserts length > 0: no answer to follow
+  if (state.buffer === undefined) {
+    state.buffer = new Array(length).fill(NaN);
+    state.writeIdx = 0;
+    state.count = 0;
+    state.last = NaN;
+  }
+  const sourceNa = Number.isNaN(value);
+  if (!sourceNa) {
+    state.count! += 1;
+    state.last = value;
+  }
+  const buffer = state.buffer;
+  const writeIdx = state.writeIdx!;
+  buffer[writeIdx] = state.last!;
+  state.writeIdx = (writeIdx + 1) % length;
+  if (sourceNa || state.count! < length) return NaN;
+
+  // The oldest slot is the one written next.
+  const oldest = state.writeIdx;
+  let summ = 0;
+  let weight = 0;
+  for (let i = 0; i < length; i++) {
+    weight += 1;
+    summ = summ + buffer[(oldest + i) % length]! * weight;
+  }
+  return summ / ((length * (length + 1)) / 2);
+}
+
+export interface CogWindowState {
+  buffer?: number[];
+  writeIdx?: number;
   sum?: number;
   weightedSum?: number;
 }
 
-// ta.wma - Weighted Moving Average: weight(oldest)=1 ... weight(newest)=length, WMA = weightedSum/weightTotal
-// (weightTotal = length*(length+1)/2). pine2py wavealgo/ta/wma.py recomputes the weighted sum from a
-// list window every bar (O(length)); pine2js reuses ta.sma's fixed-width circular buffer (single
-// allocation on first call, GOAL.md "bar loop 안 할당 제로") plus an O(1) incremental update derived
-// algebraically from the rolling-window recurrence:
+// The running sums ta.cog composes (see cog below): a fixed-width window of the last `length` calls
+// whose plain sum and weighted sum (weight(oldest)=1 ... weight(newest)=length) are updated in O(1)
 //   S_{t+1} = S_t - Sum_t + newValue*length   (S=weighted sum, Sum=plain sum of the window before this bar)
 // Derivation: dropping the oldest element a_1 (weight 1) shifts every remaining element's weight down by
 // 1 and appends newValue at weight=length: S_{t+1} = sum_{i=2..L} a_i*(i-1) + newValue*L
-// = (S_t - a_1) - (Sum_t - a_1) + newValue*L = S_t - Sum_t + newValue*L (a_1 cancels — same NaN-recompute
-// pattern as ta.sma's `sum`, using `state.writeIdx` post-increment as the new oldest-element position).
-export function wma(state: WmaState, value: number, length: number): number {
-  length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조)
+// = (S_t - a_1) - (Sum_t - a_1) + newValue*L = S_t - Sum_t + newValue*L (a_1 cancels). An na in the
+// window makes both sums na until it leaves. This was ta.wma's machine before wma took the oracle's
+// forward-filled window; cog's own na rule (the oracle's na-compacted window, lib/ta.py cog) is not
+// this one and is left to its own fix.
+function cogWindow(state: CogWindowState, value: number, length: number): number {
+  length = Math.trunc(length);
   if (state.buffer === undefined) {
     state.buffer = new Array(length).fill(NaN);
     state.writeIdx = 0;
@@ -389,16 +444,15 @@ export function alma(state: AlmaState, value: number, length: number, offsetMult
 }
 
 export interface CogState {
-  inner?: WmaState;
+  inner?: CogWindowState;
 }
 
 // ta.cog - Center of Gravity oscillator: cog = -num/denom over a fixed window, where (pine2py
 // wavealgo/ta/cog.py, get(i) 표기, i=0=현재바(최신)..i=length-1=가장 오래된 바)
 // num=Σ source.get(i)*(i+1) (newest weight=1, oldest weight=length), denom=Σ source.get(i)(=state.sum).
-// This positional weighting is the exact mirror of ta.wma's own weight(oldest)=1..weight(newest)=length
-// convention (get(i) 표기로는 wma_weight(i)=length-i) — same "compose from an already-implemented TA"
-// principle as linreg (C41): rather than deriving a new O(1) recurrence, reuse rt.ta.wma's internal
-// running totals (state.sum=Σv_i, state.weightedSum=Σv_i*(length-i)) via the identity
+// This positional weighting is the exact mirror of the weight(oldest)=1..weight(newest)=length
+// convention (get(i) 표기로는 wma_weight(i)=length-i) — rather than deriving a new O(1) recurrence,
+// reuse cogWindow's running totals (state.sum=Σv_i, state.weightedSum=Σv_i*(length-i)) via the identity
 //   weightedSum = Σv_i*(length-i) = length*S - Σ(v_i*i)  =>  Σ(v_i*i) = length*S - weightedSum
 //   num = Σv_i*(i+1) = Σ(v_i*i) + S = (length+1)*S - weightedSum
 // (derivation verified against a brute-force port with scratch/probe_cog.mjs — sample10/tie/
@@ -408,7 +462,7 @@ export function cog(state: CogState, value: number, length: number): number {
   if (state.inner === undefined) {
     state.inner = {};
   }
-  const wmaVal = wma(state.inner, value, length);
+  const wmaVal = cogWindow(state.inner, value, length);
   if (Number.isNaN(wmaVal)) return NaN;
   const sum = state.inner.sum!;
   if (sum === 0) return NaN;
@@ -427,22 +481,18 @@ export interface HmaState {
 // wavealgo/ta/hma.py). Both are pure derivations of `length`, so — exactly like sma's buffer size
 // (C16) — they're safe to fix from the first call's `length` value only; TA_REGISTRY.lengthArgIndex
 // hard-errors a series length the same way it does for sma, guaranteeing this.
-// Rather than deriving a new O(1) recurrence, this reuses rt.ta.wma three times (half/full/outer)
-// inside one taSlot's state object (VwmaState/StdevState precedent — multiple sub-buffers of
-// differing roles nested in a single slot). pine2py only appends to `diff_window` (the outer WMA's
-// input) when *both* inner WMAs are non-NaN (hma.py L55-56 early-return before the append) — so the
-// outer wma() call is skipped entirely on bars where either inner WMA is still NaN (warm-up or
-// poison-recompute), instead of being fed a poisoned/NaN diff. This is the same "conditional
-// advance" shape as cmo's gains/losses append-on-non-NaN (C31), just applied to a whole nested TA
-// call instead of a buffer push. The outer window's weight direction (oldest=1..newest=sqrt_len)
-// matches wma's own oldest=1..newest=length convention (hma.py's diff_window is append-only, so
-// window[-sqrt_len:] is oldest-to-newest) — confirmed by hand-tracing hma.py before implementing.
+// It runs rt.ta.wma three times (half/full/outer) inside one taSlot's state object, the way the
+// oracle does (pynecore lib/ta.py hma): an na source returns na before either inner wma runs, and
+// the outer wma runs only when both inner ones are valued. A wma that does not run does not advance
+// (a builtin's window counts its executions), so an na source leaves all three windows where they
+// were — unlike ta.wma's own na, which advances its window with the last value carried forward.
 export function hma(state: HmaState, value: number, length: number): number {
   if (state.half === undefined) {
     state.half = {};
     state.full = {};
     state.outer = {};
   }
+  if (Number.isNaN(value)) return NaN;
   const halfLen = Math.max(1, Math.trunc(length / 2));
   const sqrtLen = Math.max(1, Math.trunc(Math.sqrt(length)));
 
@@ -1451,43 +1501,58 @@ export function linregVarLen(state: LinregVarLenState, value: number, length: nu
   return linregStep(state, value, length, offset);
 }
 
-// ta.wma(source, length) - length가 series인 변형(C550, 같은 묶음). 버퍼 메커니즘은 highestVarLen과
-// 완전 동형 - 값 계산만 선형 가중 평균(창 안 위치 가중치 oldest=1..newest=len, 분모
-// len*(len+1)/2). **median/linreg와 달리 pine2py는 이 축의 오라클이 못 된다**: wavealgo/ta/wma.py는
-// context 모드에서 첫 성공 호출의 length로 state["window"] 크기를 영구 고정하는 인크리멘탈이고
-// (이후 length가 변해도 창 크기는 그대로, _calc_wma가 창 자체 길이로 가중치를 매겨 무의미한 값),
-// last_idx를 갱신만 하고 비교하지 않아 같은 바 반복 호출마다 pop/append로 창이 다중 전진하는
-// latent 버그도 sma.py와 동일하게 보유한다(소스 직접 확인 2026-08-01 - smaVarLen #179와 완전히
-// 같은 패턴). GOAL.md "알려진 버그는 따르지 않는다" 원칙에 따라 TV 문서 정의(선형 가중 이동평균)
-// 대로 hand-verified 구현하고 DIVERGENCES #181에 등재 - 오라클은 "series 한정자 + 값은 상수" 퇴화
-// 케이스(oracle/cases/ta_wma_varlen.pine)로만 버퍼/워밍업/NaN 메커니즘을 대조한다. 엣지:
-// length<1은 pine2py가 빈 창 가중합 0/0 ZeroDivisionError 크래시(python 직접 확인)라 na 자체
-// 결정, length=NaN은 na 전파(TV 미검증 가설), 창 안 NaN 하나면 즉시 NaN(고정 wma()와 동일).
-export function wmaVarLen(state: ExtremeVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
+export interface WmaVarLenState {
+  buffer?: Float64Array;
+  writeIdx?: number;
+  lastBarIdx?: number;
+  count?: number;
+  last?: number;
+  barCount?: number;
+  barLast?: number;
+}
+
+// ta.wma(source, length) with a series length: the fixed-length machine above (the oracle's, lib/ta.py
+// wma, which reads `length` on every call) over the call site's whole forward-filled history, so a
+// length that grows reads values the window of a shorter length already passed. The history holds
+// one slot per execution of the call site, like the fixed ring; the variant is bar-keyed (no
+// rt.ta.loopState copy): a second execution on the same bar rewrites that bar's slot from the
+// bar-start count and last value. The oracle asserts length > 0 (no answer for 0, a negative or an
+// na length): resin answers na and keeps advancing the history.
+export function wmaVarLen(state: WmaVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
   if (state.buffer === undefined) {
     state.buffer = new Float64Array(barCount).fill(NaN);
     state.writeIdx = -1;
     state.lastBarIdx = -1;
+    state.count = 0;
+    state.last = NaN;
   }
   if (barIdx !== state.lastBarIdx) {
     state.writeIdx = state.writeIdx! + 1;
     state.lastBarIdx = barIdx;
+    state.barCount = state.count;
+    state.barLast = state.last;
+  } else {
+    state.count = state.barCount;
+    state.last = state.barLast;
+  }
+  const sourceNa = Number.isNaN(value);
+  if (!sourceNa) {
+    state.count! += 1;
+    state.last = value;
   }
   const writeIdx = state.writeIdx!;
-  state.buffer[writeIdx] = value;
+  state.buffer[writeIdx] = state.last!;
 
   const len = Math.trunc(length);
-  if (Number.isNaN(len)) return NaN;
-  if (len < 1) return NaN;
-  if (len > writeIdx + 1) return NaN;
-  let weightedTotal = 0;
-  const start = writeIdx - len + 1;
-  for (let i = start; i <= writeIdx; i++) {
-    const v = state.buffer[i]!;
-    if (Number.isNaN(v)) return NaN;
-    weightedTotal += v * (i - start + 1);
+  if (!(len >= 1)) return NaN;
+  if (sourceNa || state.count! < len) return NaN;
+  let summ = 0;
+  let weight = 0;
+  for (let i = writeIdx - len + 1; i <= writeIdx; i++) {
+    weight += 1;
+    summ = summ + state.buffer[i]! * weight;
   }
-  return weightedTotal / ((len * (len + 1)) / 2);
+  return summ / ((len * (len + 1)) / 2);
 }
 
 // math.sum(source, length) - length가 series인 변형(배치25 (4) 다섯 번째 묶음, C551): the

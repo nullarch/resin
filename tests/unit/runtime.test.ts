@@ -514,16 +514,55 @@ describe("ta.wma", () => {
     expect(wma(state, NaN, 3)).toBeNaN();
   });
 
-  it("only clears NaN contamination once the poisoned slot cycles back out of the fixed-width buffer", () => {
+  // An na source advances the window with the last non-na value carried forward (pynecore lib/ta.py
+  // wma: "an na bar carries the previous value forward, so the average runs over the last `length`
+  // bars"); harness twins state/repros/wma-na-ffill.json and wma-sample10.json.
+  it("carries the last value forward through an na source instead of poisoning the window", () => {
     const state = {};
     wma(state, 1, 3);
     wma(state, 2, 3);
     wma(state, 3, 3); // window [1,2,3]
-    wma(state, NaN, 3); // window [2,3,NaN] -> poisoned
-    expect(wma(state, 4, 3)).toBeNaN(); // window [3,NaN,4] -> still poisoned
-    expect(wma(state, 5, 3)).toBeNaN(); // window [NaN,4,5] -> still poisoned (NaN slot not yet overwritten)
-    // window [4,5,6] -> the NaN slot (written length=3 calls ago) finally gets overwritten
-    expect(wma(state, 6, 3)).toBeCloseTo((4 * 1 + 5 * 2 + 6 * 3) / 6, 9);
+    expect(wma(state, NaN, 3)).toBeNaN(); // window [2,3,3], but the na bar itself is na
+    expect(wma(state, 4, 3)).toBeCloseTo((3 * 1 + 3 * 2 + 4 * 3) / 6, 12); // window [3,3,4]
+    expect(wma(state, 5, 3)).toBeCloseTo((3 * 1 + 4 * 2 + 5 * 3) / 6, 12);
+    expect(wma(state, 6, 3)).toBeCloseTo((4 * 1 + 5 * 2 + 6 * 3) / 6, 12);
+  });
+
+  it("matches the oracle on sample10 with an na source on bar 3 (twin state/repros/wma-sample10.json, w3_fixed)", () => {
+    const state = {};
+    const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
+    const results = closes.map((c, i) => wma(state, i === 3 ? NaN : c, 3));
+    for (const i of [0, 1, 3]) expect(results[i]).toBeNaN();
+    expect(results[2]).toBeCloseTo(614 / 6, 12);
+    expect(results[4]).toBeCloseTo(103.5, 12); // window [103, 103, 104]
+    expect(results[5]).toBeCloseTo(626 / 6, 12); // window [103, 104, 105]
+    expect(results[9]).toBeCloseTo(643 / 6, 12);
+  });
+
+  it("stays na until length non-na values have arrived (a leading na stays out of every window)", () => {
+    const state = {};
+    expect(wma(state, NaN, 2)).toBeNaN();
+    expect(wma(state, NaN, 2)).toBeNaN();
+    expect(wma(state, 5, 2)).toBeNaN();
+    expect(wma(state, 8, 2)).toBeCloseTo((5 + 16) / 3, 12);
+  });
+
+  // Tier 1 ta_246_wma_exact: TradingView logs (k - r) * 1e15 = 0 on bars 10 and 11 for these exact
+  // doubles, so the window has to be re-summed oldest first every bar (an O(1) rolling update
+  // leaves different last bits).
+  it("reproduces TradingView's doubles bit for bit (tier 1 ta_246_wma_exact)", () => {
+    const k1 = {};
+    const k2 = {};
+    const k3 = {};
+    const k5 = {};
+    const out: number[][] = [];
+    for (let bar = 0; bar < 12; bar++) {
+      const a = 100.0 + (bar % 7) / 3.0;
+      const g = bar % 3 === 0 ? NaN : a;
+      out.push([wma(k1, a, 3), wma(k2, a, 5), wma(k3, g, 4), hma(k5, a, 4)]);
+    }
+    expect(out[10]).toEqual([100.77777777777779, 100.71111111111112, 100.56666666666666, 100.92222222222223]);
+    expect(out[11]).toEqual([101.11111111111113, 100.88888888888889, 100.93333333333332, 101.33333333333333]);
   });
 
   it("stays correct across many bars beyond the initial fill (circular buffer wraparound)", () => {
@@ -740,21 +779,26 @@ describe("ta.hma", () => {
     expect(hma(state, 7, 1)).toBeCloseTo(7, 9);
   });
 
-  it("does not advance the outer WMA window while either inner WMA is still NaN (matches pine2py's conditional diff_window.append, not a poisoned push)", () => {
-    // Cross-checked against a from-scratch direct recomputation of pine2py's hma.py algorithm
-    // (window-scan wma + conditional diff_window append), independent of the incremental wma()
-    // this file's hma() delegates to. length=4 -> half_len=2, sqrt_len=2. An embedded NaN gap at
-    // index 4 keeps wma_full NaN for several bars after the gap (poisoned fixed-width buffer), so
-    // the outer window must skip those bars entirely rather than counting them toward its 2-diff
-    // warmup.
+  it("skips an na source in all three windows (none of its wmas runs) and runs the outer one only once both inner ones are valued", () => {
+    // pynecore lib/ta.py hma returns na on an na source before either inner wma runs, and a wma that
+    // does not run does not advance; harness twin state/repros/wma-sample10.json (h4_na, h2_na).
+    // length=4 -> half_len=2, sqrt_len=2. With the na skipped the inputs are the line 10..20, on
+    // which the HMA's lag cancels exactly: 2*(x - 1/3) - (x - 1) = x + 1/3, whose 2-wma is x.
     const state = {};
     const values = [10, 11, 12, 13, NaN, 14, 15, 16, 17, 18, 19, 20];
     const results = values.map((v) => hma(state, v, 4));
-    for (let i = 0; i < 8; i++) expect(results[i]).toBeNaN();
-    expect(results[8]).toBeCloseTo(16, 9);
-    expect(results[9]).toBeCloseTo(18, 9);
-    expect(results[10]).toBeCloseTo(19, 9);
-    expect(results[11]).toBeCloseTo(20, 9);
+    for (let i = 0; i < 5; i++) expect(results[i]).toBeNaN();
+    for (let i = 5; i < values.length; i++) expect(results[i]).toBeCloseTo(values[i]!, 9);
+  });
+
+  it("matches the oracle on sample10 with an na source on bar 4 (twin state/repros/wma-sample10.json, h4_na)", () => {
+    const state = {};
+    const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
+    const results = closes.map((c, i) => hma(state, i === 4 ? NaN : c, 4));
+    for (let i = 0; i < 5; i++) expect(results[i]).toBeNaN();
+    expect(results[5]).toBeCloseTo(103.888888889, 8);
+    expect(results[6]).toBeCloseTo(106.022222222, 8);
+    expect(results[9]).toBeCloseTo(107.844444444, 8);
   });
 
   it("reacts faster than ta.wma to a sharp jump (Hull's whole point — lower lag)", () => {
@@ -3993,7 +4037,7 @@ describe("ta.median/ta.linreg/ta.wma variable(series) length (medianVarLen/linre
     expect(results[5]).toBeCloseTo(86 / 6, 12);
   });
 
-  it("wmaVarLen: NaN for length<1 (pine2py ZeroDivisionError crash → hand-verified na) / length=NaN / warmup / NaN-poison window", () => {
+  it("wmaVarLen: NaN for length<1 / length=NaN (the oracle asserts length > 0) / warmup / an na source carries the last value forward", () => {
     const state = {};
     expect(wmaVarLen(state, 10, 0, 10, 0)).toBeNaN();
     expect(wmaVarLen(state, 20, -1, 10, 1)).toBeNaN();
@@ -4001,7 +4045,9 @@ describe("ta.median/ta.linreg/ta.wma variable(series) length (medianVarLen/linre
     expect(wmaVarLen(state, 40, 5, 10, 3)).toBeNaN(); // 워밍업(관측 4바 < 5)
     expect(wmaVarLen(state, 50, 2, 10, 4)).toBeCloseTo((40 * 1 + 50 * 2) / 3, 12);
     expect(wmaVarLen(state, NaN, 1, 10, 5)).toBeNaN();
-    expect(wmaVarLen(state, 60, 2, 10, 6)).toBeNaN(); // 창=[NaN,60]
+    // The na bar holds 50 in the window (pynecore lib/ta.py wma; harness twins
+    // state/repros/wma-na-ffill.json and wma-sample10.json): window [50, 60].
+    expect(wmaVarLen(state, 60, 2, 10, 6)).toBeCloseTo((50 * 1 + 60 * 2) / 3, 12);
     expect(wmaVarLen(state, 70, 2, 10, 7)).toBeCloseTo((60 + 140) / 3, 12);
   });
 

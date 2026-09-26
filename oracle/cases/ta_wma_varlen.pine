@@ -14,8 +14,10 @@ len1 = bar_index >= 0 ? 3 : 3
 var float __obs_w1 = na
 __obs_w1 := ta.wma(close, len1)
 
-// len2 = 4 고정(series 추론) + source가 바 3에서 na — NaN이 창(4바)에 머무는 바 3~6은 NaN,
-// 바 7부터 회복하는 오염 시맨틱이 pine2py 인크리멘탈과 일치함을 대조. base2 = close + 0.0은
+// len2 = 4 고정(series 추론) + source가 바 3에서 na. The na bar is na and carries the last value
+// forward in the window (pynecore lib/ta.py wma), so bars 4-6 are valued: the golden's pine2py
+// poison window (na on bars 3-6) was hand-edited to the oracle's values, harness twin
+// state/repros/wma-sample10.json (w2_varlen). base2 = close + 0.0은
 // 삼항 분기가 bare `close`일 때 pine2py 스칼라/Series 핑퐁으로 골든이 오염되는 함정 회피
 // (ta_sma_varlen.pine C548과 동일 트릭, C18).
 len2 = close > 0 ? 4 : 4

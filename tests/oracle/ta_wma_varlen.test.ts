@@ -2,7 +2,8 @@
 // runtime/ta.ts wmaVarLen). **length 값이 실제로 변하는 축은 오라클 불가**(pine2py wma.py가
 // 첫 성공 호출 length로 state["window"]를 영구 고정 + last_idx 미검사 같은-바 다중 전진 —
 // sma.py #179와 완전 동일 패턴, DIVERGENCES #181) — 여기서는 "series 한정자 + 값은 상수" 퇴화
-// 케이스로 버퍼/워밍업(len1)과 NaN 오염/회복(len2 + 바 3 na 소스) 메커니즘만 골든 대조하고,
+// 케이스로 버퍼/워밍업(len1)과 na 소스(len2 + 바 3 na: the window carries bar 2's value forward;
+// golden bars 4-6 hand-edited to the oracle, harness twin state/repros/wma-sample10.json) 메커니즘만 골든 대조하고,
 // 값이 변하는 축은 tests/unit/runtime.test.ts(wmaVarLen)와 아래 파이프라인 hand-verified가
 // 커버한다.
 
