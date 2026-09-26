@@ -1332,18 +1332,24 @@ describe("StrategyState 셋째 슬라이스 (C165: 계좌 속성, hand-verified)
     expect(st.grossProfit).toBe(12);
   });
 
-  it("closing a pyramided position is one trade with the weighted-average entry (pine2py Trade 1건 — DIVERGENCES #68)", () => {
+  // Each entry fill is its own trade, and strategy.close("A") closes only A's open quantity (FIFO,
+  // oldest first). Oracle-certified: resin-harness state/repros/mixed-seed-5.json (A 2 + B 1,
+  // close("A") → one closed trade A of size 2 at A's own entry price; B stays open).
+  it("closing one id of a pyramided position closes that entry's trade only, at its own entry price", () => {
     const st = new StrategyState();
     st.configure(1, 2);
     st.entry("A", "long", 2);
     st.processFills(12); // 롱 2 @ 12
     st.entry("B", "long", 2);
-    st.processFills(14); // 추가 진입 -> 롱 4 @ avg 13
+    st.processFills(14); // second trade: B 2 @ 14 (position 4 @ avg 13)
     st.close("A");
-    st.processFills(16); // profit (16-13)*4 = 12
-    expect(st.realizedPnl).toBe(12);
+    st.processFills(16); // closes A: (16-12)*2 = 8
+    expect(st.realizedPnl).toBe(8);
     expect(st.closedTrades).toBe(1);
     expect(st.winTrades).toBe(1);
+    expect(st.posSize).toBe(2);
+    expect(st.posAvgPrice).toBe(14);
+    expect(st.entryId).toBe("B");
   });
 
   it("accumulates counters across multiple trades (win 1건 + loss 1건)", () => {
@@ -1454,9 +1460,12 @@ describe("strategy.* 계좌 속성 analyzer/codegen (C165)", () => {
     expect(code).toContain("($.strategy.equity($.close.get(0)))");
   });
 
-  it("emits a parenthesized ternary for opentrades (flat=0, 아니면 1)", () => {
+  // opentrades counts open trades — pyramided entries count separately (strategies.txt: "A market
+  // position is total of all open trades"; oracle: resin-harness state/repros/mixed-seed-5.json,
+  // __opentrades is 2 after A and B fill).
+  it("emits the open-trade count for opentrades", () => {
     const code = transpileCode('strategy("s")\nvar float a = na\na := strategy.opentrades');
-    expect(code).toContain("($.strategy.posSize === 0 ? 0 : 1)");
+    expect(code).toContain("($.strategy.openTrades.length)");
   });
 
   it("emits a 3-arg configure only when initial_capital is specified (C129 원칙)", () => {
@@ -2471,7 +2480,11 @@ describe("StrategyState close_all + qty 부분 청산 (C168 여섯째 슬라이�
     expect(st.realizedPnl).toBe(0);
   });
 
-  it("partial close does not restore pyramiding capacity (entryCount 유지 — 보수 가설)", () => {
+  // The partial close takes 1 off the oldest trade (FIFO), so the average is re-derived from what
+  // is still open: (10*1 + 12*2) / 3. Neither entry's bound quantity is spent, so both keep their
+  // pyramiding slots. Oracle-certified on the same shape (entries 2 + 2, close qty=1, a third
+  // entry blocked; position_avg_price matched on every bar).
+  it("partial close does not restore pyramiding capacity, and re-derives the average from the open trades", () => {
     const st = new StrategyState();
     st.configure(1, 2); // pyramiding=2
     st.entry("A", "long", 2);
@@ -2483,10 +2496,11 @@ describe("StrategyState close_all + qty 부분 청산 (C168 여섯째 슬라이�
     st.close("A", 1);
     st.processFills(13); // 부분 청산 — entryCount는 2 유지
     expect(st.posSize).toBe(3);
+    expect(st.entryCount).toBe(2);
     st.entry("A", "long", 1);
     st.processFills(14); // pyramiding 소진(2>=2) — 체결 차단
     expect(st.posSize).toBe(3);
-    expect(st.posAvgPrice).toBe(11);
+    expect(st.posAvgPrice).toBe(34 / 3);
   });
 });
 
@@ -3316,7 +3330,8 @@ describe("strategy.order codegen (C169)", () => {
 // var 카운터 n: bar0=1, bar1=2, ... 진행. 주문은 다음 바 open 체결.
 // bar0: O1 롱 2 큐잉 → bar1 open 12 체결(롱 2 @ 12)
 // bar1: O2 롱 3 큐잉 → bar2 open 14 체결: avg=(12*2+14*3)/5=13.2, pos=5
-// bar2: O3 숏 3 큐잉 → bar3 open 13 체결: 3 축소, profit=(13-13.2)*3, pos=2, avg 유지
+// bar2: O3 숏 3 큐잉 → bar3 open 13 체결: 3 축소 FIFO — O1's 2 @12 (+2), then 1 of O2 @14 (-1),
+// pos=2. Oracle-certified on the same bars (two closed trades: O1 size 2 pnl 2, O2 size 1 pnl -1).
 describe("strategy.order E2E — 누적 후 부분 상쇄 (C169, hand-verified 5바)", () => {
   const data: OHLCVData = {
     open: [10, 12, 14, 13, 15],
@@ -3346,9 +3361,9 @@ describe("strategy.order E2E — 누적 후 부분 상쇄 (C169, hand-verified 5
     expect(result.bars.map((b) => b["var:__obs_ps"])).toEqual([0, 2, 5, 2, 2]);
   });
 
-  it("records realized pnl only for the netted quantity", () => {
+  it("records realized pnl only for the netted quantity, consumed oldest trade first", () => {
     const result = runPipeline(src, data);
-    const partial = (13 - 13.2) * 3; // IEEE754 그대로(손 계산 -0.6의 fp 표현)
+    const partial = (13 - 12) * 2 + (13 - 14) * 1; // FIFO: O1 fully, then 1 of O2
     expect(result.bars.map((b) => b["var:__obs_np"])).toEqual([0, 0, 0, partial, partial]);
   });
 });
@@ -4802,10 +4817,12 @@ describe("StrategyState.updateMaxContractsHeld — running max ratchet (C334, ne
     st.updateMaxContractsHeld();
     expect(st.maxContractsHeldAll).toBe(5);
     expect(st.maxContractsHeldLong).toBe(5);
+    // close("A", qty=4) is capped at A's open quantity (2), leaving B's 3 — oracle-certified on the
+    // same shape (one closed trade A size 2).
     st.close("A", 4); // 부분 청산
-    st.processFills(12); // posSize=1
+    st.processFills(12); // posSize=3
     st.updateMaxContractsHeld();
-    expect(st.posSize).toBe(1);
+    expect(st.posSize).toBe(3);
     expect(st.maxContractsHeldAll).toBe(5); // 축소돼도 과거 피크 유지
     expect(st.maxContractsHeldLong).toBe(5);
   });
@@ -5262,7 +5279,9 @@ describe("StrategyState 트레이드 접근자 확장 (C308, hand-verified — e
     expect(st.closedTradeEntryBarIndex(0)).toBe(3);
     expect(st.closedTradeExitBarIndex(0)).toBe(7);
     expect(st.closedTradeEntryId(0)).toBe("L1");
-    expect(st.closedTradeExitId(0)).toBe("L1"); // close()의 id
+    // close()'s id names the entry, not its exit order (strategies.txt); oracle-certified name,
+    // resin-harness state/repros/mixed-seed-5.json.
+    expect(st.closedTradeExitId(0)).toBe("Close entry(s) order L1");
     expect(st.closedTradeProfit(0)).toBe(10); // (15-10)*2
     expect(st.closedTradeSize(0)).toBe(2); // 롱 — 양수
   });
@@ -5323,7 +5342,7 @@ describe("StrategyState 트레이드 접근자 확장 (C308, hand-verified — e
   });
 });
 
-describe("StrategyState.opentrades 접근자 (C308, hand-verified — 단일 가상 트레이드 index=0, 피라미딩도 이 모델로 압축)", () => {
+describe("StrategyState.opentrades 접근자 (C308 — one open trade per entry fill, index 0 = oldest)", () => {
   it("returns na (not a throw) when flat, regardless of index (C578 — eager and/or 관용구가 flat에서도 매 바 호출)", () => {
     const st = new StrategyState();
     expect(Number.isNaN(st.openTradeEntryPrice(0))).toBe(true);
@@ -5348,15 +5367,21 @@ describe("StrategyState.opentrades 접근자 (C308, hand-verified — 단일 가
     expect(st.openTradeSize(0)).toBe(-2);
   });
 
-  it("entry_price reflects the pyramided weighted-average, entry_bar_index keeps the first fill's bar", () => {
+  // Each pyramided entry is its own open trade (strategies.txt: "A market position is total of all
+  // open trades"; oracle: resin-harness state/repros/mixed-seed-5.json).
+  it("each pyramided entry is its own open trade with its own entry price and bar", () => {
     const st = new StrategyState();
     st.configure(1, 2); // pyramiding=2
     st.entry("A", "long", 1);
     st.processFills(10, undefined, undefined, 0);
     st.entry("B", "long", 1);
     st.processFills(20, undefined, undefined, 1);
-    expect(st.openTradeEntryPrice(0)).toBe(15); // (10*1+20*1)/2
-    expect(st.openTradeEntryBarIndex(0)).toBe(0); // 최초 진입 bar 유지(entryId/entryComment와 동일 lifecycle)
+    expect(st.openTradeEntryPrice(0)).toBe(10);
+    expect(st.openTradeEntryBarIndex(0)).toBe(0);
+    expect(st.openTradeEntryPrice(1)).toBe(20);
+    expect(st.openTradeEntryBarIndex(1)).toBe(1);
+    expect(st.openTradeEntryId(1)).toBe("B");
+    expect(st.posAvgPrice).toBe(15); // (10*1+20*1)/2
   });
 
   it("throws for any open-trade index other than 0", () => {
@@ -5469,17 +5494,19 @@ describe("StrategyState.closedtrades/opentrades.max_drawdown/max_runup/profit_pe
     expect(st.openTradeMaxDrawdown(0)).toBe(0);
   });
 
-  it("partial close snapshots the running value without resetting it (잔여 포지션은 같은 트레이드로 계속 누적)", () => {
+  // A partial close splits the trade: the closed piece takes its size share of the excursion and
+  // the open remainder keeps the rest (the oracle's _fill_order scales both by the size ratio).
+  it("partial close splits the running excursion between the closed piece and the open remainder", () => {
     const st = new StrategyState();
     st.entry("L", "long", 2);
     st.processFills(100, 100, 100, 0);
     st.processFills(105, 110, 95, 1); // pre-fill avg=100,size=2: high pnl=20, low pnl=-10 -> runup=20, drawdown=10
     st.close("L", 1); // 부분 청산(qty=1, 잔여 1)
     st.processFills(103, 104, 102, 2);
-    expect(st.closedTradeMaxRunup(0)).toBe(20); // 부분 청산도 스냅샷(다른 lastClosed* 필드와 동일 관례)
-    expect(st.closedTradeMaxDrawdown(0)).toBe(10);
-    expect(st.openTradeMaxRunup(0)).toBe(20); // 러닝값은 리셋 안 됨(포지션 존속)
-    expect(st.openTradeMaxDrawdown(0)).toBe(10);
+    expect(st.closedTradeMaxRunup(0)).toBe(10); // half of the size closed → half of 20
+    expect(st.closedTradeMaxDrawdown(0)).toBe(5);
+    expect(st.openTradeMaxRunup(0)).toBe(10); // the remaining half keeps accumulating
+    expect(st.openTradeMaxDrawdown(0)).toBe(5);
   });
 
   it("returns na for opentrades.profit/profit_percent/max_drawdown/max_runup when flat (C578), still throws at a wrong index while a trade is open", () => {

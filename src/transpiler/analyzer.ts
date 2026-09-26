@@ -876,7 +876,8 @@ export function timeframeBooleanPropValue(attr: string, chartTf: string): boolea
 // 상태만으로는 못 구하고 **현재 바 close**가 필요해 순수 프로퍼티 식이 아니라 메서드 호출 식
 // `$.strategy.openProfit($.close.get(0))`으로 등록한다 — builtinRuntimeExprs의 값은 임의 JS 식
 // 문자열이라 barstate와 등록 메커니즘이 완전히 동일하고 식 내용만 다르다(codegen 변경 0).
-// opentrades는 pine2py 프로퍼티(flat=0, 아니면 1)를 삼항식으로 그대로 폴딩. grossloss는
+// opentrades counts the open trades — one per entry fill, so pyramided entries count separately
+// (strategies.txt: "A market position is total of all open trades"). grossloss는
 // pine2py와 동일하게 음수 합(DIVERGENCES #68 — TV 미검증 가설, 절댓값일 가능성 있음).
 export const STRATEGY_RUNTIME_PROPS: ReadonlyMap<string, string> = new Map([
   ["position_size", "$.strategy.posSize"],
@@ -886,7 +887,7 @@ export const STRATEGY_RUNTIME_PROPS: ReadonlyMap<string, string> = new Map([
   ["equity", "$.strategy.equity($.close.get(0))"],
   ["initial_capital", "$.strategy.initialCapital"],
   ["closedtrades", "$.strategy.closedTrades"],
-  ["opentrades", "$.strategy.posSize === 0 ? 0 : 1"],
+  ["opentrades", "$.strategy.openTrades.length"],
   ["wintrades", "$.strategy.winTrades"],
   ["losstrades", "$.strategy.lossTrades"],
   ["grossprofit", "$.strategy.grossProfit"],

@@ -29,6 +29,31 @@ interface ClosedTradeRecord {
   maxDrawdown: number;
 }
 
+// One open trade. The manual (strategies.txt, "Orders and trades"): "a trade is the resulting
+// transaction that opens after the emulator fills an entry order. A market position is total of
+// all open trades." Every entry fill (strategy.entry, pyramiding adds, strategy.order) opens its
+// own trade with its own entry price; a partial exit shrinks `size` (signed: >0 long, <0 short).
+interface OpenTrade {
+  entryId: string;
+  entryComment: string;
+  entryPrice: number;
+  entryBarIndex: number;
+  entryTime: number;
+  size: number;
+  maxRunup: number;
+  maxDrawdown: number;
+}
+
+// One filled entry as the order commands see it: it holds a pyramiding slot and sizes the exits
+// bound to its id (strategy.close(id), strategy.exit(from_entry=id)). It is settled separately from
+// the FIFO trade rows: strategies.txt, "Closing a market position" — the strategy.close("Buy2")
+// order "is for 10 units because it links to the open trade with the "Buy2" entry ID", yet "five
+// units of the order close the "Buy1" trade first because it is the oldest".
+interface EntryBinding {
+  entryId: string;
+  bound: number;
+}
+
 // pine2py wavealgo/strategy/engine.py의 주문 상태머신 구조(pending 주문 → 체결 → Position
 // 갱신, entry()의 반대 포지션 청산/pyramiding 가드, _fill_entry의 가중평균 추가 진입)를 시맨틱
 // 참조로 이식하되, **체결 시점은 pine2py를 따르지 않는다**: pine2py StrategyEngine은 market 주문을
@@ -47,27 +72,18 @@ interface ClosedTradeRecord {
 // open에서 반드시 소진(체결 또는 취소)되고, limit/stop 주문(C166)은 체결/취소까지 슬롯을 점유한 채
 // 이월된다 — "동시 pending entry 1건" 모델: entry는 "첫 주문 유지 + 같은 id 재호출만 수정", close는
 // 멱등. pyramiding>=2에서 서로 다른 id의 entry 주문을 동시에 걸면 첫 주문만 유지된다(LIMITATIONS.md).
+// The position itself is a list of open trades (one per entry fill) consumed FIFO by closing fills;
+// those arrays grow only at fill events, never on every bar (the same reasoning as
+// closedTradeRecords).
 export class StrategyState {
-  // 포지션 — posSize는 부호 있는 값(C164): >0=롱, <0=숏, 0=flat (pine2py position_size 프로퍼티/
-  // TV strategy.position_size와 동일한 부호 규약).
+  // Running sum of the open trades' signed sizes (strategy.position_size): >0 long, <0 short, 0 flat.
   posSize: number;
-  posAvgPrice: number; // strategy.position_avg_price — flat이면 NaN(TV: na)
-  entryId: string | null; // 현재 포지션을 연 entry 주문 id (flat이면 null, pyramiding 추가 진입은 최초 id 유지)
-  // 현재 포지션을 연 entry/order 주문의 comment(C173 열한째 슬라이스) — entryId와 동일하게
-  // pyramiding 추가 진입에도 최초 값을 유지한다(pine2py Position.entry_comment가 _fill_entry의
-  // "새 Position" 분기에서만 order.comment로 설정되고 가중평균 분기에서는 안 건드리는 것의 미러).
-  entryComment: string;
-  // 현재 포지션을 구성하는 체결 횟수(pyramiding 게이트) — flat/청산 시 0, 새 포지션 1, 추가 진입 +1.
-  // pine2py의 _long_entries/_short_entries(청산 시 0 리셋)와 동형이되 체결 시점에 갱신.
-  entryCount: number;
-  // 현재 포지션이 열린 bar_index(C308, strategy.opentrades.entry_bar_index/closedtrades의 청산
-  // 스냅샷 lastClosedEntryBarIndex 공용 소스) — entryId/entryComment와 동일 lifecycle(flat=NaN,
-  // 새 포지션에서 세팅, pyramiding 추가 진입엔 안 바뀜, pine2py Position.entry_bar 대응).
-  entryBarIndexOpen: number;
-  // 현재 포지션이 열린 바의 시각(ms, C418) — entryBarIndexOpen과 완전히 동일한 lifecycle/용도의
-  // 시간판(strategy.opentrades.entry_time/closedtrades.entry_time 공용 소스). processFills가
-  // 받는 barTimeMs를 그대로 스냅샷 — entry_bar_index가 barIndex를 스냅샷하는 것과 대칭.
-  entryTimeOpen: number;
+  // strategy.position_avg_price, re-derived from the open trades after every fill (NaN when flat).
+  posAvgPrice: number;
+  // The open trades, oldest first — closing fills consume them in this order (FIFO).
+  openTrades: OpenTrade[];
+  // The filled entries, oldest first (see EntryBinding).
+  entryBook: EntryBinding[];
 
   // strategy() 지시어 메타데이터(C164, C165에서 initialCapital 추가) — codegen이 프리앰블에서
   // configure()로 1회 주입. 미지정 스크립트는 configure 호출 자체가 없거나(1/1) 세 번째 인자를
@@ -135,12 +151,8 @@ export class StrategyState {
   // strategy.closedtrades/opentrades.max_drawdown/max_runup(hand-verified, C312) — TV MFE/MAE류
   // "트레이드 생존 기간 중 최대 유리/불리 가격 이탈"(둘 다 통화 단위, 항상 >= 0). pine2py
   // Trade/Position dataclass 어디에도 대응 필드가 없어(types.py 전체 grep 0건) 전부 신규 설계다.
-  // tradeMaxRunup/tradeMaxDrawdown은 "현재 열린 트레이드"의 러닝 누적값(updateTradeExcursion이
-  // 매 바 갱신, 새 포지션 시작 시 closeAt의 flat 분기가 0으로 리셋) — opentrades 접근자가 그대로
-  // 노출한다. closedtrades 접근자는 closeAt()이 flat 전환 시점에 그 값을 lastClosedMaxRunup/
-  // lastClosedMaxDrawdown으로 스냅샷한 것을 읽는다(다른 lastClosed* 필드와 동일 lifecycle).
-  tradeMaxRunup: number;
-  tradeMaxDrawdown: number;
+  // Each open trade carries its own running excursion (OpenTrade.maxRunup/maxDrawdown, updated by
+  // updateTradeExcursion every bar); closeAt() snapshots the closed share of it into the record.
   lastClosedMaxRunup: number;
   lastClosedMaxDrawdown: number;
   // strategy.closedtrades.<method>(trade_num) 전 인덱스 조회용 레코드 배열(C579) — closeAt()이
@@ -362,11 +374,8 @@ export class StrategyState {
   constructor() {
     this.posSize = 0;
     this.posAvgPrice = NaN;
-    this.entryId = null;
-    this.entryComment = "";
-    this.entryCount = 0;
-    this.entryBarIndexOpen = NaN;
-    this.entryTimeOpen = NaN;
+    this.openTrades = [];
+    this.entryBook = [];
     this.defaultQty = 1;
     this.pyramiding = 1;
     this.initialCapital = 100000;
@@ -402,8 +411,6 @@ export class StrategyState {
     this.lastClosedExitId = "";
     this.lastClosedProfit = NaN;
     this.lastClosedSize = NaN;
-    this.tradeMaxRunup = 0;
-    this.tradeMaxDrawdown = 0;
     this.lastClosedMaxRunup = NaN;
     this.lastClosedMaxDrawdown = NaN;
     this.closedTradeRecords = [];
@@ -462,6 +469,94 @@ export class StrategyState {
     this.consLossDayCount = 0;
     this.consLossDayStartRealizedPnl = NaN;
     this.consLossLimitReached = false;
+  }
+
+  // The position's entry as a single name: the oldest open trade's (strategy.position_entry_name —
+  // the oracle measured it on TradingView to stay "A" with A and B pyramided, and to become "B"
+  // only after strategy.close("A")). null/""/NaN when flat.
+  get entryId(): string | null {
+    return this.openTrades.length > 0 ? this.openTrades[0]!.entryId : null;
+  }
+
+  get entryComment(): string {
+    return this.openTrades.length > 0 ? this.openTrades[0]!.entryComment : "";
+  }
+
+  get entryBarIndexOpen(): number {
+    return this.openTrades.length > 0 ? this.openTrades[0]!.entryBarIndex : NaN;
+  }
+
+  get entryTimeOpen(): number {
+    return this.openTrades.length > 0 ? this.openTrades[0]!.entryTime : NaN;
+  }
+
+  // Entries counted against `pyramiding` — "the maximum number of open trades, from the orders
+  // created by strategy.entry() calls, that a strategy allows for a single position"
+  // (strategies.txt). An entry keeps its slot until its own bound quantity is spent.
+  get entryCount(): number {
+    return this.entryBook.length;
+  }
+
+  // Open quantity bound to an entry id — what strategy.close(id) closes by default.
+  private boundQty(id: string): number {
+    let sum = 0;
+    for (const b of this.entryBook) if (b.entryId === id) sum += b.bound;
+    return sum;
+  }
+
+  private hasBound(id: string): boolean {
+    for (const b of this.entryBook) if (b.entryId === id) return true;
+    return false;
+  }
+
+  // An entry fill opens a new trade (never merges into an existing one) and a binding for it.
+  private openTradeAt(
+    entryId: string, entryComment: string, fillPrice: number, signedQty: number,
+    barIndex: number, barTimeMs: number,
+  ): void {
+    this.openTrades.push({
+      entryId, entryComment, entryPrice: fillPrice, entryBarIndex: barIndex, entryTime: barTimeMs,
+      size: signedQty, maxRunup: 0, maxDrawdown: 0,
+    });
+    this.entryBook.push({ entryId, bound: Math.abs(signedQty) });
+    this.posSize += signedQty;
+    this.recalcAvgPrice();
+  }
+
+  // position_avg_price is the size-weighted entry price of the trades still open — it moves when
+  // a FIFO exit removes the oldest trade (faq.txt: "Since the average price of the open position
+  // changes according to which positions are still open, be aware of the order in which trades are
+  // closed"). Summed oldest-first over the open trades and divided by the running position size,
+  // as the oracle does (its _recalc_avg_price).
+  private recalcAvgPrice(): void {
+    if (this.posSize === 0) {
+      this.posAvgPrice = NaN;
+      return;
+    }
+    let sum = 0;
+    for (const t of this.openTrades) sum += t.entryPrice * Math.abs(t.size);
+    this.posAvgPrice = sum / Math.abs(this.posSize);
+  }
+
+  // Settles a closed quantity against the entry book: an id-bound closer (strategy.close(id),
+  // strategy.exit(from_entry=id)) takes it off that id's entries oldest-first; an unbound one
+  // (close_all, a reversal, strategy.order, an exit without from_entry) walks every entry
+  // oldest-first. An entry whose bound quantity is spent gives its pyramiding slot back.
+  private settleEntryBook(qty: number, bindingId: string | null): void {
+    const dust = qty * 1e-12; // float dust of unsnapped sizes (see closeAt)
+    let remaining = qty;
+    for (let i = 0; i < this.entryBook.length && remaining > dust; ) {
+      const b = this.entryBook[i]!;
+      if (bindingId !== null && b.entryId !== bindingId) {
+        i++;
+        continue;
+      }
+      const take = b.bound < remaining ? b.bound : remaining;
+      b.bound -= take;
+      remaining -= take;
+      if (b.bound <= dust) this.entryBook.splice(i, 1);
+      else i++;
+    }
   }
 
   // strategy() 지시어의 default_qty_value/pyramiding/initial_capital 주입(C164, C165에서 세 번째
@@ -569,14 +664,16 @@ export class StrategyState {
   // 미실현 손익을 구해 러닝 최대/최소에 반영 — 둘 다 0 미만으로는 안 내려간다(TV: 한 번도 유리(불리)
   // 했던 적이 없으면 runup(drawdown)은 0). high/low가 NaN(마켓 전용 단위 테스트 기본값)이면 모든
   // 비교가 false라 안전하게 no-op(MEMORY.md C91 축).
+  // Per open trade, against its own entry price and size.
   updateTradeExcursion(high: number, low: number): void {
-    if (this.posSize === 0) return;
-    const pnlAtHigh = (high - this.posAvgPrice) * this.posSize;
-    const pnlAtLow = (low - this.posAvgPrice) * this.posSize;
-    const bestPnl = pnlAtHigh > pnlAtLow ? pnlAtHigh : pnlAtLow;
-    const worstPnl = pnlAtHigh < pnlAtLow ? pnlAtHigh : pnlAtLow;
-    if (bestPnl > this.tradeMaxRunup) this.tradeMaxRunup = bestPnl;
-    if (-worstPnl > this.tradeMaxDrawdown) this.tradeMaxDrawdown = -worstPnl;
+    for (const t of this.openTrades) {
+      const pnlAtHigh = (high - t.entryPrice) * t.size;
+      const pnlAtLow = (low - t.entryPrice) * t.size;
+      const bestPnl = pnlAtHigh > pnlAtLow ? pnlAtHigh : pnlAtLow;
+      const worstPnl = pnlAtHigh < pnlAtLow ? pnlAtHigh : pnlAtLow;
+      if (bestPnl > t.maxRunup) t.maxRunup = bestPnl;
+      if (-worstPnl > t.maxDrawdown) t.maxDrawdown = -worstPnl;
+    }
   }
 
   // strategy.closedtrades.<method>(trade_num)(C579, 배치28 (1)) — closedTradeRecords 전 인덱스
@@ -702,88 +799,74 @@ export class StrategyState {
     return this.closedTradeRecordAt(index).maxDrawdown;
   }
 
-  // strategy.opentrades.<method>(index)(C308) — Position dataclass(entry_id/entry_price/
-  // entry_bar/size) 대응, STRATEGY_RUNTIME_PROPS의 opentrades 스칼라 카운트(posSize===0?0:1)와
-  // 동일 전제라 열린 포지션이 있을 때 index=0(단일 가상 트레이드, 피라미딩도 이 모델로 압축)만
-  // 유효 — 살아있는 상태를 그대로 읽어 별도 캐시가 불필요하다(closedtrades와 달리 청산 스냅샷이
-  // 아니라 현재 posSize/posAvgPrice/entryId/entryBarIndexOpen 자체가 곧 "열린 트레이드").
-  // C578(exec 클러스터 wild 실측 75건 전수, 전부 posSize===0에서 크래시): "열린 트레이드가 아예
-  // 없음"과 "트레이드는 있는데 index가 그 트레이드가 아님(피라미딩 세부 미보유)"은 서로 다른
-  // 케이스다 — 후자만 "틀린 값을 조용히 반환"할 위험이 있는 진짜 갭이라 하드 에러 유지, 전자는
-  // `strategy.opentrades > 0 and strategy.opentrades.entry_bar_index(0) >= n`류 TV eager and/or
-  // 관용구(VERIFIED_SEMANTICS "TV v5는 and/or 양변을 모두 평가")가 매 바 무조건 이 접근자를
-  // 호출해 flat 상태에서도 흔히 도달하므로, 데이터가 아예 없는 na로 처리(TV 미검증 가설,
-  // DIVERGENCES 추가 예정 — pine2py에 이 API 자체가 없어 오라클 대조 불가는 기존과 동일).
+  // strategy.opentrades.<method>(index) — index 0 is the oldest open trade, strategy.opentrades - 1
+  // the most recent (faq.txt: "To find the entry price for the most recent open trade, and
+  // remembering that the trade indexes start at zero, use float entryPrice =
+  // strategy.opentrades.entry_price(strategy.opentrades - 1)"). An index outside the open trades
+  // throws rather than returning a made-up value. While flat every accessor returns na: the
+  // `strategy.opentrades > 0 and strategy.opentrades.entry_bar_index(0) >= n` idiom evaluates both
+  // operands on every bar (C578).
   private assertOpenTrade(method: string, index: number): void {
-    if (this.posSize !== 0 && index !== 0) {
+    if (this.posSize !== 0 && !(index >= 0 && index < this.openTrades.length)) {
       throw new Error(
-        `strategy.opentrades.${method}: index ${index} is out of range — open position only supports index=0 (single virtual trade) (individual pyramiding trades not tracked, LIMITATIONS.md)`,
+        `strategy.opentrades.${method}: index ${index} is out of range — valid range 0..${this.openTrades.length - 1} (opentrades=${this.openTrades.length})`,
       );
     }
   }
 
+  // The open trade at a validated index, or undefined while flat.
+  private openTradeAtIndex(method: string, index: number): OpenTrade | undefined {
+    this.assertOpenTrade(method, index);
+    return this.posSize === 0 ? undefined : this.openTrades[index];
+  }
+
   openTradeEntryPrice(index: number): number {
-    this.assertOpenTrade("entry_price", index);
-    return this.posSize === 0 ? NaN : this.posAvgPrice;
+    return this.openTradeAtIndex("entry_price", index)?.entryPrice ?? NaN;
   }
 
   openTradeEntryBarIndex(index: number): number {
-    this.assertOpenTrade("entry_bar_index", index);
-    return this.posSize === 0 ? NaN : this.entryBarIndexOpen;
+    return this.openTradeAtIndex("entry_bar_index", index)?.entryBarIndex ?? NaN;
   }
 
-  // strategy.opentrades.entry_time(index)(C418) — entry_bar_index와 동일 원칙의 시간판(ms).
   openTradeEntryTime(index: number): number {
-    this.assertOpenTrade("entry_time", index);
-    return this.posSize === 0 ? NaN : this.entryTimeOpen;
+    return this.openTradeAtIndex("entry_time", index)?.entryTime ?? NaN;
   }
 
   openTradeEntryId(index: number): string {
-    this.assertOpenTrade("entry_id", index);
-    return this.entryId ?? "";
+    return this.openTradeAtIndex("entry_id", index)?.entryId ?? "";
   }
 
   openTradeSize(index: number): number {
-    this.assertOpenTrade("size", index);
-    return this.posSize === 0 ? NaN : this.posSize;
+    return this.openTradeAtIndex("size", index)?.size ?? NaN;
   }
 
-  // strategy.opentrades.commission(index)(C418) — closedTradeCommission과 동일 원칙(commission 0
-  // 고정), 아직 청산 전이라도 진입 커미션은 항상 0이라 시점 무관.
+  // Commission is not modelled yet (always 0), the same as closedTradeCommission.
   openTradeCommission(index: number): number {
-    this.assertOpenTrade("commission", index);
-    return this.posSize === 0 ? NaN : 0;
+    return this.openTradeAtIndex("commission", index) === undefined ? NaN : 0;
   }
 
-  // strategy.opentrades.profit(index)(C312) — closedTradeProfit과 달리 미실현 손익이라 현재 종가가
-  // 필요하다(strategy.openprofit(closePrice)와 동일 구조 — codegen이 `$.close.get(0)`을 인자로
-  // 주입한다, codegen.ts OPEN_TRADE_CLOSE_PRICE_METHODS 참조). openProfit을 그대로 재사용(단일
-  // 가상 트레이드 = 현재 포지션 전체라 값이 완전히 동치) — 단 openProfit 자체는 strategy.openprofit
-  // 스칼라용이라 flat=0을 반환하므로(C578) "트레이드 0의 손익" 의미로는 na가 맞아 여기서 override.
+  // Unrealized profit of one open trade at the current close (codegen injects `$.close.get(0)`,
+  // see codegen.ts OPEN_TRADE_CLOSE_PRICE_METHODS).
   openTradeProfit(closePrice: number, index: number): number {
-    this.assertOpenTrade("profit", index);
-    return this.posSize === 0 ? NaN : this.openProfit(closePrice);
+    const t = this.openTradeAtIndex("profit", index);
+    return t === undefined ? NaN : (closePrice - t.entryPrice) * t.size;
   }
 
-  // strategy.opentrades.profit_percent(index)(C312) — closedTradeProfitPercent의 미실현 버전.
-  // pine2py Position dataclass엔 이 계산 자체가 없어(profit도 없음) 전부 hand-verified.
   openTradeProfitPercent(closePrice: number, index: number): number {
-    this.assertOpenTrade("profit_percent", index);
-    if (this.posSize === 0) return NaN;
-    if (this.posAvgPrice === 0) return 0;
-    return this.posSize > 0
-      ? ((closePrice - this.posAvgPrice) / this.posAvgPrice) * 100
-      : ((this.posAvgPrice - closePrice) / this.posAvgPrice) * 100;
+    const t = this.openTradeAtIndex("profit_percent", index);
+    if (t === undefined) return NaN;
+    if (t.entryPrice === 0) return 0;
+    return t.size > 0
+      ? ((closePrice - t.entryPrice) / t.entryPrice) * 100
+      : ((t.entryPrice - closePrice) / t.entryPrice) * 100;
   }
 
   openTradeMaxRunup(index: number): number {
-    this.assertOpenTrade("max_runup", index);
-    return this.posSize === 0 ? NaN : this.tradeMaxRunup;
+    return this.openTradeAtIndex("max_runup", index)?.maxRunup ?? NaN;
   }
 
   openTradeMaxDrawdown(index: number): number {
-    this.assertOpenTrade("max_drawdown", index);
-    return this.posSize === 0 ? NaN : this.tradeMaxDrawdown;
+    return this.openTradeAtIndex("max_drawdown", index)?.maxDrawdown ?? NaN;
   }
 
   // percent_of_equity 자동 수량(C171): 체결가 기준 equity의 percent%를 체결가로 나눈 계약 수 —
@@ -814,106 +897,114 @@ export class StrategyState {
     return this.defaultQty;
   }
 
-  // 포지션 청산 체결(qty 생략=전량) — 실현 손익/트레이드 카운터 누적 + 포지션 감소/리셋(engine.py
-  // _close_position의 Trade 생성+_realized_pnl 누적+포지션 리셋을 스칼라 누적기로 압축, commission
-  // 0 고정). profit = (체결가-평균진입가)*방향부호*청산수량 — 전량이면 (체결가-avg)*posSize와 동치.
-  // qty 부분 청산(C168)은 pine2py에 대응 구현이 없다(exit()가 qty를 받아놓고 _close_position이
-  // 무시하는 전량 전용 — C167 소스 확인): 부분 산식(avg 유지·|posSize| 감소·초과 qty는 전량 클램프)
-  // 과 "부분 청산 1회 = closedtrades 1건"(pine2py의 _close_position 1회=Trade 1건 관례 준용 — TV는
-  // entry별 카운트 가능성) 전부 TV 실측 미검증 가설이다(DIVERGENCES #71).
-  // 전량 도달 판정은 정확-0이 보장된다(closeQty===|posSize|일 때 posSize-sign*|posSize|는 IEEE754
-  // 정확 0 — C114의 "러닝 합계 잔차" 클래스가 아님. 부분 qty 자체의 fp 잔차는 호출자 데이터 축).
-  // processFills의 close/exit 청산 지점과 리버스 지점이 호출. barIndex/exitId(C308)는 C129 원칙대로
-  // 뒤쪽 슬롯에 추가(기존 3-인자 호출부 exact-string 무변화) — closedtrades.entry_bar_index/
-  // exit_bar_index/entry_id/exit_id/entry_price/exit_price/profit/size 스냅샷에 쓰인다. barTimeMs
-  // (C418)는 그보다도 뒤(C129 "실제 지정된 가장 뒤쪽 슬롯까지만" 원칙 — 기존 5-인자 호출부
-  // exact-string 무변화) — closedtrades.entry_time/exit_time 스냅샷 전용.
+  // A closing fill of `qty` (Infinity = the whole position) at `fillPrice`. It consumes the open
+  // trades oldest-first whatever order produced it — strategies.txt, "Closing a market position":
+  // "By default, strategies close a market position using the First In, First Out (FIFO) method
+  // ... any exit order closes or reduces the position starting with the first open trade, even if
+  // the exit command specifies the entry ID of a different open trade." Every trade it touches
+  // becomes its own closed trade with that trade's entry id, price, bar and the share of the size
+  // it closed; a partly consumed trade stays open with the rest. `bindingId` is the entry id the
+  // closing order is bound to (null = unbound), used to settle the entry book (settleEntryBook).
+  // Callers: the close/exit fills and the reversal/netting legs in processFills, and the
+  // immediately= paths of close/close_all.
   private closeAt(
     fillPrice: number, qty: number = Infinity, exitComment: string = "",
     barIndex: number = NaN, exitId: string = "", barTimeMs: number = NaN,
+    bindingId: string | null = null,
   ): void {
     const size = Math.abs(this.posSize);
-    const closeQty = qty < size ? qty : size;
     const sign = this.posSize > 0 ? 1 : -1;
-    const profit = (fillPrice - this.posAvgPrice) * sign * closeQty;
-    this.realizedPnl += profit;
+    // Sizes are not snapped to a lot grid, so a quantity summed from trade sizes can differ from
+    // them by float dust; dust must not split off a phantom closing piece.
+    const dust = size * 1e-12;
+    const exitWasBound = this.exitPending && (this.exitFromEntry === "" || this.hasBound(this.exitFromEntry));
+    let remaining = qty >= size ? Infinity : qty;
+    let closedQty = 0;
+    while (this.openTrades.length > 0 && remaining > dust) {
+      const t = this.openTrades[0]!;
+      const tradeQty = Math.abs(t.size);
+      const whole = remaining >= tradeQty - dust;
+      const take = whole ? tradeQty : remaining;
+      const share = take / tradeQty;
+      const profit = (fillPrice - t.entryPrice) * sign * take;
+      this.recordClosedTrade({
+        entryComment: t.entryComment,
+        exitComment,
+        entryPrice: t.entryPrice,
+        exitPrice: fillPrice,
+        entryBarIndex: t.entryBarIndex,
+        exitBarIndex: barIndex,
+        entryTime: t.entryTime,
+        exitTime: barTimeMs,
+        entryId: t.entryId,
+        exitId,
+        profit,
+        size: sign * take,
+        maxRunup: t.maxRunup * share,
+        maxDrawdown: t.maxDrawdown * share,
+      });
+      if (whole) {
+        this.openTrades.shift();
+      } else {
+        t.size -= sign * take;
+        t.maxRunup *= 1 - share;
+        t.maxDrawdown *= 1 - share;
+      }
+      this.posSize -= sign * take;
+      remaining -= take;
+      closedQty += take;
+    }
+    if (this.openTrades.length === 0) this.posSize = 0;
+    this.settleEntryBook(closedQty, bindingId);
+    this.recalcAvgPrice();
+    if (this.posSize === 0) this.entryBook.length = 0;
+    // A pending exit dies with what it was bound to: the position, once flat (an exit without
+    // from_entry), or its from_entry id's entries, once their bound quantity is spent. An exit
+    // bound to a still-pending entry order (e.g. the one reversing this position) was not bound
+    // here and survives.
+    if (
+      exitWasBound &&
+      (this.posSize === 0 || (this.exitFromEntry !== "" && !this.hasBound(this.exitFromEntry)))
+    ) {
+      this.exitPending = false;
+    }
+  }
+
+  // Books one closed trade: the record behind strategy.closedtrades.*(trade_num), the latest-trade
+  // snapshot fields, and the account counters.
+  private recordClosedTrade(rec: ClosedTradeRecord): void {
+    this.realizedPnl += rec.profit;
     this.closedTrades += 1;
-    // C173/C308: 부분 청산도 "청산 1회"라 매번 갱신(closedTrades 증가와 동일 관례, C168 (3)).
-    this.lastClosedEntryComment = this.entryComment;
-    this.lastClosedExitComment = exitComment;
-    this.lastClosedEntryPrice = this.posAvgPrice;
-    this.lastClosedExitPrice = fillPrice;
-    this.lastClosedEntryBarIndex = this.entryBarIndexOpen;
-    this.lastClosedExitBarIndex = barIndex;
-    this.lastClosedEntryTime = this.entryTimeOpen;
-    this.lastClosedExitTime = barTimeMs;
-    this.lastClosedEntryId = this.entryId ?? "";
-    this.lastClosedExitId = exitId;
-    this.lastClosedProfit = profit;
-    this.lastClosedSize = sign * closeQty;
-    // max_drawdown/max_runup(C312) 스냅샷 — 다른 lastClosed* 필드와 동일하게 부분 청산도 "청산
-    // 1회"라 매번 갱신한다(closedTrades 증가와 동일 관례, 바로 위 주석). 러닝값 자체의 리셋은
-    // 부분 청산에서는 하지 않는다(잔여 포지션의 트레이드가 아직 안 끝났으므로) — 전량 청산(flat
-    // 전환) 시에만 아래에서 0으로 되돌린다.
-    this.lastClosedMaxRunup = this.tradeMaxRunup;
-    this.lastClosedMaxDrawdown = this.tradeMaxDrawdown;
-    // C579: trade_num 전 인덱스 조회용 레코드 push — 위 lastClosed* 스냅샷과 완전히 동일한 값(그
-    // 필드들의 push 시점 그대로 복사)이라 이후 별도 동기화가 필요 없다.
-    this.closedTradeRecords.push({
-      entryComment: this.lastClosedEntryComment,
-      exitComment: this.lastClosedExitComment,
-      entryPrice: this.lastClosedEntryPrice,
-      exitPrice: this.lastClosedExitPrice,
-      entryBarIndex: this.lastClosedEntryBarIndex,
-      exitBarIndex: this.lastClosedExitBarIndex,
-      entryTime: this.lastClosedEntryTime,
-      exitTime: this.lastClosedExitTime,
-      entryId: this.lastClosedEntryId,
-      exitId: this.lastClosedExitId,
-      profit,
-      size: this.lastClosedSize,
-      maxRunup: this.lastClosedMaxRunup,
-      maxDrawdown: this.lastClosedMaxDrawdown,
-    });
-    // avg_winning_trade_percent/avg_losing_trade_percent(C674) — closedTradeProfitPercent와
-    // 동일 공식(entryPrice===0 가드, direction은 profit과 같은 sign 변수로 판별 — closedTradeSize와
-    // 동일 규약이라 별도 재계산 불필요).
-    const entryPriceForPct = this.lastClosedEntryPrice;
+    this.lastClosedEntryComment = rec.entryComment;
+    this.lastClosedExitComment = rec.exitComment;
+    this.lastClosedEntryPrice = rec.entryPrice;
+    this.lastClosedExitPrice = rec.exitPrice;
+    this.lastClosedEntryBarIndex = rec.entryBarIndex;
+    this.lastClosedExitBarIndex = rec.exitBarIndex;
+    this.lastClosedEntryTime = rec.entryTime;
+    this.lastClosedExitTime = rec.exitTime;
+    this.lastClosedEntryId = rec.entryId;
+    this.lastClosedExitId = rec.exitId;
+    this.lastClosedProfit = rec.profit;
+    this.lastClosedSize = rec.size;
+    this.lastClosedMaxRunup = rec.maxRunup;
+    this.lastClosedMaxDrawdown = rec.maxDrawdown;
+    this.closedTradeRecords.push(rec);
+    // avg_winning_trade_percent/avg_losing_trade_percent(C674) — closedTradeProfitPercent와 동일 공식.
     const profitPercent =
-      entryPriceForPct === 0 ? 0 : sign > 0
-        ? ((fillPrice - entryPriceForPct) / entryPriceForPct) * 100
-        : ((entryPriceForPct - fillPrice) / entryPriceForPct) * 100;
-    if (profit > 0) {
+      rec.entryPrice === 0 ? 0 : rec.size > 0
+        ? ((rec.exitPrice - rec.entryPrice) / rec.entryPrice) * 100
+        : ((rec.entryPrice - rec.exitPrice) / rec.entryPrice) * 100;
+    if (rec.profit > 0) {
       this.winTrades += 1;
-      this.grossProfit += profit;
+      this.grossProfit += rec.profit;
       this.sumWinProfitPercent += profitPercent;
-    } else if (profit < 0) {
+    } else if (rec.profit < 0) {
       this.lossTrades += 1;
-      this.grossLoss += profit;
+      this.grossLoss += rec.profit;
       this.sumLossProfitPercent += profitPercent;
     } else {
       this.evenTrades += 1;
-    }
-    this.posSize -= sign * closeQty;
-    if (this.posSize === 0) {
-      // An exit bound to another entry id than the position being closed waits on a pending entry
-      // order (e.g. the one reversing this position) — it is not this position's bracket.
-      const exitIsThisPositions = this.exitFromEntry === "" || this.exitFromEntry === this.entryId;
-      this.tradeMaxRunup = 0;
-      this.tradeMaxDrawdown = 0;
-      this.posAvgPrice = NaN;
-      this.entryId = null;
-      this.entryComment = "";
-      this.entryCount = 0;
-      this.entryBarIndexOpen = NaN;
-      this.entryTimeOpen = NaN;
-      // 포지션 전량 청산 시 pending exit 자동 소멸(pine2py _close_position의 from_entry 주문 제거
-      // 동형, C167) — exit 자신의 체결 소비/close 마켓 청산/리버스 entry 세 경로 모두 여기 한 곳으로
-      // 수렴. 부분 청산(잔여 포지션 존재)은 브래킷 유지 — 잔여분의 익절/손절이 계속 유효한 쪽이 TV
-      // 브래킷 의도에 맞는다는 가설(exit 자신의 부분 체결은 processFills가 주문 소비를 별도 수행,
-      // DIVERGENCES #71). entryCount(pyramiding 게이트)도 유지 — 부분 청산이 추가 진입 여력을
-      // 되돌리는지는 TV 미검증이라 보수적으로 불변(LIMITATIONS.md).
-      if (exitIsThisPositions) this.exitPending = false;
     }
   }
 
@@ -1140,15 +1231,19 @@ export class StrategyState {
     // calls strategy.entry() and strategy.exit() once, on the same bar, before the entry fills.
     // Without from_entry, a pending entry is a target only while flat (in a position the exit
     // already binds to it). Repro: resin-harness state/repros/mixed-seed-1.json.
-    const bindsPosition = this.posSize !== 0 && (from === "" || from === this.entryId);
+    // With from_entry, the open part it binds to is that id's entries, not the whole position
+    // (strategies.txt: "instructing the command to create exit orders only for open trades that
+    // have the "buy2" entry ID").
+    const bindsPosition = this.posSize !== 0 && (from === "" || this.hasBound(from));
     const bindsPendingEntry = !bindsPosition && this.entryPending && (from === "" || from === this.entryOrderId);
     if (!bindsPosition && !bindsPendingEntry) return;
     // qty_percent of a pending entry is a share of its size at the fill (see exitQtyPercent).
     const deferPercent = bindsPendingEntry && qty === undefined && qtyPercent !== undefined;
+    const boundOpenQty = from === "" ? Math.abs(this.posSize) : this.boundQty(from);
     const q = qty !== undefined
       ? qty
       : qtyPercent !== undefined
-        ? deferPercent ? qtyPercent : (Math.abs(this.posSize) * qtyPercent) / 100
+        ? deferPercent ? qtyPercent : (boundOpenQty * qtyPercent) / 100
         : Infinity;
     if (!(q > 0)) return; // NaN에서도 안전한 긍정형 가드(MEMORY.md C91)
     const exitQty = deferPercent ? Infinity : q;
@@ -1279,6 +1374,13 @@ export class StrategyState {
   // closeAllPending 가드는 "다음 바에 이미 전량 청산이 걸려 있으면 부분 큐잉을 skip"하는 pending-vs-
   // pending 축이라 즉시 체결(지금 당장 발생)에는 적용하지 않는다(즉시 체결로 posSize가 0이 되면
   // 나중에 pending 소비 시점의 기존 posSize!==0 가드가 자연히 no-op 처리).
+  // The id of the exit order strategy.close(id) creates. strategies.txt: the command's id
+  // "specifies the entry ID of an open trade. It does not represent the ID of the resulting exit
+  // order." TradingView names that order "Close entry(s) order <id>" (the oracle's exit_id).
+  private static closeExitId(entryId: string): string {
+    return `Close entry(s) order ${entryId}`;
+  }
+
   close(
     id: string | null | undefined, qty?: number, comment?: string, when: boolean = true,
     qtyPercent?: number, immediately?: boolean, currentClose?: number, currentBarIndex?: number,
@@ -1286,16 +1388,24 @@ export class StrategyState {
   ): void {
     if (!when) return;
     if (this.posSize === 0) return;
-    if (id === null || id === undefined || id !== this.entryId) return;
+    if (id === null || id === undefined) return;
+    // The order closes the open quantity bound to the entries with this id, not the whole
+    // position (strategies.txt: "If a market position consists of multiple open trades with the
+    // same entry ID, a single strategy.close() call with that ID as its id argument generates a
+    // single market order to close all of those trades"; in the FIFO demo the strategy.close("Buy2")
+    // order "is for 10 units because it links to the open trade with the "Buy2" entry ID"). Which
+    // trades the fill consumes is FIFO (closeAt). Repro: resin-harness state/repros/mixed-seed-5.json.
+    const bound = this.boundQty(id);
+    if (!(bound > 0)) return;
     const q = qty !== undefined
-      ? qty
+      ? qty > bound ? bound : qty
       : qtyPercent !== undefined
-        ? (Math.abs(this.posSize) * qtyPercent) / 100
-        : Infinity;
+        ? (bound * qtyPercent) / 100
+        : bound;
     if (!(q > 0)) return; // NaN에서도 안전한 긍정형 가드(MEMORY.md C91)
     const cmt = comment ?? "";
     if (immediately) {
-      this.closeAt(currentClose ?? NaN, q, cmt, currentBarIndex ?? NaN, id, currentBarTimeMs ?? NaN);
+      this.closeAt(currentClose ?? NaN, q, cmt, currentBarIndex ?? NaN, StrategyState.closeExitId(id), currentBarTimeMs ?? NaN, id);
       return;
     }
     if (this.closeAllPending) return;
@@ -1397,8 +1507,13 @@ export class StrategyState {
       this.closePending = false;
       const ignoreId = this.closeAllPending; // close_all(C168) — id 매칭 생략(전량 청산)
       this.closeAllPending = false;
-      if (this.posSize !== 0 && (ignoreId || this.entryId === this.closeOrderId)) {
-        this.closeAt(openPrice, this.closeQty, this.closeOrderComment, barIndex, this.closeOrderId, barTimeMs);
+      if (this.posSize !== 0 && (ignoreId || this.hasBound(this.closeOrderId))) {
+        // close_all has no entry id: its exit id is "" as on its immediately= path.
+        this.closeAt(
+          openPrice, this.closeQty, this.closeOrderComment, barIndex,
+          ignoreId ? "" : StrategyState.closeExitId(this.closeOrderId), barTimeMs,
+          ignoreId ? null : this.closeOrderId,
+        );
       }
     }
     // exit 브래킷(C167)은 close(마켓 청산) 다음, entry 앞에서 판정한다 — 마켓 close는 open 체결이라
@@ -1468,28 +1583,19 @@ export class StrategyState {
           if (directionForbidden || intradayLimitReached || drawdownForbidden || qty <= 0) {
             // 위 청산까지만 — 아래 신규/피라미딩 분기 스킵(주문 자체는 소진, 이월 없음).
           } else if (this.posSize === 0) {
-            this.posSize = sign * qty;
-            this.posAvgPrice = fillPrice;
-            this.entryId = this.entryOrderId;
-            this.entryComment = this.entryOrderComment;
-            this.entryCount = 1;
-            this.entryBarIndexOpen = barIndex;
-            this.entryTimeOpen = barTimeMs;
+            this.openTradeAt(this.entryOrderId, this.entryOrderComment, fillPrice, sign * qty, barIndex, barTimeMs);
             this.intradayFilledCount += 1;
             if (this.exitPending && !Number.isNaN(this.exitQtyPercent)) {
               this.exitQty = (qty * this.exitQtyPercent) / 100;
               this.exitQtyPercent = NaN;
             }
           } else if (this.entryCount < this.pyramiding) {
-            // 같은 방향 추가 진입(pyramiding) — pine2py _fill_entry의 가중평균 분기 literal port.
-            // entryId는 최초 진입 id 유지(pine2py도 pyramiding 분기에서 position.entry_id를 안 바꿈).
-            // pyramiding=0은 이 분기(0 < 0 false)에 절대 못 들어와 1과 실질 동치 — pine2py 가드
-            // (`entries >= pyramiding`이되 `is_long`일 때만 차단)와 같은 관측 결과.
+            // A pyramiding add opens its own trade beside the earlier ones (it is not merged into
+            // them): "Pyramiding specifies the maximum number of open trades, from the orders created
+            // by strategy.entry() calls, that a strategy allows for a single position"
+            // (strategies.txt). pyramiding=0 never gets here (0 < 0), the same as 1.
             // 자동 수량의 추가 진입 equity에는 기존 포지션의 미실현 손익(체결가 기준)이 포함된다.
-            const size = Math.abs(this.posSize);
-            this.posAvgPrice = (this.posAvgPrice * size + fillPrice * qty) / (size + qty);
-            this.posSize += sign * qty;
-            this.entryCount += 1;
+            this.openTradeAt(this.entryOrderId, this.entryOrderComment, fillPrice, sign * qty, barIndex, barTimeMs);
             this.intradayFilledCount += 1;
           }
           // else: 같은 방향 + pyramiding 소진 → 주문 취소(이월 없음)
@@ -1535,24 +1641,10 @@ export class StrategyState {
             qty -= reduceQty;
           }
           if (qty > 0) {
-            if (this.posSize === 0) {
-              this.posSize = sign * qty;
-              this.posAvgPrice = orderFill;
-              this.entryId = this.orderOrderId;
-              this.entryComment = this.orderOrderComment;
-              this.entryCount = 1;
-              this.entryBarIndexOpen = barIndex;
-              this.entryTimeOpen = barTimeMs;
-            } else {
-              // 같은 방향 추가 — entry의 pyramiding 분기와 같은 가중평균이되 **게이트 없음**(TV:
-              // strategy.order는 pyramiding 설정의 영향을 받지 않는다 — 미검증 가설 #72). entryCount는
-              // 증가시켜 이후 entry의 pyramiding 게이트에 반영한다(pine2py _fill_entry가 주문 출처
-              // 무관하게 _long/_short_entries를 증가시키는 것과 동형 — 역시 TV 미검증 가설).
-              const size = Math.abs(this.posSize);
-              this.posAvgPrice = (this.posAvgPrice * size + orderFill * qty) / (size + qty);
-              this.posSize += sign * qty;
-              this.entryCount += 1;
-            }
+            // Opens a trade of its own, from flat or beside the open ones — with no pyramiding gate
+            // (strategies.txt: strategy.order() "ignores most properties, such as pyramiding"). Its
+            // entry still takes a slot the next strategy.entry() is gated on (entryCount).
+            this.openTradeAt(this.orderOrderId, this.orderOrderComment, orderFill, sign * qty, barIndex, barTimeMs);
           }
         }
       }
@@ -1563,7 +1655,8 @@ export class StrategyState {
   // the entry slot (a position carried in from earlier bars) and again after an entry opens a
   // position from flat on this bar (see processFills).
   private fillPendingExit(openPrice: number, high: number, low: number, barIndex: number, barTimeMs: number): void {
-    if (this.exitPending && this.posSize !== 0 && (this.exitFromEntry === "" || this.exitFromEntry === this.entryId)) {
+    const from = this.exitFromEntry;
+    if (this.exitPending && this.posSize !== 0 && (from === "" || this.hasBound(from))) {
       const exitFill = this.exitFillPrice(openPrice, high, low);
       if (!Number.isNaN(exitFill)) {
         // 주문 소비는 여기서 명시(C168) — 전량 청산은 closeAt의 flat 리셋이 exitPending을 함께
@@ -1581,7 +1674,15 @@ export class StrategyState {
               : this.exitFillKind === null && this.exitCommentTrailing !== null
                 ? this.exitCommentTrailing
                 : this.exitOrderComment;
-        this.closeAt(exitFill, this.exitQty, exitCmt, barIndex, this.exitOrderId, barTimeMs);
+        // An exit with from_entry closes at most its entry id's bound quantity; the fill itself
+        // is FIFO like every closing fill (closeAt).
+        if (from === "") {
+          this.closeAt(exitFill, this.exitQty, exitCmt, barIndex, this.exitOrderId, barTimeMs);
+        } else {
+          const bound = this.boundQty(from);
+          const qty = this.exitQty < bound ? this.exitQty : bound;
+          this.closeAt(exitFill, qty, exitCmt, barIndex, this.exitOrderId, barTimeMs, from);
+        }
       }
     }
   }

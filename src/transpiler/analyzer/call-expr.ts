@@ -2178,11 +2178,9 @@ function matchSecurityExprMathCall(node: CallExpr): string | null {
 // 허용 method 집합" 표로 판별한다. pine2py wavealgo/strategy/types.py Trade dataclass(entry_id/
 // exit_id/entry_price/exit_price/entry_bar/exit_bar/profit) 필드셋과 대응 — 단 pine2js는 트레이드
 // 배열을 보유하지 않아(GOAL.md "bar loop 안 할당 제로") closedtrades는 entry_comment/exit_comment와
-// 동일하게 **가장 최근 청산 트레이드 1건만**(runtime/strategy.ts lastClosed* 필드), opentrades는
-// Position dataclass(entry_id/entry_price/entry_bar/size)에 대응하고 STRATEGY_RUNTIME_PROPS의
-// opentrades 스칼라 카운트(posSize===0?0:1)와 같은 전제라 index=0(단일 가상 트레이드, 피라미딩도
-// 압축)만 유효 — 그 외 index는 트레이드 히스토리 미보유라 명시적 하드 에러(LIMITATIONS.md, 조용한
-// 오답 방지). profit/profit_percent/max_drawdown/max_runup(C312, C308이 범위 밖으로 보류했던 4종)은
+// 동일하게 **가장 최근 청산 트레이드 1건만**(runtime/strategy.ts lastClosed* 필드), opentrades reads
+// the engine's open trades (one per entry fill, index 0 = oldest; runtime/strategy.ts openTrades) —
+// an index outside them is a hard runtime error, not a made-up value. profit/profit_percent/max_drawdown/max_runup(C312, C308이 범위 밖으로 보류했던 4종)은
 // codegen.ts OPEN_TRADE_CLOSE_PRICE_METHODS(opentrades.profit/profit_percent만 `$.close.get(0)`
 // 암묵 주입 — 미실현 손익 계산에 종가가 필요, C308 원래 우려 해소)와 runtime/strategy.ts
 // updateTradeExcursion(max_drawdown/max_runup의 바별 인트라바 추적) 참조.
