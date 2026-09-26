@@ -1697,7 +1697,8 @@ function pivotBufGet(buffer: Float64Array, writeIdx: number, idx: number): numbe
 // length 하나가 아니라 left/right 두 값이 창의 좌/우 폭을 각각 결정하므로, 고정 length 버전(위
 // pivothigh())처럼 rt.ta.highest/lowest를 재호출하는 합성이 아니라 pine2py 원본처럼
 // candidate=buffer[writeIdx-right]를 직접 인덱싱해 왼쪽(더 오래된 값)/오른쪽(더 최근 값) 두 구간을
-// 따로 스캔한다. left<=0/right<=0은 Python range(1,left+1)/range(right)가 빈 루프가 되는 것과
+// 따로 스캔한다. Ties are asymmetric, as in the fixed-length pivothigh() below: an equal value on the
+// left does not break the pivot, an equal value on the right (a newer bar) does. left<=0/right<=0은 Python range(1,left+1)/range(right)가 빈 루프가 되는 것과
 // 동일하게 JS for 루프 조건이 자연히 스킵한다(별도 분기 불필요) - negative left/right/0/과대
 // length 6개 조합을 python 직접 실행으로 대조해 pivotBufGet의 범위 판정 하나로 전부 재현됨을 확인
 // (음수 right가 candidate를 미래 바로 밀어 out-of-range NaN을 내는 경로까지 포함). left 또는
@@ -1735,7 +1736,7 @@ export function pivothighVarLen(
   }
   for (let i = 0; i < r; i++) {
     const v = pivotBufGet(state.buffer, writeIdx, writeIdx - i);
-    if (Number.isNaN(v) || v > candidate) return NaN;
+    if (Number.isNaN(v) || v >= candidate) return NaN;
   }
   return candidate;
 }
@@ -1774,7 +1775,7 @@ export function pivotlowVarLen(
   }
   for (let i = 0; i < r; i++) {
     const v = pivotBufGet(state.buffer, writeIdx, writeIdx - i);
-    if (Number.isNaN(v) || v < candidate) return NaN;
+    if (Number.isNaN(v) || v <= candidate) return NaN;
   }
   return candidate;
 }
@@ -3143,26 +3144,27 @@ export interface PivotState {
 }
 
 // ta.pivothigh/ta.pivotlow(source, left, right) - candidate=source.get(right)(right바 지연)가 창
-// [0..left+right] 전체(길이 left+right+1)에서 최댓값/최솟값이면 그 값을, 아니면 NaN을 반환한다
-// (pine2py wavealgo/ta/pivot.py: 왼쪽 source.get(right+1..right+left)/오른쪽 source.get(0..right-1)
-// 둘 다 NaN이거나 candidate보다 **엄격히** 더 극단이면 NaN — 동률은 pivot 성립을 막지 않는다,
-// highest류와 동일한 poison window로 창 안 NaN/데이터 부족도 즉시 NaN).
+// [0..left+right] 전체(길이 left+right+1)의 최댓값/최솟값이면 그 값을, 아니면 NaN을 반환한다
+// (highest류와 동일한 poison window로 창 안 NaN/데이터 부족도 즉시 NaN).
 //
 // 새 자료구조 없이 length=left+right+1짜리 rt.ta.highest/rt.ta.lowest(C42 ExtremeState)를 그대로
 // 호출하는 합성(hma/stoch류 "이미 구현된 TA 재사용" 원칙) — 창 [0..left+right]가 정확히
-// highest(source, left+right+1)의 창과 일치하므로 windowMax===candidate(둘 다 non-NaN)가 곧
-// "candidate 이외의 모든 원소가 candidate 이하"(동률 허용, 엄격 부등호만 거부)와 동치다.
-// candidate(=right바 전 값) 조회는 별도 순환 버퍼를 새로 두지 않고 ExtremeState의 raw backing
-// buffer(state.buffer — tie-break 방향이 있는 deque가 아니라 push된 원값을 위치 그대로 순환 저장할
-// 뿐이라 동률과 무관하게 안전)를 offset=right로 직접 인덱싱해 재사용한다: highest()/lowest() 호출
-// 직후 writeIdx는 방금 쓴 값의 "다음" 슬롯을 가리키므로, right바 전 값은
-// buffer[(writeIdx-1-right) mod length]에 있다. windowMax가 non-NaN이면(nanCount===0) 그 창 전체가
-// 실측값이므로 candidate도 항상 non-NaN — 별도 NaN 체크 불필요. scratch/probe_pivot.mjs로
-// tie/창NaN/left=0/right=0(지연 없음)/5,000샘플 퍼즈(5개 (left,right) 조합) 전부 대조 완료.
+// highest(source, left+right+1)의 창과 일치한다. windowMax가 non-NaN이면(nanCount===0) 그 창 전체가
+// 실측값이므로 candidate도 항상 non-NaN — 별도 NaN 체크 불필요.
+//
+// Ties are asymmetric. The bar `right` back is a pivot only when it holds the NEWEST occurrence of
+// the window's extreme: an equal value on the left (older bars) does not break it, an equal value
+// on the right (newer bars) does. Tier 1 ta_369_pivot_zero_strength (BINANCE:BTCUSDT 30m) bar 208:
+// ta.pivothigh(high, 0, 5) is na although bar 203's high 98500 is the window's maximum, because bar
+// 205 reaches 98500 again; at bar 210 the same call reports bar 205's 98500 with the equal bar 203
+// on its left. The oracle agrees (PyneCore lib/ta.py pivothigh: `highest(source, pivotrange,
+// _check_eq=True)` keeps the newest index among equal values, pivot when it is `-rightbars`). The
+// manual (ref_v6_ta_math.txt ta.pivothigh) says only "returns price of the pivot high point".
+// highest()'s monotonic deque pops every older value <= the new one, so its head is already the
+// newest occurrence of the maximum: the pivot is that head's seq being `right` bars old.
 export function pivothigh(state: PivotState, source: number, left: number, right: number): number {
-  // C569: left/right int 복원(상세는 sma() 주석 참조) — highest()도 length를 자체 trunc하지만
-  // 여기 아래의 idx 계산(% length)이 별도로 untruncated length를 쓰면 둘이 어긋나므로 이 함수
-  // 자신의 스코프에서도 먼저 truncate해 length 파생값 전체를 일관되게 정수로 고정한다.
+  // C569: left/right int 복원(상세는 sma() 주석 참조) — highest()도 length를 자체 trunc하므로
+  // 이 함수 자신의 스코프에서도 먼저 truncate해 length 파생값 전체를 일관되게 정수로 고정한다.
   left = Math.trunc(left);
   right = Math.trunc(right);
   if (state.extreme === undefined) {
@@ -3171,11 +3173,11 @@ export function pivothigh(state: PivotState, source: number, left: number, right
   const length = left + right + 1;
   const windowMax = highest(state.extreme, source, length);
   if (Number.isNaN(windowMax)) return NaN;
-  const idx = (((state.extreme.writeIdx! - 1 - right) % length) + length) % length;
-  const candidate = state.extreme.buffer![idx]!;
-  return windowMax === candidate ? candidate : NaN;
+  const ext = state.extreme;
+  return ext.dequeSeq![ext.dequeHead!] === ext.seq! - right ? windowMax : NaN;
 }
 
+// ta.pivotlow - pivothigh() mirrored: lowest()'s deque head is the newest occurrence of the minimum.
 export function pivotlow(state: PivotState, source: number, left: number, right: number): number {
   left = Math.trunc(left); // C569: left/right int 복원(상세는 pivothigh() 주석 참조)
   right = Math.trunc(right);
@@ -3185,9 +3187,8 @@ export function pivotlow(state: PivotState, source: number, left: number, right:
   const length = left + right + 1;
   const windowMin = lowest(state.extreme, source, length);
   if (Number.isNaN(windowMin)) return NaN;
-  const idx = (((state.extreme.writeIdx! - 1 - right) % length) + length) % length;
-  const candidate = state.extreme.buffer![idx]!;
-  return windowMin === candidate ? candidate : NaN;
+  const ext = state.extreme;
+  return ext.dequeSeq![ext.dequeHead!] === ext.seq! - right ? windowMin : NaN;
 }
 
 export interface SupertrendState {

@@ -6106,11 +6106,12 @@ describe("ta.vwap (multi-arg overloads, C362)", () => {
 });
 
 // ta.pivothigh/ta.pivotlow(source, left, right) — candidate=source.get(right)(right바 지연)가 창
-// [0..left+right](길이 left+right+1)에서 최댓값/최솟값이면 그 값을, 아니면 NaN을 반환(동률은 pivot
-// 성립을 막지 않음, 엄격 부등호만 거부 — pine2py wavealgo/ta/pivot.py). 새 자료구조 없이
-// length=left+right+1짜리 rt.ta.highest/rt.ta.lowest(C42 ExtremeState)를 그대로 호출하는 합성 —
-// candidate는 ExtremeState의 raw backing buffer(deque가 아닌 원값 순환 저장)를 offset=right로 직접
-// 인덱싱해 재사용(별도 버퍼 불필요). scratch/probe_pivot.mjs로 pine2py 리터럴 포트와 대조 완료.
+// [0..left+right](길이 left+right+1)의 최댓값/최솟값이면 그 값을, 아니면 NaN을 반환. Ties are
+// asymmetric: an equal value on the left does not break the pivot, an equal value on the right
+// (a newer bar) does — harness state/repros/tv-ta_369_pivot_zero_strength.json (tier 1, bar 208:
+// ta.pivothigh(high, 0, 5) is na because bar 205 equals bar 203's 98500). The old pine2py rule
+// (every tie allowed) was wrong. 새 자료구조 없이 length=left+right+1짜리 rt.ta.highest/rt.ta.lowest
+// (C42 ExtremeState)를 그대로 호출하는 합성.
 describe("ta.pivothigh", () => {
   it("returns NaN while the window hasn't filled yet (left=1, right=1, total=3 bars)", () => {
     const state = {};
@@ -6133,11 +6134,16 @@ describe("ta.pivothigh", () => {
     expect(pivothigh(state, 3, 1, 1)).toBeNaN(); // window [9,2,3], candidate=2, but 9>2 on the left -> NaN
   });
 
-  it("allows ties (equal values do not block a pivot, only a strictly greater value does)", () => {
-    const state = {};
-    pivothigh(state, 3, 1, 1);
-    pivothigh(state, 3, 1, 1);
-    expect(pivothigh(state, 3, 1, 1)).toBe(3); // flat window [3,3,3]: candidate==max, tie allowed
+  it("allows a tie on the left, rejects a tie on the right (tier 1 tv-ta_369_pivot_zero_strength)", () => {
+    const left = {};
+    pivothigh(left, 3, 1, 1);
+    pivothigh(left, 3, 1, 1);
+    expect(pivothigh(left, 2, 1, 1)).toBe(3); // window [3,3,2]: the older 3 on the left is a tie, allowed
+    const right = {};
+    pivothigh(right, 1, 1, 1);
+    pivothigh(right, 3, 1, 1);
+    expect(pivothigh(right, 3, 1, 1)).toBeNaN(); // window [1,3,3]: candidate 3 ties the newer 3 -> NaN
+    expect(pivothigh(right, 2, 1, 1)).toBe(3); // window [3,3,2]: the newer 3 is the pivot
   });
 
   it("poisons the result if any bar in the window (including the candidate itself) is NaN", () => {
@@ -6179,7 +6185,7 @@ describe("ta.pivothigh", () => {
     results.forEach((r, i) => (Number.isNaN(expected[i]!) ? expect(r).toBeNaN() : expect(r).toBe(expected[i])));
   });
 
-  it("matches a from-scratch literal port of pivot.py (pivothigh) across ties, NaN gaps, and varying left/right", () => {
+  it("matches a from-scratch brute force (left ties allowed, right ties rejected) across ties, NaN gaps, and varying left/right", () => {
     const bruteForce = (history: number[], i: number, left: number, right: number): number => {
       const total = left + right + 1;
       if (i + 1 < total) return NaN;
@@ -6192,7 +6198,7 @@ describe("ta.pivothigh", () => {
       }
       for (let k = 0; k < right; k++) {
         const val = get(k);
-        if (Number.isNaN(val) || val > candidate) return NaN;
+        if (Number.isNaN(val) || val >= candidate) return NaN;
       }
       return candidate;
     };
@@ -6231,11 +6237,16 @@ describe("ta.pivotlow", () => {
     expect(pivotlow(state, 8, 1, 1)).toBe(1); // window [9,1,8], candidate=source.get(1)=1, min of window
   });
 
-  it("allows ties (equal values do not block a pivot, only a strictly smaller value does)", () => {
-    const state = {};
-    pivotlow(state, 3, 1, 1);
-    pivotlow(state, 3, 1, 1);
-    expect(pivotlow(state, 3, 1, 1)).toBe(3); // flat window [3,3,3]: candidate==min, tie allowed
+  it("allows a tie on the left, rejects a tie on the right (tier 1 tv-ta_369_pivot_zero_strength)", () => {
+    const left = {};
+    pivotlow(left, 3, 1, 1);
+    pivotlow(left, 3, 1, 1);
+    expect(pivotlow(left, 4, 1, 1)).toBe(3); // window [3,3,4]: the older 3 on the left is a tie, allowed
+    const right = {};
+    pivotlow(right, 5, 1, 1);
+    pivotlow(right, 3, 1, 1);
+    expect(pivotlow(right, 3, 1, 1)).toBeNaN(); // window [5,3,3]: candidate 3 ties the newer 3 -> NaN
+    expect(pivotlow(right, 4, 1, 1)).toBe(3); // window [3,3,4]: the newer 3 is the pivot
   });
 
   it("poisons the result if any bar in the window is NaN", () => {
@@ -6262,7 +6273,7 @@ describe("ta.pivotlow", () => {
     results.forEach((r, i) => (Number.isNaN(expected[i]!) ? expect(r).toBeNaN() : expect(r).toBe(expected[i])));
   });
 
-  it("matches a from-scratch literal port of pivot.py (pivotlow) across ties, NaN gaps, and varying left/right", () => {
+  it("matches a from-scratch brute force (left ties allowed, right ties rejected) across ties, NaN gaps, and varying left/right", () => {
     const bruteForce = (history: number[], i: number, left: number, right: number): number => {
       const total = left + right + 1;
       if (i + 1 < total) return NaN;
@@ -6275,7 +6286,7 @@ describe("ta.pivotlow", () => {
       }
       for (let k = 0; k < right; k++) {
         const val = get(k);
-        if (Number.isNaN(val) || val < candidate) return NaN;
+        if (Number.isNaN(val) || val <= candidate) return NaN;
       }
       return candidate;
     };
@@ -6322,9 +6333,10 @@ describe("ta.pivothigh variable(series) left/right (pivothighVarLen)", () => {
         const val = get(i - right - k);
         if (Number.isNaN(val) || val > candidate) return NaN;
       }
+      // A tie on the right (a newer bar) breaks the pivot (tier 1 tv-ta_369_pivot_zero_strength).
       for (let k = 0; k < right; k++) {
         const val = get(i - k);
-        if (Number.isNaN(val) || val > candidate) return NaN;
+        if (Number.isNaN(val) || val >= candidate) return NaN;
       }
       return candidate;
     };
@@ -6379,9 +6391,10 @@ describe("ta.pivotlow variable(series) left/right (pivotlowVarLen)", () => {
         const val = get(i - right - k);
         if (Number.isNaN(val) || val < candidate) return NaN;
       }
+      // A tie on the right (a newer bar) breaks the pivot (tier 1 tv-ta_369_pivot_zero_strength).
       for (let k = 0; k < right; k++) {
         const val = get(i - k);
-        if (Number.isNaN(val) || val < candidate) return NaN;
+        if (Number.isNaN(val) || val <= candidate) return NaN;
       }
       return candidate;
     };
