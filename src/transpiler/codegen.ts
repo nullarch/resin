@@ -366,21 +366,27 @@ export function generateCode(program: AnalyzedProgram): string {
     program.strategyInitialCapital !== null ||
     program.strategyQtyIsPercent ||
     program.strategyQtyIsCash ||
-    program.strategyProcessOrdersOnClose
+    program.strategyProcessOrdersOnClose ||
+    program.strategySlippage > 0
   ) {
     // default_qty_type=percent_of_equity(C171)/cash(C330)는 각각 네 번째/다섯 번째 슬롯 — 지정되면
     // 그 앞의 슬롯들도 기본값으로 채워 방출한다(C129 "지정된 가장 뒤쪽 슬롯까지만 방출" — 둘 다
     // 미지정 스크립트의 기존 출력은 한 글자도 안 바뀜). 두 플래그는 call-expr.ts의 if/else-if
     // 구조상 상호 배타이므로 cash일 때 percent 슬롯은 항상 명시적 false로 채운다.
-    // process_orders_on_close=true is the sixth slot, so it spells out the two before it.
+    // process_orders_on_close=true is the sixth slot, so it spells out the two before it; slippage
+    // is the seventh and spells out the three before it.
     const onClose = program.strategyProcessOrdersOnClose;
+    const slippage = program.strategySlippage;
     const capArg =
-      program.strategyInitialCapital !== null || program.strategyQtyIsPercent || program.strategyQtyIsCash || onClose
+      program.strategyInitialCapital !== null || program.strategyQtyIsPercent || program.strategyQtyIsCash || onClose ||
+      slippage > 0
         ? `, ${program.strategyInitialCapital ?? 100000}`
         : "";
-    const tailArgs = onClose
-      ? `, ${program.strategyQtyIsPercent}, ${program.strategyQtyIsCash}, true`
-      : program.strategyQtyIsCash ? ", false, true" : program.strategyQtyIsPercent ? ", true" : "";
+    const tailArgs = slippage > 0
+      ? `, ${program.strategyQtyIsPercent}, ${program.strategyQtyIsCash}, ${onClose}, ${slippage}`
+      : onClose
+        ? `, ${program.strategyQtyIsPercent}, ${program.strategyQtyIsCash}, true`
+        : program.strategyQtyIsCash ? ", false, true" : program.strategyQtyIsPercent ? ", true" : "";
     lines.push(
       `$.strategy.configure(${program.strategyDefaultQty ?? 1}, ${program.strategyPyramiding ?? 1}${capArg}${tailArgs});`,
     );

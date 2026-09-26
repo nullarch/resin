@@ -4972,6 +4972,20 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             );
           }
         }
+        // slippage (const int, ticks) moves every market and stop fill against the order
+        // (StrategyState.slipped). Anything but a compile-time int >= 0 is a hard error, since
+        // dropping it would silently move those fills.
+        const slip = directiveArgExpr(expr, STRATEGY_PARAM_NAMES, "slippage");
+        if (slip !== undefined) {
+          const slipVal = resolveDirectiveConstNumber(slip, prog);
+          if (slipVal !== undefined && Number.isInteger(slipVal) && slipVal >= 0) {
+            prog.strategySlippage = slipVal;
+          } else {
+            prog.errors.push(
+              `'strategy()' 'slippage' argument only supports an int literal >= 0 (requires a compile-time constant) (L${expr.line}:${expr.col})`,
+            );
+          }
+        }
       }
       for (const arg of expr.args) analyzeExpr(arg, prog, scope, false);
       return;

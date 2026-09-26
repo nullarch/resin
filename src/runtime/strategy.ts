@@ -120,6 +120,8 @@ export class StrategyState {
   // strategy(process_orders_on_close=true): the orders the script places on a bar get one more
   // fill attempt at that bar's close (processFillsAtClose), instead of waiting for the next open.
   processOrdersOnClose: boolean;
+  // strategy(slippage=N): ticks every market or stop fill is moved against the order (see slipped).
+  slippage: number;
 
   // 계좌 속성 누적기(C165 셋째 슬라이스) — pine2py는 청산마다 Trade 객체를 리스트에 쌓고 속성을
   // 매번 리스트 스캔(sum/len)으로 계산하지만, 여기서는 GOAL.md "bar loop 안 할당 제로"에 따라
@@ -399,6 +401,7 @@ export class StrategyState {
     this.qtyIsPercent = false;
     this.qtyIsCash = false;
     this.processOrdersOnClose = false;
+    this.slippage = 0;
     this.realizedPnl = 0;
     this.closedTrades = 0;
     this.winTrades = 0;
@@ -597,6 +600,7 @@ export class StrategyState {
   configure(
     defaultQty: number, pyramiding: number, initialCapital: number = 100000,
     qtyIsPercent: boolean = false, qtyIsCash: boolean = false, processOrdersOnClose: boolean = false,
+    slippage: number = 0,
   ): void {
     this.defaultQty = defaultQty;
     this.pyramiding = pyramiding;
@@ -604,6 +608,18 @@ export class StrategyState {
     this.qtyIsPercent = qtyIsPercent;
     this.qtyIsCash = qtyIsCash;
     this.processOrdersOnClose = processOrdersOnClose;
+    this.slippage = slippage;
+  }
+
+  // The fill price of a market or stop order after slippage: `price` moved `slippage` ticks against
+  // the order, up for a buy (`side` 1) and down for a sell (-1). props.txt: "Slippage (parameter:
+  // slippage) specifies the value in ticks to be added to the fill price of market or stop orders";
+  // strategies.txt, "Slippage and unfilled limits": "each order fills 20 ticks beyond the intended
+  // price in the unfavorable direction (higher for long orders, and lower for short orders)". A limit
+  // fill keeps its price ("limit orders execute at the specified price or a better value"). The price
+  // is not snapped afterwards, as in the oracle. Repro: resin-harness state/repros/mixed-seed-6.json.
+  private slipped(price: number, side: number): number {
+    return this.slippage > 0 ? price + side * (MINTICK * this.slippage) : price;
   }
 
   // strategy.openprofit — 미실현 손익(pine2py engine.py openprofit 프로퍼티의 signed-posSize 형:
@@ -1441,7 +1457,9 @@ export class StrategyState {
     if (!(q > 0)) return; // NaN에서도 안전한 긍정형 가드(MEMORY.md C91)
     const cmt = comment ?? "";
     if (immediately) {
-      this.closeAt(currentClose ?? NaN, q, cmt, currentBarIndex ?? NaN, StrategyState.closeExitId(id), currentBarTimeMs ?? NaN, id);
+      // A market order at the close: slipped against the position (closing a long sells).
+      const fill = this.slipped(currentClose ?? NaN, this.posSize > 0 ? -1 : 1);
+      this.closeAt(fill, q, cmt, currentBarIndex ?? NaN, StrategyState.closeExitId(id), currentBarTimeMs ?? NaN, id);
       return;
     }
     if (this.closeAllPending) return;
@@ -1470,7 +1488,8 @@ export class StrategyState {
     if (this.posSize === 0) return;
     const cmt = comment ?? "";
     if (immediately) {
-      this.closeAt(currentClose ?? NaN, Infinity, cmt, currentBarIndex ?? NaN, "", currentBarTimeMs ?? NaN);
+      const fill = this.slipped(currentClose ?? NaN, this.posSize > 0 ? -1 : 1); // as in close()
+      this.closeAt(fill, Infinity, cmt, currentBarIndex ?? NaN, "", currentBarTimeMs ?? NaN);
       return;
     }
     this.closePending = true;
@@ -1605,7 +1624,8 @@ export class StrategyState {
     this.updateMaxContractsHeld();
   }
 
-  // Fills the pending strategy.close()/close_all() market order at `fillPrice`.
+  // Fills the pending strategy.close()/close_all() market order at `fillPrice`, slipped against the
+  // position (closing a long sells).
   private fillPendingClose(fillPrice: number, barIndex: number, barTimeMs: number): void {
     this.closePending = false;
     const ignoreId = this.closeAllPending; // close_all(C168) — id 매칭 생략(전량 청산)
@@ -1613,7 +1633,7 @@ export class StrategyState {
     if (this.posSize !== 0 && (ignoreId || this.hasBound(this.closeOrderId))) {
       // close_all has no entry id: its exit id is "" as on its immediately= path.
       this.closeAt(
-        fillPrice, this.closeQty, this.closeOrderComment, barIndex,
+        this.slipped(fillPrice, this.posSize > 0 ? -1 : 1), this.closeQty, this.closeOrderComment, barIndex,
         ignoreId ? "" : StrategyState.closeExitId(this.closeOrderId), barTimeMs,
         ignoreId ? null : this.closeOrderId,
       );
@@ -1626,6 +1646,10 @@ export class StrategyState {
   private fillPendingEntry(fillPrice: number, barIndex: number, barTimeMs: number): void {
     this.entryPending = false;
     const sign = this.entryDirection === "long" ? 1 : -1;
+    // A market or stop entry fills slipped against it, the reversal's closing leg included (one
+    // order, one price); a limit entry, and a stop-limit (a limit order once its stop triggers),
+    // keeps its price.
+    if (Number.isNaN(this.entryLimit)) fillPrice = this.slipped(fillPrice, sign);
     // percent_of_equity 자동 수량(C171)은 체결 시점에 해석: entryQty(지분율 %)를 equity(체결가
     // 기준)로 계약 수 환산. 리버스 청산 **전에** 계산해도 동일하다 — equity(p)는 같은 가격 p의
     // 청산 전/후 불변((p-avg)*posSize가 미실현→실현으로 자리만 옮기고 openProfit이 0이 됨).
@@ -1701,6 +1725,7 @@ export class StrategyState {
   private fillPendingOrder(orderFill: number, barIndex: number, barTimeMs: number): void {
     this.orderPending = false;
     const sign = this.orderDirection === "long" ? 1 : -1;
+    if (Number.isNaN(this.orderLimit)) orderFill = this.slipped(orderFill, sign); // as in fillPendingEntry
     // percent_of_equity 자동 수량(C171) — entry 분기와 동일하게 체결 시점 해석. 상쇄(부분
     // closeAt)도 같은 가격이라 equity 불변 — 해석을 상쇄 앞 한 곳에 두면 충분하다. equity<=0이면
     // 주문 소진·미체결(상쇄 포함 전부 스킵 — entry 분기와 동일 가드, DIVERGENCES #74).
@@ -1758,8 +1783,11 @@ export class StrategyState {
     this.executeExit(closePrice, barIndex, barTimeMs);
   }
 
-  // Closes at the pending exit's fill price; exitFillKind names the level that triggered it.
+  // Closes at the pending exit's fill price; exitFillKind names the level that triggered it. The
+  // stop-loss and trailing legs are stop orders and fill slipped against the position; the
+  // take-profit leg is a limit order and keeps its price.
   private executeExit(exitFill: number, barIndex: number, barTimeMs: number): void {
+    if (this.exitFillKind !== "profit") exitFill = this.slipped(exitFill, this.posSize > 0 ? -1 : 1);
     const from = this.exitFromEntry;
     // 주문 소비는 여기서 명시(C168) — 전량 청산은 closeAt의 flat 리셋이 exitPending을 함께
     // 소멸시키지만, qty= 부분 체결은 포지션이 남아도 브래킷 주문 자체는 체결로 소진돼야 한다

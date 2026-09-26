@@ -8177,3 +8177,151 @@ describe("strategy(process_orders_on_close=true) E2E", () => {
     expect(errs.some((e) => e.includes("'process_orders_on_close' argument must be a true/false literal"))).toBe(true);
   });
 });
+
+// ── strategy(slippage=N) ──
+// props.txt: "Slippage (parameter: slippage) specifies the value in ticks to be added to the fill
+// price of market or stop orders"; strategies.txt, "Slippage and unfilled limits": "each order fills
+// 20 ticks beyond the intended price in the unfavorable direction (higher for long orders, and lower
+// for short orders)". A limit fill keeps its price. mintick is 0.01.
+// Oracle-checked: resin-harness state/repros/mixed-seed-6.json, slippage-seed-1.json, probe C16.
+describe("StrategyState slippage (market and stop fills move N ticks against the order)", () => {
+  function slip(ticks: number, onClose = false): StrategyState {
+    const st = new StrategyState();
+    st.configure(1, 1, 100000, false, false, onClose, ticks);
+    return st;
+  }
+
+  it("a long market entry buys N ticks above the open and its close sells N ticks below", () => {
+    // resin-harness state/repros/slippage-seed-1.json: slippage=2, the entry fills at bar 20's
+    // open 107.47 and the close at bar 28's open 111.64.
+    const st = slip(2);
+    st.entry("L", "long", 3);
+    st.processFills(107.47, 108, 107, 20);
+    expect(st.posAvgPrice).toBe(107.49);
+    st.close("L");
+    st.processFills(111.64, 112, 111, 28);
+    expect(st.closedTradeRecords[0]!.exitPrice).toBe(111.62);
+    expect(st.realizedPnl).toBeCloseTo(12.39, 9);
+  });
+
+  it("a short market entry sells N ticks below the open and its close buys N ticks above", () => {
+    // resin-harness state/repros/mixed-seed-6.json: slippage=6.
+    const st = slip(6);
+    st.entry("S", "short", 2);
+    st.processFills(103.01, 104, 102, 24);
+    expect(st.posAvgPrice).toBe(102.95);
+    st.close("S");
+    st.processFills(103.5, 104, 103, 26);
+    expect(st.closedTradeRecords[0]!.exitPrice).toBe(103.56);
+    expect(st.realizedPnl).toBeCloseTo(-1.22, 9);
+  });
+
+  it("a limit entry keeps its price, at the limit or at the open it gapped to", () => {
+    const st = slip(5);
+    st.entry("L", "long", 1, 100); // buy limit 100
+    st.processFills(101, 102, 99.5, 0);
+    expect(st.posAvgPrice).toBe(100);
+    const gap = slip(5);
+    gap.entry("L", "long", 1, 100);
+    gap.processFills(99, 99.5, 98, 0);
+    expect(gap.posAvgPrice).toBe(99);
+  });
+
+  it("a stop entry fills N ticks past its stop, or past the open it gapped to", () => {
+    const st = slip(5);
+    st.entry("L", "long", 1, undefined, 100); // buy stop 100
+    st.processFills(99, 101, 98.5, 0);
+    expect(st.posAvgPrice).toBe(100.05);
+    const gap = slip(5);
+    gap.entry("S", "short", 1, undefined, 100); // sell stop 100, the bar opens below it
+    gap.processFills(98, 99, 97, 0);
+    expect(gap.posAvgPrice).toBe(97.95);
+  });
+
+  it("a strategy.order market fill is slipped like an entry", () => {
+    const st = slip(5);
+    st.order("O", "short", 1);
+    st.processFills(105, 106, 104, 0);
+    expect(st.posAvgPrice).toBe(104.95);
+  });
+
+  it("an exit's stop leg fills N ticks past its stop, its limit leg at the limit", () => {
+    const st = slip(5);
+    st.entry("L", "long", 1);
+    st.processFills(100, 101, 99.5, 0);
+    st.exit("X", "L", 110, 98);
+    st.processFills(99, 99.5, 97, 1); // low reaches the stop
+    expect(st.closedTradeRecords[0]!.exitPrice).toBe(97.95);
+    const tp = slip(5);
+    tp.entry("L", "long", 1);
+    tp.processFills(100, 101, 99.5, 0);
+    tp.exit("X", "L", 105, 90);
+    tp.processFills(104, 106, 103.5, 1); // high reaches the limit
+    expect(tp.closedTradeRecords[0]!.exitPrice).toBe(105);
+  });
+
+  it("a trailing stop fill is slipped like a stop", () => {
+    const st = slip(3);
+    st.entry("L", "long", 1);
+    st.processFills(100, 100.5, 99.8, 0); // fills at 100.03
+    // trail_points=100 activates at 101.03; trail_offset=100 trails 1.00 under the high.
+    st.exit("T", "L", undefined, undefined, undefined, 100, 100);
+    st.processFills(101, 105, 100.5, 1); // the line reaches 104, the low crosses it
+    expect(st.closedTradeRecords[0]!.exitPrice).toBe(103.97);
+  });
+
+  it("strategy.close(immediately=true) sells N ticks below the close", () => {
+    const st = slip(5);
+    st.entry("L", "long", 1);
+    st.processFills(100, 101, 99.5, 0);
+    st.close("L", undefined, undefined, true, undefined, true, 105, 0);
+    expect(st.closedTradeRecords[0]!.exitPrice).toBe(104.95);
+  });
+
+  it("the process_orders_on_close pass slips its market fills at the close", () => {
+    const st = slip(3, true);
+    st.processFills(99, 101, 98, 0);
+    st.entry("L", "long", 1);
+    st.processFillsAtClose(100, 0);
+    expect(st.posAvgPrice).toBe(100.03);
+    st.processFills(98, 98.5, 96, 1);
+    st.close("L");
+    st.processFillsAtClose(97, 1);
+    expect(st.closedTradeRecords[0]!.exitPrice).toBe(96.97);
+  });
+});
+
+describe("strategy(slippage=N) E2E", () => {
+  const data: OHLCVData = {
+    open: [100, 101, 103, 102],
+    high: [101, 102, 104, 103],
+    low: [99, 100, 102, 101],
+    close: [100.5, 101.5, 103.5, 102.5],
+    volume: [1, 1, 1, 1],
+  };
+  // TradingView's own slippage test scripts state the ticks through a top-level constant.
+  const src = [
+    "int SLIP = 5",
+    'strategy("s", initial_capital=100000, slippage=SLIP)',
+    "if bar_index == 0",
+    '    strategy.entry("L", strategy.long, qty=2)',
+    "if bar_index == 1",
+    '    strategy.close("L")',
+    "var float __net = na",
+    "__net := strategy.netprofit",
+  ].join("\n");
+
+  it("configures the slippage slot", () => {
+    expect(transpileCode(src)).toContain("$.strategy.configure(1, 1, 100000, false, false, false, 5);");
+  });
+
+  it("buys at bar 1's open + 5 ticks and sells at bar 2's open - 5 ticks", () => {
+    const result = runPipeline(src, data);
+    expect(result.bars[2]!["var:__net"]).toBeCloseTo((102.95 - 101.05) * 2, 9);
+  });
+
+  it("rejects a slippage that is not a compile-time int >= 0", () => {
+    const errs = transpileErrors('strategy("s", slippage=1.5)');
+    expect(errs.some((e) => e.includes("'slippage' argument only supports an int literal >= 0"))).toBe(true);
+  });
+});
