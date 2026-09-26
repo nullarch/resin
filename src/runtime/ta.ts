@@ -1395,6 +1395,16 @@ export interface NaSkipVarLenState {
   count?: number; // values stored, this bar's included
   barStart?: number; // values stored before this bar
   lastBarIdx?: number;
+  // naSkipSumVarLen's rolling machine; `entries` is indexed like `buffer` (a value's realized entry)
+  entries?: Float64Array;
+  sum?: number;
+  comp?: number;
+  window?: number; // values the sum covers
+  calls?: number;
+  prevLen?: number; // the last call's length, 0 before any (and after a length below 1 or na)
+  chgAt?: number; // the call on which the length last changed
+  bar?: number[]; // [sum, comp, window, calls, prevLen, chgAt] as the bar began
+  undo?: number[]; // (position, old entry) pairs written on this bar, for a same-bar re-execution
 }
 
 // Appends a non-na value to the call site's na-compacted history (an na stores nothing) and
@@ -1417,16 +1427,151 @@ function recordNonNa(state: NaSkipVarLenState, value: number, barCount: number, 
   return count;
 }
 
-// naSkipSum with a series length: every non-na value is kept (the window may grow again). A NaN
-// length is na; a length <= 0 sums an empty window (0).
+// naSkipSum with a series length: the same rolling compensated machine, which follows the length
+// without restarting (pynecore lib/_math_stateful.py sum: "Pine's machine does not restart when the
+// length moves (MEASURED, probe sumlen2: a length grown 1..610 reproduces a constant 610
+// bit-for-bit on all 28746 bars)"). A plain linear sum of the window is not TradingView's value: on
+// a flat window it gives the exact mean where the machine keeps one ulp of dust, and ta.cci divides
+// that dust by itself (resin-harness state/repros/ta.serieslen-seed-14.json, ta.cci(ohlc4,
+// math.min(bar_index + 1, 6)) on bar 171: -66.67 on the oracle, 0/0 before). Every non-na value is
+// kept (the window may grow again), and `entries` holds each one's realized entry by position.
+// Offset k (0 = this bar's value, or on an na bar the newest stored one) is position n - 1 - k.
+// A moved length is walked as the oracle measured it:
+//   - offsets leaving the window, oldest first, each an eviction-only step with its RAW value, the
+//     newest of them (offset newW) fused with this bar's step as the steady-state eviction
+//     ("MEASURED, probes sumlen3/6: the isolated 8->1, 100->1, 300->150, 610->100 and 5->3 events
+//     are all bit-exact only this way");
+//   - offsets entering it, oldest first, each an addition-only step whose residue becomes that
+//     value's entry ("probes sumlen6/sumlen7: a 5->6, 6->7, 4->10 or 6->5 step is bit-exact");
+//   - a length that changes on two calls in a row (a RUNNING length) re-baselines to the
+//     newest-first raw sum of the window, raw entries, compensation cleared, once the history is
+//     longer than the length ("the dense path re-baselines", probe columns saw20/50/200).
+// An na bar that does not move the window reports the standing sum ("probe sumlen4"). The machine
+// is bar-keyed like the other *VarLen variants: a same-bar re-execution (a loop call site) starts
+// again from the bar-start state, as the oracle's loop-site rollback does. A length below 1 has no
+// answer in the oracle (it asserts `length > 0`): resin keeps its na for a NaN length and 0 for an
+// empty window, and the next valid length rebuilds the window from the stored history.
 function naSkipSumVarLen(state: NaSkipVarLenState, value: number, len: number, barCount: number, barIdx: number): number {
-  const count = recordNonNa(state, value, barCount, barIdx);
-  if (Number.isNaN(len)) return NaN;
-  if (len > count) return NaN;
-  let total = 0;
+  if (state.entries === undefined) {
+    state.entries = new Float64Array(Math.max(1, barCount));
+    state.sum = 0;
+    state.comp = 0;
+    state.window = 0;
+    state.calls = 0;
+    state.prevLen = 0;
+    state.chgAt = -Infinity;
+    state.bar = [0, 0, 0, 0, 0, -Infinity];
+    state.undo = [];
+  }
+  const entries = state.entries;
+  const bar = state.bar!;
+  const undo = state.undo!;
+  if (barIdx !== state.lastBarIdx) {
+    bar[0] = state.sum!;
+    bar[1] = state.comp!;
+    bar[2] = state.window!;
+    bar[3] = state.calls!;
+    bar[4] = state.prevLen!;
+    bar[5] = state.chgAt!;
+  } else {
+    for (let i = undo.length - 2; i >= 0; i -= 2) entries[undo[i]!] = undo[i + 1]!;
+    state.sum = bar[0];
+    state.comp = bar[1];
+    state.window = bar[2];
+    state.calls = bar[3];
+    state.prevLen = bar[4];
+    state.chgAt = bar[5];
+  }
+  undo.length = 0;
+  const n = recordNonNa(state, value, barCount, barIdx);
+  if (!(len >= 1)) {
+    state.sum = 0;
+    state.comp = 0;
+    state.window = 0;
+    state.prevLen = 0;
+    return Number.isNaN(len) ? NaN : 0;
+  }
   const buffer = state.buffer!;
-  for (let i = count - Math.max(len, 0); i < count; i++) total += buffer[i]!;
-  return total;
+  const sourceNa = Number.isNaN(value);
+  const calls = state.calls! + 1;
+  state.calls = calls;
+  const changed = state.prevLen !== 0 && len !== state.prevLen;
+  const dense = changed && calls - state.chgAt! <= 1;
+  if (changed) state.chgAt = calls;
+  state.prevLen = len;
+
+  const prevW = state.window!;
+  const newW = n >= len ? len : n;
+  if (sourceNa && prevW === newW) return newW >= len ? state.sum! : NaN;
+  const top = n - 1;
+  if (dense && n > len) {
+    let rebuilt = buffer[top]!;
+    for (let k = 1; k < newW; k++) rebuilt += buffer[top - k]!;
+    for (let k = 0; k < newW; k++) putEntry(state, top - k, buffer[top - k]!);
+    state.sum = rebuilt;
+    state.comp = 0;
+    state.window = newW;
+    return rebuilt;
+  }
+
+  let s = state.sum!;
+  let c = state.comp!;
+  const shift = sourceNa ? 0 : 1;
+  const v = sourceNa ? 0 : value;
+  let d0 = 0;
+  if (prevW + shift > newW) {
+    for (let k = prevW - 1 + shift; k > newW; k--) {
+      const y1 = -buffer[top - k]! - c;
+      const t = s + y1;
+      const e1 = t - s - y1;
+      const y2 = -e1;
+      s = t + y2;
+      c = s - t - y2;
+    }
+    d0 = entries[top - newW]!;
+  } else if (newW > prevW + shift) {
+    for (let k = newW - 1; k >= prevW + shift; k--) {
+      const y1 = -c;
+      const t = s + y1;
+      const e1 = t - s - y1;
+      const y2 = buffer[top - k]! - e1;
+      s = t + y2;
+      c = s - t - y2;
+      putEntry(state, top - k, y2);
+    }
+  }
+
+  // sum_fires, as in naSkipSum.
+  let fires = false;
+  if (c !== 0 && v !== 0) {
+    const b = c > 0 ? c : -c;
+    const r = v + b;
+    if (r !== 0 && r - r === 0) fires = b - (r - v) > 0;
+  }
+  if (fires) {
+    s = v;
+    for (let k = 1; k < newW; k++) s += buffer[top - k]!;
+    c = 0;
+    putEntry(state, top, v);
+  } else {
+    const y1 = -d0 - c;
+    const t = s + y1;
+    const e1 = t - s - y1;
+    const y2 = v - e1;
+    s = t + y2;
+    c = s - t - y2;
+    if (!sourceNa) putEntry(state, top, y2);
+  }
+  state.sum = s;
+  state.comp = c;
+  state.window = newW;
+  return newW >= len ? s : NaN;
+}
+
+// Writes a realized entry, logging the old one so a same-bar re-execution can restore it.
+function putEntry(state: NaSkipVarLenState, pos: number, entry: number): void {
+  state.undo!.push(pos, state.entries![pos]!);
+  state.entries![pos] = entry;
 }
 
 export interface MedianVarLenState extends NaSkipVarLenState {

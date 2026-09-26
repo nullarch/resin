@@ -4252,6 +4252,34 @@ describe("math.sum variable(series) length (sumVarLen)", () => {
     sumVarLen(state, 10, 1, 10, 0);
     expect(sumVarLen(state, 20, 2.9, 10, 1)).toBe(30); // trunc(2.9)=2 → 창=[10,20]
   });
+
+  // A series length runs the fixed-length rolling compensated machine, not a plain sum of the
+  // window (pynecore lib/_math_stateful.py sum; resin-harness state/repros/ta.serieslen-seed-14.json,
+  // where the plain sum's exact flat-window mean made ta.cci 0/0 instead of the oracle's -66.67).
+  // Bars 7, 8 and 11 are where the plain oldest-first sum lands one ulp away.
+  it("runs the same rolling compensated sum as a literal length, bit for bit", () => {
+    const vals = [100.1, 100.2, 99.7, 100.3, 100.05, 99.95, 100.15, 100.25, 99.85, 100.35, 100.45, 99.65, 100.1, 100.2];
+    const fixed = {};
+    const series = {};
+    for (let i = 0; i < vals.length; i++) {
+      expect(sumVarLen(series, vals[i]!, 4, vals.length, i)).toBe(sum(fixed, vals[i]!, 4));
+    }
+    const plain = (i: number) => vals[i - 3]! + vals[i - 2]! + vals[i - 1]! + vals[i]!;
+    const again = {};
+    const got = vals.map((v, i) => sumVarLen(again, v, 4, vals.length, i));
+    expect([7, 8, 11].map((i) => got[i] === plain(i))).toEqual([false, false, false]);
+  });
+
+  it("a same-bar re-execution starts again from the bar-start machine (loop call site)", () => {
+    const vals = [100.1, 100.2, 99.7, 100.3, 100.05, 99.95, 100.15, 100.25, 99.85, 100.35, 100.45, 99.65];
+    const once = {};
+    const loop = {};
+    for (let i = 0; i < vals.length; i++) {
+      sumVarLen(loop, vals[i]!, 2, vals.length, i);
+      sumVarLen(loop, vals[i]!, 7, vals.length, i);
+      expect(sumVarLen(loop, vals[i]!, 4, vals.length, i)).toBe(sumVarLen(once, vals[i]!, 4, vals.length, i));
+    }
+  });
 });
 
 // ta.highestbars/ta.lowestbars(source, length) — offset (0=current bar, -1=1 bar ago, ...) to the
