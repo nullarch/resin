@@ -1,20 +1,18 @@
-// oracle/cases/cond_loop_ta.pine: 조건부 stateful call — loop 본문(for/while)의 per-call 상태
-// 전진 (ROADMAP line 809 "loop·UDF 본문" 중 loop 슬라이스, C161). cond_if_ta(C64)/cond_switch_ta
-// (C65)의 문장 레벨 조건부 검증을 반복문 본문으로 확장한다: 루프 안 ta 콜은 "반복마다 같은
-// 콜사이트 상태가 1회씩 전진"이며, pine2py가 for/while을 Python 루프로 직결 트랜스파일(codegen.py
-// _gen_for/_gen_while) + state_key가 codegen 시점 정적 콜사이트 카운터(_taN)라 정확히 동형 —
-// 네 채널 전부 순수 call-fed인 ta.ema만 사용해(sma/rma는 첫 호출 히스토리 백필로 오라클 무효,
-// DIVERGENCES.md #11) divergence 제외 구간 없이 pine2py 골든과 전 구간 일치한다.
-// TV 실측은 미검증 가설(DIVERGENCES.md — VERIFIED_SEMANTICS의 조건부 per-call CONFIRMED를 루프에
-// 외삽).
+// oracle/cases/cond_loop_ta.pine: stateful calls in loop bodies (for/while, a `continue`, and a
+// per-bar iteration count that alternates 2,1,2,1,...).
 //
-// 골든이 확정한 사실(스모킹 건):
-// - __obs_a bar1 = 101.6667: ema(close,3)가 바당 2회 전진해 4번째 호출에서 시드
-//   (101+101+102)/3=101.3333 뒤 한 스텝 더 나갔다는 수치 증거 — 바당 1회 전진이었다면 bar1은
-//   아직 워밍업(호출 2회)이라 NaN이어야 한다.
-// - __obs_d bar0 = 101.0: ema(close,2)가 한 바 안에서(2회 호출) 워밍업을 끝냈다는 증거 +
-//   flag 교대에 따라 바마다 호출 횟수가 2,1,2,1,...로 달라져도 pine2js와 pine2py가 같은 속도로
-//   전진한다는 가변 반복 횟수 검증.
+// The rule (tier 2, certified against TradingView): a call site in a loop body keeps ONE state,
+// and every execution on one bar re-derives from the state the bar started with; the state carried
+// to the next bar is the last execution's. PyneCore core/instance_state.py `__loop_state__`
+// ("the builtin machines in the callee's subtree are rolled back to their bar-start state before
+// every same-bar re-execution"); tier 1 ta_373_sma_loop_shared_window (ta.sma in a for loop,
+// 260/260 TradingView bars). With the same arguments on every iteration, a loop call site therefore
+// reads exactly what the straight-line call reads, however many times the loop runs on a bar.
+//
+// The golden in oracle/golden/cond_loop_ta.json is pine2py's, and pine2py advanced the state once
+// per iteration (C161). That is not ground truth: the harness twin of this case (same bars,
+// sample10) run by PyneCore gives the values asserted below, and resin matches it on every bar.
+// Only the golden's `flag` channel, which has no stateful call, is still read from it.
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -31,20 +29,37 @@ function loadCaseSource(name: string): string {
   return readFileSync(join(ROOT, "oracle", "cases", `${name}.pine`), "utf-8");
 }
 
-const CHANNELS = ["__obs_a", "__obs_b", "__obs_c", "__obs_d", "flag"] as const;
+// PyneCore on the harness twin of this case (close = 101, 102, 103, 102, 104, 105, 106, 105, 107,
+// 108): each channel is the straight-line ema of its length.
+const ORACLE: Record<"__obs_a" | "__obs_b" | "__obs_c" | "__obs_d", readonly number[]> = {
+  // ema(close, 3), two iterations per bar
+  __obs_a: [NaN, NaN, 102, 102, 103, 104, 105, 105, 106, 107],
+  // ema(close, 5), while loop, two iterations per bar
+  __obs_b: [
+    NaN, NaN, NaN, NaN, 102.4, 103.26666666666668, 104.17777777777779, 104.45185185185187, 105.30123456790125,
+    106.20082304526751,
+  ],
+  // ema(close, 4), for loop skipping i == 1 with continue
+  __obs_c: [NaN, NaN, NaN, 102, 102.8, 103.68, 104.608, 104.7648, 105.65888, 106.595328],
+  // ema(close, 2), 2,1,2,1,... iterations per bar
+  __obs_d: [
+    NaN, 101.5, 102.5, 102.16666666666667, 103.38888888888889, 104.46296296296296, 105.48765432098764,
+    105.16255144032922, 106.38751714677642, 107.46250571559214,
+  ],
+};
+const OBS_CHANNELS = ["__obs_a", "__obs_b", "__obs_c", "__obs_d"] as const;
 
-describe("oracle: cond_loop_ta (stateful calls in for/while loop bodies, per-call advance)", () => {
-  it("golden proves pine2py advances ema state once per loop iteration (bar1 __obs_a seeded+stepped, bar0 __obs_d fully seeded)", () => {
+describe("oracle: cond_loop_ta (stateful calls in for/while loop bodies, bar-start rollback per execution)", () => {
+  it("pine2py's golden advanced the ema once per loop iteration (the per-call model the tier-2 oracle contradicts)", () => {
     const golden = loadGolden(CASE_NAME);
-    // ema(close,3) 2회/바: bar0은 호출 2회(워밍업 중) NaN, bar1 4번째 호출에서 시드 후 한 스텝
-    // 더 — 바당 1회 전진이었다면 여기가 NaN이어야 한다(스모킹 건).
+    // pine2py: ema(close,3) twice per bar seeds on its 3rd call (bar 1) and steps once more.
     expect(golden.bars[0]!["var:__obs_a"]).toBe("NaN");
     expect(decodeSentinel(golden.bars[1]!["var:__obs_a"]!)).toBeCloseTo(101.66666666666667, 9);
-    // ema(close,2) 2회/바(bar0): 한 바 안에서 시드 (101+101)/2=101 완성.
-    expect(decodeSentinel(golden.bars[0]!["var:__obs_d"]!)).toBe(101.0);
+    // PyneCore: one step per bar, so bar 1 is still warming up.
+    expect(ORACLE.__obs_a[1]).toBeNaN();
   });
 
-  it("matches golden bar-for-bar on all four loop channels with no exclusions (all call-fed ema)", () => {
+  it("matches the tier-2 oracle bar-for-bar on all four loop channels (flag from the golden)", () => {
     const data = loadOracleData(CASE_NAME);
     const source = loadCaseSource(CASE_NAME);
     const result = runPipeline(source, data);
@@ -52,30 +67,27 @@ describe("oracle: cond_loop_ta (stateful calls in for/while loop bodies, per-cal
 
     expect(result.bars).toHaveLength(golden.bars.length);
     for (let i = 0; i < golden.bars.length; i++) {
-      for (const ch of CHANNELS) {
-        const expected = decodeSentinel(golden.bars[i]![`var:${ch}`]!);
+      for (const ch of OBS_CHANNELS) {
+        const expected = ORACLE[ch][i]!;
         expect(
           nearlyEqual(result.bars[i]![`var:${ch}`]!, expected),
-          `bar ${i} ${ch}: actual=${result.bars[i]![`var:${ch}`]} golden=${expected}`,
+          `bar ${i} ${ch}: actual=${result.bars[i]![`var:${ch}`]} oracle=${expected}`,
         ).toBe(true);
       }
+      const flag = decodeSentinel(golden.bars[i]!["var:flag"]!);
+      expect(nearlyEqual(result.bars[i]!["var:flag"]!, flag), `bar ${i} flag`).toBe(true);
     }
   });
 
-  it("advances a fixed 2-iteration for-loop ema exactly two steps per bar (hand-verified trace)", () => {
+  it("re-derives a fixed 2-iteration for-loop ema from the bar-start state (one step per bar)", () => {
     const data = loadOracleData(CASE_NAME);
     const source = loadCaseSource(CASE_NAME);
     const result = runPipeline(source, data);
 
-    // ema(close,3), alpha=0.5, 바당 같은 close를 2회: bar0 호출 2회(누적 2<3) NaN,
-    // bar1 3번째 호출 시드 (101+101+102)/3 후 4번째 호출 0.5*102+0.5*101.3333=101.6667,
-    // 이후 바마다 두 스텝씩 전진(손 계산 전 구간).
-    const expectedA = [
-      NaN, 101.66666666666667, 102.66666666666667, 102.16666666666667, 103.54166666666667,
-      104.63541666666667, 105.65885416666667, 105.16471354166667, 106.54117838541667, 107.63529459635417,
-    ];
-    for (let i = 0; i < expectedA.length; i++) {
-      const e = expectedA[i]!;
+    // ema(close,3), alpha=0.5: seeded on bar 2 by (101+102+103)/3, then one step per bar even
+    // though the loop body runs twice.
+    for (let i = 0; i < ORACLE.__obs_a.length; i++) {
+      const e = ORACLE.__obs_a[i]!;
       if (Number.isNaN(e)) {
         expect(result.bars[i]!["var:__obs_a"], `bar ${i}`).toBeNaN();
       } else {
@@ -84,29 +96,30 @@ describe("oracle: cond_loop_ta (stateful calls in for/while loop bodies, per-cal
     }
   });
 
-  it("advances a variable-iteration for-loop ema at a different per-bar rate (hand-verified 2,1,2,1,... trace)", () => {
+  it("advances a variable-iteration for-loop ema at one step per bar whatever the iteration count (2,1,2,1,...)", () => {
     const data = loadOracleData(CASE_NAME);
     const source = loadCaseSource(CASE_NAME);
     const result = runPipeline(source, data);
 
-    // ema(close,2), alpha=2/3, flag 교대로 호출 횟수 2,1,2,1,...: bar0(2회) 시드 101 완성,
-    // 홀수 바는 한 스텝, 짝수 바는 두 스텝(손 계산 전 구간).
-    const expectedD = [
-      101.0, 101.66666666666667, 102.85185185185186, 102.28395061728395, 103.80932784636488,
-      104.60310928212162, 105.84478992023574, 105.28159664007858, 106.80906629334206, 107.60302209778069,
-    ];
-    for (let i = 0; i < expectedD.length; i++) {
-      expect(result.bars[i]!["var:__obs_d"], `bar ${i}`).toBeCloseTo(expectedD[i]!, 9);
+    // ema(close,2), alpha=2/3: seeded on bar 1 by (101+102)/2 = 101.5, then one step per bar.
+    for (let i = 0; i < ORACLE.__obs_d.length; i++) {
+      const e = ORACLE.__obs_d[i]!;
+      if (Number.isNaN(e)) {
+        expect(result.bars[i]!["var:__obs_d"], `bar ${i}`).toBeNaN();
+      } else {
+        expect(result.bars[i]!["var:__obs_d"], `bar ${i}`).toBeCloseTo(e, 9);
+      }
     }
   });
 
-  it("matches golden finalVarState on all channels", () => {
+  it("matches the tier-2 oracle's final value on all channels (flag from the golden)", () => {
     const data = loadOracleData(CASE_NAME);
     const source = loadCaseSource(CASE_NAME);
     const result = runPipeline(source, data);
     const golden = loadGolden(CASE_NAME);
-    for (const ch of CHANNELS) {
-      expect(result.finalVarState[ch], ch).toBeCloseTo(decodeSentinel(golden.finalVarState[ch]!), 9);
+    for (const ch of OBS_CHANNELS) {
+      expect(result.finalVarState[ch], ch).toBeCloseTo(ORACLE[ch][ORACLE[ch].length - 1]!, 9);
     }
+    expect(result.finalVarState.flag, "flag").toBeCloseTo(decodeSentinel(golden.finalVarState.flag!), 9);
   });
 });

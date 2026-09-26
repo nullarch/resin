@@ -3798,3 +3798,77 @@ export function pivotPointLevels(
   if (!Number.isNaN(close)) state.lastClose = close;
   return levels;
 }
+
+// A builtin call site inside a loop body keeps ONE state, shared by every iteration, but the
+// machine is bar-keyed: each execution on the same bar re-derives from the state the bar started
+// with (the last execution of the previous bar), fed this execution's own arguments, and the state
+// carried to the next bar is the last execution's. PyneCore (the tier-2 oracle, certified against
+// TradingView) implements exactly this in core/instance_state.py `__loop_state__`: "TradingView
+// keeps one state per call site no matter how many times a loop body executes it on a bar ... the
+// builtin machines in the callee's subtree are rolled back to their bar-start state before every
+// same-bar re-execution", measured there as "ta.sma inside a loop reproduces 86292/86292 values on
+// the shared-window model". The machines TradingView advances once per execution instead
+// (ta.highest/lowest and everything built on them, the percentiles, math.random) are not routed
+// here (codegen PER_EXECUTION_TA_FNS), nor are the *VarLen variants, which are bar-keyed already
+// (a same-bar call overwrites the bar's slot instead of advancing).
+//
+// codegen wraps the state argument of such a call site: `rt.ta.sma(rt.ta.loopState($.taSlots[k],
+// $.idx), …)`. The first execution of a bar snapshots the state; every later one on that bar
+// restores it. Both copies reuse the containers already there, so the bar loop stays
+// allocation-free once the state's shape settles, and the live state keeps its identity (a handle
+// such as pivot_point_levels' array stays the one the script holds).
+const LOOP_SITE = Symbol("loopSite");
+
+interface LoopSiteCell {
+  bar: number;
+  snapshot: Record<string, unknown>;
+}
+
+export function loopState(state: Record<string, unknown>, bar: number): Record<string, unknown> {
+  const holder = state as Record<string | symbol, unknown>;
+  const cell = holder[LOOP_SITE] as LoopSiteCell | undefined;
+  if (cell === undefined) {
+    const snapshot: Record<string, unknown> = {};
+    copyStateInto(snapshot, state);
+    holder[LOOP_SITE] = { bar, snapshot } satisfies LoopSiteCell;
+  } else if (cell.bar !== bar) {
+    cell.bar = bar;
+    copyStateInto(cell.snapshot, state);
+  } else {
+    copyStateInto(state, cell.snapshot);
+  }
+  return state;
+}
+
+// Deep copy of a machine state (numbers, booleans, strings, arrays, typed arrays, nested state
+// objects) into `dst`, reusing dst's own containers. for...in skips the symbol-keyed loop cell.
+function copyStateInto(dst: Record<string, unknown>, src: Record<string, unknown>): void {
+  for (const key in dst) {
+    if (!(key in src)) delete dst[key];
+  }
+  for (const key in src) dst[key] = copyStateValue(dst[key], src[key]);
+}
+
+function copyStateValue(prev: unknown, value: unknown): unknown {
+  if (value === null || typeof value !== "object") return value;
+  if (ArrayBuffer.isView(value)) {
+    const src = value as Float64Array;
+    if (prev instanceof (src.constructor as Float64ArrayConstructor) && (prev as Float64Array).length === src.length) {
+      (prev as Float64Array).set(src);
+      return prev;
+    }
+    return src.slice();
+  }
+  if (Array.isArray(value)) {
+    const out: unknown[] = Array.isArray(prev) ? prev : [];
+    out.length = value.length;
+    for (let i = 0; i < value.length; i++) out[i] = copyStateValue(out[i], value[i]);
+    return out;
+  }
+  const out =
+    prev !== null && typeof prev === "object" && !Array.isArray(prev) && !ArrayBuffer.isView(prev)
+      ? (prev as Record<string, unknown>)
+      : {};
+  copyStateInto(out, value as Record<string, unknown>);
+  return out;
+}

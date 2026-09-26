@@ -3784,6 +3784,29 @@ const VARLEN_RT_PATHS: Readonly<Record<string, string>> = {
   vwma: "rt.ta.vwmaVarLen",
 };
 
+// The builtins whose machine TradingView advances once per EXECUTION of a loop call site, instead
+// of re-deriving each same-bar execution from the bar-start state (rt.ta.loopState). PyneCore marks
+// them `per_call` / `__pyne_shared_call_site__`: ta.highest/ta.lowest ("The kept extreme advances
+// once per CALL on TradingView ... probe hiloop_probe ... a bar-start rollback misses 43746 of
+// them", lib/ta.py) and every machine built on them (highestbars/lowestbars, range, stoch, wpr,
+// pivothigh/pivotlow), the percentile machines ("advances this machine once per EXECUTION of its
+// call site"), and math.random ("The PRNG advances once per CALL by nature"). Their loop call sites
+// keep resin's per-call advance.
+const PER_EXECUTION_TA_FNS: ReadonlySet<string> = new Set([
+  "highest",
+  "lowest",
+  "highestbars",
+  "lowestbars",
+  "range",
+  "stoch",
+  "wpr",
+  "pivothigh",
+  "pivotlow",
+  "percentile_nearest_rank",
+  "percentile_linear_interpolation",
+  "random",
+]);
+
 function genCallExpr(
   expr: CallExpr,
   program: AnalyzedProgram,
@@ -4090,7 +4113,13 @@ function genCallExpr(
     // UDF/method 본문 안(C162)의 stateful 콜은 함수-상대 슬롯이라 콜사이트가 인자로 전달한
     // __taBase에 더해 실제 전역 슬롯을 만든다 — $.fnVars[__slotBase + i]와 동형.
     const slotRef = stateCall.inUdf ? `__taBase + ${stateCall.slot}` : String(stateCall.slot);
-    return `${rtPath}($.taSlots[${slotRef}], ${args.join(", ")})`;
+    let stateRef = `$.taSlots[${slotRef}]`;
+    if (stateCall.inLoop && !stateCall.seriesLength && !PER_EXECUTION_TA_FNS.has(stateCall.fn)) {
+      // A loop call site re-derives every same-bar execution from the bar-start state
+      // (rt.ta.loopState). The *VarLen variants are bar-keyed already and skip the copy.
+      stateRef = `rt.ta.loopState(${stateRef}, ${secCtx === null ? "$.idx" : secCtx.loopVar})`;
+    }
+    return `${rtPath}(${stateRef}, ${args.join(", ")})`;
   }
   if (program.noopStmtCalls.has(expr)) {
     // hline/bgcolor/.../alert(...)(C208) 콜이 문장 위치가 아니라 식 위치(대입 RHS 등)에서 genExpr로

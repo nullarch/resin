@@ -8,7 +8,7 @@
 
 import type { CallExpr, Expr } from "../ast";
 import type { AnalyzedProgram, LexScope, ScopePushKind } from "../analyzer";
-import { inferQualifier } from "../analyzer";
+import { inferQualifier, readsLoopVaryingName } from "../analyzer";
 import { isHarmlessArgDup } from "./arg-dup";
 
 // stateful 콜(ta.*/fixnan) 거부 판정: 스코프 체인을 루트까지 걸어 cond-body(if 분기 본문/switch
@@ -975,9 +975,10 @@ export function analyzeStatefulCall(
   // C64/C65: if 분기 본문/switch case 본문(cond-body 체인)은 per-call 상태 전진이 TV/pine2py와
   // 동형이라 허용(oracle/cases/cond_if_ta.pine·cond_switch_ta.pine — "호출된 바에서만 상태 전진"을
   // 골든으로 수치 확정). C66: 삼항/and·or lazy 위치(lazy-expr)는 codegen eager 호이스팅으로 허용.
-  // C161: for/while 본문(loop-body)은 "호출될 때마다 상태 전진"(반복마다 1회)으로 허용 —
-  // pine2py와 동형(oracle/cases/cond_loop_ta.pine 골든으로 수치 확정), TV 실측은 미검증 가설
-  // (DIVERGENCES.md 참조 — VERIFIED_SEMANTICS의 조건부 per-call CONFIRMED를 루프에 외삽).
+  // C161: for/while 본문(loop-body)도 허용. One state per call site, but every execution on one
+  // bar re-derives from the bar-start state (codegen routes it through rt.ta.loopState; PyneCore
+  // __loop_state__, tier 1 ta_373_sma_loop_shared_window) — pine2py's per-iteration advance, which
+  // C161 adopted, is superseded.
   // C162: UDF/method 본문(udf-body)은 함수-상대 슬롯 + 콜사이트별 __taBase 전파로 허용
   // (oracle/cases/cond_udf_ta.pine — 단일 콜사이트 골든, 다중 콜사이트는 hand-verified).
   // C260: elif 조건/switch case 값/while 조건의 직접 호출(and/or lazy 우변 밖)도 허용 —
@@ -999,6 +1000,9 @@ export function analyzeStatefulCall(
     prog.stateCallSlots.set(expr, { fn: name, slot: prog.taSlotCount });
     prog.taSlotCount += 1;
   }
+  // A call site in a loop body can execute several times on one bar; its state is still one
+  // (codegen routes it through rt.ta.loopState, see there for the rule).
+  if (scope.inLoop) prog.stateCallSlots.get(expr)!.inLoop = true;
   const callReturnArity = taCallReturnArity(entry, expr.args.length);
   if (callReturnArity !== undefined) {
     // 다중 반환 콜이 실제로 등장했으니 Context.taScratch가 그 반환 개수만큼은 필요하다
@@ -1039,6 +1043,19 @@ export function analyzeStatefulCall(
       prog.errors.push(
         `length argument of '${entry.displayName}' cannot be 'series' (a value changing per bar breaks fixed-width/initialization-window state): (L${expr.line}:${expr.col})`,
       );
+    } else if (
+      entry.seriesLengthOk &&
+      scope.inLoop &&
+      resolvedArgs.length > idx &&
+      resolvedArgs[idx] !== undefined &&
+      readsLoopVaryingName(resolvedArgs[idx]!, scope)
+    ) {
+      // A length read from a name the enclosing loop reassigns changes between the executions of
+      // this call site on one bar (tier 1 ta_373_sma_loop_shared_window: `p1 += 5` per iteration,
+      // ta.sma(close, p1) takes 5, 10, … 50 on every bar), so it needs the machine whose window
+      // follows the length. The *VarLen variant is it, and it is bar-keyed (a same-bar call
+      // overwrites the bar's slot), which is the loop-site law rt.ta.loopState states.
+      prog.stateCallSlots.get(expr)!.seriesLength = true;
     }
   }
 }

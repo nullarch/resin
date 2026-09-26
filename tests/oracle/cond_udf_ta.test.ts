@@ -12,8 +12,11 @@
 // - __obs_b bar4 = 103.5: if 분기 안 단일 콜사이트의 UDF 내부 ema(src,2)가 "호출된 바에서만"
 //   전진한다는 수치 증거 — 호출은 close>102.5인 바(2,4,5,...)뿐이라 bar4가 두 번째 호출 = 시드
 //   (103+104)/2. 매 바 전진이었다면 bar4는 이미 스무딩 구간이라 이 값이 나올 수 없다.
-// - __obs_c bar1 = 101.6667: UDF 본문 안 for 루프의 ema(src,3)가 반복마다 전진해 바당 2스텝 —
-//   cond_loop_ta __obs_a와 동일한 수치가 UDF 경유로 재현된다(바당 1회였다면 워밍업 NaN).
+// - __obs_c: the golden (pine2py) steps the ema in the UDF's for loop once per iteration (bar1 =
+//   101.6667). That is superseded: a loop call site re-derives every same-bar execution from the
+//   bar-start state (PyneCore __loop_state__, tier 1 ta_373_sma_loop_shared_window), so __obs_c
+//   is the straight-line ema(close,3). The harness twin of this case run by PyneCore gives
+//   ORACLE_C below on every bar (and the golden's values on __obs_a/__obs_b/__obs_d).
 // - __obs_d: UDF 내부 var(acc, fnVars slotBase)와 ta 상태(taSlots __taBase)가 한 함수에 공존해도
 //   두 분리 메커니즘이 서로를 깨뜨리지 않는다(누적 시퀀스 전 구간 일치). 골든의 "var:acc" 채널은
 //   무시 — pine2js는 UDF 내부 var를 top-level var:<name> 채널에 노출하지 않는다(udf_single_var와
@@ -34,20 +37,26 @@ function loadCaseSource(name: string): string {
   return readFileSync(join(ROOT, "oracle", "cases", `${name}.pine`), "utf-8");
 }
 
-const CHANNELS = ["__obs_a", "__obs_b", "__obs_c", "__obs_d"] as const;
+// The channels on which pine2py's golden agrees with the tier-2 oracle.
+const GOLDEN_CHANNELS = ["__obs_a", "__obs_b", "__obs_d"] as const;
+// PyneCore on the harness twin of this case: __obs_c, the ema(close,3) in the UDF's 2-iteration for
+// loop, is the straight-line ema(close,3) (close = 101, 102, 103, 102, 104, 105, 106, 105, 107, 108).
+const ORACLE_C = [NaN, NaN, 102, 102, 103, 104, 105, 105, 106, 107];
 
 describe("oracle: cond_udf_ta (stateful calls inside UDF bodies, per-call advance + per-call-site slots)", () => {
-  it("golden proves pine2py advances the UDF-internal ema only when the single call site executes (bar4 __obs_b seed, bar1 __obs_c double-step)", () => {
+  it("golden proves pine2py advances the UDF-internal ema only when the single call site executes (bar4 __obs_b seed); its __obs_c double-step is superseded", () => {
     const golden = loadGolden(CASE_NAME);
     // if 분기 안 콜사이트: 첫 호출 bar2(워밍업 NaN), 두 번째 호출 bar4에서 시드 (103+104)/2.
     expect(golden.bars[2]!["var:__obs_b"]).toBe("NaN");
     expect(golden.bars[3]!["var:__obs_b"]).toBe("NaN");
     expect(decodeSentinel(golden.bars[4]!["var:__obs_b"]!)).toBe(103.5);
-    // UDF 본문 for 루프: 바당 2스텝 — bar1에 이미 시드+한 스텝(바당 1회였다면 NaN).
+    // pine2py stepped the loop's ema twice per bar (seeded + one step by bar 1); PyneCore steps it
+    // once per bar, so bar 1 is still warming up.
     expect(decodeSentinel(golden.bars[1]!["var:__obs_c"]!)).toBeCloseTo(101.66666666666667, 9);
+    expect(ORACLE_C[1]).toBeNaN();
   });
 
-  it("matches golden bar-for-bar on all four UDF channels with no exclusions (all call-fed ema, single call sites)", () => {
+  it("matches golden bar-for-bar on __obs_a/__obs_b/__obs_d and the tier-2 oracle on __obs_c (all call-fed ema, single call sites)", () => {
     const data = loadOracleData(CASE_NAME);
     const source = loadCaseSource(CASE_NAME);
     const result = runPipeline(source, data);
@@ -55,13 +64,17 @@ describe("oracle: cond_udf_ta (stateful calls inside UDF bodies, per-call advanc
 
     expect(result.bars).toHaveLength(golden.bars.length);
     for (let i = 0; i < golden.bars.length; i++) {
-      for (const ch of CHANNELS) {
+      for (const ch of GOLDEN_CHANNELS) {
         const expected = decodeSentinel(golden.bars[i]![`var:${ch}`]!);
         expect(
           nearlyEqual(result.bars[i]![`var:${ch}`]!, expected),
           `bar ${i} ${ch}: actual=${result.bars[i]![`var:${ch}`]} golden=${expected}`,
         ).toBe(true);
       }
+      expect(
+        nearlyEqual(result.bars[i]!["var:__obs_c"]!, ORACLE_C[i]!),
+        `bar ${i} __obs_c: actual=${result.bars[i]!["var:__obs_c"]} oracle=${ORACLE_C[i]}`,
+      ).toBe(true);
     }
   });
 
@@ -100,13 +113,14 @@ describe("oracle: cond_udf_ta (stateful calls inside UDF bodies, per-call advanc
     }
   });
 
-  it("matches golden finalVarState on all four observation channels", () => {
+  it("matches golden finalVarState on __obs_a/__obs_b/__obs_d and the tier-2 oracle on __obs_c", () => {
     const data = loadOracleData(CASE_NAME);
     const source = loadCaseSource(CASE_NAME);
     const result = runPipeline(source, data);
     const golden = loadGolden(CASE_NAME);
-    for (const ch of CHANNELS) {
+    for (const ch of GOLDEN_CHANNELS) {
       expect(result.finalVarState[ch], ch).toBeCloseTo(decodeSentinel(golden.finalVarState[ch]!), 9);
     }
+    expect(result.finalVarState.__obs_c, "__obs_c").toBeCloseTo(ORACLE_C[ORACLE_C.length - 1]!, 9);
   });
 });

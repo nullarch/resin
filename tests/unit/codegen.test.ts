@@ -4541,12 +4541,14 @@ describe("CodeGen", () => {
 
   it("transpile() hoists a lazy-position ta.* to just before the owning statement inside a while-body (C161)", () => {
     // loop-body가 C161부터 허용 위치가 되면서, lazy 호이스팅 프리루드는 소유 문장과 함께 루프 본문
-    // **안**에 방출된다 — 반복마다 1회 eager 호출(per-call 전진과 정합).
+    // **안**에 방출된다 — 반복마다 1회 eager 호출. The loop call site's state goes through
+    // rt.ta.loopState: every same-bar execution re-derives from the bar-start state (tier 1
+    // ta_373_sma_loop_shared_window, PyneCore __loop_state__; see runtime/ta.ts loopState).
     const result = transpile("while close > open\n    x = close > high ? ta.sma(close, 3) : 0.0");
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.code).toContain(
-      "let __lazy0 = rt.ta.sma($.taSlots[0], $.close.get(0), 3);\nlet x = (rt.pineGt($.close.get(0), $.high.get(0)) ? __lazy0 : 0.0);",
+      "let __lazy0 = rt.ta.sma(rt.ta.loopState($.taSlots[0], $.idx), $.close.get(0), 3);\nlet x = (rt.pineGt($.close.get(0), $.high.get(0)) ? __lazy0 : 0.0);",
     );
     // eslint-disable-next-line @typescript-eslint/no-implied-eval
     expect(() => new Function("$", "rt", result.code)).not.toThrow();
@@ -4861,7 +4863,8 @@ describe("CodeGen", () => {
     const result = transpile("i = 0\nwhile i < 5\n    x = ta.sma(close, 3)\n    i := i + 1");
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.code).toContain("rt.ta.sma($.taSlots[0], $.close.get(0), 3)");
+    // Loop call site: state routed through rt.ta.loopState (tier 1 ta_373_sma_loop_shared_window).
+    expect(result.code).toContain("rt.ta.sma(rt.ta.loopState($.taSlots[0], $.idx), $.close.get(0), 3)");
     // eslint-disable-next-line @typescript-eslint/no-implied-eval
     expect(() => new Function("$", "rt", result.code)).not.toThrow();
   });
@@ -4935,14 +4938,17 @@ describe("CodeGen", () => {
     const result = transpile("for i = 1 to 5\n    x = ta.sma(close, 3)");
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.code).toContain("let x = rt.ta.sma($.taSlots[0], $.close.get(0), 3);");
+    // Loop call site: state routed through rt.ta.loopState (tier 1 ta_373_sma_loop_shared_window).
+    expect(result.code).toContain("let x = rt.ta.sma(rt.ta.loopState($.taSlots[0], $.idx), $.close.get(0), 3);");
     // eslint-disable-next-line @typescript-eslint/no-implied-eval
     expect(() => new Function("$", "rt", result.code)).not.toThrow();
   });
 
-  it("emits the stateful call inside the for-loop block so its state advances once per iteration (C161)", () => {
-    // 콜이 JS for 블록 안에 그대로 내려가는 것으로 per-call 전진이 충분하다(C64의 if와 동일 원리)
-    // — codegen 변경 0줄, 슬롯/상태 모델이 원래 호출 단위로 전진하기 때문.
+  it("emits the stateful call inside the for-loop block with its state rolled back to the bar start on every same-bar execution", () => {
+    // The call stays inside the JS for block, one state per call site, but each execution on a bar
+    // re-derives from the state the bar started with (rt.ta.loopState). pine2py's per-call advance
+    // (C161: the state stepped once per iteration) is what the tier-2 oracle contradicts: PyneCore
+    // core/instance_state.py __loop_state__, and tier 1 ta_373_sma_loop_shared_window (260/260 bars).
     const code = codegenSource(["s = 0.0", "for i = 0 to 1", "    s := ta.ema(close, 3)"].join("\n"));
     expect(code).toBe(
       "var s = 0.0;\n" +
@@ -4955,7 +4961,7 @@ describe("CodeGen", () => {
         "let __forLimit = 10000;\n" +
         "for (let i = __forStart; (__forFwd ? i <= __forEnd : i >= __forEnd) && __forLimit > 0; i += __forDelta) {\n" +
         "__forLimit -= 1;\n" +
-        "s = rt.ta.ema($.taSlots[0], $.close.get(0), 3);\n" +
+        "s = rt.ta.ema(rt.ta.loopState($.taSlots[0], $.idx), $.close.get(0), 3);\n" +
         "}\n" +
         "}",
     );

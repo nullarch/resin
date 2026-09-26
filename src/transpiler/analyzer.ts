@@ -1488,6 +1488,96 @@ export interface LexScope {
   nestedTupleLocalNames: Set<string>;
   inLoop: boolean;
   func: FuncInfo | null;
+  // Set on a loop body scope only: the names the body reassigns (`:=` and compound assignments, at
+  // any depth). Such a name can hold a different value on every iteration, so a stateful call in
+  // the body that takes it as a length sees its length change between executions on one bar
+  // (readsLoopVaryingName, analyzeStatefulCall).
+  loopReassigned?: ReadonlySet<string>;
+}
+
+// The names a loop body reassigns, at any depth (nested blocks and control-flow expressions).
+function collectReassignedNames(body: readonly Stmt[], out: Set<string>): Set<string> {
+  const visitExpr = (expr: Expr): void => {
+    switch (expr.kind) {
+      case "IfStmt":
+      case "ForStmt":
+      case "WhileStmt":
+      case "SwitchStmt":
+        visitStmt(expr);
+        return;
+      default:
+        return;
+    }
+  };
+  const visitStmt = (stmt: Stmt): void => {
+    switch (stmt.kind) {
+      case "Assignment":
+        if (stmt.operator === ":=") out.add(stmt.name);
+        visitExpr(stmt.value);
+        return;
+      case "VarDecl":
+      case "TupleDestructure":
+        visitExpr(stmt.value);
+        return;
+      case "IfStmt":
+        for (const s of stmt.thenBody) visitStmt(s);
+        for (const clause of stmt.elifClauses) for (const s of clause.body) visitStmt(s);
+        if (stmt.elseBody) for (const s of stmt.elseBody) visitStmt(s);
+        return;
+      case "ForStmt":
+      case "ForInStmt":
+      case "WhileStmt":
+        for (const s of stmt.body) visitStmt(s);
+        return;
+      case "SwitchStmt":
+        for (const c of stmt.cases) for (const s of c.body) visitStmt(s);
+        return;
+      default:
+        return;
+    }
+  };
+  for (const stmt of body) visitStmt(stmt);
+  return out;
+}
+
+// Whether `expr` reads a name that an enclosing loop body reassigns (LexScope.loopReassigned).
+// Control-flow expressions count as varying: they are not worth walking in a length position.
+export function readsLoopVaryingName(expr: Expr, scope: LexScope): boolean {
+  switch (expr.kind) {
+    case "Identifier":
+      for (let s: LexScope | null = scope; s !== null; s = s.parent) {
+        if (s.loopReassigned?.has(expr.name)) return true;
+      }
+      return false;
+    case "BinOp":
+      return readsLoopVaryingName(expr.left, scope) || readsLoopVaryingName(expr.right, scope);
+    case "UnaryOp":
+      return readsLoopVaryingName(expr.operand, scope);
+    case "TernaryOp":
+      return (
+        readsLoopVaryingName(expr.condition, scope) ||
+        readsLoopVaryingName(expr.trueExpr, scope) ||
+        readsLoopVaryingName(expr.falseExpr, scope)
+      );
+    case "CallExpr":
+      return (
+        expr.args.some((a) => readsLoopVaryingName(a, scope)) ||
+        expr.kwargs.some((kw) => readsLoopVaryingName(kw.value, scope))
+      );
+    case "IndexAccess":
+      return readsLoopVaryingName(expr.obj, scope) || readsLoopVaryingName(expr.index, scope);
+    case "DotAccess":
+      return readsLoopVaryingName(expr.obj, scope);
+    case "TupleExpr":
+      return expr.elements.some((e) => readsLoopVaryingName(e, scope));
+    case "IfStmt":
+    case "ForStmt":
+    case "WhileStmt":
+    case "SwitchStmt":
+      return true;
+    default:
+      return false;
+  }
 }
 
 function pushScope(
@@ -2051,7 +2141,9 @@ export interface AnalyzedProgram {
   // `$.taSlots[__taBase + slot]`로 내린다 — 실제 전역 슬롯은 UDF 콜사이트마다 funcTaBases가 할당.
   // seriesLength:true(TA_REGISTRY.seriesLengthOk 항목 — highest/lowest/sma/highestbars/lowestbars)면
   // length 인자가 series라 codegen이 state-fixed rtPath 대신 *VarLen 변형으로 분기한다.
-  stateCallSlots: Map<CallExpr, { fn: string; slot: number; inUdf?: true; seriesLength?: true }>;
+  // inLoop:true marks a call site inside a loop body (of the script or of the function it sits in):
+  // it can execute several times on one bar, and codegen routes its state through rt.ta.loopState.
+  stateCallSlots: Map<CallExpr, { fn: string; slot: number; inUdf?: true; seriesLength?: true; inLoop?: true }>;
   taSlotCount: number;
   // 다중 반환 TA 콜사이트 중 튜플 디스트럭처링의 값 위치에 합법적으로 등장한 것들.
   // analyzeTupleDestructure가 stmt.value를 재귀 분석하기 전에 등록하고, analyzeCallExpr는
@@ -7046,7 +7138,9 @@ function analyzeWhileStmt(stmt: WhileStmt, prog: AnalyzedProgram, scope: LexScop
   // (C161부터 stateful 콜 허용 — 반복마다 per-call 전진, ScopePushKind 주석 참조).
   const condScope = pushScope(scope, "condition");
   analyzeExpr(stmt.condition, prog, condScope, false);
-  analyzeBlock(stmt.body, prog, scope, "loop-body", /* inLoop */ true);
+  const bodyScope = pushScope(scope, "loop-body", /* inLoop */ true);
+  bodyScope.loopReassigned = collectReassignedNames(stmt.body, new Set());
+  for (const s of stmt.body) analyzeStmt(s, prog, bodyScope);
 }
 
 function analyzeForStmt(stmt: ForStmt, prog: AnalyzedProgram, scope: LexScope): void {
@@ -7078,6 +7172,7 @@ function analyzeForStmt(stmt: ForStmt, prog: AnalyzedProgram, scope: LexScope): 
   // for 루프 카운터는 Pine 언어 자체가 항상 int 타입으로 고정한다(isStaticIntExpr 주석 참조,
   // C201) — start/end/step의 실제 값과 무관하게 변수 자체의 타입은 항상 int.
   bodyScope.numTypeHints.set(stmt.varName, "int");
+  bodyScope.loopReassigned = collectReassignedNames(stmt.body, new Set());
   for (const s of stmt.body) analyzeStmt(s, prog, bodyScope);
 }
 
@@ -7152,6 +7247,7 @@ function analyzeForInStmt(stmt: ForInStmt, prog: AnalyzedProgram, scope: LexScop
   // 등 array method-call sugar/중첩 for-in이 그대로 동작하도록 container kind 힌트를 단다
   // (PineMatrix 원소 타입은 추적하지 않아 array<UDT>/array<drawing> 힌트는 달지 않음, 과욕 금지).
   if (kind === "matrix") bodyScope.containerKindHints.set(stmt.varName, "array");
+  bodyScope.loopReassigned = collectReassignedNames(stmt.body, new Set());
   for (const s of stmt.body) analyzeStmt(s, prog, bodyScope);
 }
 
