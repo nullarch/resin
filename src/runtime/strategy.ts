@@ -1,3 +1,5 @@
+import { MINMOVE, MINTICK, PRICESCALE } from "./syminfo";
+
 // StrategyState: strategy.* 브로커 에뮬레이터 — 마켓 주문 entry/close, 롱/숏 양방향(C164 둘째
 // 슬라이스), 계좌 속성 netprofit/openprofit/equity/트레이드 카운터(C165 셋째 슬라이스),
 // limit/stop entry 주문 + 바 넘어 이월 + cancel/cancel_all(C166 넷째 슬라이스),
@@ -49,9 +51,21 @@ interface OpenTrade {
 // the FIFO trade rows: strategies.txt, "Closing a market position" — the strategy.close("Buy2")
 // order "is for 10 units because it links to the open trade with the "Buy2" entry ID", yet "five
 // units of the order close the "Buy1" trade first because it is the oldest".
+// `entryPrice` is the entry's own fill price: the base an exit's tick distances are measured from.
 interface EntryBinding {
   entryId: string;
   bound: number;
+  entryPrice: number;
+}
+
+// Snaps a price level derived from a tick distance onto the symbol's tick grid, rounding up
+// (`up`) or down, so the level is a price the chart can print. A level within 1e-4 tick of a grid
+// point counts as on it, which absorbs the float error of `price ± ticks * mintick`. This is the
+// oracle's `_price_round` (tier 2, measured on TradingView — see resin-harness
+// state/repros/ticks-seed-1.json).
+function snapToTick(price: number, up: boolean): number {
+  const ticks = (price * PRICESCALE) / MINMOVE;
+  return ((up ? Math.ceil(ticks - 1e-4) : Math.floor(ticks + 1e-4)) * MINMOVE) / PRICESCALE;
 }
 
 // pine2py wavealgo/strategy/engine.py의 주문 상태머신 구조(pending 주문 → 체결 → Position
@@ -265,33 +279,27 @@ export class StrategyState {
   // processFills가 closeAt() 호출 직전에 1회만 읽고 소비 — exit 체결이 없는 바에는 갱신되지
   // 않는 값이라도 무해(그 바엔 애초에 안 읽음).
   exitFillKind: "profit" | "loss" | null;
-  // 트레일링 스톱(C170 여덟째 슬라이스) — strategy.exit(trail_points=, trail_offset=). pine2py
-  // engine.py _check_trailing_fill 이식: 활성화 레벨 = posAvgPrice ± trail_points(롱 +/숏 -, 체결
-  // 판정 시점의 avg — 콜타임 스냅샷 아님), 활성화 후 바마다 유리 극값(롱 high/숏 low)에서
-  // trail_offset만큼 떨어진 라인을 단조 래칫(롱은 max/숏은 min — 되돌림에도 라인은 후퇴 안 함),
-  // 반대 극값이 라인에 닿으면 라인 가격 체결. 단위는 pine2py와 동일하게 **가격 포인트**(TV 문서의
-  // trail_points는 틱 단위로 알려져 있으나 syminfo.mintick 미구현이라 mintick=1 가정과 동치 —
-  // TV 실측 미검증, DIVERGENCES #73).
-  exitTrailPoints: number; // 활성화 거리(포인트, NaN=trail_price로 대체 활성화 또는 트레일링 축 없음)
-  exitTrailOffset: number; // 라인 오프셋(포인트, NaN=trail_points를 오프셋으로 재사용 — pine2py 기본 규칙. trail_price 사용 시 필수)
+  // Trailing stop — strategy.exit(trail_points=, trail_offset=). It activates once price moves
+  // trail_points ticks past the bound entry's fill price in the favorable direction (long +,
+  // short -). From then on the line trails the favorable extreme (long high, short low) by
+  // trail_offset ticks and only ratchets forward (long max, short min); the opposite extreme
+  // touching the line fills at the line. Both distances are counts of syminfo.mintick (see
+  // exitFillPrice).
+  exitTrailPoints: number; // activation distance in ticks (NaN = trail_price activates instead, or no trailing leg)
+  exitTrailOffset: number; // line offset in ticks (NaN = reuse trail_points; required with trail_price)
   exitTrailPrice: number; // 추적 중인 트레일링 스톱 라인(NaN=미활성) — exitFillPrice가 바마다 갱신
-  // strategy.exit(trail_price=, C178) — 활성화 레벨을 posAvgPrice±trail_points 산식이 아니라
+  // strategy.exit(trail_price=, C178) — 활성화 레벨을 entry±trail_points 산식이 아니라
   // **절대 가격**으로 직접 지정(pine2py에 사용자 파라미터로 존재하지 않아 전부 TV 미검증 가설,
   // DIVERGENCES #79). trail_points와 동시 지정은 activation 산식이 상충해 analyzer가 하드
-  // 에러로 막는다 — 이 필드가 NaN이 아니면 exitFillPrice는 posAvgPrice±trail_points 산식 대신
+  // 에러로 막는다 — 이 필드가 NaN이 아니면 exitFillPrice는 entry±trail_points 산식 대신
   // 이 값을 그대로 activation 임계값으로 쓴다(방향 부호 보정 없음 — 롱/숏 모두 절대 가격 그대로 비교).
   exitTrailPriceArg: number; // 활성화 절대가(NaN=trail_points 산식 사용)
-  // strategy.exit(profit=/loss=, hand-verified) — pine2py exit()는 **kwargs로 받아 조용히 버리는
-  // 파라미터라(engine.py L141-153) 대응 구현 자체가 없음, 전부 TV 미검증 가설(DIVERGENCES #98).
-  // limit=/stop=(절대가)의 "포인트 단위" 대안 — profit은 posAvgPrice에서 유리한 방향으로 이만큼,
-  // loss는 불리한 방향으로 이만큼 떨어진 가격을 익절/손절 레벨로 쓴다. trail_points와 동일하게
-  // exitFillPrice가 매 바 posAvgPrice로 다시 계산(콜타임 스냅샷 아님 — pyramiding으로 avg가 바뀌어도
-  // 정합). limit=/stop=과 각각 같은 축(둘 다 "이 포지션의 익절/손절 절대가"를 결정)이라 동시 지정은
-  // analyzer가 하드 에러로 막는다(어느 쪽이 우선인지 확신 없음, trail_price/trail_points와 동일 원칙).
-  // 단위는 trail_points와 동일하게 가격 포인트(TV는 틱 단위로 알려져 있으나 syminfo.mintick
-  // 미구현이라 mintick=1 가정과 동치, #73 축 계승).
-  exitProfitPoints: number; // 익절 목표(포인트, NaN=미지정 — limit=이 대신 쓰임)
-  exitLossPoints: number; // 손절 목표(포인트, NaN=미지정 — stop=이 대신 쓰임)
+  // strategy.exit(profit=/loss=) — the tick-distance alternatives to limit=/stop=: the take-profit
+  // level sits `profit` ticks from the bound entry's fill price in the favorable direction, the
+  // stop-loss `loss` ticks in the unfavorable one (exitFillPrice). When a call gives both of a pair
+  // (limit=+profit=, stop=+loss=), the absolute level is used.
+  exitProfitPoints: number; // take-profit distance in ticks (NaN = not given; limit= is used instead)
+  exitLossPoints: number; // stop-loss distance in ticks (NaN = not given; stop= is used instead)
   // pending order(넷팅 주문) 슬롯(C169 일곱째 슬라이스) — entry 슬롯과 별개: entry의 체결 판정
   // (리버스 전량 청산 + pyramiding 게이트)과 달리 order는 반대 방향을 |posSize|와 상쇄하고
   // 같은 방향 추가엔 pyramiding 게이트가 없어 체결 경로가 다르다. 마켓/limit/stop·이월·같은 id
@@ -509,6 +517,14 @@ export class StrategyState {
     return false;
   }
 
+  // Fill price of the entry the pending exit is bound to — the oldest entry of its from_entry id,
+  // or the oldest entry when it has none. NaN when nothing is bound.
+  private exitEntryPrice(): number {
+    const from = this.exitFromEntry;
+    for (const b of this.entryBook) if (from === "" || b.entryId === from) return b.entryPrice;
+    return NaN;
+  }
+
   // An entry fill opens a new trade (never merges into an existing one) and a binding for it.
   private openTradeAt(
     entryId: string, entryComment: string, fillPrice: number, signedQty: number,
@@ -518,7 +534,7 @@ export class StrategyState {
       entryId, entryComment, entryPrice: fillPrice, entryBarIndex: barIndex, entryTime: barTimeMs,
       size: signedQty, maxRunup: 0, maxDrawdown: 0,
     });
-    this.entryBook.push({ entryId, bound: Math.abs(signedQty) });
+    this.entryBook.push({ entryId, bound: Math.abs(signedQty), entryPrice: fillPrice });
     this.posSize += signedQty;
     this.recalcAvgPrice();
   }
@@ -1773,20 +1789,30 @@ export class StrategyState {
   // 갭 open 적응: open이 **이전 바까지의** 라인을 이미 관통했으면 open 체결(라인 래칫 전 판정 —
   // pine2py는 갭에서도 정확히 라인 가격을 반환해 "시장에 없던 가격" 체결, #69 (a) 축이라 미추종).
   private exitFillPrice(openPrice: number, high: number, low: number): number {
-    // profit=/loss=(hand-verified, #98)는 limit=/stop=의 포인트 단위 대안 — analyzer가 limit=/profit=,
-    // stop=/loss= 각각 동시 지정을 막아두므로 둘 중 하나만 유한값이다. limit=/stop=이 없을 때만
-    // posAvgPrice(체결 시점 최신값 — trail_points 활성화 산식과 동일하게 매 바 재계산)로 절대가를
-    // 유도한다. 롱은 유리한 방향이 +profit/-loss, 숏은 반대(entryFillPrice 부호 규약과 동일 축).
+    // profit=/loss=/trail_points= are tick distances from the entry price, not price distances.
+    // The manual (strategies.txt, "Take-profit and stop-loss"): "The profit and loss parameters
+    // accept relative values representing the number of ticks by which the market price must move
+    // away from the entry price to trigger an exit"; trail_points is "the tick distance from the
+    // entry price required to activate the trailing stop", and trail_offset is "a specified number
+    // of ticks". The base is the fill price of the entry the exit is bound to (a later pyramid add
+    // does not move it), and each level is snapped to the tick grid away from that price, as the
+    // oracle resolves them. Repro: resin-harness state/repros/ticks-seed-1.json (and
+    // ticks-pyramid-add.json for the base). When both of a pair are given, limit=/stop= is used.
     const isLong = this.posSize > 0;
+    const base = this.exitEntryPrice();
     const limit = !Number.isNaN(this.exitLimit)
       ? this.exitLimit
       : !Number.isNaN(this.exitProfitPoints)
-        ? (isLong ? this.posAvgPrice + this.exitProfitPoints : this.posAvgPrice - this.exitProfitPoints)
+        ? (isLong
+          ? snapToTick(base + this.exitProfitPoints * MINTICK, true)
+          : snapToTick(base - this.exitProfitPoints * MINTICK, false))
         : NaN;
     const stop = !Number.isNaN(this.exitStop)
       ? this.exitStop
       : !Number.isNaN(this.exitLossPoints)
-        ? (isLong ? this.posAvgPrice - this.exitLossPoints : this.posAvgPrice + this.exitLossPoints)
+        ? (isLong
+          ? snapToTick(base - this.exitLossPoints * MINTICK, false)
+          : snapToTick(base + this.exitLossPoints * MINTICK, true))
         : NaN;
     const hasLimit = !Number.isNaN(limit);
     const hasStop = !Number.isNaN(stop);
@@ -1800,12 +1826,12 @@ export class StrategyState {
       if (hasTrail && openPrice <= this.exitTrailPrice) { this.exitFillKind = null; return openPrice; } // 라인 미활성(NaN)이면 비교 false — 안전(C91)
       if (hasLimit && openPrice >= limit) { this.exitFillKind = "profit"; return openPrice; }
       if (hasTrail) {
-        // 활성화(high가 avg+trail_points, 또는 trail_price가 지정됐으면 그 절대가 그대로 도달)
+        // 활성화(high가 entry+trail_points, 또는 trail_price가 지정됐으면 그 절대가 그대로 도달)
         // 또는 기활성이면 이번 바 high로 라인 래칫(단조 max). high가 NaN(마켓 전용 단위 테스트
         // 경로)이면 활성화 비교/래칫 비교 전부 false — 안전 소멸.
-        const offset = Number.isNaN(this.exitTrailOffset) ? this.exitTrailPoints : this.exitTrailOffset;
+        const offset = (Number.isNaN(this.exitTrailOffset) ? this.exitTrailPoints : this.exitTrailOffset) * MINTICK;
         const activation = Number.isNaN(this.exitTrailPriceArg)
-          ? this.posAvgPrice + this.exitTrailPoints
+          ? snapToTick(base + this.exitTrailPoints * MINTICK, true)
           : this.exitTrailPriceArg;
         if (!Number.isNaN(this.exitTrailPrice) || high >= activation) {
           const newTrail = high - offset;
@@ -1827,9 +1853,9 @@ export class StrategyState {
       if (hasTrail && openPrice >= this.exitTrailPrice) { this.exitFillKind = null; return openPrice; }
       if (hasLimit && openPrice <= limit) { this.exitFillKind = "profit"; return openPrice; }
       if (hasTrail) {
-        const offset = Number.isNaN(this.exitTrailOffset) ? this.exitTrailPoints : this.exitTrailOffset;
+        const offset = (Number.isNaN(this.exitTrailOffset) ? this.exitTrailPoints : this.exitTrailOffset) * MINTICK;
         const activation = Number.isNaN(this.exitTrailPriceArg)
-          ? this.posAvgPrice - this.exitTrailPoints
+          ? snapToTick(base - this.exitTrailPoints * MINTICK, false)
           : this.exitTrailPriceArg;
         if (!Number.isNaN(this.exitTrailPrice) || low <= activation) {
           const newTrail = low + offset;

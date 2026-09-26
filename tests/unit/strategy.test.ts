@@ -3410,6 +3410,9 @@ describe("strategy.order E2E — 부호 반전 (C169, hand-verified 5바)", () =
 // 적응(#69 (a) 축). pine2py의 "재호출마다 trail_price 리셋"(Order 재생성)은 매 바 재호출 표준
 // 패턴에서 래칫이 절대 형성되지 않는 실버그로 판단해 미추종 — 같은 id 수정은 라인 보존.
 // 전부 TV 실측 미검증 가설(DIVERGENCES #73), hand-verified.
+// trail_points/trail_offset are counts of ticks (strategies.txt), so at mintick 0.01 the arguments
+// below are 100x the price distances the comments reason in (trail_points=200 is 2.00).
+// Oracle-checked: resin-harness state/repros/trail-seed-1.json.
 describe("StrategyState exit 트레일링 스톱 (C170 여덟째 슬라이스, hand-verified)", () => {
   function longAt12(): StrategyState {
     const st = new StrategyState();
@@ -3420,7 +3423,7 @@ describe("StrategyState exit 트레일링 스톱 (C170 여덟째 슬라이스, h
 
   it("long: 활성화 후 유리 극값 래칫 → 라인 터치 시 라인 가격 체결", () => {
     const st = longAt12();
-    st.exit("X", "", NaN, NaN, undefined, 2, 1); // 활성화 12+2=14, 오프셋 1
+    st.exit("X", "", NaN, NaN, undefined, 200, 100); // 활성화 12+2=14, 오프셋 1
     expect(st.exitPending).toBe(true);
     st.processFills(13, 13.5, 12.5); // high 13.5 < 14 — 미활성
     expect(st.exitTrailPrice).toBeNaN();
@@ -3436,7 +3439,7 @@ describe("StrategyState exit 트레일링 스톱 (C170 여덟째 슬라이스, h
 
   it("long: 활성화 미달 바는 상태 없이 이월, 경계(>=)에서 활성화", () => {
     const st = longAt12();
-    st.exit("X", "", NaN, NaN, undefined, 5, 1); // 활성화 17
+    st.exit("X", "", NaN, NaN, undefined, 500, 100); // 활성화 17
     st.processFills(13, 14, 12.5);
     st.processFills(14, 15, 13.5);
     expect(st.exitPending).toBe(true);
@@ -3448,7 +3451,7 @@ describe("StrategyState exit 트레일링 스톱 (C170 여덟째 슬라이스, h
 
   it("long: 넓은 바에서 같은 바 활성화+체결 (유리 극값 선행 가설)", () => {
     const st = longAt12();
-    st.exit("X", "", NaN, NaN, undefined, 2, 1);
+    st.exit("X", "", NaN, NaN, undefined, 200, 100);
     st.processFills(15.5, 16, 13.5); // 활성화(16>=14) → 라인 15, low 13.5 <= 15 → 같은 바 15 체결
     expect(st.posSize).toBe(0);
     expect(st.realizedPnl).toBe(3);
@@ -3456,7 +3459,7 @@ describe("StrategyState exit 트레일링 스톱 (C170 여덟째 슬라이스, h
 
   it("long: 라인 아래 갭 다운 open은 open 체결 (pine2py의 라인 가격 체결 미추종 — #69 (a) 축)", () => {
     const st = longAt12();
-    st.exit("X", "", NaN, NaN, undefined, 2, 1);
+    st.exit("X", "", NaN, NaN, undefined, 200, 100);
     st.processFills(14.5, 15, 14.2); // 라인 14
     st.processFills(13, 13.2, 12.8); // open 13 <= 14 → open 체결(라인 14 체결이었다면 profit 2)
     expect(st.posSize).toBe(0);
@@ -3465,7 +3468,7 @@ describe("StrategyState exit 트레일링 스톱 (C170 여덟째 슬라이스, h
 
   it("trail_offset 생략 시 trail_points를 오프셋으로 재사용 (pine2py 기본 규칙)", () => {
     const st = longAt12();
-    st.exit("X", "", NaN, NaN, undefined, 2); // 오프셋 = 2
+    st.exit("X", "", NaN, NaN, undefined, 200); // 오프셋 = 2
     st.processFills(14.5, 15, 13.2); // 활성화 → 라인 = 15-2 = 13, low 13.2 > 13 미체결
     expect(st.exitTrailPrice).toBe(13);
     st.processFills(13.5, 13.6, 12.9); // 래칫 없음(13.6-2 < 13), low 12.9 <= 13 → 13 체결
@@ -3488,10 +3491,10 @@ describe("StrategyState exit 트레일링 스톱 (C170 여덟째 슬라이스, h
   });
 
   // trail_price+trail_points 동시 지정(구 하드 에러) — activation=trail_price(절대가 우선),
-  // offset=trail_points(포인트 단위)로 자연 분리돼 정상 작동함을 확인.
+  // offset=trail_points(ticks)로 자연 분리돼 정상 작동함을 확인.
   it("trail_price+trail_points 동시 지정은 activation=trail_price, offset=trail_points로 정상 작동 (C723)", () => {
     const st = longAt12();
-    st.exit("X", "", NaN, NaN, undefined, 999, undefined, undefined, 14); // trail_price=14(활성화), trail_points=999(offset으로만 재사용)
+    st.exit("X", "", NaN, NaN, undefined, 99900, undefined, undefined, 14); // trail_price=14(활성화), trail_points=999(offset으로만 재사용)
     st.processFills(14.5, 15, 14.2); // activation(15>=14, trail_points의 12+999 아님) → 라인 = 15-999 = -984
     expect(st.exitTrailPrice).toBe(15 - 999);
     st.processFills(-900, -900, -1000); // 라인 밑으로 내려가는 극단값으로 체결 확인
@@ -3508,7 +3511,7 @@ describe("StrategyState exit 트레일링 스톱 (C170 여덟째 슬라이스, h
 
   it("trail_points=0은 진입가에서 즉시 활성화 (profit 0 청산은 win도 loss도 아님)", () => {
     const st = longAt12();
-    st.exit("X", "", NaN, NaN, undefined, 0, 1); // 활성화 12
+    st.exit("X", "", NaN, NaN, undefined, 0, 100); // 활성화 12
     st.processFills(12.5, 13, 12.4); // 활성화(13>=12) → 라인 12, low 12.4 > 12 미체결
     expect(st.exitTrailPrice).toBe(12);
     st.processFills(12.3, 12.4, 11.9); // low 11.9 <= 12 → 12 체결, profit 0
@@ -3523,7 +3526,7 @@ describe("StrategyState exit 트레일링 스톱 (C170 여덟째 슬라이스, h
     const st = new StrategyState();
     st.entry("S", "short", 1);
     st.processFills(12); // 숏 1 @ 12
-    st.exit("X", "", NaN, NaN, undefined, 2, 1); // 활성화 12-2=10, 오프셋 1
+    st.exit("X", "", NaN, NaN, undefined, 200, 100); // 활성화 12-2=10, 오프셋 1
     st.processFills(10.5, 10.7, 9.8); // low 9.8 <= 10 활성화 → 라인 = 9.8+1 = 10.8, high 10.7 < 10.8 미체결
     expect(st.exitTrailPrice).toBe(10.8);
     st.processFills(10, 10.5, 9); // 라인 = min(10.8, 9+1) = 10, high 10.5 >= 10 → 10 체결
@@ -3535,7 +3538,7 @@ describe("StrategyState exit 트레일링 스톱 (C170 여덟째 슬라이스, h
     const st = new StrategyState();
     st.entry("S", "short", 1);
     st.processFills(12);
-    st.exit("X", "", NaN, NaN, undefined, 2, 1);
+    st.exit("X", "", NaN, NaN, undefined, 200, 100);
     st.processFills(10.5, 10.7, 9.8); // 라인 10.8
     st.processFills(11, 11.2, 10.9); // open 11 >= 10.8 → open 체결
     expect(st.posSize).toBe(0);
@@ -3544,7 +3547,7 @@ describe("StrategyState exit 트레일링 스톱 (C170 여덟째 슬라이스, h
 
   it("같은 바에 stop과 trail 둘 다 트리거되면 높은(롱) 레벨 체결 — 하락 경로에서 먼저 닿는 쪽", () => {
     const st = longAt12();
-    st.exit("X", "", NaN, 10, undefined, 2, 1); // stop 10 + 트레일링
+    st.exit("X", "", NaN, 10, undefined, 200, 100); // stop 10 + 트레일링
     st.processFills(14.5, 15, 14.2); // 라인 14
     st.processFills(14.1, 14.1, 9); // low 9는 stop 10과 라인 14 둘 다 관통 → max(10, 14) = 14 체결
     expect(st.posSize).toBe(0);
@@ -3553,7 +3556,7 @@ describe("StrategyState exit 트레일링 스톱 (C170 여덟째 슬라이스, h
 
   it("같은 바에 trail과 limit 둘 다 트리거되면 trail(손절 계열) 우선 (C186: O-L-H-C 확정 — 롱은 trail이 low 쪽이라 그대로 일치)", () => {
     const st = longAt12();
-    st.exit("X", "", 16, NaN, undefined, 2, 1); // limit 16 + 트레일링
+    st.exit("X", "", 16, NaN, undefined, 200, 100); // limit 16 + 트레일링
     st.processFills(14.5, 15, 14.2); // 라인 14, high 15 < 16
     st.processFills(15, 16.5, 14.5); // 라인 → 15.5, high 16.5 >= 16(TP)이고 low 14.5 <= 15.5(trail) → 15.5
     expect(st.posSize).toBe(0);
@@ -3564,7 +3567,7 @@ describe("StrategyState exit 트레일링 스톱 (C170 여덟째 슬라이스, h
     const st = new StrategyState();
     st.entry("S", "short", 1);
     st.processFills(12); // 숏 1 @ 12
-    st.exit("X", "", 8, NaN, undefined, 2, 2); // limit 8 + 트레일링(활성화 12-2=10, 오프셋 2)
+    st.exit("X", "", 8, NaN, undefined, 200, 200); // limit 8 + 트레일링(활성화 12-2=10, 오프셋 2)
     st.processFills(9.5, 9.8, 9); // low 9 <= 10 활성화 → 라인 = 9+2 = 11, high 9.8 < 11 미체결
     expect(st.exitTrailPrice).toBe(11);
     st.processFills(8.5, 9.5, 7); // 라인 → min(11, 7+2=9) = 9, high 9.5 >= 9(trail)이고 low 7 <= 8(limit) → limit 8
@@ -3574,9 +3577,9 @@ describe("StrategyState exit 트레일링 스톱 (C170 여덟째 슬라이스, h
 
   it("같은 id 재호출(매 바 표준 패턴)은 달성된 라인을 보존한다 (pine2py의 매 바 리셋 실버그 미추종)", () => {
     const st = longAt12();
-    st.exit("X", "", NaN, NaN, undefined, 2, 1);
+    st.exit("X", "", NaN, NaN, undefined, 200, 100);
     st.processFills(14.5, 15, 14.2); // 라인 14
-    st.exit("X", "", NaN, NaN, undefined, 2, 1); // 재호출 — 라인 보존
+    st.exit("X", "", NaN, NaN, undefined, 200, 100); // 재호출 — 라인 보존
     expect(st.exitTrailPrice).toBe(14);
     st.processFills(14.5, 14.6, 13.9); // 보존된 라인 14: low 13.9 <= 14 → 14 체결(리셋이었다면 라인 13.6, 미체결)
     expect(st.posSize).toBe(0);
@@ -3585,13 +3588,13 @@ describe("StrategyState exit 트레일링 스톱 (C170 여덟째 슬라이스, h
 
   it("트레일링 축을 제거한 같은 id 수정은 라인을 파기하고, 재도입은 활성화부터 다시", () => {
     const st = longAt12();
-    st.exit("X", "", NaN, NaN, undefined, 2, 1);
+    st.exit("X", "", NaN, NaN, undefined, 200, 100);
     st.processFills(14.5, 15, 14.2); // 라인 14
     st.exit("X", "", 20, NaN); // limit 전용으로 수정 — 트레일링 제거
     expect(st.exitTrailPrice).toBeNaN();
     st.processFills(14.5, 14.6, 13.9); // limit 20 미달, 구 라인 14가 남아있었다면 체결됐을 바
     expect(st.posSize).toBe(1);
-    st.exit("X", "", NaN, NaN, undefined, 2, 1); // 트레일링 재도입 — 신선한 상태
+    st.exit("X", "", NaN, NaN, undefined, 200, 100); // 트레일링 재도입 — 신선한 상태
     st.processFills(13.5, 13.8, 13.2); // high 13.8 < 활성화 14 → 미활성, 미체결
     expect(st.exitTrailPrice).toBeNaN();
     expect(st.posSize).toBe(1);
@@ -3599,13 +3602,13 @@ describe("StrategyState exit 트레일링 스톱 (C170 여덟째 슬라이스, h
 
   it("신규 등록은 이전 주문의 잔류 라인을 차단한다 (미활성에서 시작)", () => {
     const st = longAt12();
-    st.exit("X", "", NaN, NaN, undefined, 2, 1);
+    st.exit("X", "", NaN, NaN, undefined, 200, 100);
     st.processFills(14.5, 15, 14.2); // 라인 14
     st.processFills(13, 13.2, 12.8); // open 13 <= 14 → 체결, 주문 소비(잔류 라인 14는 미판독 상태)
     expect(st.posSize).toBe(0);
     st.entry("L2", "long", 1);
     st.processFills(20, 20.5, 19.5); // 롱 1 @ 20
-    st.exit("X2", "", NaN, NaN, undefined, 2, 1); // 신규 등록 — 라인 리셋
+    st.exit("X2", "", NaN, NaN, undefined, 200, 100); // 신규 등록 — 라인 리셋
     expect(st.exitTrailPrice).toBeNaN();
     st.processFills(20.5, 21, 19.8); // 활성화 22 미달 → 미체결
     expect(st.posSize).toBe(1);
@@ -3615,7 +3618,7 @@ describe("StrategyState exit 트레일링 스톱 (C170 여덟째 슬라이스, h
     const st = new StrategyState();
     st.entry("L", "long", 2);
     st.processFills(12); // 롱 2 @ 12
-    st.exit("X", "", NaN, NaN, 1, 2, 1); // qty 1 부분
+    st.exit("X", "", NaN, NaN, 1, 200, 100); // qty 1 부분
     st.processFills(14.5, 15, 14.2); // 라인 14
     st.processFills(14.1, 14.1, 13.9); // low 13.9 <= 14 → 14 체결 qty 1
     expect(st.posSize).toBe(1);
@@ -3629,9 +3632,9 @@ describe("StrategyState exit 트레일링 스톱 (C170 여덟째 슬라이스, h
     const st = longAt12();
     st.exit("X", "", NaN, NaN, undefined, NaN, NaN);
     expect(st.exitPending).toBe(false);
-    st.exit("X", "", NaN, NaN, undefined, NaN, 1); // 활성화 레벨 없는 오프셋 — 조건 없음으로 접음
+    st.exit("X", "", NaN, NaN, undefined, NaN, 100); // 활성화 레벨 없는 오프셋 — 조건 없음으로 접음
     expect(st.exitPending).toBe(false);
-    st.exit("X", "", NaN, NaN, undefined, 2); // 트레일링 단독은 유효한 청산 조건
+    st.exit("X", "", NaN, NaN, undefined, 200); // 트레일링 단독은 유효한 청산 조건
     expect(st.exitPending).toBe(true);
   });
 });
@@ -3652,7 +3655,7 @@ describe("StrategyState exit 트레일링 스톱 trail_price= (C178, hand-verifi
 
   it("long: trail_price=14(=avg12+2) 활성화 후 유리 극값 래칫 → 라인 터치 시 라인 가격 체결", () => {
     const st = longAt12();
-    st.exit("X", "", NaN, NaN, undefined, NaN, 1, undefined, 14); // 활성화 14, 오프셋 1
+    st.exit("X", "", NaN, NaN, undefined, NaN, 100, undefined, 14); // 활성화 14, 오프셋 1
     expect(st.exitPending).toBe(true);
     st.processFills(13, 13.5, 12.5); // high 13.5 < 14 — 미활성
     expect(st.exitTrailPrice).toBeNaN();
@@ -3665,7 +3668,7 @@ describe("StrategyState exit 트레일링 스톱 trail_price= (C178, hand-verifi
 
   it("long: 활성화 미달 바는 상태 없이 이월, 경계(>=)에서 활성화 (trail_price=17=avg12+5)", () => {
     const st = longAt12();
-    st.exit("X", "", NaN, NaN, undefined, NaN, 1, undefined, 17);
+    st.exit("X", "", NaN, NaN, undefined, NaN, 100, undefined, 17);
     st.processFills(13, 14, 12.5);
     st.processFills(14, 15, 13.5);
     expect(st.exitTrailPrice).toBeNaN(); // 두 바 모두 미활성 이월
@@ -3676,7 +3679,7 @@ describe("StrategyState exit 트레일링 스톱 trail_price= (C178, hand-verifi
 
   it("long: 넓은 바에서 같은 바 활성화+체결 (trail_price=14)", () => {
     const st = longAt12();
-    st.exit("X", "", NaN, NaN, undefined, NaN, 1, undefined, 14);
+    st.exit("X", "", NaN, NaN, undefined, NaN, 100, undefined, 14);
     st.processFills(15.5, 16, 13.5); // 활성화(16>=14) → 라인 15, low 13.5 <= 15 → 같은 바 15 체결
     expect(st.posSize).toBe(0);
     expect(st.realizedPnl).toBe(3);
@@ -3684,7 +3687,7 @@ describe("StrategyState exit 트레일링 스톱 trail_price= (C178, hand-verifi
 
   it("long: 라인 아래 갭 다운 open은 open 체결 (trail_price=14)", () => {
     const st = longAt12();
-    st.exit("X", "", NaN, NaN, undefined, NaN, 1, undefined, 14);
+    st.exit("X", "", NaN, NaN, undefined, NaN, 100, undefined, 14);
     st.processFills(14.5, 15, 14.2); // 라인 14
     st.processFills(13, 13.2, 12.8); // open 13 <= 14 → open 체결
     expect(st.posSize).toBe(0);
@@ -3695,7 +3698,7 @@ describe("StrategyState exit 트레일링 스톱 trail_price= (C178, hand-verifi
     const st = new StrategyState();
     st.entry("S", "short", 1);
     st.processFills(12); // 숏 1 @ 12
-    st.exit("X", "", NaN, NaN, undefined, NaN, 1, undefined, 10); // 활성화 10, 오프셋 1
+    st.exit("X", "", NaN, NaN, undefined, NaN, 100, undefined, 10); // 활성화 10, 오프셋 1
     st.processFills(10.5, 10.7, 9.8); // low 9.8 <= 10 활성화 → 라인 = 9.8+1 = 10.8, high 10.7 < 10.8 미체결
     expect(st.exitTrailPrice).toBe(10.8);
     st.processFills(10, 10.5, 9); // 라인 = min(10.8, 9+1) = 10, high 10.5 >= 10 → 10 체결
@@ -3707,7 +3710,7 @@ describe("StrategyState exit 트레일링 스톱 trail_price= (C178, hand-verifi
     const st = new StrategyState();
     st.entry("S", "short", 1);
     st.processFills(12);
-    st.exit("X", "", NaN, NaN, undefined, NaN, 1, undefined, 10);
+    st.exit("X", "", NaN, NaN, undefined, NaN, 100, undefined, 10);
     st.processFills(10.5, 10.7, 9.8); // 라인 10.8
     st.processFills(11, 11.2, 10.9); // open 11 >= 10.8 → open 체결
     expect(st.posSize).toBe(0);
@@ -3716,9 +3719,9 @@ describe("StrategyState exit 트레일링 스톱 trail_price= (C178, hand-verifi
 
   it("같은 id 재호출(매 바 표준 패턴)은 달성된 라인을 보존한다 (trail_price 버전)", () => {
     const st = longAt12();
-    st.exit("X", "", NaN, NaN, undefined, NaN, 1, undefined, 14);
+    st.exit("X", "", NaN, NaN, undefined, NaN, 100, undefined, 14);
     st.processFills(14.5, 15, 14.2); // 라인 14
-    st.exit("X", "", NaN, NaN, undefined, NaN, 1, undefined, 14); // 재호출 — 라인 보존
+    st.exit("X", "", NaN, NaN, undefined, NaN, 100, undefined, 14); // 재호출 — 라인 보존
     expect(st.exitTrailPrice).toBe(14);
     st.processFills(14.5, 14.6, 13.9); // 보존된 라인 14: low 13.9 <= 14 → 14 체결
     expect(st.posSize).toBe(0);
@@ -3727,13 +3730,13 @@ describe("StrategyState exit 트레일링 스톱 trail_price= (C178, hand-verifi
 
   it("트레일링 축(trail_price)을 제거한 같은 id 수정은 라인을 파기하고, 재도입은 활성화부터 다시", () => {
     const st = longAt12();
-    st.exit("X", "", NaN, NaN, undefined, NaN, 1, undefined, 14);
+    st.exit("X", "", NaN, NaN, undefined, NaN, 100, undefined, 14);
     st.processFills(14.5, 15, 14.2); // 라인 14
     st.exit("X", "", 20, NaN); // limit 전용으로 수정 — trail_points/trail_price 둘 다 미지정, 트레일링 제거
     expect(st.exitTrailPrice).toBeNaN();
     st.processFills(14.5, 14.6, 13.9); // limit 20 미달, 구 라인 14가 남아있었다면 체결됐을 바
     expect(st.posSize).toBe(1);
-    st.exit("X", "", NaN, NaN, undefined, NaN, 1, undefined, 14); // 트레일링 재도입 — 신선한 상태
+    st.exit("X", "", NaN, NaN, undefined, NaN, 100, undefined, 14); // 트레일링 재도입 — 신선한 상태
     st.processFills(13.5, 13.8, 13.2); // high 13.8 < 활성화 14 → 미활성, 미체결
     expect(st.exitTrailPrice).toBeNaN();
     expect(st.posSize).toBe(1);
@@ -3741,13 +3744,13 @@ describe("StrategyState exit 트레일링 스톱 trail_price= (C178, hand-verifi
 
   it("신규 등록은 이전 주문의 잔류 라인을 차단한다 (trail_price 버전, 미활성에서 시작)", () => {
     const st = longAt12();
-    st.exit("X", "", NaN, NaN, undefined, NaN, 1, undefined, 14);
+    st.exit("X", "", NaN, NaN, undefined, NaN, 100, undefined, 14);
     st.processFills(14.5, 15, 14.2); // 라인 14
     st.processFills(13, 13.2, 12.8); // open 13 <= 14 → 체결, 주문 소비
     expect(st.posSize).toBe(0);
     st.entry("L2", "long", 1);
     st.processFills(20, 20.5, 19.5); // 롱 1 @ 20
-    st.exit("X2", "", NaN, NaN, undefined, NaN, 1, undefined, 22); // 신규 등록(활성화 22) — 라인 리셋
+    st.exit("X2", "", NaN, NaN, undefined, NaN, 100, undefined, 22); // 신규 등록(활성화 22) — 라인 리셋
     expect(st.exitTrailPrice).toBeNaN();
     st.processFills(20.5, 21, 19.8); // 활성화 22 미달 → 미체결
     expect(st.posSize).toBe(1);
@@ -3757,7 +3760,7 @@ describe("StrategyState exit 트레일링 스톱 trail_price= (C178, hand-verifi
     const st = new StrategyState();
     st.entry("L", "long", 2);
     st.processFills(12); // 롱 2 @ 12
-    st.exit("X", "", NaN, NaN, 1, NaN, 1, undefined, 14); // qty 1 부분, 활성화 14
+    st.exit("X", "", NaN, NaN, 1, NaN, 100, undefined, 14); // qty 1 부분, 활성화 14
     st.processFills(14.5, 15, 14.2); // 라인 14
     st.processFills(14.1, 14.1, 13.9); // low 13.9 <= 14 → 14 체결 qty 1
     expect(st.posSize).toBe(1);
@@ -3820,9 +3823,9 @@ describe("strategy.exit 트레일링 codegen emission (C170)", () => {
 });
 
 describe("strategy.* E2E 여덟째 슬라이스 (hand-verified: 트레일링 래칫 → 라인 체결)", () => {
-  // 손 계산 시나리오 (trail_points=2, trail_offset=1 — 매 바 재호출로 라인 보존):
+  // 손 계산 시나리오 (trail_points=200, trail_offset=100 — 매 바 재호출로 라인 보존):
   //   bar0: O=10 C=11 양봉&flat → entry("L",1) 큐잉. (ps=0, np=0)
-  //   bar1: O=12 → 롱 1@12 체결(활성화 레벨 12+2=14). exit("X", trail_points=2, trail_offset=1)
+  //   bar1: O=12 → 롱 1@12 체결(활성화 레벨 12+2=14). exit("X", trail_points=200, trail_offset=100)
   //         등록. (ps=1, np=0)
   //   bar2: O=14.5 H=15 L=14.2 → high 15>=14 활성화, 라인=15-1=14, low 14.2>14 미체결.
   //         exit 재호출(라인 14 보존). (ps=1, np=0)
@@ -3841,7 +3844,7 @@ describe("strategy.* E2E 여덟째 슬라이스 (hand-verified: 트레일링 래
     "if close > open and strategy.position_size == 0",
     '    strategy.entry("L", strategy.long, 1)',
     "if strategy.position_size > 0",
-    '    strategy.exit("X", trail_points=2, trail_offset=1)',
+    '    strategy.exit("X", trail_points=200, trail_offset=100)',
     "var float __obs_ps = na",
     "__obs_ps := strategy.position_size",
     "var float __obs_np = na",
@@ -3860,9 +3863,9 @@ describe("strategy.* E2E 여덟째 슬라이스 (hand-verified: 트레일링 래
 });
 
 describe("strategy.* E2E 여덟째 슬라이스 (hand-verified: 라인 아래 갭 다운 open 체결)", () => {
-  // 손 계산 시나리오 (trail_points=1, trail_offset=1 — bar3이 라인 아래로 갭 다운):
+  // 손 계산 시나리오 (trail_points=100, trail_offset=100 — bar3이 라인 아래로 갭 다운):
   //   bar0: O=10 C=11 양봉&flat → entry 큐잉. (ps=0, np=0)
-  //   bar1: O=12 → 롱 1@12 체결(활성화 13). exit(trail_points=1, trail_offset=1) 등록. (ps=1, np=0)
+  //   bar1: O=12 → 롱 1@12 체결(활성화 13). exit(trail_points=100, trail_offset=100) 등록. (ps=1, np=0)
   //   bar2: O=13.5 H=14 L=13.2 → 활성화(14>=13), 라인=14-1=13, low 13.2>13 미체결. 재호출 보존.
   //         (ps=1, np=0)
   //   bar3: O=12.5 → open 12.5 <= 라인 13 → open 12.5 체결(np=0.5 — 라인 13 체결이었다면 1).
@@ -3880,7 +3883,7 @@ describe("strategy.* E2E 여덟째 슬라이스 (hand-verified: 라인 아래 �
     "if close > open and strategy.position_size == 0",
     '    strategy.entry("L", strategy.long, 1)',
     "if strategy.position_size > 0",
-    '    strategy.exit("X", trail_points=1, trail_offset=1)',
+    '    strategy.exit("X", trail_points=100, trail_offset=100)',
     "var float __obs_ps = na",
     "__obs_ps := strategy.position_size",
     "var float __obs_np = na",
@@ -3913,7 +3916,7 @@ describe("strategy.* E2E trail_price= (C178, hand-verified: 트레일링 래칫 
     "if close > open and strategy.position_size == 0",
     '    strategy.entry("L", strategy.long, 1)',
     "if strategy.position_size > 0",
-    '    strategy.exit("X", trail_price=14, trail_offset=1)',
+    '    strategy.exit("X", trail_price=14, trail_offset=100)',
     "var float __obs_ps = na",
     "__obs_ps := strategy.position_size",
     "var float __obs_np = na",
@@ -3931,15 +3934,14 @@ describe("strategy.* E2E trail_price= (C178, hand-verified: 트레일링 래칫 
   });
 });
 
-// ── strategy.exit profit=/loss= (hand-verified, DIVERGENCES #98) ──
-// pine2py exit()는 **kwargs로 받아 조용히 버리는 파라미터라(engine.py L141-153, C170/C173이 이미
-// grep으로 확인) 대응 구현 자체가 없음 — trail_price=(C178)와 동일한 "오라클 불가, hand-verified"
-// 축. limit=/stop=(절대가)의 포인트 단위 대안: profit=은 posAvgPrice에서 유리한 방향으로,
-// loss=는 불리한 방향으로 이만큼 떨어진 가격을 익절/손절 레벨로 쓴다. trail_points의 activation
-// 산식과 동일하게 exitFillPrice가 매 바 posAvgPrice로 다시 계산(콜타임 스냅샷 아님 — pyramiding으로
-// avg가 바뀌어도 정합). 단위는 trail_points와 동일하게 가격 포인트(TV는 틱 단위로 알려져 있으나
-// syminfo.mintick 미구현 — mintick=1 가정과 동치, #73 축 계승).
-describe("StrategyState exit profit=/loss= (hand-verified, DIVERGENCES #98)", () => {
+// ── strategy.exit profit=/loss= ──
+// The tick-distance alternatives to limit=/stop=. The manual (strategies.txt, "Take-profit and
+// stop-loss"): "The profit and loss parameters accept relative values representing the number of
+// ticks by which the market price must move away from the entry price to trigger an exit." The
+// base is the fill price of the entry the exit is bound to, and a later pyramid add does not move
+// it. At mintick 0.01 the arguments below are 100x the price distances (profit=200 is 2.00).
+// Oracle-checked: resin-harness state/repros/ticks-seed-1.json, ticks-pyramid-add.json.
+describe("StrategyState exit profit=/loss= (ticks from the entry price)", () => {
   function longAt12(): StrategyState {
     const st = new StrategyState();
     st.entry("L", "long", 1);
@@ -3954,35 +3956,35 @@ describe("StrategyState exit profit=/loss= (hand-verified, DIVERGENCES #98)", ()
     return st;
   }
 
-  it("long: profit= computes the limit target as posAvgPrice+profit — high touches it", () => {
+  it("long: profit= puts the limit target profit ticks above the entry — high touches it", () => {
     const st = longAt12();
-    st.exit("X", "", undefined, undefined, undefined, undefined, undefined, undefined, undefined, 2); // target 12+2=14
+    st.exit("X", "", undefined, undefined, undefined, undefined, undefined, undefined, undefined, 200); // target 12+2=14
     st.processFills(13, 15, 12.5); // high 15 >= 14 -> 14 체결
     expect(st.posSize).toBe(0);
     expect(st.realizedPnl).toBe(2); // (14-12)*1
     expect(st.winTrades).toBe(1);
   });
 
-  it("long: loss= computes the stop target as posAvgPrice-loss — low touches it", () => {
+  it("long: loss= puts the stop target loss ticks below the entry — low touches it", () => {
     const st = longAt12();
-    st.exit("X", "", undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, 2); // target 12-2=10
+    st.exit("X", "", undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, 200); // target 12-2=10
     st.processFills(11, 11.5, 9); // low 9 <= 10 -> 10 체결
     expect(st.posSize).toBe(0);
     expect(st.realizedPnl).toBe(-2); // (10-12)*1
     expect(st.lossTrades).toBe(1);
   });
 
-  it("short: profit= computes the limit target as posAvgPrice-profit — low touches it", () => {
+  it("short: profit= puts the limit target profit ticks below the entry — low touches it", () => {
     const st = shortAt12();
-    st.exit("X", "", undefined, undefined, undefined, undefined, undefined, undefined, undefined, 2); // target 12-2=10
+    st.exit("X", "", undefined, undefined, undefined, undefined, undefined, undefined, undefined, 200); // target 12-2=10
     st.processFills(11, 11.2, 9.5); // low 9.5 <= 10 -> 10 체결
     expect(st.posSize).toBe(0);
     expect(st.realizedPnl).toBe(2); // (10-12)*(-1)
   });
 
-  it("short: loss= computes the stop target as posAvgPrice+loss — high touches it", () => {
+  it("short: loss= puts the stop target loss ticks above the entry — high touches it", () => {
     const st = shortAt12();
-    st.exit("X", "", undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, 2); // target 12+2=14
+    st.exit("X", "", undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, 200); // target 12+2=14
     st.processFills(13, 14.5, 12.5); // high 14.5 >= 14 -> 14 체결
     expect(st.posSize).toBe(0);
     expect(st.realizedPnl).toBe(-2); // (14-12)*(-1)
@@ -3990,7 +3992,7 @@ describe("StrategyState exit profit=/loss= (hand-verified, DIVERGENCES #98)", ()
 
   it("combines profit=/loss= as OCA-style independent axes — whichever touches first fills", () => {
     const st = longAt12();
-    st.exit("X", "", undefined, undefined, undefined, undefined, undefined, undefined, undefined, 2, 3); // profit target 14, loss target 9
+    st.exit("X", "", undefined, undefined, undefined, undefined, undefined, undefined, undefined, 200, 300); // profit target 14, loss target 9
     st.processFills(13, 14, 12.5); // high 14 >= 14(profit) -> fills at profit target
     expect(st.posSize).toBe(0);
     expect(st.realizedPnl).toBe(2);
@@ -3998,34 +4000,39 @@ describe("StrategyState exit profit=/loss= (hand-verified, DIVERGENCES #98)", ()
 
   it("same-id re-registration (매 바 재호출 표준 패턴) updates the profit/loss targets", () => {
     const st = longAt12();
-    st.exit("X", "", undefined, undefined, undefined, undefined, undefined, undefined, undefined, 2); // target 14
+    st.exit("X", "", undefined, undefined, undefined, undefined, undefined, undefined, undefined, 200); // target 14
     st.processFills(13, 13.5, 12.8); // 미달, 이월
     expect(st.posSize).toBe(1);
-    st.exit("X", "", undefined, undefined, undefined, undefined, undefined, undefined, undefined, 5); // 재호출 — target 17로 갱신
+    st.exit("X", "", undefined, undefined, undefined, undefined, undefined, undefined, undefined, 500); // 재호출 — target 17로 갱신
     st.processFills(14, 15.5, 13.5); // high 15.5 < 17 — 여전히 미달(옛 target 14였다면 체결됐을 바)
     expect(st.posSize).toBe(1);
   });
 
-  it("recomputes the profit target against a pyramiding-updated posAvgPrice (동적 재계산, 콜타임 스냅샷 아님)", () => {
+  // The level is measured from the bound entry's own fill, so a pyramid add that moves the average
+  // does not move it. This test used to assert the opposite (target re-derived from the 12.5
+  // average, filling 2 lots at 14.5); the oracle fills L alone at 14 — resin-harness
+  // state/repros/ticks-pyramid-add.json.
+  it("keeps the profit target at the bound entry's fill price after a pyramid add moves the average", () => {
     const st = new StrategyState();
     st.configure(1, 2); // pyramiding=2 — 동일 방향 추가 진입 1회 허용
     st.entry("L", "long", 1);
     st.processFills(12); // 롱 1 @ 12
-    st.exit("X", "", undefined, undefined, undefined, undefined, undefined, undefined, undefined, 2); // 등록 시점 target 14 — 단 avg는 매 바 재조회
+    st.exit("X", "L", undefined, undefined, undefined, undefined, undefined, undefined, undefined, 200); // target 12+2=14
     st.entry("L2", "long", 1);
     st.processFills(13, 13.2, 12.8); // exit 미달(limit 14 미도달) 이월, entry 체결 -> avg=(12*1+13*1)/2=12.5
     expect(st.posAvgPrice).toBe(12.5);
     expect(st.posSize).toBe(2);
-    st.processFills(14, 14.5, 13.8); // 새 target = 12.5+2 = 14.5, high 14.5 >= 14.5 -> 14.5 체결
-    expect(st.posSize).toBe(0);
-    expect(st.realizedPnl).toBe(4); // (14.5-12.5)*2
+    st.processFills(13.5, 14.5, 13.3); // target stays 14 (not 12.5+2=14.5): high 14.5 >= 14 -> L fills at 14
+    expect(st.posSize).toBe(1); // only L's bound lot; L2 stays open
+    expect(st.posAvgPrice).toBe(13);
+    expect(st.realizedPnl).toBe(2); // (14-12)*1
   });
 
   it("qty= partial exit combines with profit= — 부분 청산 후 잔여 포지션/avg 유지", () => {
     const st = new StrategyState();
     st.entry("L", "long", 2);
     st.processFills(12); // 롱 2 @ 12
-    st.exit("X", "", undefined, undefined, 1, undefined, undefined, undefined, undefined, 2); // qty 1 부분, target 14
+    st.exit("X", "", undefined, undefined, 1, undefined, undefined, undefined, undefined, 200); // qty 1 부분, target 14
     st.processFills(13.5, 15, 13.2); // open 13.5 < 14 미달, high 15 >= 14 -> 14 체결 qty 1
     expect(st.posSize).toBe(1);
     expect(st.posAvgPrice).toBe(12);
@@ -4091,9 +4098,9 @@ describe("strategy.exit profit=/loss= codegen emission (hand-verified, DIVERGENC
 });
 
 describe("strategy.* E2E profit=/loss= (hand-verified: 익절/손절 포인트 목표 반복 체결)", () => {
-  // 손 계산 시나리오 (profit=2, loss=3 — 매 바 재호출 표준 패턴):
+  // 손 계산 시나리오 (profit=200, loss=300 — 매 바 재호출 표준 패턴):
   //   bar0: O=10 C=11 양봉&flat -> entry("L") 큐잉. (ps=0, np=0)
-  //   bar1: O=12 -> 롱 1@12 체결(avg=12). exit("X", profit=2, loss=3) 등록(target=14/9). (ps=1, np=0)
+  //   bar1: O=12 -> 롱 1@12 체결(avg=12). exit("X", profit=200, loss=300) 등록(target=14/9). (ps=1, np=0)
   //   bar2: O=13 H=14 L=12.5 -> high 14>=14(profit) -> 14 체결(np=2). 같은 바 양봉(C=13.5>O=13)이라
   //         flat 감지 후 재진입 entry("L2") 큐잉. (ps=0, np=2)
   //   bar3: O=14.5 -> 롱 1@14.5 체결(avg=14.5). exit 재등록(target=16.5/11.5). (ps=1, np=2)
@@ -4110,7 +4117,7 @@ describe("strategy.* E2E profit=/loss= (hand-verified: 익절/손절 포인트 �
     "if close > open and strategy.position_size == 0",
     '    strategy.entry("L", strategy.long, 1)',
     "if strategy.position_size > 0",
-    '    strategy.exit("X", profit=2, loss=3)',
+    '    strategy.exit("X", profit=200, loss=300)',
     "var float __obs_ps = na",
     "__obs_ps := strategy.position_size",
     "var float __obs_np = na",
@@ -5855,32 +5862,31 @@ describe("strategy.* E2E (hand-verified: closedtrades/opentrades.entry_time/exit
 //
 // fast=2/slow=3/signal=2(ta_macd.pine과 동일 파라미터, 이미 오라클로 검증된 조합 재사용)로
 // ta.crossover(macdLine,signalLine)이 true인 바에서만 strategy.entry(pyramiding=2) 진입, 매 바
-// strategy.exit(trail_points=4, trail_offset=1)을 무조건 재호출(exit() 자체가 posSize===0일 때
+// strategy.exit(trail_points=500, trail_offset=100)을 무조건 재호출(exit() 자체가 posSize===0일 때
 // 콜타임에 no-op이라 별도 가드 불필요, C167 참조)한다. 16바 커스텀 데이터(realistic once가 아니라
 // 크로스오버가 여러 번 재발하도록 미세 등락을 반복시킨 합성 시퀀스)로 실제 파이프라인을 먼저
 // 실행해(scratch 탐색 스크립트, 삭제함) 크로스오버가 bar5/7/9/11에 정확히 4회 발화함을 확인한 뒤,
 // 그 실측 트레이스를 아래처럼 손으로 재검증했다:
 //   bar5: crossover(long) 발화 -> entry("L",1) 큐잉(1번째 진입 신호). 아직 flat(ps=0)
-//   bar6: open 104 체결(신규 포지션, ps=1/ap=104/entryCount=1). exit 첫 등록(activation=104+4=108)
+//   bar6: open 104 체결(신규 포지션, ps=1/ap=104/entryCount=1). exit 첫 등록(activation=104+5=109)
 //   bar7: crossover(long) 재발화 -> entry("L",1) 큐잉(2번째 신호, 이월). ps=1/ap=104 그대로
 //   bar8: open 105 체결 -> pyramiding 가중평균(entryCount 1<2 통과): ap=(104*1+105*1)/2=104.5,
-//         ps=2, entryCount=2(게이트 소진). exit 재등록(activation=104.5+4=108.5로 갱신)
+//         ps=2, entryCount=2(게이트 소진).
 //   bar9: crossover(long) 재발화 -> entry("L",1) 큐잉(3번째 신호)
 //   bar10: open 106에서 체결 시도하나 entryCount(2)>=pyramiding(2) -> 주문 소진(이월 없음). ps/ap
-//         불변(2/104.5). high 107<activation 108.5라 트레일링도 미활성 -> 이중으로 불변 확인
-//   bar11: crossover(long) 재발화 -> entry("L",1) 큐잉(4번째 신호). high 108<108.5라 트레일링
-//         여전히 미활성(경계값 확인). ps/ap 불변(2/104.5)
-//   bar12: **같은 processFills 호출 안에서 청산이 entry보다 먼저 판정된다**(C167 "청산 먼저" 순서
-//         원칙) -- high 111>=activation 108.5로 트레일링 활성 + 라인=111-1=110으로 래칫, low
-//         106<=110이라 즉시 110에 전량(2계약) 체결(profit=(110-104.5)*2=11, realizedPnl 0->11).
-//         이 청산이 posSize를 0으로 리셋한 **바로 그 뒤**에 bar11이 큐잉해둔 4번째 entry 주문이
-//         처리되는데, 이 시점 posSize===0이라 pyramiding 가중평균이 아니라 **완전히 새 포지션**으로
-//         체결된다(open 107, ap=107/entryCount=1) -- 4번째 신호가 우연히 "게이트 차단"이 아니라
-//         "청산 직후 신규 진입"이 된 것. 최종 ps=1/ap=107/np=11
-//   bar13: 새 사이클의 exit는 bar12에서 이미 fresh 등록(activation=107+4=111)됐다 -- high 111이
-//         activation과 정확히 일치(경계 포함 확인) -> 활성 + 라인=111-1=110 래칫, low 105<=110 ->
-//         110에 전량(1계약) 체결(profit=(110-107)*1=3, realizedPnl 11->14). ps=0/ap=na/np=14
-//   bar14/bar15: 신규 신호 없음(crossover 미발화) -> flat 유지, np=14 고정
+//         불변(2/104.5). high 107<activation 109라 트레일링도 미활성 -> 이중으로 불변 확인
+//   bar11: crossover(long) 재발화 -> entry("L",1) 큐잉(4번째 신호). high 108<109라 트레일링
+//         여전히 미활성. ps/ap 불변(2/104.5)
+//   bar12: high 111 activates the trailing stop of both lots, line 111-1=110, low 106<=110 -> both
+//         lots exit at 110: (110-104)+(110-105)=11. np=11
+//   bar13-15: no new signal, np stays 11.
+// Revised for ticks (trail_points=4, trail_offset=1 were price points). Activation is measured from
+// each entry's own fill (104+5=109 and 105+5=110), not from the 104.5 average; trail_points=500 is
+// chosen so both lots activate on bar 12 and trail one line. Checked against the oracle:
+// resin-harness state/repros/trail-pyramid-legs.json. The same repro shows the 4th entry (queued on
+// bar 11) rejected at bar 12's open, where pyramiding=2 is still full — the trailing exit fills
+// later in the bar. resin still judges the exit before that entry and re-enters at 107; that
+// divergence is pinned by the it.fails case below.
 describe("strategy.* E2E 열두째 슬라이스 (hand-verified: MACD crossover 진입 + pyramiding 가중평균 + trailing stop 청산 조합, C193)", () => {
   const close = [100, 102, 101, 103, 102, 104, 103, 105, 104, 106, 105, 107, 110, 106, 103, 101];
   const open = [99, 101, 102, 101, 103, 102, 104, 103, 105, 104, 106, 105, 107, 110, 106, 103];
@@ -5895,7 +5901,7 @@ describe("strategy.* E2E 열두째 슬라이스 (hand-verified: MACD crossover �
     "shortCond = ta.crossunder(macdLine, signalLine)",
     "if longCond",
     '    strategy.entry("L", strategy.long, 1)',
-    'strategy.exit("X", trail_points=4, trail_offset=1)',
+    'strategy.exit("X", trail_points=500, trail_offset=100)',
     "var float __obs_long = na",
     "__obs_long := longCond ? 1.0 : 0.0",
     "var float __obs_short = na",
@@ -5908,8 +5914,9 @@ describe("strategy.* E2E 열두째 슬라이스 (hand-verified: MACD crossover �
     "__obs_np := strategy.netprofit",
   ].join("\n");
 
-  const PS = [0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 1, 0, 0, 0];
-  const NP = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 14, 14, 14];
+  // The oracle's values (resin-harness state/repros/trail-pyramid-legs.json).
+  const PS = [0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 0, 0, 0, 0];
+  const NP = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 11, 11, 11];
 
   it("fires ta.crossover(macdLine, signalLine) exactly at bar5/7/9/11", () => {
     const result = runPipeline(src, data);
@@ -5921,7 +5928,16 @@ describe("strategy.* E2E 열두째 슬라이스 (hand-verified: MACD crossover �
     expect(result.bars.map((b) => b["var:__obs_short"])).toEqual([0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0]);
   });
 
-  it("tracks position_size through fresh entry -> pyramiding add -> gated block -> exit-then-reentry -> exit", () => {
+  it("tracks position_size through fresh entry -> pyramiding add -> gated block, up to the exit bar", () => {
+    const result = runPipeline(src, data);
+    expect(result.bars.slice(0, 12).map((b) => b["var:__obs_ps"])).toEqual(PS.slice(0, 12));
+  });
+
+  // Known divergence (see the scenario comment): the oracle rejects the entry queued on bar 11 at
+  // bar 12's open, because both lots are still open there; resin judges the intrabar trailing exit
+  // first and re-enters at 107. Flip this to `it` once resin fills bar-open orders before intrabar
+  // exits.
+  it.fails("rejects the entry queued on bar 11 at bar 12's open while pyramiding=2 is still full", () => {
     const result = runPipeline(src, data);
     expect(result.bars.map((b) => b["var:__obs_ps"])).toEqual(PS);
   });
@@ -5946,42 +5962,34 @@ describe("strategy.* E2E 열두째 슬라이스 (hand-verified: MACD crossover �
 
   it("bar10 gated add-on is consumed without carrying over (not a pending order still waiting)", () => {
     const result = runPipeline(src, data);
-    // bar11의 open(105)/high(108)도 이미 activation(108.5) 미만이라 트레일링과 무관하게
+    // bar11의 open(105)/high(108)도 이미 activation(109) 미만이라 트레일링과 무관하게
     // ps가 그대로임을 bar9->bar10->bar11 3바 연속으로 재확인(단일 우연 아님).
     expect(result.bars[9]!["var:__obs_ps"]).toBe(2);
     expect(result.bars[10]!["var:__obs_ps"]).toBe(2);
     expect(result.bars[11]!["var:__obs_ps"]).toBe(2);
   });
 
-  it("trailing activation threshold is exact: bar11 high=108 < activation 108.5 stays inactive, bar12 high=111 >= 108.5 activates", () => {
+  it("trailing activation is measured from the entry fill: bar11 high=108 < 104+5=109 stays inactive, bar12 high=111 activates", () => {
     expect(high[11]).toBe(108);
     expect(high[12]).toBe(111);
     const result = runPipeline(src, data);
     expect(result.bars[11]!["var:__obs_ps"]).toBe(2); // 미활성 -> 청산 없음
-    expect(result.bars[12]!["var:__obs_ps"]).toBe(1); // 활성+체결 -> 청산 후 재진입
+    expect(result.bars[11]!["var:__obs_np"]).toBe(0);
+    expect(result.bars[12]!["var:__obs_np"]).toBe(11); // 활성+체결
   });
 
-  it("bar12 realizes the full 2-lot trailing exit profit before the queued 4th entry re-fills as a brand-new position", () => {
+  it("bar12 realizes both pyramided lots at the trailing line 110: (110-104)+(110-105)=11", () => {
     const result = runPipeline(src, data);
-    // (110-104.5)*2 = 11 -- 청산이 같은 processFills 호출 안에서 entry보다 먼저 판정된다(C167).
     expect(result.bars[12]!["var:__obs_np"]).toBe(11);
-    expect(result.bars[12]!["var:__obs_ps"]).toBe(1);
-    expect(result.bars[12]!["var:__obs_ap"]).toBe(107); // pyramiding 가중평균이 아니라 신규 진입가 그대로
   });
 
-  it("bar12's re-entry starts an independent trailing cycle (fresh avg=107, not the stale 104.5 cycle)", () => {
+  it("no further trade closes after bar 12", () => {
     const result = runPipeline(src, data);
-    // bar13 활성화 임계값은 107+4=111(구 사이클의 104.5+4=108.5가 아님) -- high 111과 정확히 일치.
-    expect(high[13]).toBe(111);
-    expect(result.bars[13]!["var:__obs_ps"]).toBe(0);
+    expect(high[13]).toBe(111); // below the 107+5=112 a bar-12 re-entry would need
+    expect(result.bars[13]!["var:__obs_np"]).toBe(11);
   });
 
-  it("bar13 exact-touch activation (high == activation threshold) still triggers the trailing exit", () => {
-    const result = runPipeline(src, data);
-    expect(result.bars[13]!["var:__obs_np"]).toBe(14); // (110-107)*1=3 추가, 11+3=14
-  });
-
-  it("tracks netprofit through both realized trailing exits and stays flat afterward", () => {
+  it("tracks netprofit through the 2-lot trailing exit and holds it afterward", () => {
     const result = runPipeline(src, data);
     expect(result.bars.map((b) => b["var:__obs_np"])).toEqual(NP);
   });
@@ -6001,7 +6009,8 @@ describe("strategy.* E2E 열두째 슬라이스 (hand-verified: MACD crossover �
     }
   });
 
-  it("ends flat after both trailing exits with no residual position (bar14/bar15 see no new signal)", () => {
+  // The oracle is flat from bar 12 on; resin holds its bar-12 re-entry — the known divergence above.
+  it.fails("ends flat after the trailing exit with no residual position (bar14/bar15 see no new signal)", () => {
     const result = runPipeline(src, data);
     expect(result.bars[14]!["var:__obs_ps"]).toBe(0);
     expect(result.bars[15]!["var:__obs_ps"]).toBe(0);

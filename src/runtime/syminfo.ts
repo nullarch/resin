@@ -1,3 +1,11 @@
+// The chart symbol's price grid. resin runs every script against one fixed symbol environment:
+// the analyzer folds syminfo.mintick/minmove/pricescale to these values, and the strategy engine
+// measures tick distances (strategy.exit profit/loss/trail_points/trail_offset) on the same grid.
+// mintick = minmove / pricescale.
+export const MINMOVE = 1;
+export const PRICESCALE = 100;
+export const MINTICK = 0.01;
+
 // syminfo.ticker(symbol) — the one-argument call form, distinct from the bare
 // `syminfo.ticker` property, which folds to "" at compile time.
 //
