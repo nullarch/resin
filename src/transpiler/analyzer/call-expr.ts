@@ -4959,6 +4959,19 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             prog.strategyCurrency = cur.value;
           }
         }
+        // process_orders_on_close moves every fill of an order placed on a bar's close to that
+        // same close (StrategyState.processFillsAtClose). It is a const bool in Pine; anything else
+        // is a hard error, since dropping it would silently shift every fill to the next open.
+        const poc = directiveArgExpr(expr, STRATEGY_PARAM_NAMES, "process_orders_on_close");
+        if (poc !== undefined) {
+          if (poc.kind === "BoolLiteral") {
+            prog.strategyProcessOrdersOnClose = poc.value;
+          } else {
+            prog.errors.push(
+              `'strategy()' 'process_orders_on_close' argument must be a true/false literal (L${expr.line}:${expr.col})`,
+            );
+          }
+        }
       }
       for (const arg of expr.args) analyzeExpr(arg, prog, scope, false);
       return;

@@ -2177,6 +2177,9 @@ export interface AnalyzedProgram {
   // true면 codegen이 configure 다섯 번째 인자(true)를 방출하고 네 번째(percent) 슬롯도 명시적으로
   // false로 채운다(C129 원칙의 연장 — 두 슬롯 사이 skip 불가).
   strategyQtyIsCash: boolean;
+  // strategy(process_orders_on_close=true): orders placed on a bar get one more fill attempt at
+  // that bar's close. codegen passes it as configure()'s sixth argument.
+  strategyProcessOrdersOnClose: boolean;
   // strategy() 지시어의 currency= kwarg(C332, next_hint(C331) 1순위) — 위 세 숫자 필드와 달리
   // '지원하지 않는 strategy 속성' 에러를 내던 strategy.account_currency의 값 소스. TV 기본값은
   // currency.NONE("계좌 통화 = 심볼 통화")인데 이 엔진의 syminfo.currency/basecurrency가 이미
@@ -3410,6 +3413,7 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
     vizSeriesSlotCount: 0,
     noopSeriesWrites: new Map(),
     strategyQtyIsCash: false,
+    strategyProcessOrdersOnClose: false,
     strategyCurrency: SYMINFO_STRING_PROPS.get("currency")!,
     stmtCalls: new Set(),
     funcs: new Map(),

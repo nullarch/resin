@@ -117,6 +117,9 @@ export class StrategyState {
   // qtyIsPercent와 상호 배타(codegen이 if/else-if로 하나만 true를 방출). 동일하게 pine2py 소비
   // 로직 전무 — TV 실측 미검증 가설(DIVERGENCES #74).
   qtyIsCash: boolean;
+  // strategy(process_orders_on_close=true): the orders the script places on a bar get one more
+  // fill attempt at that bar's close (processFillsAtClose), instead of waiting for the next open.
+  processOrdersOnClose: boolean;
 
   // 계좌 속성 누적기(C165 셋째 슬라이스) — pine2py는 청산마다 Trade 객체를 리스트에 쌓고 속성을
   // 매번 리스트 스캔(sum/len)으로 계산하지만, 여기서는 GOAL.md "bar loop 안 할당 제로"에 따라
@@ -312,6 +315,12 @@ export class StrategyState {
   orderLimit: number; // 지정가(NaN=없음) — limit/stop 둘 다 NaN이면 마켓 주문
   orderStop: number; // 역지정가(NaN=없음)
   orderOrderComment: string; // strategy.order(comment=, C173)
+  // Whether the entry/exit/order slot was placed (or re-placed under the same id) by the script
+  // on the current bar — only those orders are "created on a bar's close" and get the close pass.
+  // processFills clears them at every bar's open.
+  entryPlacedThisBar: boolean;
+  exitPlacedThisBar: boolean;
+  orderPlacedThisBar: boolean;
 
   // strategy.risk.allow_entry_in(value)(C309) — "all"|"long"|"short" 방향 제한. entry()의
   // 체결 시점(processFills)에서만 소비 — 콜타임이 아니라 체결 시점에 검사해야 그 사이 방향이
@@ -389,6 +398,7 @@ export class StrategyState {
     this.initialCapital = 100000;
     this.qtyIsPercent = false;
     this.qtyIsCash = false;
+    this.processOrdersOnClose = false;
     this.realizedPnl = 0;
     this.closedTrades = 0;
     this.winTrades = 0;
@@ -461,6 +471,9 @@ export class StrategyState {
     this.orderLimit = NaN;
     this.orderStop = NaN;
     this.orderOrderComment = "";
+    this.entryPlacedThisBar = false;
+    this.exitPlacedThisBar = false;
+    this.orderPlacedThisBar = false;
     this.allowedDirection = "all";
     this.maxIntradayFilledOrders = NaN;
     this.intradayFilledCount = 0;
@@ -583,13 +596,14 @@ export class StrategyState {
   // 생략한다(C129 원칙).
   configure(
     defaultQty: number, pyramiding: number, initialCapital: number = 100000,
-    qtyIsPercent: boolean = false, qtyIsCash: boolean = false,
+    qtyIsPercent: boolean = false, qtyIsCash: boolean = false, processOrdersOnClose: boolean = false,
   ): void {
     this.defaultQty = defaultQty;
     this.pyramiding = pyramiding;
     this.initialCapital = initialCapital;
     this.qtyIsPercent = qtyIsPercent;
     this.qtyIsCash = qtyIsCash;
+    this.processOrdersOnClose = processOrdersOnClose;
   }
 
   // strategy.openprofit — 미실현 손익(pine2py engine.py openprofit 프로퍼티의 signed-posSize 형:
@@ -1135,9 +1149,11 @@ export class StrategyState {
         this.entryLimit = limit ?? NaN;
         this.entryStop = stop ?? NaN;
         this.entryOrderComment = cmt;
+        this.entryPlacedThisBar = true;
       }
       return;
     }
+    this.entryPlacedThisBar = true;
     this.entryPending = true;
     this.entryOrderId = id;
     this.entryDirection = direction;
@@ -1182,9 +1198,11 @@ export class StrategyState {
         this.orderLimit = limit ?? NaN;
         this.orderStop = stop ?? NaN;
         this.orderOrderComment = cmt;
+        this.orderPlacedThisBar = true;
       }
       return;
     }
+    this.orderPlacedThisBar = true;
     this.orderPending = true;
     this.orderOrderId = id;
     this.orderDirection = direction;
@@ -1306,9 +1324,11 @@ export class StrategyState {
         // 사실상 무상태가 됨 — 실버그로 판단, 미추종. TV 실측 미검증 가설, DIVERGENCES #73).
         // 트레일링 축이 제거된 수정은 라인도 파기(이후 재도입 시 활성화부터 다시).
         if (Number.isNaN(tp) && Number.isNaN(tprice)) this.exitTrailPrice = NaN;
+        this.exitPlacedThisBar = true;
       }
       return;
     }
+    this.exitPlacedThisBar = true;
     this.exitPending = true;
     this.exitOrderId = id;
     this.exitFromEntry = from;
@@ -1510,6 +1530,9 @@ export class StrategyState {
       }
     }
     this.updateTradeExcursion(high, low);
+    this.entryPlacedThisBar = false;
+    this.exitPlacedThisBar = false;
+    this.orderPlacedThisBar = false;
     // An exit bound to a pending entry order lives only as long as that order: once it is gone
     // (cancelled, or consumed without opening a position) the exit has nothing to close. A
     // from_entry-less exit is not bound to one entry and keeps waiting for the next position.
@@ -1519,19 +1542,7 @@ export class StrategyState {
     ) {
       this.exitPending = false;
     }
-    if (this.closePending) {
-      this.closePending = false;
-      const ignoreId = this.closeAllPending; // close_all(C168) — id 매칭 생략(전량 청산)
-      this.closeAllPending = false;
-      if (this.posSize !== 0 && (ignoreId || this.hasBound(this.closeOrderId))) {
-        // close_all has no entry id: its exit id is "" as on its immediately= path.
-        this.closeAt(
-          openPrice, this.closeQty, this.closeOrderComment, barIndex,
-          ignoreId ? "" : StrategyState.closeExitId(this.closeOrderId), barTimeMs,
-          ignoreId ? null : this.closeOrderId,
-        );
-      }
-    }
+    if (this.closePending) this.fillPendingClose(openPrice, barIndex, barTimeMs);
     // exit 브래킷(C167)은 close(마켓 청산) 다음, entry 앞에서 판정한다 — 마켓 close는 open 체결이라
     // 항상 이 바의 첫 가격이고(체결되면 closeAt이 exitPending을 함께 소멸시킴), exit도 청산 계열이라
     // 기존 "청산 먼저 → entry" 순서 원칙에 합류한다(같은 바에 exit 체결+재진입 entry 체결이 순차
@@ -1544,79 +1555,7 @@ export class StrategyState {
       // NaN이면 limit/stop 가격 조건 미충족 — 주문 이월(마켓은 NaN 불가). early return이 아니라
       // 분기 스킵인 이유(C169): 아래 order 슬롯 판정이 entry 이월 여부와 무관하게 이 바에서
       // 실행돼야 한다(entry가 마지막 블록이던 시절의 return을 order 추가와 함께 구조 변경 — 동작 동치).
-      if (!Number.isNaN(fillPrice)) {
-        this.entryPending = false;
-        const sign = this.entryDirection === "long" ? 1 : -1;
-        // percent_of_equity 자동 수량(C171)은 체결 시점에 해석: entryQty(지분율 %)를 equity(체결가
-        // 기준)로 계약 수 환산. 리버스 청산 **전에** 계산해도 동일하다 — equity(p)는 같은 가격 p의
-        // 청산 전/후 불변((p-avg)*posSize가 미실현→실현으로 자리만 옮기고 openProfit이 0이 됨).
-        // equity<=0(파산)이면 qty<=0 → 주문은 소진하되(마켓 소진 규칙과 동일 — 이월 없음) 리버스
-        // 청산 포함 아무 체결도 없다(긍정형 가드 C91, TV 실측 미검증 가설 DIVERGENCES #74).
-        let qty = this.entryQtyAuto
-          ? this.qtyIsCash
-            ? this.autoQtyCashAt(fillPrice, this.entryQty)
-            : this.autoQtyAt(fillPrice, this.entryQty)
-          : this.entryQty;
-        if (qty > 0) {
-          // strategy.risk.allow_entry_in(C309) — 금지된 방향의 entry는 아래 리버스-청산(있었다면)
-          // 까지만 수행하고 신규 포지션/피라미딩 추가는 열지 않는다("position-closing order
-          // instead of a reversal" — call-expr.ts strategy.risk.allow_entry_in 분기 주석의 TV 문서
-          // 발췌 근거 참조). "all"(기본값)이면 이 게이트는 항상 false — 기존 무제한 동작 무변화.
-          const directionForbidden =
-            this.allowedDirection !== "all" && this.entryDirection !== this.allowedDirection;
-          // strategy.risk.max_intraday_filled_orders(C320) — 오늘 이미 상한만큼 신규 체결됐으면
-          // directionForbidden과 동일하게 "위 리버스 청산까지만" 허용하고 아래 오픈/피라미딩 분기는
-          // 막는다(REMARKS "market order to exit ... still allowed"). 카운터는 오픈/피라미딩 분기가
-          // 실제로 실행될 때만 +1 — 청산 전용 체결(반대 방향 entry의 리버스-청산 부분, close/exit)은
-          // 세지 않는다(TV 미검증 가설 — call-expr.ts 분기 주석 근거 참조).
-          const intradayLimitReached =
-            !Number.isNaN(this.maxIntradayFilledOrders) &&
-            this.intradayFilledCount >= this.maxIntradayFilledOrders;
-          // strategy.risk.max_drawdown/max_intraday_loss(C322)/max_cons_loss_days(C325) — allow_entry_in/
-          // max_intraday_filled_orders와 동일한 "위 리버스 청산까지만 허용" 게이트에 합류.
-          const drawdownForbidden =
-            this.drawdownLimitReached || this.intradayLossLimitReached || this.consLossLimitReached;
-          if (this.posSize !== 0 && this.posSize > 0 !== sign > 0) {
-            // 반대 방향이면 리버스(TV: 반대 direction entry는 기존 포지션 청산 후 진입 — pine2py
-            // entry()의 콜타임 `_close_position` + `_fill_entry` "새 Position" 분기를 체결 시점으로
-            // 옮긴 것, DIVERGENCES #67). 청산을 실현 손익으로 기록(closedtrades 1건)한 뒤 flat이 되어
-            // 아래 새 포지션 분기로 이어진다 — C164의 "포지션 교체" 단축과 포지션 관측은 동일하고
-            // 계좌 속성 관측만 추가된 것. limit/stop 체결도 동일 경로(청산가 = 그 주문의 체결가).
-            // exit_comment(C173)는 pine2py `self._close_position(id, comment)`처럼 **청산을 유발한
-            // 새 entry 주문 자신의 comment**를 쓴다(_close_position이 exit_id/comment 인자를
-            // exit()의 그것이 아니라 리버스를 일으킨 entry()의 id/comment로 호출하는 것의 미러).
-            this.closeAt(fillPrice, Infinity, this.entryOrderComment, barIndex, this.entryOrderId, barTimeMs);
-          }
-          // strategy.risk.max_position_size(value)(C324) — 위 3형제(directionForbidden 등)와 달리
-          // "전면 차단"이 아니라 "부족분만 체결"이다(TV 문서: "quantity of new strategy.entry orders
-          // will be reduced if necessary to prevent exceeding this limit"). 위 리버스 청산 이후
-          // 시점의 |posSize|(리버스가 있었다면 이미 0)를 "기존 같은 방향 보유량"으로 삼아 남은 여유만
-          // qty에서 깎는다 — 이미 한도 이상이면 0으로 축소돼 아래 오픈/피라미딩 분기 자체가
-          // 무해하게 스킵된다(긍정형 가드, C91과 동일 원칙).
-          if (!Number.isNaN(this.maxPositionSizeValue)) {
-            qty = Math.max(0, Math.min(qty, this.maxPositionSizeValue - Math.abs(this.posSize)));
-          }
-          if (directionForbidden || intradayLimitReached || drawdownForbidden || qty <= 0) {
-            // 위 청산까지만 — 아래 신규/피라미딩 분기 스킵(주문 자체는 소진, 이월 없음).
-          } else if (this.posSize === 0) {
-            this.openTradeAt(this.entryOrderId, this.entryOrderComment, fillPrice, sign * qty, barIndex, barTimeMs);
-            this.intradayFilledCount += 1;
-            if (this.exitPending && !Number.isNaN(this.exitQtyPercent)) {
-              this.exitQty = (qty * this.exitQtyPercent) / 100;
-              this.exitQtyPercent = NaN;
-            }
-          } else if (this.entryCount < this.pyramiding) {
-            // A pyramiding add opens its own trade beside the earlier ones (it is not merged into
-            // them): "Pyramiding specifies the maximum number of open trades, from the orders created
-            // by strategy.entry() calls, that a strategy allows for a single position"
-            // (strategies.txt). pyramiding=0 never gets here (0 < 0), the same as 1.
-            // 자동 수량의 추가 진입 equity에는 기존 포지션의 미실현 손익(체결가 기준)이 포함된다.
-            this.openTradeAt(this.entryOrderId, this.entryOrderComment, fillPrice, sign * qty, barIndex, barTimeMs);
-            this.intradayFilledCount += 1;
-          }
-          // else: 같은 방향 + pyramiding 소진 → 주문 취소(이월 없음)
-        }
-      }
+      if (!Number.isNaN(fillPrice)) this.fillPendingEntry(fillPrice, barIndex, barTimeMs);
     }
     // An exit bound to an entry that just opened a position from flat is live on the fill bar
     // itself, not from the next one: the order exists before the fill, so the rest of this bar can
@@ -1632,38 +1571,162 @@ export class StrategyState {
     // (마켓=open, limit/stop=조건 충족 시 체결·미충족 시 이월, 갭 오픈 or-better #69 (a) 축).
     if (this.orderPending) {
       const orderFill = this.directionalFillPrice(this.orderDirection, this.orderLimit, this.orderStop, openPrice, high, low);
-      if (!Number.isNaN(orderFill)) {
-        this.orderPending = false;
-        const sign = this.orderDirection === "long" ? 1 : -1;
-        // percent_of_equity 자동 수량(C171) — entry 분기와 동일하게 체결 시점 해석. 상쇄(부분
-        // closeAt)도 같은 가격이라 equity 불변 — 해석을 상쇄 앞 한 곳에 두면 충분하다. equity<=0이면
-        // 주문 소진·미체결(상쇄 포함 전부 스킵 — entry 분기와 동일 가드, DIVERGENCES #74).
-        let qty = this.orderQtyAuto
-          ? this.qtyIsCash
-            ? this.autoQtyCashAt(orderFill, this.orderQty)
-            : this.autoQtyAt(orderFill, this.orderQty)
-          : this.orderQty;
-        if (qty > 0) {
-          if (this.posSize !== 0 && this.posSize > 0 !== sign > 0) {
-            // 반대 방향은 |posSize|와 상쇄 — 축소분을 실현 손익으로 기록(closeAt 부분 산식 재사용,
-            // C168 인프라의 자연 확장: avg/entryId/entryCount 유지, 전량 도달 시 flat 리셋 + 브래킷
-            // 소멸까지 기존 경로와 동치). qty가 |posSize|를 초과하면 잔여분이 아래 분기에서 반대
-            // 방향 새 포지션이 된다(부호 반전 — entry의 리버스 전량+전량과 달리 넷 수량만 진입).
-            const size = Math.abs(this.posSize);
-            const reduceQty = qty < size ? qty : size;
-            // exit_comment(C173)는 entry 리버스 분기와 같은 가설(주문 자신의 comment) — order()엔
-            // pine2py 대응 구현이 없어(DIVERGENCES #72) 대칭성만 근거로 삼는다.
-            this.closeAt(orderFill, reduceQty, this.orderOrderComment, barIndex, this.orderOrderId, barTimeMs);
-            qty -= reduceQty;
-          }
-          if (qty > 0) {
-            // Opens a trade of its own, from flat or beside the open ones — with no pyramiding gate
-            // (strategies.txt: strategy.order() "ignores most properties, such as pyramiding"). Its
-            // entry still takes a slot the next strategy.entry() is gated on (entryCount).
-            this.openTradeAt(this.orderOrderId, this.orderOrderComment, orderFill, sign * qty, barIndex, barTimeMs);
-          }
-        }
+      if (!Number.isNaN(orderFill)) this.fillPendingOrder(orderFill, barIndex, barTimeMs);
+    }
+  }
+
+  // strategy(process_orders_on_close=true): the extra fill attempt at the bar's close, after the
+  // script body ran (Context.finishBar). The manual (strategies.txt, "process_orders_on_close"): "If
+  // the value is true, the broker emulator can fill orders created on a bar's close immediately, on
+  // the same tick, rather than waiting for the next available tick"; props.txt: "If the orders are
+  // market orders, the broker emulator executes them before the next bar's open. If the orders are
+  // price-dependent, they will only be filled if the price conditions are met." So only the orders
+  // the script placed on this bar take part (the ones resting from earlier bars already met this
+  // bar's prices in processFills), and the close is the single price they are judged at and fill
+  // at. The exit goes last: the entry it is bound to may have just filled. The oracle's close pass
+  // runs in the same order (market orders, then triggered entries, then exits).
+  // Repro: resin-harness state/repros/mixed-seed-4.json.
+  processFillsAtClose(closePrice: number, barIndex: number = NaN, barTimeMs: number = NaN): void {
+    if (!this.processOrdersOnClose) return;
+    if (this.closePending) this.fillPendingClose(closePrice, barIndex, barTimeMs);
+    if (this.entryPending && this.entryPlacedThisBar) {
+      const fillPrice = this.directionalFillPrice(
+        this.entryDirection, this.entryLimit, this.entryStop, closePrice, closePrice, closePrice,
+      );
+      if (!Number.isNaN(fillPrice)) this.fillPendingEntry(fillPrice, barIndex, barTimeMs);
+    }
+    if (this.orderPending && this.orderPlacedThisBar) {
+      const orderFill = this.directionalFillPrice(
+        this.orderDirection, this.orderLimit, this.orderStop, closePrice, closePrice, closePrice,
+      );
+      if (!Number.isNaN(orderFill)) this.fillPendingOrder(orderFill, barIndex, barTimeMs);
+    }
+    if (this.exitPlacedThisBar) this.fillPendingExitAtClose(closePrice, barIndex, barTimeMs);
+    this.updateMaxContractsHeld();
+  }
+
+  // Fills the pending strategy.close()/close_all() market order at `fillPrice`.
+  private fillPendingClose(fillPrice: number, barIndex: number, barTimeMs: number): void {
+    this.closePending = false;
+    const ignoreId = this.closeAllPending; // close_all(C168) — id 매칭 생략(전량 청산)
+    this.closeAllPending = false;
+    if (this.posSize !== 0 && (ignoreId || this.hasBound(this.closeOrderId))) {
+      // close_all has no entry id: its exit id is "" as on its immediately= path.
+      this.closeAt(
+        fillPrice, this.closeQty, this.closeOrderComment, barIndex,
+        ignoreId ? "" : StrategyState.closeExitId(this.closeOrderId), barTimeMs,
+        ignoreId ? null : this.closeOrderId,
+      );
+    }
+  }
+
+  // Fills the pending entry order at `fillPrice`, its trigger already judged: a reversal closes the
+  // opposite position first, then the risk and pyramiding gates decide whether it opens a trade.
+  // The order is consumed either way.
+  private fillPendingEntry(fillPrice: number, barIndex: number, barTimeMs: number): void {
+    this.entryPending = false;
+    const sign = this.entryDirection === "long" ? 1 : -1;
+    // percent_of_equity 자동 수량(C171)은 체결 시점에 해석: entryQty(지분율 %)를 equity(체결가
+    // 기준)로 계약 수 환산. 리버스 청산 **전에** 계산해도 동일하다 — equity(p)는 같은 가격 p의
+    // 청산 전/후 불변((p-avg)*posSize가 미실현→실현으로 자리만 옮기고 openProfit이 0이 됨).
+    // equity<=0(파산)이면 qty<=0 → 주문은 소진하되(마켓 소진 규칙과 동일 — 이월 없음) 리버스
+    // 청산 포함 아무 체결도 없다(긍정형 가드 C91, TV 실측 미검증 가설 DIVERGENCES #74).
+    let qty = this.entryQtyAuto
+      ? this.qtyIsCash
+        ? this.autoQtyCashAt(fillPrice, this.entryQty)
+        : this.autoQtyAt(fillPrice, this.entryQty)
+      : this.entryQty;
+    if (!(qty > 0)) return;
+    // strategy.risk.allow_entry_in(C309) — 금지된 방향의 entry는 아래 리버스-청산(있었다면)
+    // 까지만 수행하고 신규 포지션/피라미딩 추가는 열지 않는다("position-closing order
+    // instead of a reversal" — call-expr.ts strategy.risk.allow_entry_in 분기 주석의 TV 문서
+    // 발췌 근거 참조). "all"(기본값)이면 이 게이트는 항상 false — 기존 무제한 동작 무변화.
+    const directionForbidden =
+      this.allowedDirection !== "all" && this.entryDirection !== this.allowedDirection;
+    // strategy.risk.max_intraday_filled_orders(C320) — 오늘 이미 상한만큼 신규 체결됐으면
+    // directionForbidden과 동일하게 "위 리버스 청산까지만" 허용하고 아래 오픈/피라미딩 분기는
+    // 막는다(REMARKS "market order to exit ... still allowed"). 카운터는 오픈/피라미딩 분기가
+    // 실제로 실행될 때만 +1 — 청산 전용 체결(반대 방향 entry의 리버스-청산 부분, close/exit)은
+    // 세지 않는다(TV 미검증 가설 — call-expr.ts 분기 주석 근거 참조).
+    const intradayLimitReached =
+      !Number.isNaN(this.maxIntradayFilledOrders) &&
+      this.intradayFilledCount >= this.maxIntradayFilledOrders;
+    // strategy.risk.max_drawdown/max_intraday_loss(C322)/max_cons_loss_days(C325) — allow_entry_in/
+    // max_intraday_filled_orders와 동일한 "위 리버스 청산까지만 허용" 게이트에 합류.
+    const drawdownForbidden =
+      this.drawdownLimitReached || this.intradayLossLimitReached || this.consLossLimitReached;
+    if (this.posSize !== 0 && this.posSize > 0 !== sign > 0) {
+      // 반대 방향이면 리버스(TV: 반대 direction entry는 기존 포지션 청산 후 진입 — pine2py
+      // entry()의 콜타임 `_close_position` + `_fill_entry` "새 Position" 분기를 체결 시점으로
+      // 옮긴 것, DIVERGENCES #67). 청산을 실현 손익으로 기록(closedtrades 1건)한 뒤 flat이 되어
+      // 아래 새 포지션 분기로 이어진다 — C164의 "포지션 교체" 단축과 포지션 관측은 동일하고
+      // 계좌 속성 관측만 추가된 것. limit/stop 체결도 동일 경로(청산가 = 그 주문의 체결가).
+      // exit_comment(C173)는 pine2py `self._close_position(id, comment)`처럼 **청산을 유발한
+      // 새 entry 주문 자신의 comment**를 쓴다(_close_position이 exit_id/comment 인자를
+      // exit()의 그것이 아니라 리버스를 일으킨 entry()의 id/comment로 호출하는 것의 미러).
+      this.closeAt(fillPrice, Infinity, this.entryOrderComment, barIndex, this.entryOrderId, barTimeMs);
+    }
+    // strategy.risk.max_position_size(value)(C324) — 위 3형제(directionForbidden 등)와 달리
+    // "전면 차단"이 아니라 "부족분만 체결"이다(TV 문서: "quantity of new strategy.entry orders
+    // will be reduced if necessary to prevent exceeding this limit"). 위 리버스 청산 이후
+    // 시점의 |posSize|(리버스가 있었다면 이미 0)를 "기존 같은 방향 보유량"으로 삼아 남은 여유만
+    // qty에서 깎는다 — 이미 한도 이상이면 0으로 축소돼 아래 오픈/피라미딩 분기 자체가
+    // 무해하게 스킵된다(긍정형 가드, C91과 동일 원칙).
+    if (!Number.isNaN(this.maxPositionSizeValue)) {
+      qty = Math.max(0, Math.min(qty, this.maxPositionSizeValue - Math.abs(this.posSize)));
+    }
+    if (directionForbidden || intradayLimitReached || drawdownForbidden || qty <= 0) {
+      // 위 청산까지만 — 아래 신규/피라미딩 분기 스킵(주문 자체는 소진, 이월 없음).
+    } else if (this.posSize === 0) {
+      this.openTradeAt(this.entryOrderId, this.entryOrderComment, fillPrice, sign * qty, barIndex, barTimeMs);
+      this.intradayFilledCount += 1;
+      if (this.exitPending && !Number.isNaN(this.exitQtyPercent)) {
+        this.exitQty = (qty * this.exitQtyPercent) / 100;
+        this.exitQtyPercent = NaN;
       }
+    } else if (this.entryCount < this.pyramiding) {
+      // A pyramiding add opens its own trade beside the earlier ones (it is not merged into
+      // them): "Pyramiding specifies the maximum number of open trades, from the orders created
+      // by strategy.entry() calls, that a strategy allows for a single position"
+      // (strategies.txt). pyramiding=0 never gets here (0 < 0), the same as 1.
+      // 자동 수량의 추가 진입 equity에는 기존 포지션의 미실현 손익(체결가 기준)이 포함된다.
+      this.openTradeAt(this.entryOrderId, this.entryOrderComment, fillPrice, sign * qty, barIndex, barTimeMs);
+      this.intradayFilledCount += 1;
+    }
+    // else: 같은 방향 + pyramiding 소진 → 주문 취소(이월 없음)
+  }
+
+  // Fills the pending strategy.order() at `orderFill`, its trigger already judged: netted against an
+  // opposite position first, the rest opening a trade.
+  private fillPendingOrder(orderFill: number, barIndex: number, barTimeMs: number): void {
+    this.orderPending = false;
+    const sign = this.orderDirection === "long" ? 1 : -1;
+    // percent_of_equity 자동 수량(C171) — entry 분기와 동일하게 체결 시점 해석. 상쇄(부분
+    // closeAt)도 같은 가격이라 equity 불변 — 해석을 상쇄 앞 한 곳에 두면 충분하다. equity<=0이면
+    // 주문 소진·미체결(상쇄 포함 전부 스킵 — entry 분기와 동일 가드, DIVERGENCES #74).
+    let qty = this.orderQtyAuto
+      ? this.qtyIsCash
+        ? this.autoQtyCashAt(orderFill, this.orderQty)
+        : this.autoQtyAt(orderFill, this.orderQty)
+      : this.orderQty;
+    if (!(qty > 0)) return;
+    if (this.posSize !== 0 && this.posSize > 0 !== sign > 0) {
+      // 반대 방향은 |posSize|와 상쇄 — 축소분을 실현 손익으로 기록(closeAt 부분 산식 재사용,
+      // C168 인프라의 자연 확장: avg/entryId/entryCount 유지, 전량 도달 시 flat 리셋 + 브래킷
+      // 소멸까지 기존 경로와 동치). qty가 |posSize|를 초과하면 잔여분이 아래 분기에서 반대
+      // 방향 새 포지션이 된다(부호 반전 — entry의 리버스 전량+전량과 달리 넷 수량만 진입).
+      const size = Math.abs(this.posSize);
+      const reduceQty = qty < size ? qty : size;
+      // exit_comment(C173)는 entry 리버스 분기와 같은 가설(주문 자신의 comment) — order()엔
+      // pine2py 대응 구현이 없어(DIVERGENCES #72) 대칭성만 근거로 삼는다.
+      this.closeAt(orderFill, reduceQty, this.orderOrderComment, barIndex, this.orderOrderId, barTimeMs);
+      qty -= reduceQty;
+    }
+    if (qty > 0) {
+      // Opens a trade of its own, from flat or beside the open ones — with no pyramiding gate
+      // (strategies.txt: strategy.order() "ignores most properties, such as pyramiding"). Its
+      // entry still takes a slot the next strategy.entry() is gated on (entryCount).
+      this.openTradeAt(this.orderOrderId, this.orderOrderComment, orderFill, sign * qty, barIndex, barTimeMs);
     }
   }
 
@@ -1674,32 +1737,53 @@ export class StrategyState {
     const from = this.exitFromEntry;
     if (this.exitPending && this.posSize !== 0 && (from === "" || this.hasBound(from))) {
       const exitFill = this.exitFillPrice(openPrice, high, low);
-      if (!Number.isNaN(exitFill)) {
-        // 주문 소비는 여기서 명시(C168) — 전량 청산은 closeAt의 flat 리셋이 exitPending을 함께
-        // 소멸시키지만, qty= 부분 체결은 포지션이 남아도 브래킷 주문 자체는 체결로 소진돼야 한다
-        // (TV: 주문은 1회 체결로 소멸, 잔여분 브래킷은 스크립트가 매 바 재호출로 재발행 — 가설 #71).
-        this.exitPending = false;
-        // comment_loss=/comment_profit=/comment_trailing=(C375+C673) — exitFillPrice가 남긴
-        // exitFillKind로 트리거별 오버라이드를 선택: "profit"→comment_profit=, "loss"→comment_loss=,
-        // null(순수 트레일링)→comment_trailing=. 셋 다 미지정(null)이면 comment=로 폴백.
-        const exitCmt =
-          this.exitFillKind === "profit" && this.exitCommentProfit !== null
-            ? this.exitCommentProfit
-            : this.exitFillKind === "loss" && this.exitCommentLoss !== null
-              ? this.exitCommentLoss
-              : this.exitFillKind === null && this.exitCommentTrailing !== null
-                ? this.exitCommentTrailing
-                : this.exitOrderComment;
-        // An exit with from_entry closes at most its entry id's bound quantity; the fill itself
-        // is FIFO like every closing fill (closeAt).
-        if (from === "") {
-          this.closeAt(exitFill, this.exitQty, exitCmt, barIndex, this.exitOrderId, barTimeMs);
-        } else {
-          const bound = this.boundQty(from);
-          const qty = this.exitQty < bound ? this.exitQty : bound;
-          this.closeAt(exitFill, qty, exitCmt, barIndex, this.exitOrderId, barTimeMs, from);
-        }
-      }
+      if (!Number.isNaN(exitFill)) this.executeExit(exitFill, barIndex, barTimeMs);
+    }
+  }
+
+  // The close pass (processFillsAtClose) for the exit: its price levels judged against the close
+  // alone, the stop before the limit, filling at the close. A trailing leg is left to the next
+  // bar's walk, as in the oracle's close pass, which tests an order's limit and stop levels only.
+  private fillPendingExitAtClose(closePrice: number, barIndex: number, barTimeMs: number): void {
+    const from = this.exitFromEntry;
+    if (!this.exitPending || this.posSize === 0 || (from !== "" && !this.hasBound(from))) return;
+    const isLong = this.posSize > 0;
+    const base = this.exitEntryPrice();
+    const stop = this.exitStopLevel(isLong, base);
+    const limit = this.exitLimitLevel(isLong, base);
+    // NaN levels compare false (C91).
+    if (isLong ? closePrice <= stop : closePrice >= stop) this.exitFillKind = "loss";
+    else if (isLong ? closePrice >= limit : closePrice <= limit) this.exitFillKind = "profit";
+    else return;
+    this.executeExit(closePrice, barIndex, barTimeMs);
+  }
+
+  // Closes at the pending exit's fill price; exitFillKind names the level that triggered it.
+  private executeExit(exitFill: number, barIndex: number, barTimeMs: number): void {
+    const from = this.exitFromEntry;
+    // 주문 소비는 여기서 명시(C168) — 전량 청산은 closeAt의 flat 리셋이 exitPending을 함께
+    // 소멸시키지만, qty= 부분 체결은 포지션이 남아도 브래킷 주문 자체는 체결로 소진돼야 한다
+    // (TV: 주문은 1회 체결로 소멸, 잔여분 브래킷은 스크립트가 매 바 재호출로 재발행 — 가설 #71).
+    this.exitPending = false;
+    // comment_loss=/comment_profit=/comment_trailing=(C375+C673) — exitFillPrice가 남긴
+    // exitFillKind로 트리거별 오버라이드를 선택: "profit"→comment_profit=, "loss"→comment_loss=,
+    // null(순수 트레일링)→comment_trailing=. 셋 다 미지정(null)이면 comment=로 폴백.
+    const exitCmt =
+      this.exitFillKind === "profit" && this.exitCommentProfit !== null
+        ? this.exitCommentProfit
+        : this.exitFillKind === "loss" && this.exitCommentLoss !== null
+          ? this.exitCommentLoss
+          : this.exitFillKind === null && this.exitCommentTrailing !== null
+            ? this.exitCommentTrailing
+            : this.exitOrderComment;
+    // An exit with from_entry closes at most its entry id's bound quantity; the fill itself
+    // is FIFO like every closing fill (closeAt).
+    if (from === "") {
+      this.closeAt(exitFill, this.exitQty, exitCmt, barIndex, this.exitOrderId, barTimeMs);
+    } else {
+      const bound = this.boundQty(from);
+      const qty = this.exitQty < bound ? this.exitQty : bound;
+      this.closeAt(exitFill, qty, exitCmt, barIndex, this.exitOrderId, barTimeMs, from);
     }
   }
 
@@ -1800,20 +1884,8 @@ export class StrategyState {
     // ticks-pyramid-add.json for the base). When both of a pair are given, limit=/stop= is used.
     const isLong = this.posSize > 0;
     const base = this.exitEntryPrice();
-    const limit = !Number.isNaN(this.exitLimit)
-      ? this.exitLimit
-      : !Number.isNaN(this.exitProfitPoints)
-        ? (isLong
-          ? snapToTick(base + this.exitProfitPoints * MINTICK, true)
-          : snapToTick(base - this.exitProfitPoints * MINTICK, false))
-        : NaN;
-    const stop = !Number.isNaN(this.exitStop)
-      ? this.exitStop
-      : !Number.isNaN(this.exitLossPoints)
-        ? (isLong
-          ? snapToTick(base - this.exitLossPoints * MINTICK, false)
-          : snapToTick(base + this.exitLossPoints * MINTICK, true))
-        : NaN;
+    const limit = this.exitLimitLevel(isLong, base);
+    const stop = this.exitStopLevel(isLong, base);
     const hasLimit = !Number.isNaN(limit);
     const hasStop = !Number.isNaN(stop);
     const hasTrail = !Number.isNaN(this.exitTrailPoints) || !Number.isNaN(this.exitTrailPriceArg);
@@ -1876,5 +1948,25 @@ export class StrategyState {
       if (trailHit) { this.exitFillKind = null; return this.exitTrailPrice; }
     }
     return NaN;
+  }
+
+  // The pending exit's take-profit level: limit=, else `profit` ticks from `base` (the bound
+  // entry's fill price) in the position's favour. NaN when it has neither.
+  private exitLimitLevel(isLong: boolean, base: number): number {
+    if (!Number.isNaN(this.exitLimit)) return this.exitLimit;
+    if (Number.isNaN(this.exitProfitPoints)) return NaN;
+    return isLong
+      ? snapToTick(base + this.exitProfitPoints * MINTICK, true)
+      : snapToTick(base - this.exitProfitPoints * MINTICK, false);
+  }
+
+  // The pending exit's stop-loss level: stop=, else `loss` ticks from `base` against the position.
+  // NaN when it has neither.
+  private exitStopLevel(isLong: boolean, base: number): number {
+    if (!Number.isNaN(this.exitStop)) return this.exitStop;
+    if (Number.isNaN(this.exitLossPoints)) return NaN;
+    return isLong
+      ? snapToTick(base - this.exitLossPoints * MINTICK, false)
+      : snapToTick(base + this.exitLossPoints * MINTICK, true);
   }
 }

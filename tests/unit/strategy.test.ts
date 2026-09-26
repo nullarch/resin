@@ -8029,3 +8029,151 @@ describe("strategy.max_runup/max_runup_percent E2E (hand-verified, C674 — max_
     expect(result.bars.map((b) => b["var:__obs_rup"])).toEqual([0, 0, (70 / 980) * 100, (70 / 980) * 100, (70 / 980) * 100]);
   });
 });
+
+// ── strategy(process_orders_on_close=true) ──
+// The manual (strategies.txt, "process_orders_on_close"): "If the value is true, the broker
+// emulator can fill orders created on a bar's close immediately, on the same tick, rather than
+// waiting for the next available tick"; props.txt: "If the orders are price-dependent, they will
+// only be filled if the price conditions are met." The close pass (processFillsAtClose, run after
+// the script body) takes only the orders placed on that bar and fills them at the close.
+// Oracle-checked: resin-harness state/repros/mixed-seed-4.json, ordersOnClose-seed-1.json, probe C02.
+describe("StrategyState process_orders_on_close (fills at the signal bar's close)", () => {
+  function onClose(): StrategyState {
+    const st = new StrategyState();
+    st.configure(1, 1, 100000, false, false, true);
+    return st;
+  }
+
+  it("a market entry placed on a bar fills at that bar's close, not the next open", () => {
+    const st = onClose();
+    st.processFills(99, 101, 98, 0);
+    st.entry("L", "long", 2);
+    st.processFillsAtClose(100, 0);
+    expect(st.posSize).toBe(2);
+    expect(st.posAvgPrice).toBe(100);
+    expect(st.entryPending).toBe(false);
+    st.processFills(103, 104, 101, 1); // nothing is left for the next open
+    expect(st.posSize).toBe(2);
+    expect(st.posAvgPrice).toBe(100);
+  });
+
+  it("strategy.close() placed on a bar closes at that bar's close", () => {
+    const st = onClose();
+    st.processFills(99, 101, 98, 0);
+    st.entry("L", "long", 1);
+    st.processFillsAtClose(100, 0);
+    st.processFills(104, 106, 103, 1);
+    st.close("L");
+    st.processFillsAtClose(105, 1);
+    expect(st.posSize).toBe(0);
+    expect(st.realizedPnl).toBe(5);
+    expect(st.closedTradeRecords[0]!.exitBarIndex).toBe(1);
+    expect(st.closedTradeRecords[0]!.exitPrice).toBe(105);
+  });
+
+  it("without the setting the close pass does nothing", () => {
+    const st = new StrategyState();
+    st.processFills(99, 101, 98, 0);
+    st.entry("L", "long", 1);
+    st.processFillsAtClose(100, 0);
+    expect(st.posSize).toBe(0);
+    st.processFills(103, 104, 101, 1);
+    expect(st.posAvgPrice).toBe(103);
+  });
+
+  it("a limit entry placed on a bar fills at the close when the close meets its price", () => {
+    const st = onClose();
+    st.processFills(101, 102, 99, 0);
+    st.entry("L", "long", 1, 100.5); // buy limit 100.5, close 100 is below it
+    st.processFillsAtClose(100, 0);
+    expect(st.posSize).toBe(1);
+    expect(st.posAvgPrice).toBe(100); // at the close, not at the limit
+  });
+
+  it("a limit entry the close does not meet rests and is judged on the next bar", () => {
+    const st = onClose();
+    st.processFills(101, 102, 99, 0);
+    st.entry("L", "long", 1, 99.5); // buy limit 99.5, close 100 is above it
+    st.processFillsAtClose(100, 0);
+    expect(st.posSize).toBe(0);
+    expect(st.entryPending).toBe(true);
+    st.processFills(100, 100.5, 99, 1); // low 99 <= 99.5 -> fills at the limit
+    expect(st.posAvgPrice).toBe(99.5);
+  });
+
+  it("an order resting from an earlier bar is not judged at the close", () => {
+    const st = onClose();
+    st.processFills(101, 102, 101, 0);
+    st.entry("L", "long", 1, 100.5);
+    st.processFillsAtClose(101.5, 0); // not met
+    st.processFills(101); // next bar, no intrabar prices given: nothing triggers
+    st.processFillsAtClose(100, 1); // the close meets 100.5, but the order was placed on bar 0
+    expect(st.posSize).toBe(0);
+    expect(st.entryPending).toBe(true);
+  });
+
+  it("an exit placed on a bar fills at the close when the close is past its stop", () => {
+    const st = onClose();
+    st.processFills(99, 101, 98, 0);
+    st.entry("L", "long", 1);
+    st.processFillsAtClose(100, 0);
+    st.processFills(100, 101, 97, 1);
+    st.exit("X", "L", undefined, 98); // placed on bar 1, the close 97.5 is below the stop
+    st.processFillsAtClose(97.5, 1);
+    expect(st.posSize).toBe(0);
+    expect(st.closedTradeRecords[0]!.exitPrice).toBe(97.5);
+    expect(st.closedTradeRecords[0]!.exitId).toBe("X");
+  });
+
+  it("an exit placed with its entry takes its tick levels from the entry's close fill", () => {
+    const st = onClose();
+    st.processFills(99, 101, 98, 0);
+    st.entry("L", "long", 1);
+    // profit=200 / loss=100 ticks: 102 / 99 from the fill at 100
+    st.exit("X", "L", undefined, undefined, undefined, undefined, undefined, undefined, undefined, 200, 100);
+    st.processFillsAtClose(100, 0);
+    expect(st.posSize).toBe(1);
+    expect(st.exitPending).toBe(true); // the close 100 reaches neither level
+    st.processFills(100.5, 102.5, 100, 1); // high 102.5 >= 102
+    expect(st.posSize).toBe(0);
+    expect(st.closedTradeRecords[0]!.exitPrice).toBe(102);
+  });
+});
+
+describe("strategy(process_orders_on_close=true) E2E", () => {
+  // Probe C02 (resin-harness suites/strategy/probes/C02.json), oracle-checked. The script reads
+  // the position before the close pass, so each fill shows from the next bar on.
+  const data: OHLCVData = {
+    open: [100, 103, 104, 104, 110],
+    high: [101, 104, 106, 108, 111],
+    low: [99, 101, 103, 103, 109],
+    close: [100, 103, 105, 107, 110],
+    volume: [1, 1, 1, 1, 1],
+  };
+  const src = [
+    'strategy("s", initial_capital=100000, process_orders_on_close=true)',
+    "if bar_index == 0",
+    '    strategy.entry("L", strategy.long, qty=1)',
+    "if bar_index == 2",
+    '    strategy.close("L")',
+    "var float __pos = na",
+    "__pos := strategy.position_size",
+    "var float __net = na",
+    "__net := strategy.netprofit",
+  ].join("\n");
+
+  it("configures the close pass", () => {
+    expect(transpileCode(src)).toContain("$.strategy.configure(1, 1, 100000, false, false, true);");
+  });
+
+  it("fills the entry at bar 0's close and the close at bar 2's", () => {
+    const result = runPipeline(src, data);
+    expect(result.bars.map((b) => b["var:__pos"])).toEqual([0, 1, 1, 0, 0]);
+    expect(result.bars.map((b) => b["var:__net"])).toEqual([0, 0, 0, 5, 5]);
+  });
+
+  it("rejects a process_orders_on_close that is not a true/false literal", () => {
+    const errs = transpileErrors('strategy("s", process_orders_on_close=1)');
+    expect(errs.some((e) => e.includes("'process_orders_on_close' argument must be a true/false literal"))).toBe(true);
+  });
+});

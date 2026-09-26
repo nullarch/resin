@@ -159,6 +159,7 @@ export function compile(code: string): (ctx: Context) => () => void {
     return () => {
       setDrawingContext(ctx);
       barFn();
+      ctx.finishBar();
     };
   };
 }
