@@ -678,66 +678,25 @@ export function linreg(state: LinregState, value: number, length: number, offset
 }
 
 export interface VwmaState {
-  priceBuffer?: number[];
-  volBuffer?: number[];
-  writeIdx?: number;
-  pvSum?: number;
-  vSum?: number;
+  pv?: SmaState; // ta.sma(source * volume, length)
+  v?: SmaState; // ta.sma(volume, length)
 }
 
-// ta.vwma - Volume-Weighted Moving Average: VWMA = Σ(price*volume)/Σ(volume) over a fixed window.
-// Unlike ta.wma, every bar in the window gets equal *position* weight (only volume differs each bar's
-// contribution) — so this is two ta.sma-style rolling sums (Σprice*volume and Σvolume) run in parallel,
-// not a derived weighted recurrence like wma. pine2py wavealgo/ta/vwma.py recomputes both sums from a
-// list window every bar (O(length)); pine2js reuses ta.sma's fixed-width circular buffer pattern twice
-// (one buffer per signal, single allocation on first call) for O(1) incremental updates.
+// ta.vwma - Volume-Weighted Moving Average, literally the reference's quotient of two ta.sma calls:
+// "It is the same as: sma(source * volume, length) / sma(volume, length)" (ref_v6_ta_math.txt
+// ta.vwma, REMARKS "`na` values in the `source` series are ignored"; the oracle's lib/ta.py vwma is
+// that one line). So the two averages keep their own na-skipping windows (naSkipSum): an na source
+// makes source * volume na, which the numerator skips while the denominator still takes the bar's
+// volume. The value is therefore not a single window's Σ(p·v)/Σ(v): resin had pine2py's poison
+// window (na for `length` bars after one na source; resin-harness state/repros/ta.serieslen-seed-2.json,
+// source na every third bar, oracle 103.84687083695336 on bar 16 where resin had na). The quotient is
+// Pine's `/`: a window of zero volume is 0 / 0 = na (see iii below).
 export function vwma(state: VwmaState, price: number, volume: number, length: number): number {
-  length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조)
-  if (state.priceBuffer === undefined) {
-    state.priceBuffer = new Array(length).fill(NaN);
-    state.volBuffer = new Array(length).fill(NaN);
-    state.writeIdx = 0;
-    state.pvSum = NaN;
-    state.vSum = NaN;
+  if (state.pv === undefined) {
+    state.pv = {};
+    state.v = {};
   }
-  const priceBuffer = state.priceBuffer;
-  const volBuffer = state.volBuffer!;
-  const writeIdx = state.writeIdx!;
-  const oldPrice = priceBuffer[writeIdx]!;
-  const oldVol = volBuffer[writeIdx]!;
-  priceBuffer[writeIdx] = price;
-  volBuffer[writeIdx] = volume;
-  state.writeIdx = (writeIdx + 1) % length;
-
-  if (
-    Number.isNaN(price) ||
-    Number.isNaN(volume) ||
-    Number.isNaN(oldPrice) ||
-    Number.isNaN(oldVol) ||
-    Number.isNaN(state.pvSum!)
-  ) {
-    let pvTotal = 0;
-    let vTotal = 0;
-    let hasNaN = false;
-    for (let i = 0; i < length; i++) {
-      const p = priceBuffer[i]!;
-      const v = volBuffer[i]!;
-      if (Number.isNaN(p) || Number.isNaN(v)) {
-        hasNaN = true;
-        break;
-      }
-      pvTotal += p * v;
-      vTotal += v;
-    }
-    state.pvSum = hasNaN ? NaN : pvTotal;
-    state.vSum = hasNaN ? NaN : vTotal;
-  } else {
-    state.pvSum = state.pvSum! - oldPrice * oldVol + price * volume;
-    state.vSum = state.vSum! - oldVol + volume;
-  }
-
-  if (state.vSum === 0) return NaN;
-  return state.pvSum! / state.vSum!;
+  return sma(state.pv, price * volume, length) / sma(state.v!, volume, length);
 }
 
 export interface SwmaState {
@@ -2906,28 +2865,13 @@ export function percentileLinearInterpolationVarLen(
 }
 
 export interface VwmaVarLenState {
-  priceBuffer?: Float64Array;
-  volBuffer?: Float64Array;
-  writeIdx?: number;
-  lastBarIdx?: number;
+  pv?: NaSkipVarLenState; // ta.sma(source * volume, length)
+  v?: NaSkipVarLenState; // ta.sma(volume, length)
 }
 
-// ta.vwma(source, length) — length가 series인 변형(배치25 (4) 마지막 항목, C555). 버퍼/writeIdx/
-// barIdx 덮어쓰기 메커니즘은 highestVarLen과 완전 동형(단일 Float64Array 대신 price/volume 두
-// 버퍼를 나란히 관리 — 위 고정 vwma()의 "두 신호 병렬" 구조를 O(length) 재스캔으로 바꾼 것).
-// **가변 축은 pine2py 버그 불추종(hand-verified, sma #179/wma #181과 동일 패턴)**: pine2py
-// wavealgo/ta/vwma.py도 첫 성공 호출의 length로 state["price_window"]/["vol_window"] 크기를
-// 영구 고정한 채(같은-바 반복 호출도 last_idx 미검사로 pop/append가 매 호출 일어나는 latent 버그
-// 동반, python 직접 실행 확인 2026-08-01 — DIVERGENCES #184가 이미 이 축을 "hand-verified 필요"로
-// 예고). GOAL.md "알려진 버그 불추종" 원칙에 따라 TV 문서 정의(VWMA = Σ(price·volume, length) /
-// Σ(volume, length))대로 구현한다. 오라클은 sma/wma와 동일하게 "series 한정자 + 값은 상수"인
-// 퇴화 케이스(oracle/cases/ta_vwma_varlen.pine)로만 버퍼/워밍업/NaN 메커니즘을 대조하고, 값이
-// 실제로 변하는 축(wild min(barssince,l)/loop-body 패턴)은 hand-verified(tests/unit/runtime.test.ts
-// vwmaVarLen + 파이프라인 E2E)로 검증한다. 엣지: length<1은 pine2py가 두 번째 호출부터 빈 리스트
-// pop(0) IndexError로 크래시(첫 호출만 v_sum==0→NaN, 그다음 바에서 무조건 깨짐 — highest의 ±inf처럼
-// "크래시 없이 정의된 동작"이 없어 이식 불가) → na 자체 결정(sma/wma와 동일 논리). length=NaN은
-// highestVarLen과 동일 na 전파 외삽(TV 미검증 가설). 창 안 price/volume 어느 한쪽이라도 NaN이면
-// 결과 NaN(고정 vwma()의 오염 시맨틱과 동일), vSum===0도 NaN(0-나눗셈 방지, 고정 버전과 동일).
+// ta.vwma(source, length) with a series length ("ARG length [series int]"): the same quotient as
+// vwma() above, sma(source * volume, length) / sma(volume, length), on the series-length ta.sma
+// (smaVarLen), each average over its own last `length` non-na values. A length below 1 or na is na.
 export function vwmaVarLen(
   state: VwmaVarLenState,
   price: number,
@@ -2936,35 +2880,11 @@ export function vwmaVarLen(
   barCount: number,
   barIdx: number,
 ): number {
-  if (state.priceBuffer === undefined) {
-    state.priceBuffer = new Float64Array(barCount).fill(NaN);
-    state.volBuffer = new Float64Array(barCount).fill(NaN);
-    state.writeIdx = -1;
-    state.lastBarIdx = -1;
+  if (state.pv === undefined) {
+    state.pv = {};
+    state.v = {};
   }
-  if (barIdx !== state.lastBarIdx) {
-    state.writeIdx = state.writeIdx! + 1;
-    state.lastBarIdx = barIdx;
-  }
-  const writeIdx = state.writeIdx!;
-  state.priceBuffer[writeIdx] = price;
-  state.volBuffer![writeIdx] = volume;
-
-  const len = Math.trunc(length);
-  if (Number.isNaN(len)) return NaN;
-  if (len < 1) return NaN;
-  if (len > writeIdx + 1) return NaN;
-  let pvSum = 0;
-  let vSum = 0;
-  for (let i = writeIdx - len + 1; i <= writeIdx; i++) {
-    const p = state.priceBuffer[i]!;
-    const v = state.volBuffer![i]!;
-    if (Number.isNaN(p) || Number.isNaN(v)) return NaN;
-    pvSum += p * v;
-    vSum += v;
-  }
-  if (vSum === 0) return NaN;
-  return pvSum / vSum;
+  return smaVarLen(state.pv, price * volume, length, barCount, barIdx) / smaVarLen(state.v!, volume, length, barCount, barIdx);
 }
 
 export interface DevState {

@@ -1,9 +1,10 @@
 // oracle/cases/ta_vwma_varlen.pine: ta.vwma series length 검증(배치25 (4) 마지막 항목, C555 —
 // runtime/ta.ts vwmaVarLen). **length 값이 실제로 변하는 축은 오라클 불가**(pine2py vwma.py가
 // sma.py(#179)와 동일한 첫 성공 호출 length 영구 고정 latent 버그) — 여기서는 "series 한정자 +
-// 값은 상수" 퇴화 케이스로 버퍼/워밍업(len1)과 NaN 오염/회복(len2 + 바 3 na 소스) 메커니즘만 골든
+// 값은 상수" 퇴화 케이스로 버퍼/워밍업(len1)과 na 소스(len2 + 바 3 na 소스) 메커니즘만 골든
 // 대조하고, 값이 변하는 축은 tests/unit/runtime.test.ts(vwmaVarLen)와 pipeline E2E(여기 hand-verified
-// 테스트들)가 커버한다.
+// 테스트들)가 커버한다. The len2 values on bars 4-6 are PyneCore's, not pine2py's poisoned window
+// (see the case file).
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";

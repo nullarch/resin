@@ -1149,38 +1149,40 @@ describe("ta.vwma", () => {
     expect(vwma(stateB, 100, 5, 2)).toBeNaN();
   });
 
-  it("re-contaminates with NaN when a new price is NaN", () => {
+  // ta.vwma is sma(source * volume, length) / sma(volume, length) (ref_v6_ta_math.txt ta.vwma; oracle
+  // lib/ta.py vwma), each sma over its own last `length` non-na values: an na source is skipped by the
+  // numerator only, the denominator still takes that bar's volume (resin-harness
+  // state/repros/ta.serieslen-seed-2.json). pine2py poisoned the whole window for `length` bars.
+  it("skips an na price in the numerator only, the denominator keeps the bar's volume", () => {
+    const state = {};
+    vwma(state, 1, 10, 3);
+    vwma(state, 2, 20, 3);
+    expect(vwma(state, 3, 30, 3)).toBeCloseTo(140 / 60, 9); // pv [10,40,90], v [10,20,30]
+    expect(vwma(state, NaN, 40, 3)).toBeCloseTo(140 / 90, 9); // pv standing, v [20,30,40]
+    expect(vwma(state, 4, 50, 3)).toBeCloseTo(330 / 120, 9); // pv [40,90,200], v [30,40,50]
+  });
+
+  it("leaves both averages standing on an na volume", () => {
     const state = {};
     vwma(state, 1, 10, 3);
     vwma(state, 2, 10, 3);
-    expect(vwma(state, 3, 10, 3)).not.toBeNaN();
-    expect(vwma(state, NaN, 10, 3)).toBeNaN();
+    expect(vwma(state, 3, 10, 3)).toBeCloseTo(2, 9);
+    expect(vwma(state, 4, NaN, 3)).toBeCloseTo(2, 9);
   });
 
-  it("re-contaminates with NaN when a new volume is NaN", () => {
-    const state = {};
-    vwma(state, 1, 10, 3);
-    vwma(state, 2, 10, 3);
-    expect(vwma(state, 3, 10, 3)).not.toBeNaN();
-    expect(vwma(state, 4, NaN, 3)).toBeNaN();
-  });
-
-  it("returns NaN when the window's total volume is zero (division-by-zero guard)", () => {
+  it("returns NaN when the window's total volume is zero (Pine's 0 / 0)", () => {
     const state = {};
     vwma(state, 1, 0, 2);
     expect(vwma(state, 2, 0, 2)).toBeNaN();
   });
 
-  it("only clears NaN contamination once the poisoned slot cycles back out of the fixed-width buffer", () => {
+  it("is na until `length` non-na products have arrived, then never poisoned by an earlier na", () => {
     const state = {};
     vwma(state, 1, 10, 3);
-    vwma(state, 2, 10, 3);
-    vwma(state, 3, 10, 3); // window [1,2,3]
-    vwma(state, NaN, 10, 3); // window [2,3,NaN] -> poisoned
-    expect(vwma(state, 4, 10, 3)).toBeNaN(); // window [3,NaN,4] -> still poisoned
-    expect(vwma(state, 5, 10, 3)).toBeNaN(); // window [NaN,4,5] -> still poisoned
-    // window [4,5,6] -> the NaN slot (written length=3 calls ago) finally gets overwritten
-    expect(vwma(state, 6, 10, 3)).toBeCloseTo((4 + 5 + 6) / 3, 9);
+    expect(vwma(state, NaN, 10, 3)).toBeNaN(); // one product stored
+    expect(vwma(state, 2, 10, 3)).toBeNaN(); // two
+    expect(vwma(state, 3, 10, 3)).toBeCloseTo((1 + 2 + 3) / 3, 9); // equal volumes: the plain mean
+    expect(vwma(state, 4, 10, 3)).toBeCloseTo((2 + 3 + 4) / 3, 9);
   });
 
   it("stays correct across many bars beyond the initial fill (circular buffer wraparound)", () => {
@@ -1204,8 +1206,8 @@ describe("ta.vwma", () => {
   });
 });
 
-// ta.vwma series length 변형(vwmaVarLen, 배치25 (4) 마지막 항목, C555) — 버퍼/barIdx 덮어쓰기
-// 메커니즘은 highestVarLen과 동형(price/volume 두 Float64Array), 값 계산만 Σ(price·volume)/Σ(volume).
+// ta.vwma series length 변형(vwmaVarLen, 배치25 (4) 마지막 항목, C555) — smaVarLen(source * volume) /
+// smaVarLen(volume), each over its own last `length` non-na values (the bar-keyed history of smaVarLen).
 // **여기의 "값이 실제로 변하는 length" 케이스들은 hand-verified다**: pine2py vwma.py도 sma.py(#179)와
 // 동일하게 첫 성공 호출 length로 윈도우를 영구 고정하는 latent 버그가 있어(직접 실행 실측
 // 2026-08-01) 이 축의 오라클이 성립하지 않는다 — DIVERGENCES #184/신규 항목, GOAL.md "알려진 버그는
@@ -1260,16 +1262,16 @@ describe("ta.vwma variable(series) length (vwmaVarLen)", () => {
     expect(vwmaVarLen(state, 30, 100, 3, 10, 2)).toBeCloseTo(20, 12); // constant volume -> plain mean
   });
 
-  it("poisons the result while any price or volume in the trailing window is NaN, then recovers (fixed-length vwma parity)", () => {
+  it("skips an na price in the numerator and an na volume in both averages (sma(source * volume) / sma(volume), fixed-length vwma parity)", () => {
     const state = {};
     vwmaVarLen(state, 10, 100, 2, 10, 0);
-    expect(vwmaVarLen(state, NaN, 100, 2, 10, 1)).toBeNaN();
-    expect(vwmaVarLen(state, 20, 100, 2, 10, 2)).toBeNaN(); // 창에 NaN 바(price) 포함
+    expect(vwmaVarLen(state, NaN, 100, 2, 10, 1)).toBeNaN(); // one product stored
+    expect(vwmaVarLen(state, 20, 100, 2, 10, 2)).toBeCloseTo(15, 12); // pv [1000,2000], v [100,100]
     expect(vwmaVarLen(state, 30, 100, 2, 10, 3)).toBeCloseTo(25, 12); // [20,30], equal volume
-    expect(vwmaVarLen(state, 40, NaN, 2, 10, 4)).toBeNaN(); // volume 쪽 NaN도 동일 오염
+    expect(vwmaVarLen(state, 40, NaN, 2, 10, 4)).toBeCloseTo(25, 12); // both averages standing
   });
 
-  it("returns NaN when the window's total volume is zero (division-by-zero guard, fixed-length vwma parity)", () => {
+  it("returns NaN when the window's total volume is zero (Pine's 0 / 0, fixed-length vwma parity)", () => {
     const state = {};
     vwmaVarLen(state, 1, 0, 2, 10, 0);
     expect(vwmaVarLen(state, 2, 0, 2, 10, 1)).toBeNaN();
