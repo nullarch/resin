@@ -2631,6 +2631,10 @@ export interface ModeState {
 // statistics.mode, 최초 등장값 tie-break)와 알고리즘이 다르므로 재사용하지 않는다.
 export function mode(state: ModeState, value: number, length: number): number {
   length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조)
+  // An na length is na on every bar, as for the percentile machines and ta.median (tier 1
+  // ta_362_percentile_na_length "mode_na_len"; pynecore lib/ta.py: "percentile_nearest_rank,
+  // percentile_linear_interpolation, median and mode all export an all-na plot").
+  if (!(length >= 1)) return NaN;
   if (state.buffer === undefined) {
     state.buffer = new Array(length).fill(NaN);
     state.writeIdx = 0;
@@ -2717,153 +2721,155 @@ export function percentrank(state: PercentrankState, value: number, length: numb
   return result;
 }
 
-export interface PercentileNearestRankState {
-  buffer?: number[];
-  writeIdx?: number;
+export interface PercentileState {
+  hist?: ExtremeVarLenState; // the call site's history of its source: `source[i]`
+  window?: number[]; // the window in arrival order, oldest first
+  ranks?: number[]; // the same values in rank order, na elements at slots of their own
 }
 
-// ta.percentile_nearest_rank(source, length, percentage=50) - 최근 length바(현재 포함) 중
-// nearest-rank 방식 백분위. pine2py wavealgo/ta/percentrank.py의 percentile_nearest_rank는
-// median.py와 창 수집 로직이 완전히 동일하다(source.get(0..length-1), 하나라도 NaN이면 즉시 NaN) -
-// median(C115)의 raw-passthrough 순환 버퍼를 그대로 재사용하고 정렬 후 선택 인덱스만 다르다.
-// idx = clamp(ceil((percentage/100)*length) - 1, 0, length-1) (pine2py 그대로 literal port).
-export function percentileNearestRank(state: PercentileNearestRankState, value: number, length: number, percentage = 50): number {
-  length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조). percentage는 TV simple float라 대상 아님
-  if (state.buffer === undefined) {
-    state.buffer = new Array(length).fill(NaN);
-    state.writeIdx = 0;
+// ta.percentile_nearest_rank / ta.percentile_linear_interpolation(source, length, percentage), with a
+// literal or a series length ("ARG length [series int]", ref_v6_ta_math.txt): one machine, the
+// oracle's (pynecore lib/ta.py percentile_nearest_rank / percentile_linear_interpolation), whose
+// rules are TradingView measurements quoted there and pinned by tier 1 ta_221_percentiles,
+// ta_242_percentile_change_exact, ta_247_percentile_na_percentage, ta_362_percentile_na_length and
+// ta_372_rolling_na_rank_order:
+//   - the window holds the last `length` executions of the call, na included: every call pushes its
+//     source, tops an underfull window up from the call site's history ("source[i] for i =
+//     len(window)..length - 1, na beyond the buffer", prepended as older entries that persist), and
+//     evicts the oldest while over the CURRENT call's length;
+//   - the values are kept in a rank order that na elements take part in ("the window holds it like
+//     any other element and the rank order decides"). The order is Pine's tolerant one
+//     (rankInsertPos). So a window with na in it still answers, and answers na where the rank lands
+//     on one (tier 1 ta_372: the warm-up window [na, na, na, 3, 4] reads na at 20..60 %, 3 at 80 %);
+//     the manual's "`na` values in the `source` series are ignored" (ta.percentile_nearest_rank) is
+//     not the measured behaviour, while its "are included in calculations and will produce an `na`
+//     result" (ta.percentile_linear_interpolation) holds for the two ranks interpolated;
+//   - na while bar_index < length - 1;
+//   - nearest rank reads rank ceil(percentage * n / 100), clamped to 1..n, an na percentage counting
+//     as 0 (tier 1 ta_247: "rank_na" equals "rank_zero");
+//   - linear interpolation reads the 1-based position n * percentage / 100 + 0.5 and weighs its two
+//     neighbours (tier 1 ta_221, ta_242); an na percentage is na;
+//   - an na length is na and leaves the window alone (tier 1 ta_362: an all-na plot); a length below
+//     1, which the oracle asserts against, is na too.
+// The window advances once per execution of the call site (a loop call site too; codegen
+// PER_EXECUTION_TA_FNS), while the history is bar-keyed like the other *VarLen machines.
+function percentileStep(state: PercentileState, value: number, length: number, barCount: number, barIdx: number): number[] | null {
+  if (state.hist === undefined) {
+    state.hist = {};
+    state.window = [];
+    state.ranks = [];
   }
-  const buffer = state.buffer;
-  const writeIdx = state.writeIdx!;
-  buffer[writeIdx] = value;
-  state.writeIdx = (writeIdx + 1) % length;
-
-  for (let i = 0; i < length; i++) {
-    if (Number.isNaN(buffer[i]!)) return NaN;
+  const w = recordVarLen(state.hist, value, barCount, barIdx);
+  const len = Math.trunc(length);
+  if (!(len >= 1)) return null;
+  const window = state.window!;
+  const ranks = state.ranks!;
+  window.push(value);
+  ranks.splice(rankInsertPos(ranks, value), 0, value);
+  if (window.length < len) {
+    const history = state.hist.buffer!;
+    for (let i = window.length; i < len; i++) {
+      const v = i <= w ? history[w - i]! : NaN;
+      window.unshift(v);
+      // A top-up entry is older than everything in the window, so an na one takes the front of the
+      // rank order, the slot a warm-up na holds.
+      ranks.splice(Number.isNaN(v) ? 0 : rankInsertPos(ranks, v), 0, v);
+    }
   }
-  const sorted = buffer.slice().sort((a, b) => a - b);
-  const idx = Math.max(0, Math.min(length - 1, Math.ceil((percentage / 100) * length) - 1));
-  return sorted[idx]!;
+  while (window.length > len) {
+    ranks.splice(rankRemovePos(ranks, window.shift()!), 1);
+  }
+  if (barIdx < len - 1) return null;
+  return ranks;
 }
 
-export interface PercentileLinearInterpolationState {
-  buffer?: number[];
-  writeIdx?: number;
+// The slot a value takes in the rank order: in front of the values it ties with (Pine's 1e-10
+// tolerance), and an na never holds a value back: the search steps past an na, and an na being
+// inserted steps past everything, so a warm-up na stays at the front while an na arriving into a
+// filled window lands at the back (pynecore lib/ta.py _rank_insert_pos, "Measured on TradingView ...
+// [na, na, na, 3, 4] ... [3, 4, 5, 6, na] ... [4, 5, 6, na, 8]").
+function rankInsertPos(ranks: number[], value: number): number {
+  const valueNa = Number.isNaN(value);
+  let lo = 0;
+  let hi = ranks.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    const other = ranks[mid]!;
+    if (valueNa || Number.isNaN(other) || other - value < -PINE_EPS) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
 }
 
-// ta.percentile_linear_interpolation(source, length, percentage=50) - percentileNearestRank와
-// 동일한 창 수집(median 순환 버퍼 재사용)에 선형 보간만 다르다: pos = (percentage/100)*(length-1),
-// lo/hi 인접 두 순서통계량 사이를 frac만큼 보간(pine2py wavealgo/ta/percentrank.py 그대로 literal port).
-export function percentileLinearInterpolation(state: PercentileLinearInterpolationState, value: number, length: number, percentage = 50): number {
-  length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조). percentage는 TV simple float라 대상 아님
-  if (state.buffer === undefined) {
-    state.buffer = new Array(length).fill(NaN);
-    state.writeIdx = 0;
+// The slot an evicted value leaves: the last of its ties, found by the same na-transparent search; an
+// evicted na takes the oldest na slot (pynecore lib/ta.py _rank_remove_pos).
+function rankRemovePos(ranks: number[], value: number): number {
+  if (Number.isNaN(value)) {
+    const i = ranks.findIndex((other) => Number.isNaN(other));
+    return i >= 0 ? i : 0;
   }
-  const buffer = state.buffer;
-  const writeIdx = state.writeIdx!;
-  buffer[writeIdx] = value;
-  state.writeIdx = (writeIdx + 1) % length;
-
-  for (let i = 0; i < length; i++) {
-    if (Number.isNaN(buffer[i]!)) return NaN;
+  let lo = 0;
+  let hi = ranks.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    const other = ranks[mid]!;
+    if (Number.isNaN(other) || value - other >= -PINE_EPS) lo = mid + 1;
+    else hi = mid;
   }
-  const sorted = buffer.slice().sort((a, b) => a - b);
-  const pos = (percentage / 100) * (length - 1);
-  const lo = Math.floor(pos);
-  const hi = Math.min(lo + 1, length - 1);
-  const frac = pos - lo;
-  return sorted[lo]! + frac * (sorted[hi]! - sorted[lo]!);
+  const ties = (other: number) => !Number.isNaN(other) && -PINE_EPS <= value - other && value - other <= PINE_EPS;
+  const pos = lo - 1;
+  if (pos >= 0 && pos < ranks.length && ties(ranks[pos]!)) return pos;
+  // With an na in the window the search can step past the value's own slot: take the last of its
+  // ties directly. A chain of ties can drift until none is left within tolerance: the closest slot.
+  for (let i = ranks.length - 1; i >= 0; i--) {
+    if (ties(ranks[i]!)) return i;
+  }
+  return pos > 0 ? pos : 0;
 }
 
-// ta.percentile_nearest_rank/ta.percentile_linear_interpolation(source, length, percentage=50) -
-// length가 series인 변형(배치25 (4) 계속, next_hint(C552) 잔여 싱글턴, range와 같은 묶음). pine2py
-// wavealgo/ta/percentrank.py의 두 percentile_* 함수도 median.py와 동일하게 상태 없이 매 호출
-// source.get(0..length-1)을 재구축·정렬한다(get_ta_state 미사용, python 직접 실행으로 가변 length
-// 정상 동작 확인 2026-08-01) - median(#181)과 동일 축으로 오라클 성립
-// (oracle/cases/ta_range_percentile_varlen.pine). 버퍼/writeIdx/barIdx 메커니즘은 highestVarLen과
-// 완전 동형(ExtremeVarLenState 재사용), 값 계산은 각각 고정 percentileNearestRank/
-// percentileLinearInterpolation과 동일한 정렬 후 선택/보간. 엣지(python 직접 실행 확인
-// 2026-08-01): length<1(0/음수 둘 다)은 빈 window를 인덱싱하는 pine2py IndexError 크래시(range와
-// 달리 "크래시 없이 정의된 동작"이 없음) - median/wma와 동일하게 na 자체 결정. length=NaN은
-// `range(nan)` TypeError 크래시라 highestVarLen과 동일 na 전파 외삽(TV 미검증 가설). 창 안 NaN
-// 하나면 즉시 NaN(고정판과 동일 poison window). percentage는 이 축(length)과 무관해 고정판 그대로
-// 패스스루한다.
-export function percentileNearestRankVarLen(
-  state: ExtremeVarLenState,
+export function percentileNearestRank(
+  state: PercentileState,
   value: number,
   length: number,
   percentage: number,
   barCount: number,
   barIdx: number,
 ): number {
-  if (state.buffer === undefined) {
-    state.buffer = new Float64Array(barCount).fill(NaN);
-    state.writeIdx = -1;
-    state.lastBarIdx = -1;
-  }
-  if (barIdx !== state.lastBarIdx) {
-    state.writeIdx = state.writeIdx! + 1;
-    state.lastBarIdx = barIdx;
-  }
-  const writeIdx = state.writeIdx!;
-  state.buffer[writeIdx] = value;
-
-  const len = Math.trunc(length);
-  if (Number.isNaN(len)) return NaN;
-  if (len < 1) return NaN;
-  if (len > writeIdx + 1) return NaN;
-  const window: number[] = [];
-  for (let i = writeIdx - len + 1; i <= writeIdx; i++) {
-    const v = state.buffer[i]!;
-    if (Number.isNaN(v)) return NaN;
-    window.push(v);
-  }
-  window.sort((a, b) => a - b);
-  const idx = Math.max(0, Math.min(len - 1, Math.ceil((percentage / 100) * len) - 1));
-  return window[idx]!;
+  const ranks = percentileStep(state, value, length, barCount, barIdx);
+  if (ranks === null) return NaN;
+  const p = Number.isNaN(percentage) ? 0 : percentage;
+  const n = ranks.length;
+  const rank = Math.max(1, Math.min(Math.ceil((p * n) / 100), n));
+  return ranks[rank - 1]!;
 }
 
-// ta.percentile_linear_interpolation series-length 변형 - percentileNearestRankVarLen과 창 수집이
-// 동일하고 선형 보간만 다르다. 상세는 percentileNearestRankVarLen 주석 참조.
-export function percentileLinearInterpolationVarLen(
-  state: ExtremeVarLenState,
+export function percentileLinearInterpolation(
+  state: PercentileState,
   value: number,
   length: number,
   percentage: number,
   barCount: number,
   barIdx: number,
 ): number {
-  if (state.buffer === undefined) {
-    state.buffer = new Float64Array(barCount).fill(NaN);
-    state.writeIdx = -1;
-    state.lastBarIdx = -1;
-  }
-  if (barIdx !== state.lastBarIdx) {
-    state.writeIdx = state.writeIdx! + 1;
-    state.lastBarIdx = barIdx;
-  }
-  const writeIdx = state.writeIdx!;
-  state.buffer[writeIdx] = value;
-
-  const len = Math.trunc(length);
-  if (Number.isNaN(len)) return NaN;
-  if (len < 1) return NaN;
-  if (len > writeIdx + 1) return NaN;
-  const window: number[] = [];
-  for (let i = writeIdx - len + 1; i <= writeIdx; i++) {
-    const v = state.buffer[i]!;
-    if (Number.isNaN(v)) return NaN;
-    window.push(v);
-  }
-  window.sort((a, b) => a - b);
-  const pos = (percentage / 100) * (len - 1);
-  const lo = Math.floor(pos);
-  const hi = Math.min(lo + 1, len - 1);
-  const frac = pos - lo;
-  return window[lo]! + frac * (window[hi]! - window[lo]!);
+  const ranks = percentileStep(state, value, length, barCount, barIdx);
+  if (ranks === null || Number.isNaN(percentage)) return NaN;
+  const n = ranks.length;
+  let pos = (n * percentage) / 100 + 0.5;
+  // Floating-point noise just shy of an exact rank snaps to it.
+  const nearest = Math.round(pos);
+  if (Math.abs(pos - nearest) < 1e-9) pos = nearest;
+  if (pos <= 1) return ranks[0]!;
+  if (pos >= n) return ranks[n - 1]!;
+  const lower = Math.floor(pos);
+  const frac = pos - lower;
+  // The weighted average, not lo + frac * (hi - lo): the two round differently and TradingView
+  // follows this one (pynecore lib/ta.py _rank_linear, probe m580).
+  return ranks[lower - 1]! * (1 - frac) + ranks[lower]! * frac;
 }
 
+// The series-length entry points (codegen VARLEN_RT_PATHS): the same machine.
+export const percentileNearestRankVarLen = percentileNearestRank;
+export const percentileLinearInterpolationVarLen = percentileLinearInterpolation;
 export interface VwmaVarLenState {
   pv?: NaSkipVarLenState; // ta.sma(source * volume, length)
   v?: NaSkipVarLenState; // ta.sma(volume, length)

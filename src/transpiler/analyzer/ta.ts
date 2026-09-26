@@ -601,15 +601,11 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // C552(next_hint) 잔여 싱글턴 재실측 결과 range_func.py도 상태 없이 매 호출 재스캔이라
   // seriesLengthOk: true(runtime/ta.ts rangeVarLen 참조, oracle/cases/ta_range_percentile_varlen.pine).
   range: { dispatch: "ta", displayName: "ta.range", argCount: 2, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.range" },
-  // ta.percentile_nearest_rank(source, length, percentage=50) / ta.percentile_linear_interpolation
-  // (source, length, percentage=50) — median과 정확히 동일한 창 수집(현재 바 포함 length개, 정렬)을
-  // 공유하고 마지막 선택/보간 계산만 다르다(runtime/ta.ts percentileNearestRank/
-  // percentileLinearInterpolation 주석 참조). percentage는 pine2py 시그니처가 이미 기본값 50.0을
-  // 가진 선택 인자라 change/kc와 동일한 minArgCount 패턴(C227) 적용 — kc처럼 뒤에 스크래치를
-  // 추가로 push하는 returnArity가 없어 codegen 특수 패딩 분기 불필요, entry.rtPath 표준 경로 그대로.
-  // C552(next_hint) 잔여 싱글턴 재실측 결과 percentrank.py의 두 percentile_* 함수도 median.py와
-  // 동일한 무상태 재스캔이라 seriesLengthOk: true(runtime/ta.ts percentileNearestRankVarLen/
-  // percentileLinearInterpolationVarLen 참조, range와 같은 오라클 케이스 파일 공유).
+  // ta.percentile_nearest_rank(source, length, percentage) / ta.percentile_linear_interpolation
+  // (source, length, percentage) — one rolling rank machine for a literal and a series length, the
+  // oracle's (runtime/ta.ts percentileNearestRank). resin keeps pine2py's optional percentage
+  // (default 50, minArgCount 2); codegen pads it and appends the bar count and index the machine
+  // reads.
   percentile_nearest_rank: { dispatch: "ta", displayName: "ta.percentile_nearest_rank", argCount: 3, minArgCount: 2, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.percentileNearestRank" },
   percentile_linear_interpolation: { dispatch: "ta", displayName: "ta.percentile_linear_interpolation", argCount: 3, minArgCount: 2, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.percentileLinearInterpolation" },
   // ta.macd(source, fast_length, slow_length, signal_length) — 첫 다중 반환 TA(returnArity: 3,

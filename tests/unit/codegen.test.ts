@@ -3481,19 +3481,21 @@ describe("CodeGen", () => {
     expect(code).toBe("var x = rt.ta.change($.taSlots[0], $.close.get(0));");
   });
 
+  // The percentile machine reads the call site's history and bar_index for a literal length too
+  // (runtime/ta.ts percentileNearestRank), so codegen appends $.barCount, $.idx.
   it("emits ta.percentile_nearest_rank call through $.taSlots[slot]", () => {
     const code = codegenSource("x = ta.percentile_nearest_rank(close, 5, 75)");
-    expect(code).toBe("var x = rt.ta.percentileNearestRank($.taSlots[0], $.close.get(0), 5, 75);");
+    expect(code).toBe("var x = rt.ta.percentileNearestRank($.taSlots[0], $.close.get(0), 5, 75, $.barCount, $.idx);");
   });
 
-  it("emits ta.percentile_nearest_rank 2-arg call with percentage omitted entirely (JS default parameter fills 50, TA_REGISTRY.percentile_nearest_rank minArgCount:2)", () => {
+  it("emits ta.percentile_nearest_rank 2-arg call with the omitted percentage padded to 50 (TA_REGISTRY.percentile_nearest_rank minArgCount:2)", () => {
     const code = codegenSource("x = ta.percentile_nearest_rank(close, 5)");
-    expect(code).toBe("var x = rt.ta.percentileNearestRank($.taSlots[0], $.close.get(0), 5);");
+    expect(code).toBe("var x = rt.ta.percentileNearestRank($.taSlots[0], $.close.get(0), 5, 50, $.barCount, $.idx);");
   });
 
   it("emits ta.percentile_linear_interpolation call through $.taSlots[slot]", () => {
     const code = codegenSource("x = ta.percentile_linear_interpolation(close, 5, 25)");
-    expect(code).toBe("var x = rt.ta.percentileLinearInterpolation($.taSlots[0], $.close.get(0), 5, 25);");
+    expect(code).toBe("var x = rt.ta.percentileLinearInterpolation($.taSlots[0], $.close.get(0), 5, 25, $.barCount, $.idx);");
   });
 
   it("emits ta.roc call through $.taSlots[slot]", () => {
@@ -3822,9 +3824,9 @@ describe("CodeGen", () => {
     expect(code).toBe("var x = rt.ta.percentileNearestRankVarLen($.taSlots[0], $.close.get(0), $.idx, 75, $.barCount, $.idx);");
   });
 
-  it("keeps emitting the state-fixed rt.ta.percentileNearestRank with the JS-default omitted percentage for a literal length (C553 — 고정 경로 출력 바이트 불변)", () => {
+  it("keeps the rt.ta.percentileNearestRank entry point for a literal length, with the same padded percentage and bar count/index as the varlen path", () => {
     const code = codegenSource("x = ta.percentile_nearest_rank(close, 5)");
-    expect(code).toBe("var x = rt.ta.percentileNearestRank($.taSlots[0], $.close.get(0), 5);");
+    expect(code).toBe("var x = rt.ta.percentileNearestRank($.taSlots[0], $.close.get(0), 5, 50, $.barCount, $.idx);");
   });
 
   it("pads the omitted percentile_linear_interpolation percentage with an explicit 50 before $.barCount/$.idx on the varlen path (C553 — percentile_nearest_rank와 동일 패턴)", () => {

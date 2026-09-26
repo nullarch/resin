@@ -25,7 +25,7 @@
   {
    "var:__obs_pnr": 103.0,
    "var:__obs_pnr_default": 102.0,
-   "var:__obs_pli": 102.0
+   "var:__obs_pli": 101.75
   },
   {
    "var:__obs_pnr": 104.0,
@@ -35,17 +35,17 @@
   {
    "var:__obs_pnr": 105.0,
    "var:__obs_pnr_default": 104.0,
-   "var:__obs_pli": 103.0
+   "var:__obs_pli": 102.75
   },
   {
    "var:__obs_pnr": 105.0,
    "var:__obs_pnr_default": 105.0,
-   "var:__obs_pli": 104.0
+   "var:__obs_pli": 103.5
   },
   {
    "var:__obs_pnr": 106.0,
    "var:__obs_pnr_default": 105.0,
-   "var:__obs_pli": 105.0
+   "var:__obs_pli": 104.75
   },
   {
    "var:__obs_pnr": 107.0,

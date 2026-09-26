@@ -608,8 +608,17 @@ describe("corpus diff: sample bar-by-bar replay against pine2py golden", () => {
     // no rebalance). The rolling-sum change of the same commit (math.sum/ta.sma/ta.variance run
     // TradingView's compensated machine) moved no hash. Floor moved to the observed matched 2306 /
     // mismatch 609; nothing else changed.
-    expect(matched.length).toBeGreaterThanOrEqual(2306);
-    expect(mismatched.length).toBeLessThanOrEqual(609);
+    // 2026-09-27 ta.percentile_nearest_rank/ta.percentile_linear_interpolation run the oracle's
+    // rolling rank machine, and the linear form reads TradingView's 1-based position n * p / 100 +
+    // 0.5 instead of pine2py's (p / 100) * (n - 1) (tier 1 resin-harness
+    // suites/indicators/tv/ta_221_percentiles, ta_242_percentile_change_exact; PyneCore lib/ta.py
+    // _rank_linear). Exactly one hash went matched -> mismatch: a5401750ec34
+    // `ta.percentile_linear_interpolation(close, 10, 25)`, whose position 3.0 is an exact rank
+    // (863.5) where pine2py (not ground truth) interpolated 2.25 (863.75); twin
+    // state/repros/percentile-sample10.json channel pli10_25 runs this shape through the oracle.
+    // Floor moved to the observed matched 2305 / mismatch 610; nothing else changed.
+    expect(matched.length).toBeGreaterThanOrEqual(2305);
+    expect(mismatched.length).toBeLessThanOrEqual(610);
     expect(transpileFailed.length).toBeLessThanOrEqual(86);
     expect(runtimeFailed.length, `runtime failures: ${runtimeFailed.map((o) => `${o.hash}: ${o.detail}`).join(" | ")}`).toBe(0);
     expect(noComparable.length, `no comparable key: ${noComparable.map((o) => o.hash).join(", ")}`).toBeLessThanOrEqual(2);

@@ -72,8 +72,20 @@ const CASES: Array<{ name: string; makeStep: (state: object, length: number) => 
   { name: "median", makeStep: (s, len) => (v) => median(s as never, v, len) },
   { name: "mode", makeStep: (s, len) => (v) => mode(s as never, v, len) },
   { name: "percentrank", makeStep: (s, len) => (v) => percentrank(s as never, v, len) },
-  { name: "percentileNearestRank", makeStep: (s, len) => (v) => percentileNearestRank(s as never, v, len) },
-  { name: "percentileLinearInterpolation", makeStep: (s, len) => (v) => percentileLinearInterpolation(s as never, v, len) },
+  {
+    name: "percentileNearestRank",
+    makeStep: (s, len) => {
+      let barIdx = 0;
+      return (v) => percentileNearestRank(s as never, v, len, 50, 1000, barIdx++);
+    },
+  },
+  {
+    name: "percentileLinearInterpolation",
+    makeStep: (s, len) => {
+      let barIdx = 0;
+      return (v) => percentileLinearInterpolation(s as never, v, len, 50, 1000, barIdx++);
+    },
+  },
   { name: "dev", makeStep: (s, len) => (v) => dev(s as never, v, len) },
   {
     name: "rci",

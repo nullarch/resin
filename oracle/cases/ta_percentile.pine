@@ -6,6 +6,10 @@ indicator("ta_percentile")
 // 10바 안에서 워밍업(바 0~3, data_len<length라 NaN)과 정상 구간(바 4~9)을 모두 커버. percentage는
 // pine2py 기본값 50.0을 갖는 선택 인자(minArgCount:2, C227 change/kc와 동일 패턴)라 __obs_pnr_default
 // 채널로 3-인자/2-인자(생략) 두 콜사이트를 병렬 관측.
+// The golden's __obs_pli was hand-edited from pine2py's (p/100)*(n-1) interpolation to the oracle's
+// answer, TradingView's 1-based position n*p/100 + 0.5 (runtime/ta.ts percentileLinearInterpolation;
+// tier 1 ta_221_percentiles): resin-harness state/repros/percentile-sample10.json runs this case
+// through PyneCore.
 var float __obs_pnr = na
 __obs_pnr := ta.percentile_nearest_rank(close, 5, 75)
 var float __obs_pnr_default = na

@@ -6755,66 +6755,98 @@ describe("ta.range variable(series) length (rangeVarLen)", () => {
   });
 });
 
-// ta.percentile_nearest_rank/ta.percentile_linear_interpolation(source, length, percentage=50) -
-// length가 series인 변형(배치25 (4) 계속, next_hint(C552) 잔여 싱글턴 묶음, C553 — runtime/ta.ts
-// percentileNearestRankVarLen/percentileLinearInterpolationVarLen). pine2py percentrank.py의 두
-// percentile_* 함수도 median.py와 동일하게 상태 없이 매 호출 재스캔이라 가변 length 오라클이
-// 성립(oracle/cases/ta_range_percentile_varlen.pine 골든이 정상 구간 + 2/3-인자 폼 codegen 패딩
-// 둘 다 커버). 여기서는 오라클 불가 축(length<1은 pine2py 빈 window 인덱싱 IndexError 크래시,
-// median/wma와 동일하게 na 자체 결정 — range와 달리 "크래시 없는 정의된 동작"이 없다는 점에
-// 주의)과 고정판과의 등가성만 추가로 확인한다.
-describe("ta.percentile_nearest_rank/ta.percentile_linear_interpolation variable(series) length (percentileNearestRankVarLen/percentileLinearInterpolationVarLen)", () => {
-  it("percentileNearestRankVarLen matches the fixed-length percentileNearestRank() for a constant length across the whole trace", () => {
-    const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
-    const fixedState = {};
-    const varState = {};
-    closes.forEach((c, i) => {
-      const fixed = percentileNearestRank(fixedState, c, 3, 30);
-      const varlen = percentileNearestRankVarLen(varState, c, 3, 30, closes.length, i);
-      if (Number.isNaN(fixed)) expect(varlen).toBeNaN();
-      else expect(varlen).toBe(fixed);
-    });
-  });
-
-  it("percentileLinearInterpolationVarLen matches the fixed-length percentileLinearInterpolation() for a constant length across the whole trace", () => {
-    const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
-    const fixedState = {};
-    const varState = {};
-    closes.forEach((c, i) => {
-      const fixed = percentileLinearInterpolation(fixedState, c, 3, 30);
-      const varlen = percentileLinearInterpolationVarLen(varState, c, 3, 30, closes.length, i);
-      if (Number.isNaN(fixed)) expect(varlen).toBeNaN();
-      else expect(varlen).toBe(fixed);
-    });
-  });
-
-  it("length<1 (0 and negative) → NaN for both (pine2py sorted-window indexing IndexError crash → hand-verified na, python 직접 실행 확인 — median/wma와 동일 축, range의 -inf와 다름)", () => {
-    expect(percentileNearestRankVarLen({}, 10, 0, 50, 10, 0)).toBeNaN();
-    expect(percentileNearestRankVarLen({}, 10, -2, 50, 10, 0)).toBeNaN();
-    expect(percentileLinearInterpolationVarLen({}, 10, 0, 50, 10, 0)).toBeNaN();
-    expect(percentileLinearInterpolationVarLen({}, 10, -2, 50, 10, 0)).toBeNaN();
-  });
-
-  it("length=NaN → NaN for both (pine2py `range(nan)` TypeError crash → hand-verified na 전파 외삽, TV 미검증 가설)", () => {
-    expect(percentileNearestRankVarLen({}, 10, NaN, 50, 10, 0)).toBeNaN();
-    expect(percentileLinearInterpolationVarLen({}, 10, NaN, 50, 10, 0)).toBeNaN();
-  });
-
-  it("same-bar repeated calls overwrite the current slot instead of advancing (context.param() parity)", () => {
+// ta.percentile_nearest_rank/ta.percentile_linear_interpolation: one machine for a literal and a
+// series length, the oracle's (runtime/ta.ts percentileNearestRank; pynecore lib/ta.py). The window
+// holds the last `length` executions, na included, in a rank order na elements take part in.
+// Evidence: tier 1 ta_242_percentile_change_exact, ta_372_rolling_na_rank_order,
+// ta_362_percentile_na_length; resin-harness twins state/repros/percentile-sample10.json and
+// percentile-machine.json.
+describe("ta.percentile_nearest_rank/ta.percentile_linear_interpolation (percentileNearestRank/percentileLinearInterpolation)", () => {
+  // Runs one call site over `values` with a length per bar, one execution per bar.
+  function run(
+    fn: typeof percentileNearestRank,
+    values: number[],
+    lengths: number | number[],
+    percentage: number,
+  ): number[] {
     const state = {};
-    percentileNearestRankVarLen(state, 10, 1, 50, 10, 0);
-    percentileNearestRankVarLen(state, 1, 1, 50, 10, 1);
-    percentileNearestRankVarLen(state, -100, 1, 50, 10, 1); // barIdx(1)는 직전과 동일 → buffer[1]을 덮어쓰기(push 아님)
-    // window=buffer[1..2]=[-100(덮어써진 값),2] 정렬=[-100,2], idx=ceil(0.5*2)-1=0 → -100
-    expect(percentileNearestRankVarLen(state, 2, 2, 50, 10, 2)).toBe(-100);
+    return values.map((v, i) => fn(state, v, Array.isArray(lengths) ? lengths[i]! : lengths, percentage, values.length, i));
+  }
+
+  it("the series-length entry points are the same machine", () => {
+    expect(percentileNearestRankVarLen).toBe(percentileNearestRank);
+    expect(percentileLinearInterpolationVarLen).toBe(percentileLinearInterpolation);
   });
 
-  it("poisons the result while a NaN sits inside the trailing window, then recovers", () => {
+  it("reads TradingView's ranks: nearest rank ceil(p * n / 100), linear position n * p / 100 + 0.5 (tier 1 ta_242: li 0/0/0.5/1/1.5/3 nr 0/0/1/1/2/3)", () => {
+    const c = Array.from({ length: 9 }, (_, i) => 100 + (i % 4));
+    const li = [0, 12.5, 25, 37.5, 50, 100].map((p) => run(percentileLinearInterpolation, c, 4, p)[8]! - 100);
+    const nr = [0, 25, 26, 50, 51, 100].map((p) => run(percentileNearestRank, c, 4, p)[8]! - 100);
+    expect(li).toEqual([0, 0, 0.5, 1, 1.5, 3]);
+    expect(nr).toEqual([0, 0, 1, 1, 2, 3]);
+  });
+
+  it("keeps a warm-up na in the window at the front of the rank order (tier 1 ta_372_rolling_na_rank_order)", () => {
+    const src = Array.from({ length: 8 }, (_, i) => (i < 3 ? NaN : i));
+    const tail = (fn: typeof percentileNearestRank, p: number) => run(fn, src, 5, p).slice(4);
+    const na = NaN;
+    expect(tail(percentileNearestRank, 20)).toEqual([na, na, na, 3]);
+    expect(tail(percentileNearestRank, 40)).toEqual([na, na, 3, 4]);
+    expect(tail(percentileNearestRank, 60)).toEqual([na, 3, 4, 5]);
+    expect(tail(percentileNearestRank, 80)).toEqual([3, 4, 5, 6]);
+    expect(tail(percentileNearestRank, 100)).toEqual([4, 5, 6, 7]);
+    expect(tail(percentileLinearInterpolation, 0)).toEqual([na, na, na, 3]);
+    expect(tail(percentileLinearInterpolation, 50)).toEqual([na, 3, 4, 5]);
+    expect(tail(percentileLinearInterpolation, 75)).toEqual([3.25, 4.25, 5.25, 6.25]);
+  });
+
+  it("puts an na arriving into a filled window at the back of the rank order until it is evicted", () => {
+    // bar 1 window [5, na]: ranks [5, na]; bar 2 window [na, 6]: 6 steps past the na, ranks [na, 6];
+    // bar 3 window [6, 9].
+    const src = [5, NaN, 6, 9];
+    expect(run(percentileNearestRank, src, 2, 50)).toEqual([NaN, 5, NaN, 6]);
+    expect(run(percentileNearestRank, src, 2, 100)).toEqual([NaN, NaN, 6, 9]);
+    expect(run(percentileLinearInterpolation, src, 2, 50)).toEqual([NaN, NaN, NaN, 7.5]);
+  });
+
+  it("tops a window that a growing length leaves underfull up from the call site's history", () => {
+    // bar 5: length 2 -> 5, the window becomes the last five values [3, 8, 1, 9, 4].
+    const src = [5, 3, 8, 1, 9, 4];
+    const lens = [2, 2, 2, 2, 2, 5];
+    expect(run(percentileNearestRank, src, lens, 0)[5]).toBe(1);
+    expect(run(percentileNearestRank, src, lens, 100)[5]).toBe(9);
+    expect(run(percentileLinearInterpolation, src, lens, 50)[5]).toBe(4);
+  });
+
+  it("an na length is na and leaves the window alone (tier 1 ta_362_percentile_na_length)", () => {
+    // bar 3 does not enter 100: bar 4's window is [2, 3, 4].
+    const src = [1, 2, 3, 100, 4];
+    const lens = [3, 3, 3, NaN, 3];
+    expect(run(percentileNearestRank, src, lens, 100)).toEqual([NaN, NaN, 3, NaN, 4]);
+    expect(run(percentileNearestRank, src, lens, 0)).toEqual([NaN, NaN, 1, NaN, 2]);
+    expect(run(percentileNearestRank, [1, 2, 3], NaN, 50)).toEqual([NaN, NaN, NaN]);
+    expect(run(percentileLinearInterpolation, [1, 2, 3], NaN, 50)).toEqual([NaN, NaN, NaN]);
+  });
+
+  it("a length below 1 is na (the oracle asserts length > 0)", () => {
+    expect(percentileNearestRank({}, 10, 0, 50, 10, 0)).toBeNaN();
+    expect(percentileNearestRank({}, 10, -2, 50, 10, 0)).toBeNaN();
+    expect(percentileLinearInterpolation({}, 10, 0, 50, 10, 0)).toBeNaN();
+    expect(percentileLinearInterpolation({}, 10, -2, 50, 10, 0)).toBeNaN();
+  });
+
+  it("an na percentage is rank 1 for nearest rank and na for linear interpolation (tier 1 ta_247_percentile_na_percentage)", () => {
+    const src = [3, 1, 2];
+    expect(run(percentileNearestRank, src, 3, NaN)[2]).toBe(1);
+    expect(run(percentileLinearInterpolation, src, 3, NaN)[2]).toBeNaN();
+  });
+
+  it("advances the window once per execution of a loop call site (pynecore lib/ta.py: \"advances this machine once per EXECUTION of its call site\")", () => {
     const state = {};
-    percentileLinearInterpolationVarLen(state, 5, 2, 50, 10, 0);
-    expect(percentileLinearInterpolationVarLen(state, NaN, 2, 50, 10, 1)).toBeNaN();
-    expect(percentileLinearInterpolationVarLen(state, 6, 2, 50, 10, 2)).toBeNaN(); // window=[NaN,6]
-    expect(percentileLinearInterpolationVarLen(state, 9, 2, 50, 10, 3)).toBe(7.5); // window=[6,9] → mid
+    percentileNearestRank(state, 1, 2, 0, 10, 0);
+    percentileNearestRank(state, 5, 2, 0, 10, 1);
+    // The second execution on bar 1 pushes again: the window is [5, 7], not [1, 7].
+    expect(percentileNearestRank(state, 7, 2, 0, 10, 1)).toBe(5);
   });
 });
 

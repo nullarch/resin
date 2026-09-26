@@ -25,7 +25,10 @@ var float __obs_pnr1 = na
 __obs_pnr1 := ta.percentile_nearest_rank(close, lenA)
 var float __obs_pnr2 = na
 __obs_pnr2 := ta.percentile_nearest_rank(close, lenA, 30)
-// percentile_linear_interpolation: 위와 동일한 2/3-인자 폼 쌍.
+// percentile_linear_interpolation: 위와 동일한 2/3-인자 폼 쌍. The golden's __obs_pli2 was
+// hand-edited from pine2py's interpolation to the oracle's answer (runtime/ta.ts
+// percentileLinearInterpolation; resin-harness state/repros/percentile-sample10.json runs these
+// percentile channels through PyneCore).
 var float __obs_pli1 = na
 __obs_pli1 := ta.percentile_linear_interpolation(close, lenA)
 var float __obs_pli2 = na

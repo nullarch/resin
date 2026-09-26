@@ -1,7 +1,8 @@
 // oracle/cases/ta_percentile.pine: ta.percentile_nearest_rank(close, 5, 75)/(close, 5)(default
 // percentage=50)/ta.percentile_linear_interpolation(close, 5, 25) 검증(C233 next_hint — corpus 3건
 // 실측 ta.percentile_nearest_rank(close, len, pct)). 워밍업(바 0~3, data_len<length라 NaN)과 정상
-// 구간(바 4~9)을 모두 커버한다.
+// 구간(바 4~9)을 모두 커버한다. The linear interpolation channel follows the oracle, not pine2py
+// (golden hand-edited; resin-harness twin state/repros/percentile-sample10.json).
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";

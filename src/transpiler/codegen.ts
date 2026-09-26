@@ -4144,6 +4144,14 @@ function genCallExpr(
       // 스칼라 반환 그대로(taCallReturnArity 주석 참조).
       args.push("$.taScratch");
     }
+    if (stateCall.fn === "percentile_nearest_rank" || stateCall.fn === "percentile_linear_interpolation") {
+      // One machine for a literal and a series length (runtime/ta.ts percentileNearestRank): it reads
+      // the call site's history and bar_index, so the literal form takes the bar count and index the
+      // *VarLen suffix below appends. The optional percentage (default 50) is padded first to keep the
+      // runtime signature (state, value, length, percentage, barCount, barIdx).
+      if (args.length === 2) args.push("50");
+      if (!stateCall.seriesLength) args.push("$.barCount", secCtx === null ? "$.idx" : secCtx.loopVar);
+    }
     if (stateCall.seriesLength) {
       // *VarLen 변형(VARLEN_RT_PATHS)의 마지막 두 인자 — barCount는 자체 히스토리 버퍼를 최초 1회
       // 할당하기 위한 상한(runtime/ta.ts 주석 참조). barIdx는 "같은 바 안 반복 호출은 push가 아니라
@@ -4164,15 +4172,6 @@ function genCallExpr(
       // (state, value, length, biased, barCount, barIdx)를 맞춘다.
       if ((stateCall.fn === "stdev" || stateCall.fn === "variance") && args.length === 2) {
         args.push("true");
-      }
-      // percentile_nearest_rank/percentile_linear_interpolation(C553) — length 뒤에 선택 인자
-      // percentage(기본 50)가 있어(minArgCount 2) linreg/stdev와 동일 원리로 2-인자 폼만 명시적으로
-      // 50을 패딩해 런타임 시그니처 (state, value, length, percentage, barCount, barIdx)를 맞춘다.
-      if (
-        (stateCall.fn === "percentile_nearest_rank" || stateCall.fn === "percentile_linear_interpolation") &&
-        args.length === 2
-      ) {
-        args.push("50");
       }
       args.push("$.barCount", secCtx === null ? "$.idx" : secCtx.loopVar);
     }
