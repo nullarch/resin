@@ -3,6 +3,12 @@
 // (pine2py 실제 파라미터명이 정확히 'timezone', no-op 인자지만 이름은 일치) -- time=/format=은
 // pine2py 내부 파라미터명이 time_ms/format_str이라 TypeError로 크래시하는 오라클 구조적 불가 축
 // (codegen.test.ts의 hand-verified 동치성 테스트가 대체).
+//
+// The timezone is not a no-op: str.format_time renders in it (ref_v6_lang.txt "Converts the `time`
+// timestamp into a string formatted according to `format` and `timezone`"; tier 1 resin-harness
+// str_011_format_time, TradingView Pine Logs: 06:23:45 UTC formats as "2025-01-01 02:23" in
+// "UTC-4"). 2024-01-15 00:00 UTC is 2024-01-14 19:00 in New York; the golden's
+// __obs_kw_tz_positional_format was rewritten from pine2py's "2024-01-15".
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -45,12 +51,12 @@ describe("oracle: str_format_time_kwargs", () => {
     }
   });
 
-  it("renders the exact values pine2py produces (timezone kwarg is a no-op, matches positional-arg equivalent)", () => {
+  it("renders in the timezone= keyword's timezone, as the positional form does", () => {
     const source = loadCaseSource(CASE_NAME);
     const data = loadOracleData(CASE_NAME);
     const result = runPipeline(source, data);
 
-    expect(result.finalVarState.__obs_kw_tz_positional_format).toBe("2024-01-15");
+    expect(result.finalVarState.__obs_kw_tz_positional_format).toBe("2024-01-14");
     expect(result.finalVarState.__obs_kw_tz_default_format).toBe("2024-01-15T14:30:45+0000");
   });
 });

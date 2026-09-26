@@ -9,6 +9,7 @@
 // 동작은 그대로 유지한다.
 
 import { runtimeError } from "./log";
+import { zoneOffsetMs } from "./datetime";
 
 // str.length — pine2py wavealgo.builtins.str_funcs.length는 `len(source) if source else 0`로
 // None(na)/빈 문자열을 동일하게 0으로 처리하는 명시적 가드를 갖고 있다(다른 str.* 함수와 달리
@@ -747,64 +748,112 @@ const MONTH_FULL = [
   "July", "August", "September", "October", "November", "December",
 ];
 const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const WEEKDAY_FULL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const WEEKDAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function pad2(n: number, width: number): string {
   return String(n).padStart(width, "0");
 }
 
-// str.format_time(time_ms, format_str="yyyy-MM-dd'T'HH:mm:ssZ", timezone="") — pine2py
-// str_funcs.py L194-215: time_ms/1000를 datetime.fromtimestamp(tz=UTC)로 변환 후 Pine 포맷 토큰을
-// 순차 .replace() 체인(yyyy->yy->MMMM->MMM->MM->dd->HH->hh->mm->ss->'T'->Z 순, 긴 토큰부터)으로
-// strftime 코드로 바꿔 datetime.strftime() 호출. GOAL.md 런타임 의존성 0 원칙상 JS엔 표준
-// strftime이 없어(Intl.DateTimeFormat은 옵션 체계가 근본적으로 달라 직접 매핑 불가) 중간 strftime
-// 코드를 거치지 않고 pine2py와 동일한 순서로 Date getUTC* 값을 직접 문자열 치환한다(각 단계의
-// 치환값이 뒤따르는 토큰 문자열을 우연히 포함하지 않아 순서 안전성이 동일하게 성립함을 node로
-// 재확인). timezone 인자는 python 직접 실행으로 함수 본문에서 전혀 참조되지 않음을 재확인(항상
-// UTC 고정) — 시그니처만 받고 no-op으로 그대로 이식.
-// MMMM/MMM(영문 월 이름)은 이 환경의 Python이 시스템 로케일(Korean_Korea) 설정과 무관하게 항상
-// 영어 이름을 반환함을 python 직접 실행으로 확인(strftime %B/%b가 로케일 미설정 시 C 기본
-// 로케일에 고정) — 로케일 의존 없이 12개 영문 배열 하드코딩으로 안전하게 이식.
-// **na 처리**: time_ms가 NaN/±Infinity/JS Date 표현 범위(약 ±273,790년) 밖이면 Date가 자연히
-// Invalid Date(getTime()===NaN)가 돼 pine2py의 "NaN" 문자열 반환과 동일하게 수렴(별도 가드 없이
-// 하나의 판정으로 세 경계 전부 흡수). format_str이 na(null)면 str.format/format_number(C110/C111)와
-// 동일한 "string 매개변수 na가 pine2py를 실제로 크래시시키는" 패턴(python 직접 실행으로
-// AttributeError 확인, time_ms 유효성 체크가 먼저라 time_ms=NaN이면 이 크래시가 가려짐 — C111과
-// 동일한 순서 함정) — na(null) 전파로 결정.
-// **신규 발견(divergence)**: pine2py가 OverflowError(±Infinity, except절에 없어 미포착)로 실제
-// 크래시하는 지점과 별개로, 이 Windows/Python 3.11 환경은 1970-01-01 이전 타임스탬프에서도
-// datetime.fromtimestamp가 OSError로 크래시한다(python 직접 실행으로 -7200초는 성공, -86399초부터
-// 실패하는 좁은 창을 확인 — Windows CRT gmtime의 time_t 범위 산출물로 추정, Python 언어나 TV
-// 시맨틱과 무관한 플랫폼 아티팩트). JS Date는 이 범위에서 크래시 없이 정상 계산되므로 GOAL.md
-// "알려진 버그는 따르지 않는다"를 적용해 이 플랫폼 특유의 크래시를 이식하지 않고 JS Date 계산
-// 결과를 그대로 사용(음수 타임스탬프 채널은 pine2py 오라클과 일치하지 않음 — DIVERGENCES.md 신규,
-// hand-verified로 대체).
+const FORMAT_TIME_DEFAULT = "yyyy-MM-dd'T'HH:mm:ssZ";
+
+// str.format_time(time, format, timezone) (ref_v6_lang.txt): "Converts the `time` timestamp into a
+// string formatted according to `format` and `timezone`". The timezone is "UTC/GMT notation (e.g.,
+// "UTC-5", "GMT+0530") or ... an IANA time zone database name ... Optional. The default is
+// syminfo.timezone" — `symbolTimezone`, which codegen passes when the chart symbol's timezone is not
+// UTC. Tier 1 str_011_format_time (TradingView Pine Logs, syminfo.timezone UTC-5) prints 06:23:45 UTC
+// as "2025-01-01 02:23" in "UTC-4", "31-12-2024 22:23" in "UTC-8", and with no timezone and the
+// default format as "2025-01-01T01:23:45-0500".
+//
+// The format: "All letters used in the string, except those escaped by single quotation marks `'`,
+// are considered formatting tokens"; a token is a run of one letter, and "The `M`, `d`, `h`, `H`,
+// `m` and `s` tokens can all be doubled to generate leading zeros". y is the year (`yy` its last two
+// digits), M the month (MMM/MMMM its English name, as the oracle's strftime %b/%B), d the day, a the
+// "AM/PM postfix", h the hour 1-12 ("The last hour of the day will be `11`"), H the hour 0-23, m the
+// minute, s the second, Z "the HHmm offset from UTC, preceded by either `+` or `-`". Where the manual
+// lists no rule the oracle's mapping (pynecore lib/string.py _datatime_fmt_tv2py) decides: E/EEE and
+// EEEE are the weekday's short and full name, A is AM/PM, SSS is %f (six digits of microseconds),
+// and every other letter is kept as it is (z, the zone's name, is not ported). The oracle's
+// replace-chain misses single-letter tokens and mangles quoted text (its "__ESC0__" placeholder
+// contains the token E); resin follows the manual there (state/disputes.md D7).
+//
+// na: a na `time` is na (oracle `if time is None or not (time == time): return NA(str)`); a na or
+// empty `format` or `timezone` takes its default (oracle `format if format else ...`,
+// `timezone or _syminfo.timezone`; NA is falsy). An unrecognised timezone reads as UTC, as the
+// time-of-day builtins read it (datetime.ts zonedWallClockMs).
 export function format_time(
-  time_ms: number,
-  format_str: string | null = "yyyy-MM-dd'T'HH:mm:ssZ",
+  time: number,
+  format: string | null = FORMAT_TIME_DEFAULT,
   timezone: string | null = "",
+  symbolTimezone = "UTC",
 ): string | null {
-  void timezone;
-  const dt = new Date(time_ms);
-  if (Number.isNaN(dt.getTime())) return "NaN";
-  if (typeof format_str !== "string") return null;
-  const year = dt.getUTCFullYear();
-  const month = dt.getUTCMonth();
-  const day = dt.getUTCDate();
-  const hours24 = dt.getUTCHours();
-  const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
-  const minutes = dt.getUTCMinutes();
-  const seconds = dt.getUTCSeconds();
-  return format_str
-    .replaceAll("yyyy", pad2(year, 4))
-    .replaceAll("yy", pad2(((year % 100) + 100) % 100, 2))
-    .replaceAll("MMMM", MONTH_FULL[month]!)
-    .replaceAll("MMM", MONTH_ABBR[month]!)
-    .replaceAll("MM", pad2(month + 1, 2))
-    .replaceAll("dd", pad2(day, 2))
-    .replaceAll("HH", pad2(hours24, 2))
-    .replaceAll("hh", pad2(hours12, 2))
-    .replaceAll("mm", pad2(minutes, 2))
-    .replaceAll("ss", pad2(seconds, 2))
-    .replaceAll("'T'", "T")
-    .replaceAll("Z", "+0000");
+  if (typeof time !== "number" || !Number.isFinite(time)) return null;
+  const fmt = typeof format === "string" && format !== "" ? format : FORMAT_TIME_DEFAULT;
+  const zone = typeof timezone === "string" && timezone !== "" ? timezone : symbolTimezone;
+  const offsetMs = zoneOffsetMs(time, zone);
+  // Wall-clock milliseconds: the zone's local time read through the getUTC* accessors.
+  const wall = new Date(time + offsetMs);
+  if (Number.isNaN(wall.getTime())) return null;
+  let out = "";
+  let i = 0;
+  while (i < fmt.length) {
+    const c = fmt[i]!;
+    if (c === "'") {
+      const end = fmt.indexOf("'", i + 1);
+      if (end === -1) {
+        // An unpaired quote stays in the text, and the letters after it are still tokens (oracle).
+        out += c;
+        i += 1;
+      } else {
+        out += fmt.slice(i + 1, end);
+        i = end + 1;
+      }
+      continue;
+    }
+    let j = i + 1;
+    if (/[A-Za-z]/.test(c)) while (j < fmt.length && fmt[j] === c) j++;
+    out += formatTimeToken(c, j - i, wall, offsetMs) ?? fmt.slice(i, j);
+    i = j;
+  }
+  return out;
+}
+
+// One format_time token: `count` repetitions of `letter`, read from the wall clock `wall`; null
+// when the run is kept as literal text.
+function formatTimeToken(letter: string, count: number, wall: Date, offsetMs: number): string | null {
+  switch (letter) {
+    case "y": {
+      const year = wall.getUTCFullYear();
+      return count === 2 ? pad2(((year % 100) + 100) % 100, 2) : pad2(year, count);
+    }
+    case "M": {
+      const month = wall.getUTCMonth();
+      if (count >= 4) return MONTH_FULL[month]!;
+      if (count === 3) return MONTH_ABBR[month]!;
+      return pad2(month + 1, count);
+    }
+    case "d":
+      return pad2(wall.getUTCDate(), count);
+    case "H":
+      return pad2(wall.getUTCHours(), count);
+    case "h":
+      return pad2(wall.getUTCHours() % 12 === 0 ? 12 : wall.getUTCHours() % 12, count);
+    case "m":
+      return pad2(wall.getUTCMinutes(), count);
+    case "s":
+      return pad2(wall.getUTCSeconds(), count);
+    case "a":
+    case "A":
+      return wall.getUTCHours() < 12 ? "AM" : "PM";
+    case "E":
+      return count >= 4 ? WEEKDAY_FULL[wall.getUTCDay()]! : WEEKDAY_ABBR[wall.getUTCDay()]!;
+    case "S":
+      return count === 3 ? pad2(wall.getUTCMilliseconds() * 1000, 6) : null;
+    case "Z": {
+      const minutes = Math.round(Math.abs(offsetMs) / 60000);
+      return `${offsetMs < 0 ? "-" : "+"}${pad2(Math.floor(minutes / 60), 2)}${pad2(minutes % 60, 2)}`;
+    }
+    default:
+      return null;
+  }
 }

@@ -3605,9 +3605,9 @@ export interface AnalyzeOptions {
 // ([{ day, start, end }]), `session_starts` and `session_ends` ([{ day, time }]) with day 0 = Monday
 // … 6 = Sunday and "HH:MM[:SS]" times in the symbol's timezone. syminfo.timezone and syminfo.type
 // fold to them, timeframe.change lays its periods on them and session.* reads them
-// (runtime/calendar.ts). The other time builtins (hour, dayofweek, time(), timestamp(),
-// str.format_time, ...) still default to UTC. Without a schedule resin assumes a market open around
-// the clock, every day starting at 00:00 and ending at 23:59:59.
+// (runtime/calendar.ts), and str.format_time takes the timezone as its default (codegen). The other
+// time builtins (hour, dayofweek, time(), timestamp(), ...) still default to UTC. Without a schedule
+// resin assumes a market open around the clock, every day starting at 00:00 and ending at 23:59:59.
 //
 // The symbol's identity comes with them too (SYMINFO_IDENTITY_KEYS): its exchange `prefix` and
 // its `ticker`. syminfo.prefix and syminfo.ticker fold to them and syminfo.tickerid to

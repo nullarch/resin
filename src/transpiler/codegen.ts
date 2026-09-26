@@ -4582,17 +4582,24 @@ function genCallExpr(
       }
       return `rt.tostring(${args.join(", ")})`;
     }
-    if (builtinName === "format_time" && expr.kwargs.length > 0) {
+    if (builtinName === "format_time") {
       // str.format_time(time=/format=/timezone=) kwargs(C478, STR_KWARG_PARAM_NAMES 참조) —
-      // tostring(C403)과 동일한 "위치/키워드 슬롯 병합" 패턴. kwargs 없으면 이 분기 자체를 안 타
-      // 기존 출력 불변.
+      // tostring(C403)과 동일한 "위치/키워드 슬롯 병합" 패턴.
       const paramNames = STR_KWARG_PARAM_NAMES["format_time"]!;
-      const args = expr.args.map((a) => genExpr(a, program, funcCtx));
+      const args = expr.args.map((a) => genExpr(a, program, funcCtx, secCtx));
       for (const kw of expr.kwargs) {
         const slot = paramNames.indexOf(kw.name);
         if (slot === -1) continue; // 방어적 fallback(analyzer가 이미 이 이름만 허용)
         while (args.length < slot) args.push("undefined");
-        args[slot] = genExpr(kw.value, program, funcCtx);
+        args[slot] = genExpr(kw.value, program, funcCtx, secCtx);
+      }
+      // The timezone defaults to syminfo.timezone (ref_v6_lang.txt str.format_time: "Optional. The
+      // default is syminfo.timezone"); rt.format_time's own default is UTC, resin's default symbol
+      // timezone, so only another chart timezone is passed.
+      const symbolTimezone = program.syminfoStrings.get("timezone")!;
+      if (symbolTimezone !== "UTC") {
+        while (args.length < 3) args.push("undefined");
+        args.push(JSON.stringify(symbolTimezone));
       }
       return `rt.format_time(${args.join(", ")})`;
     }

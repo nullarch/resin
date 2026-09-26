@@ -8789,8 +8789,26 @@ describe("numeric helpers", () => {
     expect(format_time(1706745600000, "MMMM MMM")).toBe("February Feb");
   });
 
-  it("format_time() applies yyyy before yy in the replace chain so a 4-digit year isn't double-substituted", () => {
-    expect(format_time(1705276800000, "yy vs yyyy")).toBe("24 vs 2024");
+  // A token is a run of one letter, so yyyy is not read as two yy; every unquoted letter is a token
+  // (ref_v6_lang.txt str.format_time: "All letters used in the string, except those escaped by
+  // single quotation marks `'`, are considered formatting tokens"), so the `s` of "vs" is the
+  // seconds and only quoted text stays as written (resin-harness state/disputes.md D7: the oracle
+  // keeps single letters as text).
+  it("format_time() reads a run of one letter as one token, and every unquoted letter as a token", () => {
+    expect(format_time(1705276800000, "yy/yyyy")).toBe("24/2024");
+    expect(format_time(1705276800000, "yy vs yyyy")).toBe("24 v0 2024");
+    expect(format_time(1705276800000, "yy 'vs' yyyy")).toBe("24 vs 2024");
+  });
+
+  // ref_v6_lang.txt str.format_time: "The `M`, `d`, `h`, `H`, `m` and `s` tokens can all be doubled
+  // to generate leading zeros. For example, the month of January will display as `1` with `M`, or
+  // `01` with `MM`"; "a - AM/PM postfix"; "Z - Timezone, the HHmm offset from UTC".
+  it("format_time() pads a doubled token, not a single one, and prints a/Z", () => {
+    const t = 1704164645000; // 2024-01-02 03:04:05 UTC
+    expect(format_time(t, "M/d/y H:m:s", "UTC")).toBe("1/2/2024 3:4:5");
+    expect(format_time(t, "MM/dd HH:mm:ss", "UTC")).toBe("01/02 03:04:05");
+    expect(format_time(t, "h:mm a Z", "UTC-5")).toBe("10:04 PM -0500");
+    expect(format_time(t, "EEE EEEE Z", "GMT+05:30")).toBe("Tue Tuesday +0530");
   });
 
   it("format_time() renders hh (12-hour) as 12 at both midnight and noon, distinct from HH (24-hour)", () => {
@@ -8799,26 +8817,36 @@ describe("numeric helpers", () => {
     expect(format_time(1705329045000, "hh:mm:ss")).toBe("02:30:45");
   });
 
-  it("format_time() ignores the timezone argument entirely (pine2py accepts it but never references it in the function body — always UTC)", () => {
-    expect(format_time(1705276800000, "yyyy-MM-dd", "America/New_York")).toBe("2024-01-15");
+  // Tier 1 resin-harness str_011_format_time (TradingView Pine Logs, syminfo.timezone UTC-5):
+  // 2025-01-01 06:23:45 UTC prints as "2025-01-01 02:23" in "UTC-4", "31-12-2024 22:23" in "UTC-8",
+  // and, with no timezone, in syminfo.timezone ("Optional. The default is syminfo.timezone") as
+  // "2025-01-01T01:23:45-0500". pine2py ignored the timezone.
+  it("format_time() renders in the timezone argument, else in the symbol's timezone", () => {
+    const t = 1735712625000;
+    expect(format_time(t, "yyyy-MM-dd HH:mm", "UTC-4")).toBe("2025-01-01 02:23");
+    expect(format_time(t, "HH:mm:ss", "UTC")).toBe("06:23:45");
+    expect(format_time(t, "yyyy/MM/dd", "UTC+1")).toBe("2025/01/01");
+    expect(format_time(t, "dd-MM-yyyy HH:mm", "UTC-8")).toBe("31-12-2024 22:23");
+    expect(format_time(t, undefined, undefined, "UTC-5")).toBe("2025-01-01T01:23:45-0500");
+    expect(format_time(1705276800000, "yyyy-MM-dd", "America/New_York")).toBe("2024-01-14");
     expect(format_time(1705276800000, "yyyy-MM-dd", "")).toBe("2024-01-15");
+    expect(format_time(1720000000000, "HH:mm Z", "America/New_York")).toBe("05:46 -0400");
   });
 
-  it("format_time() returns 'NaN' for a NaN time_ms (matches pine2py's explicit isnan/None guard)", () => {
-    expect(format_time(NaN, "yyyy-MM-dd")).toBe("NaN");
+  // Oracle pynecore lib/string.py format_time: `if time is None or not (time == time): return
+  // NA(str)`; `fmt = format if format else ...` and `timezone or _syminfo.timezone`, NA being falsy.
+  it("format_time() is na for a na or infinite time", () => {
+    expect(format_time(NaN, "yyyy-MM-dd")).toBe(null);
+    expect(format_time(Infinity, "yyyy-MM-dd")).toBe(null);
+    expect(format_time(-Infinity, "yyyy-MM-dd")).toBe(null);
+    expect(format_time(NaN, null)).toBe(null);
   });
 
-  it("format_time() returns 'NaN' for +/-Infinity time_ms — pine2py itself crashes uncaught here (OverflowError, not in the except tuple, confirmed via direct python execution), so this is a deliberate na-safety absorption rather than a literal port", () => {
-    expect(format_time(Infinity, "yyyy-MM-dd")).toBe("NaN");
-    expect(format_time(-Infinity, "yyyy-MM-dd")).toBe("NaN");
-  });
-
-  it("format_time() propagates na (null) when format_str is explicitly na and time_ms is otherwise valid — pine2py crashes here too (AttributeError: 'NoneType' object has no attribute 'replace', confirmed via direct python execution) — not oracle-verifiable, hand-verified only (LIMITATIONS.md)", () => {
-    expect(format_time(1705276800000, null)).toBe(null);
-  });
-
-  it("format_time() returns 'NaN' (not na) when time_ms is NaN even if format_str is also na — the time_ms conversion guard runs first and masks the format_str crash (confirmed via direct python execution: format_time(nan, None) === 'NaN')", () => {
-    expect(format_time(NaN, null)).toBe("NaN");
+  it("format_time() takes the default format for a na or empty format, and the symbol's timezone for a na one", () => {
+    expect(format_time(1705276800000, null)).toBe("2024-01-15T00:00:00+0000");
+    expect(format_time(1705276800000, "")).toBe("2024-01-15T00:00:00+0000");
+    expect(format_time(1705276800000, "yyyy-MM-dd", null, "UTC+9")).toBe("2024-01-15");
+    expect(format_time(1705276800000, "HH", null, "UTC+9")).toBe("09");
   });
 
   it("format_time() computes a correct pre-1970 date for a negative time_ms — deliberate divergence from pine2py's oracle: this Windows/Python 3.11 env's datetime.fromtimestamp raises OSError for timestamps before ~2 hours prior to epoch (confirmed via direct python execution: -7200s succeeds, -86399s fails), a platform time_t artifact rather than a real Python or TV semantic, so pine2js computes the date via JS Date instead of replicating the crash (DIVERGENCES.md; not oracle-verifiable, hand-verified only)", () => {
@@ -8853,7 +8881,8 @@ describe("numeric helpers", () => {
     expect(tonumber(NAN)).toBeNaN();
     expect(format(NAN)).toBe(null);
     expect(format_number(1, NAN)).toBe(null);
-    expect(format_time(0, NAN)).toBe(null);
+    // A na format takes the default format (oracle pynecore lib/string.py format_time).
+    expect(format_time(0, NAN)).toBe("1970-01-01T00:00:00+0000");
   });
 
   it("fixnan() returns na and does not set state when the value is na and no non-na has been seen yet", () => {

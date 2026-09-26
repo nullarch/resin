@@ -73,6 +73,14 @@ function zonedWallClockMs(ms: number, timezone: string | null | undefined): numb
   return Date.UTC(get("year"), get("month") - 1, get("day"), get("hour") % 24, get("minute"), get("second"));
 }
 
+// The offset of `timezone`'s wall clock from UTC at the instant `ms`, in milliseconds (0 where
+// zonedWallClockMs keeps UTC: an empty, na or unrecognised timezone). The IANA path reads whole
+// seconds, so the offset is taken at the start of the instant's second.
+export function zoneOffsetMs(ms: number, timezone: string | null | undefined): number {
+  const second = Math.floor(ms / 1000) * 1000;
+  return zonedWallClockMs(second, timezone) - second;
+}
+
 export function year(ms: number, timezone?: string | null): number {
   return ms === 0 ? 0 : new Date(zonedWallClockMs(ms, timezone)).getUTCFullYear();
 }

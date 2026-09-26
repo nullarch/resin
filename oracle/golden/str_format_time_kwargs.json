@@ -3,48 +3,48 @@
  "data": "sample10.json",
  "bars": [
   {
-   "var:__obs_kw_tz_positional_format": "2024-01-15",
+   "var:__obs_kw_tz_positional_format": "2024-01-14",
    "var:__obs_kw_tz_default_format": "2024-01-15T14:30:45+0000"
   },
   {
-   "var:__obs_kw_tz_positional_format": "2024-01-15",
+   "var:__obs_kw_tz_positional_format": "2024-01-14",
    "var:__obs_kw_tz_default_format": "2024-01-15T14:30:45+0000"
   },
   {
-   "var:__obs_kw_tz_positional_format": "2024-01-15",
+   "var:__obs_kw_tz_positional_format": "2024-01-14",
    "var:__obs_kw_tz_default_format": "2024-01-15T14:30:45+0000"
   },
   {
-   "var:__obs_kw_tz_positional_format": "2024-01-15",
+   "var:__obs_kw_tz_positional_format": "2024-01-14",
    "var:__obs_kw_tz_default_format": "2024-01-15T14:30:45+0000"
   },
   {
-   "var:__obs_kw_tz_positional_format": "2024-01-15",
+   "var:__obs_kw_tz_positional_format": "2024-01-14",
    "var:__obs_kw_tz_default_format": "2024-01-15T14:30:45+0000"
   },
   {
-   "var:__obs_kw_tz_positional_format": "2024-01-15",
+   "var:__obs_kw_tz_positional_format": "2024-01-14",
    "var:__obs_kw_tz_default_format": "2024-01-15T14:30:45+0000"
   },
   {
-   "var:__obs_kw_tz_positional_format": "2024-01-15",
+   "var:__obs_kw_tz_positional_format": "2024-01-14",
    "var:__obs_kw_tz_default_format": "2024-01-15T14:30:45+0000"
   },
   {
-   "var:__obs_kw_tz_positional_format": "2024-01-15",
+   "var:__obs_kw_tz_positional_format": "2024-01-14",
    "var:__obs_kw_tz_default_format": "2024-01-15T14:30:45+0000"
   },
   {
-   "var:__obs_kw_tz_positional_format": "2024-01-15",
+   "var:__obs_kw_tz_positional_format": "2024-01-14",
    "var:__obs_kw_tz_default_format": "2024-01-15T14:30:45+0000"
   },
   {
-   "var:__obs_kw_tz_positional_format": "2024-01-15",
+   "var:__obs_kw_tz_positional_format": "2024-01-14",
    "var:__obs_kw_tz_default_format": "2024-01-15T14:30:45+0000"
   }
  ],
  "finalVarState": {
-  "__obs_kw_tz_positional_format": "2024-01-15",
+  "__obs_kw_tz_positional_format": "2024-01-14",
   "__obs_kw_tz_default_format": "2024-01-15T14:30:45+0000"
  }
 }

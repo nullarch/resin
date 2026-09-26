@@ -20428,6 +20428,15 @@ describe("CodeGen str.format_time(time=/format=/timezone=) kwargs (C478, next_hi
     const code = codegenSource('x = str.format_time(time=1705276800000.0, format="MM/dd/yyyy")');
     expect(code).toBe(codegenSource('x = str.format_time(1705276800000.0, "MM/dd/yyyy")'));
   });
+
+  // The timezone defaults to syminfo.timezone (ref_v6_lang.txt str.format_time; tier 1
+  // resin-harness str_011_format_time runs on a UTC-5 symbol), passed after the three Pine arguments.
+  it("passes the chart symbol's timezone when it is not UTC", () => {
+    const syminfo = { syminfo: { timezone: "America/New_York" } };
+    expect(codegenSource("x = str.format_time(time)", syminfo)).toBe('var x = rt.format_time($.barTimeMs, undefined, undefined, "America/New_York");');
+    expect(codegenSource('x = str.format_time(time, "HH:mm", "UTC")', syminfo)).toBe('var x = rt.format_time($.barTimeMs, "HH:mm", "UTC", "America/New_York");');
+    expect(codegenSource("x = str.format_time(time)")).toBe("var x = rt.format_time($.barTimeMs);");
+  });
 });
 
 describe("CodeGen math.abs/round/sign(number=/precision=) kwargs (C404, next_hint(C403) — wild가 실제로 kwarg를 직접 받는 math.* 함수는 이 3종뿐)", () => {
