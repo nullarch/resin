@@ -804,9 +804,9 @@ describe("CodeGen", () => {
     expect(codegenSource("x = ta.min(close)")).toBe("var x = rt.ta.cumMin($.taSlots[0], $.close.get(0));");
   });
 
-  it("emits ta.rci call through $.taSlots[slot] (no codegen special-casing — 배치25 (3), DIVERGENCES.md #177)", () => {
+  it("emits ta.rci call through $.taSlots[slot] with bar_index appended (na while bar_index < length, tier 1 ta_251_rci)", () => {
     const code = codegenSource("x = ta.rci(close, 9)");
-    expect(code).toBe("var x = rt.ta.rci($.taSlots[0], $.close.get(0), 9);");
+    expect(code).toBe("var x = rt.ta.rci($.taSlots[0], $.close.get(0), 9, $.idx);");
   });
 
   it("emits ta.linreg call through $.taSlots[slot] (no codegen special-casing — 3 args pass through in order)", () => {

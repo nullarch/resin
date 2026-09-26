@@ -726,66 +726,74 @@ describe("ta.dema", () => {
   });
 });
 
-// ta.rci — pine2py에 대응 구현이 전혀 없는 hand-verified 신규 함수(배치25 (3), DIVERGENCES.md
-// #177). 표준 RCI 공식(timeRank/priceRank 완전 항등 -> +-100)을 손으로 유도해(완전 상승/하락 시
-// sum(d^2)=0) 검증한다(scratch/rci_probe.mjs, gitignored 확인 후 삭제).
+// ta.rci — the oracle's TradingView-exact pipeline (pynecore lib/ta.py rci; runtime/ta.ts rci()).
+// The fourth argument is bar_index: na while bar_index < length (tier 1 ta_251_rci, harness
+// suites/indicators/tv/ta_251_rci: ta.rci(close, 5) first valued on bar 5); ties share their average
+// rank (harness repro state/repros/rci-ties.json, oracle twin). These replace the pre-oracle
+// hand-derived tests (length-1 warm-up; strict-greater ranks, where a flat window read -25).
 describe("ta.rci", () => {
-  it("returns NaN for the first length-1 bars, then +100 for a monotonic uptrend (length=3)", () => {
+  it("is na while bar_index < length, then +100 for a monotonic uptrend (length=3)", () => {
     const state = {};
-    const results = [10, 20, 30, 40, 50].map((v) => rci(state, v, 3));
+    const results = [10, 20, 30, 40, 50].map((v, i) => rci(state, v, 3, i));
     expect(results[0]).toBeNaN();
     expect(results[1]).toBeNaN();
-    expect(results[2]).toBeCloseTo(100, 9);
+    expect(results[2]).toBeNaN();
     expect(results[3]).toBeCloseTo(100, 9);
     expect(results[4]).toBeCloseTo(100, 9);
   });
 
   it("returns -100 for a monotonic downtrend (length=3)", () => {
     const state = {};
-    const results = [30, 20, 10, 5, 1].map((v) => rci(state, v, 3));
-    expect(results[2]).toBeCloseTo(-100, 9);
+    const results = [30, 20, 10, 5, 1].map((v, i) => rci(state, v, 3, i));
+    expect(results[2]).toBeNaN();
     expect(results[3]).toBeCloseTo(-100, 9);
     expect(results[4]).toBeCloseTo(-100, 9);
   });
 
-  it("returns a non-zero skew for a flat series (strict-greater rank, no tie-averaging — hand-derived, length=3)", () => {
+  it("is na on a flat window (every value tied: the rank variance is 0)", () => {
     const state = {};
-    const results = [5, 5, 5, 5].map((v) => rci(state, v, 3));
-    expect(results[2]).toBeCloseTo(-25, 9);
-    expect(results[3]).toBeCloseTo(-25, 9);
+    const results = [5, 5, 5, 5].map((v, i) => rci(state, v, 3, i));
+    expect(results[3]).toBeNaN();
   });
 
-  it("poisons the window on a mid-stream NaN and recovers exactly length bars after the gap closes (length=3)", () => {
+  it("gives tied values their average rank (Spearman; hand-derived, length=4)", () => {
+    // Newest first: 3, 2, 2, 1 -> ranks 0, 1.5, 1.5, 3 against x = 0..3:
+    // cov 1.125, var_x 1.25, var_y 1.125 -> 100 * 1.125 / sqrt(1.25 * 1.125) = 100 * sqrt(0.9).
     const state = {};
-    const results = [10, NaN, 20, 30, 40].map((v) => rci(state, v, 3));
-    expect(results[0]).toBeNaN();
-    expect(results[1]).toBeNaN();
-    expect(results[2]).toBeNaN(); // window still has the NaN slot
-    expect(results[3]).toBeNaN(); // window still has the NaN slot (buffer wrapped once)
-    expect(results[4]).toBeCloseTo(100, 9); // NaN slot finally overwritten, window fully valid + monotonic
+    const results = [0, 1, 2, 2, 3].map((v, i) => rci(state, v, 4, i));
+    expect(results[4]).toBeCloseTo(100 * Math.sqrt(0.9), 9);
   });
 
-  it("returns NaN at length=1 (denominator n*(n^2-1)=0, IEEE754 0/0 naturally yields NaN)", () => {
+  it("is na on an na source, and while a past na is in the window (length=3)", () => {
     const state = {};
-    expect(rci(state, 10, 1)).toBeNaN();
-    expect(rci(state, 20, 1)).toBeNaN();
-    expect(rci(state, 30, 1)).toBeNaN();
+    const results = [10, 20, 30, NaN, 40, 50, 60].map((v, i) => rci(state, v, 3, i));
+    expect(results[3]).toBeNaN(); // current na
+    expect(results[4]).toBeNaN(); // na one bar back
+    expect(results[5]).toBeNaN(); // na two bars back
+    expect(results[6]).toBeCloseTo(100, 9); // window 60, 50, 40
+  });
+
+  it("returns NaN at length=1 (the time variance is 0)", () => {
+    const state = {};
+    expect(rci(state, 10, 1, 0)).toBeNaN();
+    expect(rci(state, 20, 1, 1)).toBeNaN();
+    expect(rci(state, 30, 1, 2)).toBeNaN();
   });
 
   it("keeps independent state across two call sites", () => {
     const stateA = {};
     const stateB = {};
-    [10, 20, 30].forEach((v) => rci(stateA, v, 3));
-    expect(rci(stateA, 40, 3)).toBeCloseTo(100, 9);
-    // stateB has only seen 1 bar and must still be warming up, unaffected by stateA.
-    expect(rci(stateB, 999, 3)).toBeNaN();
+    [10, 20, 30].forEach((v, i) => rci(stateA, v, 3, i));
+    expect(rci(stateA, 40, 3, 3)).toBeCloseTo(100, 9);
+    // stateB has seen one value: its window is not full, unaffected by stateA.
+    expect(rci(stateB, 999, 3, 3)).toBeNaN();
   });
 
   it("alternates between +100 and -100 for a perfectly oscillating 2-value series (length=2, regression guard)", () => {
     const state = {};
-    const results = [10, 20, 10, 20, 10, 20].map((v) => rci(state, v, 2));
+    const results = [10, 20, 10, 20, 10, 20].map((v, i) => rci(state, v, 2, i));
     expect(results[0]).toBeNaN();
-    expect(results[1]).toBeCloseTo(100, 9);
+    expect(results[1]).toBeNaN();
     expect(results[2]).toBeCloseTo(-100, 9);
     expect(results[3]).toBeCloseTo(100, 9);
     expect(results[4]).toBeCloseTo(-100, 9);

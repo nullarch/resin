@@ -2583,24 +2583,25 @@ export interface RciState {
   writeIdx?: number;
 }
 
-// ta.rci(source, length) - Rank Correlation Index: Spearman rank correlation between price and
-// time over a length-bar window (current bar included), scaled to [-100, 100]. pine2py
-// wavealgo/에 대응 구현이 전혀 없어(전수 grep 0건) 오라클 대조 자체가 불가한 hand-verified
-// 신규 함수(배치25 (3), DIVERGENCES.md #177) — TV native builtin화 이전부터 통용되던 표준 정의
-// RCI = (1 - 6*sum(d_i^2) / (n*(n^2-1))) * 100, d_i = timeRank_i - priceRank_i를 그대로 구현한다.
-// 창은 median/dev(C115/C119)와 동일하게 raw-passthrough 순환 버퍼(현재 바 포함 length개, 하나라도
-// NaN이면 즉시 NaN) — 단 median/dev와 달리 정렬만으로는 부족하고 "몇 바 전 값인가"(시간 순위)가
-// 필요해 writeIdx 자체를 순위 계산에 쓴다: 이번 바 push 직후의 writeIdx가 곧 현재 바(timeRank=0)의
-// 슬롯이므로, 임의 슬롯 k의 timeRank는 (curIdx - k + length) % length로 역산된다. priceRank_i는
-// "i보다 값이 큰 원소 개수"(동률은 세지 않는 strict-greater 카운트 — Spearman 표준의 average-rank
-// tie-break가 아니다, TV 실제 tie 처리는 미검증이라 DIVERGENCES에 가설로 등재). alma/cci/median/
-// mode/percentrank/dev에 이은 GOAL.md O(1)/bar 원칙의 일곱 번째 명시적 예외(순위 계산 자체가
-// O(length^2)/bar — 정렬 기반 median/mode보다도 비싸지만 이 리포 실사용 length 범위에서는 무시
-// 가능한 수준, cci/dev와 동일 트레이드오프 판단). 완전 상승(가장 최근 값이 창 안에서 최댓값)이면
-// timeRank와 priceRank가 항등이라 sum(d_i^2)=0 -> RCI=+100, 완전 하락이면 -100이 되도록 손으로
-// 유도해 검증(scratch/rci_probe.mjs, gitignored). length=1은 분모 n*(n^2-1)=0이라 0/0=NaN으로
-// 자연 낙착(별도 가드 불필요 — IEEE754가 이미 na-safe한 값을 냄).
-export function rci(state: RciState, value: number, length: number): number {
+// ta.rci(source, length) - Rank Correlation Index: Spearman's rank correlation between the source
+// and the bar index over `length` bars, scaled to [-100, 100] (ref_v6_ta_math.txt ta.rci: "evaluates
+// the monotonic relationship between a `source` series and the bar index over `length` bars using
+// Spearman's rank correlation coefficient"). This is the oracle's TradingView-exact pipeline
+// (pynecore lib/ta.py rci, "validated bit-for-bit on 333k synthetic windows ... including ties"),
+// ported in its operation order:
+//   - na while the current source is na, and while bar_index < length (tier 1 ta_251_rci:
+//     ta.rci(close, 5) is na on bars 0-4 and first valued on bar 5); the value still enters the
+//     window;
+//   - the window is the call site's last `length` values, newest first (x = 0 is the current bar);
+//   - ranks: values are swept ascending and grouped into ties, a group taking every value closer
+//     than 1e-10 to its smallest member; each group gets its 0-based average rank, descending by
+//     value (the largest value ranks 0, so a steady rise correlates +100);
+//   - Pearson correlation of (x, rank): moment-form variances E[v^2] - mean^2 (na when either is
+//     not positive: length 1, or every value tied), covariance from deviation products,
+//     100 * cov / (sd_x * sd_y).
+// A past na in the window gives na (the oracle has no answer there: its tie sweep never advances
+// past a nan). barIdx is bar_index (the request.security prepass passes its own row).
+export function rci(state: RciState, value: number, length: number, barIdx: number): number {
   length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조)
   if (state.buffer === undefined) {
     state.buffer = new Array(length).fill(NaN);
@@ -2610,22 +2611,50 @@ export function rci(state: RciState, value: number, length: number): number {
   const curIdx = state.writeIdx!;
   buffer[curIdx] = value;
   state.writeIdx = (curIdx + 1) % length;
+  if (Number.isNaN(value) || barIdx < length) return NaN;
 
+  const values = new Array<number>(length);
+  const order = new Array<number>(length);
   for (let k = 0; k < length; k++) {
-    if (Number.isNaN(buffer[k]!)) return NaN;
+    const v = buffer[(curIdx - k + length) % length]!;
+    if (Number.isNaN(v)) return NaN;
+    values[k] = v;
+    order[k] = k;
   }
-
-  let sumDsq = 0;
+  // Stable ascending sort by value, as Python's sorted(key=...).
+  order.sort((a, b) => (values[a]! < values[b]! ? -1 : values[a]! > values[b]! ? 1 : 0));
+  const ranks = new Array<number>(length);
+  let pos = 0;
+  let i = 0;
+  while (i < length) {
+    const anchor = values[order[i]!]!;
+    let j = i;
+    while (j < length && values[order[j]!]! - anchor < 1e-10) j++;
+    const avgRank = length - 1 - (pos + pos + (j - i) - 1) / 2.0;
+    for (let t = i; t < j; t++) ranks[order[t]!] = avgRank;
+    pos += j - i;
+    i = j;
+  }
+  let sumX = 0;
+  let sumY = 0;
+  let sumX2 = 0;
+  let sumY2 = 0;
   for (let k = 0; k < length; k++) {
-    const timeRank = (curIdx - k + length) % length;
-    let priceRank = 0;
-    for (let j = 0; j < length; j++) {
-      if (buffer[j]! > buffer[k]!) priceRank++;
-    }
-    const d = timeRank - priceRank;
-    sumDsq += d * d;
+    const y = ranks[k]!;
+    sumX += k;
+    sumY += y;
+    sumX2 += k * k;
+    sumY2 += y * y;
   }
-  return (1 - (6 * sumDsq) / (length * (length * length - 1))) * 100;
+  const meanX = sumX / length;
+  const meanY = sumY / length;
+  const varX = sumX2 / length - meanX * meanX;
+  const varY = sumY2 / length - meanY * meanY;
+  if (varX <= 0 || varY <= 0) return NaN;
+  let cov = 0;
+  for (let k = 0; k < length; k++) cov += (k - meanX) * (ranks[k]! - meanY);
+  cov /= length;
+  return (100.0 * cov) / (Math.sqrt(varX) * Math.sqrt(varY));
 }
 
 export interface TsiState {

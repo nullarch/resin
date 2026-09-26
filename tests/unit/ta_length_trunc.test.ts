@@ -63,7 +63,13 @@ const CASES: Array<{ name: string; makeStep: (state: object, length: number) => 
   { name: "percentileNearestRank", makeStep: (s, len) => (v) => percentileNearestRank(s as never, v, len) },
   { name: "percentileLinearInterpolation", makeStep: (s, len) => (v) => percentileLinearInterpolation(s as never, v, len) },
   { name: "dev", makeStep: (s, len) => (v) => dev(s as never, v, len) },
-  { name: "rci", makeStep: (s, len) => (v) => rci(s as never, v, len) },
+  {
+    name: "rci",
+    makeStep: (s, len) => {
+      let barIdx = 0;
+      return (v) => rci(s as never, v, len, barIdx++);
+    },
+  },
   { name: "sum", makeStep: (s, len) => (v) => sum(s as never, v, len) },
 ];
 

@@ -27,7 +27,7 @@ describe("ta.rci pipeline wiring (hand-verified, no pine2py oracle)", () => {
     const src = ["var float __obs_a = na", "__obs_a := ta.rci(close, 9)"].join("\n");
 
     const state = {};
-    const expected = closes.map((c) => rci(state, c, 9));
+    const expected = closes.map((c, i) => rci(state, c, 9, i));
     expect(obs(src, data)).toEqual(expected);
   });
 
@@ -49,8 +49,8 @@ describe("ta.rci pipeline wiring (hand-verified, no pine2py oracle)", () => {
 
     const stateA = {};
     const stateB = {};
-    const expectedA = closes.map((c) => rci(stateA, c, 3));
-    const expectedB = closes.map((c) => rci(stateB, c, 5));
+    const expectedA = closes.map((c, i) => rci(stateA, c, 3, i));
+    const expectedB = closes.map((c, i) => rci(stateB, c, 5, i));
     const result = runPipeline(src, data);
     expect(result.bars.map((b) => b["var:__obs_a"])).toEqual(expectedA);
     expect(result.bars.map((b) => b["var:__obs_b"])).toEqual(expectedB);

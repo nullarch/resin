@@ -3908,6 +3908,11 @@ function genCallExpr(
       // session is not modelled: the first row anchors, as session.isfirstbar_regular reads there.
       if (args.length === 2) args.push(secCtx === null ? SESSION_PROPS.get("isfirstbar")! : `(${secCtx.loopVar} === 0)`);
     }
+    if (stateCall.fn === "rci") {
+      // ta.rci(source, length) is na while bar_index < length (runtime/ta.ts rci; pynecore lib/ta.py
+      // rci; tier 1 ta_251_rci), so it reads bar_index: $.idx, or the prepass row in request.security.
+      args.push(secCtx === null ? "$.idx" : secCtx.loopVar);
+    }
     if (stateCall.fn === "wpr") {
       // ta.wpr(length) — Pine 문법에 close/high/low 인자가 없고 내장 bar series를 암묵 사용한다
       // (analyzer.ts TA_REGISTRY.wpr 주석 참조). 유일한 사용자 인자 length(index 0) 앞에 셋을 끼워
