@@ -568,8 +568,16 @@ describe("corpus diff: sample bar-by-bar replay against pine2py golden", () => {
     // suites/indicators/tv/ta_031_tr (plot "ta.tr" na on bar 0) and the PyneCore oracle (lib/ta.py
     // `def tr(handle_na: bool = False)`). Floor moved to the observed matched 2322 / mismatch 593;
     // nothing else changed.
-    expect(matched.length).toBeGreaterThanOrEqual(2322);
-    expect(mismatched.length).toBeLessThanOrEqual(593);
+    // 2026-09-26 ta.cum of an na source is na on its bar (the total skips it), and ta.obv/ta.pvt are
+    // the manual's ta.cum of a ta.change(close) term: exactly four hashes went matched -> mismatch,
+    // all on bar 0 where pine2py (not ground truth) gave 0 (3d689810be4c ta.pvt(), 534e9751087c
+    // ta.cum(ta.change-based chg), 79b436ef8219 ta.cum(math.sign(ta.change(src)) * volume),
+    // ad1e0c32a9be ta.obv). ref_v6_ta_math.txt f_obv/f_pvt, tier 1 resin-harness
+    // suites/indicators/tv/ta_051_iii_nvi_obv and ta_341_accdist_pvi_pvt_wad_wvad (obv/pvt na on bar
+    // 0), the PyneCore oracle (lib/ta.py cum). Floor moved to the observed matched 2318 / mismatch
+    // 597; nothing else changed.
+    expect(matched.length).toBeGreaterThanOrEqual(2318);
+    expect(mismatched.length).toBeLessThanOrEqual(597);
     expect(transpileFailed.length).toBeLessThanOrEqual(86);
     expect(runtimeFailed.length, `runtime failures: ${runtimeFailed.map((o) => `${o.hash}: ${o.detail}`).join(" | ")}`).toBe(0);
     expect(noComparable.length, `no comparable key: ${noComparable.map((o) => o.hash).join(", ")}`).toBeLessThanOrEqual(2);

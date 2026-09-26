@@ -3,7 +3,7 @@
  "data": "sample10.json",
  "bars": [
   {
-   "var:__obs_pvt": 0.0,
+   "var:__obs_pvt": "NaN",
    "var:__obs_wad": 0.0
   },
   {

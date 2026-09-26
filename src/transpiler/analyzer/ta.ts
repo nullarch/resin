@@ -332,7 +332,7 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   stdev: { dispatch: "ta", displayName: "ta.stdev", argCount: 3, minArgCount: 2, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.stdev", kwargParamNames: ["source", "length"] },
   // ta.cum(source) — Pine 문법상 length 인자가 없는(고정 없음) 누적 합계. swma와 동일하게
   // lengthArgIndex: null(길이 자체가 없어 series length 하드 에러 검사 대상이 아님). NaN 처리는
-  // runtime/ta.ts cum() 주석 참조 — NaN을 0으로 치환해 누적해 절대 NaN을 반환하지 않는다.
+  // runtime/ta.ts cum(): an na source is na on its bar and leaves the total alone.
   cum: { dispatch: "ta", displayName: "ta.cum", argCount: 1, lengthArgIndex: null, conditionalForbidden: true, rtPath: "rt.ta.cum", kwargParamNames: ["source"] },
   // ta.max(source)/ta.min(source) — cum(위)의 형제 함수: 인자 1개, length 없음(lengthArgIndex:
   // null). pine2py에 대응 구현이 전혀 없는 hand-verified 신규 함수(배치25 (3), DIVERGENCES.md #176)

@@ -8,8 +8,8 @@
    "var:__obs_wad": 0.0,
    "var:__obs_wvad": 333.3333333333,
    "var:__obs_iii": 0.0003333333,
-   "var:__obs_obv": 0.0,
-   "var:__obs_pvt": 0.0,
+   "var:__obs_obv": "NaN",
+   "var:__obs_pvt": "NaN",
    "var:__obs_nvi": 1.0,
    "var:__obs_pvi": 1.0
   },

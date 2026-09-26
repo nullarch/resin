@@ -5,6 +5,9 @@
 // 여전히 pine2py 골든과 바별로 일치하는지, (2) 단일 plot() 슬롯이 정확히 배정되는지, (3) plot
 // 채널 값이 같은 바의 __obs 미러 값과 정확히 같은지(e2e_wpr.test.ts와 동일한 세 축, 단일 plot
 // 케이스).
+// Bar 0 __obs_obv is hand-edited over pine2py's 0 seed to na, the tier-2 value (see
+// ta_obv_accdist.test.ts; resin-harness state/repros/cum-na-obv-pvt.json; tier 1 harness tv
+// ta_051_iii_nvi_obv).
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";

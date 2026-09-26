@@ -8,6 +8,10 @@
 // The golden's bar 0 __obs_tr is hand-edited over pine2py's hl fallback (3) to na, the tier-2
 // oracle's value: bare ta.tr is ta.tr(handle_na = false) (ref_v6_ta_math.txt "VAR ta.tr";
 // resin-harness state/repros/tr-default-na.json, tier 1 state/repros/tv-ta_031_tr.json).
+// Bar 0 __obs_obv and __obs_pvt are hand-edited over pine2py's 0 seed to na, the tier-2 value:
+// both are ta.cum of a ta.change(close) term that has no previous close there (ref_v6_ta_math.txt
+// f_obv/f_pvt; resin-harness state/repros/cum-na-obv-pvt.json, same data; tier 1 harness tv
+// ta_051_iii_nvi_obv, ta_341_accdist_pvi_pvt_wad_wvad).
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";

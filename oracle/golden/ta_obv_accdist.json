@@ -3,7 +3,7 @@
  "data": "sample10.json",
  "bars": [
   {
-   "var:__obs_obv": 0.0,
+   "var:__obs_obv": "NaN",
    "var:__obs_accdist": 333.3333333333
   },
   {

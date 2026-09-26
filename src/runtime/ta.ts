@@ -1004,18 +1004,19 @@ export interface CumState {
   sum?: number;
 }
 
-// ta.cum(source) - 누적(러닝) 합계. pine2py wavealgo/ta/cum.py 소스 대조 결과 인자 1개(length 없음)
-// 짜리 단일 러닝 합계 상태 하나뿐이라 지금까지 나온 TA 중 가장 단순하지만, NaN 처리가 지금까지의
-// 모든 패턴(raw-passthrough로 버퍼를 오염시키거나 그대로 NaN을 반환하는 sma/wma/change류, momentum이
-// NaN이면 스킵하는 cmo류)과 다른 세 번째 방식이다: cum.py L43-44는 `math.isnan(val): val = 0.0`로
-// NaN 입력을 조용히 0으로 바꿔치기한 뒤 누적하므로, cum은 NaN 입력에도 절대 NaN을 반환하지 않고
-// 직전 누적값을 그대로 유지한다(초기 상태 자체가 NaN이 아니라 0.0 — sma/wma/swma의 "NaN-프라임"
-// 워밍업과 근본적으로 다름, 워밍업 구간 자체가 없다).
+// ta.cum(source) - the running total of `source` since the first bar, starting from 0 (no warm-up).
+// An na source is na on its own bar and leaves the total alone, so the next bar continues from the
+// standing sum. TradingView measures it: ta.obv and ta.pvt are na on bar 0 (tier 1 ta_051_iii_nvi_obv,
+// ta_341_accdist_pvi_pvt_wad_wvad), where the manual defines them as `ta.cum(...)` of an expression
+// whose `ta.change(close)` is na (ref_v6_ta_math.txt "f_obv() => ta.cum(math.sign(ta.change(close))
+// * volume)"). Oracle pynecore lib/ta.py cum: `if not (source == source): return na_float`. pine2py
+// summed an na as 0 and returned the standing sum.
 export function cum(state: CumState, value: number): number {
   if (state.sum === undefined) {
     state.sum = 0;
   }
-  state.sum += Number.isNaN(value) ? 0 : value;
+  if (Number.isNaN(value)) return NaN;
+  state.sum += value;
   return state.sum;
 }
 
@@ -3297,33 +3298,22 @@ export interface ObvState {
   prevClose?: number;
 }
 
-// ta.obv() - On Balance Volume. Pine 문법상 인자가 없고(close/volume은 bar series 암묵 사용,
-// tr/atr과 동일한 implicit unshift 패턴) codegen이 $.close.get(0)/$.volume.get(0)을 앞에 끼워
-// 넣는다(TA_REGISTRY.obv argCount:0). pine2py wavealgo/ta/obv.py 소스 대조 결과 지금까지 나온 TA
-// 중 가장 단순한 여섯 번째 NaN 처리 패턴: close 또는 volume이 NaN이면 state를 **전혀 건드리지
-// 않고** 즉시 NaN을 반환한다(barssince의 "카운터 자체는 갱신 시도"와도 다름 — obv는 정말 아무것도
-// 안 씀). 그래서 state.prevObv가 아직 없는(="prev_obv" not in state와 동치) "최초 유효 바"에서
-// prevObv=0.0으로 시드하고 0.0을 반환하는데, 이 시드는 그 이전에 몇 개의 NaN 바가 있었든 항상
-// 그대로 0.0이다 — sma/ema/rma류처럼 "N바 워밍업 후 값이 나온다"는 개념 자체가 없다(scratch/
-// probe_obv.mjs "leading NaN close" 케이스로 확인). 이후 매 바 close를 prevClose와 비교해 오르면
-// +volume, 내리면 -volume, tie면 유지 — NaN 갭이 있었다면 갭 이전 마지막 유효 prevClose와 비교됨
-// (갭 바가 state를 안 건드리므로, probe_obv.mjs "mid-stream NaN gap" 케이스로 확인).
+// ta.obv - On Balance Volume. No arguments: codegen passes $.close.get(0)/$.volume.get(0)
+// (TA_REGISTRY.obv argCount:0). The manual's definition, "f_obv() => ta.cum(math.sign(ta.change(close))
+// * volume)" (ref_v6_ta_math.txt ta.obv), is what TradingView computes: bar 0 has no previous close, so
+// it is na, not 0 (tier 1 ta_051_iii_nvi_obv; oracle pynecore lib/ta.py obv). ta.change(close) reads
+// the previous bar's close even when that is na, so the bar after an na close is na too; an na change or
+// volume is na and leaves the total alone (ta.cum). prevClose is written on every bar for that reason.
+// pine2py seeded 0 on the first valid bar and compared with the last valid close.
 export function obv(state: ObvState, close: number, volume: number): number {
-  if (Number.isNaN(close) || Number.isNaN(volume)) return NaN;
-  if (state.prevObv === undefined) {
-    state.prevObv = 0;
-    state.prevClose = close;
-    return 0;
-  }
-  const prevClose = state.prevClose!;
-  const prevObv = state.prevObv;
-  let currentObv: number;
-  if (close > prevClose) currentObv = prevObv + volume;
-  else if (close < prevClose) currentObv = prevObv - volume;
-  else currentObv = prevObv;
-  state.prevObv = currentObv;
+  const prevClose = state.prevClose;
   state.prevClose = close;
-  return currentObv;
+  if (state.prevObv === undefined) state.prevObv = 0;
+  const chg = prevClose === undefined ? NaN : close - prevClose;
+  if (Number.isNaN(chg) || Number.isNaN(volume)) return NaN;
+  if (chg > 0) state.prevObv += volume;
+  else if (chg < 0) state.prevObv -= volume;
+  return state.prevObv;
 }
 
 export interface AccDistState {
@@ -3353,25 +3343,21 @@ export interface PvtState {
   prevClose?: number;
 }
 
-// ta.pvt() - Price Volume Trend. Pine 문법상 인자가 없고(close/volume은 bar series 암묵 사용,
-// obv와 동일한 implicit unshift 패턴) codegen이 $.close.get(0)/$.volume.get(0)을 뒤에 끼워 넣는다
-// (TA_REGISTRY.pvt argCount:0). pine2py wavealgo/ta/pvt.py 소스 대조 결과 obv(C55)와 완전히 동일한
-// 여섯 번째 NaN 패턴: close 또는 volume이 NaN이면 state를 **전혀 건드리지 않고** 즉시 NaN 반환,
-// state.cum이 아직 없는(="cum" not in state와 동치) "최초 유효 바"에서 cum=0.0/prevClose=close로
-// 시드하고 0.0 반환(obv와 마찬가지로 워밍업 구간 없음). 이후 change_pct=(close-prevClose)/prevClose
-// (**prevClose===0이면 change_pct=0.0** — obv엔 없던 나눗셈 가드, pvt.py 고유), cum += change_pct*
-// volume으로 누적(scratch/probe_pvt_wad.mjs로 이 나눗셈 가드를 포함해 브루트포스 대조 완료).
+// ta.pvt - Price Volume Trend. No arguments: codegen passes $.close.get(0)/$.volume.get(0)
+// (TA_REGISTRY.pvt argCount:0). The manual's definition, "f_pvt() => ta.cum((ta.change(close) /
+// close[1]) * volume)" (ref_v6_ta_math.txt ta.pvt), is what TradingView computes: bar 0 has no
+// previous close, so it is na, not 0 (tier 1 ta_341_accdist_pvi_pvt_wad_wvad; oracle pynecore
+// lib/ta.py pvt). close[1] is the previous bar's close even when that is na; an na term (na close on
+// either bar, na volume, a zero previous close: Pine's division by zero is na) is na and leaves the
+// total alone (ta.cum). pine2py seeded 0 on the first valid bar and read a zero previous close as 0%.
 export function pvt(state: PvtState, close: number, volume: number): number {
-  if (Number.isNaN(close) || Number.isNaN(volume)) return NaN;
-  if (state.cum === undefined) {
-    state.cum = 0;
-    state.prevClose = close;
-    return 0;
-  }
-  const prevClose = state.prevClose!;
-  const changePct = prevClose === 0 ? 0 : (close - prevClose) / prevClose;
-  state.cum += changePct * volume;
+  const prevClose = state.prevClose;
   state.prevClose = close;
+  if (state.cum === undefined) state.cum = 0;
+  if (prevClose === undefined || prevClose === 0) return NaN;
+  const term = ((close - prevClose) / prevClose) * volume;
+  if (Number.isNaN(term)) return NaN;
+  state.cum += term;
   return state.cum;
 }
 

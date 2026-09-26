@@ -1,6 +1,9 @@
 // oracle/cases/ta_obv_accdist.pine: ta.obv()/ta.accdist() 검증(ROADMAP P2 "ta.* 44종" —
 // obv/accdist). 둘 다 인자 없음(close/high/low/volume 암묵 사용), sample10.json 전 구간 관측.
-// obv는 워밍업 NaN 구간이 없어(runtime/ta.ts obv() 주석 참조) 바0부터 즉시 유효한 값을 낸다.
+// Bar 0 __obs_obv is hand-edited over pine2py's 0 seed to na, the tier-2 value: ta.obv is
+// ta.cum(math.sign(ta.change(close)) * volume) and bar 0 has no previous close (ref_v6_ta_math.txt
+// f_obv; resin-harness state/repros/cum-na-obv-pvt.json, same data; tier 1 harness tv
+// ta_051_iii_nvi_obv).
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";

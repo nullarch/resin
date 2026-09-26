@@ -2502,16 +2502,19 @@ describe("ta.cum", () => {
     expect(results[9]).toBe(1043);
   });
 
-  it("treats a NaN input as 0 and carries the running sum forward — never returns NaN (third NaN-handling pattern, distinct from sma/wma's push-and-poison and cmo's skip-on-NaN)", () => {
+  // An na source is na on its bar and leaves the total alone (pine2py returned the standing sum).
+  // Tier 1: ta.obv/ta.pvt, defined as ta.cum of an expression that is na on bar 0, are na there
+  // (harness tv ta_051_iii_nvi_obv, ta_341_accdist_pvi_pvt_wad_wvad); probe I01 bar 100 (oracle).
+  it("returns NaN on a NaN input and carries the running sum past it untouched", () => {
     const state = {};
     expect(cum(state, 10)).toBe(10);
-    expect(cum(state, NaN)).toBe(10); // NaN treated as 0 -> sum unchanged, and NOT NaN itself
+    expect(cum(state, NaN)).toBeNaN();
     expect(cum(state, 5)).toBe(15);
   });
 
-  it("returns 0 (not NaN) on a first call with a NaN input — initial state is 0.0, not NaN-primed", () => {
+  it("returns NaN on a first call with a NaN input; the sum still starts from 0", () => {
     const state = {};
-    expect(cum(state, NaN)).toBe(0);
+    expect(cum(state, NaN)).toBeNaN();
     expect(cum(state, 7)).toBe(7);
   });
 
@@ -2528,7 +2531,7 @@ describe("ta.cum", () => {
     const state = {};
     const values = [1, NaN, 2, 3, NaN, NaN, 4];
     const results = values.map((v) => cum(state, v));
-    expect(results).toEqual([1, 1, 3, 6, 6, 6, 10]);
+    expect(results).toEqual([1, NaN, 3, 6, NaN, NaN, 10]);
   });
 });
 
@@ -5562,47 +5565,48 @@ describe("ta.kcw", () => {
   });
 });
 
-// ta.obv() — On Balance Volume. NaN close/volume leaves state fully untouched (unlike every prior
-// pattern, which at least advances a warmup counter or NaN-primes a buffer) — the first *valid* bar
-// always seeds prevObv=0.0, regardless of how many NaN bars preceded it. scratch/probe_obv.mjs
-// cross-checked this against a literal port of pine2py's obv.py.
+// ta.obv() — On Balance Volume = ta.cum(math.sign(ta.change(close)) * volume) (ref_v6_ta_math.txt
+// f_obv). Bar 0 has no previous close: na, not pine2py's 0 seed (tier 1 harness tv
+// ta_051_iii_nvi_obv, bar 0 "ta.obv" null). An na change or volume is na and leaves the total alone;
+// ta.change reads the previous bar's close even when it is na (oracle pynecore lib/ta.py obv).
 describe("ta.obv", () => {
-  it("seeds the first valid bar to 0.0, not NaN (no warmup period)", () => {
+  it("is NaN on the first bar (no previous close), then starts the total from 0", () => {
     const state = {};
-    expect(obv(state, 101, 1000)).toBe(0);
+    expect(obv(state, 101, 1000)).toBeNaN();
+    expect(obv(state, 102, 500)).toBe(500);
   });
 
-  it("returns NaN on NaN close or volume without touching state", () => {
+  it("returns NaN on NaN volume and leaves the total alone", () => {
     const state = {};
-    expect(obv(state, NaN, 1000)).toBeNaN();
-    expect(obv(state, 101, NaN)).toBeNaN();
-    // state still uninitialized -> next valid bar still seeds to 0.0, not treated as a "second" bar
-    expect(obv(state, 102, 1000)).toBe(0);
+    obv(state, 100, 1000);
+    expect(obv(state, 101, 500)).toBe(500);
+    expect(obv(state, 102, NaN)).toBeNaN();
+    expect(obv(state, 103, 200)).toBe(700); // 103 > 102: the na-volume bar's close is the reference
   });
 
   it("adds volume on a rise, subtracts on a fall, holds on a tie", () => {
     const state = {};
-    obv(state, 100, 1000); // seed: obv=0, prevClose=100
+    obv(state, 100, 1000); // prevClose=100, na
     expect(obv(state, 101, 500)).toBe(500); // rise -> +500
     expect(obv(state, 101, 300)).toBe(500); // tie -> unchanged
     expect(obv(state, 99, 700)).toBe(-200); // fall -> -700
   });
 
-  it("compares against the pre-gap prevClose after a mid-stream NaN gap (state untouched during gap)", () => {
+  it("is NaN on a NaN close and on the bar after it (ta.change(close) reads the na close)", () => {
     const state = {};
-    obv(state, 101, 1000); // seed: obv=0, prevClose=101
-    obv(state, 102, 1100); // rise -> obv=1100, prevClose=102
-    expect(obv(state, NaN, NaN)).toBeNaN(); // gap: state stays at prevClose=102
-    // next valid bar compares to the pre-gap prevClose(102), not to the NaN bar
-    expect(obv(state, 108, 1150)).toBe(2250); // 108 > 102 -> 1100 + 1150
+    obv(state, 101, 1000); // na
+    obv(state, 102, 1100); // rise -> obv=1100
+    expect(obv(state, NaN, 1200)).toBeNaN();
+    expect(obv(state, 108, 1150)).toBeNaN(); // 108 - na = na
+    expect(obv(state, 107, 1000)).toBe(100); // the total resumes from 1100: fall -> -1000
   });
 
-  it("matches the pine2py-verified sample10.json trace", () => {
+  it("matches the sample10.json trace (bar 0 na)", () => {
     const state = {};
     const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
     const volumes = [1000, 1100, 1200, 1150, 1300, 1250, 1400, 1350, 1500, 1450];
     const out = closes.map((c, i) => obv(state, c, volumes[i]!));
-    expect(out).toEqual([0, 1100, 2300, 1150, 2450, 3700, 5100, 3750, 5250, 6700]);
+    expect(out).toEqual([NaN, 1100, 2300, 1150, 2450, 3700, 5100, 3750, 5250, 6700]);
   });
 });
 
@@ -5735,57 +5739,58 @@ describe("ta.max/ta.min (cumMax/cumMin)", () => {
   });
 });
 
-// ta.pvt() — Price Volume Trend. Same sixth NaN pattern as obv(C55): NaN input leaves state
-// completely untouched and returns NaN outright; the first valid bar always seeds to 0.0 regardless
-// of how many NaN bars preceded it. Unlike obv, pvt has a divide-by-zero guard (prevClose===0 ->
-// change_pct=0.0) that obv's tie-branch doesn't need. scratch/probe_pvt_wad.mjs cross-checked this
-// against a literal port of pvt.py.
+// ta.pvt() — Price Volume Trend = ta.cum((ta.change(close) / close[1]) * volume) (ref_v6_ta_math.txt
+// f_pvt). Bar 0 has no previous close: na, not pine2py's 0 seed (tier 1 harness tv
+// ta_341_accdist_pvi_pvt_wad_wvad, bar 0 "ta.pvt" null). An na term (na close on either bar, na
+// volume, a zero previous close: division by zero is na) is na and leaves the total alone (oracle
+// pynecore lib/ta.py pvt).
 describe("ta.pvt", () => {
-  it("seeds the first valid bar to 0.0, not NaN (no warmup period)", () => {
+  it("is NaN on the first bar (no previous close), then starts the total from 0", () => {
     const state = {};
-    expect(pvt(state, 101, 1000)).toBe(0);
+    expect(pvt(state, 100, 1000)).toBeNaN();
+    expect(pvt(state, 102, 1100)).toBeCloseTo(22, 9);
   });
 
-  it("returns NaN on NaN close or volume without touching state", () => {
+  it("returns NaN on NaN volume and leaves the total alone", () => {
     const state = {};
-    expect(pvt(state, NaN, 1000)).toBeNaN();
-    expect(pvt(state, 101, NaN)).toBeNaN();
-    // state still uninitialized -> next valid bar still seeds to 0.0, not treated as a "second" bar
-    expect(pvt(state, 102, 1000)).toBe(0);
+    pvt(state, 100, 1000);
+    pvt(state, 102, 1100); // cum=22
+    expect(pvt(state, 104, NaN)).toBeNaN();
+    expect(pvt(state, 106, 1040)).toBeCloseTo(22 + ((106 - 104) / 104) * 1040, 9);
   });
 
   it("accumulates change_pct * volume across bars", () => {
     const state = {};
-    pvt(state, 100, 1000); // seed: cum=0, prevClose=100
+    pvt(state, 100, 1000); // prevClose=100, na
     // c=102,v=1100 -> change_pct=(102-100)/100=0.02 -> cum += 0.02*1100 = 22
     expect(pvt(state, 102, 1100)).toBeCloseTo(22, 9);
   });
 
-  it("uses change_pct=0.0 when prevClose is exactly 0 (divide guard, no obv equivalent)", () => {
+  it("is NaN when the previous close is exactly 0 (division by zero is na) and leaves the total alone", () => {
     const state = {};
-    pvt(state, 0, 1000); // seed: cum=0, prevClose=0
-    // prevClose===0 -> change_pct forced to 0.0 regardless of the new close, cum stays 0
-    expect(pvt(state, 50, 1100)).toBe(0);
-    // next bar compares against the now-nonzero prevClose=50 normally
-    expect(pvt(state, 75, 1200)).toBeCloseTo(0 + ((75 - 50) / 50) * 1200, 9);
+    pvt(state, 100, 1000); // na
+    pvt(state, 0, 1000); // cum = -1000
+    expect(pvt(state, 50, 1100)).toBeNaN();
+    expect(pvt(state, 75, 1200)).toBeCloseTo(-1000 + ((75 - 50) / 50) * 1200, 9);
   });
 
-  it("compares against the pre-gap prevClose after a mid-stream NaN gap (state untouched during gap)", () => {
+  it("is NaN on a NaN close and on the bar after it (close[1] reads the na close)", () => {
     const state = {};
-    pvt(state, 100, 1000); // seed: cum=0, prevClose=100
-    pvt(state, 102, 1100); // cum=22, prevClose=102
-    expect(pvt(state, NaN, NaN)).toBeNaN(); // gap: state stays at prevClose=102, cum=22
-    // next valid bar compares to the pre-gap prevClose(102), not to the NaN bar
-    expect(pvt(state, 108, 1150)).toBeCloseTo(22 + ((108 - 102) / 102) * 1150, 9);
+    pvt(state, 100, 1000); // na
+    pvt(state, 102, 1100); // cum=22
+    expect(pvt(state, NaN, NaN)).toBeNaN();
+    expect(pvt(state, 108, 1150)).toBeNaN();
+    expect(pvt(state, 104, 1000)).toBeCloseTo(22 + ((104 - 108) / 108) * 1000, 9);
   });
 
-  it("matches the pine2py-verified sample10.json trace", () => {
+  it("matches the sample10.json trace (bar 0 na)", () => {
     const state = {};
     const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
     const volumes = [1000, 1100, 1200, 1150, 1300, 1250, 1400, 1350, 1500, 1450];
     const out = closes.map((c, i) => pvt(state, c, volumes[i]!));
-    const expected = [0, 10.891089108910892, 22.655794991263832, 11.490746447574512, 36.98094252600588, 49.00017329523665, 62.333506628569985, 49.59765757196621, 78.16908614339478, 91.72048801255366];
-    out.forEach((v, i) => expect(v).toBeCloseTo(expected[i]!, 9));
+    const expected = [NaN, 10.891089108910892, 22.655794991263832, 11.490746447574512, 36.98094252600588, 49.00017329523665, 62.333506628569985, 49.59765757196621, 78.16908614339478, 91.72048801255366];
+    expect(out[0]).toBeNaN();
+    out.slice(1).forEach((v, i) => expect(v).toBeCloseTo(expected[i + 1]!, 9));
   });
 });
 
