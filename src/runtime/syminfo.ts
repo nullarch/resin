@@ -6,6 +6,11 @@ export const MINMOVE = 1;
 export const PRICESCALE = 100;
 export const MINTICK = 0.01;
 
+// The chart symbol's quantity grid: syminfo.mincontract, "the smallest number of
+// contracts/shares/lots/units required to trade the current symbol" (rn.txt). The strategy engine
+// floors default-sized order quantities to it (see StrategyState.defaultOrderQty).
+export const MINCONTRACT = 1;
+
 // syminfo.ticker(symbol) — the one-argument call form, distinct from the bare
 // `syminfo.ticker` property, which folds to "" at compile time.
 //

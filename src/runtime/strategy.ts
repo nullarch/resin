@@ -1,4 +1,4 @@
-import { MINMOVE, MINTICK, PRICESCALE } from "./syminfo";
+import { MINCONTRACT, MINMOVE, MINTICK, PRICESCALE } from "./syminfo";
 
 // StrategyState: strategy.* 브로커 에뮬레이터 — 마켓 주문 entry/close, 롱/숏 양방향(C164 둘째
 // 슬라이스), 계좌 속성 netprofit/openprofit/equity/트레이드 카운터(C165 셋째 슬라이스),
@@ -68,6 +68,33 @@ function snapToTick(price: number, up: boolean): number {
   return ((up ? Math.ceil(ticks - 1e-4) : Math.floor(ticks + 1e-4)) * MINMOVE) / PRICESCALE;
 }
 
+// Lots per contract: the quantity grid step is 1 / LOTS_PER_CONTRACT = syminfo.mincontract.
+const LOTS_PER_CONTRACT = Math.max(1, Math.round(1 / MINCONTRACT));
+
+// Truncates a quantity toward zero onto the symbol's quantity grid (syminfo.mincontract). An order
+// sized from money (percent_of_equity/cash) buys whole lots only: 5000 cash at 100.28 is 49
+// contracts, not 49.86. This is
+// the oracle's `_size_floor` (tier 2, measured on TradingView; repros resin-harness
+// state/repros/mixed-seed-5.json and qtyType-seed-1.json). The oracle then re-materializes the
+// quantity on a 1e-8 unit grid, which leaves whole contracts unchanged, so it is omitted here.
+function floorToLots(qty: number): number {
+  const lots = Math.trunc(Math.abs(qty) * LOTS_PER_CONTRACT);
+  if (lots === 0) return 0;
+  return Math.sign(qty) * lots * (1 / LOTS_PER_CONTRACT);
+}
+
+// Rounds a sizing budget half-up to 10 significant decimal digits of its shortest decimal form,
+// before it is divided by the unit price. This is the oracle's `_sig10_money` (tier 2, measured on
+// TradingView): it decides the lot count whenever the budget sits within half a digit of a whole lot.
+function sig10(money: number): number {
+  if (!(money > 0) || money === Infinity) return money;
+  const [mantissa, exp] = money.toExponential().split("e");
+  const digits = mantissa!.replace(".", "");
+  if (digits.length <= 10) return money;
+  const kept = Number(digits.slice(0, 10)) + (digits[10]! >= "5" ? 1 : 0);
+  return Number(`${kept}e${Number(exp) - 9}`);
+}
+
 // pine2py wavealgo/strategy/engine.py의 주문 상태머신 구조(pending 주문 → 체결 → Position
 // 갱신, entry()의 반대 포지션 청산/pyramiding 가드, _fill_entry의 가중평균 추가 진입)를 시맨틱
 // 참조로 이식하되, **체결 시점은 pine2py를 따르지 않는다**: pine2py StrategyEngine은 market 주문을
@@ -105,18 +132,15 @@ export class StrategyState {
   defaultQty: number; // strategy(default_qty_value=N) — entry qty 생략 시 사용
   pyramiding: number; // strategy(pyramiding=N) — 같은 방향 추가 진입 최대 횟수(0은 1과 실질 동치 — 아래 processFills 참조)
   initialCapital: number; // strategy(initial_capital=N) — equity의 기저(TV/pine2py StrategyConfig 기본 100000)
-  // strategy(default_qty_type=strategy.percent_of_equity) 소비(C171 아홉째 슬라이스) — true면
-  // entry/order의 qty 생략 시 defaultQty를 계약 수가 아니라 **지분율 %**로 해석해 체결 시점에
-  // 수량을 산출한다(autoQtyAt — 가격이 확정되는 지점이라 콜타임 해석 불가). fixed(기본)는 기존
-  // 동작 그대로. pine2py는 상수(constants.py PERCENT_OF_EQUITY)만 있고 StrategyConfig에 필드
-  // 자체가 없어 소비 로직 전무 — 전부 TV 실측 미검증 가설(DIVERGENCES #74).
+  // strategy(default_qty_type=strategy.percent_of_equity): an entry/order that omits qty spends
+  // defaultQty percent of the equity (see defaultOrderQty).
   qtyIsPercent: boolean;
-  // strategy(default_qty_type=strategy.cash) 소비(C330) — true면 entry/order의 qty 생략 시
-  // defaultQty를 계약 수가 아니라 **통화 금액**으로 해석해 체결 시점에 금액/체결가로 계약 수를
-  // 산출한다(autoQtyCashAt — percent_of_equity와 달리 equity(잔고) 자체와는 무관한 절대 금액 축).
-  // qtyIsPercent와 상호 배타(codegen이 if/else-if로 하나만 true를 방출). 동일하게 pine2py 소비
-  // 로직 전무 — TV 실측 미검증 가설(DIVERGENCES #74).
+  // strategy(default_qty_type=strategy.cash): an entry/order that omits qty spends defaultQty units
+  // of the account currency. Exclusive with qtyIsPercent (codegen emits at most one of them).
   qtyIsCash: boolean;
+  // The close of the bar the script body is running on (set by Context.advance). A default-sized
+  // order is sized when it is placed, at this price.
+  barClose: number;
   // strategy(process_orders_on_close=true): the orders the script places on a bar get one more
   // fill attempt at that bar's close (processFillsAtClose), instead of waiting for the next open.
   processOrdersOnClose: boolean;
@@ -232,8 +256,8 @@ export class StrategyState {
   entryPending: boolean;
   entryOrderId: string;
   entryDirection: string; // "long" | "short" (entry()가 검증)
-  entryQty: number; // 계약 수 — entryQtyAuto가 true면 지분율 %(C171) 또는 통화 금액(C330), qtyIsCash로 분기(체결 시점에 계약 수로 환산)
-  entryQtyAuto: boolean; // percent_of_equity/cash 자동 수량 — qty 생략 + (qtyIsPercent || qtyIsCash)일 때만 true
+  entryQty: number; // contracts; when entryQtyAuto, the money budget frozen at placement instead
+  entryQtyAuto: boolean; // a default-sized limit/stop order: its size resolves at the fill price (see moneyQtyAt)
   entryLimit: number; // 지정가(NaN=없음) — limit/stop 둘 다 NaN이면 마켓 주문
   entryStop: number; // 역지정가(NaN=없음) — 둘 다 지정되면 stop-limit
   entryOrderComment: string; // strategy.entry(comment=, C173) — 이 pending 주문 자체의 comment(체결 시 새 포지션이면 entryComment로 승격)
@@ -312,8 +336,8 @@ export class StrategyState {
   orderPending: boolean;
   orderOrderId: string;
   orderDirection: string; // "long" | "short" (order()가 검증)
-  orderQty: number; // 계약 수 — orderQtyAuto가 true면 지분율 %(C171) 또는 통화 금액(C330), entry 슬롯과 동일 규약
-  orderQtyAuto: boolean; // percent_of_equity/cash 자동 수량(entry와 동일 규약)
+  orderQty: number; // as entryQty
+  orderQtyAuto: boolean; // as entryQtyAuto
   orderLimit: number; // 지정가(NaN=없음) — limit/stop 둘 다 NaN이면 마켓 주문
   orderStop: number; // 역지정가(NaN=없음)
   orderOrderComment: string; // strategy.order(comment=, C173)
@@ -400,6 +424,7 @@ export class StrategyState {
     this.initialCapital = 100000;
     this.qtyIsPercent = false;
     this.qtyIsCash = false;
+    this.barClose = NaN;
     this.processOrdersOnClose = false;
     this.slippage = 0;
     this.realizedPnl = 0;
@@ -915,32 +940,71 @@ export class StrategyState {
     return this.openTradeAtIndex("max_drawdown", index)?.maxDrawdown ?? NaN;
   }
 
-  // percent_of_equity 자동 수량(C171): 체결가 기준 equity의 percent%를 체결가로 나눈 계약 수 —
-  // qty = equity(체결가) * percent/100 / 체결가. TV는 산출 수량을 심볼 최소 수량 단위(qty step)로
-  // 내림하는 것으로 알려져 있으나 syminfo 미구현이라 소수 수량을 그대로 쓴다(trail_points의
-  // mintick=1 가정과 같은 축 — TV 실측 미검증 가설, DIVERGENCES #74). equity가 0 이하(파산)면
-  // 음수/0 수량이 나오며 호출부의 긍정형 가드가 주문을 미체결 소진시킨다.
-  private autoQtyAt(fillPrice: number, percent: number): number {
-    return (this.equity(fillPrice) * percent) / 100 / fillPrice;
+  // The money a default-sized order spends, fixed when the order is placed: percent_of_equity is
+  // that share of the equity marked at the bar's close, cash is the amount itself. strategies.txt
+  // ("Position sizing"): the default order size applies to "orders from strategy.entry() and
+  // strategy.order() calls that do not include a qty argument". The oracle freezes the budget at
+  // placement, also for a limit/stop order that fills bars later (tier 2, `_default_entry_budget`).
+  // Commission is not modeled, so the percent_of_equity budget carries no fee allowance yet.
+  private defaultBudget(): number {
+    return this.qtyIsPercent ? this.equity(this.barClose) * this.defaultQty * 0.01 : this.defaultQty;
   }
 
-  // strategy.cash 자동 수량(C330): 현금 금액을 체결가로 나눈 계약 수 — qty = 금액 / 체결가.
-  // percent_of_equity(위 autoQtyAt)와 달리 equity(잔고)와는 무관한 절대 금액 축(pine2py는
-  // 소비 로직이 없어 산식 자체가 TV 실측 미검증 가설, DIVERGENCES #74). 소수 수량 그대로(qty step
-  // 내림 없음 — syminfo 미구현, autoQtyAt (d)와 동일 축). 금액<=0이면 qty<=0이 나와 호출부의
-  // 긍정형 가드(`qty > 0`)가 주문을 미체결 소진시킨다(equity<=0 파산 분기와 동일 관례).
-  private autoQtyCashAt(fillPrice: number, cashAmount: number): number {
-    return cashAmount / fillPrice;
+  // Contracts a frozen money budget buys at `price`, floored to whole lots; NaN when nothing
+  // sizable comes out (a non-positive budget, or no price to divide it by).
+  private static moneyQtyAt(money: number, price: number): number {
+    const raw = sig10(money) / price;
+    return raw > 0 && raw < Infinity ? floorToLots(raw) : NaN;
   }
 
-  // strategy.default_entry_qty(price)(C429) — entry()/order()의 qty 생략 시 실제로 쓰일 기본
-  // 수량을 그대로 반환(pine2py에 대응 구현 없음, hand-verified "TV 미검증(가설)"). qty_type에
-  // 따라 percent_of_equity/cash는 위 두 헬퍼로 price 기준 환산(entry/order 체결 시점의 qtyAuto
-  // 해석과 완전히 동일한 3-way 분류), fixed는 price 인자와 무관하게 defaultQty 그대로.
+  // The quantity of an entry/order that omits qty, resolved when it is placed on this bar:
+  // - fixed: default_qty_value as stated. Like an explicit qty it is not snapped to the lot grid:
+  //   the oracle floors both, but resin cannot be told the chart symbol's mincontract, and flooring
+  //   a stated 0.01 onto the fixed grid of 1 would drop every order on a crypto chart (tier 1
+  //   suites/strategy/tv/bar_magnifier trades 0.01 BTC with mincontract 0.00001);
+  // - percent_of_equity/cash, market order: the budget divided by the price the order would fill at
+  //   now, this bar's close moved by slippage against it, floored to whole lots. The size stays
+  //   fixed until the fill; a later open does not re-size it;
+  // - percent_of_equity/cash, limit/stop order: the budget itself (auto), divided by the actual fill
+  //   price when the order fills (moneyQtyAt). Placing it still requires a size of at least one lot
+  //   at the price it would fill at now.
+  // This is the oracle's entry()/order() sizing (tier 2, probe-verified on TradingView: market
+  // entries are sized "from the mark-to-market equity and close of the placement bar", pushed by
+  // slippage; repros resin-harness state/repros/mixed-seed-5.json and qtyType-seed-1.json).
+  // Returns null when the order is dropped: nothing sizable, or zero lots with no opposite position
+  // for the order to close (`reverses`: an entry facing an opposite position still closes it).
+  private defaultOrderQty(
+    sign: number, limit: number, stop: number, reverses: boolean,
+  ): { qty: number; auto: boolean } | null {
+    const moneyBased = this.qtyIsPercent || this.qtyIsCash;
+    const priceBased = !Number.isNaN(limit) || !Number.isNaN(stop);
+    let qty: number;
+    let money = NaN;
+    if (moneyBased) {
+      money = this.defaultBudget();
+      const c = this.barClose;
+      const sizingPrice = !Number.isNaN(limit)
+        ? sign > 0 ? Math.min(limit, c) : Math.max(limit, c)
+        : !Number.isNaN(stop)
+          ? sign > 0 ? Math.max(stop, c) : Math.min(stop, c)
+          : this.slipped(c, sign);
+      qty = StrategyState.moneyQtyAt(money, sizingPrice);
+    } else {
+      qty = this.defaultQty > 0 ? this.defaultQty : NaN;
+    }
+    if (Number.isNaN(qty) || (qty === 0 && !reverses)) return null;
+    return moneyBased && priceBased ? { qty: money, auto: true } : { qty, auto: false };
+  }
+
+  // strategy.default_entry_qty(price): the size an entry/order that omits qty would get if it filled
+  // at `price`, snapped to the tick grid first and floored to whole lots (0 when it cannot be sized).
+  // The oracle's default_entry_qty, measured on TradingView (tier 2): "The price argument is SNAPPED
+  // to the tick grid before sizing ... The quantity is then FLOORED on the lot grid, never rounded".
+  // A fixed default_qty_value is returned as stated (see defaultOrderQty).
   defaultEntryQty(price: number): number {
-    if (this.qtyIsPercent) return this.autoQtyAt(price, this.defaultQty);
-    if (this.qtyIsCash) return this.autoQtyCashAt(price, this.defaultQty);
-    return this.defaultQty;
+    if (!this.qtyIsPercent && !this.qtyIsCash) return this.defaultQty;
+    const raw = sig10(this.defaultBudget()) / (Math.floor(price / MINTICK + 0.5) * MINTICK);
+    return Math.abs(raw) < Infinity ? floorToLots(raw) : 0;
   }
 
   // A closing fill of `qty` (Infinity = the whole position) at `fillPrice`. It consumes the open
@@ -1145,14 +1209,19 @@ export class StrategyState {
     // na 안전성: id가 na(null)이거나 qty가 na(NaN) 또는 0 이하면 주문을 내지 않는다(LIMITATIONS.md).
     // `!(qty > 0)`은 NaN에서도 안전한 긍정형 가드(MEMORY.md C91 — NaN 비교는 항상 false).
     if (id === null || id === undefined) return;
-    // percent_of_equity(C171)/cash(C330): qty 생략 시 defaultQty는 지분율 % 또는 통화 금액으로
-    // 해석 — 계약 수는 체결가가 확정되는 processFills에서 산출해야 하므로(둘 다 체결가의 함수)
-    // 여기서는 원시값을 그대로 싣고 auto 플래그만 세운다(정확한 산식은 qtyIsCash로 그 지점에서
-    // 분기). qty= 명시는 유형 무관 계약 수 그대로(TV: qty 인자는 default_qty_*를 덮어쓰는 계약 수
-    // — TV 실측 미검증 가설, DIVERGENCES #74). 가드는 세 해석 공통(>0 필수).
-    const qtyAuto = qty === undefined && (this.qtyIsPercent || this.qtyIsCash);
-    if (qty === undefined) qty = this.defaultQty; // 콜타임 해석 — configure는 프리앰블에서 이미 완료
-    if (!(qty > 0)) return;
+    // An explicit qty is a number of contracts whatever default_qty_type says; an omitted one is
+    // resolved now, on the placement bar (see defaultOrderQty).
+    let qtyAuto = false;
+    if (qty === undefined) {
+      const sign = direction === "long" ? 1 : -1;
+      const reverses = this.posSize !== 0 && this.posSize > 0 !== sign > 0;
+      const sized = this.defaultOrderQty(sign, limit ?? NaN, stop ?? NaN, reverses);
+      if (sized === null) return;
+      qty = sized.qty;
+      qtyAuto = sized.auto;
+    } else if (!(qty > 0)) {
+      return;
+    }
     const cmt = comment ?? "";
     if (this.entryPending) {
       // 같은 id 재호출 = 기존 주문 수정(TV: 동일 id 주문은 대체 — qty/direction/limit/stop 전부.
@@ -1202,9 +1271,17 @@ export class StrategyState {
       );
     }
     if (id === null || id === undefined) return;
-    const qtyAuto = qty === undefined && (this.qtyIsPercent || this.qtyIsCash); // percent_of_equity(C171)/cash(C330) — entry와 동일 규약
-    if (qty === undefined) qty = this.defaultQty;
-    if (!(qty > 0)) return; // NaN에서도 안전한 긍정형 가드(MEMORY.md C91)
+    // Sized as in entry(), except that a zero-lot order is always dropped: strategy.order() has no
+    // reversal leg to keep.
+    let qtyAuto = false;
+    if (qty === undefined) {
+      const sized = this.defaultOrderQty(direction === "long" ? 1 : -1, limit ?? NaN, stop ?? NaN, false);
+      if (sized === null) return;
+      qty = sized.qty;
+      qtyAuto = sized.auto;
+    } else if (!(qty > 0)) {
+      return; // NaN-safe positive guard
+    }
     const cmt = comment ?? "";
     if (this.orderPending) {
       if (this.orderOrderId === id) {
@@ -1650,17 +1727,14 @@ export class StrategyState {
     // order, one price); a limit entry, and a stop-limit (a limit order once its stop triggers),
     // keeps its price.
     if (Number.isNaN(this.entryLimit)) fillPrice = this.slipped(fillPrice, sign);
-    // percent_of_equity 자동 수량(C171)은 체결 시점에 해석: entryQty(지분율 %)를 equity(체결가
-    // 기준)로 계약 수 환산. 리버스 청산 **전에** 계산해도 동일하다 — equity(p)는 같은 가격 p의
-    // 청산 전/후 불변((p-avg)*posSize가 미실현→실현으로 자리만 옮기고 openProfit이 0이 됨).
-    // equity<=0(파산)이면 qty<=0 → 주문은 소진하되(마켓 소진 규칙과 동일 — 이월 없음) 리버스
-    // 청산 포함 아무 체결도 없다(긍정형 가드 C91, TV 실측 미검증 가설 DIVERGENCES #74).
-    let qty = this.entryQtyAuto
-      ? this.qtyIsCash
-        ? this.autoQtyCashAt(fillPrice, this.entryQty)
-        : this.autoQtyAt(fillPrice, this.entryQty)
-      : this.entryQty;
-    if (!(qty > 0)) return;
+    // A default-sized limit/stop entry divides its frozen budget by the actual fill price now (see
+    // defaultOrderQty). Nothing sizable consumes the order unfilled, reversal included. Zero lots
+    // still close an opposite position and open nothing (the oracle keeps the reversal leg).
+    let qty = this.entryQty;
+    if (this.entryQtyAuto) {
+      qty = StrategyState.moneyQtyAt(this.entryQty, fillPrice);
+      if (Number.isNaN(qty)) return;
+    }
     // strategy.risk.allow_entry_in(C309) — 금지된 방향의 entry는 아래 리버스-청산(있었다면)
     // 까지만 수행하고 신규 포지션/피라미딩 추가는 열지 않는다("position-closing order
     // instead of a reversal" — call-expr.ts strategy.risk.allow_entry_in 분기 주석의 TV 문서
@@ -1726,14 +1800,9 @@ export class StrategyState {
     this.orderPending = false;
     const sign = this.orderDirection === "long" ? 1 : -1;
     if (Number.isNaN(this.orderLimit)) orderFill = this.slipped(orderFill, sign); // as in fillPendingEntry
-    // percent_of_equity 자동 수량(C171) — entry 분기와 동일하게 체결 시점 해석. 상쇄(부분
-    // closeAt)도 같은 가격이라 equity 불변 — 해석을 상쇄 앞 한 곳에 두면 충분하다. equity<=0이면
-    // 주문 소진·미체결(상쇄 포함 전부 스킵 — entry 분기와 동일 가드, DIVERGENCES #74).
-    let qty = this.orderQtyAuto
-      ? this.qtyIsCash
-        ? this.autoQtyCashAt(orderFill, this.orderQty)
-        : this.autoQtyAt(orderFill, this.orderQty)
-      : this.orderQty;
+    // A default-sized limit/stop order resolves at its fill price, as in fillPendingEntry; zero lots
+    // consume it unfilled.
+    let qty = this.orderQtyAuto ? StrategyState.moneyQtyAt(this.orderQty, orderFill) : this.orderQty;
     if (!(qty > 0)) return;
     if (this.posSize !== 0 && this.posSize > 0 !== sign > 0) {
       // 반대 방향은 |posSize|와 상쇄 — 축소분을 실현 손익으로 기록(closeAt 부분 산식 재사용,

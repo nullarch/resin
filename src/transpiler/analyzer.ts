@@ -122,7 +122,7 @@ import {
   resolveUdtObjectType,
 } from "./analyzer/index-access";
 export { resolveUdtObjectType } from "./analyzer/index-access";
-import { MINMOVE, MINTICK, PRICESCALE } from "../runtime/syminfo";
+import { MINCONTRACT, MINMOVE, MINTICK, PRICESCALE } from "../runtime/syminfo";
 
 // enum 타입명 -> 멤버 이름 목록(선언 순서) + 멤버별 title(C136, 표시 전용 메타데이터). 값 자체는
 // codegen 표현이 필요 없다 — 멤버 접근(Direction.long)이 analyzer에서 바로 "EnumName.MemberName"
@@ -734,7 +734,7 @@ export const SYMINFO_NUMBER_PROPS: ReadonlyMap<string, number> = new Map([
   ["minmove", MINMOVE],
   ["pointvalue", 1.0],
   ["pricescale", PRICESCALE],
-  ["mincontract", 1],
+  ["mincontract", MINCONTRACT],
   ["shares_outstanding_float", 0],
   ["shares_outstanding_total", 0],
 ]);

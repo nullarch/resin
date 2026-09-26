@@ -4135,11 +4135,16 @@ describe("strategy.* E2E profit=/loss= (hand-verified: 익절/손절 포인트 �
   });
 });
 
-describe("StrategyState percent_of_equity 자동 수량 (C171 아홉째 슬라이스, hand-verified)", () => {
-  // pine2py에는 상수(constants.py PERCENT_OF_EQUITY)만 있고 StrategyConfig에 default_qty_type
-  // 필드 자체가 없어 소비 로직이 전무하다(C171 소스 확인) — 자동 수량 산식(equity 체결가 기준)/
-  // 체결 시점 해석/qty= 명시 우선/파산 가드 전부 TV 실측 미검증 가설(DIVERGENCES #74).
-  it("configure 4th arg sets qtyIsPercent (omitted → false — 기존 2/3-인자 호출 호환)", () => {
+describe("StrategyState default order sizing: percent_of_equity / cash", () => {
+  // An entry/order that omits qty is sized when it is placed: at the placement bar's close (moved
+  // by slippage against the order) and the equity marked at that close, floored to whole lots
+  // (syminfo.mincontract = 1). A limit/stop order freezes its money budget at placement and divides
+  // it by its actual fill price. Tier 2: the oracle's entry()/order() sizing, _size_floor and
+  // _resolve_deferred_qty, probe-verified on TradingView; repros resin-harness
+  // state/repros/mixed-seed-5.json (cash 5000 at 100.28 → 49, not 49.86) and qtyType-seed-1.json.
+  // These tests previously asserted fill-time sizing (equity and price at the fill, fractional
+  // quantities); that evidence contradicts it.
+  it("configure 4th arg sets qtyIsPercent (omitted → false, older 2/3-arg calls stay valid)", () => {
     const st = new StrategyState();
     expect(st.qtyIsPercent).toBe(false);
     st.configure(50, 1, 1000, true);
@@ -4152,19 +4157,39 @@ describe("StrategyState percent_of_equity 자동 수량 (C171 아홉째 슬라�
     expect(st3.qtyIsPercent).toBe(false);
   });
 
-  it("entry with omitted qty fills percent-of-equity contracts (1000 * 50% / 10 = 50)", () => {
+  it("entry with omitted qty is sized at the placement close (1000 * 50% / 10 = 50) and keeps it at the fill", () => {
     const st = new StrategyState();
     st.configure(50, 1, 1000, true);
+    st.barClose = 10;
     st.entry("L", "long");
-    expect(st.posSize).toBe(0); // 콜타임에는 미체결(수량도 미해석)
-    st.processFills(10);
+    expect(st.posSize).toBe(0); // not filled on the placement bar
+    st.processFills(12); // the next open does not re-size it
     expect(st.posSize).toBe(50);
-    expect(st.posAvgPrice).toBe(10);
+    expect(st.posAvgPrice).toBe(12);
+  });
+
+  it("floors the quantity to whole contracts (1000 * 50% / 11 = 45.45 → 45)", () => {
+    const st = new StrategyState();
+    st.configure(50, 1, 1000, true);
+    st.barClose = 11;
+    st.entry("L", "long");
+    st.processFills(10);
+    expect(st.posSize).toBe(45);
+  });
+
+  it("rounds the budget to 10 significant digits before dividing (322.99999999999994 / 17 → 19, not 18)", () => {
+    const st = new StrategyState();
+    st.configure(32.3, 1, 1000, true); // 1000 * 32.3 * 0.01 = 322.99999999999994
+    st.barClose = 17;
+    st.entry("L", "long");
+    st.processFills(17);
+    expect(st.posSize).toBe(19);
   });
 
   it("default_qty_value defaults to 1 → 1% of equity when type is percent", () => {
     const st = new StrategyState();
     st.configure(1, 1, 1000, true);
+    st.barClose = 10;
     st.entry("L", "long");
     st.processFills(10);
     expect(st.posSize).toBe(1); // 1000 * 1% / 10
@@ -4173,119 +4198,131 @@ describe("StrategyState percent_of_equity 자동 수량 (C171 아홉째 슬라�
   it("explicit qty= overrides percent mode with fixed contracts", () => {
     const st = new StrategyState();
     st.configure(50, 1, 1000, true);
+    st.barClose = 10;
     st.entry("L", "long", 2);
     st.processFills(10);
     expect(st.posSize).toBe(2);
   });
 
-  it("resolves qty at FILL time — realized profit before the fill grows the auto qty", () => {
+  it("uses the equity at the placement close: realized profit counts, the fill price does not", () => {
     const st = new StrategyState();
     st.configure(50, 1, 1000, true);
     st.entry("A", "long", 10);
-    st.processFills(10); // 롱 10@10 (고정 수량)
+    st.processFills(10); // long 10@10 (explicit qty)
     st.close("A");
-    st.processFills(20); // 청산 @20 — profit=(20-10)*10=100, equity=1100
+    st.processFills(20); // closed @20: profit (20-10)*10 = 100, equity 1100
     expect(st.realizedPnl).toBe(100);
+    st.barClose = 11;
     st.entry("B", "long");
-    st.processFills(11); // equity(11)=1100 → qty=1100*0.5/11=50
+    st.processFills(22); // 1100 * 50% / 11 = 50, filled @22
     expect(st.posSize).toBe(50);
-    expect(st.posAvgPrice).toBe(11);
+    expect(st.posAvgPrice).toBe(22);
   });
 
-  it("reverse entry resolves qty with equity including the just-realized profit", () => {
+  it("a reversal is sized from the equity marked at the placement close, open profit included", () => {
     const st = new StrategyState();
     st.configure(100, 1, 1000, true);
+    st.barClose = 10;
     st.entry("L", "long");
-    st.processFills(10); // equity=1000 → 롱 100@10
+    st.processFills(10); // long 100@10
     expect(st.posSize).toBe(100);
-    st.entry("S", "short");
-    st.processFills(12); // 리버스 — 청산 (12-10)*100=200 실현, equity(12)=1200 → 숏 100@12
-    expect(st.realizedPnl).toBe(200);
-    expect(st.posSize).toBe(-100); // 1200*100%/12 = 100
-    expect(st.posAvgPrice).toBe(12);
+    st.barClose = 12;
+    st.entry("S", "short"); // equity(12) = 1000 + 200 = 1200 → 1200 / 12 = 100
+    st.processFills(15); // the long closes @15 (+500), the short opens 100@15
+    expect(st.realizedPnl).toBe(500);
+    expect(st.posSize).toBe(-100);
+    expect(st.posAvgPrice).toBe(15);
   });
 
-  it("pyramiding add-on resolves qty with equity including unrealized open profit", () => {
+  it("pyramiding add-on is sized with the open profit marked at the placement close", () => {
     const st = new StrategyState();
     st.configure(50, 2, 1000, true);
+    st.barClose = 10;
     st.entry("A", "long");
-    st.processFills(10); // equity=1000 → 롱 50@10 (count=1)
+    st.processFills(10); // long 50@10
     expect(st.posSize).toBe(50);
-    st.entry("A", "long");
-    st.processFills(20); // equity(20)=1000+(20-10)*50=1500 → 추가 37.5@20 (count=2)
-    expect(st.posSize).toBe(87.5); // 50 + 1500*0.5/20
+    st.barClose = 20;
+    st.entry("A", "long"); // equity(20) = 1000 + 500 = 1500 → 750 / 20 = 37.5 → 37
+    st.processFills(21);
+    expect(st.posSize).toBe(87);
     expect(st.entryCount).toBe(2);
   });
 
-  it("consumes (does not fill or carry) an auto-qty order when equity <= 0", () => {
+  it("drops the order at placement when equity <= 0 (nothing to size)", () => {
     const st = new StrategyState();
     st.configure(100, 1, 1000, true);
-    st.realizedPnl = -1000; // 파산 시나리오 주입 — equity(any)=0
+    st.realizedPnl = -1000; // equity(any) = 0
+    st.barClose = 10;
     st.entry("L", "long");
+    expect(st.entryPending).toBe(false);
     st.processFills(10);
-    expect(st.posSize).toBe(0);
-    expect(st.entryPending).toBe(false); // 마켓 소진 규칙과 동일 — 이월 없음
-    st.processFills(5);
     expect(st.posSize).toBe(0);
   });
 
-  it("limit entry carried over resolves auto qty at the fill bar, not the call bar", () => {
+  it("limit entry freezes the budget at placement and divides it by the fill price", () => {
     const st = new StrategyState();
     st.configure(50, 1, 1000, true);
-    st.entry("L", "long", undefined, 10); // limit 10
-    st.processFills(12, 13, 11); // low 11 > 10 — 미체결 이월
+    st.barClose = 12;
+    st.entry("L", "long", undefined, 10); // limit 10, budget 1000 * 50% = 500 frozen now
+    st.realizedPnl = 500; // equity changes before the fill do not re-size it
+    st.processFills(12, 13, 11); // low 11 > 10 — carried
     expect(st.posSize).toBe(0);
     expect(st.entryPending).toBe(true);
-    st.processFills(10.5, 11, 9.5); // low <= 10 → limit 10 체결: qty=1000*0.5/10=50
+    st.processFills(10.5, 11, 9.5); // limit 10 fills: 500 / 10 = 50
     expect(st.posSize).toBe(50);
     expect(st.posAvgPrice).toBe(10);
   });
 
-  it("same-id re-entry switches between fixed and auto qty (마지막 호출 기준)", () => {
+  it("same-id re-entry switches between fixed and default qty (the last call wins)", () => {
     const st = new StrategyState();
     st.configure(50, 1, 1000, true);
+    st.barClose = 10;
     st.entry("L", "long", 5);
-    st.entry("L", "long"); // 같은 id 수정 — qty 생략이라 auto로 전환
+    st.entry("L", "long"); // same id, qty omitted → default sizing
     st.processFills(10);
-    expect(st.posSize).toBe(50); // 5가 아니라 1000*0.5/10
+    expect(st.posSize).toBe(50); // 1000 * 50% / 10, not 5
     const st2 = new StrategyState();
     st2.configure(50, 1, 1000, true);
+    st2.barClose = 10;
     st2.entry("L", "long");
-    st2.entry("L", "long", 5); // 반대 방향 전환 — auto → 고정 5
+    st2.entry("L", "long", 5); // back to a fixed 5
     st2.processFills(10);
     expect(st2.posSize).toBe(5);
   });
 
-  it("order() with omitted qty fills percent-of-equity contracts", () => {
+  it("order() with omitted qty is sized at the placement close", () => {
     const st = new StrategyState();
     st.configure(50, 1, 1000, true);
+    st.barClose = 10;
     st.order("O", "long");
-    st.processFills(10);
+    st.processFills(11);
     expect(st.posSize).toBe(50);
   });
 
-  it("order() opposite-direction auto qty nets against the position (상쇄 후 잔여 반전)", () => {
+  it("order() opposite-direction default qty nets against the position (the rest reverses)", () => {
     const st = new StrategyState();
     st.configure(50, 1, 1000, true);
     st.order("A", "long", 10);
-    st.processFills(10); // 롱 10@10 (고정)
-    st.order("B", "short");
-    st.processFills(10); // equity(10)=1000 → qty=50: 10 상쇄(profit 0) + 잔여 40 숏
+    st.processFills(10); // long 10@10 (explicit)
+    st.barClose = 10;
+    st.order("B", "short"); // equity(10) = 1000 → 500 / 10 = 50
+    st.processFills(10); // 10 netted (profit 0), 40 short
     expect(st.posSize).toBe(-40);
     expect(st.posAvgPrice).toBe(10);
   });
 
-  it("order() auto qty is consumed without fill when equity <= 0", () => {
+  it("order() drops a default-sized order when equity <= 0", () => {
     const st = new StrategyState();
     st.configure(100, 1, 1000, true);
     st.realizedPnl = -1000;
+    st.barClose = 10;
     st.order("O", "long");
+    expect(st.orderPending).toBe(false);
     st.processFills(10);
     expect(st.posSize).toBe(0);
-    expect(st.orderPending).toBe(false);
   });
 
-  it("fixed type (qtyIsPercent=false) keeps defaultQty as plain contracts (기존 동작 불변)", () => {
+  it("fixed type (qtyIsPercent=false) keeps defaultQty as plain contracts", () => {
     const st = new StrategyState();
     st.configure(5, 1, 1000, false);
     st.entry("L", "long");
@@ -4293,48 +4330,98 @@ describe("StrategyState percent_of_equity 자동 수량 (C171 아홉째 슬라�
     expect(st.posSize).toBe(5);
   });
 
-  it("cash type (qtyIsCash=true): entry() with omitted qty fills cashAmount/fillPrice contracts (C330)", () => {
+  it("fixed type keeps a fractional default_qty_value as stated, like an explicit qty (2.5)", () => {
+    // Not snapped to resin's fixed grid of 1: tier 1 suites/strategy/tv/bar_magnifier states 0.01 BTC
+    // on a symbol whose mincontract is 0.00001 (see StrategyState.defaultOrderQty).
+    const st = new StrategyState();
+    st.configure(2.5, 1);
+    st.entry("L", "long");
+    st.processFills(10);
+    expect(st.posSize).toBe(2.5);
+  });
+
+  it("cash type (qtyIsCash=true): entry() with omitted qty buys cash / placement close contracts (C330)", () => {
     const st = new StrategyState();
     st.configure(500, 1, 1000, false, true);
+    st.barClose = 10;
     st.entry("L", "long");
-    st.processFills(10); // qty = 500/10 = 50 (equity 무관 — percent_of_equity와 대조)
+    st.processFills(11); // 500 / 10 = 50, filled @11
     expect(st.posSize).toBe(50);
   });
 
-  it("cash type: qty= explicit overrides the cash auto-sizing (유형 무관 계약 수 그대로)", () => {
+  it("cash type: qty= explicit overrides the cash sizing", () => {
     const st = new StrategyState();
     st.configure(500, 1, 1000, false, true);
+    st.barClose = 10;
     st.entry("L", "long", 7);
     st.processFills(10);
     expect(st.posSize).toBe(7);
   });
 
-  it("cash type: order() with omitted qty fills cashAmount/fillPrice contracts", () => {
+  it("cash type: order() with omitted qty buys cash / placement close contracts", () => {
     const st = new StrategyState();
     st.configure(500, 1, 1000, false, true);
+    st.barClose = 10;
     st.order("O", "long");
     st.processFills(10);
     expect(st.posSize).toBe(50);
   });
 
-  it("cash type: pyramiding add-on re-derives qty at the new fill price (equity 무관 — 매 체결 고정 500/가격)", () => {
+  it("cash type: pyramiding add-on is sized at its own placement close (equity-independent)", () => {
     const st = new StrategyState();
     st.configure(500, 2, 1000, false, true);
+    st.barClose = 10;
     st.entry("L", "long");
-    st.processFills(10); // qty=50, avg=10, posSize=50
-    st.entry("L", "long");
-    st.processFills(20); // qty=25, avg=(10*50+20*25)/75, posSize=75
+    st.processFills(10); // 50@10
+    st.barClose = 20;
+    st.entry("L", "long"); // 500 / 20 = 25
+    st.processFills(21); // 25@21
     expect(st.posSize).toBe(75);
-    expect(st.posAvgPrice).toBeCloseTo((10 * 50 + 20 * 25) / 75, 9);
+    expect(st.posAvgPrice).toBeCloseTo((10 * 50 + 21 * 25) / 75, 9);
   });
 
-  it("cash type: non-positive cash amount is consumed without fill (긍정형 가드, C91)", () => {
+  it("cash type: a non-positive cash amount drops the order at placement", () => {
     const st = new StrategyState();
     st.configure(-100, 1, 1000, false, true);
+    st.barClose = 10;
     st.entry("L", "long");
-    st.processFills(10); // qty = -100/10 = -10 <= 0
-    expect(st.posSize).toBe(0);
     expect(st.entryPending).toBe(false);
+    st.processFills(10);
+    expect(st.posSize).toBe(0);
+  });
+
+  it("slippage moves the market sizing price against the order", () => {
+    const st = new StrategyState();
+    st.configure(500, 1, 1000, false, true, false, 10); // 10 ticks = 0.1
+    st.barClose = 10;
+    st.entry("L", "long"); // 500 / 10.1 = 49.5 → 49
+    st.processFills(10);
+    expect(st.posSize).toBe(49);
+    const st2 = new StrategyState();
+    st2.configure(500, 1, 1000, false, true, false, 10);
+    st2.barClose = 10;
+    st2.entry("S", "short"); // 500 / 9.9 = 50.5 → 50
+    st2.processFills(10);
+    expect(st2.posSize).toBe(-50);
+  });
+
+  it("zero lots still reverse: the entry closes the opposite position and opens nothing", () => {
+    const st = new StrategyState();
+    st.configure(5, 1, 1000, false, true); // cash 5 buys 0.5 contract at 10 → 0 lots
+    st.entry("L", "long", 1);
+    st.processFills(10); // long 1@10
+    st.barClose = 10;
+    st.entry("S", "short");
+    expect(st.entryPending).toBe(true);
+    st.processFills(12);
+    expect(st.posSize).toBe(0);
+    expect(st.realizedPnl).toBe(2);
+    expect(st.closedTrades).toBe(1);
+    const flat = new StrategyState();
+    flat.configure(5, 1, 1000, false, true);
+    flat.barClose = 10;
+    flat.entry("L", "long"); // nothing to close: dropped
+    expect(flat.entryPending).toBe(false);
   });
 });
 
@@ -4435,12 +4522,15 @@ describe("strategy() default_qty_type=cash codegen emission (C330)", () => {
 });
 
 describe("strategy.* E2E 아홉째 슬라이스 (hand-verified: percent_of_equity 복리 수량)", () => {
-  // 손 계산 시나리오 (default_qty_value=50%, initial_capital=1000 — 두 번째 진입이 커진 equity 반영):
-  //   bar0: O=10 C=11 양봉&flat → entry 큐잉. (ps=0, np=0)
-  //   bar1: O=10 → 체결: equity(10)=1000 → qty=1000*50%/10=50. 롱 50@10. (ps=50, np=0)
-  //   bar2: O=12 C=11 음봉&ps>0 → close 큐잉. (ps=50, np=0)
-  //   bar3: O=14 → 청산 @14: profit=(14-10)*50=200. 양봉&flat → entry 큐잉. (ps=0, np=200)
-  //   bar4: O=10 → 체결: equity(10)=1200 → qty=1200*50%/10=60. 롱 60@10. (ps=60, np=200)
+  // Worked by hand (default_qty_value=50%, initial_capital=1000). An entry is sized at its placement
+  // close from the equity there, floored to whole contracts (tier 2 — resin-harness
+  // state/repros/qtyType-seed-1.json; this test used to size at the fill-bar open):
+  //   bar0: O=10 C=11 up & flat → entry placed: 1000*50%/11 = 45.45 → 45. (ps=0, np=0)
+  //   bar1: O=10 → fills long 45@10. (ps=45, np=0)
+  //   bar2: O=12 C=11 down & ps>0 → close placed. (ps=45, np=0)
+  //   bar3: O=14 → closed @14: profit=(14-10)*45=180. C=15 up & flat → entry placed:
+  //         1180*50%/15 = 39.33 → 39. (ps=0, np=180)
+  //   bar4: O=10 → fills long 39@10. (ps=39, np=180)
   const data: OHLCVData = {
     open: [10, 10, 12, 14, 10],
     high: [12, 13, 13, 16, 11],
@@ -4460,14 +4550,14 @@ describe("strategy.* E2E 아홉째 슬라이스 (hand-verified: percent_of_equit
     "__obs_np := strategy.netprofit",
   ].join("\n");
 
-  it("sizes each entry as 50% of fill-time equity (50 → 60 after +200 profit)", () => {
+  it("sizes each entry as 50% of the equity at its placement close (45, then 39 after +180 profit)", () => {
     const result = runPipeline(src, data);
-    expect(result.bars.map((b) => b["var:__obs_ps"])).toEqual([0, 50, 50, 0, 60]);
+    expect(result.bars.map((b) => b["var:__obs_ps"])).toEqual([0, 45, 45, 0, 39]);
   });
 
-  it("realizes profit from the auto-sized position ((14-10)*50 = 200)", () => {
+  it("realizes profit from the default-sized position ((14-10)*45 = 180)", () => {
     const result = runPipeline(src, data);
-    expect(result.bars.map((b) => b["var:__obs_np"])).toEqual([0, 0, 0, 200, 200]);
+    expect(result.bars.map((b) => b["var:__obs_np"])).toEqual([0, 0, 0, 180, 180]);
   });
 
   it("explicit qty= keeps fixed contracts under percent mode (같은 데이터, qty=3)", () => {
@@ -4479,13 +4569,15 @@ describe("strategy.* E2E 아홉째 슬라이스 (hand-verified: percent_of_equit
 });
 
 describe("strategy.* E2E — default_qty_type=cash (hand-verified, C330)", () => {
-  // 손 계산 시나리오 (default_qty_value=500, initial_capital=1000 — percent_of_equity와 동일
-  // 데이터로 대조: cash는 equity 무관 고정 금액이라 두 진입 모두 500/체결가로 동일 계약 수).
-  //   bar0: O=10 C=11 양봉&flat → entry 큐잉. (ps=0, np=0)
-  //   bar1: O=10 → 체결: qty=500/10=50. 롱 50@10. (ps=50, np=0)
-  //   bar2: O=12 C=11 음봉&ps>0 → close 큐잉. (ps=50, np=0)
-  //   bar3: O=14 → 청산 @14: profit=(14-10)*50=200. 양봉&flat → entry 큐잉. (ps=0, np=200)
-  //   bar4: O=10 → 체결: qty=500/10=50(equity 1200이어도 불변 — percent_of_equity의 60과 대조). (ps=50, np=200)
+  // Worked by hand (default_qty_value=500, initial_capital=1000; same data as percent_of_equity).
+  // Cash ignores the equity: each entry buys 500 / its placement close, floored to whole contracts
+  // (tier 2 — resin-harness state/repros/mixed-seed-5.json; this test used to size at the fill open):
+  //   bar0: O=10 C=11 up & flat → entry placed: 500/11 = 45.45 → 45. (ps=0, np=0)
+  //   bar1: O=10 → fills long 45@10. (ps=45, np=0)
+  //   bar2: O=12 C=11 down & ps>0 → close placed. (ps=45, np=0)
+  //   bar3: O=14 → closed @14: profit=(14-10)*45=180. C=15 up & flat → entry placed:
+  //         500/15 = 33.33 → 33 (the 1180 equity does not matter). (ps=0, np=180)
+  //   bar4: O=10 → fills long 33@10. (ps=33, np=180)
   const data: OHLCVData = {
     open: [10, 10, 12, 14, 10],
     high: [12, 13, 13, 16, 11],
@@ -4505,14 +4597,14 @@ describe("strategy.* E2E — default_qty_type=cash (hand-verified, C330)", () =>
     "__obs_np := strategy.netprofit",
   ].join("\n");
 
-  it("sizes each entry as cashAmount/fillPrice regardless of accumulated profit (50 → 50, not 60)", () => {
+  it("sizes each entry as cash / its placement close regardless of accumulated profit (45, then 33)", () => {
     const result = runPipeline(src, data);
-    expect(result.bars.map((b) => b["var:__obs_ps"])).toEqual([0, 50, 50, 0, 50]);
+    expect(result.bars.map((b) => b["var:__obs_ps"])).toEqual([0, 45, 45, 0, 33]);
   });
 
-  it("realizes profit from the cash-sized position ((14-10)*50 = 200)", () => {
+  it("realizes profit from the cash-sized position ((14-10)*45 = 180)", () => {
     const result = runPipeline(src, data);
-    expect(result.bars.map((b) => b["var:__obs_np"])).toEqual([0, 0, 0, 200, 200]);
+    expect(result.bars.map((b) => b["var:__obs_np"])).toEqual([0, 0, 0, 180, 180]);
   });
 
   it("explicit qty= keeps fixed contracts under cash mode (같은 데이터, qty=3)", () => {
@@ -7510,9 +7602,10 @@ describe("strategy.* E2E comment_trailing= (hand-verified, C673: 전체 파이�
 // 달리 이 콜은 **값을 반환**해 표현식 위치에서 쓰인다(wild 실사용: `qty = strategy.default_entry_qty(close)`
 // / `qty1 * strategy.default_entry_qty(close) / qtySum`, 6de0a0bcfa4d.pine/79126db3910e.pine) —
 // hand-verified 신규 설계, "TV 미검증(가설)": entry()/order()의 qty 생략 시 실제로 쓰일 기본 수량을
-// 그대로 반환한다고 알려져 있다. qty_type이 percent_of_equity/cash면 price 인자로 환산(기존
-// autoQtyAt/autoQtyCashAt 재사용 — entry/order 체결 시점의 qtyAuto 해석과 완전히 동일한 3-way
-// 분류), fixed(기본)면 price 인자와 무관하게 defaultQty 그대로.
+// 그대로 반환한다고 알려져 있다.
+// Now tier 2: the oracle's default_entry_qty, measured on TradingView — the budget (equity marked at
+// the bar's close for percent_of_equity, the amount for cash) over the tick-snapped price, floored to
+// whole lots; a fixed default_qty_value is returned as stated (see StrategyState.defaultOrderQty).
 describe("StrategyState.defaultEntryQty (C429, hand-verified)", () => {
   it("fixed (default qty_type): returns defaultQty unchanged regardless of price", () => {
     const st = new StrategyState();
@@ -7521,7 +7614,15 @@ describe("StrategyState.defaultEntryQty (C429, hand-verified)", () => {
     expect(st.defaultEntryQty(999)).toBe(7);
   });
 
-  it("percent_of_equity: converts equity(price)*percent/100/price, matching autoQtyAt", () => {
+  it("floors to whole contracts and snaps the price to the tick grid first", () => {
+    const st = new StrategyState();
+    st.configure(500, 1, 1000, false, true);
+    expect(st.defaultEntryQty(11)).toBe(45); // 500 / 11 = 45.45
+    expect(st.defaultEntryQty(10.004)).toBe(50); // sized at 10.00
+    expect(st.defaultEntryQty(NaN)).toBe(0);
+  });
+
+  it("percent_of_equity: converts equity*percent/100/price", () => {
     const st = new StrategyState();
     st.configure(50, 1, 1000, true, false); // defaultQty=50(%), initialCapital=1000, qtyIsPercent=true
     expect(st.defaultEntryQty(10)).toBeCloseTo((1000 * 50) / 100 / 10, 10); // = 50
@@ -7537,7 +7638,7 @@ describe("StrategyState.defaultEntryQty (C429, hand-verified)", () => {
     expect(st.defaultEntryQty(10)).toBeCloseTo((1020 * 50) / 100 / 10, 10); // equity(10)=1000+20=1020 -> qty=51
   });
 
-  it("cash: converts cashAmount/price, matching autoQtyCashAt", () => {
+  it("cash: converts cashAmount/price", () => {
     const st = new StrategyState();
     st.configure(500, 1, 1000, false, true); // defaultQty=500(현금), qtyIsCash=true
     expect(st.defaultEntryQty(10)).toBe(50); // 500/10

@@ -6728,7 +6728,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     // 전수 grep 결과 대응 구현이 전혀 없어(engine.py에 default_entry_qty 자체가 없음) hand-verified
     // 신규 설계, "TV 미검증(가설)": entry()/order()의 qty 생략 시 실제로 쓰일 기본 수량을 그대로
     // 반환한다고 알려져 있다 — qty_type(percent_of_equity/cash)이면 price 인자로 환산(기존
-    // runtime/strategy.ts autoQtyAt/autoQtyCashAt, entry/order의 qtyAuto 해석과 동일 산식 재사용),
+    // runtime/strategy.ts StrategyState.defaultEntryQty — the same sizing as an entry/order without qty),
     // fixed(기본)면 price 인자와 무관하게 defaultQty 그대로.
     // C771 — strategy() 선행 선언 불필요(analyzer.ts strategy.* 단일 레벨 분기 주석 참조).
     if (expr.args.length !== 1 || expr.kwargs.length > 0) {

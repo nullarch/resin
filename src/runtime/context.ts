@@ -317,6 +317,8 @@ export class Context {
     // runs before barFn(), so this bar's script code sees the post-fill
     // position.
     this.strategy.processFills(this.open.get(0), this.high.get(0), this.low.get(0), this.idx, this.barTimeMs);
+    // The close the script body runs at: orders it places without a qty are sized at this price.
+    this.strategy.barClose = this.close.get(0);
     // Updating drawdown here, before barFn, gives the same answer as updating
     // it afterwards: this is a batch replay, so the bar's close is already
     // fixed and equals whatever the script will read later.
