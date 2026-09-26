@@ -6271,6 +6271,19 @@ function inferFuncBodyReturnUdtType(
 // 분기 안에서 새로 선언된 '=' 로컬을 그 분기의 마지막 문장으로 반환하는 경우(현재 corpus 근거 0건)는
 // resolveUdtObjectType이 그 로컬을 못 찾아 조용히 null(안전한 false negative, 오탐 아님)로 빠진다 —
 // corpus에 그런 사례가 나오면 그때 실제 분기 스코프 전달로 확장할 것.
+// The UDT type a declaration (`x = v`, `var x = v`, func-local `var x = v`) takes from its
+// initial value: a value that makes an instance (isUdtConstructorCall), or a bare variable that
+// already holds one. A UDT is a reference type, so `a = p` copies the reference, not the object:
+// `a` is the instance `p` is (language_type-system.txt "Value vs. reference types": "Assigning the
+// reference stored by one variable to another does not create a new copy of an object. Instead,
+// both variables refer to the same object in memory."; lang.udt alias_and_copy, repro
+// state/repros/lang.udt-seed-3.json in the harness).
+function udtInitValueType(value: Expr, prog: AnalyzedProgram, scope: LexScope): string | null {
+  const made = isUdtConstructorCall(value, prog, scope);
+  if (made !== null || value.kind !== "Identifier") return made;
+  return resolveUdtObjectType(value, prog, scope) ?? null;
+}
+
 function inferReturnStmtUdtType(stmt: Stmt, prog: AnalyzedProgram, scope: LexScope): string | null {
   if (stmt.kind === "ExprStmt") {
     const expr = stmt.expr;
@@ -6605,7 +6618,7 @@ function analyzeVarDecl(stmt: VarDecl, prog: AnalyzedProgram, scope: LexScope): 
           stmt.typeHint !== null && (prog.udtTypes.has(stmt.typeHint) || stmt.typeHint === CHART_POINT_FIELD_TYPE)
             ? stmt.typeHint
             : null;
-        const inferredUdtType = isUdtConstructorCall(stmt.value, prog, scope);
+        const inferredUdtType = udtInitValueType(stmt.value, prog, scope);
         if (explicitUdtType !== null && inferredUdtType !== null && explicitUdtType !== inferredUdtType) {
           prog.errors.push(
             `declared type '${explicitUdtType}' differs from constructor type '${inferredUdtType}': '${stmt.name}' (L${stmt.line}:${stmt.col})`,
@@ -6711,7 +6724,7 @@ function analyzeVarDecl(stmt: VarDecl, prog: AnalyzedProgram, scope: LexScope): 
       stmt.typeHint !== null && (prog.udtTypes.has(stmt.typeHint) || stmt.typeHint === CHART_POINT_FIELD_TYPE)
         ? stmt.typeHint
         : null;
-    const inferredUdtType = isUdtConstructorCall(stmt.value, prog, scope);
+    const inferredUdtType = udtInitValueType(stmt.value, prog, scope);
     if (explicitUdtType !== null && inferredUdtType !== null && explicitUdtType !== inferredUdtType) {
       prog.errors.push(
         `declared type '${explicitUdtType}' differs from constructor type '${inferredUdtType}': '${stmt.name}' (L${stmt.line}:${stmt.col})`,
@@ -7015,7 +7028,7 @@ function analyzeAssignment(stmt: Assignment, prog: AnalyzedProgram, scope: LexSc
       stmt.typeHint !== null && (prog.udtTypes.has(stmt.typeHint) || stmt.typeHint === CHART_POINT_FIELD_TYPE)
         ? stmt.typeHint
         : null;
-    const constructorUdtType = isUdtConstructorCall(stmt.value, prog, scope);
+    const constructorUdtType = udtInitValueType(stmt.value, prog, scope);
     if (explicitUdtType !== null && constructorUdtType !== null && explicitUdtType !== constructorUdtType) {
       prog.errors.push(
         `declared type '${explicitUdtType}' differs from constructor type '${constructorUdtType}': '${stmt.name}' (L${stmt.line}:${stmt.col})`,
