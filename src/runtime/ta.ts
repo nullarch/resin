@@ -6,10 +6,12 @@
 import { runtimeError } from "./log";
 
 export interface SmaState {
-  buffer?: number[]; // ring of the last `length` non-na values
+  buffer?: number[]; // ring of the last `length` non-na values, raw
+  entries?: number[]; // the same slots' realized entries: what an eviction subtracts
   writeIdx?: number;
   count?: number; // non-na values stored so far, capped at the length
   sum?: number;
+  comp?: number; // the compensation register
 }
 
 // The rolling sum ta.sma and math.sum share: the sum of the last `length` NON-na values of the
@@ -22,6 +24,23 @@ export interface SmaState {
 // the standing sum, "MEASURED, probe sumlen4"). So an na bar neither enters the ring nor evicts
 // from it, and a warm-up counts non-na values, not bars (math.sum used to return the partial sum
 // of the first bars, ta.sma used to poison its whole window for `length` bars after one na).
+//
+// The arithmetic is TradingView's, not a plain `sum - oldest + value`: a rolling COMPENSATED sum
+// that each bar evicts the entry stored `length` values ago and adds the new value in one fused
+// two-round step (y1 = -d0 - c; t = s + y1; e1 = (t - s) - y1; y2 = value - e1; s = t + y2;
+// c = (s - t) - y2), storing the realized y2 as the slot's entry, so a later eviction subtracts
+// exactly what was added. On a bar where adding the compensation's magnitude to the value rounds
+// down (the fixed-order Fast2Sum residue of fl(value + |c|) is positive) it re-baselines instead:
+// the sum becomes the plain newest-first linear sum of the raw window, the compensation clears
+// and the raw value is stored. The warm-up runs the same machine with nothing to evict (oracle
+// pynecore lib/_math_stateful.py sum and core/rolling_sum.py sum_fires, "Validated bit-for-bit
+// against TV output on dense probes for lengths 2..14 (~330k displayed bars)"). Tier 1
+// math_004_sum_flat_exact shows it: after a window of 100s gives way to 0s,
+// ta.sma(ta.sma(v, 3), 3) equals ta.sma(v, 3) again (TV "k_eq_d: true" on bar 24) although the
+// window of zeros keeps rounding dust (see pineEq's tolerance, numeric.ts). A flat window's
+// ta.stdev is whatever the machine's p and q leave, 0 or a residue (resin-harness
+// state/repros/ta.volatility-seed-13.json: ta.stdev(hlc3, 4) is exactly 0 on bar 79, where the
+// plain rolling sum gave 2.7e-6).
 function naSkipSum(state: SmaState, value: number, length: number): number {
   // C569: length는 TV에서 항상 'int' 타입이지만, analyzer.ts의 int/int idiv 판별(idivBinOps, C201
   // 잔여 범위)이 UDF 매개변수·삼항 체인처럼 top-level 리터럴 밖의 int 값을 못 잡으면 codegen이
@@ -33,23 +52,52 @@ function naSkipSum(state: SmaState, value: number, length: number): number {
   if (!(length >= 1)) return NaN;
   if (state.buffer === undefined) {
     state.buffer = new Array(length).fill(0);
+    state.entries = new Array(length).fill(0);
     state.writeIdx = 0;
     state.count = 0;
     state.sum = 0;
+    state.comp = 0;
   }
-  if (!Number.isNaN(value)) {
-    const buffer = state.buffer;
-    const writeIdx = state.writeIdx!;
-    if (state.count! < length) {
-      state.count = state.count! + 1;
-      state.sum = state.sum! + value;
-    } else {
-      state.sum = state.sum! - buffer[writeIdx]! + value;
+  if (Number.isNaN(value)) return state.count! < length ? NaN : state.sum!;
+  const buffer = state.buffer;
+  const entries = state.entries!;
+  const at = state.writeIdx!;
+  const prevW = state.count!;
+  const full = prevW >= length;
+  const c = state.comp!;
+  let s = state.sum!;
+  // sum_fires: c == 0 or value == 0 never fire; `r - r === 0` rejects a NaN or infinite r.
+  let fires = false;
+  if (c !== 0 && value !== 0) {
+    const b = c > 0 ? c : -c;
+    const r = value + b;
+    if (r !== 0 && r - r === 0) fires = b - (r - value) > 0;
+  }
+  if (fires) {
+    // value + src[1] + src[2] + ... in that order; slot `at` holds the value leaving the window.
+    const newW = full ? length : prevW + 1;
+    let i = at;
+    s = value;
+    for (let k = 1; k < newW; k++) {
+      i = i === 0 ? length - 1 : i - 1;
+      s += buffer[i]!;
     }
-    buffer[writeIdx] = value;
-    state.writeIdx = (writeIdx + 1) % length;
+    state.comp = 0;
+    entries[at] = value;
+  } else {
+    const y1 = -(full ? entries[at]! : 0) - c;
+    const t = s + y1;
+    const e1 = t - s - y1;
+    const y2 = value - e1;
+    s = t + y2;
+    state.comp = s - t - y2;
+    entries[at] = y2;
   }
-  return state.count! < length ? NaN : state.sum!;
+  buffer[at] = value;
+  state.sum = s;
+  state.writeIdx = at + 1 === length ? 0 : at + 1;
+  if (!full) state.count = prevW + 1;
+  return state.count! < length ? NaN : s;
 }
 
 // ta.sma = the na-skipping rolling sum (naSkipSum) / length.

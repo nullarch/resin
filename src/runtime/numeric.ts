@@ -67,20 +67,33 @@ export function pineNot(x: boolean | number): boolean | number {
 // 결과도 na"다. pine2py도 Python `nan > x`가 False라 이 갭을 오라클로 검증할 수 없음(C25 not과
 // 동일 사정) — 두 피연산자 모두 유한할 때만 네이티브 비교를 적용하고, 하나라도 na면 na(NaN)를
 // 그대로 전파한다(ROADMAP P2 "C25 발견" 항목).
+//
+// The comparison itself is tolerant, as TradingView's is: "comparison operators automatically
+// round “float” operands to nine fractional digits" (language_type-system.txt, "float"). The
+// oracle measured the rule on TradingView as an absolute band on the difference, the boundary
+// belonging to equality: operands at most 1e-10 apart are equal at every magnitude (pynecore
+// core/pine_compare.py EPSILON, transformers/float_tolerance.py: `a < b` -> `-1e-10 > a - b`,
+// `a <= b` -> `a <= b or 1e-10 >= a - b`, `a == b` -> `a == b or -1e-10 <= a - b <= 1e-10`).
+// Tier 1 math_004_sum_flat_exact: TradingView's rolling sum leaves ~1e-14 of dust in a window of
+// zeros, and its own `==` still reports ta.sma(ta.sma(v, 3), 3) == ta.sma(v, 3) there. An int
+// difference is 0 or at least 1, so ints stay exact. The raw test in front of the non-strict forms
+// keeps two equal infinities equal (their difference is NaN).
+const CMP_EPS = 1e-10;
+
 export function pineLt(a: number, b: number): boolean | number {
-  return a !== a || b !== b ? NaN : a < b;
+  return a !== a || b !== b ? NaN : -CMP_EPS > a - b;
 }
 
 export function pineGt(a: number, b: number): boolean | number {
-  return a !== a || b !== b ? NaN : a > b;
+  return a !== a || b !== b ? NaN : CMP_EPS < a - b;
 }
 
 export function pineLe(a: number, b: number): boolean | number {
-  return a !== a || b !== b ? NaN : a <= b;
+  return a !== a || b !== b ? NaN : a <= b || CMP_EPS >= a - b;
 }
 
 export function pineGe(a: number, b: number): boolean | number {
-  return a !== a || b !== b ? NaN : a >= b;
+  return a !== a || b !== b ? NaN : a >= b || -CMP_EPS <= a - b;
 }
 
 // 논리 AND/OR — pine2py 문서(docs/pinescript/03-operators.md L60-62, docs/pinescript/09-edge-cases.md
@@ -139,13 +152,18 @@ export function pineOrLazy(a: boolean | number, b: () => boolean | number): bool
 // 판정이 정상 스크립트의 숫자 비교를 바꿀 여지는 없다. 그 밖의 모든 타입(number/string/null/
 // 참조형)은 기존 `===` 시맨틱 그대로 — NaN===NaN이 false인 것(na끼리 비교는 genEquality의
 // NaLiteral 분기가 rt.na로 따로 처리)도 그대로 유지된다.
+// Two numbers compare with the tolerance of pineLt & co. (see there); a na operand's NaN
+// difference fails the band, so na == x stays false.
 export function pineEq(a: unknown, b: unknown): boolean {
   if (typeof a === "boolean") {
     if (typeof b === "number") return b === (a ? 1 : 0);
   } else if (typeof b === "boolean" && typeof a === "number") {
     return a === (b ? 1 : 0);
   }
-  return a === b;
+  if (a === b) return true;
+  if (typeof a !== "number" || typeof b !== "number") return false;
+  const d = a - b;
+  return -CMP_EPS <= d && d <= CMP_EPS;
 }
 
 export function pineNeq(a: unknown, b: unknown): boolean {

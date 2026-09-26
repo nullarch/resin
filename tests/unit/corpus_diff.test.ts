@@ -597,8 +597,19 @@ describe("corpus diff: sample bar-by-bar replay against pine2py golden", () => {
     // 315167927063, 5a0a15521b55, 61ddd7a0b26e, 732176f80ae6, 8048f5dd9ee5, af39c2ca8287,
     // bd9fd95e81b4; 444704223518 now matches). Floor moved to the observed matched 2308 /
     // mismatch 607; nothing else changed.
-    expect(matched.length).toBeGreaterThanOrEqual(2308);
-    expect(mismatched.length).toBeLessThanOrEqual(607);
+    // 2026-09-26 the comparison operators are tolerant: float operands at most 1e-10 apart are
+    // equal ("comparison operators automatically round “float” operands to nine fractional
+    // digits", language_type-system.txt; PyneCore core/pine_compare.py, measured on TradingView;
+    // tier 1 resin-harness suites/indicators/tv/math_004_sum_flat_exact). Exactly two hashes went
+    // matched -> mismatch, both a float that differs from a literal by representation dust, which
+    // pine2py (not ground truth) compared exactly: 373fc658dc09 (`threshold > buyPress` with
+    // threshold 0.9 - 0.1 - 0.1 - 0.1 = 0.6000000000000001 against 0.6: the while loop now stops
+    // one step earlier) and 97e74f266a4e (`drift > 0.05` with |0.65 - 0.6| = 0.05000000000000004:
+    // no rebalance). The rolling-sum change of the same commit (math.sum/ta.sma/ta.variance run
+    // TradingView's compensated machine) moved no hash. Floor moved to the observed matched 2306 /
+    // mismatch 609; nothing else changed.
+    expect(matched.length).toBeGreaterThanOrEqual(2306);
+    expect(mismatched.length).toBeLessThanOrEqual(609);
     expect(transpileFailed.length).toBeLessThanOrEqual(86);
     expect(runtimeFailed.length, `runtime failures: ${runtimeFailed.map((o) => `${o.hash}: ${o.detail}`).join(" | ")}`).toBe(0);
     expect(noComparable.length, `no comparable key: ${noComparable.map((o) => o.hash).join(", ")}`).toBeLessThanOrEqual(2);
