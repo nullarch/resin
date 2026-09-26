@@ -1,11 +1,10 @@
 // oracle/cases/e2e_kc.pine: TV 빌트인 "Keltner Channels" 인디케이터 E2E 재현(ROADMAP P2 "TV 빌트인
-// 인디케이터 E2E" 여덟(마지막) 슬라이스, KC 단독). ta.kc의 warmup divergence는 이미
-// tests/oracle/ta_kc_kcw.test.ts가 문서화했다(pine2py kc.py가 basis_val이 이미 유효해도
-// range_src(atr)가 NaN이면 튜플 전체를 NaN으로 묶어 반환 -- ta.atr의 워밍업 divergence가 basis까지
-// 전파돼 pine2js가 golden보다 한 바 일찍(bar2) 유효값을 냄, bar3부터는 두 구현이 정확히 일치) -- 이
-// 테스트는 그 divergence를 그대로 물려받아 bar-by-bar 비교를 hand-verified로 대체하고
-// (compareToGolden 불가), finalVarState/plot 조합 축은 다른 e2e_*.test.ts와 동일한 순수 골든 비교를
-// 쓴다(마지막 바(bar9)는 이미 두 구현이 수렴한 구간이라 golden과 정확히 같은 값을 내기 때문).
+// 인디케이터 E2E" 여덟(마지막) 슬라이스, KC 단독). The bar-by-bar values are the oracle's, not the
+// pine2py golden's: ta.kc's range is ema(ta.tr(false), length), so the basis is valued from bar 2 and
+// upper/lower from bar 3 (the pine2py golden has all three from bar 3). Evidence: harness twin
+// state/repros/kc-sample10.json (basis_t/upper_t/lower_t, the same length 3 / mult 2 / true on
+// sample10); ref_v6_ta_math.txt ta.kc f_kc; pynecore lib/ta.py kc. finalVarState/plot 조합 축은 다른
+// e2e_*.test.ts와 동일한 골든 비교를 쓴다(bar9는 golden과 오라클이 같은 값).
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -23,26 +22,18 @@ function loadCaseSource(name: string): string {
 }
 
 describe("oracle: e2e_kc (TV built-in Keltner Channels, full script)", () => {
-  it("diverges from golden by the documented one-bar ATR-seeded warmup shift (hand-verified, not golden-compared)", () => {
+  it("matches the oracle: basis from bar 2, upper/lower from bar 3 (twin state/repros/kc-sample10.json)", () => {
     const golden = loadGolden(CASE_NAME);
     const data = loadOracleData(CASE_NAME);
     const source = loadCaseSource(CASE_NAME);
 
     const result = runPipeline(source, data);
 
-    // golden (pine2py kc.py shared NaN gate masked by atr's warmup delay): NaN through bar2, valid from bar3.
-    for (let i = 0; i < 3; i++) {
-      expect(golden.bars[i]!["var:__obs_basis"]).toBe("NaN");
-      expect(golden.bars[i]!["var:__obs_upper"]).toBe("NaN");
-      expect(golden.bars[i]!["var:__obs_lower"]).toBe("NaN");
-    }
-    expect(golden.bars[3]!["var:__obs_basis"]).toBe(102.0);
-
-    // pine2js (ema(3)+atr(3) both warm in parallel, no shared gate): valid one bar earlier (bar2).
+    // The range ema of ta.tr(false) skips bar 0's na, so it seeds one bar after the basis ema.
     const expected: [number, number, number][] = [
       [NaN, NaN, NaN],
       [NaN, NaN, NaN],
-      [102, 108, 96],
+      [102, NaN, NaN],
       [102, 108, 96],
       [103, 109, 97],
       [104, 110, 98],
@@ -52,17 +43,12 @@ describe("oracle: e2e_kc (TV built-in Keltner Channels, full script)", () => {
       [107, 113, 101],
     ];
     expect(result.bars).toHaveLength(expected.length);
+    const check = (got: number, want: number) => (Number.isNaN(want) ? expect(got).toBeNaN() : expect(got).toBeCloseTo(want, 9));
     for (let i = 0; i < expected.length; i++) {
       const [basis, upper, lower] = expected[i]!;
-      if (Number.isNaN(basis)) {
-        expect(result.bars[i]!["var:__obs_basis"]).toBeNaN();
-        expect(result.bars[i]!["var:__obs_upper"]).toBeNaN();
-        expect(result.bars[i]!["var:__obs_lower"]).toBeNaN();
-      } else {
-        expect(result.bars[i]!["var:__obs_basis"]).toBeCloseTo(basis, 9);
-        expect(result.bars[i]!["var:__obs_upper"]).toBeCloseTo(upper, 9);
-        expect(result.bars[i]!["var:__obs_lower"]).toBeCloseTo(lower, 9);
-      }
+      check(result.bars[i]!["var:__obs_basis"]!, basis);
+      check(result.bars[i]!["var:__obs_upper"]!, upper);
+      check(result.bars[i]!["var:__obs_lower"]!, lower);
     }
 
     // bar3부터는 golden과 실제로 일치함을 명시적으로 재확인(이 짧은 샘플에 한정된 우연 -- 일반 보장 아님).

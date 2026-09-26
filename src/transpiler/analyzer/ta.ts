@@ -657,15 +657,13 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // bbwVarLen.
   bbw: { dispatch: "ta", displayName: "ta.bbw", argCount: 3, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.bbw" },
   // ta.kc(source, length, mult, useTrueRange) — Keltner Channels, the third multi-return TA
-  // (returnArity: 3, [basis, upper, lower]). pine2py wavealgo/ta/kc.py composes basis=ema(source,
-  // length) with range=atr(high,low,close,length) when useTrueRange(default true) — both already
-  // implemented (rt.ta.ema/rt.ta.atr, C19/C53) — reused unconditionally every bar (runtime/ta.ts
-  // kc() comment: gating atr's call on basis being NaN, as pine2py's early return literally does,
-  // desyncs the two independent length-bar warmups — scratch/probe_kc.mjs confirmed). useTrueRange
-  // false uses TV's documented "high - low" formula, **not** pine2py's kc.py bug (source.get(0)
-  // read twice → range always 0) — DIVERGENCES.md 신규. Pine 문법에 high/low/close 인자가 없어
-  // codegen이 atr과 동일한 패턴으로 $.high.get(0)/$.low.get(0)/$.close.get(1)을 앞에 unshift한다.
-  // length가 ema/atr 둘 다의 초기화 구간을 결정하므로 sma와 동일하게 lengthArgIndex: 1(series 하드
+  // (returnArity: 3, [basis, upper, lower]): basis = ema(source, length), range = ema(useTrueRange ?
+  // ta.tr : high - low, length), both every bar (runtime/ta.ts kc(), the reference's f_kc). The
+  // arguments may be named as the reference names them (ref_v6_ta_math.txt "SYNTAX: ta.kc(series,
+  // length, mult, useTrueRange)"; tier 1 ta_171_kc writes `useTrueRange=false`). Pine 문법에
+  // high/low/close 인자가 없어 codegen이 atr과 동일한 패턴으로 $.high.get(0)/$.low.get(0)/
+  // $.close.get(1)을 앞에 unshift한다.
+  // length가 두 ema의 초기화 구간을 결정하므로 sma와 동일하게 lengthArgIndex: 1(series 하드
   // 에러); mult/useTrueRange는 최종 산술/분기에만 쓰여 series 허용. useTrueRange는 TV 기본값 true
   // (pine2py kc.py도 use_true_range=True 기본값 — corpus 실측 20+건이 `ta.kc(source, length, mult)`
   // 3-인자 관용구, C227)라 minArgCount:3 신설 — codegen이 args를 4개로 패딩한 뒤 implicit unshift하므로
@@ -679,15 +677,16 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
     conditionalForbidden: true,
     rtPath: "rt.ta.kc",
     returnArity: 3,
+    kwargParamNames: ["series", "length", "mult", "useTrueRange"],
   },
-  // ta.kcw(source, length, mult, useTrueRange) — Keltner Channels Width. pine2py wavealgo/ta/kcw.py
-  // calls kc(...) then (upper-lower)/basis*100 (NaN if basis is NaN or exactly 0) — same "call kc
-  // for its side effect, inline arithmetic" composition as bbw over bb (C52). Single scalar return,
-  // no returnArity, standard pattern. Same implicit high/low/close injection + lengthArgIndex: 1 as kc.
+  // ta.kcw(source, length, mult, useTrueRange) — Keltner Channels Width: (upper - lower) / basis of
+  // kc's lines (runtime/ta.ts kcw(), the reference's f_kcw; na on a zero basis). Single scalar
+  // return, no returnArity, standard pattern. Same implicit high/low/close injection, named
+  // arguments and lengthArgIndex: 1 as kc.
   // useTrueRange 기본값 true — kc와 동일 이유로 minArgCount:3(kcw는 returnArity 없어 트레일링 스크래치
   // push 자체가 없으므로 useTrueRange 생략도 자연스러운 트레일링 인자 누락으로 그대로 안전 —
   // codegen genCallExpr kc/kcw 분기의 "undefined" 패딩은 kc 전용, kcw는 패딩 불필요).
-  kcw: { dispatch: "ta", displayName: "ta.kcw", argCount: 4, minArgCount: 3, lengthArgIndex: 1, conditionalForbidden: true, rtPath: "rt.ta.kcw" },
+  kcw: { dispatch: "ta", displayName: "ta.kcw", argCount: 4, minArgCount: 3, lengthArgIndex: 1, conditionalForbidden: true, rtPath: "rt.ta.kcw", kwargParamNames: ["series", "length", "mult", "useTrueRange"] },
   // ta.obv() — On Balance Volume. Pine 문법상 인자가 없고(close/volume은 bar series 암묵 사용,
   // tr/atr과 동일한 implicit unshift 패턴 — codegen이 $.close.get(0)/$.volume.get(0)을 끼워 넣는다)
   // TA_IMPLICIT_CALL bare 프로퍼티 그룹(PROGRESS.md C54 next_hint)의 첫 사례. length 자체가 없어

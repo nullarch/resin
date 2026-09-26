@@ -3131,49 +3131,29 @@ export function macd(
 
 export interface KcState {
   ema?: EmaState;
-  atr?: AtrState;
+  rangeEma?: EmaState;
 }
 
-// ta.kc(source, length, mult, useTrueRange) - Keltner Channels, the third multi-return TA
-// ([basis, upper, lower] tuple, after ta.macd/ta.bb). pine2py wavealgo/ta/kc.py computes
-// basis=ema(source,length); if useTrueRange (default true), range=atr(high,low,close,length)
-// (the already-implemented rt.ta.atr, C53); upper/lower=basis±mult*range.
-//
-// pine2py kc.py early-returns (nan,nan,nan) the instant basis is NaN, and in that branch never
-// calls atr() at all that bar - unlike ema/atr, which are two *independent* length-bar warmups
-// that must both advance every bar to finish in parallel (both warm up over exactly `length` bars
-// starting from bar 0). Gating atr's call on basis's NaN-ness delays atr's own RMA warmup until
-// ema's has already finished, pushing atr's first valid value out by another `length` bars instead
-// of matching ema's warmup end - scratch/probe_kc.mjs confirmed this gated port literally diverges
-// from a straight ema()+atr() composition from bar `length` onward (not just during warmup). So kc()
-// calls ema() and atr() unconditionally every bar (the same "let the inner TA's own NaN gate handle
-// skip logic" principle as ta.tsi/ta.macd, C49/C50) and only then checks both results for NaN.
-//
-// **Compounding divergence discovered via direct pine2py probing** (DIVERGENCES.md #9): kc.py's
-// own structure returns the *entire* (nan,nan,nan) triple - not just range-dependent fields -
-// whenever `range_src` (atr's output) is NaN, even if `basis_val` (ema's output) was already
-// valid that bar. Probing pine2py's internal ta_state directly confirmed ema's own prev_ema is
-// already seeded correctly at the bar where a standalone ta.ema(source,length) would first go
-// non-NaN, but kc()'s *return value* stays NaN one extra bar because atr's warmup (#8's
-// documented off-by-one) hasn't finished yet - the golden's basis is not itself delayed, it's
-// masked by atr's bug leaking through kc.py's shared NaN gate. Since pine2js's rt.ta.atr doesn't
-// carry that off-by-one (#8), useTrueRange=true's basis/upper/lower/kcw are all one bar earlier
-// than golden - not just range-derived fields. useTrueRange=false never triggers this (see below,
-// its range is a plain non-NaN 0 whenever source is valid), so only that branch's basis is safe to
-// compare against golden (oracle/golden/ta_kc_kcw.json onlyKeys, tests/oracle/ta_kc_kcw.test.ts).
-//
-// **Intentional divergence from pine2py** (DIVERGENCES.md #9): when useTrueRange is false, pine2py
-// kc.py reads `h = source.get(0)` and `l_val = source.get(0)` (both from `source`, not the bar's
-// actual high/low) so `range = abs(h - l_val)` is always exactly 0 (unless source is NaN) - a
-// latent pine2py bug (same class as wpr/atr, C44/C53). The TradingView Script Reference for
-// `ta.kc` states the useTrueRange=false formula is literally "high - low", so pine2js implements
-// that instead of the pine2py bug (GOAL.md "pine2py의 알려진 버그는 따르지 않는다"). NaN in high or
-// low propagates through the plain subtraction automatically (no explicit guard needed - IEEE754
-// NaN arithmetic already yields NaN).
+// ta.kc(source, length, mult, useTrueRange) - Keltner Channels, [basis, upper, lower]. The
+// reference's own Pine equivalent (ref_v6_ta_math.txt "ta.kc", "// the same on pine"):
+//   basis = ta.ema(src, length)
+//   span = useTrueRange ? ta.tr : (high - low)
+//   rangeEma = ta.ema(span, length)
+//   [basis, basis + rangeEma * mult, basis - rangeEma * mult]
+// The span is the bare `ta.tr`, i.e. ta.tr(false): na on the first bar, so the range ema, which
+// skips na like every ema, reaches its seed one bar after the basis does. Both emas run every
+// bar; an na basis is the na triple, a valued basis with an na range ema is [basis, na, na]
+// (oracle pynecore lib/ta.py kc; tier 1 ta_171_kc; probe I04 bar 19: basis valued, upper na).
+// resin used pine2py's rma-based ta.atr (tr(true)) for the range and plain high - low without the
+// ema for useTrueRange = false.
 //
 // Pine syntax has no high/low/close parameters (only source/length/mult/useTrueRange); codegen
 // injects $.high.get(0)/$.low.get(0)/$.close.get(1)(prevClose) ahead of the user args, the same
 // implicit-injection pattern as ta.atr (analyzer.ts TA_REGISTRY.kc comment).
+function kcSpan(high: number, low: number, prevClose: number, useTrueRange: boolean): number {
+  return useTrueRange ? tr(undefined, high, low, prevClose, false) : high - low;
+}
+
 export function kc(
   state: KcState,
   high: number,
@@ -3187,28 +3167,26 @@ export function kc(
 ): void {
   if (state.ema === undefined) {
     state.ema = {};
-    state.atr = {};
+    state.rangeEma = {};
   }
   const basis = ema(state.ema, value, length);
-  const atrVal = atr(state.atr!, high, low, prevClose, length);
-  const range = useTrueRange ? atrVal : high - low;
-  if (Number.isNaN(basis) || Number.isNaN(range)) {
-    scratch[0] = NaN;
+  const rangeEma = ema(state.rangeEma!, kcSpan(high, low, prevClose, useTrueRange), length);
+  scratch[0] = basis;
+  if (Number.isNaN(basis) || Number.isNaN(rangeEma)) {
     scratch[1] = NaN;
     scratch[2] = NaN;
     return;
   }
-  scratch[0] = basis;
-  scratch[1] = basis + mult * range;
-  scratch[2] = basis - mult * range;
+  const range = rangeEma * mult;
+  scratch[1] = basis + range;
+  scratch[2] = basis - range;
 }
 
-// ta.kcw(source, length, mult, useTrueRange) - Keltner Channels Width: (upper-lower)/basis*100.
-// pine2py wavealgo/ta/kcw.py calls kc(...) to get (basis, upper, lower) then returns NaN if basis
-// is NaN or exactly 0, else (upper-lower)/basis*100 - the same "call kc for its side effect, inline
-// the arithmetic instead of writing to scratch" composition as ta.bbw over ta.bb (C52). Reuses the
-// same KcState{ema,atr} shape (this call site owns its own independent taSlots slot, same as
-// ta.stdev calling ta.variance on its own StdevState).
+// ta.kcw(source, length, mult, useTrueRange) - Keltner Channels Width: (upper - lower) / basis, a
+// ratio, not a percentage (ref_v6_ta_math.txt "ta.kcw": "the difference between the upper and the
+// lower Keltner Channels divided by the middle channel", f_kcw `((basis + rangeEma * mult) -
+// (basis - rangeEma * mult)) / basis`; oracle lib/ta.py kcw, na on a zero basis; probe I04 kcw
+// 0.0866 where resin's pine2py port printed 8.66). Its own call site, its own two emas.
 export function kcw(
   state: KcState,
   high: number,
@@ -3221,15 +3199,15 @@ export function kcw(
 ): number {
   if (state.ema === undefined) {
     state.ema = {};
-    state.atr = {};
+    state.rangeEma = {};
   }
   const basis = ema(state.ema, value, length);
-  const atrVal = atr(state.atr!, high, low, prevClose, length);
-  const range = useTrueRange ? atrVal : high - low;
-  if (Number.isNaN(basis) || Number.isNaN(range) || basis === 0) return NaN;
-  const upper = basis + mult * range;
-  const lower = basis - mult * range;
-  return ((upper - lower) / basis) * 100;
+  const rangeEma = ema(state.rangeEma!, kcSpan(high, low, prevClose, useTrueRange), length);
+  if (Number.isNaN(basis) || basis === 0) return NaN;
+  const range = rangeEma * mult;
+  const upper = basis + range;
+  const lower = basis - range;
+  return (upper - lower) / basis;
 }
 
 export interface ObvState {

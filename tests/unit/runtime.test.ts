@@ -5339,7 +5339,7 @@ describe("ta.kc", () => {
     return [scratch[0]!, scratch[1]!, scratch[2]!];
   }
 
-  it("writes NaN to all three outputs while ema/atr are still warming up (useTrueRange=true, length=3)", () => {
+  it("writes NaN to all three outputs while the emas are still warming up (useTrueRange=true, length=3)", () => {
     const state = {};
     const closes = [101, 102];
     for (const c of closes) {
@@ -5350,16 +5350,17 @@ describe("ta.kc", () => {
     }
   });
 
-  it("matches the pine2py-verified sample10.json trace shifted one bar earlier than golden (useTrueRange=true, length=3, mult=2 — DIVERGENCES.md #9)", () => {
-    // oracle/golden/ta_kc_kcw.json has basis_t/upper_t/lower_t NaN through bar2 (atr's off-by-one
-    // leaks through kc.py's shared NaN gate, even though ema's own state is already seeded by
-    // bar2) - pine2js's rt.ta.atr doesn't carry that off-by-one, so this is valid from bar2.
+  it("matches the oracle's sample10 trace: basis from bar 2, upper/lower from bar 3 (useTrueRange=true, length=3, mult=2; twin state/repros/kc-sample10.json *_t)", () => {
+    // The range is ema(ta.tr(false), 3): bar 0's true range is na and the ema skips it, so the range
+    // seeds one bar after the basis (pynecore lib/ta.py kc returns [basis, na, na] in between).
     const state = {};
     const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
     const out = closes.map((c, i) => kc3(state, c + 1, c - 2, i === 0 ? NaN : closes[i - 1]!, c, 3, 2, true));
     expect(out[0]![0]).toBeNaN();
     expect(out[1]![0]).toBeNaN();
-    expect(out[2]).toEqual([102, 108, 96]);
+    expect(out[2]![0]).toBe(102);
+    expect(out[2]![1]).toBeNaN();
+    expect(out[2]![2]).toBeNaN();
     expect(out[3]).toEqual([102, 108, 96]);
     expect(out[4]![0]).toBeCloseTo(103, 9);
     expect(out[4]![1]).toBeCloseTo(109, 9);
@@ -5369,7 +5370,7 @@ describe("ta.kc", () => {
     expect(out[9]![2]).toBeCloseTo(101, 9);
   });
 
-  it("matches the pine2py golden byte-for-byte for the basis channel when useTrueRange=false (length=4, mult=1.5 — range never goes NaN, no atr contamination)", () => {
+  it("matches the oracle's sample10 trace when useTrueRange=false (length=4, mult=1.5; twin kc-sample10 *_f)", () => {
     const state = {};
     const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
     const out = closes.map((c, i) => kc3(state, c + 1, c - 2, i === 0 ? NaN : closes[i - 1]!, c, 4, 1.5, false));
@@ -5382,9 +5383,9 @@ describe("ta.kc", () => {
     expect(out[9]![2]).toBeCloseTo(102.095328, 9);
   });
 
-  it("useTrueRange=false uses real TV semantics (range=high-low), not pine2py's source-source=0 bug", () => {
+  it("useTrueRange=false smooths the bar's high - low, not source - source", () => {
     // high/low set far from source(=value) - a source-source read would give range=0, but the
-    // real high-low here is 8, so upper/lower must reflect that (DIVERGENCES.md #9).
+    // real high-low here is 8 on both bars, so its ema is 8 (ref_v6_ta_math.txt ta.kc f_kc).
     const state = {};
     kc3(state, 105, 97, NaN, 100, 2, 1, false); // bar0: high=105,low=97,value=100 -> range=8
     const [b, u, l] = kc3(state, 106, 98, 100, 101, 2, 1, false); // bar1: seed=avg(100,101)=100.5
@@ -5393,17 +5394,20 @@ describe("ta.kc", () => {
     expect(l).toBeCloseTo(100.5 - 8, 9);
   });
 
-  it("propagates NaN through useTrueRange=false's range when high or low itself is NaN (plain subtraction, no explicit guard needed) - and, matching kc.py's shared gate, the whole triple (including basis) goes NaN that bar", () => {
+  it("an na high or low is an na span: the range ema skips it, the basis is still reported ([basis, na, na])", () => {
+    // pynecore lib/ta.py kc: `if not (range_ma == range_ma): return base, na_float, na_float`; the
+    // range ema skips the na span like any ema (its state does not advance).
     const state: Parameters<typeof kc>[0] = {};
     kc3(state, 105, 97, NaN, 100, 2, 1, false);
-    const [b, u, l] = kc3(state, NaN, 98, 100, 101, 2, 1, false); // high NaN this bar -> range NaN
-    // ema's own internal state still seeds correctly this bar (value=101 is valid) - but kc's
-    // NaN(basis)||NaN(range) gate zeroes the whole triple, so the scratch output for basis is also
-    // NaN even though a standalone ta.ema(101, 2) call would already report a value here.
-    expect(b).toBeNaN();
+    const [b, u, l] = kc3(state, NaN, 98, 100, 101, 2, 1, false); // high NaN this bar -> span NaN
+    expect(b).toBeCloseTo(100.5, 9);
     expect(u).toBeNaN();
     expect(l).toBeNaN();
-    expect(state.ema!.prevEma).toBeCloseTo(100.5, 9); // underlying ema state is unaffected
+    // The next valid span is the range ema's second value: seed (8 + 6) / 2 = 7.
+    const [b2, u2, l2] = kc3(state, 105, 99, 101, 102, 2, 1, false);
+    expect(b2).toBeCloseTo(100.5 + (2 / 3) * (102 - 100.5), 9);
+    expect(u2).toBeCloseTo(b2 + 7, 9);
+    expect(l2).toBeCloseTo(b2 - 7, 9);
   });
 
   it("keeps independent state across two call sites", () => {
@@ -5426,7 +5430,7 @@ describe("ta.kc", () => {
     expect(scratch[0]).toBeCloseTo(101.5, 9); // 같은 배열 인스턴스에 덮어써졌다
   });
 
-  it("matches a from-scratch brute-force cross-check (independent ema+atr composition) with NaN gaps, both useTrueRange values (length=5)", () => {
+  it("matches a from-scratch brute-force cross-check (ema of the source + ema of the span) with NaN gaps, both useTrueRange values (length=5)", () => {
     function mulberry32(seed: number) {
       return function () {
         seed |= 0;
@@ -5448,10 +5452,11 @@ describe("ta.kc", () => {
       const highs = closes.map((c) => (Number.isNaN(c) ? NaN : c + rng() * 2 + 0.1));
       const lows = closes.map((c) => (Number.isNaN(c) ? NaN : c - rng() * 2 - 0.1));
 
-      // brute reference: independent ema/rma/tr recursion (not calling the module's own ta.ts
-      // functions), mirroring runtime/ta.ts's exact transition logic bar-for-bar.
+      // brute reference: independent ema/tr recursion (not calling the module's own ta.ts
+      // functions): the reference's f_kc (ref_v6_ta_math.txt ta.kc) with pynecore lib/ta.py kc's
+      // na results (na basis: all na; na range ema: [basis, na, na]).
       const emaS = { count: 0, sum: 0, prev: NaN };
-      const rmaS = { count: 0, sum: 0, prev: NaN };
+      const spanS = { count: 0, sum: 0, prev: NaN };
       function bruteEma(value: number, length: number, s: typeof emaS): number {
         if (Number.isNaN(value)) return NaN;
         if (s.count < length) {
@@ -5464,18 +5469,6 @@ describe("ta.kc", () => {
         s.prev = alpha * value + (1 - alpha) * s.prev;
         return s.prev;
       }
-      function bruteRma(value: number, length: number, s: typeof rmaS): number {
-        if (Number.isNaN(value)) return NaN;
-        if (s.count < length) {
-          s.count += 1;
-          s.sum += value;
-          s.prev = s.count === length ? s.sum / length : NaN;
-          return s.prev;
-        }
-        const alpha = 1 / length;
-        s.prev = alpha * value + (1 - alpha) * s.prev;
-        return s.prev;
-      }
       const length = 5;
       const mult = 1.3;
       const expected: [number, number, number][] = [];
@@ -5485,11 +5478,13 @@ describe("ta.kc", () => {
         const prevClose = i === 0 ? NaN : closes[i - 1]!;
         const basis = bruteEma(closes[i]!, length, emaS);
         const hl = high - low;
-        const trVal = Number.isNaN(prevClose) ? hl : Math.max(hl, Math.abs(high - prevClose), Math.abs(low - prevClose));
-        const atrVal = bruteRma(trVal, length, rmaS);
-        const range = useTrueRange ? atrVal : hl;
-        if (Number.isNaN(basis) || Number.isNaN(range)) {
+        // ta.tr(false): na without a previous close.
+        const trVal = Number.isNaN(prevClose) ? NaN : Math.max(hl, Math.abs(high - prevClose), Math.abs(low - prevClose));
+        const range = bruteEma(useTrueRange ? trVal : hl, length, spanS);
+        if (Number.isNaN(basis)) {
           expected.push([NaN, NaN, NaN]);
+        } else if (Number.isNaN(range)) {
+          expected.push([basis, NaN, NaN]);
         } else {
           expected.push([basis, basis + mult * range, basis - mult * range]);
         }
@@ -5511,8 +5506,8 @@ describe("ta.kc", () => {
   });
 });
 
-// ta.kcw(source, length, mult, useTrueRange) — Keltner Channels Width, built on ta.kc's composition
-// (same "call for its side effect, inline the arithmetic" pattern as ta.bbw over ta.bb, C52).
+// ta.kcw(source, length, mult, useTrueRange) — Keltner Channels Width, (upper - lower) / basis of
+// ta.kc's lines: a ratio, not a percentage (ref_v6_ta_math.txt ta.kcw f_kcw; pynecore lib/ta.py kcw).
 describe("ta.kcw", () => {
   function kcwCall(
     state: Parameters<typeof kcw>[0],
@@ -5532,24 +5527,23 @@ describe("ta.kcw", () => {
     expect(kcwCall(state, 102, 99, NaN, 101, 3, 2, true)).toBeNaN();
   });
 
-  it("matches the pine2py-verified sample10.json trace for useTrueRange=true (length=3, mult=2)", () => {
+  it("matches the oracle's sample10 trace for useTrueRange=true (length=3, mult=2; twin state/repros/kc-sample10.json kcw_t)", () => {
     const state = {};
     const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
     const out = closes.map((c, i) => kcwCall(state, c + 1, c - 2, i === 0 ? NaN : closes[i - 1]!, c, 3, 2, true));
-    expect(out[0]).toBeNaN();
-    expect(out[1]).toBeNaN();
-    expect(out[2]).toBeCloseTo(11.76470588235294, 9);
-    expect(out[4]).toBeCloseTo(11.650485436893204, 9);
-    expect(out[9]).toBeCloseTo(11.214953271028037, 9);
+    for (let i = 0; i < 3; i++) expect(out[i]).toBeNaN(); // the range ema of ta.tr(false) seeds on bar 3
+    expect(out[3]).toBeCloseTo(0.11764705882352941, 12);
+    expect(out[4]).toBeCloseTo(0.11650485436893204, 12);
+    expect(out[9]).toBeCloseTo(0.11214953271028037, 12);
   });
 
-  it("matches the pine2py-verified sample10.json trace for useTrueRange=false (length=4, mult=1.5)", () => {
+  it("matches the oracle's sample10 trace for useTrueRange=false (length=4, mult=1.5; twin kc-sample10 kcw_f)", () => {
     const state = {};
     const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
     const out = closes.map((c, i) => kcwCall(state, c + 1, c - 2, i === 0 ? NaN : closes[i - 1]!, c, 4, 1.5, false));
     for (let i = 0; i < 3; i++) expect(out[i]).toBeNaN();
-    expect(out[3]).toBeCloseTo(8.823529411764707, 9);
-    expect(out[9]).toBeCloseTo(8.443146776564166, 9);
+    expect(out[3]).toBeCloseTo(0.08823529411764706, 12);
+    expect(out[9]).toBeCloseTo(0.08443146776564167, 12);
   });
 
   it("returns NaN when basis is exactly 0 (division guard, mirrors ta.bbw's basis===0 guard)", () => {

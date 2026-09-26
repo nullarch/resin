@@ -13379,6 +13379,16 @@ describe("Analyzer", () => {
     expect(prog.taSlotCount).toBe(1);
   });
 
+  // ref_v6_ta_math.txt "SYNTAX: ta.kc(series, length, mult, useTrueRange)"; tier 1 ta_171_kc plots
+  // `ta.kcw(close, 20, 2.1, useTrueRange=false)` (harness twin state/repros/kc-sample10.json).
+  it("accepts ta.kc/ta.kcw arguments by their reference names and rejects an unknown name", () => {
+    expect(analyzeSource("[b, u, l] = ta.kc(close, 20, 1.5, useTrueRange = false)").errors).toEqual([]);
+    expect(analyzeSource("x = ta.kcw(close, 20, 2.1, useTrueRange=false)").errors).toEqual([]);
+    expect(analyzeSource("x = ta.kcw(series = close, length = 20, mult = 2)").errors).toEqual([]);
+    const prog = analyzeSource("x = ta.kcw(close, 20, 2, trueRange = false)");
+    expect(prog.errors.some((e) => e.includes("'ta.kcw'") && e.includes("trueRange"))).toBe(true);
+  });
+
   it("still errors on ta.kc call with 2 args (below minArgCount:3)", () => {
     const prog = analyzeSource("[b, u, l] = ta.kc(close, 20)");
     expect(prog.errors.some((e) => e.includes("'ta.kc'") && e.includes("argument count"))).toBe(true);

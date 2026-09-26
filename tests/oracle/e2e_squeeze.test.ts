@@ -3,9 +3,12 @@
 // ta.kc)을 재사용해 sqzOn/sqzOff/noSqz를 조합하고, 그 위에 별개로 ta.highest/ta.lowest/ta.sma/
 // math.avg/ta.linreg를 조합한 val(모멘텀 히스토그램)을 계산한다. val/basisBB/upperBB/lowerBB는
 // bb에 alt atr 워밍업 divergence가 없어 표준 compareToGolden으로 바별 정확 일치를 기대할 수 있다.
-// 단 ta.kc(useTrueRange=true)는 DIVERGENCES.md #9(ta.atr 워밍업이 basis까지 전파돼 pine2js가
-// golden보다 한 바 먼저 유효값을 냄, e2e_kc.test.ts가 이미 문서화)를 그대로 물려받으므로
-// basisKC/upperKC/lowerKC와 그로부터 파생되는 sqzOn/sqzOff/noSqz는 hand-verified로 분리 검증한다.
+// The KC channels and the squeeze flags are checked against the oracle (PyneCore on sample10):
+// ta.kc's basis is valued from bar 2, its upper/lower from bar 3 (range = ema(ta.tr(false), 3); harness
+// twin state/repros/kc-sample10.json basis_sqz/upper_sqz/lower_sqz), and sqzOn/sqzOff follow the
+// oracle on every bar (twin state/repros/squeeze-na-compare.json). Open: on bars 0-2 the oracle's
+// noSqz is 1 (a v5 comparison with an na operand is false, so `sqzOn == false` holds) where resin
+// reports 0; that is the na-comparison rule, not ta.kc, and is not asserted here.
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -58,26 +61,17 @@ describe("oracle: e2e_squeeze (LazyBear Squeeze Momentum Oscillator, non-builtin
     expect(nearlyEqual(actual, expected)).toBe(true);
   });
 
-  it("basisKC/upperKC/lowerKC diverge from golden by the documented one-bar ATR-seeded warmup shift (hand-verified, DIVERGENCES #9)", () => {
+  it("basisKC/upperKC/lowerKC match the oracle: basis from bar 2, upper/lower from bar 3 (twin kc-sample10 *_sqz)", () => {
     const golden = loadGolden(CASE_NAME);
     const data = loadOracleData(CASE_NAME);
     const source = loadCaseSource(CASE_NAME);
 
     const result = runPipeline(source, data);
 
-    // golden: NaN through bar2, valid from bar3.
-    for (let i = 0; i < 3; i++) {
-      expect(golden.bars[i]!["var:__obs_basisKC"]).toBe("NaN");
-      expect(golden.bars[i]!["var:__obs_upperKC"]).toBe("NaN");
-      expect(golden.bars[i]!["var:__obs_lowerKC"]).toBe("NaN");
-    }
-    expect(golden.bars[3]!["var:__obs_basisKC"]).toBe(102.0);
-
-    // pine2js: valid one bar earlier (bar2), same shape as e2e_kc.test.ts.
     const expected: [number, number, number][] = [
       [NaN, NaN, NaN],
       [NaN, NaN, NaN],
-      [102, 106.5, 97.5],
+      [102, NaN, NaN],
       [102, 106.5, 97.5],
       [103, 107.5, 98.5],
       [104, 108.5, 99.5],
@@ -87,17 +81,12 @@ describe("oracle: e2e_squeeze (LazyBear Squeeze Momentum Oscillator, non-builtin
       [107, 111.5, 102.5],
     ];
     expect(result.bars).toHaveLength(expected.length);
+    const check = (got: number, want: number) => (Number.isNaN(want) ? expect(got).toBeNaN() : expect(got).toBeCloseTo(want, 9));
     for (let i = 0; i < expected.length; i++) {
       const [basis, upper, lower] = expected[i]!;
-      if (Number.isNaN(basis)) {
-        expect(result.bars[i]!["var:__obs_basisKC"]).toBeNaN();
-        expect(result.bars[i]!["var:__obs_upperKC"]).toBeNaN();
-        expect(result.bars[i]!["var:__obs_lowerKC"]).toBeNaN();
-      } else {
-        expect(result.bars[i]!["var:__obs_basisKC"]).toBeCloseTo(basis, 9);
-        expect(result.bars[i]!["var:__obs_upperKC"]).toBeCloseTo(upper, 9);
-        expect(result.bars[i]!["var:__obs_lowerKC"]).toBeCloseTo(lower, 9);
-      }
+      check(result.bars[i]!["var:__obs_basisKC"]!, basis);
+      check(result.bars[i]!["var:__obs_upperKC"]!, upper);
+      check(result.bars[i]!["var:__obs_lowerKC"]!, lower);
     }
 
     // bar3부터는 golden과 실제로 일치함을 재확인(이 짧은 샘플에 한정된 우연 -- 일반 보장 아님).
@@ -108,68 +97,22 @@ describe("oracle: e2e_squeeze (LazyBear Squeeze Momentum Oscillator, non-builtin
     }
   });
 
-  it("sqzOn/sqzOff/noSqz diverge from golden at bars 0-2 (na-comparison-semantics gap composes with the KC warmup shift, DIVERGENCES #85)", () => {
+  it("sqzOn/sqzOff match the oracle on every bar, noSqz from bar 3 (twin state/repros/squeeze-na-compare.json)", () => {
     const golden = loadGolden(CASE_NAME);
     const data = loadOracleData(CASE_NAME);
     const source = loadCaseSource(CASE_NAME);
 
     const result = runPipeline(source, data);
 
-    // golden (pine2py native Python `and`/comparisons: nan-comparisons fall through to concrete
-    // False, so noSqz=(False==False) and (False==False)=True while both bb/kc are still na):
-    // bars 0-2 forced noSqz=1, sqzOn from bar3 (when kc's own warmup finishes, see next test).
-    const goldenExpected = [
-      [0, 0, 1],
-      [0, 0, 1],
-      [0, 0, 1],
-      [1, 0, 0],
-      [1, 0, 0],
-      [1, 0, 0],
-      [1, 0, 0],
-      [1, 0, 0],
-      [1, 0, 0],
-      [1, 0, 0],
-    ];
-    for (let i = 0; i < goldenExpected.length; i++) {
-      const [sqzOn, sqzOff, noSqz] = goldenExpected[i]!;
-      expect(golden.bars[i]!["var:__obs_sqzOn"]).toBe(sqzOn);
-      expect(golden.bars[i]!["var:__obs_sqzOff"]).toBe(sqzOff);
-      expect(golden.bars[i]!["var:__obs_noSqz"]).toBe(noSqz);
-    }
-
-    // pine2js (VERIFIED_SEMANTICS.md OPEN "비교/and-or na 시맨틱" hypothesis, C67/pineAnd): pineGt/
-    // pineLt propagate na for na operands (sqzOn/sqzOff become genuine na, not concrete false), and
-    // `sqzOn == false` is a plain `===` (genEquality only special-cases a literal `na` operand, not
-    // `true`/`false`) -- so na !== false, and noSqz's pineAnd short-circuits to concrete false via
-    // its first false-ish operand. Net effect: at bars 0-1 (both bb/kc still na) all three flags read
-    // 0/0/0 -- a genuine "unknown" state that golden's Python-native nan-is-falsy comparisons cannot
-    // represent (it collapses straight to noSqz=1). At bar2, kc is already valid for pine2js (#9's
-    // one-bar-earlier warmup) so sqzOn flips to 1 while golden (kc still na) stays at noSqz=1.
-    const resultExpected = [
-      [0, 0, 0],
-      [0, 0, 0],
-      [1, 0, 0],
-      [1, 0, 0],
-      [1, 0, 0],
-      [1, 0, 0],
-      [1, 0, 0],
-      [1, 0, 0],
-      [1, 0, 0],
-      [1, 0, 0],
-    ];
-    for (let i = 0; i < resultExpected.length; i++) {
-      const [sqzOn, sqzOff, noSqz] = resultExpected[i]!;
-      expect(result.bars[i]!["var:__obs_sqzOn"]).toBe(sqzOn);
-      expect(result.bars[i]!["var:__obs_sqzOff"]).toBe(sqzOff);
-      expect(result.bars[i]!["var:__obs_noSqz"]).toBe(noSqz);
-    }
-
-    // explicit divergence marker: bars 0-2 disagree, 3-9 agree exactly.
-    for (const i of [0, 1, 2]) {
-      expect(goldenExpected[i]).not.toEqual(resultExpected[i]);
-    }
-    for (const i of [3, 4, 5, 6, 7, 8, 9]) {
-      expect(goldenExpected[i]).toEqual(resultExpected[i]);
+    // The oracle's flags (the pine2py golden has the same): KC's upper/lower are na through bar 2,
+    // so sqzOn is 1 from bar 3. noSqz on bars 0-2 is the open na-comparison rule (header comment).
+    const sqzOn = [0, 0, 0, 1, 1, 1, 1, 1, 1, 1];
+    for (let i = 0; i < sqzOn.length; i++) {
+      expect(result.bars[i]!["var:__obs_sqzOn"]).toBe(sqzOn[i]);
+      expect(result.bars[i]!["var:__obs_sqzOff"]).toBe(0);
+      expect(golden.bars[i]!["var:__obs_sqzOn"]).toBe(sqzOn[i]);
+      expect(golden.bars[i]!["var:__obs_sqzOff"]).toBe(0);
+      if (i >= 3) expect(result.bars[i]!["var:__obs_noSqz"]).toBe(0);
     }
   });
 
@@ -232,7 +175,7 @@ describe("oracle: e2e_squeeze (LazyBear Squeeze Momentum Oscillator, non-builtin
     expect(result.bars[4]!["var:__obs_val"]).not.toBeNaN();
   });
 
-  it("sqzOn/sqzOff/noSqz are 0-or-1 valued, and at most one is 1.0 (bars 0-1 are all-zero: a genuine na state golden cannot represent, see divergence test above)", () => {
+  it("sqzOn/sqzOff/noSqz are 0-or-1 valued, at most one is 1.0, exactly one once KC's range is valued (bar 3)", () => {
     const data = loadOracleData(CASE_NAME);
     const source = loadCaseSource(CASE_NAME);
 
@@ -243,11 +186,8 @@ describe("oracle: e2e_squeeze (LazyBear Squeeze Momentum Oscillator, non-builtin
       const flags = [bar["var:__obs_sqzOn"]!, bar["var:__obs_sqzOff"]!, bar["var:__obs_noSqz"]!];
       for (const f of flags) expect([0, 1]).toContain(f);
       const sum = flags.reduce((a, b) => a + b, 0);
-      if (i < 2) {
-        expect(sum).toBe(0);
-      } else {
-        expect(sum).toBe(1);
-      }
+      expect(sum).toBeLessThanOrEqual(1);
+      if (i >= 3) expect(sum).toBe(1);
     }
   });
 

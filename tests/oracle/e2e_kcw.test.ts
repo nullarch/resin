@@ -1,8 +1,9 @@
 // oracle/cases/e2e_kcw.pine: TV 빌트인 "Keltner Channels Width" 인디케이터 E2E 재현(ROADMAP P2
-// "TV 빌트인 인디케이터 E2E" 여덟(마지막) 슬라이스, KCW 단독). ta.kcw는 내부적으로 ta.kc를 호출해
-// (upper-lower)/basis*100을 계산하므로 e2e_kc.pine과 동일한 divergence(DIVERGENCES.md #9)를 그대로
-// 물려받는다 -- 이 테스트도 bar-by-bar 비교를 hand-verified로 대체하고(compareToGolden 불가),
-// finalVarState/plot 조합 축은 순수 골든 비교를 쓴다(마지막 바(bar9)는 두 구현이 수렴한 구간).
+// "TV 빌트인 인디케이터 E2E" 여덟(마지막) 슬라이스, KCW 단독). The values are the oracle's, not the
+// pine2py golden's: ta.kcw is (upper - lower) / basis, a ratio (the golden multiplies by 100), valued
+// from bar 3 where kc's range ema of ta.tr(false) seeds. Evidence: harness twin
+// state/repros/kc-sample10.json (kcw_t, the same length 3 / mult 2 / true on sample10);
+// ref_v6_ta_math.txt ta.kcw f_kcw; pynecore lib/ta.py kcw.
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -20,31 +21,24 @@ function loadCaseSource(name: string): string {
 }
 
 describe("oracle: e2e_kcw (TV built-in Keltner Channels Width, full script)", () => {
-  it("diverges from golden by the documented one-bar ATR-seeded warmup shift (hand-verified, not golden-compared)", () => {
+  it("matches the oracle: a ratio, valued from bar 3 (twin state/repros/kc-sample10.json, kcw_t)", () => {
     const golden = loadGolden(CASE_NAME);
     const data = loadOracleData(CASE_NAME);
     const source = loadCaseSource(CASE_NAME);
 
     const result = runPipeline(source, data);
 
-    // golden: NaN through bar2, valid from bar3.
-    for (let i = 0; i < 3; i++) {
-      expect(golden.bars[i]!["var:__obs_kcw"]).toBe("NaN");
-    }
-    expect(golden.bars[3]!["var:__obs_kcw"]).toBe(11.7647058824);
-
-    // pine2js: valid one bar earlier (bar2), matching golden bar-for-bar from bar3.
     const expected: number[] = [
       NaN,
       NaN,
-      11.76470588235294,
-      11.76470588235294,
-      11.650485436893204,
-      11.538461538461538,
-      11.428571428571429,
-      11.428571428571429,
-      11.320754716981133,
-      11.214953271028037,
+      NaN,
+      0.11764705882352941,
+      0.11650485436893204,
+      0.11538461538461539,
+      0.11428571428571428,
+      0.11428571428571428,
+      0.11320754716981132,
+      0.11214953271028037,
     ];
     expect(result.bars).toHaveLength(expected.length);
     for (let i = 0; i < expected.length; i++) {
@@ -52,26 +46,25 @@ describe("oracle: e2e_kcw (TV built-in Keltner Channels Width, full script)", ()
       if (Number.isNaN(v)) {
         expect(result.bars[i]!["var:__obs_kcw"]).toBeNaN();
       } else {
-        expect(result.bars[i]!["var:__obs_kcw"]).toBeCloseTo(v, 9);
+        expect(result.bars[i]!["var:__obs_kcw"]).toBeCloseTo(v, 12);
       }
     }
 
-    // bar3부터는 golden과 실제로 일치함을 명시적으로 재확인(이 짧은 샘플에 한정된 우연 -- 일반 보장 아님).
-    for (let i = 3; i < expected.length; i++) {
-      expect(result.bars[i]!["var:__obs_kcw"]).toBeCloseTo(golden.bars[i]!["var:__obs_kcw"] as number, 9);
+    // The pine2py golden is the same series in percent (x100), its na bars the oracle's.
+    for (let i = 0; i < expected.length; i++) {
+      const g = golden.bars[i]!["var:__obs_kcw"];
+      if (g === "NaN") expect(expected[i]).toBeNaN();
+      else expect(expected[i]! * 100).toBeCloseTo(g as number, 8);
     }
   });
 
-  it("matches the pine2py golden final var state (both converge to the same value)", () => {
-    const golden = loadGolden(CASE_NAME);
+  it("final var state is the oracle's last kcw (the pine2py golden's 11.214953271 percent / 100)", () => {
     const data = loadOracleData(CASE_NAME);
     const source = loadCaseSource(CASE_NAME);
 
     const result = runPipeline(source, data);
 
-    for (const [key, expected] of Object.entries(golden.finalVarState)) {
-      expect(result.finalVarState[key]).toBeCloseTo(expected as number, 6);
-    }
+    expect(result.finalVarState["__obs_kcw"]).toBeCloseTo(0.11214953271028037, 12);
   });
 
   it("emits exactly 1 plot titled 'KCW'", () => {
