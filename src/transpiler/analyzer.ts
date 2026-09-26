@@ -2270,6 +2270,8 @@ export interface AnalyzedProgram {
     tfLiteral: string | (string | Expr)[];
     gaps: boolean;
     lookahead: boolean;
+    // The call's compile-time symbol (securitySymbols), given to the slots the queue assigns.
+    symbol: string | null;
   }>;
   // C453: 위 큐 처리 결과 (1) — 콜사이트별 프리패스 스펙 목록(securityExprCallSlots의 값과 동형,
   // 단 key가 없는 배열: body의 request.security 노드 하나가 콜사이트 수만큼 슬롯을 가져 노드 키
@@ -2680,6 +2682,10 @@ export interface AnalyzedProgram {
   // 배열을 공유(둘 다 결국 $.securityCache[slot]의 원본 HTF OHLCV가 필요 — 3b가 그 배열을 도는
   // 프리패스로 표현식을 재계산할 예정, ROADMAP 3a/3b 설계 참조).
   securityTfs: string[];
+  // Slot index -> the symbol the slot's request.security call names, when it folds to a
+  // compile-time string (call-expr.ts resolveSecuritySymbol); unset or null for the chart's own
+  // symbol or one known only at run time. Context.from gives a named slot its feed.
+  securitySymbols: (string | null)[];
   // 배치31 슬라이스 (a, C597) — tf가 컴파일타임 리터럴로 안 접혀도 bare series 콜사이트 +
   // simple/input 한정자(series 제외)면 하드 에러 대신 이 맵에 slot -> tf 표현식으로 등록한다.
   // securityTfs[slot]에는 자리표시 값(prog.chartTf, Context 생성자가 무해하게 즉시 빌드하도록)만
@@ -3663,6 +3669,7 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
     securityCallSlots: new Map(),
     securityFieldOffsetCalls: new Map(),
     securityTfs: [],
+    securitySymbols: [],
     securityRuntimeTfSlots: new Map(),
     securityExprCallSlots: new Map(),
     securityExprTupleTaReads: new Map(),

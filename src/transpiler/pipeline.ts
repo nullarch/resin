@@ -15,6 +15,7 @@ import {
   type PlotcharMeta,
   type PlotshapeMeta,
 } from "./analyzer";
+import type { CalendarSpec } from "../runtime/calendar";
 import { generateCode } from "./codegen";
 import { hoist } from "./passes/hoisting";
 import { ParseError, parse } from "./parser";
@@ -29,6 +30,10 @@ export interface TranspileOk {
   taScratchSize: number; // size of the shared scratch array for multi-return TA calls (0 if unused)
   plotTitles: string[]; // plot() call-site titles, in slot order
   securityTfs: string[]; // compile-time timeframe of each request.security() call site, in slot order
+  // The symbol each security slot reads when it is known at compile time, null for the chart's
+  // own or one known only at run time (Context.from pairs the named ones with ContextOptions.security).
+  securitySymbols: (string | null)[];
+  calendar: CalendarSpec; // the chart symbol's exchange calendar with the chart timeframe
   refHistorySlotCount: number; // size of $.refHistSlots — history for '=' locals holding drawing handles
   condCallHistorySlotCount: number; // size of $.condCallHistSlots — call-count history for stateful calls inside a conditional
   condCallRefHistorySlotCount: number; // size of $.condCallRefHistSlots — the same, for drawing-constructor results
@@ -91,6 +96,8 @@ export function transpile(source: string, options?: AnalyzeOptions): TranspileRe
     taScratchSize: analyzed.taScratchSize,
     plotTitles: analyzed.plotTitles,
     securityTfs: analyzed.securityTfs,
+    securitySymbols: analyzed.securityTfs.map((_, slot) => analyzed.securitySymbols[slot] ?? null),
+    calendar: { chartTf: analyzed.chartTf, ...analyzed.calendar },
     refHistorySlotCount: analyzed.refHistorySlotCount,
     condCallHistorySlotCount: analyzed.condCallHistorySlotCount,
     condCallRefHistorySlotCount: analyzed.condCallRefHistorySlotCount,

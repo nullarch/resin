@@ -43,7 +43,7 @@ script stopped itself on purpose" from "the engine broke".
 | `Series` | `src/runtime/series` | read type for `ctx.close.get(0)` and friends; never constructed by a caller |
 | `StrategyState` | `src/runtime/strategy` | read type for `ctx.strategy.posSize` and friends |
 | `TranspileErr` | `src/transpiler/pipeline` | `ok: false` plus `errors: string[]` |
-| `TranspileOk` | `src/transpiler/pipeline` | `ok: true` plus `code`, the ten slot-metadata fields `Context` needs, `isStrategy`, and `viz` (overlay, plots, bgcolors, barcolors, hlines, fills, shapes, chars, arrows, candles, plotbars) |
+| `TranspileOk` | `src/transpiler/pipeline` | `ok: true` plus `code`, the ten slot-metadata fields `Context` needs, `securitySymbols` and `calendar` (what `Context.from` pairs other symbols' feeds with), `isStrategy`, and `viz` (overlay, plots, bgcolors, barcolors, hlines, fills, shapes, chars, arrows, candles, plotbars) |
 | `TranspileResult` | `src/transpiler/pipeline` | discriminated union of the two above |
 
 ## Two ways to run
@@ -54,8 +54,15 @@ you only want the result. `opts.inputs` overrides `input.*` defaults.
 `opts.magnifier` (an `OHLCVData` with `time`, as is the chart data's) is the bar
 magnifier's lower-timeframe feed: a chart bar owns the sub-bars opening from its
 time up to the next bar's, and a `strategy(use_bar_magnifier=true)` fills its
-orders on them; other scripts ignore it. Both options work the same on
-`Context.from`.
+orders on them; other scripts ignore it. `opts.security` maps symbol strings to
+other symbols' feeds (each an `OHLCVData` with `time`, plus the bars' optional
+`timeframe`, default the requested one, and the symbol's optional `syminfo`
+calendar in the `transpile()` option's shape, default open around the clock in
+UTC): a `request.security` call whose symbol folds to one of those strings at
+compile time (`TranspileOk.securitySymbols`) runs its expression on that feed,
+grouped to the requested timeframe on the symbol's calendar, and each chart bar
+reads the last feed bar whose scheduled close is at or before its own; other
+calls read the chart's bars. All three options work the same on `Context.from`.
 
 **Streaming.** `compile()` gives you a per-bar function and
 `Context.from(transpileOk, data, opts?)` holds the state; you drive the loop

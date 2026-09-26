@@ -17,6 +17,8 @@
 // 무인자 request.security(symbol, tf, expr) 호출과 완전히 동등) — gaps 분기(security.py:139-143)는
 // 아직 구현하지 않는다(analyzer가 4번째 이상 인자를 하드 에러로 거부).
 
+import { change as timeframeChange, parseTimeframe, timeframeSeconds, type ExchangeCalendar, type TimeframeChangeState } from "./calendar";
+
 // AggregatedBar 5필드를 flat Float64Array 4종 + volume으로 저장(array-of-struct 대신
 // struct-of-array — GOAL.md 스타일, TA taSlots의 plain object와 달리 이건 정적 크기라 typed array가
 // 자연스럽다). barMap은 차트 바 idx -> 그 바가 속한 HTF 바 인덱스(pine2py bar_map과 동일, 항상
@@ -36,6 +38,10 @@ export interface SecurityCache {
   volume: Float64Array;
   timeOpen: Float64Array;
   timeClose: Float64Array;
+  // Set on a cache built from another symbol's feed (buildFromFeed): per chart bar, the feed bar
+  // it reads with lookahead off and with lookahead on, -1 before there is one.
+  confirmed?: Int32Array;
+  opened?: Int32Array;
 }
 
 // bar_index는 배열이 아니라 resolveHtfIndex가 이미 계산한 htfIdx 그 자체를 field로 반환한다(HTF
@@ -267,6 +273,80 @@ export function build(
     : buildByCount(open, high, low, close, volume, tf);
 }
 
+// A request.security call on another symbol reads that symbol's own bars (ref_v6_lang.txt
+// request.security: "Requests data from another symbol and/or timeframe"), `feed`, whose
+// timeframe is `feedCal.chartTf` and whose exchange calendar is `feedCal`. The bars are grouped
+// into periods of the requested timeframe `tf` on that calendar, the rule timeframe.change
+// follows (a timeframe no longer than the feed's leaves them as they are), and each period's
+// scheduled close is where its bar closes (ExchangeCalendar.barClose).
+//
+// A chart bar reads, with lookahead off, the last of those bars whose scheduled close is at or
+// before its own scheduled close on the chart's calendar: the reference's one pairing rule
+// (pynecore core/security.py _get_confirmed_time: "the context's LAST bar whose scheduled close
+// (close_A) is at or before the chart's as-of instant", measured on TradingView for weekly over
+// daily, daily over weekly and same-timeframe cross-symbol requests). A bar one side lacks
+// therefore repeats the other side's last value. With lookahead on it reads the last of them that
+// opened before its close, the bar in progress.
+export function buildFromFeed(
+  feed: {
+    open: ArrayLike<number>;
+    high: ArrayLike<number>;
+    low: ArrayLike<number>;
+    close: ArrayLike<number>;
+    volume: ArrayLike<number>;
+    time: ArrayLike<number>;
+  },
+  feedCal: ExchangeCalendar,
+  tf: string,
+  chartTime: ArrayLike<number>,
+  chartCal: ExchangeCalendar,
+): SecurityCache {
+  const bars = {
+    open: [] as number[],
+    high: [] as number[],
+    low: [] as number[],
+    close: [] as number[],
+    volume: [] as number[],
+    timeOpen: [] as number[],
+  };
+  const [modifier, multiplier] = parseTimeframe(tf);
+  const grouped = timeframeSeconds(modifier, multiplier) > feedCal.chartSeconds;
+  const state: TimeframeChangeState = {};
+  for (let k = 0; k < feed.time.length; k++) {
+    const t = feed.time[k]!;
+    const isNew = !grouped || timeframeChange(state, tf, t, k, feedCal) || k === 0;
+    accumulate(bars, isNew, feed.open[k]!, feed.high[k]!, feed.low[k]!, feed.close[k]!, feed.volume[k]!, t);
+  }
+  const n = bars.open.length;
+  const timeClose = new Float64Array(n);
+  for (let h = 0; h < n; h++) timeClose[h] = feedCal.barClose(bars.timeOpen[h]!, h + 1 < n ? bars.timeOpen[h + 1]! : 0, tf);
+
+  const m = chartTime.length;
+  const confirmed = new Int32Array(m);
+  const opened = new Int32Array(m);
+  let c = -1;
+  let o = -1;
+  for (let i = 0; i < m; i++) {
+    const asof = chartCal.barClose(chartTime[i]!, i + 1 < m ? chartTime[i + 1]! : 0, chartCal.chartTf);
+    while (c + 1 < n && timeClose[c + 1]! <= asof) c++;
+    while (o + 1 < n && bars.timeOpen[o + 1]! < asof) o++;
+    confirmed[i] = c;
+    opened[i] = o;
+  }
+  return {
+    barMap: confirmed,
+    open: Float64Array.from(bars.open),
+    high: Float64Array.from(bars.high),
+    low: Float64Array.from(bars.low),
+    close: Float64Array.from(bars.close),
+    volume: Float64Array.from(bars.volume),
+    timeOpen: Float64Array.from(bars.timeOpen),
+    timeClose,
+    confirmed,
+    opened,
+  };
+}
+
 // barMap+gaps+lookahead -> htfIdx 인덱스 해석부만 분리(3c, ROADMAP [hard->분할] 셋째 슬라이스) —
 // get()/getFromArray() 공용. 반환값 -1은 "na 신호"(호출부가 NaN으로 변환) — 실제 htfIdx는 항상
 // 0 이상이라(barMap 값 자체가 항상 0 이상, SecurityCache 파일 헤더 참조) -1과 절대 충돌하지 않는다.
@@ -280,6 +360,15 @@ export function build(
 //                                                          — TV 미검증 가설로 literal port, DIVERGENCES)
 // lookahead=on은 인덱스 보정 자체가 없다(0번째 구간 na 예외는 lookahead=off 전용, next_hint 명시).
 function resolveHtfIndex(cache: SecurityCache, idx: number, gaps: boolean, lookahead: boolean): number {
+  if (cache.confirmed !== undefined) {
+    // Another symbol's feed: the pairing is already resolved per chart bar (buildFromFeed). With
+    // gaps on, a value shows only on the chart bar where its feed bar first appears.
+    const map = lookahead ? cache.opened! : cache.confirmed;
+    const h = map[idx]!;
+    if (h < 0) return -1;
+    if (gaps && idx > 0 && map[idx - 1] === h) return -1;
+    return h;
+  }
   const rawHtfIdx = cache.barMap[idx]!;
   let htfIdx: number;
   if (lookahead) {

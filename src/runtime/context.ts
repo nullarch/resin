@@ -22,7 +22,8 @@
 
 import { Series, RefSeries } from "./series";
 import { StrategyState, type SubBarWindow } from "./strategy";
-import { build as buildSecurityCache, type SecurityCache } from "./security";
+import { build as buildSecurityCache, buildFromFeed, type SecurityCache } from "./security";
+import { ExchangeCalendar, calendarSpecOf, type CalendarSpec, type SymbolCalendarOptions } from "./calendar";
 // Type-only: erased at runtime, so no runtime cycle back into the transpiler.
 import type { TranspileOk } from "../transpiler/pipeline";
 import type { DrawingRecord } from "./drawing";
@@ -47,10 +48,23 @@ export interface ContextOptions {
   // from its own open time up to the next chart bar's; a strategy(use_bar_magnifier=true) fills its
   // orders on them (StrategyState.processFills). Any other script ignores the feed.
   magnifier?: OHLCVData;
+  // Other symbols' bars, keyed by the symbol string a script passes request.security. A call
+  // whose symbol is known at compile time and has a feed here reads the feed (security.ts
+  // buildFromFeed); any other call reads the chart's own bars.
+  security?: Readonly<Record<string, SecurityFeed>>;
+}
+
+// One symbol's bars with their open times (required), the timeframe they have (taken to be the
+// requested one when omitted), and the symbol's exchange calendar in the shape of transpile's
+// syminfo option (open around the clock in UTC when omitted).
+export interface SecurityFeed extends OHLCVData {
+  time: ArrayLike<number>;
+  timeframe?: string;
+  syminfo?: SymbolCalendarOptions;
 }
 
 // The ContextOptions keys this resin takes, for callers that detect support.
-export const CONTEXT_OPTION_KEYS: readonly (keyof ContextOptions)[] = ["inputs", "magnifier"];
+export const CONTEXT_OPTION_KEYS: readonly (keyof ContextOptions)[] = ["inputs", "magnifier", "security"];
 
 export class Context {
   vars: (number | string | number[] | null | undefined)[];
@@ -136,6 +150,10 @@ export class Context {
   // strategy, reused bar after bar. Both undefined when no feed was given.
   private subStart: Int32Array | undefined;
   private subWindow: SubBarWindow | undefined;
+  // Per security slot, the other symbol's feed it reads and that symbol's calendar
+  // (setSecurityFeeds), and the chart's calendar they pair with. Empty without feeds.
+  private slotFeeds: ({ symbol: string; feed: SecurityFeed } | undefined)[] = [];
+  private chartCalendar: ExchangeCalendar | undefined;
 
   // Object form (viz S0): build a Context straight from a TranspileOk instead of
   // hand-copying its twelve slot fields into the positional constructor. The
@@ -153,7 +171,36 @@ export class Context {
       result.condCallHistorySlotCount, result.condCallRefHistorySlotCount,
     );
     if (opts.magnifier !== undefined) ctx.setMagnifier(opts.magnifier);
+    if (opts.security !== undefined) {
+      ctx.setSecurityFeeds(opts.security, result.securitySymbols ?? [], result.securityTfs, result.calendar);
+    }
     return ctx;
+  }
+
+  // Takes other symbols' feeds (ContextOptions.security): each security slot whose symbol
+  // (`symbols`, the analyzer's compile-time symbol per slot, null for the chart's own) has a feed
+  // is rebuilt from it, paired with the chart's bars on `chartSpec`, the chart's calendar.
+  setSecurityFeeds(
+    feeds: Readonly<Record<string, SecurityFeed>>,
+    symbols: readonly (string | null)[],
+    tfs: readonly string[],
+    chartSpec: CalendarSpec | undefined,
+  ): void {
+    this.slotFeeds = symbols.map((symbol) =>
+      symbol !== null && Object.prototype.hasOwnProperty.call(feeds, symbol) ? { symbol, feed: feeds[symbol]! } : undefined,
+    );
+    if (!this.slotFeeds.some((f) => f !== undefined)) return;
+    if (this.time === undefined) throw new Error("Context: request.security feeds need a time channel on the chart data");
+    this.chartCalendar = new ExchangeCalendar(chartSpec ?? calendarSpecOf("D", undefined, "chart"));
+    tfs.forEach((tf, slot) => {
+      if (this.slotFeeds[slot] !== undefined) this.securityCache[slot] = this.buildFeedCache(slot, tf);
+    });
+  }
+
+  private buildFeedCache(slot: number, tf: string): SecurityCache {
+    const { symbol, feed } = this.slotFeeds[slot]!;
+    const feedCal = new ExchangeCalendar(calendarSpecOf(feed.timeframe ?? tf, feed.syminfo, `request.security feed '${symbol}'`));
+    return buildFromFeed(feed, feedCal, tf, this.time!, this.chartCalendar!);
   }
 
   // Takes the bar magnifier's feed (ContextOptions.magnifier) and finds each chart bar's sub-bars in
@@ -234,6 +281,10 @@ export class Context {
   // has already filled those with the chart timeframe as a harmless
   // placeholder, so slots that are never rebuilt behave exactly as before.
   rebuildSecurityCache(slot: number, tf: string): void {
+    if (this.slotFeeds[slot] !== undefined) {
+      this.securityCache[slot] = this.buildFeedCache(slot, tf);
+      return;
+    }
     this.securityCache[slot] = buildSecurityCache(
       this.rawData.open,
       this.rawData.high,

@@ -45,6 +45,48 @@ export interface CalendarSpec {
   sessionStarts: readonly SessionStart[];
 }
 
+// A symbol's calendar as a caller writes it (the calendar keys of transpile's syminfo option):
+// day 0 = Monday … 6 = Sunday, "HH:MM[:SS]" times in the symbol's timezone.
+export interface SymbolCalendarOptions {
+  timezone?: string;
+  type?: string;
+  opening_hours?: readonly { day: number; start: string; end: string }[];
+  session_starts?: readonly { day: number; time: string }[];
+}
+
+function secondsOfDay(v: unknown, what: string): number {
+  const m = typeof v === "string" ? /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(v) : null;
+  const h = m === null ? NaN : Number(m[1]);
+  const mi = m === null ? NaN : Number(m[2]);
+  const s = m === null || m[3] === undefined ? 0 : Number(m[3]);
+  if (!(h < 24 && mi < 60 && s < 60)) throw new Error(`${what}: invalid time of day ${JSON.stringify(v)}`);
+  return h * 3600 + mi * 60 + s;
+}
+
+function weekday(v: unknown, what: string): number {
+  if (typeof v !== "number" || !Number.isInteger(v) || v < 0 || v > 6) throw new Error(`${what}: invalid day ${JSON.stringify(v)}`);
+  return v;
+}
+
+// The CalendarSpec of a symbol whose bars have timeframe `tf`. Without a schedule the market is
+// open around the clock, every day from 00:00, as the chart's is by default (analyzer
+// resolveSymbolCalendar); the timezone defaults to UTC and the type to "stock".
+export function calendarSpecOf(tf: string, opts: SymbolCalendarOptions | undefined, what: string): CalendarSpec {
+  const days = [0, 1, 2, 3, 4, 5, 6];
+  const scheduled = opts?.opening_hours !== undefined || opts?.session_starts !== undefined;
+  return {
+    chartTf: tf,
+    timezone: opts?.timezone ?? "UTC",
+    type: opts?.type ?? "stock",
+    openingHours: scheduled
+      ? (opts!.opening_hours ?? []).map((oh) => [weekday(oh.day, what), secondsOfDay(oh.start, what), secondsOfDay(oh.end, what)] as const)
+      : days.map((d) => [d, 0, 86_399] as const),
+    sessionStarts: scheduled
+      ? (opts!.session_starts ?? []).map((ss) => [weekday(ss.day, what), secondsOfDay(ss.time, what)] as const)
+      : days.map((d) => [d, 0] as const),
+  };
+}
+
 // A timeframe string as [modifier, multiplier]: "5" -> ["", 5], "1D"/"D" -> ["D", 1], "3W" ->
 // ["W", 3], "30S" -> ["S", 30] (concepts_timeframes.txt "Timeframe string specifications").
 export function parseTimeframe(tf: string): [string, number] {
@@ -127,6 +169,7 @@ export class ExchangeCalendar {
   // The earliest open per weekday that begins the next day's trading day (an overnight session
   // not opening at midnight; core/resampler.py overnight_opens / rolls_trading_day).
   private readonly rollOpen: (number | undefined)[] = new Array(7).fill(undefined);
+  private readonly openingHours: readonly SessionInterval[];
   private readonly fixedOffsetMs: number | null;
   private readonly formatter: Intl.DateTimeFormat | null;
   private readonly offsetCache = new Map<number, number>();
@@ -137,6 +180,7 @@ export class ExchangeCalendar {
     this.chartSeconds = timeframeSeconds(this.chartModifier, this.chartMultiplier);
     this.chartSpanOffMs = this.chartModifier === "" || this.chartModifier === "S" ? this.chartSeconds * 1000 - 1 : 0;
     this.gridMode = gridMode(spec.type, spec.openingHours);
+    this.openingHours = spec.openingHours;
     for (const [day, time] of spec.sessionStarts) this.startsByDay[day]!.push(time * 1000);
     const noteRollOpen = (day: number, start: number): void => {
       const cur = this.rollOpen[day];
@@ -192,6 +236,108 @@ export class ExchangeCalendar {
       this.offsetCache.set(bucket, off);
     }
     return ms + off;
+  }
+
+  // The instant of an exchange wall-clock time, the inverse of wall(). A wall time that occurs
+  // twice (the hour a daylight-saving change repeats) resolves to its first occurrence, one that
+  // does not occur (the hour skipped) with the offset in force before the change, as the
+  // reference's zone-aware datetime does (fold 0).
+  unwall(wallMs: number): number {
+    if (this.fixedOffsetMs !== null) return wallMs - this.fixedOffsetMs;
+    const before = this.wall(wallMs - 86_400_000) - (wallMs - 86_400_000);
+    const after = this.wall(wallMs + 86_400_000) - (wallMs + 86_400_000);
+    const early = wallMs - before;
+    if (this.wall(early) === wallMs) return early;
+    const late = wallMs - after;
+    return this.wall(late) === wallMs ? late : early;
+  }
+
+  // The scheduled close of a bar of timeframe `tf` opening at `openMs` (core/security.py
+  // actual_bar_close, the instant a request.security consumer pairs bars by; unix ms, exclusive):
+  // - intraday: the earliest of open + the timeframe's span, the next bar's open (`nextOpenMs`,
+  //   0 when there is none) and the end of the session holding the open;
+  // - daily, weekly, monthly: the end of the last scheduled session in the bar's period, a day,
+  //   the Monday-to-Sunday week or the month of the open's trading day, else the period's civil
+  //   end. The periods of nD/nW/nM (n > 1) are not modelled here: such a bar closes at the next
+  //   bar's open, or a span after its own open when it is the last.
+  // Holidays and early closes are not in a weekly schedule, so a bar closes where the schedule
+  // says; the reference does the same.
+  barClose(openMs: number, nextOpenMs: number, tf: string): number {
+    const [modifier, multiplier] = parseTimeframe(tf);
+    const spanMs = timeframeSeconds(modifier, multiplier) * 1000;
+    if (modifier === "" || modifier === "S") {
+      let close = openMs + spanMs;
+      if (nextOpenMs > 0 && nextOpenMs < close) close = nextOpenMs;
+      const end = this.sessionEndOf(openMs);
+      return end !== null && end < close ? end : close;
+    }
+    if (multiplier > 1) return nextOpenMs > 0 ? nextOpenMs : openMs + spanMs;
+    const first = this.tradingDay(this.wall(openMs));
+    let last: number;
+    if (modifier === "D") {
+      last = first;
+    } else if (modifier === "W") {
+      last = first - weekdayOf(first) + 6;
+    } else {
+      const date = new Date(first * DAY_MS);
+      last = Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1) / DAY_MS - 1;
+    }
+    for (let day = last; day >= first; day--) {
+      const end = this.tradingDayEnd(day);
+      if (end === null) continue;
+      const endMs = this.exclusiveEnd(end);
+      if (endMs > openMs) return endMs;
+    }
+    return this.unwall((last + 1) * DAY_MS);
+  }
+
+  // A session end as an exclusive instant: 23:59:59 is the schedule's way of writing midnight
+  // (core/security.py _exclusive_session_end), so such a session runs to the next day's 00:00.
+  private exclusiveEnd(endWall: number): number {
+    const ms = this.unwall(endWall);
+    return floorMod(endWall, DAY_MS) === DAY_MS - 1000 ? ms + 1000 : ms;
+  }
+
+  // The end (wall ms) of the session holding an instant, the earliest when several do, or null
+  // when the schedule has none there (core/security.py _session_end_of_open): a session of the
+  // instant's weekday from its open, running into the next day when it closes at or before it
+  // opens, or the part after midnight of the previous weekday's overnight session.
+  private sessionEndOf(ms: number): number | null {
+    const w = this.wall(ms);
+    const day = Math.floor(w / DAY_MS);
+    const t = w - day * DAY_MS;
+    const weekday = weekdayOf(day);
+    const prevWeekday = (weekday + 6) % 7;
+    let best: number | null = null;
+    for (const [d, start, end] of this.openingHours) {
+      const overnight = end <= start;
+      let endWall: number;
+      if (d === weekday && t >= start * 1000 && (overnight || t < end * 1000)) {
+        endWall = (day + (overnight ? 1 : 0)) * DAY_MS + end * 1000;
+      } else if (d === prevWeekday && overnight && t < end * 1000) {
+        endWall = day * DAY_MS + end * 1000;
+      } else {
+        continue;
+      }
+      const endMs = this.exclusiveEnd(endWall);
+      if (best === null || endMs < best) best = endMs;
+    }
+    return best;
+  }
+
+  // The scheduled end (wall ms) of a trading day, the last of its sessions, or null when it has
+  // none (core/resampler.py trading_day_end_sec): a day session of its weekday, or an overnight
+  // session opening the evening before. A session round the clock (00:00-00:00) has no end in it.
+  private tradingDayEnd(day: number): number | null {
+    const weekday = weekdayOf(day);
+    let best: number | null = null;
+    for (const [d, start, end] of this.openingHours) {
+      const rolls = end <= start && start !== 0;
+      if (rolls ? (d + 1) % 7 !== weekday : d !== weekday || end <= start) continue;
+      const endWall = day * DAY_MS + end * 1000;
+      if (best === null || endWall > best) best = endWall;
+    }
+    return best;
   }
 
   // The trading day (day number) of a wall time: its calendar date, or the next one at or after its

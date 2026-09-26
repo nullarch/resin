@@ -1975,6 +1975,34 @@ function resolveSecurityTfParamSiteValues(
   return values;
 }
 
+// The symbol a request.security call reads, when it is known at compile time: a string the
+// timeframe resolver folds (a literal, a constant variable, an input's default, a constant
+// ternary, ...), or, for a parameter of the enclosing function, the one string every call site
+// passes. null is the chart's own symbol (syminfo.tickerid and the like) or a symbol known only
+// at run time; both read the chart's bars. The fold registers no input freeze guard: those guard
+// the timeframe's aggregation cache.
+function resolveSecuritySymbol(symbolArg: Expr, prog: AnalyzedProgram, scope: LexScope): string | null {
+  if (symbolArg.kind === "NaLiteral") return null;
+  const guardKeysBefore = new Set(prog.securityTfConstGuards.keys());
+  let symbol = resolveSecurityTfLiteral(symbolArg, prog, undefined, undefined, scope.func?.name ?? null);
+  if (symbol === undefined) {
+    const sites = resolveSecurityTfParamSiteValues(symbolArg, prog, scope);
+    if (sites !== null && typeof sites[0] === "string" && sites.every((v) => v === sites[0])) symbol = sites[0];
+  }
+  for (const k of prog.securityTfConstGuards.keys()) {
+    if (!guardKeysBefore.has(k)) prog.securityTfConstGuards.delete(k);
+  }
+  return symbol === undefined || symbol === "" ? null : symbol;
+}
+
+// Gives the security slots assigned since `fromSlot` their call's symbol. A slot already named
+// (a nested call's own) keeps its symbol.
+function noteSecuritySymbol(prog: AnalyzedProgram, fromSlot: number, symbol: string | null): void {
+  for (let slot = fromSlot; slot < prog.securityTfs.length; slot++) {
+    if (prog.securitySymbols[slot] === undefined) prog.securitySymbols[slot] = symbol;
+  }
+}
+
 // C529: 콜사이트별 tf 슬롯 블록을 쓰는 함수의 __secIdx 배선 — C453 processPendingSecurityParamExprs
 // 꼬리와 동일한 두 부수효과(hasSecParamCalls로 함수 시그니처에 __secIdx 추가, funcAllCallSites
 // 순서 그대로 콜사이트별 서수 등록). 같은 함수에 대해 여러 번 호출돼도(본문에 해당 콜 2개 이상,
@@ -7475,6 +7503,9 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           }
         }
       }
+      // The symbol this call reads, recorded for every slot it is given below (and, for the
+      // deferred parameter forms, when processPendingSecurityParamExprs assigns them).
+      const symbol = resolveSecuritySymbol(symbolArg, prog, scope);
       const isBareSeries = seriesArg.kind === "Identifier" && BAR_SERIES_NAMES.has(seriesArg.name);
       const isTupleArg = seriesArg.kind === "TupleExpr";
       // 배치31 (a, C597)/(a)-2(C598)/(b)-1(C599): 컴파일타임 리터럴로 안 접히면 런타임 1회 확정
@@ -8052,6 +8083,8 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           prog.securityRuntimeTfSlots.set(siteSlot, v);
         }
       };
+      const slotsBefore = prog.securityTfs.length;
+      try {
       if (kwargsOk && (tfAvailable || tfViaRuntime || tfDiscarded)) {
         if (seriesArg.kind === "Identifier" && BAR_SERIES_NAMES.has(seriesArg.name)) {
           const slot = prog.securityTfs.length;
@@ -8319,6 +8352,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             tfLiteral: tfSiteValues ?? tfLiteral!,
             gaps,
             lookahead,
+            symbol,
           });
           analyzeExpr(seriesArg, prog, scope, false);
           analyzeExpr(symbolArg, prog, scope, false);
@@ -8345,6 +8379,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             tfLiteral: tfSiteValues ?? tfLiteral!,
             gaps,
             lookahead,
+            symbol,
           });
           analyzeExpr(symbolArg, prog, scope, false);
           analyzeExpr(tfArg, prog, scope, false);
@@ -8364,11 +8399,15 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             tfLiteral: tfSiteValues ?? tfLiteral!,
             gaps,
             lookahead,
+            symbol,
           });
           analyzeExpr(symbolArg, prog, scope, false);
           analyzeExpr(tfArg, prog, scope, false);
           return;
         }
+      }
+      } finally {
+        noteSecuritySymbol(prog, slotsBefore, symbol);
       }
       }
     }
@@ -8832,6 +8871,7 @@ export function processPendingSecurityParamExprs(prog: AnalyzedProgram, rootScop
           lookahead: pending.lookahead,
           offsetExpr: offsetRoot.index,
         });
+        noteSecuritySymbol(prog, slot, pending.symbol);
         continue;
       }
       pushSecurityExprUnsupportedError(prog, pending.expr);
@@ -8862,6 +8902,7 @@ export function processPendingSecurityParamExprs(prog: AnalyzedProgram, rootScop
       // top-level(위 함수 주석 참조).
       for (const tc of built.taCalls) analyzeStatefulCall(tc.taCall, tc.fn, tc.entry, prog, rootScope);
     });
+    noteSecuritySymbol(prog, base, pending.symbol);
     prog.securityParamExprCalls.set(pending.expr, { base, gaps: pending.gaps, lookahead: pending.lookahead });
     info!.hasSecParamCalls = true;
     // 서수 배정 — 같은 함수에 pending이 여러 개(본문에 해당 콜 2개 이상)면 같은 값으로 재설정될
