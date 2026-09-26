@@ -1,5 +1,7 @@
 // 안전 수치 연산. GOAL.md 아키텍처 불변 원칙: `/`->pineDiv, `%`->pineMod (0-나눗셈 -> NaN).
 
+import { MINTICK } from "./syminfo";
+
 export function pineDiv(a: number, b: number): number {
   if (b === 0) return NaN;
   return a / b;
@@ -177,29 +179,112 @@ export function pineNeq(a: unknown, b: unknown): boolean {
   return !pineEq(a, b);
 }
 
-// math.round — half-away-from-zero (MEMORY.md Pitfalls: Math.round(-0.5)는 JS에서 -0(toward +inf),
-// Pine은 0에서 멀어지는 방향으로 반올림한다. pine2py wavealgo.math.pine_round의 copysign(floor(...))
-// 방식을 그대로 이식 — Math.sign은 크기가 0일 때만 부호가 사라지므로 floor(|x|+0.5)>=1인 한 동치).
-export function round(value: number, precision: number = 0): number {
-  if (value !== value) return NaN; // NaN은 그대로 통과 (na 시맨틱)
-  if (precision === 0) {
-    return Math.sign(value) * Math.floor(Math.abs(value) + 0.5);
+// A finite non-negative double as an exact fraction n / d (Python's float.as_integer_ratio, not
+// reduced): the mantissa over a power of two, or the whole integer over 1.
+function doubleRatio(x: number): [bigint, bigint] {
+  if (x === 0) return [0n, 1n];
+  const view = new DataView(new ArrayBuffer(8));
+  view.setFloat64(0, x);
+  const hi = view.getUint32(0);
+  const biased = (hi >>> 20) & 0x7ff;
+  let mantissa = (BigInt(hi & 0xfffff) << 32n) | BigInt(view.getUint32(4));
+  let exponent = -1074;
+  if (biased !== 0) {
+    mantissa |= 1n << 52n;
+    exponent = biased - 1075;
   }
-  const multiplier = 10 ** precision;
-  return (Math.sign(value) * Math.floor(Math.abs(value) * multiplier + 0.5)) / multiplier;
+  return exponent >= 0 ? [mantissa << BigInt(exponent), 1n] : [mantissa, 1n << BigInt(-exponent)];
 }
 
-// math.round_to_mintick — value를 mintick의 배수로 반올림. pine2py wavealgo.math.round_to_mintick은
-// `round(value / mintick) * mintick`에서 이 round()를 Python 내장 round()(banker's — 0.5를 짝수로
-// 반올림)에 위임하는데, 같은 모듈의 math.round(pine_round)는 half-away-from-zero를 명시적으로
-// 구현해둔 것과 정면으로 모순된다(DIVERGENCES.md #14) — Pine 공식 문서가 math.round의 tie-break
-// 규칙("0에서 멀어지는 방향")을 명시할 뿐 round_to_mintick에 별도 규칙을 두지 않으므로, pine2js는
-// 이미 검증된 rt.round(half-away-from-zero)를 그대로 재사용해 두 함수의 반올림 규칙을 통일한다
-// (GOAL.md "pine2py의 알려진 버그는 따르지 않는다"). mintick<=0은 pine2py와 동일하게 value 그대로.
-export function round_to_mintick(value: number, mintick: number = 0.01): number {
+// `0.5 - 1e-10` as the exact fraction ROUND_TIE_HALF / ROUND_TIE_SCALE: the point from which a
+// remainder rounds away from zero in math.round (with a precision) and math.round_to_mintick.
+const ROUND_TIE_SCALE = 10n ** 10n;
+const ROUND_TIE_HALF = 5n * 10n ** 9n - 1n;
+
+// math.round — ties away from zero, on TradingView's arithmetic (the oracle's pynecore lib/math.py
+// round, whose comments cite the TradingView measurements: probes roundprobe, mr1-mr14, mrp1,
+// mrp2 on FX:EURUSD and BINANCE:BTCUSDT). The manual says "rounded to the nearest integer, with
+// ties rounding up. If the `precision` parameter is used, returns a float value rounded to that
+// amount of decimal places" (ref_v6_ta_math.txt math.round); "up" is away from zero (-2.5 -> -3).
+// - No precision (or na), or a precision of zero or less: the integer nearest to the value,
+//   compared exactly (a negative precision does not round to tens: 1234.5678 @ -2 -> 1235).
+// - A positive precision rounds only the fraction: `int + round(frac * scale) / scale`, where the
+//   scale is `1 / 10^-precision` (99999.99999999999 at 5, not 1e5), a precision above 16 acting as
+//   16. A tie is decided on the EXACT product frac * scale with a 1e-10 tolerance: a product within
+//   1e-10 below .5 rounds away from zero. So math.round(1.005, 2) is 1.01 although the double
+//   1.005 is 1.00499999999999989..., and 101.37 * 1.005 = 101.87684999999999 is 101.8769 at 4
+//   decimals where a double `x * 10^4 + 0.5` floored it to 101.8768 (repros resin-harness
+//   lang.probes L29 rprec2, state/repros/ta.math-seed-24.json).
+export function round(value: number, precision: number = NaN): number {
+  if (value !== value) return NaN; // NaN은 그대로 통과 (na 시맨틱)
+  const hasPrecision = precision === precision;
+  if (!Number.isFinite(value)) return hasPrecision ? value : NaN;
+  const negative = value < 0;
+  const magnitude = negative ? -value : value;
+  if (!hasPrecision || precision <= 0) {
+    // From 2^52 up every double is an integer, and `magnitude + 0.5` would round to even there.
+    if (magnitude >= 2 ** 52) return value;
+    const units = Math.floor(magnitude + 0.5);
+    // `0 - units`: a negative value rounded to nothing is 0, not -0.
+    return negative ? 0 - units : units;
+  }
+  const scale = 1 / Math.pow(10, -(precision <= 16 ? precision : 16));
+  const fraction = magnitude % 1;
+  const scaled = fraction * scale;
+  let units = Math.floor(scaled);
+  const offset = scaled - units - 0.5;
+  // Only a near-tie needs the exact product; the window covers the double's own error.
+  const slack = 1e-9 + scaled * 1.8e-15;
+  if (-slack < offset && offset < slack) {
+    const [fn, fd] = doubleRatio(fraction);
+    const [sn, sd] = doubleRatio(scale);
+    const denominator = fd * sd;
+    const remainder = fn * sn - BigInt(units) * denominator;
+    if (remainder * ROUND_TIE_SCALE >= ROUND_TIE_HALF * denominator) units += 1;
+  } else if (offset > 0) {
+    units += 1;
+  }
+  const rounded = magnitude - fraction + units / scale;
+  return negative ? 0 - rounded : rounded;
+}
+
+// math.round_to_mintick — "the nearest value that can be divided by syminfo.mintick, without the
+// remainder, with ties rounding up" (ref_v6_ta_math.txt), ties away from zero, on TradingView's
+// arithmetic (the oracle's pynecore lib/math.py round_to_mintick, measured on BINANCE:BTCUSDT
+// 30m: 19999.585 rounds up, 16384.245 down, -1.075 -> -1.08). The position on the tick grid is
+// `value * pricescale / minmove` (mintick = minmove / pricescale), a tie decided on its EXACT value
+// with math.round's 1e-10 tolerance, and the result is `units * minmove / pricescale`, not
+// `units * mintick` (repro resin-harness state/repros/ta.math-seed-4.json: 111 * 1.005 =
+// 111.55499999999999 is 111.56, where a double `value / 0.01` floored it to 111.55). codegen
+// passes the chart symbol's grid; a
+// resin-only explicit `mintick` argument (not in Pine) takes the grid `1 / mintick` with minmove 1.
+// A mintick <= 0 returns the value.
+export function round_to_mintick(
+  value: number,
+  mintick: number = MINTICK,
+  pricescale: number = 1 / mintick,
+  minmove: number = 1,
+): number {
   if (value !== value) return NaN;
   if (mintick <= 0) return value;
-  return round(value / mintick) * mintick;
+  const negative = value < 0;
+  const magnitude = negative ? -value : value;
+  const scaled = (magnitude * pricescale) / minmove;
+  let units = Math.trunc(scaled);
+  const offset = scaled - units - 0.5;
+  const slack = 1e-6 + scaled * 1.8e-15;
+  if (-slack < offset && offset < slack) {
+    const [mn, md] = doubleRatio(magnitude);
+    const [pn, pd] = doubleRatio(pricescale);
+    const [vn, vd] = doubleRatio(minmove);
+    const numerator = mn * pn * vd;
+    const denominator = md * pd * vn;
+    units = Number(numerator / denominator);
+    if ((numerator % denominator) * ROUND_TIE_SCALE >= ROUND_TIE_HALF * denominator) units += 1;
+  } else if (offset > 0) {
+    units += 1;
+  }
+  return ((negative ? 0 - units : units) * minmove) / pricescale;
 }
 
 // math.abs — Math.abs가 NaN을 그대로 통과시키므로 특수 처리 불필요.

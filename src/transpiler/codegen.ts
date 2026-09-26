@@ -4841,11 +4841,16 @@ function genCallExpr(
             ...expr.args.map((a, i) => (refPositions.includes(i + 1) && a.kind === "NaLiteral" ? "null" : genExpr(a, program, funcCtx, secCtx))),
           ]
         : expr.args.map((a, i) => (refPositions.includes(i) && a.kind === "NaLiteral" ? "null" : genExpr(a, program, funcCtx, secCtx)));
-    // math.round_to_mintick(x) rounds to "the symbol's mintick" (rn.txt); rt.round_to_mintick
-    // defaults to resin's default mintick, so a configured symbol grid passes its own.
-    const mintick = program.syminfoNumbers.get("mintick")!;
-    if (builtinName === "round_to_mintick" && args.length === 1 && mintick !== SYMINFO_NUMBER_PROPS.get("mintick")) {
-      args.push(String(mintick));
+    // math.round_to_mintick(x) rounds to "the symbol's mintick" (rn.txt), on the tick grid
+    // `x * pricescale / minmove` (runtime/numeric.ts round_to_mintick); rt.round_to_mintick
+    // defaults to resin's default grid, so a configured symbol grid passes its own.
+    const grid = ["mintick", "pricescale", "minmove"];
+    if (
+      builtinName === "round_to_mintick" &&
+      args.length === 1 &&
+      grid.some((k) => program.syminfoNumbers.get(k) !== SYMINFO_NUMBER_PROPS.get(k))
+    ) {
+      args.push(...grid.map((k) => String(program.syminfoNumbers.get(k)!)));
     }
     return `rt.${builtinName}(${args.join(", ")})`;
   }
