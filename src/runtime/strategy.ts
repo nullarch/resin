@@ -1,4 +1,4 @@
-import { MINCONTRACT, MINMOVE, MINTICK, PRICESCALE } from "./syminfo";
+import { MINCONTRACT, MINMOVE, MINTICK, POINTVALUE, PRICESCALE } from "./syminfo";
 
 // StrategyState: strategy.* 브로커 에뮬레이터 — 마켓 주문 entry/close, 롱/숏 양방향(C164 둘째
 // 슬라이스), 계좌 속성 netprofit/openprofit/equity/트레이드 카운터(C165 셋째 슬라이스),
@@ -246,6 +246,14 @@ export class StrategyState {
   pricescale: number;
   minmove: number;
   lotsPerContract: number;
+  // syminfo.pointvalue: the money one contract makes or loses when the price moves by 1.0. Every
+  // money amount the engine derives from a price (profit, entry value, percent commission, the
+  // unit cost a default-sized order divides its budget by, the marks behind the statistics) is
+  // that price amount times it; cash commissions and the initial capital are money already. The
+  // manual (faq.txt): "the cost of entering a futures contract position is the chart price
+  // multiplied by the syminfo.pointvalue". Tier 1 resin-harness suites/strategy/tv/futures_pnl
+  // (NYMEX_MINI:QM1!, pointvalue 500): a 1-contract short from 73.4 closed at 74.275 is -437.5.
+  pointvalue: number;
 
   // Account counters, updated as trades close (recordClosedTrade), on each closed trade's profit
   // after commission.
@@ -527,6 +535,7 @@ export class StrategyState {
     this.pricescale = PRICESCALE;
     this.minmove = MINMOVE;
     this.lotsPerContract = lotsPerContract(MINCONTRACT);
+    this.pointvalue = POINTVALUE;
     this.realizedPnl = 0;
     this.closedTrades = 0;
     this.winTrades = 0;
@@ -753,7 +762,7 @@ export class StrategyState {
   private updateRunupTrough(fillPrice: number): void {
     let mark = this.initialCapital + this.realizedPnl;
     if (this.posSize !== 0) {
-      const open = this.posSize * (fillPrice - this.posAvgPrice);
+      const open = this.posSize * (fillPrice - this.posAvgPrice) * this.pointvalue;
       if (open > 0) mark += open;
     }
     if (mark < this.runupTrough) this.runupTrough = mark;
@@ -817,12 +826,16 @@ export class StrategyState {
 
   // The chart symbol the strategy trades (transpile's syminfo option; codegen emits this once, before
   // the first bar, when it differs from resin's default symbol). Tick distances, slippage and level
-  // snapping use its tick grid; default-sized orders floor to its lot grid.
-  setSymbol(mintick: number, pricescale: number, minmove: number, mincontract: number): void {
+  // snapping use its tick grid; default-sized orders floor to its lot grid; money amounts scale by
+  // its point value.
+  setSymbol(
+    mintick: number, pricescale: number, minmove: number, mincontract: number, pointvalue: number = POINTVALUE,
+  ): void {
     this.mintick = mintick;
     this.pricescale = pricescale;
     this.minmove = minmove;
     this.lotsPerContract = lotsPerContract(mincontract);
+    this.pointvalue = pointvalue;
   }
 
   // strategy(commission_type=, commission_value=) (codegen emits this once, before the first bar,
@@ -848,8 +861,9 @@ export class StrategyState {
 
   // Books one leg (`qty` contracts at `price`) of the order being filled and returns the fee to charge
   // it. TradingView charges ONE fee per order over the order's whole quantity, rounded once
-  // (roundCash): percent is price × value% per contract, cash_per_contract is value per contract,
-  // cash_per_order is value once. That fee is split over the legs in proportion to their quantity,
+  // (roundCash): percent is price × value% per contract, scaled by the point value (the rate as a
+  // double first, then × pointvalue, as the oracle does), cash_per_contract is value per contract,
+  // cash_per_order is value once — cash fees are money already. That fee is split over the legs in proportion to their quantity,
   // each share rounded again, and every leg is charged what its share adds to the shares already
   // booked — so a single-leg order pays exactly the rounded fee. This is the oracle's
   // `_book_commission`/`_book_flat_commission`/`_apply_booking` (tier 2, probe-measured on
@@ -867,7 +881,7 @@ export class StrategyState {
     }
     const total =
       this.commissionType === "percent"
-        ? roundCash(percentRate(price, this.commissionValue) * qtyTotal)
+        ? roundCash(percentRate(price, this.commissionValue) * this.pointvalue * qtyTotal)
         : this.commissionType === "cash_per_contract"
           ? roundCash(this.commissionValue * qtyTotal)
           : roundCash(this.commissionValue);
@@ -931,7 +945,7 @@ export class StrategyState {
   // 넘긴다 — position_size류 순수 프로퍼티 식과 달리 메서드 호출 식으로 등록되는 이유.
   openProfit(closePrice: number): number {
     if (this.posSize === 0) return 0;
-    return (closePrice - this.posAvgPrice) * this.posSize;
+    return (closePrice - this.posAvgPrice) * this.posSize * this.pointvalue;
   }
 
   // strategy.equity = initial_capital + 실현 손익 + 미실현 손익 (engine.py equity 프로퍼티 literal port).
@@ -988,8 +1002,8 @@ export class StrategyState {
     let drawdownSum = 0;
     let runupSum = 0;
     for (const t of this.openTrades) {
-      const atHigh = t.size * (high - this.posAvgPrice);
-      const atLow = t.size * (low - this.posAvgPrice);
+      const atHigh = t.size * (high - this.posAvgPrice) * this.pointvalue;
+      const atLow = t.size * (low - this.posAvgPrice) * this.pointvalue;
       drawdownSum += -Math.min(atHigh, atLow, 0);
       runupSum += Math.max(atHigh, atLow, 0);
     }
@@ -1044,13 +1058,13 @@ export class StrategyState {
   // _finalize_bar_pnl (tier 2), which also stores the percents rather than deriving them later.
   updateTradeExcursion(high: number, low: number): void {
     for (const t of this.openTrades) {
-      const pnlAtHigh = (high - t.entryPrice) * t.size - t.commission;
-      const pnlAtLow = (low - t.entryPrice) * t.size - t.commission;
+      const pnlAtHigh = (high - t.entryPrice) * t.size * this.pointvalue - t.commission;
+      const pnlAtLow = (low - t.entryPrice) * t.size * this.pointvalue - t.commission;
       const bestPnl = pnlAtHigh > pnlAtLow ? pnlAtHigh : pnlAtLow;
       const worstPnl = pnlAtHigh < pnlAtLow ? pnlAtHigh : pnlAtLow;
       if (bestPnl > t.maxRunup) t.maxRunup = bestPnl;
       if (-worstPnl > t.maxDrawdown) t.maxDrawdown = -worstPnl;
-      const entryCost = Math.abs(t.size) * t.entryPrice + t.commission;
+      const entryCost = Math.abs(t.size) * t.entryPrice * this.pointvalue + t.commission;
       if (entryCost > 0) {
         t.maxDrawdownPercent = (t.maxDrawdown / entryCost) * 100;
         t.maxRunupPercent = (t.maxRunup / entryCost) * 100;
@@ -1209,18 +1223,19 @@ export class StrategyState {
 
   private openTradeNetProfit(t: OpenTrade, closePrice: number): number {
     const v = this.commissionValue;
+    const pv = this.pointvalue;
     const exitFee =
       this.commissionType === "cash_per_order"
         ? v
-        : Math.abs(t.size) * (this.commissionType === "percent" ? closePrice * v * 0.01 : v);
-    return t.size * (closePrice - t.entryPrice) - t.commission - exitFee;
+        : Math.abs(t.size) * (this.commissionType === "percent" ? closePrice * pv * v * 0.01 : v);
+    return t.size * (closePrice - t.entryPrice) * pv - t.commission - exitFee;
   }
 
   // The open profit over the trade's entry cost, its value plus its entry fee, as closedtrades.
   openTradeProfitPercent(closePrice: number, index: number): number {
     const t = this.openTradeAtIndex("profit_percent", index);
     if (t === undefined) return NaN;
-    const entryCost = Math.abs(t.size) * t.entryPrice + t.commission;
+    const entryCost = Math.abs(t.size) * t.entryPrice * this.pointvalue + t.commission;
     return entryCost === 0 ? 0 : (this.openTradeNetProfit(t, closePrice) / entryCost) * 100;
   }
 
@@ -1258,12 +1273,14 @@ export class StrategyState {
   // the whole investment, commission included, so a contract costs its price plus its fee. The
   // oracle's `_default_entry_budget` (tier 2, measured on TradingView): "TradingView calculates the
   // position size so that the total investment (position value + commission) equals the specified
-  // percentage of equity". A cash budget buys at the bare price.
+  // percentage of equity". A cash budget buys at the bare price. A contract's price is money times
+  // the point value (a cash fee is money already).
   private unitCost(price: number): number {
-    if (!this.qtyIsPercent) return price;
-    if (this.commissionType === "percent") return price * (1.0 + this.commissionValue * 0.01);
-    if (this.commissionType === "cash_per_contract") return price + this.commissionValue;
-    return price;
+    const value = price * this.pointvalue;
+    if (!this.qtyIsPercent) return value;
+    if (this.commissionType === "percent") return value * (1.0 + this.commissionValue * 0.01);
+    if (this.commissionType === "cash_per_contract") return value + this.commissionValue;
+    return value;
   }
 
   // Contracts a frozen money budget buys at `price`, floored to whole lots; NaN when nothing
@@ -1367,7 +1384,7 @@ export class StrategyState {
         t.commission *= keep;
       }
       this.openCommission -= entryFee;
-      let profit = (fillPrice - t.entryPrice) * sign * take;
+      let profit = (fillPrice - t.entryPrice) * sign * take * this.pointvalue;
       let commission = entryFee;
       if (!flatFee) {
         const exitFee = this.bookCommission(take, fillPrice);
@@ -1375,7 +1392,7 @@ export class StrategyState {
         commission += exitFee;
         profit -= exitFee;
       }
-      const entryCost = take * t.entryPrice + entryFee;
+      const entryCost = take * t.entryPrice * this.pointvalue + entryFee;
       const profitRatio = entryCost === 0 ? 0 : profit / entryCost;
       records.push({
         entryComment: t.entryComment,
@@ -1416,7 +1433,7 @@ export class StrategyState {
         const entryFee = rec.commission;
         rec.commission += (fee * Math.abs(rec.size)) / closedQty;
         rec.profit -= rec.commission;
-        const entryCost = Math.abs(rec.size) * rec.entryPrice + entryFee;
+        const entryCost = Math.abs(rec.size) * rec.entryPrice * this.pointvalue + entryFee;
         rec.profitRatio = entryCost === 0 ? 0 : rec.profit / entryCost;
         rec.profitPercent = rec.profitRatio * 100;
       }

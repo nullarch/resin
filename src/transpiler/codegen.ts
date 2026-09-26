@@ -400,10 +400,12 @@ export function generateCode(program: AnalyzedProgram): string {
       `$.strategy.setCommission(${JSON.stringify(program.strategyCommissionType)}, ${program.strategyCommissionValue});`,
     );
   }
-  // The chart symbol's tick and lot grids (AnalyzeOptions.syminfo), handed to the strategy engine
-  // once per run. Emitted only when they differ from resin's defaults, which the engine starts with.
+  // The chart symbol's tick and lot grids and point value (AnalyzeOptions.syminfo), handed to the
+  // strategy engine once per run. Emitted only when they differ from resin's defaults, which the
+  // engine starts with; a default point value, the last argument, is left out.
   if (program.isStrategy && SYMINFO_OPTION_KEYS.some((k) => program.syminfoNumbers.get(k) !== SYMINFO_NUMBER_PROPS.get(k))) {
     const grid = SYMINFO_OPTION_KEYS.map((k) => program.syminfoNumbers.get(k)!);
+    if (grid[grid.length - 1] === SYMINFO_NUMBER_PROPS.get("pointvalue")) grid.pop();
     lines.push(`$.strategy.setSymbol(${grid.join(", ")});`);
   }
   // viz S1 — 동적 plot 색 채널 preallocate(ctx당 1회). 슬롯 수를 생성 코드 자신이 나르므로

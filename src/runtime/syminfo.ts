@@ -11,6 +11,10 @@ export const MINTICK = 0.01;
 // floors default-sized order quantities to it (see StrategyState.defaultOrderQty).
 export const MINCONTRACT = 1;
 
+// syminfo.pointvalue: the money one contract makes or loses per 1.0 of price. The strategy engine
+// multiplies every price-derived money amount by it (see StrategyState.pointvalue).
+export const POINTVALUE = 1;
+
 // syminfo.ticker(symbol) — the one-argument call form, distinct from the bare
 // `syminfo.ticker` property, which folds to "" at compile time.
 //

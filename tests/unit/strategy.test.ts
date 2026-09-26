@@ -8958,6 +8958,77 @@ describe("syminfo option: the chart symbol's tick and lot grids", () => {
   });
 });
 
+// syminfo.pointvalue scales every money amount the engine takes from a price. faq.txt: "the cost of
+// entering a futures contract position is the chart price multiplied by the syminfo.pointvalue".
+// Ground truth: tier 1 resin-harness suites/strategy/tv/futures_pnl (NYMEX_MINI:QM1!, pointvalue
+// 500, 293/293 trades) and the oracle on resin-harness state/repros/pointvalue-money.json,
+// pointvalue-cash-per-contract.json and pointvalue-cash-per-order.json.
+describe("syminfo option: the chart symbol's point value", () => {
+  const bars: OHLCVData = {
+    open: [100, 100, 101],
+    high: [101, 102, 104],
+    low: [99, 99, 100],
+    close: [100, 101, 103],
+    volume: [1, 1, 1],
+  };
+
+  it("folds syminfo.pointvalue, and hands a strategy the point value only when it is not 1", () => {
+    const ind = ['indicator("i")', "var float pv = na", "pv := syminfo.pointvalue"].join("\n");
+    expect(runPipeline(ind, bars, {}, { syminfo: { pointvalue: 500 } }).bars[0]!["var:pv"]).toBe(500);
+    expect(runPipeline(ind, bars).bars[0]!["var:pv"]).toBe(1);
+    const src = 'strategy("s")\nstrategy.entry("L", strategy.long)';
+    const r = transpile(src, { syminfo: { mintick: 0.025, pricescale: 1000, minmove: 25, mincontract: 0.0001, pointvalue: 500 } });
+    expect(r.ok && r.code).toContain("$.strategy.setSymbol(0.025, 1000, 25, 0.0001, 500);");
+    const pvOnly = transpile(src, { syminfo: { pointvalue: 20 } });
+    expect(pvOnly.ok && pvOnly.code).toContain("$.strategy.setSymbol(0.01, 100, 1, 1, 20);");
+    const bad = transpile(src, { syminfo: { pointvalue: 0 } });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) expect(bad.errors[0]).toContain("'pointvalue' must be a positive finite number");
+  });
+
+  it("scales a trade's profit, the open profit and the profit percent (tier 1 futures_pnl trade #1: -437.5)", () => {
+    const st = new StrategyState();
+    st.configure(1, 0, 100000);
+    st.setSymbol(0.025, 1000, 25, 0.0001, 500);
+    st.entry("S", "short");
+    st.processFills(73.4);
+    expect(st.openProfit(74)).toBeCloseTo(-300, 9); // (74 - 73.4) × -1 × 500
+    st.entry("L", "long");
+    st.processFills(74.275);
+    const t = st.closedTradeRecords[0]!;
+    expect(t.profit).toBeCloseTo(-437.5, 9);
+    expect(st.realizedPnl).toBeCloseTo(-437.5, 9);
+    // TV's Net P&L % -1.19: the profit over the entry value 73.4 × 1 × 500.
+    expect(t.profitPercent).toBeCloseTo((-437.5 / 36700) * 100, 12);
+  });
+
+  it("sizes a percent_of_equity order and charges a percent fee on price × pointvalue; a cash fee is not scaled (repros pointvalue-money, pointvalue-cash-per-contract)", () => {
+    const st = new StrategyState();
+    st.configure(10, 3, 1000000, true);
+    st.setCommission("percent", 0.1);
+    st.setSymbol(0.01, 100, 1, 1, 20);
+    st.barClose = 101;
+    st.entry("L1", "long");
+    st.processFills(101);
+    expect(st.posSize).toBe(49); // 100000 / (101 × 20 × 1.001) = 49.45
+    expect(st.openTrades[0]!.commission).toBeCloseTo(98.98, 9); // 101 × 0.1% × 20 × 49
+    st.close("L1");
+    st.processFills(97);
+    // (97 - 101) × 49 × 20 - 98.98 - 95.06, as the oracle.
+    expect(st.closedTradeRecords[0]!.profit).toBeCloseTo(-4114.04, 9);
+
+    const cash = new StrategyState();
+    cash.configure(10, 3, 1000000, true);
+    cash.setCommission("cash_per_contract", 2.5);
+    cash.setSymbol(0.01, 100, 1, 1, 20);
+    cash.barClose = 101;
+    cash.entry("L1", "long");
+    cash.processFills(101);
+    expect(cash.posSize).toBe(49); // 100000 / (101 × 20 + 2.5) = 49.44
+    expect(cash.openTrades[0]!.commission).toBe(122.5); // 2.5 × 49
+  });
+});
+
 // strategy.entry() orders are kept per id, and the pyramiding limit is judged when the call runs.
 // Ground truth: tier 1 resin-harness suites/strategy/tv/channelbreakout (TradingView's built-in
 // channel breakout keeps a long and a short stop entry resting on every bar; 2945/2945 trades) and

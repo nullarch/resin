@@ -122,7 +122,7 @@ import {
   resolveUdtObjectType,
 } from "./analyzer/index-access";
 export { resolveUdtObjectType } from "./analyzer/index-access";
-import { MINCONTRACT, MINMOVE, MINTICK, PRICESCALE } from "../runtime/syminfo";
+import { MINCONTRACT, MINMOVE, MINTICK, POINTVALUE, PRICESCALE } from "../runtime/syminfo";
 
 // enum 타입명 -> 멤버 이름 목록(선언 순서) + 멤버별 title(C136, 표시 전용 메타데이터). 값 자체는
 // codegen 표현이 필요 없다 — 멤버 접근(Direction.long)이 analyzer에서 바로 "EnumName.MemberName"
@@ -732,7 +732,7 @@ export const SYMINFO_STRING_PROPS: ReadonlyMap<string, string> = new Map([
 export const SYMINFO_NUMBER_PROPS: ReadonlyMap<string, number> = new Map([
   ["mintick", MINTICK],
   ["minmove", MINMOVE],
-  ["pointvalue", 1.0],
+  ["pointvalue", POINTVALUE],
   ["pricescale", PRICESCALE],
   ["mincontract", MINCONTRACT],
   ["shares_outstanding_float", 0],
@@ -3352,22 +3352,26 @@ export interface AnalyzeOptions {
   syminfo?: SymbolGridOptions;
 }
 
-// The chart symbol's price and quantity grids. A TradingView run happens on a symbol, and its tick
-// size and lot size change the results: strategy.exit profit/loss/trail_* are counts of
-// syminfo.mintick, slippage is N ticks, derived levels snap to the tick grid, and default-sized
-// orders floor to syminfo.mincontract (rn.txt: "the smallest number of contracts/shares/lots/units
-// required to trade the current symbol"). Each omitted property keeps resin's default
-// (SYMINFO_NUMBER_PROPS). The other syminfo properties (pointvalue, timezone, currency, ...) are not
-// configurable yet: they stay at resin's fixed values, and keys this type does not name are ignored.
+// The chart symbol's price and quantity grids and its point value. A TradingView run happens on a
+// symbol, and its tick size, lot size and point value change the results: strategy.exit
+// profit/loss/trail_* are counts of syminfo.mintick, slippage is N ticks, derived levels snap to the
+// tick grid, default-sized orders floor to syminfo.mincontract (rn.txt: "the smallest number of
+// contracts/shares/lots/units required to trade the current symbol"), and every money amount taken
+// from a price is scaled by syminfo.pointvalue (faq.txt: "the cost of entering a futures contract
+// position is the chart price multiplied by the syminfo.pointvalue"). Each omitted property keeps
+// resin's default (SYMINFO_NUMBER_PROPS). The other syminfo properties (timezone, currency, ...) are
+// not configurable yet: they stay at resin's fixed values, and keys this type does not name are
+// ignored.
 export interface SymbolGridOptions {
   mintick?: number;
   pricescale?: number;
   minmove?: number;
   mincontract?: number;
+  pointvalue?: number;
 }
 
-// The syminfo properties SymbolGridOptions sets.
-export const SYMINFO_OPTION_KEYS: readonly string[] = ["mintick", "pricescale", "minmove", "mincontract"];
+// The syminfo properties SymbolGridOptions sets, in StrategyState.setSymbol's argument order.
+export const SYMINFO_OPTION_KEYS: readonly string[] = ["mintick", "pricescale", "minmove", "mincontract", "pointvalue"];
 
 // The program's syminfo.* number constants: resin's defaults overlaid with the caller's symbol grid.
 // mintick is minmove / pricescale on TradingView ("mintick = minmove / pricescale" — the price grid
