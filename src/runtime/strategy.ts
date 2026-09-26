@@ -60,10 +60,65 @@ interface OpenTrade {
 // order "is for 10 units because it links to the open trade with the "Buy2" entry ID", yet "five
 // units of the order close the "Buy1" trade first because it is the oldest".
 // `entryPrice` is the entry's own fill price: the base an exit's tick distances are measured from.
+// `size` is the size it filled with, frozen at the fill: the exit legs bound to it reserve their
+// slices off it (see ExitLeg).
 interface EntryBinding {
   entryId: string;
   bound: number;
   entryPrice: number;
+  size: number;
+}
+
+// One exit order of a strategy.exit() call. A call places one per filled entry it covers — each
+// entry of its from_entry id, or every entry of the position without one — and one for a still
+// pending entry order it covers, which is handed to the entry the order produces when it fills
+// (bindLegs). Legs are kept per (exit id, entry): calls with different ids place orders side by side,
+// and a call with the id of a resting leg modifies it. strategies.txt ("Partial and multi-level
+// exits"): "Strategies can use more than one call to the strategy.exit() command to create
+// successive partial exit orders for the same entry ID", and "the orders from each call
+// automatically reserve a portion of the open position. The orders from one strategy.exit() call
+// cannot exit the portion of a position that a previous call already reserved."
+// A leg's slice is taken off its entry's filled size (rn.txt, June 2022: the qty_percent
+// "percentages now always apply to the initial position size"); a leg with neither qty nor
+// qty_percent takes all its entry's size its siblings have not reserved. A leg that fills is
+// consumed: it keeps its reservation and the same call does not place it again while its entry is
+// open (the oracle's tombstone; tier 2 resin-harness state/repros/exit-leg-tombstone.json).
+interface ExitLeg {
+  id: string;
+  entryId: string; // the id of the entry it is bound to (its from_entry, or the entry's own id)
+  binding: EntryBinding | null; // the filled entry; null while it waits on a pending entry order
+  reserved: number; // its slice of the entry, in contracts
+  boundSize: number; // the entry size the slice was taken off; NaN = not sized yet (see exit())
+  qty: number; // strategy.exit(qty=) (NaN = not given)
+  qtyPercent: number; // strategy.exit(qty_percent=) (NaN = not given)
+  limit: number; // take-profit price (NaN = none)
+  stop: number; // stop-loss price (NaN = none)
+  // profit=/loss=: the take-profit and stop-loss levels as tick distances from the bound entry's
+  // fill price (NaN = not given; limit=/stop= is used instead).
+  profitPoints: number;
+  lossPoints: number;
+  // Trailing stop — trail_points=/trail_price= activate it, trail_offset= is the line's distance in
+  // ticks (NaN = reuse trail_points). trailPrice is the line once active (NaN = not active).
+  trailPoints: number;
+  trailOffset: number;
+  trailPriceArg: number;
+  trailPrice: number;
+  comment: string;
+  // comment_loss=/comment_profit=/comment_trailing= (null = not given; comment= is used instead).
+  commentLoss: string | null;
+  commentProfit: string | null;
+  commentTrailing: string | null;
+  consumed: boolean;
+  // Placed, or modified under its id, by the script on the current bar (see processFillsAtClose).
+  placedThisBar: boolean;
+  seq: number; // placement order
+  // Scratch for fillExitLegs: this bar's fill price, the level that triggered it ("profit" = the
+  // take-profit, "loss" = the stop-loss, null = the trailing line) and where the bar's path reaches
+  // it (as PendingEntry).
+  fillPrice: number;
+  fillKind: "profit" | "loss" | null;
+  pathLeg: number;
+  pathDist: number;
 }
 
 // One unfilled strategy.entry() order. Orders with different ids rest side by side; a call with
@@ -192,12 +247,13 @@ function percentRate(price: number, value: number): number {
 // 수 없다(주문을 낸 바와 체결되는 바 사이에 포지션이 바뀔 수 있음). DIVERGENCES.md #66/#67의 TV
 // 미검증 가설 축.
 //
-// 상태 표현: close/order/exit는 고정 pending 슬롯을 in-place 뮤테이션으로만 쓴다(close는 멱등,
-// order/exit는 "첫 주문 유지 + 같은 id 재호출만 수정"). 마켓 주문은 다음 바 open에서 반드시
+// 상태 표현: close/order는 고정 pending 슬롯을 in-place 뮤테이션으로만 쓴다(close는 멱등,
+// order는 "첫 주문 유지 + 같은 id 재호출만 수정"). 마켓 주문은 다음 바 open에서 반드시
 // 소진(체결 또는 취소)되고, limit/stop 주문(C166)은 체결/취소까지 이월된다.
 // strategy.entry() orders are kept per id (pendingEntries): orders with different ids rest side by
 // side and each is judged on every bar, as TradingView's built-in channel breakout strategy needs
-// (it keeps a long and a short stop entry resting at once; see entry()).
+// (it keeps a long and a short stop entry resting at once; see entry()). strategy.exit() orders are
+// kept per exit id and entry (exitLegs; see ExitLeg).
 // The position itself is a list of open trades (one per entry fill) consumed FIFO by closing fills;
 // those arrays grow only at order and fill events, never on every bar (the same reasoning as
 // closedTradeRecords).
@@ -370,65 +426,17 @@ export class StrategyState {
   // close(qty=) 부분 주문은 전량 청산의 부분집합이라 무시된다(TV라면 두 주문이 각각 나가지만 둘 다
   // 다음 바 open 체결이라 순효과는 전량 청산으로 동일 — TV 실측 미검증 가설, DIVERGENCES #71).
   closeAllPending: boolean;
-  // pending exit(브래킷 청산) 슬롯(C167 다섯째 슬라이스) — entry 슬롯과 별개. exit는 항상 가격
-  // 기반(limit/stop 최소 하나 — analyzer가 강제)이라 마켓 소진 규칙이 없고, 체결/취소/포지션
-  // 청산까지 이월된다.
-  exitPending: boolean;
-  exitOrderId: string;
-  exitFromEntry: string; // strategy.exit(from_entry=) — ""는 전체 포지션 대상(entry id 무관)
-  exitLimit: number; // 익절 지정가(NaN=없음)
-  exitStop: number; // 손절 역지정가(NaN=없음)
-  exitQty: number; // strategy.exit(qty=) 부분 청산 수량(C168) — Infinity=전량(기본)
-  // strategy.exit(qty_percent=) of an exit bound to a still-pending entry order: the share is of
-  // that entry's size, which is only known when it fills (percent_of_equity/cash sizing resolves
-  // at the fill price), so it is kept here and turned into exitQty at the fill. NaN = resolved.
-  exitQtyPercent: number;
-  exitOrderComment: string; // strategy.exit(comment=, C173)
-  // strategy.exit(comment_loss=/comment_profit=, C375, hand-verified) — TV 시그니처는 comment=의
-  // 트리거별 오버라이드 축이다: 이 청산 체결이 stop=/loss=(또는 트레일링 스톱)로 발생했으면
-  // comment_loss=가, limit=/profit=로 발생했으면 comment_profit=가 comment=보다 우선(둘 다
-  // null=미지정이면 comment=로 폴백). pine2py exit()는 이 이름들을 아예 모르고 **kwargs로 조용히
-  // 버린다(engine.py L141-153, python 소스 확인) — 그러나 alert_message(C374)와 달리 comment=는
-  // 이미 exitOrderComment/closedtrades.exit_comment(C173)로 실제로 소비되는 값이라 순수 discard가
-  // 아니라 실제 조건부 선택 시맨틱을 구현한다(MEMORY C147 원칙: 표시값이라도 소비 채널이 있으면
-  // discard 금지). null(미지정, na)과 ""(명시적 빈 문자열)을 구분해야 "미지정 시 comment=로 폴백"이
-  // 성립하므로 참조형 na 규약대로 string|null로 저장(comment=처럼 ""로 뭉개면 안 됨). comment_trailing=
-  // (TV의 세 번째 축, 트레일링 전용 오버라이드)은 C673에서 구현 — 아래 exitCommentTrailing 참조.
-  exitCommentLoss: string | null;
-  exitCommentProfit: string | null;
-  // strategy.exit(comment_trailing=, C673, hand-verified) — comment_loss/profit이 커버 못 하는
-  // 세 번째 축(exitFillKind===null, 순수 트레일링 라인 체결) 전용 오버라이드. 규약은 comment_loss/
-  // profit과 동일(null=미지정이면 comment=로 폴백, string|null 저장). pine2py exit()에 대응 파라미터
-  // 자체가 없어(comment_loss/profit과 동일 이유) TV 미검증 가설(DIVERGENCES 신규 항목).
-  exitCommentTrailing: string | null;
-  // exitFillPrice()가 이번 체결을 촉발한 축을 스칼라 필드로 보고(GOAL "bar loop 안 할당 제로" —
-  // 튜플/객체 반환 대신 기존 exitTrailPrice 래칫과 동일한 "부작용으로 상태 필드 갱신" 관례 재사용).
-  // "loss"=stop/trail_points·trail_price가 체결가를 결정, "profit"=limit/profit=가 결정,
-  // null=순수 트레일링 라인이 결정(comment_trailing=이 있으면 그쪽, 없으면 comment=로 폴백).
-  // processFills가 closeAt() 호출 직전에 1회만 읽고 소비 — exit 체결이 없는 바에는 갱신되지
-  // 않는 값이라도 무해(그 바엔 애초에 안 읽음).
-  exitFillKind: "profit" | "loss" | null;
-  // Trailing stop — strategy.exit(trail_points=, trail_offset=). It activates once price moves
-  // trail_points ticks past the bound entry's fill price in the favorable direction (long +,
-  // short -). From then on the line trails the favorable extreme (long high, short low) by
-  // trail_offset ticks and only ratchets forward (long max, short min); the opposite extreme
-  // touching the line fills at the line. Both distances are counts of syminfo.mintick (see
-  // exitFillPrice).
-  exitTrailPoints: number; // activation distance in ticks (NaN = trail_price activates instead, or no trailing leg)
-  exitTrailOffset: number; // line offset in ticks (NaN = reuse trail_points; required with trail_price)
-  exitTrailPrice: number; // 추적 중인 트레일링 스톱 라인(NaN=미활성) — exitFillPrice가 바마다 갱신
-  // strategy.exit(trail_price=, C178) — 활성화 레벨을 entry±trail_points 산식이 아니라
-  // **절대 가격**으로 직접 지정(pine2py에 사용자 파라미터로 존재하지 않아 전부 TV 미검증 가설,
-  // DIVERGENCES #79). trail_points와 동시 지정은 activation 산식이 상충해 analyzer가 하드
-  // 에러로 막는다 — 이 필드가 NaN이 아니면 exitFillPrice는 entry±trail_points 산식 대신
-  // 이 값을 그대로 activation 임계값으로 쓴다(방향 부호 보정 없음 — 롱/숏 모두 절대 가격 그대로 비교).
-  exitTrailPriceArg: number; // 활성화 절대가(NaN=trail_points 산식 사용)
-  // strategy.exit(profit=/loss=) — the tick-distance alternatives to limit=/stop=: the take-profit
-  // level sits `profit` ticks from the bound entry's fill price in the favorable direction, the
-  // stop-loss `loss` ticks in the unfavorable one (exitFillPrice). When a call gives both of a pair
-  // (limit=+profit=, stop=+loss=), the absolute level is used.
-  exitProfitPoints: number; // take-profit distance in ticks (NaN = not given; limit= is used instead)
-  exitLossPoints: number; // stop-loss distance in ticks (NaN = not given; stop= is used instead)
+  // The strategy.exit() orders (see ExitLeg), in placement order. A consumed leg stays here, out of
+  // the book, until its entry closes.
+  exitLegs: ExitLeg[];
+  private exitSeq: number;
+  // Legs an entry fill of the current bar has just bound or spawned (bindLegs): they are live on the
+  // fill bar, so processFills judges them once that fill is done.
+  private freshLegs: ExitLeg[];
+  // Reused by fillExitLegs to order one pass of exit fills without allocating.
+  private legScratch: ExitLeg[];
+  // What the strategy.exit() call being run states, reused across calls (see exit()).
+  private legTemplate: ExitLeg;
   // pending order(넷팅 주문) 슬롯(C169 일곱째 슬라이스) — entry 주문과 별개: entry의 체결 판정
   // (리버스 전량 청산 + pyramiding 게이트)과 달리 order는 반대 방향을 |posSize|와 상쇄하고
   // 같은 방향 추가엔 pyramiding 게이트가 없어 체결 경로가 다르다. 마켓/limit/stop·이월·같은 id
@@ -444,10 +452,9 @@ export class StrategyState {
   orderOrderComment: string; // strategy.order(comment=, C173)
   orderOcaName: string; // as PendingEntry.ocaName
   orderOcaType: string; // as PendingEntry.ocaType
-  // Whether the entry/exit/order slot was placed (or re-placed under the same id) by the script
-  // on the current bar — only those orders are "created on a bar's close" and get the close pass.
-  // processFills clears them at every bar's open. (An entry order carries its own flag.)
-  exitPlacedThisBar: boolean;
+  // Whether the order slot was placed (or re-placed under the same id) by the script on the current
+  // bar — only those orders are "created on a bar's close" and get the close pass. processFills
+  // clears it at every bar's open. (Entry orders and exit legs carry their own flag.)
   orderPlacedThisBar: boolean;
 
   // strategy.risk.allow_entry_in(value)(C309) — "all"|"long"|"short" 방향 제한. entry()의
@@ -583,24 +590,17 @@ export class StrategyState {
     this.closeQty = Infinity;
     this.closeOrderComment = "";
     this.closeAllPending = false;
-    this.exitPending = false;
-    this.exitOrderId = "";
-    this.exitFromEntry = "";
-    this.exitLimit = NaN;
-    this.exitStop = NaN;
-    this.exitQty = Infinity;
-    this.exitQtyPercent = NaN;
-    this.exitOrderComment = "";
-    this.exitCommentLoss = null;
-    this.exitCommentProfit = null;
-    this.exitCommentTrailing = null;
-    this.exitFillKind = null;
-    this.exitTrailPoints = NaN;
-    this.exitTrailOffset = NaN;
-    this.exitTrailPrice = NaN;
-    this.exitTrailPriceArg = NaN;
-    this.exitProfitPoints = NaN;
-    this.exitLossPoints = NaN;
+    this.exitLegs = [];
+    this.exitSeq = 0;
+    this.freshLegs = [];
+    this.legScratch = [];
+    this.legTemplate = {
+      id: "", entryId: "", binding: null, reserved: 0, boundSize: NaN, qty: NaN, qtyPercent: NaN,
+      limit: NaN, stop: NaN, profitPoints: NaN, lossPoints: NaN, trailPoints: NaN, trailOffset: NaN,
+      trailPriceArg: NaN, trailPrice: NaN, comment: "", commentLoss: null, commentProfit: null,
+      commentTrailing: null, consumed: false, placedThisBar: false, seq: 0,
+      fillPrice: NaN, fillKind: null, pathLeg: 0, pathDist: 0,
+    };
     this.orderPending = false;
     this.orderOrderId = "";
     this.orderDirection = "long";
@@ -611,7 +611,6 @@ export class StrategyState {
     this.orderOrderComment = "";
     this.orderOcaName = "";
     this.orderOcaType = "none";
-    this.exitPlacedThisBar = false;
     this.orderPlacedThisBar = false;
     this.allowedDirection = "all";
     this.maxIntradayFilledOrders = NaN;
@@ -670,11 +669,6 @@ export class StrategyState {
     return undefined;
   }
 
-  // Whether an unfilled entry order has this id ("" = any id).
-  private hasPendingEntry(id: string): boolean {
-    return id === "" ? this.pendingEntries.length > 0 : this.pendingEntry(id) !== undefined;
-  }
-
   private removePendingEntry(e: PendingEntry): void {
     const i = this.pendingEntries.indexOf(e);
     if (i >= 0) this.pendingEntries.splice(i, 1);
@@ -721,12 +715,145 @@ export class StrategyState {
     return false;
   }
 
-  // Fill price of the entry the pending exit is bound to — the oldest entry of its from_entry id,
-  // or the oldest entry when it has none. NaN when nothing is bound.
-  private exitEntryPrice(): number {
-    const from = this.exitFromEntry;
-    for (const b of this.entryBook) if (from === "" || b.entryId === from) return b.entryPrice;
-    return NaN;
+  // Whether any exit leg is live (placed, and neither filled nor cancelled).
+  get exitPending(): boolean {
+    return this.firstLiveLeg() !== undefined;
+  }
+
+  // The oldest live exit leg's take-profit price, slice and trailing line (NaN, 0, NaN without one).
+  get exitLimit(): number {
+    return this.firstLiveLeg()?.limit ?? NaN;
+  }
+
+  get exitQty(): number {
+    return this.firstLiveLeg()?.reserved ?? 0;
+  }
+
+  get exitTrailPrice(): number {
+    return this.firstLiveLeg()?.trailPrice ?? NaN;
+  }
+
+  private firstLiveLeg(): ExitLeg | undefined {
+    for (const l of this.exitLegs) if (!l.consumed) return l;
+    return undefined;
+  }
+
+  // The leg of exit `id` bound to `binding` (or, with binding null, to the pending entry order
+  // `entryId`), if any.
+  private findLeg(id: string, entryId: string, binding: EntryBinding | null): ExitLeg | undefined {
+    for (const l of this.exitLegs) if (l.id === id && l.entryId === entryId && l.binding === binding) return l;
+    return undefined;
+  }
+
+  // The contracts the other legs on the same entry have reserved against the same entry size.
+  private reservedBySiblings(entryId: string, binding: EntryBinding | null, bound: number, except: ExitLeg | undefined): number {
+    let sum = 0;
+    for (const l of this.exitLegs) {
+      if (l !== except && l.entryId === entryId && l.binding === binding && l.boundSize === bound) sum += l.reserved;
+    }
+    return sum;
+  }
+
+  // A leg's slice of an entry of `bound` contracts of which `siblings` are already reserved: qty=,
+  // or qty_percent= of the entry's size, capped at what is left, or all that is left when the call
+  // gives neither. strategies.txt: "If the sum of the exit order sizes exceeds the open position,
+  // the strategy automatically reduces their sizes to match the total size of the position." A
+  // derived slice is floored onto the lot grid (sizeRound); an explicit qty is taken as stated, as
+  // entry quantities are (not covered: the oracle floors it too).
+  private legSlice(qty: number, qtyPercent: number, bound: number, siblings: number): number {
+    const unreserved = bound - siblings;
+    if (!Number.isNaN(qty)) return qty < unreserved ? qty : this.sizeRound(unreserved);
+    const share = Number.isNaN(qtyPercent) ? unreserved : bound * (qtyPercent * 0.01);
+    return this.sizeRound(share < unreserved ? share : unreserved);
+  }
+
+  // What a pending entry order `e` will open when it fills, for the legs placed against it to reserve
+  // off: its own quantity (the part of a reversal that closes the opposite position is covered by
+  // that position's own legs); 0 for a market order adding to a position whose pyramiding slots are
+  // full (it is dropped at its fill); NaN for a default-sized limit/stop order, whose size is only
+  // known at its fill price (its legs are sized when it fills, bindLegs).
+  private pendingEntryOpens(e: PendingEntry): number {
+    const sign = e.direction === "long" ? 1 : -1;
+    const adds = this.posSize !== 0 && this.posSize > 0 === sign > 0;
+    if (!StrategyState.isPriceBased(e) && adds && this.entryCount >= this.pyramiding) return 0;
+    return e.qtyAuto ? NaN : e.qty;
+  }
+
+  // An entry fill (binding `b`) takes over the legs that waited on its order, and gets a leg of its
+  // own from every live strategy.exit() order already holding an earlier fill of its id. The oracle
+  // (tier 2, `_bind_entry`/`_spawn_legs_for_add`, measured on TradingView): "A strategy.exit order
+  // stands on its from_entry id, not on the one entry that was open when the script issued it: an
+  // entry filling LATER gets its own leg off the same call, priced from its OWN fill". A waiting leg
+  // with no slice yet is sized now; a leg taking all that is left grows to the fill. Both kinds are
+  // live on the fill bar (freshLegs).
+  private bindLegs(b: EntryBinding): void {
+    const n = this.exitLegs.length;
+    for (let i = 0; i < this.exitLegs.length; ) {
+      const l = this.exitLegs[i]!;
+      if (l.binding !== null || l.entryId !== b.entryId) {
+        i++;
+        continue;
+      }
+      l.binding = b;
+      if (Number.isNaN(l.boundSize)) {
+        l.reserved = this.legSlice(l.qty, l.qtyPercent, b.size, this.reservedBySiblings(b.entryId, b, b.size, l));
+      } else if (Number.isNaN(l.qty) && Number.isNaN(l.qtyPercent)) {
+        l.reserved = this.sizeRound(l.reserved + b.size - l.boundSize);
+      }
+      l.boundSize = b.size;
+      if (!(l.reserved > 0)) {
+        this.exitLegs.splice(i, 1);
+        continue;
+      }
+      this.freshLegs.push(l);
+      i++;
+    }
+    for (let i = 0; i < n && i < this.exitLegs.length; i++) {
+      const src = this.exitLegs[i]!;
+      if (src.entryId !== b.entryId || src.binding === null || src.binding === b || src.consumed) continue;
+      if (this.findLeg(src.id, b.entryId, b) !== undefined) continue;
+      const reserved = this.legSlice(src.qty, src.qtyPercent, b.size, 0);
+      if (!(reserved > 0)) continue;
+      const leg: ExitLeg = {
+        ...src, binding: b, reserved, boundSize: b.size, trailPrice: NaN, consumed: false,
+        placedThisBar: false, seq: ++this.exitSeq,
+      };
+      this.exitLegs.push(leg);
+      this.freshLegs.push(leg);
+    }
+  }
+
+  // A filled entry whose bound quantity is spent retires, and the legs bound to it die with it (a
+  // consumed one included); so do the legs waiting on a pending order of its id once no filled entry
+  // of that id is left. A reversal by an entry of the same id is no re-entry: the position it opens
+  // gets its exit from a later call. This is the oracle's `_drop_binding` (tier 2, measured on
+  // TradingView: a short reversed by a long of the same id with the reversal bar's bracket reached
+  // on the next bar — "TradingView fills nothing there in 5/5 events, the long is first covered by
+  // the next bar's re-issued call"). Repro: resin-harness state/repros/mixed-seed-149.json.
+  // The oracle also measured one exception, kept as TradingView prints it: when an order other than
+  // the entry's own exit leg spends it (`carry`) and a LONG entry order of its id is waiting, the
+  // legs carry over to that order's fill ("prev long -> new long carried 15/15, prev short -> new
+  // short carried 0/19"). A reversing entry order has left the book by the time its fill spends the
+  // entry, so it never carries.
+  private dropBinding(i: number, carry: boolean): void {
+    const b = this.entryBook[i]!;
+    this.entryBook.splice(i, 1);
+    const orphaned = !this.hasBound(b.entryId);
+    const waiting = carry ? this.pendingEntry(b.entryId) : undefined;
+    const carried = waiting !== undefined && waiting.direction === "long";
+    for (let j = 0; j < this.exitLegs.length; ) {
+      const l = this.exitLegs[j]!;
+      if (l.binding === b || (orphaned && l.binding === null && l.entryId === b.entryId)) {
+        if (carried) {
+          l.binding = null;
+          j++;
+        } else {
+          this.exitLegs.splice(j, 1);
+        }
+      } else {
+        j++;
+      }
+    }
   }
 
   // An entry fill opens a new trade (never merges into an existing one) and a binding for it. Its
@@ -743,7 +870,9 @@ export class StrategyState {
       entryId, entryComment, entryPrice: fillPrice, entryBarIndex: barIndex, entryTime: barTimeMs,
       size: signedQty, maxRunup: 0, maxDrawdown: 0, maxRunupPercent: 0, maxDrawdownPercent: 0, commission,
     });
-    this.entryBook.push({ entryId, bound: Math.abs(signedQty), entryPrice: fillPrice });
+    const binding = { entryId, bound: Math.abs(signedQty), entryPrice: fillPrice, size: Math.abs(signedQty) };
+    this.entryBook.push(binding);
+    this.bindLegs(binding);
     this.posSize += signedQty;
     // The peak is the position's, not one trade's: the oracle (tier 2, measured on TradingView with
     // pyramiding 3) reports 3 for long legs of 1 and 2, and 7 for short legs of 4 and 3; tier 1
@@ -787,23 +916,32 @@ export class StrategyState {
     this.posAvgPrice = sum / Math.abs(this.posSize);
   }
 
-  // Settles a closed quantity against the entry book: an id-bound closer (strategy.close(id),
-  // strategy.exit(from_entry=id)) takes it off that id's entries oldest-first; an unbound one
-  // (close_all, a reversal, strategy.order, an exit without from_entry) walks every entry
-  // oldest-first. An entry whose bound quantity is spent gives its pyramiding slot back.
-  private settleEntryBook(qty: number, bindingId: string | null): void {
+  // Settles a closed quantity against the entry book: an exit leg takes it off the one entry it is
+  // bound to; an id-bound closer (strategy.close(id)) takes it off that id's entries oldest-first; an
+  // unbound one (close_all, a reversal, strategy.order) walks every entry oldest-first. An entry
+  // whose bound quantity is spent gives its pyramiding slot back (dropBinding). A leg settles only
+  // its own entry, whichever trades the FIFO fill consumed (the oracle's `_settle_entry_book`: "A
+  // sticky strategy.exit leg is bound to ONE fill and settles exactly that one").
+  private settleEntryBook(qty: number, target: string | EntryBinding | null): void {
     const dust = qty * 1e-12; // float dust of unsnapped sizes (see closeAt)
+    if (typeof target === "object" && target !== null) {
+      const i = this.entryBook.indexOf(target);
+      if (i < 0) return;
+      target.bound -= target.bound < qty ? target.bound : qty;
+      if (target.bound <= dust) this.dropBinding(i, false);
+      return;
+    }
     let remaining = qty;
     for (let i = 0; i < this.entryBook.length && remaining > dust; ) {
       const b = this.entryBook[i]!;
-      if (bindingId !== null && b.entryId !== bindingId) {
+      if (target !== null && b.entryId !== target) {
         i++;
         continue;
       }
       const take = b.bound < remaining ? b.bound : remaining;
       b.bound -= take;
       remaining -= take;
-      if (b.bound <= dust) this.entryBook.splice(i, 1);
+      if (b.bound <= dust) this.dropBinding(i, true);
       else i++;
     }
   }
@@ -929,6 +1067,18 @@ export class StrategyState {
   private floorToLots(qty: number): number {
     const lots = Math.trunc(Math.abs(qty) * this.lotsPerContract);
     if (lots === 0) return 0;
+    return toUnits(Math.sign(qty) * lots * (1 / this.lotsPerContract), this.lotsPerContract);
+  }
+
+  // Floors a quantity derived from another quantity (an exit leg's share of its entry) onto the lot
+  // grid, like floorToLots, except that a value within a few ULPs of a whole lot count is that count:
+  // the scaling multiply can land an exact lot multiple a hair below it. The oracle's `_size_round`
+  // (tier 2, measured on TradingView: a qty_percent close floors "the real 0.77-lot fraction").
+  private sizeRound(qty: number): number {
+    const scaled = Math.abs(qty) * this.lotsPerContract;
+    const nearest = Math.round(scaled);
+    const lots = Math.abs(scaled - nearest) <= 8 * Number.EPSILON * scaled + 1e-9 ? nearest : Math.trunc(scaled);
+    if (!(lots > 0)) return 0;
     return toUnits(Math.sign(qty) * lots * (1 / this.lotsPerContract), this.lotsPerContract);
   }
 
@@ -1348,21 +1498,20 @@ export class StrategyState {
   // ... any exit order closes or reduces the position starting with the first open trade, even if
   // the exit command specifies the entry ID of a different open trade." Every trade it touches
   // becomes its own closed trade with that trade's entry id, price, bar and the share of the size
-  // it closed; a partly consumed trade stays open with the rest. `bindingId` is the entry id the
-  // closing order is bound to (null = unbound), used to settle the entry book (settleEntryBook).
-  // Callers: the close/exit fills and the reversal/netting legs in processFills, and the
-  // immediately= paths of close/close_all.
+  // it closed; a partly consumed trade stays open with the rest. `binding` is what the closing order
+  // is bound to — an exit leg's entry, a strategy.close() id, or null when unbound — used to settle
+  // the entry book (settleEntryBook). Callers: the close/exit fills and the reversal/netting legs in
+  // processFills, and the immediately= paths of close/close_all.
   private closeAt(
     fillPrice: number, qty: number = Infinity, exitComment: string = "",
     barIndex: number = NaN, exitId: string = "", barTimeMs: number = NaN,
-    bindingId: string | null = null,
+    binding: string | EntryBinding | null = null,
   ): void {
     const size = Math.abs(this.posSize);
     const sign = this.posSize > 0 ? 1 : -1;
     // Sizes are not snapped to a lot grid, so a quantity summed from trade sizes can differ from
     // them by float dust; dust must not split off a phantom closing piece.
     const dust = size * 1e-12;
-    const exitWasBound = this.exitPending && (this.exitFromEntry === "" || this.hasBound(this.exitFromEntry));
     let remaining = qty >= size ? Infinity : qty;
     let closedQty = 0;
     // Commission: each closed trade carries its share of the trade's entry fee (which leaves
@@ -1449,19 +1598,11 @@ export class StrategyState {
       this.openCommission = 0;
     }
     this.updateNetProfit();
-    this.settleEntryBook(closedQty, bindingId);
+    this.settleEntryBook(closedQty, binding);
     this.recalcAvgPrice();
-    if (this.posSize === 0) this.entryBook.length = 0;
-    // A pending exit dies with what it was bound to: the position, once flat (an exit without
-    // from_entry), or its from_entry id's entries, once their bound quantity is spent. An exit
-    // bound to a still-pending entry order (e.g. the one reversing this position) was not bound
-    // here and survives.
-    if (
-      exitWasBound &&
-      (this.posSize === 0 || (this.exitFromEntry !== "" && !this.hasBound(this.exitFromEntry)))
-    ) {
-      this.exitPending = false;
-    }
+    // Flat, every entry is spent (dropBinding).
+    const carry = typeof binding !== "object" || binding === null;
+    if (this.posSize === 0) while (this.entryBook.length > 0) this.dropBinding(this.entryBook.length - 1, carry);
   }
 
   // Books one closed trade: the record behind strategy.closedtrades.*(trade_num), the latest-trade
@@ -1815,41 +1956,27 @@ export class StrategyState {
     this.orderOcaType = oca;
   }
 
-  // strategy.exit(id, from_entry, limit=익절, stop=손절) — 브래킷 청산 주문 큐잉(C167). limit/stop
-  // 중 최소 하나는 analyzer가 강제하지만 na(NaN) 값으로 무력화될 수 있어 런타임에서 재검사한다
-  // (둘 다 na면 조건 없는 주문 — TV는 na 파라미터를 "그 축 없음"으로 무시하므로 주문 자체를 내지
-  // 않는다. pine2py는 이 경우 마켓 청산(_close_position 즉시 호출)인데, TV 문서가 strategy.exit에
-  // 최소 1개 청산 조건을 요구하는 것으로 알려져 있어 미추종 — TV 실측 미검증 가설, DIVERGENCES #70).
-  // 콜타임 가드 2종은 pine2py exit() literal port: (1) flat이면 무시(is_flat 가드 — entry와 같은
-  // 바에 낸 exit는 등록되지 않는다: 다음 바 open 체결 모델에서는 매 바 재호출이 표준 패턴이라
-  // 포지션 성립 다음 바부터 자연 등록, LIMITATIONS.md), (2) from_entry가 지정됐고 현재 포지션의
-  // entry id와 다르면 무시(pine2py는 from_entry를 매칭 없이 전량 청산하지만 TV의 "해당 entry 대상"
-  // 의도에 맞춰 매칭 — TV 미검증 가설. from_entry=na/생략은 ""로 정규화해 전체 포지션 대상).
-  // qty=(C168)는 부분 청산 수량 — 생략은 전량(Infinity 센티널). na(NaN)/0 이하 qty는 entry의
-  // qty 가드와 동일한 관례로 호출 전체를 무시한다(주문 미발행/기존 주문 무수정 — entry가 이미
-  // 확립한 "qty na는 주문 무시" 규칙의 같은 파라미터 이름 미러, TV 미검증 가설 DIVERGENCES #71).
-  // trail_points=/trail_offset=(C170)는 뒤쪽 슬롯으로 추가(C129 원칙 — 기존 콜사이트 출력 무변화).
-  // trail_offset 단독(활성화 조건 없는 트레일링)은 analyzer가 하드 에러로 막지만 런타임 우회 대비
-  // "청산 조건 없음"으로 접어 주문 미발행(limit/stop/trail_points 셋 다 na와 동일 경로 — pine2py는
-  // trail_offset 단독이면 trail_points=0으로 즉시 활성화하는데 TV가 활성화 레벨 없는 trail_offset을
-  // 무시하는 것으로 알려져 있어 어느 쪽도 확신 불가, 조용한 오답 방지 축. DIVERGENCES #73).
-  // trail_price=(C178)는 그 뒤 슬롯으로 추가(C129 유지) — trail_points와 동시 지정은 analyzer가
-  // 하드 에러로 막아 이 함수에서는 항상 둘 중 하나만 유한값이다(DIVERGENCES #79).
-  // profit=/loss=(hand-verified)는 그보다 더 뒤 슬롯(C129 유지) — limit=/stop=과 각각 동시 지정은
-  // analyzer가 하드 에러로 막아 이 함수에서는 limit/profit, stop/loss 각 쌍이 항상 상호 배타(#98).
-  // qty_percent=(C373, hand-verified, TV 미검증 가설 DIVERGENCES) — profit=/loss=보다도 뒤 슬롯.
-  // pine2py exit()는 **kwargs로 받아 조용히 버리지만(qty=와 동일 급, C168/C259 선례) TV 문서 규칙
-  // "qty_percent 우선순위는 qty보다 낮음"을 그대로 이식: qty가 명시되면 qty_percent는 완전히 무시,
-  // qty 생략 시에만 |posSize|*percent/100을 이 호출 시점(콜타임 스냅샷)에 계산해 기존 qty= 부분청산
-  // 슬롯에 그대로 태운다 — closeAt 등 하위 체결 로직은 절대값 qty만 보므로 변경 불필요.
-  // comment_loss=/comment_profit=(C375, hand-verified)는 qty_percent=보다도 뒤 슬롯 — 값은 null(na)
-  // 그대로 저장하고 실제 선택은 exitFillPrice()가 결정한 exitFillKind를 processFills가 읽어 수행한다
-  // (이 함수는 값을 받아 저장만, 트리거별 선택 로직 없음). when=(C380)은 pine2py
-  // exit(..., when: bool=True, **kwargs)의 게이트 파라미터 literal port — entry/order(C372)/
-  // close(C293)/close_all(C378)과 동일하게 함수 최상단에서 id 검증보다 먼저 판정한다(when=false면
-  // id/청산조건 상태와 무관하게 무조건 no-op). 생략(JS 기본 파라미터)은 항상 true로 떨어져 기존
-  // 호출 무변화. comment_trailing=(C673)은 when= 뒤 마지막 슬롯 — comment_loss/profit과 동일하게
-  // 값을 받아 저장만 하고 트리거별 선택(exitFillKind===null)은 processFills가 수행.
+  // strategy.exit(id, from_entry, limit=, stop=, qty=, trail_points=, trail_offset=, comment=,
+  // trail_price=, profit=, loss=, qty_percent=, comment_loss=, comment_profit=, when=,
+  // comment_trailing=) — places the call's exit legs (see ExitLeg). Its targets: with a from_entry
+  // id, each filled entry of that id and a pending entry order of that id; without one, every filled
+  // entry of the position and each pending entry order that opens from flat or adds to the position
+  // (a reversing one's position gets its exit from a later call — the oracle, measured on
+  // TradingView). The manual (strategies.txt, "Exits for multiple entries"): with a from_entry ID,
+  // the call "places exit orders for every corresponding entry created before or on the bar where
+  // the call occurs" — entry orders, filled or not; its bracket example ("Take-profit and stop-loss
+  // demo") calls strategy.entry() and strategy.exit() once, on the same bar, before the entry fills.
+  // Repros: resin-harness state/repros/mixed-seed-1.json, partial-seed-1.json.
+  // Each leg holds its own trigger levels: limit=/stop= (put on the tick grid at use, see
+  // exitLimitLevel), or profit=/loss= tick distances from its entry's fill price (the absolute level
+  // wins when a pair is given), and an optional trailing stop (trail_points= or trail_price= activate
+  // it, trail_offset= trails it; trail_offset alone arms nothing, DIVERGENCES #73). A call whose
+  // levels are all na places nothing (DIVERGENCES #70). qty= wins over qty_percent=
+  // (strategies.txt: "If a strategy.exit() call includes both qty and qty_percent arguments, the
+  // command uses the qty value"); an na, zero or negative quantity ignores the call (DIVERGENCES
+  // #71). comment_loss=/comment_profit=/comment_trailing= override comment= for a fill by the
+  // stop-loss, the take-profit or the trailing line (null = not given; hand-verified, C375/C673).
+  // when=false makes the call a no-op (C380).
   exit(
     id: string | null | undefined, fromEntry?: string | null, limit?: number, stop?: number,
     qty?: number, trailPoints?: number, trailOffset?: number, comment?: string, trailPrice?: number,
@@ -1859,95 +1986,84 @@ export class StrategyState {
   ): void {
     if (!when) return;
     if (id === null || id === undefined) return;
-    const from = fromEntry ?? "";
-    // What the exit binds to: the open position, or else a still-pending entry order. The manual
-    // (strategies.txt, "Exits for multiple entries"): with a from_entry ID, the call "places exit
-    // orders for every corresponding entry created before or on the bar where the call occurs" —
-    // entry orders, filled or not. Its basic bracket example ("Take-profit and stop-loss demo")
-    // calls strategy.entry() and strategy.exit() once, on the same bar, before the entry fills.
-    // Without from_entry, a pending entry is a target only while flat (in a position the exit
-    // already binds to it). Repro: resin-harness state/repros/mixed-seed-1.json.
-    // With from_entry, the open part it binds to is that id's entries, not the whole position
-    // (strategies.txt: "instructing the command to create exit orders only for open trades that
-    // have the "buy2" entry ID").
-    const bindsPosition = this.posSize !== 0 && (from === "" || this.hasBound(from));
-    const bindsPendingEntry = !bindsPosition && this.hasPendingEntry(from);
-    if (!bindsPosition && !bindsPendingEntry) return;
-    // qty_percent of a pending entry is a share of its size at the fill (see exitQtyPercent).
-    const deferPercent = bindsPendingEntry && qty === undefined && qtyPercent !== undefined;
-    const boundOpenQty = from === "" ? Math.abs(this.posSize) : this.boundQty(from);
-    const q = qty !== undefined
-      ? qty
-      : qtyPercent !== undefined
-        ? deferPercent ? qtyPercent : (boundOpenQty * qtyPercent) / 100
-        : Infinity;
-    if (!(q > 0)) return; // NaN에서도 안전한 긍정형 가드(MEMORY.md C91)
-    const exitQty = deferPercent ? Infinity : q;
-    const exitQtyPercent = deferPercent ? q : NaN;
-    const lim = limit ?? NaN;
-    const stp = stop ?? NaN;
-    const tp = trailPoints ?? NaN;
-    const toff = trailOffset ?? NaN;
-    const tprice = trailPrice ?? NaN;
-    const prof = profit ?? NaN;
-    const loss_ = loss ?? NaN;
-    const cmt = comment ?? "";
-    const cmtLoss = commentLoss ?? null;
-    const cmtProfit = commentProfit ?? null;
-    const cmtTrailing = commentTrailing ?? null;
+    if (qty !== undefined ? !(qty > 0) : qtyPercent !== undefined && !(qtyPercent > 0)) return; // NaN-safe (C91)
+    const t = this.legTemplate;
+    t.id = id;
+    t.qty = qty ?? NaN;
+    t.qtyPercent = qty === undefined ? qtyPercent ?? NaN : NaN;
+    t.limit = limit ?? NaN;
+    t.stop = stop ?? NaN;
+    t.trailPoints = trailPoints ?? NaN;
+    t.trailOffset = trailOffset ?? NaN;
+    t.trailPriceArg = trailPrice ?? NaN;
+    t.profitPoints = profit ?? NaN;
+    t.lossPoints = loss ?? NaN;
+    t.comment = comment ?? "";
+    t.commentLoss = commentLoss ?? null;
+    t.commentProfit = commentProfit ?? null;
+    t.commentTrailing = commentTrailing ?? null;
     if (
-      Number.isNaN(lim) && Number.isNaN(stp) && Number.isNaN(tp) && Number.isNaN(tprice) &&
-      Number.isNaN(prof) && Number.isNaN(loss_)
+      Number.isNaN(t.limit) && Number.isNaN(t.stop) && Number.isNaN(t.trailPoints) && Number.isNaN(t.trailPriceArg) &&
+      Number.isNaN(t.profitPoints) && Number.isNaN(t.lossPoints)
     ) {
       return;
     }
-    if (this.exitPending) {
-      // 같은 id 재호출 = 주문 수정(pine2py exit()의 "같은 ID 이전 exit 제거 후 재등록" 동형 —
-      // 매 바 재호출로 브래킷 가격을 갱신하는 표준 패턴). 다른 id면 첫 주문 유지("동시 pending exit
-      // 1건" 모델, LIMITATIONS.md — entry orders are already kept per id, exits not yet).
-      if (this.exitOrderId === id) {
-        this.exitFromEntry = from;
-        this.exitLimit = lim;
-        this.exitStop = stp;
-        this.exitQty = exitQty;
-        this.exitQtyPercent = exitQtyPercent;
-        this.exitTrailPoints = tp;
-        this.exitTrailOffset = toff;
-        this.exitTrailPriceArg = tprice;
-        this.exitProfitPoints = prof;
-        this.exitLossPoints = loss_;
-        this.exitOrderComment = cmt;
-        this.exitCommentLoss = cmtLoss;
-        this.exitCommentProfit = cmtProfit;
-        this.exitCommentTrailing = cmtTrailing;
-        // 달성된 트레일링 라인은 같은 id 수정에서 보존한다 — "매 바 재호출" 표준 패턴에서 래칫이
-        // 유지되는 것이 TV 트레일링의 관측 동작(pine2py는 재호출마다 Order를 새로 만들어 trail_price
-        // 가 매 바 리셋되는데, 그러면 매 바 재호출 패턴에서 래칫이 절대 형성되지 않아 트레일링이
-        // 사실상 무상태가 됨 — 실버그로 판단, 미추종. TV 실측 미검증 가설, DIVERGENCES #73).
-        // 트레일링 축이 제거된 수정은 라인도 파기(이후 재도입 시 활성화부터 다시).
-        if (Number.isNaN(tp) && Number.isNaN(tprice)) this.exitTrailPrice = NaN;
-        this.exitPlacedThisBar = true;
-      }
+    const from = fromEntry ?? "";
+    for (const b of this.entryBook) if (from === "" || b.entryId === from) this.placeLeg(b.entryId, b, b.size);
+    for (const e of this.pendingEntries) {
+      if (from !== "" ? e.id !== from : this.posSize !== 0 && this.posSize > 0 !== (e.direction === "long")) continue;
+      this.placeLeg(e.id, null, this.pendingEntryOpens(e));
+    }
+  }
+
+  // Places (or modifies) the leg of the call in legTemplate on one target: a filled entry
+  // (`binding`), or the pending entry order `entryId` (binding null) opening `bound` contracts.
+  private placeLeg(entryId: string, binding: EntryBinding | null, bound: number): void {
+    const t = this.legTemplate;
+    const existing = this.findLeg(t.id, entryId, binding);
+    // A leg that has filled is not placed again while its entry is open (see ExitLeg).
+    if (existing !== undefined && existing.consumed) return;
+    // A leg waiting on a default-sized entry order is sized when the order fills (bindLegs).
+    const sized = !Number.isNaN(bound);
+    const reserved = sized
+      ? this.legSlice(t.qty, t.qtyPercent, bound, this.reservedBySiblings(entryId, binding, bound, existing))
+      : NaN;
+    if (sized && !(reserved > 0)) return;
+    if (existing !== undefined) {
+      // A call with the id of a resting leg modifies it — the standard pattern re-issues the bracket
+      // every bar. The trailing line it has reached is kept, unless the call drops the trailing stop
+      // (hand-verified, DIVERGENCES #73: pine2py re-arms it on every call, which would keep a per-bar
+      // re-issued trailing stop from ever ratcheting).
+      const trailPrice = Number.isNaN(t.trailPoints) && Number.isNaN(t.trailPriceArg) ? NaN : existing.trailPrice;
+      StrategyState.assignLegSpec(existing, t);
+      existing.reserved = reserved;
+      existing.boundSize = bound;
+      existing.trailPrice = trailPrice;
+      existing.placedThisBar = true;
       return;
     }
-    this.exitPlacedThisBar = true;
-    this.exitPending = true;
-    this.exitOrderId = id;
-    this.exitFromEntry = from;
-    this.exitLimit = lim;
-    this.exitStop = stp;
-    this.exitQty = exitQty;
-    this.exitQtyPercent = exitQtyPercent;
-    this.exitTrailPoints = tp;
-    this.exitTrailOffset = toff;
-    this.exitTrailPriceArg = tprice;
-    this.exitProfitPoints = prof;
-    this.exitLossPoints = loss_;
-    this.exitOrderComment = cmt;
-    this.exitCommentLoss = cmtLoss;
-    this.exitCommentProfit = cmtProfit;
-    this.exitCommentTrailing = cmtTrailing;
-    this.exitTrailPrice = NaN; // 신규 등록은 항상 미활성에서 시작(이전 주문의 잔류 라인 차단)
+    const leg: ExitLeg = {
+      ...t, entryId, binding, reserved, boundSize: bound, trailPrice: NaN, consumed: false,
+      placedThisBar: true, seq: ++this.exitSeq,
+    };
+    this.exitLegs.push(leg);
+  }
+
+  // Copies what a strategy.exit() call states onto a leg.
+  private static assignLegSpec(dst: ExitLeg, src: ExitLeg): void {
+    dst.qty = src.qty;
+    dst.qtyPercent = src.qtyPercent;
+    dst.limit = src.limit;
+    dst.stop = src.stop;
+    dst.profitPoints = src.profitPoints;
+    dst.lossPoints = src.lossPoints;
+    dst.trailPoints = src.trailPoints;
+    dst.trailOffset = src.trailOffset;
+    dst.trailPriceArg = src.trailPriceArg;
+    dst.comment = src.comment;
+    dst.commentLoss = src.commentLoss;
+    dst.commentProfit = src.commentProfit;
+    dst.commentTrailing = src.commentTrailing;
   }
 
   // strategy.cancel(id) — 미체결 주문 취소. An entry order is cancelled whatever its type, a market
@@ -1968,10 +2084,12 @@ export class StrategyState {
     if (id === null || id === undefined) return;
     const e = this.pendingEntry(id);
     if (e !== undefined) this.removePendingEntry(e);
-    // exit 주문도 id로 취소 가능(pine2py cancel의 _pending_orders id 매칭이 exit 주문을 포함하는
-    // 것과 동형, C167) — exit는 항상 가격 기반이라 마켓 제외 검사가 불필요.
-    if (this.exitPending && this.exitOrderId === id) {
-      this.exitPending = false;
+    // Exit orders are cancelled by their own id, every leg of it (a consumed one too, as in the
+    // oracle's `_remove_order_by_id`: "cancel matches an exit by its exit_id only"). An exit is
+    // always price-based, so there is no market-order exception.
+    for (let i = 0; i < this.exitLegs.length; ) {
+      if (this.exitLegs[i]!.id === id) this.exitLegs.splice(i, 1);
+      else i++;
     }
     // order 주문(C169)도 entry와 동일 규칙: 가격 기반만 취소 가능(마켓은 다음 바 open 무조건 체결).
     if (this.orderPending && this.orderOrderId === id && this.orderIsPriceBased()) {
@@ -1980,10 +2098,10 @@ export class StrategyState {
   }
 
   // strategy.cancel_all() — 모든 미체결 주문 취소: every entry order (market ones included, see
-  // cancel), the exit, and a price-based strategy.order() (its market order is not covered yet).
+  // cancel), the exit legs, and a price-based strategy.order() (its market order is not covered yet).
   cancel_all(): void {
     this.pendingEntries.length = 0;
-    this.exitPending = false;
+    this.exitLegs.length = 0;
     if (this.orderPending && this.orderIsPriceBased()) {
       this.orderPending = false;
     }
@@ -2142,24 +2260,26 @@ export class StrategyState {
       }
     }
     for (const e of this.pendingEntries) e.placedThisBar = false;
-    this.exitPlacedThisBar = false;
+    for (const l of this.exitLegs) l.placedThisBar = false;
     this.orderPlacedThisBar = false;
-    // An exit bound to a pending entry order lives only as long as that order: once it is gone
-    // (cancelled, or consumed without opening a position) the exit has nothing to close. A
-    // from_entry-less exit is not bound to one entry and keeps waiting for the next position.
-    if (
-      this.exitPending && this.posSize === 0 && this.exitFromEntry !== "" &&
-      !this.hasPendingEntry(this.exitFromEntry)
-    ) {
-      this.exitPending = false;
+    this.freshLegs.length = 0;
+    // A leg waiting on a pending entry order lives only as long as that order: once it is gone
+    // (cancelled, or consumed without opening a position) the leg has nothing to close. The oracle
+    // drops it at the bar's open too (tier 2, measured on TradingView: "TradingView does not let it
+    // reach the position an OLDER entry of the same id still holds"). Not covered: the oracle keeps
+    // a from_entry-less one and re-aims it at the next position that opens.
+    for (let i = 0; i < this.exitLegs.length; ) {
+      const l = this.exitLegs[i]!;
+      if (l.binding === null && this.pendingEntry(l.entryId) === undefined) this.exitLegs.splice(i, 1);
+      else i++;
     }
     if (this.closePending) this.fillPendingClose(openPrice, barIndex, barTimeMs);
     // exit 브래킷(C167)은 close(마켓 청산) 다음, entry 앞에서 판정한다 — 마켓 close는 open 체결이라
-    // 항상 이 바의 첫 가격이고(체결되면 closeAt이 exitPending을 함께 소멸시킴), exit도 청산 계열이라
-    // 기존 "청산 먼저 → entry" 순서 원칙에 합류한다(같은 바에 exit 체결+재진입 entry 체결이 순차
-    // 발생 가능 — TV 실측 미검증 가설, DIVERGENCES #70). from_entry 매칭은 체결 시점에 재검사
-    // (콜타임과 체결 바 사이에 포지션이 바뀔 수 있음 — 불일치면 이월, 포지션 청산 시 자동 소멸).
-    this.fillPendingExit(openPrice, high, low, barIndex, barTimeMs);
+    // 항상 이 바의 첫 가격이고, exit도 청산 계열이라 기존 "청산 먼저 → entry" 순서 원칙에 합류한다
+    // (같은 바에 exit 체결+재진입 entry 체결이 순차 발생 가능 — TV 실측 미검증 가설, DIVERGENCES #70).
+    // These are the legs bound to entries filled on earlier bars; the legs an entry fill of this bar
+    // binds are judged after that fill (fillPendingEntries).
+    this.fillExitLegs(openPrice, high, low, barIndex, barTimeMs, false);
     if (this.pendingEntries.length > 0) this.fillPendingEntries(openPrice, high, low, barIndex, barTimeMs);
     // order 넷팅 주문(C169)은 마지막에 판정한다 — 처리 순서 close→exit→entry→order: 청산 계열
     // 먼저 원칙(기존 순서 불변) + 같은 바에 entry와 order가 둘 다 체결되면 entry가 만든 포지션에
@@ -2168,7 +2288,10 @@ export class StrategyState {
     // (마켓=open, limit/stop=조건 충족 시 체결·미충족 시 이월, 갭 오픈 or-better #69 (a) 축).
     if (this.orderPending) {
       const orderFill = this.directionalFillPrice(this.orderDirection, this.orderLimit, this.orderStop, openPrice, high, low);
-      if (!Number.isNaN(orderFill)) this.fillPendingOrder(orderFill, barIndex, barTimeMs);
+      if (!Number.isNaN(orderFill)) {
+        this.fillPendingOrder(orderFill, barIndex, barTimeMs);
+        this.fillExitLegs(openPrice, high, low, barIndex, barTimeMs, true);
+      }
     }
     this.updateTradeExcursion(high, low);
   }
@@ -2181,7 +2304,7 @@ export class StrategyState {
   // price-dependent, they will only be filled if the price conditions are met." So only the orders
   // the script placed on this bar take part (the ones resting from earlier bars already met this
   // bar's prices in processFills), and the close is the single price they are judged at and fill
-  // at. The exit goes last: the entry it is bound to may have just filled. The oracle's close pass
+  // at. The exits go last: the entry they are bound to may have just filled. The oracle's close pass
   // runs in the same order (market orders, then triggered entries, then exits).
   // Repro: resin-harness state/repros/mixed-seed-4.json.
   processFillsAtClose(closePrice: number, barIndex: number = NaN, barTimeMs: number = NaN): void {
@@ -2194,7 +2317,8 @@ export class StrategyState {
       );
       if (!Number.isNaN(orderFill)) this.fillPendingOrder(orderFill, barIndex, barTimeMs);
     }
-    if (this.exitPlacedThisBar) this.fillPendingExitAtClose(closePrice, barIndex, barTimeMs);
+    this.freshLegs.length = 0;
+    this.fillExitLegsAtClose(closePrice, barIndex, barTimeMs);
   }
 
   // Fills the pending strategy.close()/close_all() market order at `fillPrice`, slipped against the
@@ -2238,25 +2362,24 @@ export class StrategyState {
       due.push(e);
     }
     if (due.length > 1) due.sort((a, b) => a.pathLeg - b.pathLeg || a.pathDist - b.pathDist || a.seq - b.seq);
-    // An exit bound to an entry that opens a position from flat is live on the fill bar itself, not
-    // from the next one: the order exists before the fill, so the rest of this bar can trigger it
-    // (the manual's "Take-profit and stop-loss demo" places both on one bar). The fills at the open
-    // all happen before any intrabar price, so such an exit is judged once they are all done (a
-    // second market entry meets the position the first one opened, not the exit's close; repro
-    // resin-harness state/repros/mixed-seed-475.json), and after each intrabar fill. A position that
-    // was already open had its exit judged before the entries, so it is not judged twice.
+    // An exit leg an entry fill binds (placed against the pending entry order, or spawned for a
+    // pyramid add; bindLegs) is live on the fill bar itself, not from the next one: the order exists
+    // before the fill, so the rest of this bar can trigger it (the manual's "Take-profit and
+    // stop-loss demo" places both on one bar). The fills at the open all happen before any intrabar
+    // price, so such legs are judged once they are all done (a second market entry meets the
+    // position the first one opened, not the exit's close; repro resin-harness
+    // state/repros/mixed-seed-475.json), and after each intrabar fill. The legs of entries filled on
+    // earlier bars were judged before the entries, so they are not judged twice.
     // An order an earlier fill of this bar cancelled through its OCA group is no longer in the book.
     let i = 0;
-    const flatAtOpen = this.posSize === 0;
     for (; i < due.length && due[i]!.pathLeg === 0; i++) {
       if (this.pendingEntries.includes(due[i]!)) this.fillPendingEntry(due[i]!, due[i]!.fillPrice, barIndex, barTimeMs);
     }
-    if (flatAtOpen && this.posSize !== 0) this.fillPendingExit(openPrice, high, low, barIndex, barTimeMs);
+    this.fillExitLegs(openPrice, high, low, barIndex, barTimeMs, true);
     for (; i < due.length; i++) {
       if (!this.pendingEntries.includes(due[i]!)) continue;
-      const wasFlat = this.posSize === 0;
       this.fillPendingEntry(due[i]!, due[i]!.fillPrice, barIndex, barTimeMs);
-      if (wasFlat && this.posSize !== 0) this.fillPendingExit(openPrice, high, low, barIndex, barTimeMs);
+      this.fillExitLegs(openPrice, high, low, barIndex, barTimeMs, true);
     }
     due.length = 0;
   }
@@ -2364,10 +2487,6 @@ export class StrategyState {
     } else if (this.posSize === 0) {
       this.openTradeAt(e.id, e.comment, fillPrice, sign * qty, barIndex, barTimeMs);
       this.intradayFilledCount += 1;
-      if (this.exitPending && !Number.isNaN(this.exitQtyPercent)) {
-        this.exitQty = (qty * this.exitQtyPercent) / 100;
-        this.exitQtyPercent = NaN;
-      }
     } else if (this.entryCount < this.pyramiding) {
       // A pyramiding add opens its own trade beside the earlier ones (it is not merged into
       // them): "Pyramiding specifies the maximum number of open trades, from the orders created
@@ -2420,65 +2539,88 @@ export class StrategyState {
     );
   }
 
-  // Judges the pending exit bracket against this bar and closes at its fill price. Called before
-  // the entry slot (a position carried in from earlier bars) and again after an entry opens a
-  // position from flat on this bar (see processFills).
-  private fillPendingExit(openPrice: number, high: number, low: number, barIndex: number, barTimeMs: number): void {
-    const from = this.exitFromEntry;
-    if (this.exitPending && this.posSize !== 0 && (from === "" || this.hasBound(from))) {
-      const exitFill = this.exitFillPrice(openPrice, high, low);
-      if (!Number.isNaN(exitFill)) this.executeExit(exitFill, barIndex, barTimeMs);
+  // Judges live exit legs against this bar — every leg bound to a filled entry (`onlyFresh` false), or
+  // only the legs this bar's last entry fill bound (freshLegs) — and fills the triggered ones in the
+  // order the bar's path reaches their fill prices, as for entry orders (fillPendingEntries: a fill at
+  // the open first, then the leg to the extreme nearer the open before the leg to the farther one,
+  // nearer the open first on one leg, placement order at one point). Each fill meets the position the
+  // previous one left, so a leg whose entry an earlier fill spent is gone by its turn.
+  private fillExitLegs(
+    openPrice: number, high: number, low: number, barIndex: number, barTimeMs: number, onlyFresh: boolean,
+  ): void {
+    const legs = onlyFresh ? this.freshLegs : this.exitLegs;
+    if (legs.length === 0) return;
+    const due = this.legScratch;
+    due.length = 0;
+    if (this.posSize !== 0) {
+      const upFirst = high - openPrice < openPrice - low;
+      for (const l of legs) {
+        if (l.consumed || l.binding === null) continue;
+        const price = this.legFillPrice(l, openPrice, high, low);
+        if (Number.isNaN(price)) continue;
+        l.fillPrice = price;
+        l.pathLeg = price === openPrice ? 0 : price > openPrice === upFirst ? 1 : 2;
+        l.pathDist = Math.abs(price - openPrice);
+        due.push(l);
+      }
     }
+    if (onlyFresh) this.freshLegs.length = 0;
+    if (due.length > 1) due.sort((a, b) => a.pathLeg - b.pathLeg || a.pathDist - b.pathDist || a.seq - b.seq);
+    for (const l of due) {
+      if (this.posSize !== 0 && !l.consumed && this.exitLegs.includes(l)) this.executeLeg(l, l.fillPrice, barIndex, barTimeMs);
+    }
+    due.length = 0;
   }
 
-  // The close pass (processFillsAtClose) for the exit: its price levels judged against the close
-  // alone, the stop before the limit, filling at the close. A trailing leg is left to the next
-  // bar's walk, as in the oracle's close pass, which tests an order's limit and stop levels only.
-  private fillPendingExitAtClose(closePrice: number, barIndex: number, barTimeMs: number): void {
-    const from = this.exitFromEntry;
-    if (!this.exitPending || this.posSize === 0 || (from !== "" && !this.hasBound(from))) return;
-    const isLong = this.posSize > 0;
-    const base = this.exitEntryPrice();
-    const stop = this.exitStopLevel(isLong, base);
-    const limit = this.exitLimitLevel(isLong, base);
-    // NaN levels compare false (C91).
-    if (isLong ? closePrice <= stop : closePrice >= stop) this.exitFillKind = "loss";
-    else if (isLong ? closePrice >= limit : closePrice <= limit) this.exitFillKind = "profit";
-    else return;
-    this.executeExit(closePrice, barIndex, barTimeMs);
+  // The close pass (processFillsAtClose) for the exit legs placed on this bar: each one's price
+  // levels judged against the close alone, the stop before the limit, filling at the close, in
+  // placement order. A trailing stop is left to the next bar's walk, as in the oracle's close pass,
+  // which tests an order's limit and stop levels only.
+  private fillExitLegsAtClose(closePrice: number, barIndex: number, barTimeMs: number): void {
+    const due = this.legScratch;
+    due.length = 0;
+    for (const l of this.exitLegs) if (l.placedThisBar && !l.consumed && l.binding !== null) due.push(l);
+    for (const l of due) {
+      if (this.posSize === 0 || l.consumed || !this.exitLegs.includes(l)) continue;
+      const isLong = this.posSize > 0;
+      const base = l.binding!.entryPrice;
+      const stop = this.exitStopLevel(l, isLong, base);
+      const limit = this.exitLimitLevel(l, isLong, base);
+      // NaN levels compare false (C91).
+      if (isLong ? closePrice <= stop : closePrice >= stop) l.fillKind = "loss";
+      else if (isLong ? closePrice >= limit : closePrice <= limit) l.fillKind = "profit";
+      else continue;
+      this.executeLeg(l, closePrice, barIndex, barTimeMs);
+    }
+    due.length = 0;
   }
 
-  // Closes at the pending exit's fill price; exitFillKind names the level that triggered it. The
-  // stop-loss and trailing legs are stop orders and fill slipped against the position; the
-  // take-profit leg is a limit order and keeps its price.
-  private executeExit(exitFill: number, barIndex: number, barTimeMs: number): void {
-    if (this.exitFillKind !== "profit") exitFill = this.slipped(exitFill, this.posSize > 0 ? -1 : 1);
-    const from = this.exitFromEntry;
-    // 주문 소비는 여기서 명시(C168) — 전량 청산은 closeAt의 flat 리셋이 exitPending을 함께
-    // 소멸시키지만, qty= 부분 체결은 포지션이 남아도 브래킷 주문 자체는 체결로 소진돼야 한다
-    // (TV: 주문은 1회 체결로 소멸, 잔여분 브래킷은 스크립트가 매 바 재호출로 재발행 — 가설 #71).
-    this.exitPending = false;
-    // comment_loss=/comment_profit=/comment_trailing=(C375+C673) — exitFillPrice가 남긴
-    // exitFillKind로 트리거별 오버라이드를 선택: "profit"→comment_profit=, "loss"→comment_loss=,
-    // null(순수 트레일링)→comment_trailing=. 셋 다 미지정(null)이면 comment=로 폴백.
-    const exitCmt =
-      this.exitFillKind === "profit" && this.exitCommentProfit !== null
-        ? this.exitCommentProfit
-        : this.exitFillKind === "loss" && this.exitCommentLoss !== null
-          ? this.exitCommentLoss
-          : this.exitFillKind === null && this.exitCommentTrailing !== null
-            ? this.exitCommentTrailing
-            : this.exitOrderComment;
-    // An exit with from_entry closes at most its entry id's bound quantity; the fill itself
-    // is FIFO like every closing fill (closeAt).
+  // Fills exit leg `l` at `fill`; l.fillKind names the level that triggered it. The stop-loss and
+  // trailing legs are stop orders and fill slipped against the position; the take-profit leg is a
+  // limit order and keeps its price. The leg closes its slice, oldest trade first like every
+  // closing fill (closeAt), and settles the one entry it is bound to. Having closed all of its slice
+  // it is consumed and stays behind while that entry is open (see ExitLeg); having closed less (the
+  // position was smaller) it is gone.
+  private executeLeg(l: ExitLeg, fill: number, barIndex: number, barTimeMs: number): void {
+    if (l.fillKind !== "profit") fill = this.slipped(fill, this.posSize > 0 ? -1 : 1);
+    // comment_loss=/comment_profit=/comment_trailing=(C375+C673) — 체결을 결정한 축으로 트리거별
+    // 오버라이드를 선택: "profit"→comment_profit=, "loss"→comment_loss=, null(순수 트레일링)→
+    // comment_trailing=. 셋 다 미지정(null)이면 comment=로 폴백.
+    const cmt =
+      l.fillKind === "profit" && l.commentProfit !== null
+        ? l.commentProfit
+        : l.fillKind === "loss" && l.commentLoss !== null
+          ? l.commentLoss
+          : l.fillKind === null && l.commentTrailing !== null
+            ? l.commentTrailing
+            : l.comment;
+    const wholeSlice = l.reserved <= Math.abs(this.posSize);
     this.beginOrder();
-    if (from === "") {
-      this.closeAt(exitFill, this.exitQty, exitCmt, barIndex, this.exitOrderId, barTimeMs);
-    } else {
-      const bound = this.boundQty(from);
-      const qty = this.exitQty < bound ? this.exitQty : bound;
-      this.closeAt(exitFill, qty, exitCmt, barIndex, this.exitOrderId, barTimeMs, from);
-    }
+    this.closeAt(fill, l.reserved, cmt, barIndex, l.id, barTimeMs, l.binding);
+    const i = this.exitLegs.indexOf(l);
+    if (i < 0) return; // its entry is spent: the leg died with it
+    if (wholeSlice) l.consumed = true;
+    else this.exitLegs.splice(i, 1);
   }
 
   // pending entry/order 주문의 이번 바 체결가 — NaN이면 미체결(이월). pine2py _check_fill의 entry
@@ -2490,7 +2632,7 @@ export class StrategyState {
   // 미검증 가설, DIVERGENCES #69). 한 주문의 체결가는 "open 스냅샷 → 바 전체 H/L" 2단 모델로 정하고
   // (stop-limit의 트리거-후-limit 시차도 같은 바 결합 조건으로 접는다), 여러 entry가 한 바에서
   // 트리거되면 그 순서는 fillPendingEntries가 봉 내 경로로 정한다. exit의 부등호 반전판
-  // (exitFillPrice)과는 별개.
+  // (legFillPrice)과는 별개.
   private directionalFillPrice(
     direction: string, limitV: number, stopV: number, openPrice: number, high: number, low: number,
   ): number {
@@ -2525,7 +2667,7 @@ export class StrategyState {
     return NaN;
   }
 
-  // pending exit 브래킷의 이번 바 체결가(C167, C186에서 intrabar 우선순위 정정) — NaN이면
+  // exit leg `l`의 이번 바 체결가(C167, C186에서 intrabar 우선순위 정정) — NaN이면
   // 미체결(이월). pine2py _check_fill의 from_entry 분기(entry의 부등호 반전판: 롱 포지션 exit
   // limit(익절)은 high>=limit → limit 체결, exit stop(손절)은 low<=stop → stop 체결, 숏은 반전)를
   // 기본으로 하되 두 가지를 의도적으로 바꾼다(DIVERGENCES #70): (1) limit+stop 동시 지정을
@@ -2551,7 +2693,7 @@ export class StrategyState {
   // intrabar 먼저, stop·trail 나중**. NaN open/high/low 비교는 전부 false로 안전(C91).
   //
   // 트레일링 축(C170, pine2py _check_trailing_fill 이식 + 갭 open 체결 적응)은 **상태를 뮤테이션**
-  // 한다(exitTrailPrice 래칫) — pending exit가 살아있는 바마다 정확히 1회 호출되는 위치(processFills
+  // 한다(l.trailPrice 래칫) — 살아있는 leg마다 바당 정확히 1회 호출되는 위치(fillExitLegs
   // exit 분기)라 순수 판정 함수에 갱신을 함께 두는 것이 pine2py(_check_fill 안에서 order.trail_price
   // 갱신)와 동형. 바 내 순서는 pine2py literal port: 유리 극값(롱 high)으로 라인을 먼저 래칫한 뒤
   // 반대 극값(롱 low)과 대조 — "유리 극값이 시간상 먼저"라는 intrabar 가설(활성화 바에서 즉시 체결도
@@ -2561,85 +2703,85 @@ export class StrategyState {
   // 규칙 그대로 적용 — 롱은 limit보다 먼저, 숏은 limit보다 나중). 전부 TV 실측 미검증 가설(DIVERGENCES #73).
   // 갭 open 적응: open이 **이전 바까지의** 라인을 이미 관통했으면 open 체결(라인 래칫 전 판정 —
   // pine2py는 갭에서도 정확히 라인 가격을 반환해 "시장에 없던 가격" 체결, #69 (a) 축이라 미추종).
-  private exitFillPrice(openPrice: number, high: number, low: number): number {
+  private legFillPrice(l: ExitLeg, openPrice: number, high: number, low: number): number {
     // profit=/loss=/trail_points= are tick distances from the entry price, not price distances.
     // The manual (strategies.txt, "Take-profit and stop-loss"): "The profit and loss parameters
     // accept relative values representing the number of ticks by which the market price must move
     // away from the entry price to trigger an exit"; trail_points is "the tick distance from the
     // entry price required to activate the trailing stop", and trail_offset is "a specified number
-    // of ticks". The base is the fill price of the entry the exit is bound to (a later pyramid add
-    // does not move it), and each level is snapped to the tick grid away from that price, as the
+    // of ticks". The base is the fill price of the entry the leg is bound to (a pyramid add gets a
+    // leg of its own, bindLegs), and each level is snapped to the tick grid away from that price, as the
     // oracle resolves them. Repro: resin-harness state/repros/ticks-seed-1.json (and
     // ticks-pyramid-add.json for the base). When both of a pair are given, limit=/stop= is used.
     const isLong = this.posSize > 0;
-    const base = this.exitEntryPrice();
-    const limit = this.exitLimitLevel(isLong, base);
-    const stop = this.exitStopLevel(isLong, base);
+    const base = l.binding!.entryPrice;
+    const limit = this.exitLimitLevel(l, isLong, base);
+    const stop = this.exitStopLevel(l, isLong, base);
     const hasLimit = !Number.isNaN(limit);
     const hasStop = !Number.isNaN(stop);
-    const hasTrail = !Number.isNaN(this.exitTrailPoints) || !Number.isNaN(this.exitTrailPriceArg);
+    const hasTrail = !Number.isNaN(l.trailPoints) || !Number.isNaN(l.trailPriceArg);
     // comment_loss=/comment_profit=/comment_trailing=(C375+C673) 선택은 이 함수가 어느 축(stop=
-    // loss, limit=profit, 라인=null)이 체결가를 결정했는지 exitFillKind에 부작용으로 남긴다 —
-    // 순수 트레일링(라인이 결정)은 null로 남겨 processFills가 comment_trailing=을 선택(위
-    // exitCommentTrailing 선언 참조).
+    // loss, limit=profit, 라인=null)이 체결가를 결정했는지 l.fillKind에 부작용으로 남긴다 —
+    // 순수 트레일링(라인이 결정)은 null로 남겨 executeLeg가 comment_trailing=을 선택(
+    // ExitLeg.commentTrailing 참조).
     if (this.posSize > 0) {
-      if (hasStop && openPrice <= stop) { this.exitFillKind = "loss"; return openPrice; }
-      if (hasTrail && openPrice <= this.exitTrailPrice) { this.exitFillKind = null; return openPrice; } // 라인 미활성(NaN)이면 비교 false — 안전(C91)
-      if (hasLimit && openPrice >= limit) { this.exitFillKind = "profit"; return openPrice; }
+      if (hasStop && openPrice <= stop) { l.fillKind = "loss"; return openPrice; }
+      if (hasTrail && openPrice <= l.trailPrice) { l.fillKind = null; return openPrice; } // 라인 미활성(NaN)이면 비교 false — 안전(C91)
+      if (hasLimit && openPrice >= limit) { l.fillKind = "profit"; return openPrice; }
       if (hasTrail) {
         // 활성화(high가 entry+trail_points, 또는 trail_price가 지정됐으면 그 절대가 그대로 도달)
         // 또는 기활성이면 이번 바 high로 라인 래칫(단조 max). high가 NaN(마켓 전용 단위 테스트
         // 경로)이면 활성화 비교/래칫 비교 전부 false — 안전 소멸.
-        const offset = (Number.isNaN(this.exitTrailOffset) ? this.exitTrailPoints : this.exitTrailOffset) * this.mintick;
-        const activation = Number.isNaN(this.exitTrailPriceArg)
-          ? this.snapToTick(base + this.exitTrailPoints * this.mintick, true)
-          : this.exitTrailPriceArg;
-        if (!Number.isNaN(this.exitTrailPrice) || high >= activation) {
+        const offset = (Number.isNaN(l.trailOffset) ? l.trailPoints : l.trailOffset) * this.mintick;
+        const activation = Number.isNaN(l.trailPriceArg)
+          ? this.snapToTick(base + l.trailPoints * this.mintick, true)
+          : l.trailPriceArg;
+        if (!Number.isNaN(l.trailPrice) || high >= activation) {
           const newTrail = high - offset;
-          if (Number.isNaN(this.exitTrailPrice) || newTrail > this.exitTrailPrice) this.exitTrailPrice = newTrail;
+          if (Number.isNaN(l.trailPrice) || newTrail > l.trailPrice) l.trailPrice = newTrail;
         }
       }
       const stopHit = hasStop && low <= stop;
-      const trailHit = hasTrail && low <= this.exitTrailPrice;
+      const trailHit = hasTrail && low <= l.trailPrice;
       if (stopHit && trailHit) {
-        const stopWins = stop > this.exitTrailPrice;
-        this.exitFillKind = stopWins ? "loss" : null;
-        return stopWins ? stop : this.exitTrailPrice;
+        const stopWins = stop > l.trailPrice;
+        l.fillKind = stopWins ? "loss" : null;
+        return stopWins ? stop : l.trailPrice;
       }
-      if (stopHit) { this.exitFillKind = "loss"; return stop; }
-      if (trailHit) { this.exitFillKind = null; return this.exitTrailPrice; }
-      if (hasLimit && high >= limit) { this.exitFillKind = "profit"; return limit; }
+      if (stopHit) { l.fillKind = "loss"; return stop; }
+      if (trailHit) { l.fillKind = null; return l.trailPrice; }
+      if (hasLimit && high >= limit) { l.fillKind = "profit"; return limit; }
     } else {
-      if (hasStop && openPrice >= stop) { this.exitFillKind = "loss"; return openPrice; }
-      if (hasTrail && openPrice >= this.exitTrailPrice) { this.exitFillKind = null; return openPrice; }
-      if (hasLimit && openPrice <= limit) { this.exitFillKind = "profit"; return openPrice; }
+      if (hasStop && openPrice >= stop) { l.fillKind = "loss"; return openPrice; }
+      if (hasTrail && openPrice >= l.trailPrice) { l.fillKind = null; return openPrice; }
+      if (hasLimit && openPrice <= limit) { l.fillKind = "profit"; return openPrice; }
       if (hasTrail) {
-        const offset = (Number.isNaN(this.exitTrailOffset) ? this.exitTrailPoints : this.exitTrailOffset) * this.mintick;
-        const activation = Number.isNaN(this.exitTrailPriceArg)
-          ? this.snapToTick(base - this.exitTrailPoints * this.mintick, false)
-          : this.exitTrailPriceArg;
-        if (!Number.isNaN(this.exitTrailPrice) || low <= activation) {
+        const offset = (Number.isNaN(l.trailOffset) ? l.trailPoints : l.trailOffset) * this.mintick;
+        const activation = Number.isNaN(l.trailPriceArg)
+          ? this.snapToTick(base - l.trailPoints * this.mintick, false)
+          : l.trailPriceArg;
+        if (!Number.isNaN(l.trailPrice) || low <= activation) {
           const newTrail = low + offset;
-          if (Number.isNaN(this.exitTrailPrice) || newTrail < this.exitTrailPrice) this.exitTrailPrice = newTrail;
+          if (Number.isNaN(l.trailPrice) || newTrail < l.trailPrice) l.trailPrice = newTrail;
         }
       }
       // 숏은 limit(익절)이 low 쪽이라 O-L-H-C 경로상 stop/trail(high 쪽)보다 먼저 도달한다(C186,
       // 위 클래스 주석 참조 — 롱의 "stop/trail 먼저"와 정확히 대칭 반전).
-      if (hasLimit && low <= limit) { this.exitFillKind = "profit"; return limit; }
+      if (hasLimit && low <= limit) { l.fillKind = "profit"; return limit; }
       const stopHit = hasStop && high >= stop;
-      const trailHit = hasTrail && high >= this.exitTrailPrice;
+      const trailHit = hasTrail && high >= l.trailPrice;
       if (stopHit && trailHit) {
-        const stopWins = stop < this.exitTrailPrice;
-        this.exitFillKind = stopWins ? "loss" : null;
-        return stopWins ? stop : this.exitTrailPrice;
+        const stopWins = stop < l.trailPrice;
+        l.fillKind = stopWins ? "loss" : null;
+        return stopWins ? stop : l.trailPrice;
       }
-      if (stopHit) { this.exitFillKind = "loss"; return stop; }
-      if (trailHit) { this.exitFillKind = null; return this.exitTrailPrice; }
+      if (stopHit) { l.fillKind = "loss"; return stop; }
+      if (trailHit) { l.fillKind = null; return l.trailPrice; }
     }
     return NaN;
   }
 
-  // The pending exit's take-profit level: limit=, else `profit` ticks from `base` (the bound
+  // A leg's take-profit level: limit=, else `profit` ticks from `base` (the bound
   // entry's fill price) in the position's favour. NaN when it has neither.
   // An absolute limit=/stop= is put on the tick grid like an entry's levels, on the side the market
   // has to travel further to reach: a long's take-profit rounds up and its stop-loss down, a
@@ -2649,21 +2791,21 @@ export class StrategyState {
   // `position_avg_price * 1.01` = 1.13323 * 1.01 = 1.1445623 fills at 1.14477 with 20 ticks of
   // slippage, i.e. at 1.14457 + 0.0002; trade 2, a long's 1.14213 * 0.99 = 1.1307087, at
   // 1.1307 - 0.0002 = 1.1305. The unsnapped level filled at 1.1447623 and 1.1305087.
-  private exitLimitLevel(isLong: boolean, base: number): number {
-    if (!Number.isNaN(this.exitLimit)) return this.snapToTick(this.exitLimit, isLong);
-    if (Number.isNaN(this.exitProfitPoints)) return NaN;
+  private exitLimitLevel(l: ExitLeg, isLong: boolean, base: number): number {
+    if (!Number.isNaN(l.limit)) return this.snapToTick(l.limit, isLong);
+    if (Number.isNaN(l.profitPoints)) return NaN;
     return isLong
-      ? this.snapToTick(base + this.exitProfitPoints * this.mintick, true)
-      : this.snapToTick(base - this.exitProfitPoints * this.mintick, false);
+      ? this.snapToTick(base + l.profitPoints * this.mintick, true)
+      : this.snapToTick(base - l.profitPoints * this.mintick, false);
   }
 
-  // The pending exit's stop-loss level: stop=, else `loss` ticks from `base` against the position.
+  // A leg's stop-loss level: stop=, else `loss` ticks from `base` against the position.
   // NaN when it has neither.
-  private exitStopLevel(isLong: boolean, base: number): number {
-    if (!Number.isNaN(this.exitStop)) return this.snapToTick(this.exitStop, !isLong);
-    if (Number.isNaN(this.exitLossPoints)) return NaN;
+  private exitStopLevel(l: ExitLeg, isLong: boolean, base: number): number {
+    if (!Number.isNaN(l.stop)) return this.snapToTick(l.stop, !isLong);
+    if (Number.isNaN(l.lossPoints)) return NaN;
     return isLong
-      ? this.snapToTick(base - this.exitLossPoints * this.mintick, false)
-      : this.snapToTick(base + this.exitLossPoints * this.mintick, true);
+      ? this.snapToTick(base - l.lossPoints * this.mintick, false)
+      : this.snapToTick(base + l.lossPoints * this.mintick, true);
   }
 }

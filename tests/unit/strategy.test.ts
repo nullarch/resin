@@ -2439,7 +2439,7 @@ describe("StrategyState close_all + qty 부분 청산 (C168 여섯째 슬라이�
     st.processFills(12, 16, 11); // high 16 >= limit 15 — TP 15에 1 계약만 청산
     expect(st.posSize).toBe(2);
     expect(st.posAvgPrice).toBe(10);
-    expect(st.exitPending).toBe(false); // 주문 자체는 체결로 소진(재발행은 스크립트 몫)
+    expect(st.exitPending).toBe(false); // consumed: the same call does not re-place it while L is open
     expect(st.realizedPnl).toBe(5); // (15-10)*1
     expect(st.closedTrades).toBe(1);
   });
@@ -2971,14 +2971,17 @@ describe("strategy.* E2E 여섯째 슬라이스 (hand-verified: 부분 청산 + 
   });
 });
 
-describe("strategy.* E2E 여섯째 슬라이스 (hand-verified: exit qty= 부분 익절 2단)", () => {
-  // 손 계산 시나리오 (롱 2 진입, 매 바 qty=1 브래킷 재발행 — TP 2회로 분할 청산):
-  //   bar0: O=10 C=11 양봉&flat → entry("L",2) 큐잉. (ps=0, np=0)
-  //   bar1: O=12 → 롱 2@12 체결. exit("X","L",limit=15,qty=1) 등록. (ps=2, np=0)
-  //   bar2: O=13 H=16 → high 16>=15 → TP 15에 1 계약 청산(np=+3, 잔여 1, avg 12 유지).
-  //         ps>0 → exit 재발행(avg 불변이라 limit=15, qty=1). (ps=1, np=3)
-  //   bar3: O=16 → open 16>=limit 15 — 갭 or-better, open 16에 잔여 1 계약 청산(np=3+4=7).
-  //         C=15.5<O=16 음봉이라 재진입 없음. (ps=0, np=7)
+describe("strategy.* E2E 여섯째 슬라이스 (exit qty= partial take-profit, re-issued every bar)", () => {
+  // Long 2, with the qty=1 bracket re-issued on every bar. The leg that fills is consumed: the same
+  // call does not place it again while its entry is open, so only one contract is taken off. The
+  // oracle (tier 2) on this exact scenario: resin-harness state/repros/exit-leg-tombstone.json —
+  // one trade (L→X, 1 @ 15), the other contract still open at the end. (This test used to assert a
+  // second fill at bar 3's gap open, i.e. a re-issued leg.)
+  //   bar0: O=10 C=11, flat → entry("L", 2) placed. (ps=0, np=0)
+  //   bar1: O=12 → long 2 @ 12. exit("X", "L", limit=15, qty=1) placed. (ps=2, np=0)
+  //   bar2: O=13 H=16 → high 16 >= 15 → 1 contract at 15 (np +3); the re-issued call finds its leg
+  //         consumed. (ps=1, np=3)
+  //   bar3: O=16 → nothing rests at 15 any more. (ps=1, np=3)
   const data: OHLCVData = {
     open: [10, 12, 13, 16],
     high: [11, 13, 16, 17],
@@ -2998,14 +3001,14 @@ describe("strategy.* E2E 여섯째 슬라이스 (hand-verified: exit qty= 부분
     "__obs_np := strategy.netprofit",
   ].join("\n");
 
-  it("splits the exit into two partial TP fills (재발행 브래킷)", () => {
+  it("fills the partial take-profit once: a consumed leg is not re-placed by the same call", () => {
     const result = runPipeline(src, data);
-    expect(result.bars.map((b) => b["var:__obs_ps"])).toEqual([0, 2, 1, 0]);
+    expect(result.bars.map((b) => b["var:__obs_ps"])).toEqual([0, 2, 1, 1]);
   });
 
-  it("accumulates netprofit from both partial fills (+3 at limit, +4 at gap open)", () => {
+  it("books only the one partial fill (+3 at the limit)", () => {
     const result = runPipeline(src, data);
-    expect(result.bars.map((b) => b["var:__obs_np"])).toEqual([0, 0, 3, 7]);
+    expect(result.bars.map((b) => b["var:__obs_np"])).toEqual([0, 0, 3, 3]);
   });
 });
 
@@ -9306,5 +9309,91 @@ describe("strategy.entry/order oca_name=/oca_type= codegen", () => {
     );
     expect(code).toContain('$.strategy.entry("L", "long", undefined, undefined, $.high.get(0), undefined, undefined, "BB", "cancel")');
     expect(code).toContain('$.strategy.order("O", "short", undefined, undefined, undefined, undefined, undefined, "R", "reduce")');
+  });
+});
+
+// strategy.exit() places one leg per exit id and entry; each leg reserves its slice of its entry's
+// filled size (strategies.txt, "Partial and multi-level exits"; rn.txt, June 2022). The oracle
+// (tier 2) on the twin cases: resin-harness state/repros/partial-seed-1.json, mixed-seed-1.json,
+// mixed-seed-149.json, exit-leg-tombstone.json.
+describe("strategy.exit legs (one per exit id and entry)", () => {
+  it("two exit ids on one entry both fill: qty_percent=50, then the rest (repro partial-seed-1.json)", () => {
+    const st = new StrategyState();
+    st.entry("Q", "long", 4);
+    st.exit("Q1", "Q", 107.41, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, 50);
+    st.exit("Q2", "Q", 108.05);
+    st.processFills(105.44, 105.5, 105); // Q fills 4 at the open; neither level is reached
+    expect(st.exitLegs.map((l) => [l.id, l.reserved])).toEqual([["Q1", 2], ["Q2", 2]]);
+    st.processFills(106, 108.5, 105.9); // both reached on the way up, the nearer one first
+    expect(st.closedTradeRecords.map((r) => [r.exitId, r.exitPrice, r.size])).toEqual([["Q1", 107.41, 2], ["Q2", 108.05, 2]]);
+    expect(st.posSize).toBe(0);
+    expect(st.exitLegs).toEqual([]);
+  });
+
+  it("a later call cannot take what an earlier one reserved (strategies.txt \"Reserved exit demo\")", () => {
+    const st = new StrategyState();
+    st.entry("buy", "long", 20);
+    st.processFills(100);
+    st.exit("limit", null, 101, undefined, 19);
+    st.exit("stop", null, undefined, 99, 20);
+    expect(st.exitLegs.map((l) => [l.id, l.reserved])).toEqual([["limit", 19], ["stop", 1]]);
+    st.processFills(100, 100.5, 98.5); // the stop fills first and closes its one share only
+    expect(st.posSize).toBe(19);
+  });
+
+  it("qty_percent is a share of the entry's filled size, not of what is left (rn.txt, June 2022)", () => {
+    const st = new StrategyState();
+    st.entry("Long", "long", 100);
+    st.processFills(100);
+    const place = () => {
+      st.exit("Exit Long1", "Long", 101, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, 20);
+      st.exit("Exit Long2", "Long", 102, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, 20);
+    };
+    place();
+    st.processFills(100, 101.5, 99.5); // Exit Long1 fills 20
+    place(); // re-issued: Exit Long1 is consumed, Exit Long2 still holds 20 of 100 (not 16 of 80)
+    expect(st.exitLegs.map((l) => [l.id, l.reserved, l.consumed])).toEqual([["Exit Long1", 20, true], ["Exit Long2", 20, false]]);
+    st.processFills(101, 102.5, 100.5);
+    expect(st.posSize).toBe(60);
+  });
+
+  it("a pyramid add of the from_entry id gets its own leg off a live call, priced from its own fill", () => {
+    const st = new StrategyState();
+    st.configure(1, 2);
+    st.entry("L", "long", 1);
+    st.processFills(100);
+    st.exit("X", "L", undefined, undefined, undefined, undefined, undefined, undefined, undefined, 200); // profit=200 ticks
+    st.entry("L", "long", 1);
+    st.processFills(101, 101.5, 100.5); // the add fills at 101: its leg takes profit at 103, the first one's at 102
+    expect(st.exitLegs.map((l) => [l.id, l.binding?.entryPrice])).toEqual([["X", 100], ["X", 101]]);
+    st.processFills(101.5, 103.5, 101.4);
+    expect(st.closedTradeRecords.map((r) => [r.entryPrice, r.exitPrice])).toEqual([[100, 102], [101, 103]]);
+  });
+
+  it("a leg waiting on a pending entry dies with the last filled entry of its id (repro mixed-seed-149.json)", () => {
+    const st = new StrategyState();
+    st.entry("B", "long", 1);
+    st.processFills(102.81);
+    st.entry("B", "short", 1);
+    st.exit("BX", "B", 101.07, 107.2);
+    expect(st.exitLegs.map((l) => l.binding === null)).toEqual([false, true]); // on the long, and waiting on the short
+    st.processFills(104.38, 107.1, 103.34); // the long is closed and the short opened: no leg survives
+    expect(st.posSize).toBe(-1);
+    expect(st.exitLegs).toEqual([]);
+    st.processFills(106.34, 108.14, 106.23); // 107.2 is crossed, but nothing rests there
+    expect(st.posSize).toBe(-1);
+  });
+
+  it("cancel(id) removes every leg of the exit id", () => {
+    const st = new StrategyState();
+    st.configure(1, 2);
+    st.entry("A", "long", 2);
+    st.entry("B", "long", 1);
+    st.processFills(100);
+    st.exit("X", null, 105, undefined, 1); // a leg of 1 on each entry
+    st.exit("Y", "A", undefined, 95); // the rest of A; B is not its target
+    expect(st.exitLegs.map((l) => `${l.id}:${l.entryId}:${l.reserved}`)).toEqual(["X:A:1", "X:B:1", "Y:A:1"]);
+    st.cancel("X");
+    expect(st.exitLegs.map((l) => `${l.id}:${l.entryId}`)).toEqual(["Y:A"]);
   });
 });
