@@ -1,7 +1,8 @@
 // oracle/cases/ta_highestbars_lowestbars.pine: ta.highestbars(close,4)/ta.lowestbars(close,4) 검증
 // (ROADMAP P2 "ta.* 44종" — highestbars/lowestbars). length=4 워밍업(바 0~2 NaN, 첫 유효값은 바3)과
-// 정상 구간(바 3~9)을 모두 커버. sample10.json close에는 동률이 없어 tie-break 방향(가장 최근 바가
-// 이김)은 이 오라클로 드러나지 않음 — 그 검증은 runtime.test.ts hand-verified로 별도 커버.
+// 정상 구간(바 3~9)을 모두 커버. sample10.json close ties at bars 1/3 and 5/7: the golden's
+// lowestbars at bars 4 and 8 hold the oldest occurrence (-3), hand-edited over pine2py's newest-wins
+// (tier 1 resin-harness state/repros/tv-ta_141_highest_lowest.json; see oracle/cases/*.pine).
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";

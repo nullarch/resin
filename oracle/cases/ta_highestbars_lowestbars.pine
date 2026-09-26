@@ -1,9 +1,11 @@
 //@version=5
 indicator("ta_highestbars_lowestbars")
 // ta.highestbars/ta.lowestbars 오라클 검증(ROADMAP P2 "ta.* 44종"). length=4로 sample10.json
-// 10바 안에서 워밍업 구간(NaN, 바 0~2)과 정상 구간(바 3~9)을 모두 커버. sample10.json close에는
-// 동률이 없어 이 오라클로는 tie-break 방향(가장 최근 바가 이김)이 드러나지 않는다 — 그 검증은
-// scratch/probe_highestbars.mjs(node brute-force 대조) + runtime.test.ts hand-verified로 커버.
+// 10바 안에서 워밍업 구간(NaN, 바 0~2)과 정상 구간(바 3~9)을 모두 커버.
+// Ties: sample10.json close does tie (102 at bars 1/3, 105 at bars 5/7). The golden's lowestbars at
+// bars 4 and 8 were hand-edited from pine2py's newest-wins -1 to -3, the oldest occurrence that
+// TradingView reports (tier 1 resin-harness state/repros/tv-ta_141_highest_lowest.json; pynecore
+// lib/ta.py lowest _bars=True).
 var float __obs_hb = na
 var float __obs_lb = na
 __obs_hb := ta.highestbars(close, 4)

@@ -4,7 +4,11 @@ indicator("ta_highestbars_lowestbars_varlen")
 // runtime/ta.ts highestbarsVarLen/lowestbarsVarLen). pine2py highest.py의 highestbars()/
 // lowestbars()는 highest()와 동일한 무상태 재스캔이라 series length 오라클이 성립한다.
 // len1 = 5 - (bar_index % 5): sample10.json 10바에서 5,4,3,2,1 순환 — 바 0/1은 워밍업 NaN,
-// 바 2~9는 정상 구간(동률 없는 close 소스로 오프셋 자체를 검증).
+// 바 2~9는 정상 구간.
+// Ties resolve to the oldest occurrence (tier 1 resin-harness state/repros/tv-ta_141_highest_lowest.json;
+// pynecore lib/ta.py highest/lowest _bars=True): the golden was hand-edited from pine2py's newest-wins
+// at the tied bars — lb1 bar5 -2 → -4 and bar7 0 → -2 (close ties 102 and 105), and hb2/lb2 at bars
+// 2/5/8 0 → -1 (high - low is 3 on every bar, so a length-2 window always ties).
 len1 = 5 - (bar_index % 5)
 var float __obs_hb1 = na
 var float __obs_lb1 = na

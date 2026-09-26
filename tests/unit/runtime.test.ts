@@ -3635,7 +3635,7 @@ describe("ta.sma variable(series) length (smaVarLen)", () => {
 // -inf/+inf와 다른, 크래시 없는 정의된 동작 — 골든의 len2=0 바가 직접 검증). length=NaN만
 // hand-verified na 전파(pine2py는 range(nan) TypeError 크래시).
 describe("ta.highestbars/ta.lowestbars variable(series) length (highestbarsVarLen/lowestbarsVarLen)", () => {
-  it("matches the pine2py-verified oracle trace for a length cycling 5..1 (close source, barCount=10)", () => {
+  it("matches the oracle trace for a length cycling 5..1 (close source, barCount=10), ties to the oldest occurrence", () => {
     const stateHb = {};
     const stateLb = {};
     const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
@@ -3650,11 +3650,13 @@ describe("ta.highestbars/ta.lowestbars variable(series) length (highestbarsVarLe
     // max=106(1바 전) → -1; bar8 len=2 창[105,107] → 0; bar9 len=1 → 0.
     expect(hbResults.slice(2)).toEqual([0, -1, 0, 0, 0, -1, 0, 0]);
     // lowest 대칭: bar2 창[101,102,103] min=101(2바 전) → -2; bar3 창[103,102] min=102(현재) → 0;
-    // bar4 len=1 → 0; bar5 창(bar1..5)[102,103,102,104,105] min=102 동률(bar1/bar3) → 엄격 부등호
-    // 스캔이라 더 최근 bar3이 남아 -2; bar6 창(bar3..6)[102,104,105,106] min=102(3바 전) → -3;
-    // bar7 창(bar5..7)[105,106,105] min=105 동률 → 최근(현재바) 0; bar8 창[105,107] min=105
-    // (1바 전) → -1; bar9 len=1 → 0.
-    expect(lbResults.slice(2)).toEqual([-2, 0, 0, -2, -3, 0, -1, 0]);
+    // bar4 len=1 → 0; bar5 창(bar1..5)[102,103,102,104,105] min=102 동률(bar1/bar3) → 가장 오래된
+    // bar1 → -4; bar6 창(bar3..6)[102,104,105,106] min=102(3바 전) → -3; bar7 창(bar5..7)
+    // [105,106,105] min=105 동률 → 가장 오래된 bar5 → -2; bar8 창[105,107] min=105(1바 전) → -1;
+    // bar9 len=1 → 0. Ties resolve to the oldest occurrence (tier 1 resin-harness
+    // state/repros/tv-ta_141_highest_lowest.json; pynecore lib/ta.py lowest _bars=True gives the same
+    // trace, growth rescans included). pine2py's newest-wins gave -2 at bar5 and 0 at bar7.
+    expect(lbResults.slice(2)).toEqual([-2, 0, 0, -4, -3, -2, -1, 0]);
   });
 
   it("returns 0 for length<1 — literal-ported pine2py highestbars() empty range(length) loop leaves max_idx=0 (NOT the -inf/+inf of highest/lowest)", () => {
@@ -3688,7 +3690,7 @@ describe("ta.highestbars/ta.lowestbars variable(series) length (highestbarsVarLe
     expect(highestbarsVarLen(state, 30, 2, 10, 3)).toBe(0); // 창[20,30], max=현재바
   });
 
-  it("breaks ties toward the most recent bar (strict inequality scan from i=0, fixed-length deque parity)", () => {
+  it("breaks ties toward the oldest bar (fixed-length parity, tier 1 ta_141_highest_lowest)", () => {
     const stateHb = {};
     const stateLb = {};
     const values = [7, 7, 7];
@@ -3696,11 +3698,13 @@ describe("ta.highestbars/ta.lowestbars variable(series) length (highestbarsVarLe
       highestbarsVarLen(stateHb, values[i]!, 1, 10, i);
       lowestbarsVarLen(stateLb, values[i]!, 1, 10, i);
     }
-    // 전 바 동률 창 — 항상 가장 최근(오프셋 0)이 남아야 한다(그리고 -0이 아니라 +0이어야 한다).
-    const hb = highestbarsVarLen(stateHb, 7, 3, 10, 3);
-    const lb = lowestbarsVarLen(stateLb, 7, 3, 10, 3);
-    expect(Object.is(hb, 0)).toBe(true);
-    expect(Object.is(lb, 0)).toBe(true);
+    // 전 바 동률 창(bar1..3) — 가장 오래된 bar1(오프셋 -2)이 남는다 (resin-harness
+    // state/repros/tv-ta_141_highest_lowest.json; pine2py's newest-wins gave 0).
+    expect(highestbarsVarLen(stateHb, 7, 3, 10, 3)).toBe(-2);
+    expect(lowestbarsVarLen(stateLb, 7, 3, 10, 3)).toBe(-2);
+    // A length-1 window is the current bar alone: a plain +0, never -0.
+    expect(Object.is(highestbarsVarLen(stateHb, 7, 1, 10, 4), 0)).toBe(true);
+    expect(Object.is(lowestbarsVarLen(stateLb, 7, 1, 10, 4), 0)).toBe(true);
   });
 
   it("returns a plain +0 (not negative zero) when the extreme is the current bar (MEMORY C45 -0 pitfall)", () => {
@@ -3724,18 +3728,18 @@ describe("ta.highestbars/ta.lowestbars variable(series) length (highestbarsVarLe
         expect(lb).toBeNaN();
         continue;
       }
-      // pine2py 스캔 재현: i=0(현재)부터 len-1까지 엄격 부등호.
+      // 재스캔 재현: i=0(현재)부터 len-1까지, 동률이면 더 오래된 인덱스로 이동.
       let maxVal = -Infinity;
       let maxIdx = 0;
       let minVal = Infinity;
       let minIdx = 0;
       for (let k = 0; k < len; k++) {
         const v = values[i - k]!;
-        if (v > maxVal) {
+        if (v >= maxVal) {
           maxVal = v;
           maxIdx = k;
         }
-        if (v < minVal) {
+        if (v <= minVal) {
           minVal = v;
           minIdx = k;
         }
@@ -4114,29 +4118,31 @@ describe("ta.highestbars", () => {
     expect(highestbars(stateB, 100, 2)).toBeNaN();
   });
 
-  it("resolves ties toward the most recent occurrence (smallest offset, not the oldest)", () => {
+  // Ties resolve to the OLDEST occurrence of the extreme in the window: tier 1
+  // resin-harness state/repros/tv-ta_141_highest_lowest.json (bar 20 ta.highestbars(close, 10) is -9,
+  // the tied 1.06839 at bars 11 and 13 reported at bar 11) and the oracle's machine (pynecore lib/ta.py
+  // highest with _bars=True). These tests asserted pine2py's newest-wins rule before.
+  it("resolves ties toward the oldest occurrence in the window (tier 1 ta_141_highest_lowest)", () => {
     const state = {};
-    // all-equal window: the max is "achieved" at every position, but the tie-break must land on the
-    // current bar (offset 0) every time, not the oldest bar in the window.
+    // all-equal window: the max is "achieved" at every position; the offset lands on the oldest bar.
     expect(highestbars(state, 5, 3)).toBeNaN();
     expect(highestbars(state, 5, 3)).toBeNaN();
-    expect(highestbars(state, 5, 3)).toBe(0);
-    expect(highestbars(state, 5, 3)).toBe(0);
+    expect(highestbars(state, 5, 3)).toBe(-2);
+    expect(highestbars(state, 5, 3)).toBe(-2);
   });
 
-  it("re-anchors the recorded offset to the newer bar when a later value ties the running max", () => {
+  it("keeps the older occurrence when a later value ties the running max", () => {
     const state = {};
-    // window fills with [1,9,2] -> max=9 at offset -1. Next bar ties at 9 (now [9,2,9]) -> the tie must
-    // be recorded as the *new* occurrence (offset -1 again relative to the new current bar), not still
-    // pointing at the original bar (which would now be offset -2).
+    // window fills with [1,9,2] -> max=9 at offset -1. Next bar ties at 9 (now [9,2,9]) -> the offset
+    // still points at the original bar (now -2); once it leaves the window the newer 9 takes over.
     highestbars(state, 1, 3); // NaN
     highestbars(state, 9, 3); // NaN
     expect(highestbars(state, 2, 3)).toBe(-1); // window [1,9,2], max=9 one bar ago
-    expect(highestbars(state, 9, 3)).toBe(0); // window [9,2,9], tie resolves to the current bar
-    expect(highestbars(state, 4, 3)).toBe(-1); // window [2,9,4], max=9 one bar ago (the re-anchored one)
+    expect(highestbars(state, 9, 3)).toBe(-2); // window [9,2,9], tie resolves to the older 9
+    expect(highestbars(state, 4, 3)).toBe(-1); // window [2,9,4], max=9 one bar ago (the newer one)
   });
 
-  it("matches a from-scratch O(length) brute-force recomputation (pine2py highest.py highestbars(): scan newest-to-oldest, strict '>' keeps the smallest/most-recent index) across ties, NaN gaps, and deque wraparound", () => {
+  it("matches a from-scratch O(length) brute-force recomputation (scan newest-to-oldest, '>=' moves to the older index on a tie) across ties, NaN gaps, and deque wraparound", () => {
     const state = {};
     const length = 4;
     const raw = [5, 5, 5, 3, 5, 5, 1, 1, 1, 9, 9, 2, 2, 2, 2, NaN, 6, 6, 6, 6, 6];
@@ -4155,7 +4161,7 @@ describe("ta.highestbars", () => {
       let maxIdx = 0; // 0=current bar (newest), counting backward
       for (let k = 0; k < length; k++) {
         const val = window[length - 1 - k]!; // k=0 -> newest, k=length-1 -> oldest
-        if (val > maxVal) {
+        if (val >= maxVal) {
           maxVal = val;
           maxIdx = k;
         }
@@ -4180,17 +4186,20 @@ describe("ta.lowestbars", () => {
     expect(lowestbars(state, 20, 2)).toBe(-1); // window [5,20], min=5 one bar ago
   });
 
-  it("matches the pine2py-verified sample10.json trace (close, length=4)", () => {
+  it("matches the sample10.json trace (close, length=4), ties to the oldest occurrence", () => {
     const state = {};
     const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
     const results = closes.map((c) => lowestbars(state, c, 4));
     expect(results.slice(0, 3).every((r) => Number.isNaN(r))).toBe(true);
     expect(results[3]).toBe(-3);
-    expect(results[4]).toBe(-1);
+    // bar 4 window [102,103,102,104]: the tied 102s at bars 1 and 3 report bar 1 (tier 1
+    // resin-harness state/repros/tv-ta_141_highest_lowest.json; pine2py gave the newer bar 3, -1).
+    expect(results[4]).toBe(-3);
     expect(results[5]).toBe(-2);
     expect(results[6]).toBe(-3);
     expect(results[7]).toBe(-3);
-    expect(results[8]).toBe(-1);
+    // bar 8 window [105,106,105,107]: the tied 105s at bars 5 and 7 report bar 5.
+    expect(results[8]).toBe(-3);
     expect(results[9]).toBe(-2);
   });
 
@@ -4202,24 +4211,25 @@ describe("ta.lowestbars", () => {
     expect(lowestbars(stateB, 100, 2)).toBeNaN();
   });
 
-  it("resolves ties toward the most recent occurrence (smallest offset, not the oldest)", () => {
+  // Ties resolve to the OLDEST occurrence (see the ta.highestbars tie tests; tier 1 ta_141_highest_lowest).
+  it("resolves ties toward the oldest occurrence in the window (tier 1 ta_141_highest_lowest)", () => {
     const state = {};
     expect(lowestbars(state, 5, 3)).toBeNaN();
     expect(lowestbars(state, 5, 3)).toBeNaN();
-    expect(lowestbars(state, 5, 3)).toBe(0);
-    expect(lowestbars(state, 5, 3)).toBe(0);
+    expect(lowestbars(state, 5, 3)).toBe(-2);
+    expect(lowestbars(state, 5, 3)).toBe(-2);
   });
 
-  it("re-anchors the recorded offset to the newer bar when a later value ties the running min", () => {
+  it("keeps the older occurrence when a later value ties the running min", () => {
     const state = {};
     lowestbars(state, 9, 3); // NaN
     lowestbars(state, 1, 3); // NaN
     expect(lowestbars(state, 8, 3)).toBe(-1); // window [9,1,8], min=1 one bar ago
-    expect(lowestbars(state, 1, 3)).toBe(0); // window [1,8,1], tie resolves to the current bar
-    expect(lowestbars(state, 6, 3)).toBe(-1); // window [8,1,6], min=1 one bar ago (the re-anchored one)
+    expect(lowestbars(state, 1, 3)).toBe(-2); // window [1,8,1], tie resolves to the older 1
+    expect(lowestbars(state, 6, 3)).toBe(-1); // window [8,1,6], min=1 one bar ago (the newer one)
   });
 
-  it("matches a from-scratch O(length) brute-force recomputation (pine2py highest.py lowestbars(): scan newest-to-oldest, strict '<' keeps the smallest/most-recent index) across ties, NaN gaps, and deque wraparound", () => {
+  it("matches a from-scratch O(length) brute-force recomputation (scan newest-to-oldest, '<=' moves to the older index on a tie) across ties, NaN gaps, and deque wraparound", () => {
     const state = {};
     const length = 4;
     const raw = [5, 5, 5, 7, 5, 5, 9, 9, 9, 1, 1, 8, 8, 8, 8, NaN, 4, 4, 4, 4, 4];
@@ -4238,7 +4248,7 @@ describe("ta.lowestbars", () => {
       let minIdx = 0;
       for (let k = 0; k < length; k++) {
         const val = window[length - 1 - k]!;
-        if (val < minVal) {
+        if (val <= minVal) {
           minVal = val;
           minIdx = k;
         }
