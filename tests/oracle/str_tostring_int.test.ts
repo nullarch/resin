@@ -50,14 +50,18 @@ describe("oracle: str_tostring_int", () => {
     }
   });
 
-  it("renders the exact values pine2py produces (no decimal point on statically-int channels, decimal point preserved on the float control channel)", () => {
+  // The float control prints without a fraction too: str.tostring's default mask '#.##########'
+  // (ref_v6_lang.txt; oracle pynecore lib/string.py tostring; twin
+  // state/repros/str-number-text.json in resin-harness: str.tostring(5.0) is "5"). pine2py printed
+  // Python's "5.0"; its golden was rewritten to the oracle's value.
+  it("renders int and float literals alike, without a fraction for an integral value", () => {
     const source = loadCaseSource(CASE_NAME);
     const data = loadOracleData(CASE_NAME);
     const result = runPipeline(source, data);
 
     expect(result.finalVarState.__obs_lit_pos).toBe("5");
     expect(result.finalVarState.__obs_lit_neg).toBe("-7");
-    expect(result.finalVarState.__obs_lit_float).toBe("5.0");
+    expect(result.finalVarState.__obs_lit_float).toBe("5");
     expect(result.finalVarState.__obs_loop_direct).toBe("2");
     expect(result.finalVarState.__obs_loop_concat).toBe("01234");
   });

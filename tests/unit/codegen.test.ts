@@ -20658,7 +20658,10 @@ describe("CodeGen int()/float()/bool()/string() bare type-cast builtins (C207, L
     expect(Number.isNaN(last["var:__obs_int_na"] as number)).toBe(true);
   });
 
-  it("hand-verified E2E: string(true)/string(false) render Python's capitalized bool repr, matching pine2py's str.tostring(bool) (fix discovered while wiring string() through the shared tostring path — previously untested/broken for bool arguments)", () => {
+  // A bool is "true"/"false" whatever the format (ref_v6_lang.txt str.tostring "Bool type arguments
+  // return "true" or "false""; oracle pynecore lib/string.py tostring; twin
+  // state/repros/str-number-text.json in resin-harness, tier 1 str_001_functions).
+  it("E2E: string(true)/string(false) render Pine's 'true'/'false', like str.tostring(bool)", () => {
     const source = [
       "var string __obs_true = na",
       "__obs_true := string(true)",
@@ -20675,9 +20678,9 @@ describe("CodeGen int()/float()/bool()/string() bare type-cast builtins (C207, L
     const data: OHLCVData = { open: close, high: close, low: close, close, volume: close };
     const { bars } = run(result.code, result.varSlots, result.taSlotCount, data, result.fnVarSlotCount);
 
-    expect(bars[0]!["var:__obs_true"]).toBe("True");
-    expect(bars[0]!["var:__obs_false"]).toBe("False");
-    expect(bars[0]!["var:__obs_fmt"]).toBe("1.00%");
+    expect(bars[0]!["var:__obs_true"]).toBe("true");
+    expect(bars[0]!["var:__obs_false"]).toBe("false");
+    expect(bars[0]!["var:__obs_fmt"]).toBe("true");
   });
 
   it("hand-verified: int(Infinity) returns Infinity instead of crashing — pine2py's pine_int raises OverflowError on this input (DIVERGENCES.md #88, GOAL.md '알려진 버그는 따르지 않는다')", () => {

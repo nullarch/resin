@@ -89,7 +89,7 @@ describe("oracle: type_cast_basic", () => {
 
     expect(v.__obs_string_int).toBe("5");
     expect(v.__obs_string_float).toBe("5.7");
-    expect(v.__obs_string_bool).toBe("True");
+    expect(v.__obs_string_bool).toBe("true"); // str.tostring(true): "true" (twin state/repros/str-number-text.json)
     expect(v.__obs_string_na).toBe("NaN");
     expect(v.__obs_string_loop).toBe("2");
   });

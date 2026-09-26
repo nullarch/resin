@@ -8586,14 +8586,19 @@ describe("numeric helpers", () => {
   // (scratch/probe_format.py+.mjs, 31개 수동 케이스 + 데시멀 포맷 2,000건 + round-half-even
   // 2,013건 전부 일치) 확인 완료. ────
 
-  it("format() substitutes simple {idx} placeholders with pyFloatStr-style number text", () => {
-    expect(format("{0} {1}", "hello", 5.0)).toBe("hello 5.0");
-    expect(format("{0}", 5.0)).toBe("5.0");
+  // The expectations below are TradingView's formatter as the oracle runs it (pynecore
+  // lib/string.py format), checked line by line by the twin state/repros/str-number-text.json in
+  // resin-harness; tier 1 str_010_format / str_001_functions / math_001_functions.
+  it("format() prints a bare {idx} number through DecimalFormat's default '#.###' (no Python '5.0')", () => {
+    expect(format("{0} {1}", "hello", 5.0)).toBe("hello 5");
+    expect(format("{0}", 5.0)).toBe("5");
+    expect(format("{0}", 1.23456789)).toBe("1.235");
+    expect(format("{0}", 0.0005)).toBe("0.001");
   });
 
-  it("format() substitutes booleans as Python-capitalized 'True'/'False' (array.join #28b precedent)", () => {
-    expect(format("{0}", true)).toBe("True");
-    expect(format("{0}", false)).toBe("False");
+  it("format() prints booleans as 'true'/'false'", () => {
+    expect(format("{0}", true)).toBe("true");
+    expect(format("{0}", false)).toBe("false");
   });
 
   it("format() applies {idx,number,pattern} decimal formatting, counting digits after the dot", () => {
@@ -8602,10 +8607,10 @@ describe("numeric helpers", () => {
     expect(format("{0,number,#,###.##}", 1234.5678)).toBe("1234.57");
   });
 
-  it("format() with a dot-less number pattern rounds half-to-even (Python round(), not half-away-from-zero)", () => {
-    // Deliberately literal-ported from pine2py's plain `round()` builtin, NOT rt's half-away-
-    // from-zero math.round — this is a different code path and its TV-true rounding mode is
-    // unverified (WebSearch unavailable), so it is NOT "corrected" the way math.round was.
+  it("format() rounds a number pattern half-to-even on the double's exact value (DecimalFormat)", () => {
+    expect(format("{0,number,#.##}", 2.675)).toBe("2.67"); // 2.67499999...
+    expect(format("{0,number,integer}", 2.5)).toBe("2");
+    expect(format("{0,number,integer}", 3.5)).toBe("4");
     expect(format("{0,number,#}", 2.5)).toBe("2");
     expect(format("{0,number,#}", 0.5)).toBe("0");
     expect(format("{0,number,#}", 1.5)).toBe("2");
@@ -8618,48 +8623,65 @@ describe("numeric helpers", () => {
     expect(format("{5}", 1.0, 2.0)).toBe("{5}");
   });
 
-  it("format() leaves non-placeholder text and unmatched brace patterns untouched", () => {
+  it("format() scans the pattern as MessageFormat: quotes, spaces before the type, a '+' index, an invalid index is an error", () => {
     expect(format("no placeholder", 1.0, 2.0)).toBe("no placeholder");
-    expect(format("{a}", 5.0)).toBe("{a}");
+    expect(format("'{'0'}' is {0}", 7)).toBe("{0} is 7");
+    expect(format("it''s {0}", 7)).toBe("it's 7");
+    expect(format("{0, number, #.#}", 1.34)).toBe(" 1.3"); // the style keeps its leading space (tier 1 str_010_format)
+    expect(format("{+0}", 3)).toBe("3");
+    expect(() => format("{a}", 5.0)).toThrow(/Invalid argument index/);
+    expect(() => format("{0", 5.0)).toThrow(/ends inside a placeholder/);
   });
 
-  it("format() uses lowercase 'nan' for a bare {idx} substitution but uppercase 'NaN' for a {idx,number,...} one (pine2py's own isnan-guard asymmetry, array.join #28c precedent)", () => {
-    expect(format("{0}", NaN)).toBe("nan");
+  it("format() prints na as 'NaN' in every placeholder form", () => {
+    expect(format("{0}", NaN)).toBe("NaN");
     expect(format("{0,number,#.##}", NaN)).toBe("NaN");
   });
 
-  it("format() renders +/-Infinity as lowercase 'inf'/'-inf' in every branch, including the dot-less pattern that would crash pine2py's own int(round(inf))", () => {
-    expect(format("{0}", Infinity)).toBe("inf");
-    expect(format("{0}", -Infinity)).toBe("-inf");
-    expect(format("{0,number,#.##}", Infinity)).toBe("inf");
-    expect(format("{0,number,#}", Infinity)).toBe("inf");
-    expect(format("{0,number,#}", -Infinity)).toBe("-inf");
+  it("format() prints an infinity as '∞' between the pattern's affixes", () => {
+    expect(format("{0}", Infinity)).toBe("∞");
+    expect(format("{0}", -Infinity)).toBe("-∞");
+    expect(format("{0,number,#.##}", Infinity)).toBe("∞");
+    expect(format("{0,number,#}", Infinity)).toBe("∞");
+    expect(format("{0,number,#}", -Infinity)).toBe("-∞");
+    expect(format("{0,number,#.##;(#.##)}", -Infinity)).toBe("(∞)");
   });
 
-  it("format() parses a numeric-looking string arg under a {idx,number,...} pattern and formats it as a number", () => {
+  it("format() parses a numeric string arg under a number placeholder as Python's float() does", () => {
     expect(format("{0,number,#.##}", "3.14159")).toBe("3.14");
-    expect(format("{0,number,#.##}", "  3.5  ")).toBe("3.50");
+    expect(format("{0,number,#.##}", "  3.5  ")).toBe("3.5");
   });
 
-  it("format() falls back to the literal string arg under a {idx,number,...} pattern when it fails to parse as a number (Python float() ValueError -> str(value))", () => {
-    expect(format("{0,number,#.##}", "abc")).toBe("abc");
-    expect(format("{0,number,#.##}", "0x1A")).toBe("0x1A");
-    expect(format("{0,number,#.##}", "")).toBe("");
+  it("format() fails on a string arg under a number placeholder that does not parse (the oracle's float() ValueError)", () => {
+    expect(() => format("{0,number,#.##}", "abc")).toThrow(/could not convert/);
+    expect(() => format("{0,number,#.##}", "0x1A")).toThrow(/could not convert/);
+    expect(() => format("{0,number,#.##}", "")).toThrow(/could not convert/);
   });
 
-  it("format() preserves the negative sign on literal -0 under decimal formatting (JS toFixed drops it, C45 Pitfalls precedent)", () => {
+  it("format() keeps the sign of -0 under a number pattern (Decimal quantize)", () => {
     expect(format("{0,number,0.00}", -0)).toBe("-0.00");
-    expect(format("{0,number,0}", -0)).toBe("0");
+    expect(format("{0,number,0}", -0)).toBe("-0");
     expect(format("{0,number,0.00}", 0)).toBe("0.00");
+  });
+
+  it("format() styles: currency groups thousands, percent multiplies by 100, volume abbreviates", () => {
+    expect(format("{0, number, currency}", -1234.5)).toBe("$-1,234.50");
+    expect(format("{0,number,currency}", 1340000)).toBe("$1,340,000.00");
+    expect(format("{0,number,percent}", 0.125)).toBe("12%");
+    expect(format("{0,number,volume}", 1234567.0)).toBe("1.23M");
   });
 
   it("format() propagates na (null) when the template itself is na", () => {
     expect(format(null, 1.0)).toBe(null);
   });
 
-  it("format() propagates na (null) for the whole result when a substituted arg is a null string (pine2js-only decision — pine2py structurally can never produce a real None arg here, see LIMITATIONS.md)", () => {
-    expect(format("{0}", null)).toBe(null);
-    expect(format("prefix {0} suffix", null)).toBe(null);
+  it("format() prints a na string argument as 'NaN'; the result is not na", () => {
+    expect(format("{0}", null)).toBe("NaN");
+    expect(format("prefix {0} suffix", null)).toBe("prefix NaN suffix");
+  });
+
+  it("format() prints an array as '[a, b]'", () => {
+    expect(format("{0}", ["a", "b"])).toBe("[a, b]");
   });
 
   // str_funcs.format_number(value, format_str="")(C111): value가 NaN이면 "NaN"(format_str 유무와

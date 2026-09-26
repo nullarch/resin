@@ -585,8 +585,20 @@ describe("corpus diff: sample bar-by-bar replay against pine2py golden", () => {
     // machine", measured on TradingView); resin-harness twin state/repros/extreme-na-reset.json
     // channels hi_warm/rs_warm/osc_warm run these shapes through the oracle. Floor moved to the
     // observed matched 2315 / mismatch 600; nothing else changed.
-    expect(matched.length).toBeGreaterThanOrEqual(2315);
-    expect(mismatched.length).toBeLessThanOrEqual(600);
+    // 2026-09-26 str.tostring and str.format print TradingView's text, not Python's str(): the
+    // default mask '#.##########' ("100", not "100.0"), '#' masks without trailing zeros ("3.1",
+    // not toFixed's "3.10"), "true"/"false", "NaN" (ref_v6_lang.txt str.tostring; oracle pynecore
+    // lib/string.py; tier 1 resin-harness suites/indicators/tv/str_001_functions, str_010_format,
+    // math_001_functions and the strategy scenario slippage_pyramiding; twin
+    // state/repros/str-number-text.json). The HEAD baseline was matched 2318 / mismatch 597:
+    // exactly eleven hashes went matched -> mismatch and one went mismatch -> matched, each a
+    // str.length of text built from str.tostring results where pine2py (not ground truth)
+    // counted Python's text (18987d3c5676, 1ced1dd3ab72, 1fe2eae699b3, 2a3a177b3f77,
+    // 315167927063, 5a0a15521b55, 61ddd7a0b26e, 732176f80ae6, 8048f5dd9ee5, af39c2ca8287,
+    // bd9fd95e81b4; 444704223518 now matches). Floor moved to the observed matched 2308 /
+    // mismatch 607; nothing else changed.
+    expect(matched.length).toBeGreaterThanOrEqual(2308);
+    expect(mismatched.length).toBeLessThanOrEqual(607);
     expect(transpileFailed.length).toBeLessThanOrEqual(86);
     expect(runtimeFailed.length, `runtime failures: ${runtimeFailed.map((o) => `${o.hash}: ${o.detail}`).join(" | ")}`).toBe(0);
     expect(noComparable.length, `no comparable key: ${noComparable.map((o) => o.hash).join(", ")}`).toBeLessThanOrEqual(2);

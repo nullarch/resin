@@ -74,9 +74,12 @@ describe("C808 str.tostring — 참조형 na(null)/미초기화(undefined)", () 
 });
 
 describe("C808 str.tostring — 숫자/불리언 경로 회귀 없음", () => {
-  it("숫자 기본 분기(pyFloatStr)와 NaN 표기 불변", () => {
+  // The number and bool expectations are TradingView's chart formatter as the oracle runs it
+  // (default mask '#.##########', "true"/"false"; pynecore lib/string.py tostring), checked by the
+  // twin state/repros/str-number-text.json in resin-harness and tier 1 str_001_functions.
+  it("숫자 기본 분기('#.##########')와 NaN 표기", () => {
     expect(tostring(1.5)).toBe("1.5");
-    expect(tostring(5)).toBe("5.0");
+    expect(tostring(5)).toBe("5");
     expect(tostring(5, "", true)).toBe("5");
     expect(tostring(NaN)).toBe("NaN");
   });
@@ -88,11 +91,11 @@ describe("C808 str.tostring — 숫자/불리언 경로 회귀 없음", () => {
     expect(tostring(8, "###M")).toBe("8M");
   });
 
-  it("불리언 분기 불변(C207)", () => {
-    expect(tostring(true)).toBe("True");
-    expect(tostring(false)).toBe("False");
-    expect(tostring(false, "integer")).toBe("0");
-    expect(tostring(true, "percent")).toBe("1.00%");
+  it("불리언은 포맷과 무관하게 'true'/'false'", () => {
+    expect(tostring(true)).toBe("true");
+    expect(tostring(false)).toBe("false");
+    expect(tostring(false, "integer")).toBe("false");
+    expect(tostring(true, "percent")).toBe("true");
   });
 });
 
@@ -118,7 +121,7 @@ describe("C808 str.tostring — 스크립트 경로", () => {
   });
 
   it("숫자 인자 스크립트 경로 회귀 없음", () => {
-    expect(lastObs(src("var string __obs = na", "__obs := str.tostring(close)"))).toBe("3.0");
+    expect(lastObs(src("var string __obs = na", "__obs := str.tostring(close)"))).toBe("3");
   });
 });
 

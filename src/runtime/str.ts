@@ -8,6 +8,8 @@
 // 관용구 실측). typeof 가드는 null/NaN/undefined를 전부 동일하게 na로 흡수해 기존 null 경로의
 // 동작은 그대로 유지한다.
 
+import { runtimeError } from "./log";
+
 // str.length — pine2py wavealgo.builtins.str_funcs.length는 `len(source) if source else 0`로
 // None(na)/빈 문자열을 동일하게 0으로 처리하는 명시적 가드를 갖고 있다(다른 str.* 함수와 달리
 // 크래시 없이 na를 안전하게 다룬 유일한 사례) — 그대로 literal port. na 전파(NaN) 대신 0을 반환.
@@ -90,14 +92,11 @@ export function repeat(source: string | null, count: number, separator: string |
   return Array(c).fill(source).join(separator);
 }
 
-// str.tostring — pine2py str_funcs.tostring 소스 대조(format_str 없음/integer/percent/volume/
-// mintick/pattern("#.##" 류) 6분기). value는 numeric na(NaN)만 있고 pine2py의 None 분기와 함께
-// "NaN" 문자열로 합쳐 반환(대문자 — pine2py가 명시적으로 "NaN" 리터럴을 반환하지 소문자 "nan"이
-// 아님을 소스로 직접 확인 — PROGRESS C86 next_hint의 "소문자 nan" 추측은 틀렸다, MEMORY.md
-// "next_hint도 틀릴 수 있다" 재확인 사례). format_str이 na(null)면 pine2py `if not format_str`가
-// None도 빈 문자열과 동일하게 기본 분기로 떨어뜨리므로 JS `if (!format_str)`로 literal port.
-// array.join(C88)이 숫자 원소 포맷팅에 재사용한다(pine2py array.py의 join도 str.tostring과
-// 동일하게 default-branch `str(value)`에 의존 — 아래 join 관련 주석 참조).
+// Python's str(float) ("1.0", "nan" is left to the callers). Not a Pine formatter: str.tostring and
+// str.format use TradingView's (see "Pine's number formatters" below). It remains for the pine2py
+// ports that still print Python's text: array.join's number elements, str.format's array elements
+// (the oracle prints list numbers with str(), pynecore lib/string.py _format_value) and
+// str.format_number.
 export function pyFloatStr(value: number): string {
   // Python str(float) 재현 — 두 언어 모두 "shortest round-trip" 자릿수 알고리즘을 쓰지만(자릿수
   // 자체는 일치) 정수값 소수점 표기(JS는 없음, Python은 ".0")와 지수 표기 전환 임계값(decpt<=-4
@@ -139,65 +138,212 @@ function formatVolume(value: number): string {
   return String(Math.trunc(value));
 }
 
-// isInt(C201, 셋째 인자 — pine2js 고유, pine2py 대응 없음)는 codegen이 analyzer의 isStaticIntExpr
-// 판별(정수 리터럴/for 루프 카운터, analyzer.ts 주석 참조)로 정적 확정했을 때만 true로 실어
-// format_str 없는 기본 분기를 pyFloatStr(항상 소수점) 대신 정수 포맷으로 낸다 — pine2py `str(value)`가
-// Python 실제 타입(int/float)을 그대로 보존하는 것의 근사 재현(LIMITATIONS.md 잔여 스코프: UDF int
-// 매개변수/int() 캐스팅/'=' 로컬 전파는 여전히 isInt=false로 떨어짐).
+// ── Pine's number formatters ─────────────────────────────────────────────────────────────────
+//
+// TradingView turns a number into text with two engines, and the oracle reproduces both (pynecore
+// lib/string.py, measured on TradingView per its docstrings): str.tostring uses the chart's number
+// formatter, str.format Java's MessageFormat/DecimalFormat. Both read a DecimalFormat mask — '#' an
+// optional digit, '0' a required one, '.', a ';' negative subpattern, literal affixes, quotes — and
+// differ in how they round: str.tostring rounds the SHORTEST round-trip digits of the double half-up
+// (Java's Double.toString; `str.tostring(2.675, '#.##')` is "2.68"), str.format the double's EXACT
+// binary value half-even (2.675 is 2.67499..., "2.67"). Either keeps at most 16 fraction digits
+// once |x| >= 1e-3. Neither prints Python's "1.0" or "True": "The formatting of float values will
+// also round those values when necessary ... To display trailing zeros, use '0' instead of '#'",
+// "Bool type arguments return "true" or "false"", "When x is na, the function returns "NaN"",
+// "The default value is '#.##########'" (ref_v6_lang.txt str.tostring).
+
+// A finite non-negative double's shortest round-trip digits (Python repr, Java Double.toString) in
+// plain decimal notation: "123.456", "0.00012", "10000000000000000".
+function shortestDecimal(x: number): string {
+  const m = /^(\d)(?:\.(\d+))?e([+-]\d+)$/.exec(x.toExponential())!;
+  const digits = m[1]! + (m[2] ?? "");
+  const exponent = parseInt(m[3]!, 10);
+  if (exponent < 0) return "0." + "0".repeat(-exponent - 1) + digits;
+  if (digits.length <= exponent + 1) return digits + "0".repeat(exponent + 1 - digits.length);
+  return digits.slice(0, exponent + 1) + "." + digits.slice(exponent + 1);
+}
+
+// A finite non-negative double's exact binary value in plain decimal notation (x = m * 2^e).
+function exactDecimal(x: number): string {
+  if (x === 0) return "0";
+  const view = new DataView(new ArrayBuffer(8));
+  view.setFloat64(0, x);
+  const hi = view.getUint32(0);
+  const biased = (hi >>> 20) & 0x7ff;
+  let mantissa = (BigInt(hi & 0xfffff) << 32n) | BigInt(view.getUint32(4));
+  let exponent = -1074;
+  if (biased !== 0) {
+    mantissa |= 1n << 52n;
+    exponent = biased - 1075;
+  }
+  if (exponent >= 0) return (mantissa << BigInt(exponent)).toString();
+  const fracDigits = -exponent;
+  const digits = (mantissa * 5n ** BigInt(fracDigits)).toString().padStart(fracDigits + 1, "0");
+  return digits.slice(0, digits.length - fracDigits) + "." + digits.slice(digits.length - fracDigits);
+}
+
+// Rounds a plain non-negative decimal to exactly `decimals` fraction digits (Decimal.quantize),
+// half-up or half-even.
+function roundDecimal(plain: string, decimals: number, halfEven: boolean): string {
+  const dot = plain.indexOf(".");
+  const intPart = dot < 0 ? plain : plain.slice(0, dot);
+  const frac = dot < 0 ? "" : plain.slice(dot + 1);
+  let keep = intPart + frac.slice(0, decimals).padEnd(decimals, "0");
+  const next = decimals < frac.length ? frac.charCodeAt(decimals) - 48 : 0;
+  let up = next > 5;
+  if (next === 5) {
+    if (!halfEven || /[1-9]/.test(frac.slice(decimals + 1))) up = true;
+    else up = (keep.charCodeAt(keep.length - 1) - 48) % 2 === 1;
+  }
+  if (up) keep = (BigInt(keep) + 1n).toString().padStart(keep.length, "0");
+  if (decimals === 0) return keep;
+  return keep.slice(0, keep.length - decimals) + "." + keep.slice(keep.length - decimals);
+}
+
+// The oracle's _round_digits: a non-negative value (or -0, whose sign survives as in Decimal)
+// rounded to `decimals` places by either engine.
+function roundDigits(value: number, decimals: number, decimalFormat: boolean): string {
+  if (value >= 1e-3) decimals = Math.min(decimals, 16);
+  const r = roundDecimal(decimalFormat ? exactDecimal(value) : shortestDecimal(value), decimals, decimalFormat);
+  return Object.is(value, -0) ? "-" + r : r;
+}
+
+// Python's f"{x:.{decimals}f}": the exact value rounded half-even, the sign kept on a negative
+// value that rounds to zero.
+function fixedExact(x: number, decimals: number): string {
+  const r = roundDecimal(exactDecimal(Math.abs(x)), decimals, true);
+  return x < 0 || Object.is(x, -0) ? "-" + r : r;
+}
+
+// A DecimalFormat subpattern cut into literal prefix, digit pattern and literal suffix. Only an
+// unquoted '#', '0', '.' or ',' belongs to the digits; '' is a literal quote, and a quoted run is
+// literal ("'#'.##" prints "#1.23"). The oracle's _split_number_pattern.
+function splitNumberPattern(pattern: string): [string, string, string] {
+  const chars: string[] = [];
+  const isDigit: boolean[] = [];
+  let inQuote = false;
+  for (let i = 0; i < pattern.length; i++) {
+    const ch = pattern[i]!;
+    if (ch === "'") {
+      if (pattern[i + 1] === "'") {
+        chars.push("'");
+        isDigit.push(false);
+        i++;
+      } else {
+        inQuote = !inQuote;
+      }
+      continue;
+    }
+    chars.push(ch);
+    isDigit.push(!inQuote && "#0.,".includes(ch));
+  }
+  const lo = isDigit.indexOf(true);
+  if (lo < 0) return [chars.join(""), "", ""];
+  const hi = isDigit.lastIndexOf(true);
+  return [chars.slice(0, lo).join(""), chars.slice(lo, hi + 1).join(""), chars.slice(hi + 1).join("")];
+}
+
+function countChar(s: string, ch: string): number {
+  let n = 0;
+  for (const c of s) if (c === ch) n++;
+  return n;
+}
+
+function stripTrailing(s: string, ch: string): string {
+  let end = s.length;
+  while (end > 0 && s[end - 1] === ch) end--;
+  return s.slice(0, end);
+}
+
+// A finite double through a digit mask (the oracle's _format_number_general mask path): the
+// subpattern the sign picks (without a negative one, '-' goes in front of the positive one's
+// prefix), optional places lose their trailing zeros, required places are kept (optional places
+// after them dropped), required integer digits are zero filled, and a mask with required decimals
+// but no required integer digit drops a zero integer part ('#.0' formats 0.5 as ".5").
+function formatMask(value: number, pattern: string, decimalFormat: boolean): string {
+  let prefix = "";
+  const subpatterns = pattern.split(";");
+  let chosen = subpatterns[0]!;
+  if (value < 0) {
+    value = -value;
+    if (subpatterns.length > 1) chosen = subpatterns[1]!;
+    else prefix = "-";
+  }
+  const [affix, digits, suffix] = splitNumberPattern(chosen);
+  prefix += affix;
+  const sides = digits.split(".");
+  if (sides.length > 2) runtimeError(`Multiple decimal separators in pattern "${pattern}"`);
+  const before = sides[0]!;
+  const after = sides[1] ?? "";
+  const requiredBefore = countChar(before, "0");
+  const requiredDecimals = countChar(after, "0");
+  const maxDecimals = after.length;
+
+  let result: string;
+  if (maxDecimals === 0) {
+    result = roundDigits(value, 0, decimalFormat);
+  } else {
+    let formatted = roundDigits(value, maxDecimals, decimalFormat);
+    if (requiredDecimals === 0) {
+      formatted = stripTrailing(stripTrailing(formatted, "0"), ".");
+    } else {
+      const [intText, decimalPart] = formatted.split(".") as [string, string];
+      if (decimalPart.length > requiredDecimals) {
+        const kept = stripTrailing(decimalPart.slice(0, requiredDecimals), "0");
+        formatted = kept ? `${intText}.${kept}` : intText;
+      }
+    }
+    if (formatted.includes(".") && requiredDecimals > 0) {
+      const [intText, decimalPart] = formatted.split(".") as [string, string];
+      result = `${intText}.${decimalPart.padEnd(requiredDecimals, "0")}`;
+    } else {
+      result = formatted;
+    }
+  }
+  if (requiredBefore > 0) {
+    const [intText, decimalPart] = result.split(".") as [string, string | undefined];
+    const padded = intText.padStart(requiredBefore, "0");
+    result = decimalPart === undefined ? padded : `${padded}.${decimalPart}`;
+  } else if (requiredDecimals > 0 && result.startsWith("0.")) {
+    result = result.slice(1);
+  }
+  return prefix + result + suffix;
+}
+
+const TOSTRING_DEFAULT_FORMAT = "#.##########";
+const DECIMAL_FORMAT_DEFAULT = "#.###";
+
+// str.tostring(value, format): the chart number formatter above on the mask (default
+// '#.##########', so 1.0 is "1" and 1.23456789012 is "1.2345678901"), "true"/"false" for a bool
+// whatever the format, "NaN" for na and, the oracle adds, for an infinity (pynecore lib/string.py
+// tostring/_format_number: the chart formatter has no infinity). tier 1: str_001_functions
+// (`str.tostring(123, '#.00')` "123.00", `str.tostring(-123, '00000.00')` "-00123.00") and the
+// strategy scenario slippage_pyramiding (`"Long " + str.tostring(entryNum)` with the v6 float
+// entryNum 1.0 is the order id "Long 1"). An explicit "" is a mask without fraction places (the
+// oracle rounds to an integer); an omitted or na format is the default.
+// Not covered here: the format.percent / format.volume / format.mintick / format.inherit constants
+// keep their earlier renderings (the mintick grid and the script precision do not reach this
+// runtime), and array arguments. `isInt` (the analyzer's static int proof, C201) no longer changes
+// anything: the default mask prints an integral value without a fraction either way.
 export function tostring(
   value: number | boolean | string | null | undefined,
-  format_str: string | null = "",
+  format_str: string | null = TOSTRING_DEFAULT_FORMAT,
   isInt: boolean = false,
 ): string {
-  // C808: 참조형 na(null)와 문자열 인자 — 시그니처가 number|boolean만 상정해 둘 다 아래 숫자
-  // 경로로 흘러들어 조용한 오답을 냈다(pyFloatStr의 `Number.isFinite` 가드가 비-number를 전부
-  // 무한대로 오분류 → `str.tostring("Fast")`="-inf" / `str.tostring("12")`="inf" /
-  // `str.tostring(<string na>)`="-inf", 포맷 인자가 붙으면 `value.toFixed is not a function` 크래시).
-  // pine2py str_funcs.tostring(python 직접 실행으로 실측) 대조:
-  //   None → 포맷 유무와 무관하게 "NaN"(`value is None` 검사가 포맷 분기보다 먼저) — 그대로 이식.
-  //   문자열 + 포맷 없음 → `str(value)` = 원문 그대로 — 그대로 이식.
-  //   문자열 + 포맷 있음 → int("Fast") ValueError / f"{'x':.2f}" ValueError로 **크래시** —
-  //     GOAL.md na 안전성 원칙(크래시 흡수)에 따라 원문 반환으로 통일한다. TV str.tostring의
-  //     string 오버로드에는 애초에 format 매개변수가 없어 "포맷은 숫자에만 적용"이 자연스럽지만
-  //     TV 미검증(가설) — DIVERGENCES 등재.
-  // undefined("미초기화", GOAL na 3분할)도 null과 같이 "NaN"으로 흡수한다.
+  void isInt;
   if (value == null) return "NaN";
   if (typeof value === "string") return value;
-  // bool 인자(C207, bare string(x) 캐스트가 이 함수를 재사용하며 처음 노출된 기존 gap — 기존
-  // str.tostring(bool) 호출부는 오라클/테스트가 전무해 미검증 상태였다) — pine2py 실측 확인
-  // (scratch 프로브): format_str 없으면 Python str(bool) 그대로 "True"/"False"(대문자), format_str이
-  // 있으면 bool이 Python int 서브클래스라 그 형식의 숫자 분기로 흘러 1/0으로 계산된다
-  // (`str.tostring(false,"integer")`="0", `str.tostring(true,"percent")`="1.00%"). 그 외 로직은
-  // value가 항상 진짜 number이므로(기존 호출부 전부 무변화) 아래로 그대로 흘러가면 된다.
-  if (typeof value === "boolean") {
-    if (!format_str) return value ? "True" : "False";
-    value = value ? 1 : 0;
-  }
+  if (typeof value === "boolean") return value ? "true" : "false";
   if (Number.isNaN(value)) return "NaN";
-  if (!format_str) return isInt ? String(Math.trunc(value)) : pyFloatStr(value);
   if (format_str === "integer") return String(Math.trunc(value));
   if (format_str === "percent") return value.toFixed(2) + "%";
   if (format_str === "volume") return formatVolume(value);
   if (format_str === "mintick") return value.toFixed(8).replace(/0+$/, "").replace(/\.$/, "");
-  // C730: 숫자 패턴 + 문자 접미사("###M"/"##W"/"#D" 등) — wild auto-HTF 관용구가
-  // `str.tostring(timeframe.multiplier * mult, '###M')`로 tf 문자열("8M"/"8W"/"8D")을 만드는 데
-  // 쓴다. pine2py `_apply` 분기(#/0+. 판별)는 접미사를 버리고 "8"만 내지만, 그 값이면 이 관용구가
-  // TV에서 tf 문자열로 전혀 기능하지 않으므로(관용구의 목적 자체가 접미사 포함 tf 생성 — 다수 독립
-  // 저자가 동일 형태 반복, C560급 정황) TV DecimalFormat 계열 "패턴 밖 문자는 리터럴 보존"을
-  // 채택한다. TV 미검증(가설) — DIVERGENCES #220. toFixed(0)은 형제 분기(아래 decimals=0)와 동일한
-  // 반올림 규칙 유지. 접두사('M###')는 wild 실사용 0건이라 범위 밖(C283 큐레이션 원칙).
-  const suffixMatch = /^(#+)([A-Za-z]+)$/.exec(format_str);
-  if (suffixMatch) return value.toFixed(0) + suffixMatch[2]!;
-  // 패턴 포맷("#.##"/"0.000" 등) — pine2py는 "#"/"0"+"." 존재 여부로만 판별, 자릿수는 "." 뒤
-  // 길이. 그 외 인식 불가 패턴은 기본 분기(pyFloatStr)로 폴백(pine2py `return str(value)`와 동치).
-  if (format_str.includes("#") || (format_str.includes("0") && format_str.includes("."))) {
-    let decimals = 0;
-    if (format_str.includes(".")) {
-      decimals = format_str.split(".").pop()!.length;
-    }
-    return value.toFixed(decimals);
-  }
-  return pyFloatStr(value);
+  if (!Number.isFinite(value)) return "NaN";
+  // format.price and format.inherit are not str.tostring formats (the reference accepts
+  // format.mintick, format.percent and format.volume): the default applies.
+  const mask = typeof format_str === "string" && format_str !== "price" && format_str !== "inherit" ? format_str : TOSTRING_DEFAULT_FORMAT;
+  return formatMask(value, mask, false);
 }
 
 // str.split — pine2py str_funcs.split(source, separator): `source.split(separator)`. 반환이
@@ -318,8 +464,6 @@ export function tonumber(value: string | null): number {
   return Number(trimmed);
 }
 
-type FormatArg = number | string | boolean | null;
-
 // Python round() = half-to-even(banker's rounding, `round(2.5)===2`) — JS Math.round은 항상
 // half-up이라 별도 구현 필요. node/python 2,013건 fuzz(정수 tie 포함) 전부 일치
 // (scratch/probe_format.mjs) 확인.
@@ -355,15 +499,6 @@ function toFixedPy(num: number, decimals: number): string {
   return s;
 }
 
-function formatSimple(val: number | string | boolean): string {
-  if (typeof val === "number") {
-    if (Number.isNaN(val)) return "nan";
-    return pyFloatStr(val);
-  }
-  if (typeof val === "boolean") return val ? "True" : "False";
-  return val;
-}
-
 function applyNumberFormat(val: number | string | boolean, pattern: string): string {
   let num: number;
   if (typeof val === "number") num = val;
@@ -381,53 +516,205 @@ function applyNumberFormat(val: number | string | boolean, pattern: string): str
   return toFixedPy(num, decimals);
 }
 
-// str.format — pine2py str_funcs.format(template, *args): `{idx}` 단순 치환 + `{idx,number,pattern}`
-// 숫자 포맷 치환. 정규식 `\{(\d+)(?:,number,([^}]+))?\}` — python re와 JS RegExp 교차 실측
-// (scratch/probe_format.py+.mjs, 31개 수동 케이스 전부 + 데시멀 포맷 2,000건 + round-half-even
-// 2,013건 전부 일치) 확인 후 착수(match(C109)와 동일 사전 검증 관행). idx>=args.length는 매치
-// 텍스트 그대로 보존(pine2py `return m.group(0)`).
-// **발견 1(int/float 문자열 표현 우연성, array.join #28a와 동일 클래스)**: 단순 {idx} 치환은
-// Python `str(val)`에 위임 — val이 소스에 정수 리터럴로 쓰였으면(우연) 소수점 없이, 소수점
-// 리터럴이면(우연) pyFloatStr 스타일(".0" 포함)로 나온다. JS Number는 이 구분이 없어 항상
-// pyFloatStr로 통일(#28a 원칙 재적용, 정수 리터럴 인자는 오라클 채널 제외).
-// **발견 2(NaN 대소문자 비대칭, array.join #28c와 동일 클래스)**: 단순 {idx} 치환은 isnan 가드가
-// 없어 `str(nan)`="nan"(소문자)이 그대로 나오지만, {idx,number,...} 포맷 치환은
-// _apply_number_format 안에 명시적 `math.isnan(num): return "NaN"`(대문자) 가드가 있다 — 같은
-// NaN 값이 치환 형태에 따라 대소문자가 갈리는 pine2py 자체의 비일관성을 literal port.
-// **발견 3(정수 패턴의 round 방식, TV 미검증)**: 패턴에 "."이 없으면(`{0,number,#}`)
-// `str(int(round(num)))` — Python round()는 half-to-even(bankers rounding)이라 GOAL.md의
-// "math.round는 half-away-from-zero"(TV 실제 규칙, 서로 다른 함수)와 다르다. 이 내부 포맷
-// 헬퍼의 round가 TV str.format 실제 표시 규칙과 같은지 검증 근거가 없어(WebSearch 권한 부재)
-// literal port + TV 미검증 가설로 등재(DIVERGENCES.md 신규) — half-away-from-zero로 보정하지 않음.
-// **발견 4(무한대 크래시 흡수)**: "." 없는 패턴에서 값이 ±Infinity면 pine2py `int(round(inf))`가
-// OverflowError로 크래시한다(python 직접 실행 확인) — GOAL.md "알려진 버그는 따르지 않는다" 적용,
-// "." 있는 분기가 이미 자연스럽게 내는 "inf"/"-inf" 텍스트로 통일해 크래시 회피(DIVERGENCES.md 신규).
-// **발견 5(문자열 인자의 느슨한 float 파싱)**: {idx,number,...} 포맷에 string 인자가 오면 Python
-// `float(value)`로 파싱 시도 — 성공하면 숫자로 포맷, 실패(ValueError)하면 원본 문자열 그대로
-// 반환(`except: return str(value)`) — parseFloatLoose로 이식.
-// na 규칙(pine2js 고유 결정, pine2py 오라클로 검증 불가 — pine2py 자신이 `var string x = na`조차
-// 항상 float('nan')으로 컴파일해 이 경로에 실제 None 인자가 구조적으로 도달 못함, C107류 "Python
-// None 이중 오버로드"와는 다른 이유의 "literal port 불가" 사례): template이 na(null)면 na(null)
-// 전파. 개별 치환 인자가 na(null, string na)면 GOAL.md na 안전성 원칙에 따라 전체 결과를 na(null)로
-// 통일(hand-verified, LIMITATIONS.md 신규 등재).
+// A str.format pattern as literal text and (index, type, style) placeholders, scanned as Java's
+// MessageFormat.applyPattern does (the oracle's _parse_format_pattern): in literal text '' is one
+// quote, a lone ' toggles quoting and quoted braces are literal; an unquoted } outside a placeholder
+// is literal; inside a placeholder quotes are copied through to the style, ',' moves to the next
+// segment, nested braces nest, and a space is dropped only ahead of the type. Patterns are
+// compile-time constants in practice, so the parse is cached.
+type FormatPiece = string | [string, string, string];
+const formatPatternCache = new Map<string, FormatPiece[]>();
+
+function parseFormatPattern(pattern: string): FormatPiece[] {
+  const cached = formatPatternCache.get(pattern);
+  if (cached !== undefined) return cached;
+  const RAW = 0;
+  const INDEX = 1;
+  const TYPE = 2;
+  const STYLE = 3;
+  const parts: FormatPiece[] = [];
+  const seg = ["", "", "", ""];
+  let part = RAW;
+  let inQuote = false;
+  let braceDepth = 0;
+  for (let i = 0; i < pattern.length; i++) {
+    const ch = pattern[i]!;
+    if (part === RAW) {
+      if (ch === "'") {
+        if (pattern[i + 1] === "'") {
+          seg[RAW] += ch;
+          i++;
+        } else {
+          inQuote = !inQuote;
+        }
+      } else if (ch === "{" && !inQuote) {
+        if (seg[RAW]) {
+          parts.push(seg[RAW]);
+          seg[RAW] = "";
+        }
+        seg[INDEX] = seg[TYPE] = seg[STYLE] = "";
+        part = INDEX;
+      } else {
+        seg[RAW] += ch;
+      }
+    } else if (inQuote) {
+      seg[part] += ch;
+      if (ch === "'") inQuote = false;
+    } else if (ch === ",") {
+      if (part < STYLE) part++;
+      else seg[part] += ch;
+    } else if (ch === "{") {
+      braceDepth++;
+      seg[part] += ch;
+    } else if (ch === "}") {
+      if (braceDepth) {
+        braceDepth--;
+        seg[part] += ch;
+      } else {
+        parts.push([seg[INDEX]!, seg[TYPE]!, seg[STYLE]!]);
+        part = RAW;
+      }
+    } else if (ch === "'") {
+      inQuote = true;
+      seg[part] += ch;
+    } else if (!(ch === " " && part === TYPE && !seg[TYPE])) {
+      seg[part] += ch;
+    }
+  }
+  // An unclosed placeholder is an error, except with a brace still open inside it (Java drops
+  // that one silently).
+  if (part !== RAW && !braceDepth) runtimeError("Format pattern ends inside a placeholder");
+  if (seg[RAW]) parts.push(seg[RAW]);
+  if (formatPatternCache.size >= 256) formatPatternCache.clear();
+  formatPatternCache.set(pattern, parts);
+  return parts;
+}
+
+// The style keywords of a `number` placeholder, matched case-insensitively ignoring surrounding
+// space; any other style is a DecimalFormat pattern taken verbatim (a leading space is a literal
+// affix: `{0, number, #.#}` of 1.34 prints " 1.3", tier 1 str_010_format).
+const NUMBER_STYLES = new Set(["integer", "currency", "percent", "mintick", "volume", "price", "inherit"]);
+
+// A `number` placeholder with a keyword style, DecimalFormat's renderings (the oracle's
+// _format_number_general with decimal_format): integer rounds half-even, currency and price are
+// "$" with grouping and two places rounded half-up on the shortest digits, percent multiplies by
+// 100 without places (tier 1 str_010_format: 1.34 "1", 1.52 "2", 1.34 "$1.34", 1340000
+// "$1,340,000.00", 0.5 "50%"). An infinity keeps the style's affixes around "∞".
+// Not covered: mintick and inherit need the symbol's tick and the script precision, which do not
+// reach this runtime; they take the default pattern.
+function formatNumberStyle(value: number, keyword: string): string {
+  if (Number.isNaN(value)) return "NaN";
+  if (!Number.isFinite(value)) {
+    if (keyword === "price" || keyword === "currency") return (value < 0 ? "-$" : "$") + "∞";
+    if (keyword === "percent") return (value < 0 ? "-" : "") + "∞%";
+    return (value < 0 ? "-" : "") + "∞";
+  }
+  if (keyword === "volume") {
+    if (value >= 1e9) return fixedExact(value / 1e9, 2) + "B";
+    if (value >= 1e6) return fixedExact(value / 1e6, 2) + "M";
+    if (value >= 1e3) return fixedExact(value / 1e3, 2) + "K";
+    return String(Math.trunc(value));
+  }
+  if (keyword === "integer") {
+    const r = roundDecimal(exactDecimal(Math.abs(value)), 0, true);
+    return value < 0 && r !== "0" ? "-" + r : r;
+  }
+  if (keyword === "percent") return fixedExact(value * 100, 0) + "%";
+  if (keyword === "price" || keyword === "currency") {
+    const [intText, decimalPart] = roundDecimal(shortestDecimal(Math.abs(value)), 2, false).split(".") as [string, string];
+    const grouped = intText.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return "$" + (value < 0 || Object.is(value, -0) ? "-" : "") + grouped + "." + decimalPart;
+  }
+  return formatDecimal(value, DECIMAL_FORMAT_DEFAULT);
+}
+
+// A number through a DecimalFormat pattern (the exact value, half-even); na is "NaN", an infinity
+// "∞" between the chosen subpattern's affixes.
+function formatDecimal(value: number, pattern: string): string {
+  if (Number.isNaN(value)) return "NaN";
+  if (!Number.isFinite(value)) {
+    const subpatterns = pattern.split(";");
+    const negativeSubpattern = value < 0 && subpatterns.length > 1;
+    const [affix, , suffix] = splitNumberPattern(negativeSubpattern ? subpatterns[1]! : subpatterns[0]!);
+    return (value < 0 && !negativeSubpattern ? "-" : "") + affix + "∞" + suffix;
+  }
+  return formatMask(value, pattern, true);
+}
+
+type FormatArg = number | string | boolean | null | undefined | unknown[];
+
+// An argument of a placeholder without the `number` type (the oracle's _format_value): a string
+// as is, a number through DecimalFormat's default pattern '#.###' (`str.format("{0}", 1.23456789)`
+// is "1.235", tier 1 str_010_format), a bool "true"/"false", na "NaN", an array "[a, b]" (tier 1
+// str_001_functions: `str.split("Hello World!", " ")` prints "[Hello, World!]"; the oracle prints
+// the numbers of a list with Python's str()).
+function formatValue(value: FormatArg): string {
+  if (value === null || value === undefined) return "NaN";
+  if (typeof value === "string") return value;
+  if (typeof value === "boolean") return value ? "true" : "false";
+  if (typeof value === "number") return formatDecimal(value, DECIMAL_FORMAT_DEFAULT);
+  if (Array.isArray(value)) {
+    return "[" + value.map((x) => {
+      if (x === null || x === undefined || (typeof x === "number" && Number.isNaN(x))) return "NaN";
+      if (typeof x === "string") return x;
+      if (typeof x === "boolean") return x ? "true" : "false";
+      if (typeof x === "number") return pyFloatStr(x);
+      return String(x);
+    }).join(", ") + "]";
+  }
+  return String(value);
+}
+
+// The number a `number` placeholder formats (the oracle's safe_float): a bool is 1 or 0, a string
+// is parsed as Python's float() parses it and is an error when it does not parse, anything else
+// that is not a number is na.
+function numberArg(value: FormatArg): number {
+  if (typeof value === "number") return value;
+  if (typeof value === "boolean") return value ? 1 : 0;
+  if (typeof value === "string") {
+    const parsed = parseFloatLoose(value);
+    if (!parsed.ok) runtimeError(`could not convert string to float: '${value}'`);
+    return parsed.value;
+  }
+  return NaN;
+}
+
+// str.format(formatString, arg0, ...): Java's MessageFormat as the oracle runs it (pynecore
+// lib/string.py format). A placeholder's index is digits with an optional '+' (anything else is an
+// error); an index without an argument is echoed as "{n}"; an na argument prints "NaN" (the result
+// is not na); a placeholder without the `number` type formats its argument with formatValue; a
+// `number` one takes a style keyword (formatNumberStyle), a DecimalFormat pattern, or none (the
+// default '#.###'). A na pattern is na. Log messages are this function too (log.info(formatString,
+// ...)). tier 1: str_010_format, math_001_functions ("{0}" of math.abs(-1) is "1",
+// "{0,number,#.##########}" of math.acos(0.5) "1.0471975512"), str_001_functions (bools "true").
 export function format(template: string | null, ...args: FormatArg[]): string | null {
   if (typeof template !== "string") return null;
-  let naArg = false;
-  const result = template.replace(
-    /\{(\d+)(?:,number,([^}]+))?\}/g,
-    (whole: string, idxStr: string, fmtSpec: string | undefined) => {
-      const idx = parseInt(idxStr, 10);
-      if (idx >= args.length) return whole;
-      const val = args[idx]!;
-      if (val === null) {
-        naArg = true;
-        return whole;
-      }
-      if (fmtSpec === undefined) return formatSimple(val);
-      return applyNumberFormat(val, fmtSpec);
-    },
-  );
-  return naArg ? null : result;
+  let out = "";
+  for (const piece of parseFormatPattern(template)) {
+    if (typeof piece === "string") {
+      out += piece;
+      continue;
+    }
+    const [index, argType, style] = piece;
+    if (!/^\+?\d+$/.test(index)) runtimeError(`Invalid argument index: ${index}`);
+    const position = parseInt(index, 10);
+    if (position >= args.length) {
+      out += `{${position}}`;
+      continue;
+    }
+    const value = args[position];
+    if (value === null || value === undefined) {
+      out += "NaN";
+    } else if (argType.trim().toLowerCase() !== "number") {
+      out += formatValue(value);
+    } else {
+      const keyword = style.trim().toLowerCase();
+      const number = numberArg(value);
+      if (NUMBER_STYLES.has(keyword)) out += formatNumberStyle(number, keyword);
+      else out += formatDecimal(number, keyword ? style : DECIMAL_FORMAT_DEFAULT);
+    }
+  }
+  return out;
 }
 
 // str.format_number(value, format_str="") — pine2py str_funcs.format_number(L218-225): value가

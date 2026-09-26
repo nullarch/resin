@@ -49,7 +49,10 @@ describe("oracle: str_tostring_int_local", () => {
     }
   });
 
-  it("renders int format for '=' locals fed by int literals or loop counters (incl. chained), float format for the float control", () => {
+  // The float control prints without a fraction too (str.tostring's default mask '#.##########';
+  // oracle pynecore lib/string.py tostring; twin state/repros/str-number-text.json in
+  // resin-harness). pine2py printed Python's "5.0"; its golden was rewritten to the oracle's value.
+  it("renders '=' locals fed by int literals or loop counters (incl. chained) and the float control without a fraction", () => {
     const source = loadCaseSource(CASE_NAME);
     const data = loadOracleData(CASE_NAME);
     const result = runPipeline(source, data);
@@ -57,6 +60,6 @@ describe("oracle: str_tostring_int_local", () => {
     expect(result.finalVarState.__obs_lit_local).toBe("5");
     expect(result.finalVarState.__obs_loop_local).toBe("2");
     expect(result.finalVarState.__obs_chain_local).toBe("2");
-    expect(result.finalVarState.__obs_float_local_control).toBe("5.0");
+    expect(result.finalVarState.__obs_float_local_control).toBe("5");
   });
 });

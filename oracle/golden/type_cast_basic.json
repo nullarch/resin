@@ -18,7 +18,7 @@
    "var:__obs_bool_true": true,
    "var:__obs_string_int": "5",
    "var:__obs_string_float": "5.7",
-   "var:__obs_string_bool": "True",
+   "var:__obs_string_bool": "true",
    "var:__obs_string_na": "NaN",
    "var:__obs_string_loop": "2"
   },
@@ -38,7 +38,7 @@
    "var:__obs_bool_true": true,
    "var:__obs_string_int": "5",
    "var:__obs_string_float": "5.7",
-   "var:__obs_string_bool": "True",
+   "var:__obs_string_bool": "true",
    "var:__obs_string_na": "NaN",
    "var:__obs_string_loop": "2"
   },
@@ -58,7 +58,7 @@
    "var:__obs_bool_true": true,
    "var:__obs_string_int": "5",
    "var:__obs_string_float": "5.7",
-   "var:__obs_string_bool": "True",
+   "var:__obs_string_bool": "true",
    "var:__obs_string_na": "NaN",
    "var:__obs_string_loop": "2"
   },
@@ -78,7 +78,7 @@
    "var:__obs_bool_true": true,
    "var:__obs_string_int": "5",
    "var:__obs_string_float": "5.7",
-   "var:__obs_string_bool": "True",
+   "var:__obs_string_bool": "true",
    "var:__obs_string_na": "NaN",
    "var:__obs_string_loop": "2"
   },
@@ -98,7 +98,7 @@
    "var:__obs_bool_true": true,
    "var:__obs_string_int": "5",
    "var:__obs_string_float": "5.7",
-   "var:__obs_string_bool": "True",
+   "var:__obs_string_bool": "true",
    "var:__obs_string_na": "NaN",
    "var:__obs_string_loop": "2"
   },
@@ -118,7 +118,7 @@
    "var:__obs_bool_true": true,
    "var:__obs_string_int": "5",
    "var:__obs_string_float": "5.7",
-   "var:__obs_string_bool": "True",
+   "var:__obs_string_bool": "true",
    "var:__obs_string_na": "NaN",
    "var:__obs_string_loop": "2"
   },
@@ -138,7 +138,7 @@
    "var:__obs_bool_true": true,
    "var:__obs_string_int": "5",
    "var:__obs_string_float": "5.7",
-   "var:__obs_string_bool": "True",
+   "var:__obs_string_bool": "true",
    "var:__obs_string_na": "NaN",
    "var:__obs_string_loop": "2"
   },
@@ -158,7 +158,7 @@
    "var:__obs_bool_true": true,
    "var:__obs_string_int": "5",
    "var:__obs_string_float": "5.7",
-   "var:__obs_string_bool": "True",
+   "var:__obs_string_bool": "true",
    "var:__obs_string_na": "NaN",
    "var:__obs_string_loop": "2"
   },
@@ -178,7 +178,7 @@
    "var:__obs_bool_true": true,
    "var:__obs_string_int": "5",
    "var:__obs_string_float": "5.7",
-   "var:__obs_string_bool": "True",
+   "var:__obs_string_bool": "true",
    "var:__obs_string_na": "NaN",
    "var:__obs_string_loop": "2"
   },
@@ -198,7 +198,7 @@
    "var:__obs_bool_true": true,
    "var:__obs_string_int": "5",
    "var:__obs_string_float": "5.7",
-   "var:__obs_string_bool": "True",
+   "var:__obs_string_bool": "true",
    "var:__obs_string_na": "NaN",
    "var:__obs_string_loop": "2"
   }
@@ -219,7 +219,7 @@
   "__obs_bool_true": true,
   "__obs_string_int": "5",
   "__obs_string_float": "5.7",
-  "__obs_string_bool": "True",
+  "__obs_string_bool": "true",
   "__obs_string_na": "NaN",
   "__obs_string_loop": "2"
  }

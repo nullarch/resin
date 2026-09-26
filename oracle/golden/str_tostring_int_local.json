@@ -6,67 +6,67 @@
    "var:__obs_lit_local": "5",
    "var:__obs_loop_local": "2",
    "var:__obs_chain_local": "2",
-   "var:__obs_float_local_control": "5.0"
+   "var:__obs_float_local_control": "5"
   },
   {
    "var:__obs_lit_local": "5",
    "var:__obs_loop_local": "2",
    "var:__obs_chain_local": "2",
-   "var:__obs_float_local_control": "5.0"
+   "var:__obs_float_local_control": "5"
   },
   {
    "var:__obs_lit_local": "5",
    "var:__obs_loop_local": "2",
    "var:__obs_chain_local": "2",
-   "var:__obs_float_local_control": "5.0"
+   "var:__obs_float_local_control": "5"
   },
   {
    "var:__obs_lit_local": "5",
    "var:__obs_loop_local": "2",
    "var:__obs_chain_local": "2",
-   "var:__obs_float_local_control": "5.0"
+   "var:__obs_float_local_control": "5"
   },
   {
    "var:__obs_lit_local": "5",
    "var:__obs_loop_local": "2",
    "var:__obs_chain_local": "2",
-   "var:__obs_float_local_control": "5.0"
+   "var:__obs_float_local_control": "5"
   },
   {
    "var:__obs_lit_local": "5",
    "var:__obs_loop_local": "2",
    "var:__obs_chain_local": "2",
-   "var:__obs_float_local_control": "5.0"
+   "var:__obs_float_local_control": "5"
   },
   {
    "var:__obs_lit_local": "5",
    "var:__obs_loop_local": "2",
    "var:__obs_chain_local": "2",
-   "var:__obs_float_local_control": "5.0"
+   "var:__obs_float_local_control": "5"
   },
   {
    "var:__obs_lit_local": "5",
    "var:__obs_loop_local": "2",
    "var:__obs_chain_local": "2",
-   "var:__obs_float_local_control": "5.0"
+   "var:__obs_float_local_control": "5"
   },
   {
    "var:__obs_lit_local": "5",
    "var:__obs_loop_local": "2",
    "var:__obs_chain_local": "2",
-   "var:__obs_float_local_control": "5.0"
+   "var:__obs_float_local_control": "5"
   },
   {
    "var:__obs_lit_local": "5",
    "var:__obs_loop_local": "2",
    "var:__obs_chain_local": "2",
-   "var:__obs_float_local_control": "5.0"
+   "var:__obs_float_local_control": "5"
   }
  ],
  "finalVarState": {
   "__obs_lit_local": "5",
   "__obs_loop_local": "2",
   "__obs_chain_local": "2",
-  "__obs_float_local_control": "5.0"
+  "__obs_float_local_control": "5"
  }
 }
