@@ -748,8 +748,7 @@ export const SYMINFO_NUMBER_PROPS: ReadonlyMap<string, number> = new Map([
 // 고정값)만으로 pine2py wavealgo/builtins/barstate.py·session.py의 ctx.idx/ctx.length 판정을 그대로
 // 재현(오라클 실측: gen_oracle.py가 매 바 push_bar 시 index를 0,1,2,...로 순증가시켜 idx 의미가
 // 정확히 동형임을 codegen 소스 대조로 확인). 백테스트 모드 전제(pine2py 주석 그대로)라 isnew/
-// isconfirmed/ismarket은 항상 true, ispremarket/ispostmarket은 항상 false — 세션 인프라가 없어도
-// (ta.vwap의 LIMITATIONS.md 결정과 동일 근거) 정확히 pine2py와 동치.
+// isconfirmed는 항상 true. session.* reads the symbol's session schedule instead (SESSION_PROPS).
 export const BARSTATE_PROPS: ReadonlyMap<string, string> = new Map([
   ["isfirst", "$.idx === 0"],
   ["islast", "$.idx === $.barCount - 1"],
@@ -760,14 +759,24 @@ export const BARSTATE_PROPS: ReadonlyMap<string, string> = new Map([
   ["islastconfirmedhistory", "$.idx === $.barCount - 2"],
 ]);
 
+// session.* on the chart symbol's session schedule (AnalyzeOptions.syminfo: opening_hours,
+// session_starts, session_ends), judged on the chart bar's span, its open plus the chart timeframe
+// (runtime/calendar.ts ExchangeCalendar.isSessionFirstBar / isSessionLastBar / isMarketBar).
+// ref_v6_lang.txt: session.isfirstbar "Returns true if the current bar is the first bar of the day's
+// session", session.islastbar "... the last bar of the day's session", session.ismarket "... if the
+// current bar is a part of the regular trading hours". Tier 1 session_001_properties (CAPITALCOM
+// EURUSD 60m) and session_002_24x7 (BINANCE BTCUSDT 60m) are TradingView exports of them.
+// Extended sessions are not modelled: the *_regular variables read like their plain twins, and
+// ispremarket/ispostmarket are false. A value names its bar by `$.idx` so that history indexing can
+// shift it (index-access.ts, codegen genIndexAccess); one reading `$calendar` sets usesCalendar.
 export const SESSION_PROPS: ReadonlyMap<string, string> = new Map([
-  ["ismarket", "true"],
+  ["ismarket", "$calendar.isMarketBar($.timeOfBar($.idx))"],
   ["ispremarket", "false"],
   ["ispostmarket", "false"],
-  ["isfirstbar", "$.idx === 0"],
-  ["isfirstbar_regular", "$.idx === 0"],
-  ["islastbar", "$.idx === $.barCount - 1"],
-  ["islastbar_regular", "$.idx === $.barCount - 1"],
+  ["isfirstbar", "$calendar.isSessionFirstBar($.timeOfBar($.idx))"],
+  ["isfirstbar_regular", "$calendar.isSessionFirstBar($.timeOfBar($.idx))"],
+  ["islastbar", "$calendar.isSessionLastBar($.timeOfBar($.idx))"],
+  ["islastbar_regular", "$calendar.isSessionLastBar($.timeOfBar($.idx))"],
 ]);
 
 // timeframe.*(9종 속성 + main_period 별칭, ROADMAP P2 "barstate/session/syminfo/timeframe" 세 번째
@@ -3384,11 +3393,12 @@ export interface AnalyzeOptions {
 //
 // The symbol's exchange calendar comes with them (SYMINFO_CALENDAR_KEYS): its timezone (an IANA
 // name or "UTC±h[:mm]"), its market type, and its weekly session schedule, `opening_hours`
-// ([{ day, start, end }]) and `session_starts` ([{ day, time }]) with day 0 = Monday … 6 = Sunday
-// and "HH:MM[:SS]" times in the symbol's timezone. syminfo.timezone and syminfo.type fold to them
-// and timeframe.change lays its periods on them (runtime/calendar.ts). The other time builtins
-// (hour, dayofweek, time(), timestamp(), str.format_time, ...) still default to UTC. Without a
-// schedule resin assumes a market open around the clock, every day starting at 00:00.
+// ([{ day, start, end }]), `session_starts` and `session_ends` ([{ day, time }]) with day 0 = Monday
+// … 6 = Sunday and "HH:MM[:SS]" times in the symbol's timezone. syminfo.timezone and syminfo.type
+// fold to them, timeframe.change lays its periods on them and session.* reads them
+// (runtime/calendar.ts). The other time builtins (hour, dayofweek, time(), timestamp(),
+// str.format_time, ...) still default to UTC. Without a schedule resin assumes a market open around
+// the clock, every day starting at 00:00 and ending at 23:59:59.
 //
 // Other syminfo properties (currency, ...) are not configurable yet: they stay at resin's fixed
 // values, and keys this type does not name are ignored.
@@ -3402,13 +3412,14 @@ export interface SymbolGridOptions {
   type?: string;
   opening_hours?: readonly { day: number; start: string; end: string }[];
   session_starts?: readonly { day: number; time: string }[];
+  session_ends?: readonly { day: number; time: string }[];
 }
 
 // The syminfo properties SymbolGridOptions sets, in StrategyState.setSymbol's argument order.
 export const SYMINFO_OPTION_KEYS: readonly string[] = ["mintick", "pricescale", "minmove", "mincontract", "pointvalue"];
 
 // The exchange-calendar properties SymbolGridOptions sets.
-export const SYMINFO_CALENDAR_KEYS: readonly string[] = ["timezone", "type", "opening_hours", "session_starts"];
+export const SYMINFO_CALENDAR_KEYS: readonly string[] = ["timezone", "type", "opening_hours", "session_starts", "session_ends"];
 
 // The resolved exchange calendar of the chart symbol (times in seconds of the day), the spec
 // runtime/calendar.ts builds its ExchangeCalendar from.
@@ -3417,11 +3428,14 @@ export interface SymbolCalendar {
   type: string;
   openingHours: readonly (readonly [number, number, number])[];
   sessionStarts: readonly (readonly [number, number])[];
+  sessionEnds: readonly (readonly [number, number])[];
 }
 
-// Around the clock: every day open from 00:00 to 23:59:59, a session starting at 00:00.
+// Around the clock: every day open from 00:00 to 23:59:59, a session starting at 00:00 and ending
+// at 23:59:59 (the reference's 24/7 schedule, pynecore providers/ccxt.py _create_24_7_sessions).
 const ROUND_THE_CLOCK_HOURS: readonly (readonly [number, number, number])[] = [0, 1, 2, 3, 4, 5, 6].map((d) => [d, 0, 86_399] as const);
 const ROUND_THE_CLOCK_STARTS: readonly (readonly [number, number])[] = [0, 1, 2, 3, 4, 5, 6].map((d) => [d, 0] as const);
+const ROUND_THE_CLOCK_ENDS: readonly (readonly [number, number])[] = [0, 1, 2, 3, 4, 5, 6].map((d) => [d, 86_399] as const);
 
 // "HH:MM[:SS]" -> seconds of the day, or null.
 function parseTimeOfDay(v: unknown): number | null {
@@ -3444,8 +3458,8 @@ function resolveSymbolCalendar(opts: SymbolGridOptions | undefined, errors: stri
   }
   const type = opts?.type ?? SYMINFO_STRING_PROPS.get("type")!;
   if (typeof type !== "string") errors.push(`syminfo option 'type' must be a string, got ${String(type)}`);
-  if (opts?.opening_hours === undefined && opts?.session_starts === undefined) {
-    return { timezone, type, openingHours: ROUND_THE_CLOCK_HOURS, sessionStarts: ROUND_THE_CLOCK_STARTS };
+  if (opts?.opening_hours === undefined && opts?.session_starts === undefined && opts?.session_ends === undefined) {
+    return { timezone, type, openingHours: ROUND_THE_CLOCK_HOURS, sessionStarts: ROUND_THE_CLOCK_STARTS, sessionEnds: ROUND_THE_CLOCK_ENDS };
   }
   const openingHours: [number, number, number][] = [];
   for (const oh of opts.opening_hours ?? []) {
@@ -3457,16 +3471,19 @@ function resolveSymbolCalendar(opts: SymbolGridOptions | undefined, errors: stri
     }
     openingHours.push([oh.day, start, end]);
   }
-  const sessionStarts: [number, number][] = [];
-  for (const ss of opts.session_starts ?? []) {
-    const time = parseTimeOfDay(ss?.time);
-    if (!isWeekday(ss?.day) || time === null) {
-      errors.push(`syminfo option 'session_starts' entries must be { day: 0..6, time: "HH:MM[:SS]" }, got ${JSON.stringify(ss)}`);
-      continue;
+  const sessionTimes = (key: "session_starts" | "session_ends"): [number, number][] => {
+    const out: [number, number][] = [];
+    for (const s of opts[key] ?? []) {
+      const time = parseTimeOfDay(s?.time);
+      if (!isWeekday(s?.day) || time === null) {
+        errors.push(`syminfo option '${key}' entries must be { day: 0..6, time: "HH:MM[:SS]" }, got ${JSON.stringify(s)}`);
+        continue;
+      }
+      out.push([s.day, time]);
     }
-    sessionStarts.push([ss.day, time]);
-  }
-  return { timezone, type, openingHours, sessionStarts };
+    return out;
+  };
+  return { timezone, type, openingHours, sessionStarts: sessionTimes("session_starts"), sessionEnds: sessionTimes("session_ends") };
 }
 
 // The program's syminfo.* number constants: resin's defaults overlaid with the caller's symbol grid.
@@ -8456,7 +8473,9 @@ export function analyzeExpr(expr: Expr, prog: AnalyzedProgram, scope: LexScope, 
         return;
       }
       if (expr.obj.kind === "Identifier" && expr.obj.name === "session" && SESSION_PROPS.has(expr.attr)) {
-        prog.builtinRuntimeExprs.set(expr, SESSION_PROPS.get(expr.attr)!);
+        const value = SESSION_PROPS.get(expr.attr)!;
+        prog.builtinRuntimeExprs.set(expr, value);
+        if (value.includes("$calendar")) prog.usesCalendar = true;
         return;
       }
       // session.regular/extended(C286) — 위 SESSION_PROPS(런타임 bool)와 달리 고정 문자열이라

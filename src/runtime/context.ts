@@ -117,7 +117,7 @@ export class Context {
   // Generated code fills them with `$.plots[N].record(value)` each bar; once
   // the loop finishes, run() converts them to plain arrays.
   plots: Series[];
-  // Zero-based index of the current bar, for barstate.* and session.*.
+  // Zero-based index of the current bar, for barstate.* and session.* (timeOfBar).
   // advance() moves it forward by one; barCount is the fixed total.
   idx: number;
   // Broker state for strategy.*. Always constructed, whether or not the script
@@ -305,7 +305,14 @@ export class Context {
   // was supplied; that is an absent-infrastructure default, not an attempt to
   // reproduce any particular platform behaviour.
   get barTimeMs(): number {
-    return this.time !== undefined && this.idx < this.time.length ? this.time[this.idx]! : 0;
+    return this.timeOfBar(this.idx);
+  }
+
+  // The open time of chart bar `i`, 0 without a time channel as barTimeMs. session.* reads the bar's
+  // time through it: its analyzer expression names the bar by `$.idx`, which history indexing
+  // (session.isfirstbar[1]) rewrites to the earlier bar.
+  timeOfBar(i: number): number {
+    return this.time !== undefined && i < this.time.length ? this.time[i]! : 0;
   }
 
   // last_bar_time — the final element of the whole time array, constant no

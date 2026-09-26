@@ -33,7 +33,8 @@ function floorMod(a: number, b: number): number {
   return ((a % b) + b) % b;
 }
 
-// [weekday, open, close] (seconds of the day) and [weekday, start] (seconds of the day).
+// [weekday, open, close] (seconds of the day) and [weekday, time] (seconds of the day) of a session
+// start or end.
 export type SessionInterval = readonly [day: number, start: number, end: number];
 export type SessionStart = readonly [day: number, time: number];
 
@@ -43,6 +44,7 @@ export interface CalendarSpec {
   type: string;
   openingHours: readonly SessionInterval[];
   sessionStarts: readonly SessionStart[];
+  sessionEnds: readonly SessionStart[];
 }
 
 // A symbol's calendar as a caller writes it (the calendar keys of transpile's syminfo option):
@@ -52,6 +54,7 @@ export interface SymbolCalendarOptions {
   type?: string;
   opening_hours?: readonly { day: number; start: string; end: string }[];
   session_starts?: readonly { day: number; time: string }[];
+  session_ends?: readonly { day: number; time: string }[];
 }
 
 function secondsOfDay(v: unknown, what: string): number {
@@ -69,11 +72,11 @@ function weekday(v: unknown, what: string): number {
 }
 
 // The CalendarSpec of a symbol whose bars have timeframe `tf`. Without a schedule the market is
-// open around the clock, every day from 00:00, as the chart's is by default (analyzer
+// open around the clock, every day from 00:00 to 23:59:59, as the chart's is by default (analyzer
 // resolveSymbolCalendar); the timezone defaults to UTC and the type to "stock".
 export function calendarSpecOf(tf: string, opts: SymbolCalendarOptions | undefined, what: string): CalendarSpec {
   const days = [0, 1, 2, 3, 4, 5, 6];
-  const scheduled = opts?.opening_hours !== undefined || opts?.session_starts !== undefined;
+  const scheduled = opts?.opening_hours !== undefined || opts?.session_starts !== undefined || opts?.session_ends !== undefined;
   return {
     chartTf: tf,
     timezone: opts?.timezone ?? "UTC",
@@ -84,6 +87,9 @@ export function calendarSpecOf(tf: string, opts: SymbolCalendarOptions | undefin
     sessionStarts: scheduled
       ? (opts!.session_starts ?? []).map((ss) => [weekday(ss.day, what), secondsOfDay(ss.time, what)] as const)
       : days.map((d) => [d, 0] as const),
+    sessionEnds: scheduled
+      ? (opts!.session_ends ?? []).map((se) => [weekday(se.day, what), secondsOfDay(se.time, what)] as const)
+      : days.map((d) => [d, 86_399] as const),
   };
 }
 
@@ -162,8 +168,9 @@ export class ExchangeCalendar {
   // already (lib/__init__.py _chart_span_off_ms).
   readonly chartSpanOffMs: number;
   readonly gridMode: GridMode;
-  // Session starts per weekday, milliseconds of the day.
+  // Session starts and ends per weekday, milliseconds of the day.
   private readonly startsByDay: number[][] = [[], [], [], [], [], [], []];
+  private readonly endsByDay: number[][] = [[], [], [], [], [], [], []];
   // Opens of the sessions that run past midnight (close before open), per weekday.
   private readonly overnightByDay: number[][] = [[], [], [], [], [], [], []];
   // The earliest open per weekday that begins the next day's trading day (an overnight session
@@ -182,6 +189,7 @@ export class ExchangeCalendar {
     this.gridMode = gridMode(spec.type, spec.openingHours);
     this.openingHours = spec.openingHours;
     for (const [day, time] of spec.sessionStarts) this.startsByDay[day]!.push(time * 1000);
+    for (const [day, time] of spec.sessionEnds) this.endsByDay[day]!.push(time * 1000);
     const noteRollOpen = (day: number, start: number): void => {
       const cur = this.rollOpen[day];
       if (cur === undefined || start * 1000 < cur) this.rollOpen[day] = start * 1000;
@@ -371,6 +379,75 @@ export class ExchangeCalendar {
     };
     if (starts(this.startsByDay[curWeekday]!)) return true;
     return prevWeekday !== curWeekday && starts(this.overnightByDay[prevWeekday]!);
+  }
+
+  // session.isfirstbar and session.isfirstbar_regular: "true if the current bar is the first bar of
+  // the day's session" (ref_v6_lang.txt). The first bar is the chart bar whose span holds a session
+  // start: a start scheduled on the weekday of the bar's open, at or after the open and before the
+  // open plus the chart timeframe (pynecore lib/session.py isfirstbar_regular). Tier 1
+  // session_001_properties: on a 60-minute CAPITALCOM EURUSD chart the 17:00 bar holds the 17:05
+  // Monday-Thursday start and the Sunday 17:00 start. Extended sessions are not modelled, so both
+  // variables read the same (regular) schedule.
+  isSessionFirstBar(barTimeMs: number): boolean {
+    const w = this.wall(barTimeMs);
+    const day = Math.floor(w / DAY_MS);
+    const spanMs = this.chartSeconds * 1000;
+    for (const t of this.startsByDay[weekdayOf(day)]!) {
+      const start = day * DAY_MS + t;
+      if (w <= start && start < w + spanMs) return true;
+    }
+    return false;
+  }
+
+  // session.islastbar and session.islastbar_regular: "true if the current bar is the last bar of the
+  // day's session" (ref_v6_lang.txt). The last bar is the chart bar whose span holds a session end:
+  // an end scheduled on the weekday of the bar's open, after the open and at or before the open plus
+  // the chart timeframe; an end at or before the open is the day's midnight close (00:00 = 24:00 on a
+  // 24/7 market), taken on the next day (pynecore lib/session.py islastbar_regular). Tier 1
+  // session_001_properties: the 16:00 bar holds the 16:59:50 end; session_002_24x7: the 23:00 bar
+  // holds the 00:00 end.
+  isSessionLastBar(barTimeMs: number): boolean {
+    const w = this.wall(barTimeMs);
+    const day = Math.floor(w / DAY_MS);
+    const spanMs = this.chartSeconds * 1000;
+    for (const t of this.endsByDay[weekdayOf(day)]!) {
+      let end = day * DAY_MS + t;
+      if (end <= w) end += DAY_MS;
+      if (w < end && end <= w + spanMs) return true;
+    }
+    return false;
+  }
+
+  // session.ismarket: "true if the current bar is a part of the regular trading hours" (ref_v6_lang.txt).
+  // The chart bar's span [open, open + chart timeframe) overlaps an interval of the opening hours: one
+  // of its weekday, or the part after midnight of the previous weekday's overnight session (pynecore
+  // core/session.py is_in_session). A session closing at or before it opens runs into the next day,
+  // as sessionEndOf reads it, so a 00:00-00:00 day is open around the clock: concepts_sessions.txt
+  // "For tickers without pre-market and post-market sessions, such as “BTCUSD”, session.ismarket is
+  // always true" (the reference runs a session into the next day only when it closes strictly before
+  // it opens, which leaves a 00:00-00:00 day closed; resin-harness state/disputes.md D5).
+  isMarketBar(barTimeMs: number): boolean {
+    const w = this.wall(barTimeMs);
+    const day = Math.floor(w / DAY_MS);
+    const weekday = weekdayOf(day);
+    const prevWeekday = (weekday + 6) % 7;
+    const barEnd = w + this.chartSeconds * 1000;
+    for (const [d, start, end] of this.openingHours) {
+      const overnight = end <= start;
+      let open: number;
+      let close: number;
+      if (d === prevWeekday && overnight) {
+        open = (day - 1) * DAY_MS + start * 1000;
+        close = day * DAY_MS + end * 1000;
+      } else if (d === weekday) {
+        open = day * DAY_MS + start * 1000;
+        close = (day + (overnight ? 1 : 0)) * DAY_MS + end * 1000;
+      } else {
+        continue;
+      }
+      if (barEnd > open && w < close) return true;
+    }
+    return false;
   }
 
   // Identity of the nD/nW/nM period (multiplier > 1) holding a chart bar, on the year-reset grid

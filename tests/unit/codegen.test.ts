@@ -27,6 +27,11 @@ function codegenSource(source: string, options?: AnalyzeOptions): string {
   return unwrapModule(generateCode(analyze(parse(source), options)));
 }
 
+// The preamble line that builds the default exchange calendar (daily chart, UTC, open around the
+// clock, sessions 00:00 to 23:59:59), emitted when a script reads it (timeframe.change, session.*).
+const DEFAULT_CALENDAR_PREAMBLE =
+  'const $calendar = rt.timeframe.calendar({"chartTf":"D","timezone":"UTC","type":"stock","openingHours":[[0,0,86399],[1,0,86399],[2,0,86399],[3,0,86399],[4,0,86399],[5,0,86399],[6,0,86399]],"sessionStarts":[[0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0]],"sessionEnds":[[0,86399],[1,86399],[2,86399],[3,86399],[4,86399],[5,86399],[6,86399]]});';
+
 describe("CodeGen", () => {
   it("emits an init-guard for var declarations", () => {
     const code = codegenSource("var float acc = 0.0");
@@ -424,21 +429,27 @@ describe("CodeGen", () => {
     expect(code).toBe("var x = (true);\nvar y = (true);");
   });
 
-  it("emits session.ismarket/ispremarket/ispostmarket as bare boolean literals", () => {
+  // session.* reads the bar's time on the symbol's session schedule (resin-harness tier 1
+  // session_001_properties / session_002_24x7); extended sessions are not modelled, so
+  // ispremarket/ispostmarket stay false.
+  it("emits session.ismarket as a calendar read and ispremarket/ispostmarket as false", () => {
     const code = codegenSource("x = session.ismarket\ny = session.ispremarket\nz = session.ispostmarket");
-    expect(code).toBe("var x = (true);\nvar y = (false);\nvar z = (false);");
+    expect(code).toBe(
+      [DEFAULT_CALENDAR_PREAMBLE, "var x = ($calendar.isMarketBar($.timeOfBar($.idx)));", "var y = (false);", "var z = (false);"].join("\n"),
+    );
   });
 
-  it("emits session.isfirstbar/isfirstbar_regular/islastbar/islastbar_regular with the expected $.idx comparisons", () => {
+  it("emits session.isfirstbar/isfirstbar_regular/islastbar/islastbar_regular as calendar reads of the bar's time", () => {
     const code = codegenSource(
       "a = session.isfirstbar\nb = session.isfirstbar_regular\nc = session.islastbar\nd = session.islastbar_regular",
     );
     expect(code).toBe(
       [
-        "var a = ($.idx === 0);",
-        "var b = ($.idx === 0);",
-        "var c = ($.idx === $.barCount - 1);",
-        "var d = ($.idx === $.barCount - 1);",
+        DEFAULT_CALENDAR_PREAMBLE,
+        "var a = ($calendar.isSessionFirstBar($.timeOfBar($.idx)));",
+        "var b = ($calendar.isSessionFirstBar($.timeOfBar($.idx)));",
+        "var c = ($calendar.isSessionLastBar($.timeOfBar($.idx)));",
+        "var d = ($calendar.isSessionLastBar($.timeOfBar($.idx)));",
       ].join("\n"),
     );
   });
@@ -456,7 +467,10 @@ describe("CodeGen", () => {
   it("emits barstate.isfirst/session.ismarket inside a ternary lazy branch without hoisting (no stateful call to hoist)", () => {
     const code = codegenSource("x = close > open ? barstate.isfirst : session.ismarket");
     expect(code).toBe(
-      "var x = (rt.pineGt($.close.get(0), $.open.get(0)) ? ($.idx === 0) : (true));",
+      [
+        DEFAULT_CALENDAR_PREAMBLE,
+        "var x = (rt.pineGt($.close.get(0), $.open.get(0)) ? ($.idx === 0) : ($calendar.isMarketBar($.timeOfBar($.idx))));",
+      ].join("\n"),
     );
   });
 
@@ -622,10 +636,7 @@ describe("CodeGen", () => {
   it("emits timeframe.change(tf) as a stateful call on the preamble's exchange calendar", () => {
     const code = codegenSource('x = timeframe.change("D")');
     expect(code).toBe(
-      [
-        'const $calendar = rt.timeframe.calendar({"chartTf":"D","timezone":"UTC","type":"stock","openingHours":[[0,0,86399],[1,0,86399],[2,0,86399],[3,0,86399],[4,0,86399],[5,0,86399],[6,0,86399]],"sessionStarts":[[0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0]]});',
-        'var x = rt.timeframe.change($.taSlots[0], "D", $.barTimeMs, $.idx, $calendar);',
-      ].join("\n"),
+      [DEFAULT_CALENDAR_PREAMBLE, 'var x = rt.timeframe.change($.taSlots[0], "D", $.barTimeMs, $.idx, $calendar);'].join("\n"),
     );
   });
 
@@ -22095,7 +22106,7 @@ describe("CodeGen scale.*/session.regular·extended namespace constants (C286)",
   });
 
   it("session.ismarket (runtime bool, SESSION_PROPS) and session.regular (string constant, SESSION_STRING_CONSTANTS) coexist without name collision", () => {
-    expect(codegenSource("x = session.ismarket")).toBe("var x = (true);");
+    expect(codegenSource("x = session.ismarket")).toBe(`${DEFAULT_CALENDAR_PREAMBLE}\nvar x = ($calendar.isMarketBar($.timeOfBar($.idx)));`);
     expect(codegenSource("x = session.regular")).toBe('var x = "regular";');
   });
 

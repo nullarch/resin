@@ -21,6 +21,7 @@ const EURUSD: Omit<CalendarSpec, "chartTf"> = {
     [6, 17 * H, 0],
   ],
   sessionStarts: [[0, 17 * H + 5 * 60], [1, 17 * H + 5 * 60], [2, 17 * H + 5 * 60], [3, 17 * H + 5 * 60], [6, 17 * H]],
+  sessionEnds: [0, 1, 2, 3, 4].map((d) => [d, 16 * H + 59 * 60 + 50] as const),
 };
 
 // 5-minute bars from Sunday 2024-10-20 17:00 to Monday 17:10 New York (EDT, UTC-4), without the
@@ -73,6 +74,7 @@ describe("timeframe.change on the exchange calendar", () => {
       type: "stock",
       openingHours: [0, 1, 2, 3, 4, 5, 6].map((d) => [d, 0, 86_399] as const),
       sessionStarts: [0, 1, 2, 3, 4, 5, 6].map((d) => [d, 0] as const),
+      sessionEnds: [0, 1, 2, 3, 4, 5, 6].map((d) => [d, 86_399] as const),
     });
     const fired = hourly.map((t, i) => change(state, "D", t, i, utc));
     expect(fired.flatMap((f, i) => (f ? [i] : []))).toEqual([24, 48]);

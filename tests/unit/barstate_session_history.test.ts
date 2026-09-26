@@ -5,7 +5,9 @@
 // 런타임 크래시한다(`'bool' object is not subscriptable'`, gen_oracle.py 실측 확인) — 오라클 대조가
 // 원천 불가한 pine2py 자체 latent 버그(MEMORY C9/C14/C18과 동일 패턴)라 이 파일은 손 계산 기대값으로
 // 검증한다. barCount=8(idx 0..7, lastIndex=7)로 고정 — 아래 각 케이스의 기대 배열은 BARSTATE_PROPS/
-// SESSION_PROPS 원본 식을 ($.idx - N)으로 직접 치환해 손으로 계산한 것.
+// SESSION_PROPS 원본 식을 ($.idx - N)으로 직접 치환해 손으로 계산한 것. session.isfirstbar/islastbar
+// read the bar's time on the symbol's session schedule instead, so their cases run on timed bars
+// (sessionObs).
 
 import { describe, expect, it } from "vitest";
 import { runPipeline } from "../helpers/pipeline";
@@ -22,6 +24,16 @@ const data: OHLCVData = {
 function obs(source: string, key = "__obs_a"): unknown[] {
   const result = runPipeline(source, data);
   return result.bars.map((b) => b[`var:${key}`]);
+}
+
+// session.isfirstbar/islastbar read the bar's time on the symbol's session schedule: eight hourly
+// bars from 2025-01-03 21:00 UTC on resin's default schedule (open around the clock, sessions from
+// 00:00 to 23:59:59 UTC). Bar 2 (23:00) is the day's last bar and bar 3 (00:00) the next day's first.
+const hourly: OHLCVData = { ...data, time: Array.from({ length: 8 }, (_, i) => Date.UTC(2025, 0, 3, 21 + i)) };
+
+function sessionObs(source: string): unknown[] {
+  const result = runPipeline(source, hourly, {}, { chartTf: "60" });
+  return result.bars.map((b) => b["var:__obs_a"]);
 }
 
 describe("barstate/session-builtin history (C521, hand-verified)", () => {
@@ -85,14 +97,14 @@ describe("barstate/session-builtin history (C521, hand-verified)", () => {
     expect(obs(src)).toEqual([NaN, true, true, true, true, true, true, true]);
   });
 
-  it("computes session.isfirstbar[2] (same base expr as barstate.isfirst), true exactly at idx=2", () => {
+  it("computes session.isfirstbar[2] from the bar two back, true two bars after the 00:00 bar", () => {
     const src = ["var bool __obs_a = na", "__obs_a := session.isfirstbar[2]"].join("\n");
-    expect(obs(src)).toEqual([NaN, NaN, true, false, false, false, false, false]);
+    expect(sessionObs(src)).toEqual([NaN, NaN, false, false, false, true, false, false]);
   });
 
-  it("keeps session.islastbar_regular[N>=1] always false after warmup (same structural invariant as islast)", () => {
+  it("computes session.islastbar_regular[1] from the previous bar, true the bar after the 23:00 bar", () => {
     const src = ["var bool __obs_a = na", "__obs_a := session.islastbar_regular[1]"].join("\n");
-    expect(obs(src)).toEqual([NaN, false, false, false, false, false, false, false]);
+    expect(sessionObs(src)).toEqual([NaN, false, false, true, false, false, false, false]);
   });
 
   it("treats [0] as an identity read equal to the bare (unindexed) value, no warmup gap", () => {

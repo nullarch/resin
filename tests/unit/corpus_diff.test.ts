@@ -504,8 +504,16 @@ describe("corpus diff: sample bar-by-bar replay against pine2py golden", () => {
     // 단 golden의 dir_ 값이 문자열 "long"(숫자/불리언 아님)이라 isComparableGoldenValue가 걸러
     // no_comparable_key로 착지(mismatch/matched 어느 쪽도 아님, 정확성과 무관한 harness 스칼라-only
     // 설계 한계) — transpileFailed -1/noComparable +1로 정확히 상쇄, 바닥선을 관측치로 갱신.
-    expect(matched.length).toBeGreaterThanOrEqual(2648);
-    expect(mismatched.length).toBeLessThanOrEqual(266);
+    // 2026-09-26 session.* on the symbol's session schedule: exactly five hashes went matched ->
+    // mismatch (0f1b53428889, 11dc6abb6144, 451877669462, 4ab3e80e52a1, b3e7c4c28042), every one a
+    // session.isfirstbar/isfirstbar_regular/islastbar read on this daily data. pine2py (not ground
+    // truth) makes them barstate.isfirst/islast; TradingView reads "the first bar of the day's
+    // session" (ref_v6_lang.txt), so every bar of a daily chart open around the clock is its day's
+    // first and last bar, as the PyneCore oracle (lib/session.py on 24/7 sessions) says too.
+    // Tier 1: resin-harness suites/indicators/tv/session_001_properties and session_002_24x7.
+    // Floor moved to the observed matched 2644 / mismatch 271; nothing else changed.
+    expect(matched.length).toBeGreaterThanOrEqual(2644);
+    expect(mismatched.length).toBeLessThanOrEqual(271);
     expect(transpileFailed.length).toBeLessThanOrEqual(86);
     expect(runtimeFailed.length, `runtime failures: ${runtimeFailed.map((o) => `${o.hash}: ${o.detail}`).join(" | ")}`).toBe(0);
     expect(noComparable.length, `no comparable key: ${noComparable.map((o) => o.hash).join(", ")}`).toBeLessThanOrEqual(2);
