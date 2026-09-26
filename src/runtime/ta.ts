@@ -3346,8 +3346,8 @@ export function iii(_state: unknown, high: number, low: number, close: number, v
 export interface VwapState {
   cumPv?: number;
   cumVol?: number;
-  // Σ(volume·source²) — 3-인자 밴드 폼(C362)의 분산 계산용. 폼과 무관하게 항상 함께 유지한다
-  // (분기 제거 — 1/2-인자 폼에서는 읽히지 않는 여분 러닝 합계일 뿐 반환값에 영향 없음).
+  // Σ(source²·volume) for the 3-argument band form (C362). Kept whatever the form (the
+  // 1/2-argument forms never read it, so it cannot change their value).
   cumPv2?: number;
   // The anchor has been true once: the sums hold a period.
   anchored?: boolean;
@@ -3396,18 +3396,25 @@ export function vwap(
   if (anchor) {
     state.cumPv = value * volume;
     state.cumVol = volume;
-    state.cumPv2 = volume * value * value;
+    state.cumPv2 = 0;
     state.anchored = true;
   } else if (state.anchored === true) {
     state.cumPv! += value * volume;
     state.cumVol! += volume;
-    state.cumPv2! += volume * value * value;
   } else {
     return na();
   }
   const cumVol = state.cumVol!;
   const v = state.cumPv! / cumVol;
   if (Number.isNaN(v)) return na();
+  // Σ(source²·volume) takes a bar only once its vwap is known, and each term is
+  // (source * source) * volume in that order: the oracle's sum (pynecore lib/ta.py vwap,
+  // `sum_ppv += src * src * volume` after the na-vwap return). The product order is not
+  // algebra only: on an anchor bar (volume * source) * source / volume can land one ulp
+  // above source², so the band's variance came out ~1e-12 instead of 0 and sqrt spread it
+  // to ~1e-6 (repro ta.volume-seed-7: bar 0 upper band 99.42666801536582, oracle
+  // 99.42666666666666 = the vwap).
+  state.cumPv2! += value * value * volume;
   if (scratch !== undefined) {
     let variance = state.cumPv2! / cumVol - v * v;
     if (variance < 0) variance = 0;
