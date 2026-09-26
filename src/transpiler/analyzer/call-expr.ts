@@ -54,6 +54,8 @@ import { in_seconds as timeframeInSeconds } from "../../runtime/timeframe";
 // C730: str.tostring도 동일 원칙 — 컴파일타임 2-인자 포맷 폴딩('###M' 접미사 관용구)이 런타임
 // 분기(str.ts suffixMatch)와 같은 출력을 내도록 보장한다.
 import { tonumber as strTonumber, tostring as strTostring } from "../../runtime/str";
+// A folded `%` must equal the runtime's floored modulo, so the fold calls it rather than JS `%`.
+import { pineMod } from "../../runtime/numeric";
 
 // hline/bgcolor/barcolor/plotshape/plotchar/plotarrow/plotcandle/plotbar/alertcondition/max_bars_back
 // (C208, corpus 최다빈도 '알 수 없는 함수 호출' 스캔) — pine2py wavealgo/builtins/plot.py +
@@ -1245,9 +1247,9 @@ function resolveSecurityNumericConst(
     if (expr.op === "-") return left - right;
     if (expr.op === "*") return left * right;
     if (right === 0) return undefined;
-    // C735: '%' — JS %는 truncated 시맨틱으로 Pine과 동일(MEMORY Pitfalls, rt.pineMod는 0-나눗셈
-    // 가드만 얹은 것)이라 0-제수만 배제하면 값 동일성이 보장된다. '/'와 달리 int/float 갈림이 없다.
-    if (expr.op === "%") return left % right;
+    // '%' rounds the quotient down (language_operators.txt; rt.pineMod), unlike JS's truncated `%`.
+    // Unlike '/', it has no int/float split.
+    if (expr.op === "%") return pineMod(left, right);
     const quotient = left / right;
     return Number.isInteger(quotient) ? quotient : undefined;
   }

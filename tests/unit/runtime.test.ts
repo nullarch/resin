@@ -7564,6 +7564,22 @@ describe("numeric helpers", () => {
     expect(pineMod(10, 3)).toBe(1);
   });
 
+  // language_operators.txt: "The % operator calculates the modulo by rounding down the quotient",
+  // i.e. a - b * math.floor(a/b); the manual's own example modulo(-1, 100) is 99. Harness repro
+  // state/repros/lang.division-seed-4.json: (bar_index - 5) % 3 on bar 0 is 1, not JS's -2.
+  it("pineMod floors the quotient, so the result takes the divisor's sign", () => {
+    expect(pineMod(-1, 100)).toBe(99);
+    expect(pineMod(-5, 3)).toBe(1);
+    expect(pineMod(-7, 3)).toBe(2);
+    expect(pineMod(7, -3)).toBe(-2);
+    expect(pineMod(-7, -3)).toBe(-1);
+    expect(pineMod(5.5, 2)).toBe(1.5);
+    expect(pineMod(-5.5, 2)).toBe(0.5);
+    expect(pineMod(5.5, -4)).toBe(-2.5);
+    expect(Object.is(pineMod(-6, 3), 0)).toBe(true);
+    expect(pineMod(NaN, 3)).toBeNaN();
+  });
+
   // ── idiv(a, b) — int/int trunc division (GOAL.md "int/int→rt.idiv(trunc)") ────
 
   it("idiv truncates toward zero for exact and inexact positive quotients", () => {

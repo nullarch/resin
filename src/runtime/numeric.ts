@@ -5,9 +5,17 @@ export function pineDiv(a: number, b: number): number {
   return a / b;
 }
 
+// `%` is the floored modulo, not JS's truncated remainder: language_operators.txt "The % operator
+// calculates the modulo by rounding down the quotient to the lowest possible value"
+// (a - b * math.floor(a/b)), so the result takes the divisor's sign: (-1) % 100 = 99,
+// 7 % -3 = -2, -5.5 % 2 = 0.5. JS `%` is the exact truncated remainder; when it is non-zero and
+// its sign differs from the divisor's, adding the divisor once floors the quotient (the same
+// correction CPython's float_rem makes, so float results are exact, not a - b*floor(a/b) rounding).
 export function pineMod(a: number, b: number): number {
   if (b === 0) return NaN;
-  return a % b;
+  const r = a % b;
+  if (r === 0) return 0;
+  return r < 0 !== b < 0 ? r + b : r;
 }
 
 // int/int 나눗셈 — GOAL.md "안전 연산: int/int→rt.idiv(trunc)". pineDiv와 동일하게 0-나눗셈은
