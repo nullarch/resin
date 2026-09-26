@@ -9162,6 +9162,64 @@ describe("StrategyState entry orders per id + pyramiding gate at the call", () =
   });
 });
 
+// A limit/stop strategy.entry fixes its reversal flip (the opposite position it closes on top of its
+// own qty) when it is placed; a market entry adds the flip at its fill; an order modified on the bar
+// it was placed carries no flip. Tier 1 resin-harness suites/strategy/tv/slippage_limit trade 6;
+// oracle-checked in state/repros/entry-flip-frozen.json (these steps) and mixed-seed-52.json.
+describe("StrategyState entry flip fixed at placement", () => {
+  it("a short limit placed while flat only reduces a long that opened meanwhile", () => {
+    const st = new StrategyState();
+    st.entry("S", "short", 1, 110);
+    st.entry("L", "long", 3);
+    st.processFills(100, 101, 99); // L opens 3
+    st.processFills(100, 111, 99); // S at 110: closes 1 of the long, opens nothing
+    expect(st.posSize).toBe(2);
+    expect(st.closedTradeRecords.map((t) => [t.entryId, t.exitId, t.size, t.exitPrice])).toEqual([["L", "S", 1, 110]]);
+    expect(st.pendingEntries).toEqual([]);
+  });
+
+  it("a short limit placed against a long keeps that flip when the long shrinks before the fill", () => {
+    const st = new StrategyState();
+    st.entry("L", "long", 2);
+    st.processFills(100, 101, 99);
+    st.entry("S", "short", 1, 120); // frozen size 1 + 2
+    st.close("L", 1);
+    st.processFills(106, 107, 105); // the partial close leaves long 1
+    expect(st.posSize).toBe(1);
+    st.processFills(106, 121, 105); // S at 120: closes the long 1, opens 2 short
+    expect(st.posSize).toBe(-2);
+    expect(st.posAvgPrice).toBe(120);
+  });
+
+  it("a frozen flip that finds the position already flat opens in full", () => {
+    const st = new StrategyState();
+    st.entry("L", "long", 2);
+    st.processFills(100, 101, 99);
+    st.entry("S", "short", 1, 120); // frozen size 1 + 2
+    st.close("L");
+    st.processFills(106, 107, 105); // flat
+    st.processFills(106, 121, 105);
+    expect(st.posSize).toBe(-3);
+  });
+
+  it("a market entry adds the flip at its fill, but not when re-issued on its own bar", () => {
+    const once = new StrategyState();
+    once.entry("L", "long", 4);
+    once.processFills(114, 115, 113);
+    once.entry("S", "short", 1);
+    once.processFills(116, 117, 115);
+    expect(once.posSize).toBe(-1);
+    const twice = new StrategyState();
+    twice.entry("L", "long", 4);
+    twice.processFills(114, 115, 113);
+    twice.entry("S", "short", 1);
+    twice.entry("S", "short", 1); // modifies the order placed on this bar: no flip
+    twice.processFills(116, 117, 115);
+    expect(twice.posSize).toBe(3);
+    expect(twice.closedTradeRecords.map((t) => [t.entryId, t.exitId, t.size])).toEqual([["L", "S", 1]]);
+  });
+});
+
 // OCA groups (strategy.entry/strategy.order oca_name=, oca_type=). strategies.txt, "OCA groups":
 // cancel "completely cancels the resulting order if another order from the same OCA group executes
 // first"; reduce "reduces the order's size by the filled number of contracts"; a group is a name and
@@ -9176,12 +9234,16 @@ describe("StrategyState OCA groups", () => {
     expect(st.posSize).toBe(1);
     expect(st.posAvgPrice).toBe(105);
     expect(st.pendingEntries).toEqual([]);
-    // Without the group the short stop reverses the long at 95 on the same bar.
+    // Without the group the short stop also fills at 95 on the same bar. It was placed while flat,
+    // so it carries no flip: it closes the long and opens nothing (the oracle gives the same single
+    // L→S trade; tier 1 resin-harness suites/strategy/tv/slippage_limit trade 6, repro
+    // state/repros/entry-flip-frozen.json).
     const free = new StrategyState();
     free.entry("L", "long", 1, undefined, 105);
     free.entry("S", "short", 1, undefined, 95);
     free.processFills(101, 106, 94);
-    expect(free.posSize).toBe(-1);
+    expect(free.posSize).toBe(0);
+    expect(free.closedTradeRecords.map((t) => [t.entryId, t.exitId, t.exitPrice])).toEqual([["L", "S", 95]]);
   });
 
   it("cancel: a strategy.order fill cancels a resting entry of its group (repro oca-cancel.json)", () => {

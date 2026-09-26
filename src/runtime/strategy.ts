@@ -79,6 +79,10 @@ interface PendingEntry {
   // The order's OCA group (strategy.entry(oca_name=, oca_type=)): "" = none (see applyOca).
   ocaName: string;
   ocaType: string; // "cancel" | "reduce" | "none"
+  // Contracts of an opposite position the order closes on top of its own quantity (see entry()):
+  // frozen at placement for a limit/stop order, NaN for a market order (it closes whatever opposite
+  // position its fill meets), 0 for an order modified on the bar it was placed.
+  flip: number;
   // Placement order among the orders placed on the current bar (see positionAfterPlacedMarketOrders).
   seq: number;
   // Placed, or modified under its id, by the script on the current bar: only those orders are
@@ -1599,9 +1603,11 @@ export class StrategyState {
     if (stop !== undefined && !Number.isNaN(stop)) stop = this.snapToTick(stop, sign > 0);
     // An explicit qty is a number of contracts whatever default_qty_type says; an omitted one is
     // resolved now, on the placement bar (see defaultOrderQty).
+    const existing = this.pendingEntry(id);
+    const reissued = existing !== undefined && existing.placedThisBar;
     let qtyAuto = false;
     if (qty === undefined) {
-      const reverses = this.posSize !== 0 && this.posSize > 0 !== sign > 0;
+      const reverses = !reissued && this.posSize !== 0 && this.posSize > 0 !== sign > 0;
       const sized = this.defaultOrderQty(sign, limit ?? NaN, stop ?? NaN, reverses);
       if (sized === null) return;
       qty = sized.qty;
@@ -1609,7 +1615,6 @@ export class StrategyState {
     } else if (!(qty > 0)) {
       return;
     }
-    const existing = this.pendingEntry(id);
     // The pyramiding limit is also judged when the call runs, not only at the fill: a same-direction
     // entry placed while the position already holds `pyramiding` entries is dropped, whatever its
     // id, and does not wait for a later bar. strategies.txt ("Pyramiding"): "After the number of
@@ -1622,9 +1627,31 @@ export class StrategyState {
     // same on TradingView (`entry()`: "a second entry placed while the position is open never fills
     // ... regardless of the entry id"), with the position read as this bar's market orders leave it.
     // Re-issuing this bar's own unfilled order under its id adds no entry, so it is not judged.
-    if (!(existing !== undefined && existing.placedThisBar)) {
+    //
+    // An entry facing an opposite position reverses it by adding that position to its own size.
+    // strategies.txt ("Reversing positions"): "when an order from a strategy.entry() call executes
+    // while a position is open in the opposite direction, the command automatically adds the
+    // position's size to the new order's size". For a market order that is the position its fill
+    // meets (flip NaN: added in fillPendingEntry). A limit/stop order fixes the added size when it
+    // is PLACED, against the position this bar's market orders leave (read only while a position is
+    // open), and keeps it however the position moves before the fill: placed while flat it only
+    // closes a position that opened meanwhile, placed against a larger position it only reduces it.
+    // TradingView itself shows this, which outranks the manual's "executes": tier 1 resin-harness
+    // suites/strategy/tv/slippage_limit trade 6 — the short limit placed while flat on bar 674
+    // fills on bar 690 after a long limit opened on bar 688, closes that long at 1.14743 and opens
+    // nothing (the next trade is a long from flat on bar 841). The oracle measured the same (tier 2,
+    // entry(): "TradingView calculates the flip quantity at order creation time"). An order modified
+    // on the bar it was placed carries its raw quantity and no flip, market or not (the oracle,
+    // measured: "with a 10-contract long open, one strategy.entry(short, 4) reverses to 4 short,
+    // while the SAME call issued twice on one bar sells only 4 and leaves 6 long").
+    let flip = NaN;
+    if (!reissued) {
       const pos = this.positionAfterPlacedMarketOrders();
       if (pos !== 0 && pos > 0 === sign > 0 && this.entryCount >= this.pyramiding) return;
+      const priceBased = (limit !== undefined && !Number.isNaN(limit)) || (stop !== undefined && !Number.isNaN(stop));
+      if (priceBased) flip = this.posSize !== 0 && pos !== 0 && pos > 0 !== sign > 0 ? Math.abs(pos) : 0;
+    } else {
+      flip = 0;
     }
     const cmt = comment ?? "";
     // Entry orders are kept per id. A call with the id of an unfilled order modifies it — qty,
@@ -1644,12 +1671,13 @@ export class StrategyState {
       existing.comment = cmt;
       existing.ocaName = ocaGroup;
       existing.ocaType = oca;
+      existing.flip = flip;
       existing.placedThisBar = true;
       return;
     }
     this.pendingEntries.push({
       id, direction, qty, qtyAuto, limit: limit ?? NaN, stop: stop ?? NaN, comment: cmt,
-      ocaName: ocaGroup, ocaType: oca,
+      ocaName: ocaGroup, ocaType: oca, flip,
       seq: ++this.orderSeq, placedThisBar: true, fillPrice: NaN, pathLeg: 0, pathDist: 0,
     });
   }
@@ -1694,11 +1722,16 @@ export class StrategyState {
           continue;
         }
         if (!e.qtyAuto) {
-          e.qty = toUnits(e.qty - filledQty, this.lotsPerContract);
-          if (!(e.qty > 0)) {
+          // The reduction comes off the order's whole size, a frozen flip included (the oracle's
+          // `_reduce_oca_group` reduces `order.size`).
+          const flip = Number.isNaN(e.flip) ? 0 : e.flip;
+          const rest = toUnits(e.qty + flip - filledQty, this.lotsPerContract);
+          if (!(rest > 0)) {
             this.pendingEntries.splice(i, 1);
             continue;
           }
+          if (flip > rest) e.flip = rest;
+          e.qty = toUnits(rest - (Number.isNaN(e.flip) ? 0 : e.flip), this.lotsPerContract);
         }
       }
       i++;
@@ -2244,9 +2277,9 @@ export class StrategyState {
     due.length = 0;
   }
 
-  // Fills the entry order `e` at `fillPrice`, its trigger already judged: a reversal closes the
-  // opposite position first, then the risk and pyramiding gates decide whether it opens a trade.
-  // The order is consumed either way.
+  // Fills the entry order `e` at `fillPrice`, its trigger already judged: it closes what it can of
+  // an opposite position first, then the risk and pyramiding gates decide whether the rest opens a
+  // trade. The order is consumed either way.
   private fillPendingEntry(e: PendingEntry, fillPrice: number, barIndex: number, barTimeMs: number): void {
     this.removePendingEntry(e);
     const before = this.posSize;
@@ -2281,15 +2314,29 @@ export class StrategyState {
     // max_intraday_filled_orders와 동일한 "위 리버스 청산까지만 허용" 게이트에 합류.
     const drawdownForbidden =
       this.drawdownLimitReached || this.intradayLossLimitReached || this.consLossLimitReached;
+    // The order is its own quantity plus the flip (see entry()): a market order's is the opposite
+    // position its fill meets, a limit/stop order's the one frozen at placement. Against an opposite
+    // position it closes up to that position, oldest trade first, and opens what is left: all of it
+    // and the rest in its own direction (a reversal), all of it and nothing, or only part of it
+    // (tier 1 resin-harness suites/strategy/tv/slippage_limit trade 6). A flip that finds a smaller
+    // position, or none, opens its excess (the oracle, measured: "the unspent flip opens under the
+    // entry's id"). An order of zero size executes nothing.
+    const held = this.posSize !== 0 && this.posSize > 0 !== sign > 0 ? Math.abs(this.posSize) : 0;
+    const flip = Number.isNaN(e.flip) ? held : e.flip;
+    if (!(qty + flip > 0)) return;
+    const closesAll = held > 0 && (flip === held || qty + flip >= held);
+    const closeQty = held === 0 ? 0 : closesAll ? held : toUnits(qty + flip, this.lotsPerContract);
+    // A flip equal to the position it meets leaves exactly the order's own quantity to open.
+    qty = flip === held ? qty : closesAll || held === 0 ? toUnits(qty + flip - held, this.lotsPerContract) : 0;
     // A reversal is one order executed as two legs, so both share one commission pool stamped with
     // the order's whole quantity: the position it closes plus what it opens (nothing when a gate
     // below keeps it from opening). The oracle measured it on TradingView (see bookCommission).
-    const reverses = this.posSize !== 0 && this.posSize > 0 !== sign > 0;
+    const reverses = closeQty > 0;
     let orderQty = 0;
     if (reverses) {
       const openQty = Number.isNaN(this.maxPositionSizeValue) ? qty : Math.max(0, Math.min(qty, this.maxPositionSizeValue));
       const opens = !(directionForbidden || intradayLimitReached || drawdownForbidden) && openQty > 0;
-      orderQty = toUnits(Math.abs(this.posSize) + (opens ? openQty : 0), this.lotsPerContract);
+      orderQty = toUnits(closeQty + (opens ? openQty : 0), this.lotsPerContract);
     }
     this.beginOrder(orderQty);
     if (reverses) {
@@ -2301,7 +2348,7 @@ export class StrategyState {
       // exit_comment(C173)는 pine2py `self._close_position(id, comment)`처럼 **청산을 유발한
       // 새 entry 주문 자신의 comment**를 쓴다(_close_position이 exit_id/comment 인자를
       // exit()의 그것이 아니라 리버스를 일으킨 entry()의 id/comment로 호출하는 것의 미러).
-      this.closeAt(fillPrice, Infinity, e.comment, barIndex, e.id, barTimeMs);
+      this.closeAt(fillPrice, closesAll ? Infinity : closeQty, e.comment, barIndex, e.id, barTimeMs);
     }
     // strategy.risk.max_position_size(value)(C324) — 위 3형제(directionForbidden 등)와 달리
     // "전면 차단"이 아니라 "부족분만 체결"이다(TV 문서: "quantity of new strategy.entry orders
