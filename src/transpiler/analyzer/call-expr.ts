@@ -1145,7 +1145,14 @@ function resolveSecurityNumericConst(
     const arg = expr.args[0] ?? expr.kwargs.find((kw) => kw.name === "timeframe")?.value;
     if (arg === undefined) return timeframeInSeconds(prog.chartTf);
     const lit = resolveSecurityTfLiteral(arg, prog, visiting, env, funcName);
-    return lit === undefined ? undefined : timeframeInSeconds(lit);
+    if (lit === undefined) return undefined;
+    // A string outside the timeframe specification throws at run time (runtime/timeframe.ts); it
+    // is not a constant to fold.
+    try {
+      return timeframeInSeconds(lit, prog.chartTf);
+    } catch {
+      return undefined;
+    }
   }
   // C513: str.tonumber(x) — x가 컴파일타임 문자열 상수로 풀릴 때만 런타임 tonumber(C87)를 직접
   // 호출해 폴딩(in_seconds와 동일한 값-동일성 보장 원칙). 파싱 실패(NaN)는 undefined — NaN을

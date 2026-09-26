@@ -35,6 +35,7 @@ import {
   SYMINFO_OPTION_KEYS,
   EARNINGS_NUMBER_PROPS,
   DAYOFWEEK_CONSTANTS,
+  DEFAULT_CHART_TF,
   DRAWING_STATE_PARAM_NAMES,
   TA_REGISTRY,
   taCallReturnArity,
@@ -4726,16 +4727,23 @@ function genCallExpr(
       }
       return `rt.timestamp(${args.join(", ")})`;
     }
-    if (builtinName === "timeframe.in_seconds" && expr.kwargs.length > 0) {
+    if (builtinName === "timeframe.in_seconds") {
       // timeframe.in_seconds(timeframe=) kwarg(C405, analyzer/call-expr.ts
       // TIMEFRAME_IN_SECONDS_KWARG_PARAM_NAMES 참조) — 단일 파라미터라 슬롯 0 하나뿐이지만
       // math.*/nz와 동일한 표 기반 패턴을 그대로 재사용(일관성).
-      const args = expr.args.map((a) => genExpr(a, program, funcCtx));
+      const args = expr.args.map((a) => genExpr(a, program, funcCtx, secCtx));
       for (const kw of expr.kwargs) {
         const slot = TIMEFRAME_IN_SECONDS_KWARG_PARAM_NAMES.indexOf(kw.name);
         if (slot === -1) continue; // 방어적 fallback(analyzer가 이미 이 이름만 허용)
         while (args.length < slot) args.push("undefined");
-        args[slot] = genExpr(kw.value, program, funcCtx);
+        args[slot] = genExpr(kw.value, program, funcCtx, secCtx);
+      }
+      // An omitted, empty or na timeframe is timeframe.period (ref_v6_lang.txt timeframe.in_seconds:
+      // "Optional. The default is timeframe.period"); rt.timeframe.in_seconds's own default is
+      // resin's default chart timeframe, so only another chart timeframe is passed.
+      if (program.chartTf !== DEFAULT_CHART_TF) {
+        while (args.length < 1) args.push("undefined");
+        args.push(JSON.stringify(program.chartTf));
       }
       return `rt.timeframe.in_seconds(${args.join(", ")})`;
     }

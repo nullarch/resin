@@ -12654,36 +12654,46 @@ describe("Context", () => {
 // 604800, in_seconds('15S')=15, from_seconds(86400)='D' 등)은 사실 이 staticmethod 쪽을 실행한
 // 결과였고, 실제 codegen이 호출하는 wa.timeframe_in_seconds/from_seconds는 전혀 다른(더 단순한)
 // 로직이라 값이 갈린다(C150에서 python 직접 실행으로 재확인 후 정정 — MEMORY.md 승격 대상).
-// 아래 기대값은 전부 gen_oracle.py가 생성한 oracle/golden/timeframe_basic.json과 대조 완료.
-describe("rt.timeframe.in_seconds/from_seconds (literal port of wa.timeframe_in_seconds/from_seconds)", () => {
-  it("in_seconds resolves 'D'/'W'/'M' to their fixed second counts", () => {
-    expect(in_seconds("D")).toBe(86400);
-    expect(in_seconds("W")).toBe(604800);
-    expect(in_seconds("M")).toBe(2592000);
-  });
-
-  it("in_seconds resolves a bare digit string as minutes", () => {
-    expect(in_seconds("60")).toBe(3600);
+// 아래 from_seconds 기대값은 gen_oracle.py가 생성한 oracle/golden/timeframe_basic.json과 대조 완료.
+//
+// in_seconds is no longer pine2py's port: it reads the whole timeframe string specification, and a
+// month is 2628003 seconds (ref_v6_lang.txt timeframe.in_seconds: "When the timeframe is "1M" or
+// more, calculations use 2628003 as the number of seconds in one month"; tier 1 resin-harness
+// tf_002_in_seconds, TradingView: "1" 60, "240" 14400, "4D" 345600, "5W" 3024000, "M" 2628003,
+// "2M" 5256006). pine2py read "1W"/"15S" as 86400 and "M" as 2592000.
+describe("rt.timeframe.in_seconds/from_seconds", () => {
+  it("in_seconds matches TradingView's tf_002_in_seconds values", () => {
     expect(in_seconds("1")).toBe(60);
     expect(in_seconds("5")).toBe(300);
+    expect(in_seconds("240")).toBe(14400);
+    expect(in_seconds("D")).toBe(86400);
+    expect(in_seconds("4D")).toBe(345600);
+    expect(in_seconds("W")).toBe(604800);
+    expect(in_seconds("5W")).toBe(3024000);
+    expect(in_seconds("M")).toBe(2628003);
+    expect(in_seconds("2M")).toBe(5256006);
   });
 
-  it("in_seconds falls back to 86400 for a compound string like '1W'/'15S' (NOT 604800/15 — that's the unrelated Timeframe class staticmethod, not what codegen actually calls)", () => {
-    expect(in_seconds("1W")).toBe(86400);
-    expect(in_seconds("15S")).toBe(86400);
+  it("in_seconds reads a seconds unit and an explicit multiplier of 1", () => {
+    expect(in_seconds("15S")).toBe(15);
+    expect(in_seconds("1W")).toBe(604800);
+    expect(in_seconds("1D")).toBe(86400);
+    expect(in_seconds("12M")).toBe(31536036);
   });
 
-  it("in_seconds falls back to 86400 for an empty or non-numeric string", () => {
-    expect(in_seconds("")).toBe(86400);
-    expect(in_seconds("abc")).toBe(86400);
-  });
-
-  it("in_seconds falls back to 86400 when called with no argument (C269 — pine2py timeframe_in_seconds(timeframe: str = '') default, corpus 390cd5d7f5f3.pine)", () => {
+  it("in_seconds of an omitted, empty or na timeframe is the chart's timeframe (ref_v6_lang.txt: \"The default is timeframe.period\")", () => {
     expect(in_seconds()).toBe(86400);
+    expect(in_seconds("")).toBe(86400);
+    expect(in_seconds(undefined, "30")).toBe(1800);
+    expect(in_seconds("", "W")).toBe(604800);
+    expect(in_seconds(null as unknown as string, "3M")).toBe(7884009);
   });
 
-  it("in_seconds accepts a signed integer string like Python's int()", () => {
-    expect(in_seconds("-5")).toBe(-300);
+  it("in_seconds throws on a string outside the timeframe specification, as the oracle's _process_tf does", () => {
+    expect(() => in_seconds("abc")).toThrow("invalid timeframe");
+    expect(() => in_seconds("1H")).toThrow("invalid timeframe");
+    expect(() => in_seconds("-5")).toThrow("invalid timeframe");
+    expect(() => in_seconds("1T")).toThrow("tick timeframes");
   });
 
   it("from_seconds formats sub-minute durations as a 5-second-rounded 'NS' string", () => {

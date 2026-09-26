@@ -4,6 +4,12 @@
 // codegen.py 함수-이름 매핑 테이블이 실제로 라우팅하는 wa.timeframe_in_seconds/from_seconds
 // (wavealgo/__init__.py)가 대조 대상 — Timeframe 클래스 staticmethod와는 값이 다르다(runtime.test.ts
 // 주석 참조). 문자열/숫자 채널로 갈려 compareStringToGolden/compareToGolden을 onlyKeys로 나눠 적용.
+//
+// Two channels of the golden were rewritten, pine2py being wrong on them: __obs_in_seconds_m is
+// 2628003 and __obs_in_seconds_1w 604800 (ref_v6_lang.txt timeframe.in_seconds: "When the timeframe
+// is "1M" or more, calculations use 2628003 as the number of seconds in one month"; tier 1
+// resin-harness tf_002_in_seconds, TradingView: "M" 2628003, "W" 604800, "5W" 3024000). pine2py
+// read "M" as 2592000 and any unit with a multiplier ("1W") as 86400.
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";

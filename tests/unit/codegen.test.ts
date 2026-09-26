@@ -625,6 +625,15 @@ describe("CodeGen", () => {
     expect(code).toBe("var x = rt.timeframe.in_seconds();");
   });
 
+  it("passes a non-daily chart timeframe to timeframe.in_seconds, its default (ref_v6_lang.txt: \"The default is timeframe.period\")", () => {
+    expect(codegenSource("x = timeframe.in_seconds()", { chartTf: "30" })).toBe(
+      'var x = rt.timeframe.in_seconds(undefined, "30");',
+    );
+    expect(codegenSource('x = timeframe.in_seconds(timeframe = "W")', { chartTf: "30" })).toBe(
+      'var x = rt.timeframe.in_seconds("W", "30");',
+    );
+  });
+
   it("emits timeframe.from_seconds(s) as rt.timeframe.from_seconds(...)", () => {
     const code = codegenSource("x = timeframe.from_seconds(86400)");
     expect(code).toBe("var x = rt.timeframe.from_seconds(86400);");

@@ -1,30 +1,26 @@
-// timeframe.in_seconds/from_seconds — pine2py wavealgo/__init__.py의 timeframe_in_seconds/
-// timeframe_from_seconds를 literal port(codegen.py 함수-이름 매핑 테이블이 실제로 라우팅하는
-// 대상, wavealgo/builtins/timeframe.py Timeframe.in_seconds/from_seconds staticmethod와는 로직이
-// 다른 별개 구현 — analyzer/call-expr.ts 주석 참조).
+import { parseTimeframe, timeframeSeconds } from "./calendar";
 
-// Python `int(s)`와 동일한 엄격 정수 파싱(부호 허용, 앞뒤 공백 허용, 소수점/그 외 문자 불허) —
-// JS parseInt는 "12abc"도 12로 관대하게 파싱해 Python ValueError 폴백 분기를 놓치므로 정규식으로
-// 먼저 유효성을 확인한다.
-function pyParseInt(s: string): number | null {
-  const trimmed = s.trim();
-  if (!/^[+-]?\d+$/.test(trimmed)) return null;
-  return parseInt(trimmed, 10);
-}
-
-export function in_seconds(timeframe?: string): number {
-  if (!timeframe) return 86400; // default: 1 day
-  const tf = timeframe.toUpperCase();
-  if (tf === "D") return 86400;
-  if (tf === "W") return 604800;
-  if (tf === "M") return 2592000; // 30 days
-  const minutes = pyParseInt(timeframe);
-  if (minutes !== null) return minutes * 60;
-  return 86400;
+// timeframe.in_seconds(timeframe) returns "The "int" representation of the number of seconds in the
+// timeframe string", the argument being "Optional. The default is timeframe.period"
+// (ref_v6_lang.txt). The string follows the timeframe string specification (concepts_timeframes.txt:
+// a multiplier and a unit letter, "S", "D", "W", "M" and none for minutes, 1 when the multiplier is
+// omitted), and "When the timeframe is "1M" or more, calculations use 2628003 as the number of
+// seconds in one month" — the span calendar.ts timeframeSeconds already measures. Tier 1
+// resin-harness tf_002_in_seconds: "4D" 345600, "5W" 3024000, "M" 2628003, "2M" 5256006 (pine2py
+// read every unit but D/W/M as 86400 and a month as 2592000).
+//
+// An empty or na argument is the chart's timeframe, as the oracle reads it (pynecore
+// lib/timeframe.py _in_seconds `if not timeframe`); the chart timeframe is a compile-time constant
+// that codegen passes when it is not resin's default "D". A string outside the specification (a
+// tick timeframe, "1H", "abc") throws, as the oracle's _process_tf does.
+export function in_seconds(timeframe?: string, chartTf = "D"): number {
+  const [modifier, multiplier] = parseTimeframe(timeframe ? timeframe : chartTf);
+  return timeframeSeconds(modifier, multiplier);
 }
 
 // timeframe.change lives in calendar.ts: it reads the symbol's exchange calendar.
 
+// timeframe.from_seconds — pine2py wavealgo/__init__.py timeframe_from_seconds, literal port.
 export function from_seconds(seconds: number): string {
   if (seconds <= 0) return "D";
   if (seconds < 60) {
