@@ -4313,7 +4313,7 @@ function genCallExpr(
         // direction, qty, limit, stop, comment)).
         const KWARG_SLOTS: Record<string, number> =
           builtinName === "strategy.entry" || builtinName === "strategy.order"
-            ? { id: 0, direction: 1, qty: 2, limit: 3, stop: 4, comment: 5, when: 6 } // id=/direction=(C423, strategy.close의 id=(C293)와 동일 원리 — 위치 인자가 있으면 이 슬롯을 안 건드려 기존 콜사이트 출력 무변화) + when=(C372, comment 뒤 새 트레일링 슬롯)
+            ? { id: 0, direction: 1, qty: 2, limit: 3, stop: 4, comment: 5, when: 6, oca_name: 7, oca_type: 8 } // id=/direction=(C423, strategy.close의 id=(C293)와 동일 원리 — 위치 인자가 있으면 이 슬롯을 안 건드려 기존 콜사이트 출력 무변화) + when=(C372, comment 뒤 새 트레일링 슬롯) + oca_name=/oca_type= (after when)
             : builtinName === "strategy.exit"
               ? {
                   id: 0, // id=(C424, strategy.close의 id=(C293)와 동일 원리 — 위치 인자가 있으면 이 슬롯을 안 건드려 기존 콜사이트 출력 무변화)

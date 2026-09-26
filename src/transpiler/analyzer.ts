@@ -959,13 +959,14 @@ export const STRATEGY_DIRECTION_CONSTANTS: ReadonlyMap<string, string> = new Map
   ["short", "short"],
 ]);
 
-// strategy.oca.*(5건, C288 조사됨)는 이번 사이클 범위 밖 — commission과 달리 discard가
-// 안전하지 않다. call-expr.ts의 strategy.entry/order kwarg 화이트리스트가 oca_name=/oca_type=을
-// 의도적으로 하드 에러 처리 중인데(주석: "주문 시맨틱을 바꾸는 나머지 TV 파라미터는 파싱-후-버림이
-// 조용한 오답"), OCA(One-Cancels-All)는 실제로 pine2js 런타임에 미구현이라 값을 조용히
-// discard하면 그룹 내 한쪽 체결 시 반대쪽이 취소되는 TV 시맨틱이 사라져 체결 건수/P&L이 조용히
-// 달라질 수 있다 — commission_type처럼 "애초에 아무 계산도 안 하는 무해한 값"이 아니다. next_hint
-// 참조.
+// strategy.oca.*: the values of strategy.entry()/strategy.order()'s oca_type= argument, folded to
+// strings at compile time. The engine applies the group when one of its orders executes
+// (StrategyState.applyOca).
+export const STRATEGY_OCA_CONSTANTS: ReadonlyMap<string, string> = new Map([
+  ["cancel", "cancel"],
+  ["reduce", "reduce"],
+  ["none", "none"],
+]);
 
 // PineScript 타입 한정자: const ⊂ simple ⊂ series (scope.py TypeQualifier 이식).
 export type Qualifier = "const" | "simple" | "series";
@@ -8436,9 +8437,9 @@ export function analyzeExpr(expr: Expr, prog: AnalyzedProgram, scope: LexScope, 
       }
       // strategy.commission.*(C288, 2단 중첩 네임스페이스) — 위 strategy.* 단일 레벨 분기와 달리
       // expr.obj 자체가 DotAccess(strategy.commission)라 별도 분기 필요(STRATEGY_COMMISSION_CONSTANTS
-      // 주석 참조). 매치 안 되면(strategy.oca.* 등 다른 조합) 아래 UDT 체이닝 재귀가
+      // 주석 참조). 매치 안 되면(strategy.X.* 등 다른 조합) 아래 UDT 체이닝 재귀가
       // expr.obj(strategy.X)를 analyzeExpr해 위 단일 레벨 분기의 "지원하지 않는 strategy 속성"
-      // 에러로 자연 낙하 — 기존 거부 그대로 유지(strategy.oca는 의도적 스킵, 위 주석 참조).
+      // 에러로 자연 낙하.
       if (
         expr.obj.kind === "DotAccess" &&
         expr.obj.obj.kind === "Identifier" &&
@@ -8466,6 +8467,17 @@ export function analyzeExpr(expr: Expr, prog: AnalyzedProgram, scope: LexScope, 
           prog.builtinStringConstants.set(expr, STRATEGY_DIRECTION_CONSTANTS.get(expr.attr)!);
           return;
         }
+      }
+      // strategy.oca.* — the same two-level folding as strategy.commission.*.
+      if (
+        expr.obj.kind === "DotAccess" &&
+        expr.obj.obj.kind === "Identifier" &&
+        expr.obj.obj.name === "strategy" &&
+        expr.obj.attr === "oca" &&
+        STRATEGY_OCA_CONSTANTS.has(expr.attr)
+      ) {
+        prog.builtinStringConstants.set(expr, STRATEGY_OCA_CONSTANTS.get(expr.attr)!);
+        return;
       }
       // enum 멤버 접근(Direction.long) — math/color/order 상수와 동일한 컴파일타임 폴딩
       // (builtinStringConstants 재사용): "EnumName.MemberName" qualified 문자열로 접어, 서로 다른

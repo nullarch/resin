@@ -6477,10 +6477,13 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // KWARG_SLOTS에 슬롯을 안 줘 자연 discard(신규 상태/코드 0줄)). disable_alert=(C746, next_hint
       // (C745) "kwarg 상호배타 잔여" 재조사 — exit(C708)/close_all(C724)에 이미 이식된 alert 억제
       // 스위치의 entry/order판. alert_message=와 완전히 동일 축(P&L/체결가 무관 순수 표시 제어)이라
-      // 같은 discard 메커니즘 재사용. oca_name= 등 주문 시맨틱을 바꾸는 나머지 TV 파라미터는
-      // 파싱-후-버림이 조용한 오답이라 plot 렌더링 kwargs와 달리 하드 에러로 막는다(OCA 축은
-      // ROADMAP 배치37 (4) 감독 승인 대기 — 임의 착수 금지). id=/direction=(C423)는 위 별도 블록이
+      // 같은 discard 메커니즘 재사용. 주문 시맨틱을 바꾸는 나머지 TV 파라미터는
+      // 파싱-후-버림이 조용한 오답이라 plot 렌더링 kwargs와 달리 하드 에러로 막는다. id=/direction=(C423)는 위 별도 블록이
       // 위치-키워드 중복/누락을 이미 검증했으므로 여기서는 허용 목록에만 추가.
+      // oca_name=/oca_type= put the order in a One-Cancels-All group; the engine cancels or reduces
+      // the group's other orders when one executes (StrategyState.applyOca, strategies.txt "OCA
+      // groups"). TradingView's built-in Bollinger Bands strategy uses them (resin-harness tier 1
+      // suites/strategy/tv/bollinger).
       const seenEntryKwargs = new Set<string>();
       for (const kw of expr.kwargs) {
         if (
@@ -6492,10 +6495,12 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           kw.name !== "stop" &&
           kw.name !== "when" &&
           kw.name !== "alert_message" &&
-          kw.name !== "disable_alert"
+          kw.name !== "disable_alert" &&
+          kw.name !== "oca_name" &&
+          kw.name !== "oca_type"
         ) {
           prog.errors.push(
-            `'strategy.${method}' only supports keyword arguments 'id='/'direction='/'qty='/'comment='/'limit='/'stop='/'when='/'alert_message='/'disable_alert=' (this slice): '${kw.name}=' (L${kw.line}:${kw.col})`,
+            `'strategy.${method}' only supports keyword arguments 'id='/'direction='/'qty='/'comment='/'limit='/'stop='/'when='/'alert_message='/'disable_alert='/'oca_name='/'oca_type=' (this slice): '${kw.name}=' (L${kw.line}:${kw.col})`,
           );
         } else if (seenEntryKwargs.has(kw.name)) {
           prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
@@ -6525,7 +6530,8 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // 우선)이라 동시 지정도 상충이 아니라 단순 우선순위. 전부 hand-verified(TV 실측 미검증, DIVERGENCES
       // 갱신 필요) — 크래시/NaN 전파 없이 "일부 조건이 조용히 비활성"으로만 저하되는 안전한 근사.
       // profit=/loss= 등 나머지 주문 시맨틱 kwargs 자체의 화이트리스트 등재는 파싱-후-버림이 조용한
-      // 오답이라 여전히 하드 에러(entry의 oca_name= 축과 동일 — oca_name=은 배치37 (a)의 별도 항목).
+      // 오답이라 여전히 하드 에러. oca_name= is one of them here: the exit's legs cannot join a
+      // user-named OCA group yet (entry/order accept it, see StrategyState.applyOca).
       // comment_loss=/comment_profit=(C375, hand-verified, wild named-list kwarg 클러스터 최다빈도
       // 51건)는 qty_percent=/alert_message=와 같은 축(청산 조건 아님 — 아래 hasExitCondition에서
       // 제외)이되 alert_message와 달리 순수 discard가 아니다: comment=는 이미 exitOrderComment/
@@ -6635,7 +6641,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // exit()의 qty_percent와 동일 메커니즘 — qty 우선, 생략 시에만 콜타임 |posSize|*percent/100) +
       // immediately=(C379, hand-verified — "다음 바 open" 큐잉을 건너뛰고 이 바에서 즉시 체결,
       // pine2py는 **kwargs 흡수뿐이라 오라클 불가). 나머지 주문 시맨틱 kwargs는 조용한 오답 방지
-      // 하드 에러(entry oca_name= 축과 동일).
+      // 하드 에러.
       const seenCloseKwargs = new Set<string>();
       for (const kw of expr.kwargs) {
         if (

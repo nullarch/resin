@@ -71,6 +71,9 @@ interface PendingEntry {
   limit: number; // NaN = none; limit and stop both NaN = a market order
   stop: number; // NaN = none; both given = a stop-limit order
   comment: string;
+  // The order's OCA group (strategy.entry(oca_name=, oca_type=)): "" = none (see applyOca).
+  ocaName: string;
+  ocaType: string; // "cancel" | "reduce" | "none"
   // Placement order among the orders placed on the current bar (see positionAfterPlacedMarketOrders).
   seq: number;
   // Placed, or modified under its id, by the script on the current bar: only those orders are
@@ -431,6 +434,8 @@ export class StrategyState {
   orderLimit: number; // 지정가(NaN=없음) — limit/stop 둘 다 NaN이면 마켓 주문
   orderStop: number; // 역지정가(NaN=없음)
   orderOrderComment: string; // strategy.order(comment=, C173)
+  orderOcaName: string; // as PendingEntry.ocaName
+  orderOcaType: string; // as PendingEntry.ocaType
   // Whether the entry/exit/order slot was placed (or re-placed under the same id) by the script
   // on the current bar — only those orders are "created on a bar's close" and get the close pass.
   // processFills clears them at every bar's open. (An entry order carries its own flag.)
@@ -593,6 +598,8 @@ export class StrategyState {
     this.orderLimit = NaN;
     this.orderStop = NaN;
     this.orderOrderComment = "";
+    this.orderOcaName = "";
+    this.orderOcaType = "none";
     this.exitPlacedThisBar = false;
     this.orderPlacedThisBar = false;
     this.allowedDirection = "all";
@@ -1504,7 +1511,7 @@ export class StrategyState {
   // 일치). 생략(JS 기본 파라미터)은 항상 true로 떨어져 기존 호출 무변화.
   entry(
     id: string | null | undefined, direction: string, qty?: number, limit?: number, stop?: number,
-    comment?: string, when: boolean = true,
+    comment?: string, when: boolean = true, ocaName?: string | null, ocaType?: string,
   ): void {
     if (!when) return;
     if (direction !== "long" && direction !== "short") {
@@ -1512,6 +1519,7 @@ export class StrategyState {
         `strategy.entry: unsupported direction '${String(direction)}' (only "long"/"short" supported)`,
       );
     }
+    const oca = StrategyState.ocaType("strategy.entry", ocaType);
     // na 안전성: id가 na(null)이거나 qty가 na(NaN) 또는 0 이하면 주문을 내지 않는다(LIMITATIONS.md).
     // `!(qty > 0)`은 NaN에서도 안전한 긍정형 가드(MEMORY.md C91 — NaN 비교는 항상 false).
     if (id === null || id === undefined) return;
@@ -1563,6 +1571,7 @@ export class StrategyState {
     // specified entry ID") and has several rest at once ("OCA groups": a long stop order "at the
     // bar's high" and a short one "at the bar's low"); the channel breakout strategy above keeps its
     // two stop entries resting together, and TradingView reverses at whichever the price reaches.
+    const ocaGroup = StrategyState.ocaName(ocaName);
     if (existing !== undefined) {
       existing.direction = direction;
       existing.qty = qty;
@@ -1570,13 +1579,81 @@ export class StrategyState {
       existing.limit = limit ?? NaN;
       existing.stop = stop ?? NaN;
       existing.comment = cmt;
+      existing.ocaName = ocaGroup;
+      existing.ocaType = oca;
       existing.placedThisBar = true;
       return;
     }
     this.pendingEntries.push({
       id, direction, qty, qtyAuto, limit: limit ?? NaN, stop: stop ?? NaN, comment: cmt,
+      ocaName: ocaGroup, ocaType: oca,
       seq: ++this.orderSeq, placedThisBar: true, fillPrice: NaN, pathLeg: 0, pathDist: 0,
     });
+  }
+
+  // strategy.entry()/strategy.order(oca_type=): strategy.oca.cancel | reduce | none (the analyzer
+  // folds the constants to these strings). Omitted is none, "the default oca_type argument for the
+  // strategy.order() and strategy.entry() commands" (strategies.txt, "strategy.oca.none").
+  private static ocaType(method: string, type: string | null | undefined): string {
+    if (typeof type !== "string") return "none"; // omitted, or na
+    if (type !== "cancel" && type !== "reduce" && type !== "none") {
+      throw new Error(`${method}: unsupported oca_type '${String(type)}' (only strategy.oca.cancel/reduce/none supported)`);
+    }
+    return type;
+  }
+
+  // The OCA group name of an order: "" (and na) = the order belongs to no group.
+  private static ocaName(name: string | null | undefined): string {
+    return typeof name === "string" ? name : "";
+  }
+
+  // One-Cancels-All: an order of an OCA group has just executed `filledQty` contracts, so the other
+  // unfilled orders of its group are cancelled (strategy.oca.cancel) or have their quantity reduced
+  // by that amount, and cancelled at zero (strategy.oca.reduce). strategies.txt ("OCA groups"):
+  // "the strategy completely cancels the resulting order if another order from the same OCA group
+  // executes first"; reduce "reduces the order's size by the filled number of
+  // contracts/shares/lots/units"; strategy.oca.none orders "execute independently of any OCA group".
+  // A group is a name AND a type: "If two commands have the same oca_name value but different
+  // oca_type values, the strategy considers them to be from two distinct groups." (The oracle groups
+  // by name alone — resin-harness state/disputes.md D3.) The executed order has already left the
+  // book, so it is never its own sibling. An order consumed without executing anything (a gate kept
+  // it from opening) leaves its group alone. Repros: resin-harness state/repros/oca-cancel.json,
+  // oca-reduce.json, oca-mixed-types.json; tier 1 suites/strategy/tv/bollinger.
+  // Not covered: a default-sized (percent_of_equity/cash) limit/stop sibling keeps its money budget
+  // under reduce, and strategy.exit(oca_name=) cannot join a group yet.
+  private applyOca(name: string, type: string, filledQty: number): void {
+    if (name === "" || type === "none" || !(filledQty > 0)) return;
+    for (let i = 0; i < this.pendingEntries.length; ) {
+      const e = this.pendingEntries[i]!;
+      if (e.ocaName === name && e.ocaType === type) {
+        if (type === "cancel") {
+          this.pendingEntries.splice(i, 1);
+          continue;
+        }
+        if (!e.qtyAuto) {
+          e.qty = toUnits(e.qty - filledQty, this.lotsPerContract);
+          if (!(e.qty > 0)) {
+            this.pendingEntries.splice(i, 1);
+            continue;
+          }
+        }
+      }
+      i++;
+    }
+    if (this.orderPending && this.orderOcaName === name && this.orderOcaType === type) {
+      if (type === "cancel") {
+        this.orderPending = false;
+      } else if (!this.orderQtyAuto) {
+        this.orderQty = toUnits(this.orderQty - filledQty, this.lotsPerContract);
+        if (!(this.orderQty > 0)) this.orderPending = false;
+      }
+    }
+  }
+
+  // The quantity one order executed, from the position before and after its fill: a reversal
+  // closes the old side and opens the new one.
+  private static executedQty(before: number, after: number): number {
+    return before * after < 0 ? Math.abs(before) + Math.abs(after) : Math.abs(after - before);
   }
 
   // strategy.order(id, direction, qty=, limit=, stop=) — 넷팅 주문 큐잉(C169). entry와 시그니처는
@@ -1592,7 +1669,7 @@ export class StrategyState {
   // 먼저) 전부 entry와 동일 관례.
   order(
     id: string | null | undefined, direction: string, qty?: number, limit?: number, stop?: number,
-    comment?: string, when: boolean = true,
+    comment?: string, when: boolean = true, ocaName?: string | null, ocaType?: string,
   ): void {
     if (!when) return;
     if (direction !== "long" && direction !== "short") {
@@ -1600,6 +1677,8 @@ export class StrategyState {
         `strategy.order: unsupported direction '${String(direction)}' (only "long"/"short" supported)`,
       );
     }
+    const oca = StrategyState.ocaType("strategy.order", ocaType);
+    const ocaGroup = StrategyState.ocaName(ocaName);
     if (id === null || id === undefined) return;
     // Sized as in entry(), except that a zero-lot order is always dropped: strategy.order() has no
     // reversal leg to keep.
@@ -1621,6 +1700,8 @@ export class StrategyState {
         this.orderLimit = limit ?? NaN;
         this.orderStop = stop ?? NaN;
         this.orderOrderComment = cmt;
+        this.orderOcaName = ocaGroup;
+        this.orderOcaType = oca;
         this.orderPlacedThisBar = true;
       }
       return;
@@ -1634,6 +1715,8 @@ export class StrategyState {
     this.orderLimit = limit ?? NaN;
     this.orderStop = stop ?? NaN;
     this.orderOrderComment = cmt;
+    this.orderOcaName = ocaGroup;
+    this.orderOcaType = oca;
   }
 
   // strategy.exit(id, from_entry, limit=익절, stop=손절) — 브래킷 청산 주문 큐잉(C167). limit/stop
@@ -2067,11 +2150,15 @@ export class StrategyState {
     // second market entry meets the position the first one opened, not the exit's close; repro
     // resin-harness state/repros/mixed-seed-475.json), and after each intrabar fill. A position that
     // was already open had its exit judged before the entries, so it is not judged twice.
+    // An order an earlier fill of this bar cancelled through its OCA group is no longer in the book.
     let i = 0;
     const flatAtOpen = this.posSize === 0;
-    for (; i < due.length && due[i]!.pathLeg === 0; i++) this.fillPendingEntry(due[i]!, due[i]!.fillPrice, barIndex, barTimeMs);
+    for (; i < due.length && due[i]!.pathLeg === 0; i++) {
+      if (this.pendingEntries.includes(due[i]!)) this.fillPendingEntry(due[i]!, due[i]!.fillPrice, barIndex, barTimeMs);
+    }
     if (flatAtOpen && this.posSize !== 0) this.fillPendingExit(openPrice, high, low, barIndex, barTimeMs);
     for (; i < due.length; i++) {
+      if (!this.pendingEntries.includes(due[i]!)) continue;
       const wasFlat = this.posSize === 0;
       this.fillPendingEntry(due[i]!, due[i]!.fillPrice, barIndex, barTimeMs);
       if (wasFlat && this.posSize !== 0) this.fillPendingExit(openPrice, high, low, barIndex, barTimeMs);
@@ -2088,6 +2175,7 @@ export class StrategyState {
     for (const e of this.pendingEntries) if (e.placedThisBar && !StrategyState.isPriceBased(e)) due.push(e);
     for (const e of this.pendingEntries) if (e.placedThisBar && StrategyState.isPriceBased(e)) due.push(e);
     for (const e of due) {
+      if (!this.pendingEntries.includes(e)) continue; // cancelled by an OCA sibling's fill
       const price = this.directionalFillPrice(e.direction, e.limit, e.stop, closePrice, closePrice, closePrice);
       if (!Number.isNaN(price)) this.fillPendingEntry(e, price, barIndex, barTimeMs);
     }
@@ -2099,6 +2187,7 @@ export class StrategyState {
   // The order is consumed either way.
   private fillPendingEntry(e: PendingEntry, fillPrice: number, barIndex: number, barTimeMs: number): void {
     this.removePendingEntry(e);
+    const before = this.posSize;
     const sign = e.direction === "long" ? 1 : -1;
     // A market or stop entry fills slipped against it, the reversal's closing leg included (one
     // order, one price); a limit entry, and a stop-limit (a limit order once its stop triggers),
@@ -2180,12 +2269,14 @@ export class StrategyState {
       this.intradayFilledCount += 1;
     }
     // else: 같은 방향 + pyramiding 소진 → 주문 취소(이월 없음)
+    this.applyOca(e.ocaName, e.ocaType, toUnits(StrategyState.executedQty(before, this.posSize), this.lotsPerContract));
   }
 
   // Fills the pending strategy.order() at `orderFill`, its trigger already judged: netted against an
   // opposite position first, the rest opening a trade.
   private fillPendingOrder(orderFill: number, barIndex: number, barTimeMs: number): void {
     this.orderPending = false;
+    const before = this.posSize;
     const sign = this.orderDirection === "long" ? 1 : -1;
     if (Number.isNaN(this.orderLimit)) orderFill = this.slipped(orderFill, sign); // as in fillPendingEntry
     // A default-sized limit/stop order resolves at its fill price, as in fillPendingEntry; zero lots
@@ -2214,6 +2305,10 @@ export class StrategyState {
       // entry still takes a slot the next strategy.entry() is gated on (entryCount).
       this.openTradeAt(this.orderOrderId, this.orderOrderComment, orderFill, sign * qty, barIndex, barTimeMs);
     }
+    this.applyOca(
+      this.orderOcaName, this.orderOcaType,
+      toUnits(StrategyState.executedQty(before, this.posSize), this.lotsPerContract),
+    );
   }
 
   // Judges the pending exit bracket against this bar and closes at its fill price. Called before

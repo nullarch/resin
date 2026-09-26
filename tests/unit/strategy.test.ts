@@ -691,17 +691,21 @@ describe("strategy.* analyzer validation", () => {
   // C746(next_hint(C745) 재조사): disable_alert=(exit()의 C708/close_all()의 C724와 동일 축, 순수
   // 표시값 discard)가 목록에서 제거 — 별도 긍정 테스트로 이동, oca_type=(진짜 미구현 파라미터,
   // OCA 축은 ROADMAP 배치37 (4) 감독 승인 대기)만 남김.
-  it("rejects unsupported strategy.entry kwargs (oca_name= 등)", () => {
-    for (const kw of ['oca_name="g"', 'oca_type="cancel"']) {
-      const errors = transpileErrors(`strategy("s")\nstrategy.entry("L", strategy.long, ${kw})`);
-      expect(
-        errors.some((e) =>
-          e.includes(
-            "'strategy.entry' only supports keyword arguments 'id='/'direction='/'qty='/'comment='/'limit='/'stop='/'when='/'alert_message='/'disable_alert='",
-          ),
+  // oca_name=/oca_type= are supported now (OCA groups, StrategyState.applyOca; tier 1 resin-harness
+  // suites/strategy/tv/bollinger places its entries in a strategy.oca.cancel group), so the probe is a
+  // keyword TradingView does not have.
+  it("accepts strategy.entry oca_name=/oca_type= and rejects an unknown kwarg", () => {
+    expect(
+      transpile('strategy("s")\nstrategy.entry("L", strategy.long, oca_name="g", oca_type=strategy.oca.cancel)').ok,
+    ).toBe(true);
+    const errors = transpileErrors('strategy("s")\nstrategy.entry("L", strategy.long, oca_group="g")');
+    expect(
+      errors.some((e) =>
+        e.includes(
+          "'strategy.entry' only supports keyword arguments 'id='/'direction='/'qty='/'comment='/'limit='/'stop='/'when='/'alert_message='/'disable_alert='/'oca_name='/'oca_type='",
         ),
-      ).toBe(true);
-    }
+      ),
+    ).toBe(true);
   });
 
   it("accepts strategy.entry/order disable_alert= kwarg (C746, exit()/close_all()와 동일 축, 순수 표시값 discard)", () => {
@@ -3275,12 +3279,16 @@ describe("strategy.order analyzer (C169)", () => {
     expect(transpile('strategy("s")\nstrategy.order("O", strategy.long, alert_message="hi")').ok).toBe(true);
   });
 
-  it("rejects unsupported strategy.order kwargs (oca_name= 등)", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.order("O", strategy.long, oca_name="g")');
+  // oca_name=/oca_type= are supported now (see the strategy.entry kwarg test).
+  it("accepts strategy.order oca_name=/oca_type= and rejects an unknown kwarg", () => {
+    expect(
+      transpile('strategy("s")\nstrategy.order("O", strategy.long, oca_name="g", oca_type=strategy.oca.reduce)').ok,
+    ).toBe(true);
+    const errors = transpileErrors('strategy("s")\nstrategy.order("O", strategy.long, oca_group="g")');
     expect(
       errors.some((e) =>
         e.includes(
-          "'strategy.order' only supports keyword arguments 'id='/'direction='/'qty='/'comment='/'limit='/'stop='/'when='/'alert_message='/'disable_alert='",
+          "'strategy.order' only supports keyword arguments 'id='/'direction='/'qty='/'comment='/'limit='/'stop='/'when='/'alert_message='/'disable_alert='/'oca_name='/'oca_type='",
         ),
       ),
     ).toBe(true);
@@ -7904,8 +7912,7 @@ describe("strategy.* E2E (hand-verified: `for i = 0 to strategy.closedtrades - 1
 // position_entry_name + max_runup/max_runup_percent(C674, wild 배치34 7순위 'strategy속성'
 // 클러스터 — pine2py에 대응 구현이 전무해 avg_*/max_runup*은 hand-verified 설계, position_entry_name만
 // pine2py engine.py position_entry_name = position.entry_id(types.py 기본값 "")로 오라클 검증됨.
-// strategy.oca.*(같은 클러스터 최다 서브그룹, wild 32건)는 이번 사이클 범위 밖 그대로 유지 — OCA
-// 런타임 미구현이라 discard가 조용한 오답(analyzer.ts STRATEGY_RUNTIME_PROPS 주석 참조).
+// strategy.oca.* constants are folded now (OCA groups, see "StrategyState OCA groups").
 describe("StrategyState.closeAt — sumWinProfitPercent/sumLossProfitPercent accumulation (C674)", () => {
   it("accumulates profit_percent for a winning long trade using the same formula as closedTradeProfitPercent", () => {
     const st = new StrategyState();
@@ -8032,7 +8039,7 @@ describe("strategy.avg_winning_trade/avg_losing_trade/avg_winning_trade_percent/
     expect(code).toContain(`(${expr})`);
   });
 
-  it("still rejects strategy.oca (out of scope — OCA 런타임 미구현, 값을 discard하면 조용한 오답)", () => {
+  it("rejects bare strategy.oca (a namespace of constants, not a value)", () => {
     const errors = transpileErrors('strategy("s")\nx = strategy.oca');
     expect(errors.some((e) => e.includes("unsupported strategy property: 'strategy.oca'"))).toBe(true);
   });
@@ -8825,5 +8832,90 @@ describe("StrategyState entry orders per id + pyramiding gate at the call", () =
     g.entry("BS", "long", 1, undefined, 100.005);
     g.entry("SS", "short", 1, undefined, 100.005);
     expect(g.pendingEntries.map((e) => e.stop)).toEqual([100.01, 100]);
+  });
+});
+
+// OCA groups (strategy.entry/strategy.order oca_name=, oca_type=). strategies.txt, "OCA groups":
+// cancel "completely cancels the resulting order if another order from the same OCA group executes
+// first"; reduce "reduces the order's size by the filled number of contracts"; a group is a name and
+// a type. Oracle-checked in resin-harness state/repros/oca-cancel.json and oca-reduce.json; the
+// mixed-type rule follows the manual against the oracle (oca-mixed-types.json, disputes.md D3).
+describe("StrategyState OCA groups", () => {
+  it("cancel: the first stop of the group the bar reaches fills and cancels the other (repro oca-cancel.json)", () => {
+    const st = new StrategyState();
+    st.entry("L", "long", 1, undefined, 105, undefined, true, "G", "cancel");
+    st.entry("S", "short", 1, undefined, 95, undefined, true, "G", "cancel");
+    st.processFills(101, 106, 94); // open nearer the high: 105 before 95
+    expect(st.posSize).toBe(1);
+    expect(st.posAvgPrice).toBe(105);
+    expect(st.pendingEntries).toEqual([]);
+    // Without the group the short stop reverses the long at 95 on the same bar.
+    const free = new StrategyState();
+    free.entry("L", "long", 1, undefined, 105);
+    free.entry("S", "short", 1, undefined, 95);
+    free.processFills(101, 106, 94);
+    expect(free.posSize).toBe(-1);
+  });
+
+  it("cancel: a strategy.order fill cancels a resting entry of its group (repro oca-cancel.json)", () => {
+    const st = new StrategyState();
+    st.order("O", "long", 1, 95, undefined, undefined, true, "H", "cancel");
+    st.entry("E", "short", 1, 110, undefined, undefined, true, "H", "cancel");
+    st.processFills(100, 101, 94);
+    expect(st.posSize).toBe(1);
+    expect(st.pendingEntries).toEqual([]);
+    st.processFills(100, 111, 99); // E's limit would have filled here
+    expect(st.posSize).toBe(1);
+  });
+
+  it("reduce: a fill shrinks the other orders of the group by its quantity (repro oca-reduce.json)", () => {
+    const st = new StrategyState();
+    st.configure(1, 2);
+    st.entry("A", "long", 3, 95, undefined, undefined, true, "R", "reduce");
+    st.entry("B", "long", 5, 90, undefined, undefined, true, "R", "reduce");
+    st.processFills(100, 101, 89);
+    expect(st.openTrades.map((t) => [t.entryId, t.size, t.entryPrice])).toEqual([["A", 3, 95], ["B", 2, 90]]);
+  });
+
+  it("reduce: an order reduced to nothing is cancelled", () => {
+    const st = new StrategyState();
+    st.configure(1, 2);
+    st.entry("A", "long", 3, 95, undefined, undefined, true, "R", "reduce");
+    st.entry("B", "long", 2, 90, undefined, undefined, true, "R", "reduce");
+    st.processFills(100, 101, 96); // only A's level is out of reach: nothing fills
+    expect(st.pendingEntries.map((e) => e.qty)).toEqual([3, 2]);
+    st.processFills(100, 101, 94); // A fills 3; B (2) is gone
+    expect(st.posSize).toBe(3);
+    expect(st.pendingEntries).toEqual([]);
+  });
+
+  it("one name with two types is two groups; strategy.oca.none orders are in none (repro oca-mixed-types.json)", () => {
+    const st = new StrategyState();
+    st.configure(1, 3);
+    st.entry("A", "long", 1, 95, undefined, undefined, true, "G", "cancel");
+    st.entry("B", "long", 1, 90, undefined, undefined, true, "G", "none");
+    st.entry("C", "long", 1, 85, undefined, undefined, true, "G", "none");
+    st.processFills(100, 101, 84);
+    expect(st.openTrades.map((t) => t.entryId)).toEqual(["A", "B", "C"]);
+  });
+
+  it("an order without oca_name belongs to no group, and oca_type must be a strategy.oca constant", () => {
+    const st = new StrategyState();
+    st.configure(1, 2);
+    st.entry("A", "long", 1, 95, undefined, undefined, true, null, "cancel");
+    st.entry("B", "long", 1, 90, undefined, undefined, true, "", "cancel");
+    st.processFills(100, 101, 89);
+    expect(st.posSize).toBe(2);
+    expect(() => st.entry("X", "long", 1, undefined, undefined, undefined, true, "G", "all")).toThrow(/oca_type/);
+  });
+});
+
+describe("strategy.entry/order oca_name=/oca_type= codegen", () => {
+  it("passes the group after when=", () => {
+    const code = transpileCode(
+      'strategy("s")\nstrategy.entry("L", strategy.long, stop=high, oca_name="BB", oca_type=strategy.oca.cancel)\nstrategy.order("O", strategy.short, oca_type=strategy.oca.reduce, oca_name="R")',
+    );
+    expect(code).toContain('$.strategy.entry("L", "long", undefined, undefined, $.high.get(0), undefined, undefined, "BB", "cancel")');
+    expect(code).toContain('$.strategy.order("O", "short", undefined, undefined, undefined, undefined, undefined, "R", "reduce")');
   });
 });

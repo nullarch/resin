@@ -25678,9 +25678,8 @@ describe("CodeGen for-in loop over label.all/line.all/box.all/table.all/polyline
 // 문자열 폴딩이지만 obj가 Identifier가 아니라 DotAccess(strategy.commission)라 별도 분기 필요
 // (analyzer.ts STRATEGY_COMMISSION_CONSTANTS 주석 참조). pine2py wavealgo/strategy/constants.py
 // COMMISSION_PERCENT="percent"/COMMISSION_CASH_PER_ORDER="cash_per_order"/
-// COMMISSION_CASH_PER_CONTRACT="cash_per_contract" 리터럴 포트. strategy.oca.*(5건)는 OCA 그룹
-// 취소 로직이 pine2js 런타임에 미구현이라 discard가 조용한 오답일 수 있어 이번 사이클 범위 밖
-// (analyzer.ts 주석 참조) — 여전히 기존과 동일하게 거부돼야 한다.
+// COMMISSION_CASH_PER_CONTRACT="cash_per_contract" 리터럴 포트. strategy.oca.* fold the same way
+// (analyzer.ts STRATEGY_OCA_CONSTANTS).
 describe("CodeGen strategy.commission.* namespace constants (C288)", () => {
   it("resolves all 3 strategy.commission.* members without error inside strategy() kwargs", () => {
     const prog = analyze(
@@ -25694,9 +25693,12 @@ describe("CodeGen strategy.commission.* namespace constants (C288)", () => {
     expect(prog.errors).toEqual([]);
   });
 
-  it("still rejects strategy.oca.* (OCA group cancellation unimplemented — discard would be a silent wrong answer)", () => {
-    const prog = analyze(parse('strategy("t")\nx = strategy.oca.reduce'));
-    expect(prog.errors.some((e) => e.includes("unsupported strategy property: 'strategy.oca'"))).toBe(true);
+  // strategy.oca.* are folded the same way now: the engine implements OCA groups
+  // (StrategyState.applyOca; tier 1 resin-harness suites/strategy/tv/bollinger uses strategy.oca.cancel).
+  it("folds strategy.oca.* to their string values", () => {
+    const prog = analyze(parse('strategy("t")\nx = strategy.oca.reduce\ny = strategy.oca.cancel\nz = strategy.oca.none'));
+    expect(prog.errors).toEqual([]);
+    expect([...prog.builtinStringConstants.values()]).toEqual(expect.arrayContaining(["reduce", "cancel", "none"]));
   });
 
   it("errors on an unrecognized strategy.commission.* member (constant folding is a closed set)", () => {
