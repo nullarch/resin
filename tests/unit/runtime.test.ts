@@ -1554,18 +1554,33 @@ describe("ta.median", () => {
     expect(median(state, 3, 1)).toBe(3);
   });
 
-  // pine2py median.py has no explicit skip-on-NaN branch — the underlying source history (pushed
-  // via ensure_series/context.param before median() runs) always records the raw value, so a NaN
-  // poisons the window exactly like ta.sma/ta.change/ta.highest's raw-passthrough circular buffers
-  // (unlike ta.cci's skip-freeze). Verified against a direct pine2py median() run (300-trial fuzz,
-  // length 1-10, ~12% NaN injection rate, 0 mismatches).
-  it("poisons (does not skip-freeze) the window across a NaN gap once initialized", () => {
+  // The window is the last `length` NON-na values: "`na` values in the `source` series are
+  // ignored" (ref_v6_ta_math.txt ta.median). pine2py poisoned it for `length` bars after one na;
+  // the oracle (pynecore lib/ta.py median) skips the na and answers from the standing window on
+  // the na bar itself. resin-harness state/repros/median-na-window.json (m5, m4, m1) and probe I01.
+  it("skips an na source: the na bar answers from the standing window, the next value evicts the oldest", () => {
     const state = {};
     median(state, 7, 3);
     median(state, 8, 3);
     expect(median(state, 9, 3)).toBeCloseTo(8, 9); // window [7,8,9] -> 8
-    expect(median(state, NaN, 3)).toBeNaN(); // window [8,9,NaN] has NaN
-    expect(median(state, 11, 3)).toBeNaN(); // window [9,NaN,11] still has NaN (7 evicted, not NaN slot)
+    expect(median(state, NaN, 3)).toBeCloseTo(8, 9); // stores nothing, window [7,8,9]
+    expect(median(state, 11, 3)).toBeCloseTo(9, 9); // window [8,9,11]
+  });
+
+  it("counts the warm-up in non-na values, and an na bar before the window fills is na", () => {
+    const state = {};
+    expect(median(state, NaN, 3)).toBeNaN();
+    expect(median(state, 5, 3)).toBeNaN();
+    expect(median(state, NaN, 3)).toBeNaN(); // one value stored
+    expect(median(state, 1, 3)).toBeNaN();
+    expect(median(state, 3, 3)).toBe(3); // [5,1,3]
+  });
+
+  it("length 1 keeps no window: an na source is na", () => {
+    const state = {};
+    expect(median(state, 5, 1)).toBe(5);
+    expect(median(state, NaN, 1)).toBeNaN();
+    expect(median(state, 7, 1)).toBe(7);
   });
 
   it("keeps independent state across two call sites", () => {
@@ -3854,12 +3869,27 @@ describe("ta.median/ta.linreg/ta.wma variable(series) length (medianVarLen/linre
     expect(medianVarLen(state, 50, 4, 10, 4)).toBe(35); // [20,30,40,50] → (30+40)/2 — 위 바들도 기록됨
   });
 
-  it("medianVarLen: poisons while a NaN value sits inside the trailing window, then recovers (fixed-length median parity)", () => {
+  // An na source is skipped with a series length too: the window is rebuilt from the non-na
+  // history when the length moves, and an na bar answers from the window as it stands (pynecore
+  // lib/ta.py median; resin-harness state/repros/median-na-window.json vshrink_on_na,
+  // vgrow_on_na, vone, vnalen). pine2py poisoned the window ([NaN,20] was na).
+  it("medianVarLen: skips an na source; the rebuilt window reads the non-na history", () => {
     const state = {};
     medianVarLen(state, 10, 1, 10, 0);
-    expect(medianVarLen(state, NaN, 1, 10, 1)).toBeNaN();
-    expect(medianVarLen(state, 20, 2, 10, 2)).toBeNaN(); // 창=[NaN,20]
-    expect(medianVarLen(state, 30, 2, 10, 3)).toBe(25); // 창=[20,30]
+    expect(medianVarLen(state, NaN, 1, 10, 1)).toBeNaN(); // length 1 keeps no window
+    expect(medianVarLen(state, 20, 2, 10, 2)).toBe(15); // rebuilt: [10,20]
+    expect(medianVarLen(state, 30, 2, 10, 3)).toBe(25); // [20,30]
+  });
+
+  it("medianVarLen: an na bar keeps the length bookkeeping and answers from the standing window", () => {
+    const state = {};
+    [1, 2, 3, 4, 5].forEach((v, i) => medianVarLen(state, v, 5, 20, i)); // window [1..5]
+    expect(medianVarLen(state, NaN, 3, 20, 5)).toBe(3); // window of 5 still stands (5 >= 3)
+    expect(medianVarLen(state, NaN, 6, 20, 6)).toBeNaN(); // 5 < 6
+    expect(medianVarLen(state, 9, 3, 20, 7)).toBe(5); // length moved: rebuilt [4,5,9]
+    expect(medianVarLen(state, 1, NaN, 20, 8)).toBeNaN(); // na length: stored, window frozen
+    expect(medianVarLen(state, NaN, 3, 20, 9)).toBe(5); // the frozen window [4,5,9]
+    expect(medianVarLen(state, 2, 3, 20, 10)).toBe(2); // na length forced a rebuild: [9,1,2]
   });
 
   it("medianVarLen: same-bar repeated calls overwrite the current slot instead of advancing (context.param() parity)", () => {

@@ -1486,45 +1486,60 @@ export function lowestbarsVarLen(state: ExtremeVarLenState, value: number, lengt
   return minIdx === 0 ? 0 : -minIdx;
 }
 
-// ta.median(source, length) - length가 series인 변형(배치25 (4) 네 번째 묶음, C550). 버퍼/writeIdx/
-// barIdx 덮어쓰기 메커니즘은 highestVarLen과 완전 동형(ExtremeVarLenState 재사용). pine2py
-// wavealgo/ta/median.py는 상태 없이 매 호출 source.get(0..length-1)을 현재 length로 재구축·정렬한다
-// (get_ta_state 미사용, python 직접 실행으로 가변 length 정상 동작 확인 2026-08-01) - highest/lowest
-// (C547)와 동일하게 pine2py를 오라클로 그대로 이식한다(oracle/cases/ta_median_linreg_varlen.pine
-// 골든). 값 계산은 고정 length median()과 동일(창 정렬 후 가운데, 짝수면 두 값 평균 - 매 바 창
-// 복사+정렬 할당은 고정 버전이 이미 GOAL.md O(1)/bar 예외로 확정한 트레이드오프라 그대로 따른다,
-// median() 주석 참조). 엣지: 워밍업(len > 관측 바 수)은 NaN(`len(source) < length` 게이트 이식),
-// length<1은 pine2py가 빈 window의 가운데 인덱싱에서 IndexError 크래시(0/음수 모두 python 직접
-// 확인)라 "크래시 없이 정의된 동작"이 없음 - smaVarLen과 동일하게 na 반환 자체 결정(DIVERGENCES
-// #181). length=NaN은 highestVarLen과 동일하게 na 전파(TV 미검증 가설). 창 안 NaN 하나면 즉시
-// NaN(정렬 comparator에 NaN을 태우지 않는 고정 버전과 동일 게이트).
-export function medianVarLen(state: ExtremeVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
-  if (state.buffer === undefined) {
-    state.buffer = new Float64Array(barCount).fill(NaN);
-    state.writeIdx = -1;
-    state.lastBarIdx = -1;
-  }
-  if (barIdx !== state.lastBarIdx) {
-    state.writeIdx = state.writeIdx! + 1;
-    state.lastBarIdx = barIdx;
-  }
-  const writeIdx = state.writeIdx!;
-  state.buffer[writeIdx] = value;
+export interface MedianVarLenState extends NaSkipVarLenState {
+  win?: number; // window size: the last `win` values of the history up to winEnd
+  winEnd?: number;
+  prevLen?: number; // the length the window was built for; 0 before any, -1 after an na length
+  barWin?: number; // win/winEnd/prevLen as the bar began
+  barWinEnd?: number;
+  barPrevLen?: number;
+}
 
-  const len = Math.trunc(length);
-  if (Number.isNaN(len)) return NaN;
-  if (len < 1) return NaN;
-  if (len > writeIdx + 1) return NaN;
-  const window: number[] = [];
-  for (let i = writeIdx - len + 1; i <= writeIdx; i++) {
-    const v = state.buffer[i]!;
-    if (Number.isNaN(v)) return NaN;
-    window.push(v);
+// ta.median(source, length) with a series length: the oracle's machine (pynecore lib/ta.py median)
+// with the length read every bar, on the same window as median() above: the last `length` NON-na
+// values (ref_v6_ta_math.txt ta.median, "ARG length [series int]"). The window is kept across bars
+// and rebuilt from the call site's na-compacted history when the length moves (oldest first, the
+// current value last), so after a change it holds the last `length` non-na values again. An na bar
+// stores nothing and does not touch the length bookkeeping: it answers from the window as it
+// stands, na while that window is shorter than the bar's length. A na length is na and forces a
+// rebuild on the next valid one; length 1 returns the source and empties the window; a length
+// below 1 is na (the oracle asserts `length > 0`) and also forces a rebuild. Bar-keyed like the
+// other *VarLen machines: a same-bar re-execution starts again from the bar-start window.
+export function medianVarLen(state: MedianVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
+  if (barIdx !== state.lastBarIdx) {
+    state.barWin = state.win ?? 0;
+    state.barWinEnd = state.winEnd ?? 0;
+    state.barPrevLen = state.prevLen ?? 0;
   }
-  window.sort((a, b) => a - b);
-  const mid = Math.floor(len / 2);
-  if (len % 2 === 0) return (window[mid - 1]! + window[mid]!) / 2;
-  return window[mid]!;
+  const count = recordNonNa(state, value, barCount, barIdx);
+  let win = state.barWin!;
+  let winEnd = state.barWinEnd!;
+  let prevLen = state.barPrevLen!;
+  const len = Math.trunc(length);
+  let result = NaN;
+  if (!(len >= 1)) {
+    prevLen = -1;
+  } else if (Number.isNaN(value)) {
+    if (win >= len) result = medianOf(state.buffer!, winEnd - win, win);
+  } else {
+    if (len !== prevLen && prevLen !== 0) {
+      // Rebuild from the non-na values before this bar's, at most len - 1 of them.
+      win = Math.min(len - 1, count - 1);
+      winEnd = count - 1;
+    }
+    prevLen = len;
+    if (len === 1) {
+      result = value;
+    } else {
+      win = Math.min(win + 1, len);
+      winEnd = count;
+      if (win >= len) result = medianOf(state.buffer!, winEnd - win, win);
+    }
+  }
+  state.win = win;
+  state.winEnd = winEnd;
+  state.prevLen = prevLen;
+  return result;
 }
 
 interface LinregVarLenState extends LinregState {
@@ -2601,43 +2616,46 @@ export function correlation(
 }
 
 export interface MedianState {
-  buffer?: number[];
+  buffer?: number[]; // ring of the last `length` non-na values
   writeIdx?: number;
+  count?: number; // non-na values stored so far, capped at the length
 }
 
-// ta.median(source, length) - 최근 length바(현재 포함) 중 중앙값(짝수개면 가운데 두 값 평균).
-// pine2py wavealgo/ta/median.py는 매 호출 source.get(0..length-1) 전체를 재구축해 정렬한다(위치
-// 가중치 없는 highest/lowest의 monotonic deque 트릭이 여기선 적용 안 됨 - 극값이 아니라 "가운데
-// 순서통계"라, 원소 하나가 창에서 빠지면 나머지 원소들의 상대 순위가 전부 흔들릴 수 있어 O(1)/bar로
-// 유지할 단조 구조가 없다). O(log n)/bar로 낮추려면 임의 원소를 지울 수 있는 "제거 가능한" 두-힙
-// (+ lazy deletion 해시)이 필요하지만, 이는 균형/동기화 불변식이 늘어 정확성 버그 표면이 커지는
-// 반면 이 리포의 실사용 length 범위(수십~수백)에서 O(length log length) 정렬은 10k바 기준으로도
-// 무시할 수준(V8 native sort) - **GOAL.md "TA는 전부 incremental O(1)/bar" 원칙의 세 번째 명시적
-// 예외**(alma C113/cci C114에 이은, 이번엔 "캐시 가능한 정적 부분이 없다"가 아니라 "정렬 자체가
-// incremental 구조를 허용하지 않는다"는 새 이유). sma/change와 동일한 NaN-프라임 순환 버퍼
-// (raw-passthrough - source 원값 그대로 저장)를 쓰되, 버퍼 자체는 정렬하지 않고(다음 바 writeIdx
-// 계산이 순환 버퍼의 인덱스 순서에 의존) 매 바 얕은 복사본만 정렬해 중앙값을 뽑는다. NaN 판정은
-// 정렬 comparator에 맡기지 않는다 - `(a,b)=>a-b`는 a/b 중 하나라도 NaN이면 NaN을 반환해 유효하지
-// 않은 비교 함수가 되고(ECMA sort는 이런 경우 결과 순서를 명시하지 않음), highest/lowest와 동일한
-// "정렬 전에 버퍼를 먼저 훑어 NaN이 하나라도 있으면 즉시 NaN" 게이트로 이 문제를 원천 차단한다.
+// The median of `n` window values (the mean of the two middle ones for an even n). The window
+// holds no na, so the comparator is a valid one.
+function medianOf(values: ArrayLike<number>, from: number, n: number): number {
+  const sorted = Array.prototype.slice.call(values, from, from + n) as number[];
+  sorted.sort((a, b) => a - b);
+  const mid = Math.floor(n / 2);
+  if (n % 2 === 0) return (sorted[mid - 1]! + sorted[mid]!) / 2;
+  return sorted[mid]!;
+}
+
+// ta.median(source, length): the median of the last `length` NON-na values of the source, na
+// until that many have arrived (ref_v6_ta_math.txt ta.median: "`na` values in the `source` series
+// are ignored; the function calculates on the `length` quantity of non-`na` values"). The oracle's
+// machine (pynecore lib/ta.py median) keeps that window and, on an na bar, stores nothing and
+// answers from the window as it stands ("measured: TradingView keeps answering across an na bar
+// (a window of [2,3,4,5,6] answers 4 on the na bar that follows it)"); length 1 returns the
+// source and keeps no window, so its na bar is na. pine2py rebuilt the window from the last
+// `length` BARS and poisoned it for `length` bars after one na (probe I01: ta.median(src, 20)
+// with one na on bar 100 is 102.145 there, not na). Sorting a copy of the window each bar is
+// O(length log length); no incremental structure keeps a middle order statistic in O(1).
 export function median(state: MedianState, value: number, length: number): number {
   length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조)
+  if (!(length >= 1)) return NaN; // the oracle asserts length > 0
+  if (Number.isNaN(value)) return (state.count ?? 0) < length ? NaN : medianOf(state.buffer!, 0, length);
+  if (length === 1) return value;
   if (state.buffer === undefined) {
     state.buffer = new Array(length).fill(NaN);
     state.writeIdx = 0;
+    state.count = 0;
   }
-  const buffer = state.buffer;
   const writeIdx = state.writeIdx!;
-  buffer[writeIdx] = value;
+  state.buffer[writeIdx] = value;
   state.writeIdx = (writeIdx + 1) % length;
-
-  for (let i = 0; i < length; i++) {
-    if (Number.isNaN(buffer[i]!)) return NaN;
-  }
-  const sorted = buffer.slice().sort((a, b) => a - b);
-  const mid = Math.floor(length / 2);
-  if (length % 2 === 0) return (sorted[mid - 1]! + sorted[mid]!) / 2;
-  return sorted[mid]!;
+  if (state.count! < length) state.count = state.count! + 1;
+  return state.count! < length ? NaN : medianOf(state.buffer, 0, length);
 }
 
 export interface ModeState {
