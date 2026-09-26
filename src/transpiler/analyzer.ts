@@ -7273,10 +7273,21 @@ function analyzeWhileStmt(stmt: WhileStmt, prog: AnalyzedProgram, scope: LexScop
 }
 
 function analyzeForStmt(stmt: ForStmt, prog: AnalyzedProgram, scope: LexScope): void {
-  // start/end/step은 for 진입 시 단 한 번만 평가된다(while의 조건식과 달리 매 반복 재평가되지
-  // 않음) — 별도의 조건부(depth+1) 영역으로 다루지 않고 현재 scope 그대로 분석한다.
+  // start/step은 for 진입 시 단 한 번만 평가된다 — 별도의 조건부(depth+1) 영역으로 다루지 않고
+  // 현재 scope 그대로 분석한다. So is end up to v5; from v6 on it is re-evaluated before every
+  // iteration (mig6.txt "Dynamic for loop boundaries"; codegen dynamicForEnd), so a call in it can
+  // execute several times on one bar, like a call in the body: it is analyzed as a loop position
+  // (a stateful call there takes the loop-site law, analyzeStatefulCall), and a length it reads from
+  // a name the body reassigns changes between those executions.
+  const bodyReassigned = collectReassignedNames(stmt.body, new Set());
   analyzeExpr(stmt.start, prog, scope, false);
-  analyzeExpr(stmt.end, prog, scope, false);
+  if ((prog.script.version ?? 1) >= 6) {
+    const endScope = pushScope(scope, "loop-body", /* inLoop */ true);
+    endScope.loopReassigned = bodyReassigned;
+    analyzeExpr(stmt.end, prog, endScope, false);
+  } else {
+    analyzeExpr(stmt.end, prog, scope, false);
+  }
   if (stmt.step) analyzeExpr(stmt.step, prog, scope, false);
 
   if (prog.varIndex.has(stmt.varName)) {
@@ -7301,7 +7312,7 @@ function analyzeForStmt(stmt: ForStmt, prog: AnalyzedProgram, scope: LexScope): 
   // for 루프 카운터는 Pine 언어 자체가 항상 int 타입으로 고정한다(isStaticIntExpr 주석 참조,
   // C201) — start/end/step의 실제 값과 무관하게 변수 자체의 타입은 항상 int.
   bodyScope.numTypeHints.set(stmt.varName, "int");
-  bodyScope.loopReassigned = collectReassignedNames(stmt.body, new Set());
+  bodyScope.loopReassigned = bodyReassigned;
   for (const s of stmt.body) analyzeStmt(s, prog, bodyScope);
 }
 

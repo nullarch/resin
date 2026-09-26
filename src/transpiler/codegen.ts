@@ -2248,10 +2248,32 @@ function genWhileStmt(stmt: WhileStmt, program: AnalyzedProgram, funcCtx: FuncGe
   return `{\nlet __whileLimit = ${LOOP_LIMIT};\nwhile (${condCode} && __whileLimit > 0) ${loopBody}\n}`;
 }
 
+// Whether a `for` loop re-evaluates its `to` bound before every iteration: from Pine v6 on
+// (mig6.txt "Dynamic for loop boundaries": "In Pine v5, a for loop statement establishes its final
+// counter value strictly before starting its iterations" ... "In Pine v6, all for loops dynamically
+// evaluate their stopping criteria before each iteration"; language_loops.txt: "a for loop's header
+// dynamically evaluates the to_num value at the start of every iteration"). `from` and `by` are
+// evaluated once, on entry, and the entry values fix the direction (language_loops.txt: "If the
+// from_num value is greater than the initial to_num value, the loop subtracts this amount"; the
+// oracle's pynecore core/pine_range.py PineLoop, "MEASURED on TradingView"). A script without a
+// //@version annotation is a v1 script, fixed like v5. The analyzer reads the same rule
+// (analyzeForStmt).
+function dynamicForEnd(program: AnalyzedProgram): boolean {
+  return (program.script.version ?? 1) >= 6;
+}
+
+// The update clause of a for loop's JS header: the counter step, then, when the bound is dynamic,
+// the fresh `to` value the next iteration's test reads. It runs after every iteration a `continue`
+// ends too, and not after a `break` (language_loops.txt: `continue` makes the script "re-evaluate
+// the loop header's criteria"; after `break` it "does not re-evaluate the header's criteria").
+function forUpdateCode(v: string, stepCode: string, endCode: string, program: AnalyzedProgram): string {
+  return dynamicForEnd(program) ? `${v} += ${stepCode}, __forEnd = ${endCode}` : `${v} += ${stepCode}`;
+}
+
 // 숫자 range for만 지원(ast.ts ForStmt 참조): `for i = start to end [by step]`.
-// start/end/step은 루프 진입 시 단 한 번만 평가된다(while 조건과 달리 반복마다 재평가되지 않음).
-// 방향(오름/내림)은 pine2py _gen_for_range_args와 동일한 시맨틱으로 결정하되, Python range()를
-// 흉내 내지 않고 JS 네이티브 for(;;)로 직접 내린다(GOAL.md):
+// start/step은 루프 진입 시 단 한 번만 평가된다. end는 v5까지 진입 시 1회, v6부터는 매 반복 전에
+// 다시 평가된다(dynamicForEnd). 방향(오름/내림)은 pine2py _gen_for_range_args와 동일한 시맨틱으로
+// 결정하되, Python range()를 흉내 내지 않고 JS 네이티브 for(;;)로 직접 내린다(GOAL.md):
 //  - step이 컴파일타임에 음수 리터럴로 확정되면 방향은 항상 내림차순으로 고정(start<=end인
 //    실제 값과 무관 — start<end이면 자연히 0회 반복됨. pine2py의 range(start, end-1, step) 분기와 동치)
 //  - 그 외(step 없음/양수 리터럴/런타임 expr)는 진입 시 start<=end로 방향을 감지하고
@@ -2259,8 +2281,10 @@ function genWhileStmt(stmt: WhileStmt, program: AnalyzedProgram, funcCtx: FuncGe
 // while과 동일하게 자신만의 `{ }` 블록에 안전 카운터(__forLimit)를 선언해 step이 0이 되는
 // 런타임 상황에서도 무한루프를 막는다(GOAL.md 10,000회/bar 제한, ForStmt도 동일 적용).
 function genForStmt(stmt: ForStmt, program: AnalyzedProgram, funcCtx: FuncGenContext | null): string {
-  // start/end/step은 진입 시 1회 평가되는 for 헤더 표현식(조건식이 아니라 stateful 콜 허용 위치,
-  // analyzeForStmt 주석 참조) — 그 안의 lazy 위치는 래핑 블록 선두로 호이스팅한다.
+  // start/end/step은 for 헤더 표현식(조건식이 아니라 stateful 콜 허용 위치, analyzeForStmt 주석
+  // 참조) — 그 안의 lazy 위치는 래핑 블록 선두로 호이스팅한다. A dynamic `to` (v6) re-reads the
+  // rest of its expression per iteration; what is hoisted there is a history reference under
+  // `and`/`or` (walkForLazyHoist), a past bar's value that cannot change within the bar.
   const pre: string[] = [];
   hoistLazyStatefulCalls(stmt.start, program, funcCtx, pre);
   hoistLazyStatefulCalls(stmt.end, program, funcCtx, pre);
@@ -2276,7 +2300,7 @@ function genForStmt(stmt: ForStmt, program: AnalyzedProgram, funcCtx: FuncGenCon
     const stepCode = genExpr(stmt.step, program, funcCtx);
     return (
       `{\n${preCode}let __forStart = ${startCode};\nlet __forEnd = ${endCode};\nlet __forLimit = ${LOOP_LIMIT};\n` +
-      `for (let ${v} = __forStart; ${v} >= __forEnd && __forLimit > 0; ${v} += (${stepCode})) ${loopBody}\n}`
+      `for (let ${v} = __forStart; ${v} >= __forEnd && __forLimit > 0; ${forUpdateCode(v, `(${stepCode})`, endCode, program)}) ${loopBody}\n}`
     );
   }
 
@@ -2286,7 +2310,7 @@ function genForStmt(stmt: ForStmt, program: AnalyzedProgram, funcCtx: FuncGenCon
     `let __forFwd = __forStart <= __forEnd;\n` +
     `let __forDelta = __forFwd ? Math.abs(__forStep) : -Math.abs(__forStep);\n` +
     `let __forLimit = ${LOOP_LIMIT};\n` +
-    `for (let ${v} = __forStart; (__forFwd ? ${v} <= __forEnd : ${v} >= __forEnd) && __forLimit > 0; ${v} += __forDelta) ${loopBody}\n}`
+    `for (let ${v} = __forStart; (__forFwd ? ${v} <= __forEnd : ${v} >= __forEnd) && __forLimit > 0; ${forUpdateCode(v, "__forDelta", endCode, program)}) ${loopBody}\n}`
   );
 }
 
@@ -2652,7 +2676,7 @@ function genForWithResult(target: string, stmt: ForStmt, program: AnalyzedProgra
     const stepCode = genExpr(stmt.step, program, funcCtx);
     return (
       `{\n${preCode}let __forStart = ${startCode};\nlet __forEnd = ${endCode};\nlet __forLimit = ${LOOP_LIMIT};\n` +
-      `for (let ${v} = __forStart; ${v} >= __forEnd && __forLimit > 0; ${v} += (${stepCode})) ${loopBody}\n}`
+      `for (let ${v} = __forStart; ${v} >= __forEnd && __forLimit > 0; ${forUpdateCode(v, `(${stepCode})`, endCode, program)}) ${loopBody}\n}`
     );
   }
 
@@ -2662,7 +2686,7 @@ function genForWithResult(target: string, stmt: ForStmt, program: AnalyzedProgra
     `let __forFwd = __forStart <= __forEnd;\n` +
     `let __forDelta = __forFwd ? Math.abs(__forStep) : -Math.abs(__forStep);\n` +
     `let __forLimit = ${LOOP_LIMIT};\n` +
-    `for (let ${v} = __forStart; (__forFwd ? ${v} <= __forEnd : ${v} >= __forEnd) && __forLimit > 0; ${v} += __forDelta) ${loopBody}\n}`
+    `for (let ${v} = __forStart; (__forFwd ? ${v} <= __forEnd : ${v} >= __forEnd) && __forLimit > 0; ${forUpdateCode(v, "__forDelta", endCode, program)}) ${loopBody}\n}`
   );
 }
 
