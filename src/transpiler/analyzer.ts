@@ -2176,6 +2176,9 @@ export interface AnalyzedProgram {
   // strategy(process_orders_on_close=true): orders placed on a bar get one more fill attempt at
   // that bar's close. codegen passes it as configure()'s sixth argument.
   strategyProcessOrdersOnClose: boolean;
+  // strategy(use_bar_magnifier=true): fills are judged on the run's lower-timeframe bars, when it
+  // supplies them. codegen sets $.strategy.useBarMagnifier.
+  strategyUseBarMagnifier: boolean;
   // strategy(slippage=N): ticks added against the order to every market and stop fill (0 = none).
   // codegen passes it as configure()'s seventh argument.
   strategySlippage: number;
@@ -3470,6 +3473,7 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
     noopSeriesWrites: new Map(),
     strategyQtyIsCash: false,
     strategyProcessOrdersOnClose: false,
+    strategyUseBarMagnifier: false,
     strategySlippage: 0,
     strategyCommissionType: "percent",
     strategyCommissionValue: 0,

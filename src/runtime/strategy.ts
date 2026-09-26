@@ -151,6 +151,17 @@ interface PendingEntry {
   pathDist: number;
 }
 
+// The lower-timeframe bars inside one chart bar, for strategy(use_bar_magnifier=true): indexes
+// [from, to) of the feed's arrays, in time order (Context.advance hands one window per chart bar).
+export interface SubBarWindow {
+  open: ArrayLike<number>;
+  high: ArrayLike<number>;
+  low: ArrayLike<number>;
+  close: ArrayLike<number>;
+  from: number;
+  to: number;
+}
+
 // strategy(initial_capital=) when the declaration omits it. props.txt: "Initial Capital (parameter:
 // initial_capital) ... By default, this value is equal to 1,000,000." TradingView measured it
 // (tier 1 resin-harness suites/strategy/tv/barupdn: the script omits initial_capital and its first
@@ -285,6 +296,9 @@ export class StrategyState {
   // strategy(process_orders_on_close=true): the orders the script places on a bar get one more
   // fill attempt at that bar's close (processFillsAtClose), instead of waiting for the next open.
   processOrdersOnClose: boolean;
+  // strategy(use_bar_magnifier=true): fills are judged on the lower-timeframe bars inside each chart
+  // bar when the run supplies them (processFills' `sub`), else on the chart bar as usual.
+  useBarMagnifier: boolean;
   // strategy(slippage=N): ticks every market or stop fill is moved against the order (see slipped).
   slippage: number;
   // strategy(commission_type=, commission_value=): the fee every filled order pays (see
@@ -539,6 +553,7 @@ export class StrategyState {
     this.qtyIsCash = false;
     this.barClose = NaN;
     this.processOrdersOnClose = false;
+    this.useBarMagnifier = false;
     this.slippage = 0;
     this.commissionType = "percent";
     this.commissionValue = 0;
@@ -2231,17 +2246,27 @@ export class StrategyState {
   // (단위 테스트 기본값) 그 게이트 자체가 무해하게 no-op(아래 NaN 가드).
   // closePrice ends the bar's path, whose closing segment a trailing stop can still be hit on
   // (walkLeg); without it (unit tests) that segment fills nothing.
+  //
+  // `sub` is the bar's lower-timeframe bars. With strategy(use_bar_magnifier=true) the orders are
+  // judged on them instead of on the chart bar (strategies.txt, "Adjusting historical bar detail":
+  // "the broker emulator retrieves open, high, low, and close prices from the bars on a suitable
+  // lower timeframe, when possible, to increase the number of ticks available for estimating price
+  // action and filling orders on historical bars"): each sub-bar is walked like a bar of its own
+  // (fillOnPath), in time order. The market orders fill at the first one's open, which is the chart
+  // bar's; a price-based order fills where a sub-bar's path reaches its level, or at the open of the
+  // sub-bar after a gap that jumped it ("the emulator fills the order at the opening price of the
+  // bar following the gap"). The trades' excursions stay marked on the chart bar's high and low.
+  // The oracle does the same (`process_orders_magnified`: the at-open phase on the first sub-bar,
+  // the limit/stop phase on every sub-bar, the P&L phase on the chart bar), except that it fills
+  // a gapped level only at the first sub-bar's open (resin-harness state/disputes.md D4).
+  // Tier 1: resin-harness suites/strategy/tv/bar_magnifier (a 1D chart judged on its 60m bars;
+  // trade 10, a short entered at 80734.48 whose 81734.37 stop-loss the hours reach before its
+  // 79234.37 take-profit, where the day's path alone reaches the take-profit first). Without `sub`,
+  // or a bar with no sub-bars in it, the chart bar is walked as usual.
   processFills(
     openPrice: number, high: number = NaN, low: number = NaN, barIndex: number = NaN, barTimeMs: number = NaN,
-    closePrice: number = NaN,
+    closePrice: number = NaN, sub?: SubBarWindow,
   ): void {
-    // strategies.txt ("Broker emulator"): open → high → low → close when the open is closer to the
-    // high, else open → low → high → close (halfway walks down first, as in the oracle).
-    this.pathUpFirst = high - openPrice < openPrice - low;
-    this.barPath[0] = openPrice;
-    this.barPath[1] = this.pathUpFirst ? high : low;
-    this.barPath[2] = this.pathUpFirst ? low : high;
-    this.barPath[3] = closePrice;
     if (!Number.isNaN(barTimeMs)) {
       const d = new Date(barTimeMs);
       const dayKey = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
@@ -2291,6 +2316,29 @@ export class StrategyState {
       if (l.binding === null && this.pendingEntry(l.entryId) === undefined) this.exitLegs.splice(i, 1);
       else i++;
     }
+    if (sub !== undefined && this.useBarMagnifier && sub.from < sub.to) {
+      for (let k = sub.from; k < sub.to; k++) {
+        this.fillOnPath(sub.open[k]!, sub.high[k]!, sub.low[k]!, sub.close[k]!, barIndex, barTimeMs);
+      }
+    } else {
+      this.fillOnPath(openPrice, high, low, closePrice, barIndex, barTimeMs);
+    }
+    this.updateTradeExcursion(high, low);
+  }
+
+  // Fills what the price path open → nearer extreme → farther extreme → close reaches: the chart bar,
+  // or one of its sub-bars under the bar magnifier (processFills). The market orders are all filled
+  // at the first path's open, so a later sub-bar only meets price-based orders and exit legs.
+  private fillOnPath(
+    openPrice: number, high: number, low: number, closePrice: number, barIndex: number, barTimeMs: number,
+  ): void {
+    // strategies.txt ("Broker emulator"): open → high → low → close when the open is closer to the
+    // high, else open → low → high → close (halfway walks down first, as in the oracle).
+    this.pathUpFirst = high - openPrice < openPrice - low;
+    this.barPath[0] = openPrice;
+    this.barPath[1] = this.pathUpFirst ? high : low;
+    this.barPath[2] = this.pathUpFirst ? low : high;
+    this.barPath[3] = closePrice;
     if (this.closePending) this.fillPendingClose(openPrice, barIndex, barTimeMs);
     // exit 브래킷(C167)은 close(마켓 청산) 다음, entry 앞에서 판정한다 — 마켓 close는 open 체결이라
     // 항상 이 바의 첫 가격이고, exit도 청산 계열이라 기존 "청산 먼저 → entry" 순서 원칙에 합류한다
@@ -2312,7 +2360,6 @@ export class StrategyState {
         this.fillExitLegs(barIndex, barTimeMs, true, seg);
       }
     }
-    this.updateTradeExcursion(high, low);
   }
 
   // strategy(process_orders_on_close=true): the extra fill attempt at the bar's close, after the

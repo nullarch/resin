@@ -8,7 +8,7 @@
 // run() also collects a snapshot of every var slot per bar under the
 // `var:<name>` channel, which is the format the differential oracle compares.
 
-import { Context, type OHLCVData } from "./context";
+import { Context, type ContextOptions, type OHLCVData } from "./context";
 import { setDrawingContext } from "./drawing";
 import { rt } from "./rt";
 // Type-only: erased at runtime, so no runtime cycle back into the transpiler.
@@ -167,7 +167,7 @@ export function compile(code: string): (ctx: Context) => () => void {
 // Object form (viz S0): everything run() needs is already on TranspileOk, so take it
 // whole. The positional form below stays supported — this is an additive overload,
 // not a replacement. New slot kinds land here once instead of at every call site.
-export function run(result: TranspileOk, data: OHLCVData, opts?: { inputs?: Record<string, unknown> }): RunResult;
+export function run(result: TranspileOk, data: OHLCVData, opts?: ContextOptions): RunResult;
 export function run(
   code: string,
   varSlots: string[],
@@ -186,7 +186,7 @@ export function run(
 export function run(
   codeOrResult: string | TranspileOk,
   varSlotsOrData?: string[] | OHLCVData,
-  taSlotCountOrOpts?: number | { inputs?: Record<string, unknown> },
+  taSlotCountOrOpts?: number | ContextOptions,
   positionalData?: OHLCVData,
   fnVarSlotCount: number = 0,
   historySlotCount: number = 0,
@@ -200,7 +200,7 @@ export function run(
 ): RunResult {
   if (typeof codeOrResult !== "string") {
     const r = codeOrResult;
-    const opts = (taSlotCountOrOpts as { inputs?: Record<string, unknown> } | undefined) ?? {};
+    const opts = (taSlotCountOrOpts as ContextOptions | undefined) ?? {};
     const ctx = Context.from(r, varSlotsOrData as OHLCVData, opts);
     const base = collect(r.code, r.varSlots, r.plotTitles, ctx);
     // viz S1 — only the object form can assemble this: the metadata lives on

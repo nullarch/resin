@@ -15,7 +15,8 @@ import { describe, it, expect } from "vitest";
 import { StrategyState } from "../../src/runtime/strategy";
 import { transpile } from "../../src/transpiler/pipeline";
 import { runPipeline } from "../helpers/pipeline";
-import type { OHLCVData } from "../../src/runtime/context";
+import { run } from "../../src/runtime/engine";
+import { CONTEXT_OPTION_KEYS, type OHLCVData } from "../../src/runtime/context";
 
 function transpileErrors(source: string): string[] {
   const r = transpile(source);
@@ -8578,6 +8579,128 @@ describe("strategy(process_orders_on_close=true) E2E", () => {
   it("rejects a process_orders_on_close that is not a true/false literal", () => {
     const errs = transpileErrors('strategy("s", process_orders_on_close=1)');
     expect(errs.some((e) => e.includes("'process_orders_on_close' argument must be a true/false literal"))).toBe(true);
+  });
+});
+
+// ── strategy(use_bar_magnifier=true) ──
+// strategies.txt, "Adjusting historical bar detail": "the broker emulator retrieves open, high, low,
+// and close prices from the bars on a suitable lower timeframe, when possible, to increase the
+// number of ticks available for estimating price action and filling orders on historical bars".
+// Tier 1: resin-harness suites/strategy/tv/bar_magnifier (1D chart, 60m feed, 56/56 trades).
+describe("strategy(use_bar_magnifier=true) E2E (fills judged on the magnifier feed's sub-bars)", () => {
+  const DAY = 86_400_000;
+  const HALF = DAY / 2;
+  // Hand-computed. A short of 1 enters at bar 1's open 100 with a take-profit at 98 and a
+  // stop-loss at 102. Bar 1 (O=100 H=103 L=97) opens as near its high as its low, so its own
+  // path runs open → low → high → close and reaches the take-profit first (+2). Its first 12h
+  // sub-bar (O=100 H=103 L=99.5 C=101) runs open → low → high and reaches the stop-loss at 102
+  // before the second one (O=101 H=101.5 L=97) gets down to 98 (-2).
+  const data: OHLCVData = {
+    open: [100, 100, 99],
+    high: [100.5, 103, 99.5],
+    low: [99.5, 97, 98.5],
+    close: [100, 99, 99],
+    volume: [1, 1, 1],
+    time: [0, DAY, 2 * DAY],
+  };
+  const feed: OHLCVData = {
+    open: [100, 100, 101, 99],
+    high: [100.5, 103, 101.5, 99.5],
+    low: [99.5, 99.5, 97, 98.5],
+    close: [100, 101, 99, 99],
+    volume: [1, 1, 1, 1],
+    time: [0, DAY, DAY + HALF, 2 * DAY],
+  };
+  const body = [
+    "if bar_index == 0",
+    '    strategy.entry("S", strategy.short, 1)',
+    '    strategy.exit("X", "S", limit=98, stop=102)',
+    "var float __net = na",
+    "__net := strategy.netprofit",
+  ];
+  const on = ['strategy("s", initial_capital=100000, use_bar_magnifier=true)', ...body].join("\n");
+  const off = ['strategy("s", initial_capital=100000)', ...body].join("\n");
+  function net(src: string, magnifier?: OHLCVData): number[] {
+    const r = transpile(src);
+    if (!r.ok) throw new Error(r.errors.join("; "));
+    return run(r, data, { magnifier }).bars.map((b) => b["var:__net"] as number);
+  }
+
+  it("emits the flag only when it is on", () => {
+    expect(transpileCode(on)).toContain("$.strategy.useBarMagnifier = true;");
+    expect(transpileCode(off)).not.toContain("useBarMagnifier");
+  });
+
+  it("fills the bracket where the sub-bars reach it first (the stop-loss)", () => {
+    expect(net(on, feed)).toEqual([0, -2, -2]);
+  });
+
+  it("walks the chart bar when the script leaves the magnifier off, or no feed is given", () => {
+    expect(net(off, feed)).toEqual([0, 2, 2]);
+    expect(net(on)).toEqual([0, 2, 2]);
+  });
+
+  it("fills a stop entry a gap between two sub-bars jumped at the later one's open", () => {
+    // strategies.txt, "Broker emulator": "the emulator fills the order at the opening price of the
+    // bar following the gap". The first sub-bar tops out at 100.8 and the second opens at 101.5,
+    // over the buy stop at 101; bar 1's own path (O=100 H=102) would fill it at 101. The oracle
+    // leaves it unfilled on that sub-bar (resin-harness state/disputes.md D4).
+    const src = [
+      'strategy("s", initial_capital=100000, use_bar_magnifier=true)',
+      "if bar_index == 0",
+      '    strategy.entry("L", strategy.long, 1, stop=101)',
+      "var float __ep = na",
+      "__ep := strategy.position_avg_price",
+    ].join("\n");
+    const chart: OHLCVData = {
+      open: [100, 100], high: [100.5, 102], low: [99.5, 99.9], close: [100, 101.8], volume: [1, 1], time: [0, DAY],
+    };
+    const sub: OHLCVData = {
+      open: [100, 100, 101.5], high: [100.5, 100.8, 102], low: [99.5, 99.9, 101.2], close: [100, 100.5, 101.8],
+      volume: [1, 1, 1], time: [0, DAY, DAY + HALF],
+    };
+    const r = transpile(src);
+    if (!r.ok) throw new Error(r.errors.join("; "));
+    expect(run(r, chart, { magnifier: sub }).bars[1]!["var:__ep"]).toBe(101.5);
+    expect(run(r, chart).bars[1]!["var:__ep"]).toBe(101);
+  });
+
+  it("gives a chart bar only the sub-bars opening from its time up to the next bar's", () => {
+    // The short (take-profit 90, stop-loss 102) is open from bar 1's open. Only a sub-bar reaching
+    // 103 can stop it out: the one opening at bar 2's time is bar 2's, and the ones before the first
+    // bar or at the last bar's close time (extrapolated from the bar spacing, 2 days here) belong
+    // to no bar.
+    const src = [
+      'strategy("s", initial_capital=100000, use_bar_magnifier=true)',
+      "if bar_index == 0",
+      '    strategy.entry("S", strategy.short, 1)',
+      '    strategy.exit("X", "S", limit=90, stop=102)',
+      "var float __net = na",
+      "__net := strategy.netprofit",
+    ].join("\n");
+    const r = transpile(src);
+    if (!r.ok) throw new Error(r.errors.join("; "));
+    const calm = [100, 101, 99, 100];
+    const spike = [100, 103, 99, 100];
+    const bars = (rows: number[][], time: number[]): OHLCVData => ({
+      open: rows.map((b) => b[0]!), high: rows.map((b) => b[1]!), low: rows.map((b) => b[2]!),
+      close: rows.map((b) => b[3]!), volume: rows.map(() => 1), time,
+    });
+    // One sub-bar per chart bar, each the chart bar itself.
+    const three = bars([calm, calm, spike], [0, DAY, 2 * DAY]);
+    expect(run(r, three, { magnifier: three }).bars.map((b) => b["var:__net"])).toEqual([0, 0, -2]);
+    const two = bars([calm, calm], [0, DAY]);
+    const outside = bars([spike, calm, calm, spike], [-HALF, 0, DAY, 2 * DAY]);
+    expect(run(r, two, { magnifier: outside }).bars.map((b) => b["var:__net"])).toEqual([0, 0]);
+  });
+
+  it("rejects a use_bar_magnifier that is not a true/false literal", () => {
+    const errs = transpileErrors('strategy("s", use_bar_magnifier=1)');
+    expect(errs.some((e) => e.includes("'use_bar_magnifier' argument must be a true/false literal"))).toBe(true);
+  });
+
+  it("lists the magnifier among the context options it takes", () => {
+    expect(CONTEXT_OPTION_KEYS).toContain("magnifier");
   });
 });
 

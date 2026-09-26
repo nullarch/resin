@@ -51,6 +51,11 @@ script stopped itself on purpose" from "the engine broke".
 **One shot.** `run(transpileOk, data, opts?)` compiles, executes every bar, and
 hands back per-bar variable snapshots and the finished plot series. Use it when
 you only want the result. `opts.inputs` overrides `input.*` defaults.
+`opts.magnifier` (an `OHLCVData` with `time`, as is the chart data's) is the bar
+magnifier's lower-timeframe feed: a chart bar owns the sub-bars opening from its
+time up to the next bar's, and a `strategy(use_bar_magnifier=true)` fills its
+orders on them; other scripts ignore it. Both options work the same on
+`Context.from`.
 
 **Streaming.** `compile()` gives you a per-bar function and
 `Context.from(transpileOk, data, opts?)` holds the state; you drive the loop

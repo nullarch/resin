@@ -21,7 +21,7 @@
 // already casts explicitly.
 
 import { Series, RefSeries } from "./series";
-import { StrategyState } from "./strategy";
+import { StrategyState, type SubBarWindow } from "./strategy";
 import { build as buildSecurityCache, type SecurityCache } from "./security";
 // Type-only: erased at runtime, so no runtime cycle back into the transpiler.
 import type { TranspileOk } from "../transpiler/pipeline";
@@ -38,6 +38,19 @@ export interface OHLCVData {
   // naive bar counting and everything else is unchanged.
   time?: ArrayLike<number>;
 }
+
+export interface ContextOptions {
+  // Overrides for input.*, keyed by the input's title.
+  inputs?: Record<string, unknown>;
+  // The bar magnifier's feed: lower-timeframe bars covering the chart's span, in time order, with
+  // their open times (required, as is the chart data's). A chart bar owns the sub-bars that open
+  // from its own open time up to the next chart bar's; a strategy(use_bar_magnifier=true) fills its
+  // orders on them (StrategyState.processFills). Any other script ignores the feed.
+  magnifier?: OHLCVData;
+}
+
+// The ContextOptions keys this resin takes, for callers that detect support.
+export const CONTEXT_OPTION_KEYS: readonly (keyof ContextOptions)[] = ["inputs", "magnifier"];
 
 export class Context {
   vars: (number | string | number[] | null | undefined)[];
@@ -119,6 +132,10 @@ export class Context {
   // above (reverse access only, no raw exposure), but the cache builder needs
   // forward ArrayLike. This is the constructor argument itself — no copy.
   private rawData: OHLCVData;
+  // The bar magnifier's feed split by chart bar (setMagnifier), and the window advance() hands the
+  // strategy, reused bar after bar. Both undefined when no feed was given.
+  private subStart: Int32Array | undefined;
+  private subWindow: SubBarWindow | undefined;
 
   // Object form (viz S0): build a Context straight from a TranspileOk instead of
   // hand-copying its twelve slot fields into the positional constructor. The
@@ -127,14 +144,38 @@ export class Context {
   static from(
     result: TranspileOk,
     data: OHLCVData,
-    opts: { inputs?: Record<string, unknown> } = {},
+    opts: ContextOptions = {},
   ): Context {
-    return new Context(
+    const ctx = new Context(
       data, result.varSlots.length, result.taSlotCount, result.fnVarSlotCount,
       result.historySlotCount, result.taScratchSize, opts.inputs ?? {},
       result.plotTitles.length, result.securityTfs, result.refHistorySlotCount,
       result.condCallHistorySlotCount, result.condCallRefHistorySlotCount,
     );
+    if (opts.magnifier !== undefined) ctx.setMagnifier(opts.magnifier);
+    return ctx;
+  }
+
+  // Takes the bar magnifier's feed (ContextOptions.magnifier) and finds each chart bar's sub-bars in
+  // it: chart bar i owns [subStart[i], subStart[i + 1]), the sub-bars opening at or after its open
+  // time and before the next bar's (the last bar's end is its time_close, extrapolated as there).
+  // Sub-bars before the first chart bar belong to none.
+  setMagnifier(feed: OHLCVData): void {
+    const chart = this.time;
+    const t = feed.time;
+    if (chart === undefined || t === undefined) {
+      throw new Error("Context: the magnifier feed needs a time channel on both the chart data and the feed");
+    }
+    const n = this.barCount;
+    const start = new Int32Array(n + 1);
+    let j = 0;
+    for (let i = 0; i <= n; i++) {
+      const until = i < n ? chart[i]! : n >= 2 ? chart[n - 1]! + (chart[n - 1]! - chart[n - 2]!) : Infinity;
+      while (j < t.length && t[j]! < until) j++;
+      start[i] = j;
+    }
+    this.subStart = start;
+    this.subWindow = { open: feed.open, high: feed.high, low: feed.low, close: feed.close, from: 0, to: 0 };
   }
 
   // viz S1 — called once from the generated preamble when the script has runtime
@@ -316,9 +357,15 @@ export class Context {
     // an exit's trailing stop also on the path's closing segment, to the
     // close); untriggered ones stay in the slot and carry to the next bar. advance()
     // runs before barFn(), so this bar's script code sees the post-fill
-    // position.
+    // position. With a magnifier feed the bar's sub-bars go along; the strategy
+    // uses them only under use_bar_magnifier=true.
+    const sub = this.subWindow;
+    if (sub !== undefined) {
+      sub.from = this.subStart![this.idx]!;
+      sub.to = this.subStart![this.idx + 1]!;
+    }
     this.strategy.processFills(
-      this.open.get(0), this.high.get(0), this.low.get(0), this.idx, this.barTimeMs, this.close.get(0),
+      this.open.get(0), this.high.get(0), this.low.get(0), this.idx, this.barTimeMs, this.close.get(0), sub,
     );
     // The close the script body runs at: orders it places without a qty are sized at this price.
     this.strategy.barClose = this.close.get(0);

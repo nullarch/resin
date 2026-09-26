@@ -393,6 +393,10 @@ export function generateCode(program: AnalyzedProgram): string {
       `$.strategy.configure(${program.strategyDefaultQty ?? 1}, ${program.strategyPyramiding ?? 1}${capArg}${tailArgs});`,
     );
   }
+  // strategy(use_bar_magnifier=true): emitted only when it is on, so other scripts are unchanged.
+  if (program.isStrategy && program.strategyUseBarMagnifier) {
+    lines.push("$.strategy.useBarMagnifier = true;");
+  }
   // strategy(commission_type=, commission_value=): handed to the strategy engine once per run, only
   // when a fee is actually charged.
   if (program.isStrategy && program.strategyCommissionValue > 0) {

@@ -4979,6 +4979,20 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             );
           }
         }
+        // use_bar_magnifier=true judges fills on the lower-timeframe bars the run supplies
+        // (ContextOptions.magnifier; StrategyState.processFills). A const bool, like
+        // process_orders_on_close; anything else is a hard error, since dropping it would silently
+        // judge the fills on the chart bars.
+        const mag = directiveArgExpr(expr, STRATEGY_PARAM_NAMES, "use_bar_magnifier");
+        if (mag !== undefined) {
+          if (mag.kind === "BoolLiteral") {
+            prog.strategyUseBarMagnifier = mag.value;
+          } else {
+            prog.errors.push(
+              `'strategy()' 'use_bar_magnifier' argument must be a true/false literal (L${expr.line}:${expr.col})`,
+            );
+          }
+        }
         // slippage (const int, ticks) moves every market and stop fill against the order
         // (StrategyState.slipped). Anything but a compile-time int >= 0 is a hard error, since
         // dropping it would silently move those fills.
