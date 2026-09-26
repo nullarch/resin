@@ -593,6 +593,17 @@ describe("ta.alma", () => {
     expect(results[9]).toBeCloseTo(107.6831286619, 9);
   });
 
+  // ref_v6_ta_math.txt "ta.alma": `floor` floors m = offset * (length - 1) before the weights are
+  // built. length 3, offset 0.85: m = floor(1.7) = 1, the centre tap, so the weights are the
+  // symmetric [e^-2, 1, e^-2] (s = 3 / 6); the unfloored m = 1.7 gives 102.6856736002 on bar 2.
+  it("floors the Gaussian's centre when floor = true (harness ta.ma seed 1)", () => {
+    const state = {};
+    const results = [101, 102, 103, 102].map((c) => alma(state, c, 3, 0.85, 6.0, true));
+    expect(results[1]).toBeNaN();
+    expect(results[2]).toBeCloseTo(102, 12);
+    expect(results[3]).toBeCloseTo(102 + 1 / (1 + 2 * Math.exp(-2)), 12);
+  });
+
   it("keeps independent state across two call sites", () => {
     const stateA = {};
     const stateB = {};

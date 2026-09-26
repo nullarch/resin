@@ -2142,6 +2142,20 @@ describe("Analyzer", () => {
     expect(prog.errors.some((e) => e.includes("'ta.alma'") && e.includes("argument count"))).toBe(true);
   });
 
+  // ref_v6_ta_math.txt "SYNTAX: ta.alma(series, length, offset, sigma, floor)", "ARG floor [simple
+  // bool]: An optional parameter" (harness repro state/repros/ta.ma-seed-1.json).
+  it("accepts ta.alma's optional fifth argument floor, positional or by name", () => {
+    expect(analyzeSource("x = ta.alma(low, 37, 0.85, 1.5, false)").errors).toEqual([]);
+    expect(analyzeSource("x = ta.alma(close, 9, 0.85, 6, floor = true)").errors).toEqual([]);
+    const prog = analyzeSource("x = ta.alma(close, 9, 0.85, 6, true, 1)");
+    expect(prog.errors.some((e) => e.includes("'ta.alma'") && e.includes("argument count"))).toBe(true);
+  });
+
+  it("errors when ta.alma's floor argument is a series bool (it shapes the weights, simple bool)", () => {
+    const prog = analyzeSource("x = ta.alma(close, 9, 0.85, 6, close > open)");
+    expect(prog.errors.some((e) => e.includes("'ta.alma'") && e.includes("series"))).toBe(true);
+  });
+
   it("accepts ta.alma inside a while-body and registers the slot (loop bodies allowed since C161, per-call advance)", () => {
     const prog = analyzeSource("while close > open\n    x = ta.alma(close, 9, 0.85, 6)");
     expect(prog.errors).toEqual([]);

@@ -348,12 +348,17 @@ export interface AlmaState {
 // `length/sigma`가 ZeroDivisionError로 크래시하지만, JS는 0-나눗셈이 Infinity를 내고
 // (i-m)^2/Infinity가 0으로 수렴해 모든 weight가 1.0(균등 가중 — SMA와 동치)이 되는 well-defined
 // 값을 낸다 — GOAL.md "알려진 버그는 따르지 않는다" 적용, DIVERGENCES.md 신규 항목 참조.
-export function alma(state: AlmaState, value: number, length: number, offsetMult: number, sigma: number): number {
+// `floor` (the optional fifth argument, default false) floors the Gaussian's centre before the
+// weights are built: ref_v6_ta_math.txt "ta.alma" "ARG floor [simple bool]: An optional parameter.
+// Specifies whether the offset calculation is floored before ALMA is calculated. Default value is
+// false", pine_alma "m = math.floor(offset * (windowsize - 1)) // Used as m when math.floor=true"
+// (oracle lib/ta.py alma `math.floor(offset * (length - 1))`).
+export function alma(state: AlmaState, value: number, length: number, offsetMult: number, sigma: number, floor: boolean = false): number {
   length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조). offsetMult/sigma는 TV 자체가 simple float라 대상 아님
   if (state.buffer === undefined) {
     state.buffer = new Array(length).fill(NaN);
     state.writeIdx = 0;
-    const m = offsetMult * (length - 1);
+    const m = floor ? Math.floor(offsetMult * (length - 1)) : offsetMult * (length - 1);
     const s = length / sigma;
     const weights = new Array(length);
     let weightSum = 0;
