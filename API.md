@@ -35,7 +35,7 @@ script stopped itself on purpose" from "the engine broke".
 
 | Name | Module | Role |
 |---|---|---|
-| `AnalyzeOptions` | `src/transpiler/analyzer` | options for `transpile()` (`chartTf?: string`) |
+| `AnalyzeOptions` | `src/transpiler/analyzer` | options for `transpile()` (`chartTf?: string`; `syminfo?: { mintick?, pricescale?, minmove?, mincontract? }` — the chart symbol's tick and lot grids, default 0.01 / 100 / 1 / 1; `mintick` must equal `minmove / pricescale`) |
 | `BarSnapshot` | `src/runtime/engine` | `Record<string, number>`, keyed `var:<name>` |
 | `OHLCVData` | `src/runtime/context` | `Context` input: `open/high/low/close/volume: ArrayLike<number>`, optional `time` |
 | `PlotResult` | `src/runtime/engine` | `{ title, values }` |

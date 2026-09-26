@@ -58,29 +58,28 @@ interface EntryBinding {
   entryPrice: number;
 }
 
-// Snaps a price level derived from a tick distance onto the symbol's tick grid, rounding up
-// (`up`) or down, so the level is a price the chart can print. A level within 1e-4 tick of a grid
-// point counts as on it, which absorbs the float error of `price ± ticks * mintick`. This is the
-// oracle's `_price_round` (tier 2, measured on TradingView — see resin-harness
-// state/repros/ticks-seed-1.json).
-function snapToTick(price: number, up: boolean): number {
-  const ticks = (price * PRICESCALE) / MINMOVE;
-  return ((up ? Math.ceil(ticks - 1e-4) : Math.floor(ticks + 1e-4)) * MINMOVE) / PRICESCALE;
+// strategy(initial_capital=) when the declaration omits it. props.txt: "Initial Capital (parameter:
+// initial_capital) ... By default, this value is equal to 1,000,000." TradingView measured it
+// (tier 1 resin-harness suites/strategy/tv/barupdn: the script omits initial_capital and its first
+// 10%-of-equity entry buys 87927.5 units at 1.1373), and so does the oracle (tier 2, its strategy()
+// default).
+export const DEFAULT_INITIAL_CAPITAL = 1000000;
+
+// Lots per contract of a syminfo.mincontract: the quantity grid step is 1 / lotsPerContract. A lot
+// larger than one contract keeps the whole-contract grid, as in the oracle (`_size_round_factor`).
+function lotsPerContract(mincontract: number): number {
+  return Math.max(1, Math.round(1 / mincontract));
 }
 
-// Lots per contract: the quantity grid step is 1 / LOTS_PER_CONTRACT = syminfo.mincontract.
-const LOTS_PER_CONTRACT = Math.max(1, Math.round(1 / MINCONTRACT));
-
-// Truncates a quantity toward zero onto the symbol's quantity grid (syminfo.mincontract). An order
-// sized from money (percent_of_equity/cash) buys whole lots only: 5000 cash at 100.28 is 49
-// contracts, not 49.86. This is
-// the oracle's `_size_floor` (tier 2, measured on TradingView; repros resin-harness
-// state/repros/mixed-seed-5.json and qtyType-seed-1.json). The oracle then re-materializes the
-// quantity on a 1e-8 unit grid, which leaves whole contracts unchanged, so it is omitted here.
-function floorToLots(qty: number): number {
-  const lots = Math.trunc(Math.abs(qty) * LOTS_PER_CONTRACT);
-  if (lots === 0) return 0;
-  return Math.sign(qty) * lots * (1 / LOTS_PER_CONTRACT);
+// Materializes a quantity on TradingView's 1e-8 unit grid: TV carries every quantity as an integer
+// count of 1e-8 units (the oracle's `_size_units`, tier 2, measured on TradingView — its EURUSD run
+// reports 5294.900000000001, not 5294.9). A whole-contract quantity is already on it, so this only
+// matters on a fractional lot grid. Beyond 1e8 lots per contract, or TV's long range, it is left alone.
+function toUnits(qty: number, lotsPerContract: number): number {
+  if (lotsPerContract > 1e8) return qty;
+  const units = qty / 1e-8;
+  if (!(Math.abs(units) < 9.223372036854776e18)) return qty;
+  return Math.round(units) * 1e-8;
 }
 
 // Rounds a sizing budget half-up to 10 significant decimal digits of its shortest decimal form,
@@ -128,10 +127,10 @@ export class StrategyState {
 
   // strategy() 지시어 메타데이터(C164, C165에서 initialCapital 추가) — codegen이 프리앰블에서
   // configure()로 1회 주입. 미지정 스크립트는 configure 호출 자체가 없거나(1/1) 세 번째 인자를
-  // 생략해(100000) 기본값이 그대로 쓰인다.
+  // 생략해 기본값(DEFAULT_INITIAL_CAPITAL)이 그대로 쓰인다.
   defaultQty: number; // strategy(default_qty_value=N) — entry qty 생략 시 사용
   pyramiding: number; // strategy(pyramiding=N) — 같은 방향 추가 진입 최대 횟수(0은 1과 실질 동치 — 아래 processFills 참조)
-  initialCapital: number; // strategy(initial_capital=N) — equity의 기저(TV/pine2py StrategyConfig 기본 100000)
+  initialCapital: number; // strategy(initial_capital=N) — equity의 기저(default DEFAULT_INITIAL_CAPITAL = 1,000,000)
   // strategy(default_qty_type=strategy.percent_of_equity): an entry/order that omits qty spends
   // defaultQty percent of the equity (see defaultOrderQty).
   qtyIsPercent: boolean;
@@ -146,6 +145,12 @@ export class StrategyState {
   processOrdersOnClose: boolean;
   // strategy(slippage=N): ticks every market or stop fill is moved against the order (see slipped).
   slippage: number;
+  // The chart symbol's grids (setSymbol): syminfo.mintick, the tick grid minmove / pricescale, and
+  // the lot grid 1 / lotsPerContract (syminfo.mincontract).
+  mintick: number;
+  pricescale: number;
+  minmove: number;
+  lotsPerContract: number;
 
   // 계좌 속성 누적기(C165 셋째 슬라이스) — pine2py는 청산마다 Trade 객체를 리스트에 쌓고 속성을
   // 매번 리스트 스캔(sum/len)으로 계산하지만, 여기서는 GOAL.md "bar loop 안 할당 제로"에 따라
@@ -421,12 +426,16 @@ export class StrategyState {
     this.entryBook = [];
     this.defaultQty = 1;
     this.pyramiding = 1;
-    this.initialCapital = 100000;
+    this.initialCapital = DEFAULT_INITIAL_CAPITAL;
     this.qtyIsPercent = false;
     this.qtyIsCash = false;
     this.barClose = NaN;
     this.processOrdersOnClose = false;
     this.slippage = 0;
+    this.mintick = MINTICK;
+    this.pricescale = PRICESCALE;
+    this.minmove = MINMOVE;
+    this.lotsPerContract = lotsPerContract(MINCONTRACT);
     this.realizedPnl = 0;
     this.closedTrades = 0;
     this.winTrades = 0;
@@ -623,7 +632,7 @@ export class StrategyState {
   // 호출 형태(및 그 exact-string 테스트)가 그대로 유효하다 — codegen도 미지정 슬롯 뒤쪽은 방출을
   // 생략한다(C129 원칙).
   configure(
-    defaultQty: number, pyramiding: number, initialCapital: number = 100000,
+    defaultQty: number, pyramiding: number, initialCapital: number = DEFAULT_INITIAL_CAPITAL,
     qtyIsPercent: boolean = false, qtyIsCash: boolean = false, processOrdersOnClose: boolean = false,
     slippage: number = 0,
   ): void {
@@ -636,6 +645,37 @@ export class StrategyState {
     this.slippage = slippage;
   }
 
+  // The chart symbol the strategy trades (transpile's syminfo option; codegen emits this once, before
+  // the first bar, when it differs from resin's default symbol). Tick distances, slippage and level
+  // snapping use its tick grid; default-sized orders floor to its lot grid.
+  setSymbol(mintick: number, pricescale: number, minmove: number, mincontract: number): void {
+    this.mintick = mintick;
+    this.pricescale = pricescale;
+    this.minmove = minmove;
+    this.lotsPerContract = lotsPerContract(mincontract);
+  }
+
+  // Snaps a price level derived from a tick distance onto the symbol's tick grid, rounding up
+  // (`up`) or down, so the level is a price the chart can print. A level within 1e-4 tick of a grid
+  // point counts as on it, which absorbs the float error of `price ± ticks * mintick`. This is the
+  // oracle's `_price_round` (tier 2, measured on TradingView — see resin-harness
+  // state/repros/ticks-seed-1.json).
+  private snapToTick(price: number, up: boolean): number {
+    const ticks = (price * this.pricescale) / this.minmove;
+    return ((up ? Math.ceil(ticks - 1e-4) : Math.floor(ticks + 1e-4)) * this.minmove) / this.pricescale;
+  }
+
+  // Truncates a quantity toward zero onto the symbol's quantity grid (syminfo.mincontract), then
+  // materializes it on the 1e-8 unit grid (toUnits). An order sized from money (percent_of_equity/
+  // cash) buys whole lots only: 5000 cash at 100.28 is 49 contracts, not 49.86. This is the oracle's
+  // `_size_floor` (tier 2, measured on TradingView; repros resin-harness
+  // state/repros/mixed-seed-5.json and qtyType-seed-1.json).
+  private floorToLots(qty: number): number {
+    const lots = Math.trunc(Math.abs(qty) * this.lotsPerContract);
+    if (lots === 0) return 0;
+    return toUnits(Math.sign(qty) * lots * (1 / this.lotsPerContract), this.lotsPerContract);
+  }
+
   // The fill price of a market or stop order after slippage: `price` moved `slippage` ticks against
   // the order, up for a buy (`side` 1) and down for a sell (-1). props.txt: "Slippage (parameter:
   // slippage) specifies the value in ticks to be added to the fill price of market or stop orders";
@@ -644,7 +684,7 @@ export class StrategyState {
   // fill keeps its price ("limit orders execute at the specified price or a better value"). The price
   // is not snapped afterwards, as in the oracle. Repro: resin-harness state/repros/mixed-seed-6.json.
   private slipped(price: number, side: number): number {
-    return this.slippage > 0 ? price + side * (MINTICK * this.slippage) : price;
+    return this.slippage > 0 ? price + side * (this.mintick * this.slippage) : price;
   }
 
   // strategy.openprofit — 미실현 손익(pine2py engine.py openprofit 프로퍼티의 signed-posSize 형:
@@ -952,16 +992,14 @@ export class StrategyState {
 
   // Contracts a frozen money budget buys at `price`, floored to whole lots; NaN when nothing
   // sizable comes out (a non-positive budget, or no price to divide it by).
-  private static moneyQtyAt(money: number, price: number): number {
+  private moneyQtyAt(money: number, price: number): number {
     const raw = sig10(money) / price;
-    return raw > 0 && raw < Infinity ? floorToLots(raw) : NaN;
+    return raw > 0 && raw < Infinity ? this.floorToLots(raw) : NaN;
   }
 
   // The quantity of an entry/order that omits qty, resolved when it is placed on this bar:
-  // - fixed: default_qty_value as stated. Like an explicit qty it is not snapped to the lot grid:
-  //   the oracle floors both, but resin cannot be told the chart symbol's mincontract, and flooring
-  //   a stated 0.01 onto the fixed grid of 1 would drop every order on a crypto chart (tier 1
-  //   suites/strategy/tv/bar_magnifier trades 0.01 BTC with mincontract 0.00001);
+  // - fixed: default_qty_value as stated. Like an explicit qty it is not snapped to the lot grid
+  //   yet (not covered: the oracle floors both onto syminfo.mincontract);
   // - percent_of_equity/cash, market order: the budget divided by the price the order would fill at
   //   now, this bar's close moved by slippage against it, floored to whole lots. The size stays
   //   fixed until the fill; a later open does not re-size it;
@@ -988,7 +1026,7 @@ export class StrategyState {
         : !Number.isNaN(stop)
           ? sign > 0 ? Math.max(stop, c) : Math.min(stop, c)
           : this.slipped(c, sign);
-      qty = StrategyState.moneyQtyAt(money, sizingPrice);
+      qty = this.moneyQtyAt(money, sizingPrice);
     } else {
       qty = this.defaultQty > 0 ? this.defaultQty : NaN;
     }
@@ -1003,8 +1041,8 @@ export class StrategyState {
   // A fixed default_qty_value is returned as stated (see defaultOrderQty).
   defaultEntryQty(price: number): number {
     if (!this.qtyIsPercent && !this.qtyIsCash) return this.defaultQty;
-    const raw = sig10(this.defaultBudget()) / (Math.floor(price / MINTICK + 0.5) * MINTICK);
-    return Math.abs(raw) < Infinity ? floorToLots(raw) : 0;
+    const raw = sig10(this.defaultBudget()) / (Math.floor(price / this.mintick + 0.5) * this.mintick);
+    return Math.abs(raw) < Infinity ? this.floorToLots(raw) : 0;
   }
 
   // A closing fill of `qty` (Infinity = the whole position) at `fillPrice`. It consumes the open
@@ -1732,7 +1770,7 @@ export class StrategyState {
     // still close an opposite position and open nothing (the oracle keeps the reversal leg).
     let qty = this.entryQty;
     if (this.entryQtyAuto) {
-      qty = StrategyState.moneyQtyAt(this.entryQty, fillPrice);
+      qty = this.moneyQtyAt(this.entryQty, fillPrice);
       if (Number.isNaN(qty)) return;
     }
     // strategy.risk.allow_entry_in(C309) — 금지된 방향의 entry는 아래 리버스-청산(있었다면)
@@ -1802,7 +1840,7 @@ export class StrategyState {
     if (Number.isNaN(this.orderLimit)) orderFill = this.slipped(orderFill, sign); // as in fillPendingEntry
     // A default-sized limit/stop order resolves at its fill price, as in fillPendingEntry; zero lots
     // consume it unfilled.
-    let qty = this.orderQtyAuto ? StrategyState.moneyQtyAt(this.orderQty, orderFill) : this.orderQty;
+    let qty = this.orderQtyAuto ? this.moneyQtyAt(this.orderQty, orderFill) : this.orderQty;
     if (!(qty > 0)) return;
     if (this.posSize !== 0 && this.posSize > 0 !== sign > 0) {
       // 반대 방향은 |posSize|와 상쇄 — 축소분을 실현 손익으로 기록(closeAt 부분 산식 재사용,
@@ -1998,9 +2036,9 @@ export class StrategyState {
         // 활성화(high가 entry+trail_points, 또는 trail_price가 지정됐으면 그 절대가 그대로 도달)
         // 또는 기활성이면 이번 바 high로 라인 래칫(단조 max). high가 NaN(마켓 전용 단위 테스트
         // 경로)이면 활성화 비교/래칫 비교 전부 false — 안전 소멸.
-        const offset = (Number.isNaN(this.exitTrailOffset) ? this.exitTrailPoints : this.exitTrailOffset) * MINTICK;
+        const offset = (Number.isNaN(this.exitTrailOffset) ? this.exitTrailPoints : this.exitTrailOffset) * this.mintick;
         const activation = Number.isNaN(this.exitTrailPriceArg)
-          ? snapToTick(base + this.exitTrailPoints * MINTICK, true)
+          ? this.snapToTick(base + this.exitTrailPoints * this.mintick, true)
           : this.exitTrailPriceArg;
         if (!Number.isNaN(this.exitTrailPrice) || high >= activation) {
           const newTrail = high - offset;
@@ -2022,9 +2060,9 @@ export class StrategyState {
       if (hasTrail && openPrice >= this.exitTrailPrice) { this.exitFillKind = null; return openPrice; }
       if (hasLimit && openPrice <= limit) { this.exitFillKind = "profit"; return openPrice; }
       if (hasTrail) {
-        const offset = (Number.isNaN(this.exitTrailOffset) ? this.exitTrailPoints : this.exitTrailOffset) * MINTICK;
+        const offset = (Number.isNaN(this.exitTrailOffset) ? this.exitTrailPoints : this.exitTrailOffset) * this.mintick;
         const activation = Number.isNaN(this.exitTrailPriceArg)
-          ? snapToTick(base - this.exitTrailPoints * MINTICK, false)
+          ? this.snapToTick(base - this.exitTrailPoints * this.mintick, false)
           : this.exitTrailPriceArg;
         if (!Number.isNaN(this.exitTrailPrice) || low <= activation) {
           const newTrail = low + offset;
@@ -2053,8 +2091,8 @@ export class StrategyState {
     if (!Number.isNaN(this.exitLimit)) return this.exitLimit;
     if (Number.isNaN(this.exitProfitPoints)) return NaN;
     return isLong
-      ? snapToTick(base + this.exitProfitPoints * MINTICK, true)
-      : snapToTick(base - this.exitProfitPoints * MINTICK, false);
+      ? this.snapToTick(base + this.exitProfitPoints * this.mintick, true)
+      : this.snapToTick(base - this.exitProfitPoints * this.mintick, false);
   }
 
   // The pending exit's stop-loss level: stop=, else `loss` ticks from `base` against the position.
@@ -2063,7 +2101,7 @@ export class StrategyState {
     if (!Number.isNaN(this.exitStop)) return this.exitStop;
     if (Number.isNaN(this.exitLossPoints)) return NaN;
     return isLong
-      ? snapToTick(base - this.exitLossPoints * MINTICK, false)
-      : snapToTick(base + this.exitLossPoints * MINTICK, true);
+      ? this.snapToTick(base - this.exitLossPoints * this.mintick, false)
+      : this.snapToTick(base + this.exitLossPoints * this.mintick, true);
   }
 }

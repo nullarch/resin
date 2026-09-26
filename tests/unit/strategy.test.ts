@@ -1237,7 +1237,9 @@ describe("strategy.* E2E 둘째 슬라이스 (hand-verified: default_qty_value +
 });
 
 describe("StrategyState 셋째 슬라이스 (C165: 계좌 속성, hand-verified)", () => {
-  it("starts with zeroed accumulators and the TV default initial capital (100000)", () => {
+  // props.txt: "By default, this value is equal to 1,000,000"; TradingView sized tier 1
+  // resin-harness suites/strategy/tv/barupdn (no initial_capital) from 1,000,000.
+  it("starts with zeroed accumulators and the TV default initial capital (1,000,000)", () => {
     const st = new StrategyState();
     expect(st.realizedPnl).toBe(0);
     expect(st.closedTrades).toBe(0);
@@ -1245,9 +1247,9 @@ describe("StrategyState 셋째 슬라이스 (C165: 계좌 속성, hand-verified)
     expect(st.lossTrades).toBe(0);
     expect(st.grossProfit).toBe(0);
     expect(st.grossLoss).toBe(0);
-    expect(st.initialCapital).toBe(100000);
+    expect(st.initialCapital).toBe(1000000);
     expect(st.openProfit(123)).toBe(0); // flat — 미실현 손익 0
-    expect(st.equity(123)).toBe(100000);
+    expect(st.equity(123)).toBe(1000000);
   });
 
   it("records a winning long close: (exit-entry)*qty", () => {
@@ -1398,7 +1400,7 @@ describe("StrategyState 셋째 슬라이스 (C165: 계좌 속성, hand-verified)
   it("configure without the third arg keeps the default initial capital (C164 2-인자 호출 호환)", () => {
     const st = new StrategyState();
     st.configure(5, 1);
-    expect(st.initialCapital).toBe(100000);
+    expect(st.initialCapital).toBe(1000000);
     st.configure(5, 1, 777);
     expect(st.initialCapital).toBe(777);
   });
@@ -4476,7 +4478,7 @@ describe("strategy() default_qty_type analyzer validation (C171)", () => {
 describe("strategy() default_qty_type codegen emission (C171)", () => {
   it("emits configure with a 4th arg (true) and fills the capital slot with its default", () => {
     const code = transpileCode('strategy("s", default_qty_type=strategy.percent_of_equity)');
-    expect(code).toContain("$.strategy.configure(1, 1, 100000, true);");
+    expect(code).toContain("$.strategy.configure(1, 1, 1000000, true);");
   });
 
   it("emits all four slots when value/capital are also specified", () => {
@@ -4498,14 +4500,14 @@ describe("strategy() default_qty_type codegen emission (C171)", () => {
 
   it("treats the string literal form identically to the constant", () => {
     const code = transpileCode('strategy("s", default_qty_type="percent_of_equity")');
-    expect(code).toContain("$.strategy.configure(1, 1, 100000, true);");
+    expect(code).toContain("$.strategy.configure(1, 1, 1000000, true);");
   });
 });
 
 describe("strategy() default_qty_type=cash codegen emission (C330)", () => {
   it("emits configure with a 5th arg (true) and fills the percent(4th)/capital(3rd) slots", () => {
     const code = transpileCode('strategy("s", default_qty_type=strategy.cash)');
-    expect(code).toContain("$.strategy.configure(1, 1, 100000, false, true);");
+    expect(code).toContain("$.strategy.configure(1, 1, 1000000, false, true);");
   });
 
   it("emits all five slots when value/capital are also specified", () => {
@@ -4517,7 +4519,7 @@ describe("strategy() default_qty_type=cash codegen emission (C330)", () => {
 
   it("treats the string literal form identically to the constant", () => {
     const code = transpileCode('strategy("s", default_qty_type="cash")');
-    expect(code).toContain("$.strategy.configure(1, 1, 100000, false, true);");
+    expect(code).toContain("$.strategy.configure(1, 1, 1000000, false, true);");
   });
 });
 
@@ -4621,7 +4623,7 @@ describe("StrategyState.updateDrawdown (C172 열째 슬라이스: max_drawdown, 
   it("seeds peakEquity from initialCapital on the first call (flat position)", () => {
     const st = new StrategyState();
     st.updateDrawdown(123); // 플랫 — closePrice는 openProfit에 영향 없음
-    expect(st.peakEquity).toBe(100000);
+    expect(st.peakEquity).toBe(1000000);
     expect(st.maxDrawdown).toBe(0);
   });
 
@@ -6523,8 +6525,8 @@ describe("StrategyState.setMaxDrawdown/entry() 영구 드로다운 게이트 (C3
   });
 
   it("cash type: blocks a new entry once peak-to-current equity drawdown reaches the threshold", () => {
-    const st = new StrategyState(); // initialCapital=100000 기본값
-    st.configure(1, 10); // pyramiding=10 — 상한이 pyramiding이 아니라 drawdown 게이트임을 격리
+    const st = new StrategyState();
+    st.configure(1, 10, 100000); // capital 100000 pinned; pyramiding=10 — 상한이 pyramiding이 아니라 drawdown 게이트임을 격리
     st.setMaxDrawdown(5000, "cash");
     st.entry("A", "long", 100);
     st.processFills(100, undefined, undefined, 0); // 체결가 100, 포지션 100주
@@ -6538,7 +6540,7 @@ describe("StrategyState.setMaxDrawdown/entry() 영구 드로다운 게이트 (C3
 
   it("percent_of_equity type: threshold is evaluated against peak equity, not initial capital", () => {
     const st = new StrategyState();
-    st.configure(1, 10); // pyramiding 격리
+    st.configure(1, 10, 100000); // capital 100000 pinned; pyramiding 격리
     st.setMaxDrawdown(5, "percent_of_equity"); // peak의 5%
     st.entry("A", "long", 1000);
     st.processFills(100, undefined, undefined, 0);
@@ -6617,7 +6619,7 @@ describe("StrategyState.setMaxIntradayLoss/entry() 일일 드로다운 게이트
 
   it("cash type: blocks further same-day entries once the intraday peak-to-current loss reaches the threshold", () => {
     const st = new StrategyState();
-    st.configure(1, 10); // pyramiding=10 — 상한이 pyramiding이 아니라 intraday-loss 게이트임을 격리
+    st.configure(1, 10, 100000); // capital 100000 pinned; pyramiding=10 — 상한이 pyramiding이 아니라 intraday-loss 게이트임을 격리
     st.setMaxIntradayLoss(5000, "cash");
     st.entry("A", "long", 100);
     st.processFills(100, undefined, undefined, 0, C322_DAY1); // day1 첫 바 -> intradayPeakEquity NaN 리셋
@@ -6630,7 +6632,7 @@ describe("StrategyState.setMaxIntradayLoss/entry() 일일 드로다운 게이트
 
   it("resets at the UTC calendar day boundary, unblocking further entries", () => {
     const st = new StrategyState();
-    st.configure(1, 10); // pyramiding 여유 — 리셋 후 재진입이 pyramiding에 안 막히도록
+    st.configure(1, 10, 100000); // capital 100000 pinned; pyramiding 여유 — 리셋 후 재진입이 pyramiding에 안 막히도록
     st.setMaxIntradayLoss(5000, "cash");
     st.entry("A", "long", 100);
     st.processFills(100, undefined, undefined, 0, C322_DAY1);
@@ -6646,7 +6648,7 @@ describe("StrategyState.setMaxIntradayLoss/entry() 일일 드로다운 게이트
 
   it("does not stay latched within the same day if equity partially recovers (still recomputed, but latch itself only clears on day change)", () => {
     const st = new StrategyState();
-    st.configure(1, 10); // pyramiding 격리
+    st.configure(1, 10, 100000); // capital 100000 pinned; pyramiding 격리
     st.setMaxIntradayLoss(5000, "cash");
     st.entry("A", "long", 100);
     st.processFills(100, undefined, undefined, 0, C322_DAY1);
@@ -6661,6 +6663,7 @@ describe("StrategyState.setMaxIntradayLoss/entry() 일일 드로다운 게이트
 
   it("still allows closing an existing position once the intraday loss limit is reached", () => {
     const st = new StrategyState();
+    st.configure(1, 1, 100000); // capital 100000 pinned
     st.setMaxIntradayLoss(5000, "cash");
     st.entry("A", "long", 100);
     st.processFills(100, undefined, undefined, 0, C322_DAY1);
@@ -6674,6 +6677,7 @@ describe("StrategyState.setMaxIntradayLoss/entry() 일일 드로다운 게이트
 
   it("order() netting is NOT gated by max_intraday_loss — this restriction is documented as strategy.entry-specific only", () => {
     const st = new StrategyState();
+    st.configure(1, 1, 100000); // capital 100000 pinned
     st.setMaxIntradayLoss(1, "cash");
     st.entry("A", "long", 100);
     st.processFills(100, undefined, undefined, 0, C322_DAY1);
@@ -8424,5 +8428,82 @@ describe("strategy(slippage=N) E2E", () => {
   it("rejects a slippage that is not a compile-time int >= 0", () => {
     const errs = transpileErrors('strategy("s", slippage=1.5)');
     expect(errs.some((e) => e.includes("'slippage' argument only supports an int literal >= 0"))).toBe(true);
+  });
+});
+
+// The chart symbol's tick and lot grids come in through transpile's syminfo option. A TradingView
+// run happens on a symbol: tier 1 resin-harness suites/strategy/tv/barupdn runs on EURUSD (mintick
+// 0.00001, mincontract 0.0001), and its first 10%-of-equity short buys 87927.5 units at 1.1373 —
+// only true on that lot grid and with the 1,000,000 default capital (props.txt).
+describe("syminfo option: the chart symbol's tick and lot grids", () => {
+  const EURUSD = { mintick: 0.00001, pricescale: 100000, minmove: 1, mincontract: 0.0001 };
+  const fx: OHLCVData = {
+    open: [1.13, 1.13, 1.1295, 1.1295],
+    high: [1.131, 1.1305, 1.13, 1.13],
+    low: [1.129, 1.1285, 1.129, 1.129],
+    close: [1.13, 1.1295, 1.1295, 1.1295],
+    volume: [1, 1, 1, 1],
+  };
+
+  it("folds syminfo.* to the given symbol, deriving an omitted mintick from minmove / pricescale", () => {
+    const src = [
+      'indicator("i")',
+      "var float mt = na",
+      "var float mc = na",
+      "mt := syminfo.mintick",
+      "mc := syminfo.mincontract",
+    ].join("\n");
+    const given = runPipeline(src, fx, {}, { syminfo: EURUSD });
+    expect(given.bars[0]!["var:mt"]).toBe(0.00001);
+    expect(given.bars[0]!["var:mc"]).toBe(0.0001);
+    const derived = runPipeline(src, fx, {}, { syminfo: { pricescale: 100000, minmove: 1 } });
+    expect(derived.bars[0]!["var:mt"]).toBe(0.00001);
+    const none = runPipeline(src, fx);
+    expect(none.bars[0]!["var:mt"]).toBe(0.01);
+    expect(none.bars[0]!["var:mc"]).toBe(1);
+  });
+
+  it("rejects a mintick that is not minmove / pricescale, and a non-positive value", () => {
+    const bad = transpile('indicator("i")', { syminfo: { mintick: 0.00001 } });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) expect(bad.errors[0]).toContain("must equal minmove / pricescale");
+    const zero = transpile('indicator("i")', { syminfo: { ...EURUSD, mincontract: 0 } });
+    expect(zero.ok).toBe(false);
+    if (!zero.ok) expect(zero.errors[0]).toContain("'mincontract' must be a positive finite number");
+  });
+
+  it("hands a strategy the grid only when it differs from resin's default symbol", () => {
+    const src = 'strategy("s")\nstrategy.entry("L", strategy.long)';
+    const r = transpile(src, { syminfo: EURUSD });
+    expect(r.ok && r.code).toContain("$.strategy.setSymbol(0.00001, 100000, 1, 0.0001);");
+    expect(transpileCode(src)).not.toContain("setSymbol");
+  });
+
+  it("floors a percent_of_equity entry onto the 0.0001 lot grid (barupdn trade #1: 87927.5477 at 1.1373)", () => {
+    const st = new StrategyState();
+    st.configure(10, 1, 1000000, true);
+    st.setSymbol(0.00001, 100000, 1, 0.0001);
+    st.barClose = 1.1373;
+    st.entry("BarDn", "short");
+    st.processFills(1.1373);
+    expect(st.posSize).toBeCloseTo(-87927.5477, 9); // 100000 / 1.1373 = 87927.547700...
+  });
+
+  it("measures exit loss= ticks, slippage and math.round_to_mintick on the symbol's mintick", () => {
+    const src = [
+      'strategy("s", slippage=5)',
+      "if bar_index == 0",
+      '    strategy.entry("L", strategy.long, qty=1)',
+      '    strategy.exit("X", "L", loss=100)',
+      "var float __net = na",
+      "var float r = na",
+      "__net := strategy.netprofit",
+      "r := math.round_to_mintick(1.234567)",
+    ].join("\n");
+    const result = runPipeline(src, fx, {}, { syminfo: EURUSD });
+    // Buys at bar 1's open 1.13 + 5 ticks = 1.13005; the stop sits 100 ticks under that fill, at
+    // 1.12905, and bar 1's low 1.1285 takes it, slipped 5 ticks down to 1.129.
+    expect(result.bars[1]!["var:__net"]).toBeCloseTo(1.129 - 1.13005, 12);
+    expect(result.bars[0]!["var:r"]).toBeCloseTo(1.23457, 12);
   });
 });

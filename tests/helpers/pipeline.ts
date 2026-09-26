@@ -4,12 +4,13 @@
 import { transpile } from "../../src/transpiler/pipeline";
 import { run, type RunResult } from "../../src/runtime/engine";
 import type { OHLCVData } from "../../src/runtime/context";
+import type { AnalyzeOptions } from "../../src/transpiler/analyzer";
 
 export function runPipeline(
   source: string,
   data: OHLCVData,
   inputs: Record<string, unknown> = {},
-  options?: { chartTf?: string },
+  options?: AnalyzeOptions,
 ): RunResult {
   const result = transpile(source, options);
   if (!result.ok) {

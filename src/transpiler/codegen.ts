@@ -30,6 +30,7 @@ import {
   RUNTIME_KWARG_PARAM_NAMES,
   STRATEGY_RUNTIME_PROPS,
   SYMINFO_NUMBER_PROPS,
+  SYMINFO_OPTION_KEYS,
   EARNINGS_NUMBER_PROPS,
   DAYOFWEEK_CONSTANTS,
   DRAWING_STATE_PARAM_NAMES,
@@ -43,6 +44,7 @@ import {
   timeframeBooleanPropValue,
 } from "./analyzer";
 import { DRAWING_ALL_NAMESPACES } from "./analyzer/constructors";
+import { DEFAULT_INITIAL_CAPITAL } from "../runtime/strategy";
 import { ARRAY_KWARG_PARAM_NAMES, STR_KWARG_PARAM_NAMES } from "./analyzer/collections";
 import type {
   Assignment,
@@ -358,7 +360,7 @@ export function generateCode(program: AnalyzedProgram): string {
   // strategy() default_qty_value/pyramiding(C164) + initial_capital(C165) 메타데이터 — 지시어
   // 문장 자체는 여전히 no-op이지만 이 값들만 프리앰블(ctx당 1회 실행)에서 브로커 상태로 주입한다
   // (엔진 run()/Context 시그니처 변경 0). 전부 미지정이면 configure 방출 자체를 생략하고,
-  // initial_capital만 미지정이면 세 번째 인자를 생략(StrategyState 기본 파라미터 100000)해
+  // initial_capital만 미지정이면 세 번째 인자를 생략(StrategyState 기본 파라미터 DEFAULT_INITIAL_CAPITAL)해
   // C164까지의 기존 입력 패턴 출력이 한 글자도 안 바뀐다(C129 "지정된 가장 뒤쪽 슬롯까지만 방출").
   if (
     program.strategyDefaultQty !== null ||
@@ -380,7 +382,7 @@ export function generateCode(program: AnalyzedProgram): string {
     const capArg =
       program.strategyInitialCapital !== null || program.strategyQtyIsPercent || program.strategyQtyIsCash || onClose ||
       slippage > 0
-        ? `, ${program.strategyInitialCapital ?? 100000}`
+        ? `, ${program.strategyInitialCapital ?? DEFAULT_INITIAL_CAPITAL}`
         : "";
     const tailArgs = slippage > 0
       ? `, ${program.strategyQtyIsPercent}, ${program.strategyQtyIsCash}, ${onClose}, ${slippage}`
@@ -390,6 +392,12 @@ export function generateCode(program: AnalyzedProgram): string {
     lines.push(
       `$.strategy.configure(${program.strategyDefaultQty ?? 1}, ${program.strategyPyramiding ?? 1}${capArg}${tailArgs});`,
     );
+  }
+  // The chart symbol's tick and lot grids (AnalyzeOptions.syminfo), handed to the strategy engine
+  // once per run. Emitted only when they differ from resin's defaults, which the engine starts with.
+  if (program.isStrategy && SYMINFO_OPTION_KEYS.some((k) => program.syminfoNumbers.get(k) !== SYMINFO_NUMBER_PROPS.get(k))) {
+    const grid = SYMINFO_OPTION_KEYS.map((k) => program.syminfoNumbers.get(k)!);
+    lines.push(`$.strategy.setSymbol(${grid.join(", ")});`);
   }
   // viz S1 — 동적 plot 색 채널 preallocate(ctx당 1회). 슬롯 수를 생성 코드 자신이 나르므로
   // Context/run의 positional 시그니처는 그대로다(viz S0 결정). 동적 색이 없는 스크립트는
@@ -3037,11 +3045,11 @@ function genExpr(
       if (secCtx !== null && expr.obj.kind === "Identifier" && expr.obj.name === "session" && expr.attr === "islastbar_regular") {
         return `(${secCtx.loopVar} === ${secCtx.cacheVar}.close.length - 1)`;
       }
-      // C481: syminfo.* — SYMINFO_NUMBER_PROPS만(문자열 상수는 call-expr.ts buildSecurityExprNode
+      // C481: syminfo.* — program.syminfoNumbers만(문자열 상수는 call-expr.ts buildSecurityExprNode
       // DotAccess case 주석 참조 — 이 좁은 문법의 프리패스 캐시가 Float64Array 전용이라 문자열은
       // 배제). 이 서브트리(일반 analyzeExpr 미경유, C180)에서도 맵 값을 그대로 리터럴로 방출한다.
       if (secCtx !== null && expr.obj.kind === "Identifier" && expr.obj.name === "syminfo") {
-        const numConst = SYMINFO_NUMBER_PROPS.get(expr.attr);
+        const numConst = program.syminfoNumbers.get(expr.attr);
         if (numConst !== undefined) return String(numConst);
       }
       // C482: earnings.future_eps/future_period_end_time/future_revenue/future_time — syminfo.*
@@ -4661,6 +4669,12 @@ function genCallExpr(
             ...expr.args.map((a, i) => (refPositions.includes(i + 1) && a.kind === "NaLiteral" ? "null" : genExpr(a, program, funcCtx, secCtx))),
           ]
         : expr.args.map((a, i) => (refPositions.includes(i) && a.kind === "NaLiteral" ? "null" : genExpr(a, program, funcCtx, secCtx)));
+    // math.round_to_mintick(x) rounds to "the symbol's mintick" (rn.txt); rt.round_to_mintick
+    // defaults to resin's default mintick, so a configured symbol grid passes its own.
+    const mintick = program.syminfoNumbers.get("mintick")!;
+    if (builtinName === "round_to_mintick" && args.length === 1 && mintick !== SYMINFO_NUMBER_PROPS.get("mintick")) {
+      args.push(String(mintick));
+    }
     return `rt.${builtinName}(${args.join(", ")})`;
   }
   const userSlotBase = program.funcCallSlots.get(expr);

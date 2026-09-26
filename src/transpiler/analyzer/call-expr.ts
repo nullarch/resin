@@ -4895,7 +4895,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           }
         }
         // initial_capital(C165 셋째 슬라이스 — equity의 기저) — default_qty_value와 동일한 원칙:
-        // 컴파일타임 상수만 추출, 미해석 식별자/식이면 하드 에러(기본값 100000으로 둔갑한 equity는
+        // 컴파일타임 상수만 추출, 미해석 식별자/식이면 하드 에러(기본값 1000000으로 둔갑한 equity는
         // 조용한 오답). C764: 0 허용으로 완화 — equity = initialCapital + realizedPnl + openProfit는
         // 나눗셈 분모가 아니라(strategy.ts L490) 0도 well-defined, wild 실사용 확인(양수 전용이던
         // 원 결정이 `initial_capital=0` 3건을 걸러냄, default_qty_value=0(C465)과 동일 근거).

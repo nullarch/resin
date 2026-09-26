@@ -2030,6 +2030,9 @@ export interface AnalyzedProgram {
   // timeframe.* 폴딩(analyzeExpr DotAccess 분기)과 call-expr.ts의 request.security tf 상수 폴딩
   // 계열(resolveSecurityTfLiteral 등)이 공통으로 참조하는 단일 출처.
   chartTf: string;
+  // The syminfo.* number constants of the chart symbol (AnalyzeOptions.syminfo over resin's
+  // defaults) — what syminfo.mintick etc. fold to, and the grid codegen hands the strategy engine.
+  syminfoNumbers: ReadonlyMap<string, number>;
   varSlots: string[]; // slot index -> 변수명 (선언 순서)
   varIndex: Map<string, number>;
   varTypeHints: Map<string, string | null>;
@@ -2129,7 +2132,7 @@ export interface AnalyzedProgram {
   strategyPyramiding: number | null;
   // strategy() 지시어에서 추출한 initial_capital(C165) — 위 두 필드와 완전히 동일한 원칙(숫자
   // 리터럴 전용, null=미지정). 미지정이면 codegen이 configure 세 번째 인자 자체를 생략해 C164
-  // 2-인자 출력이 한 글자도 안 바뀐다(StrategyState 기본 파라미터 100000 = TV/pine2py 기본값).
+  // 2-인자 출력이 한 글자도 안 바뀐다(StrategyState 기본 파라미터 DEFAULT_INITIAL_CAPITAL = 1,000,000, props.txt).
   strategyInitialCapital: number | null;
   // strategy(default_qty_type=strategy.percent_of_equity) 지정 여부(C171) — strategy.fixed/
   // 동치 문자열은 기존 동작(계약 수)이라 false 유지. true면 codegen이 configure 네 번째 인자(true)를
@@ -3348,10 +3351,57 @@ function prescanConstVars(script: Script, chartTf: string): {
 // pine2py Context.timeframe 고정 가정과 100% 동일한 기존 동작을 유지한다.
 export interface AnalyzeOptions {
   chartTf?: string;
+  syminfo?: SymbolGridOptions;
+}
+
+// The chart symbol's price and quantity grids. A TradingView run happens on a symbol, and its tick
+// size and lot size change the results: strategy.exit profit/loss/trail_* are counts of
+// syminfo.mintick, slippage is N ticks, derived levels snap to the tick grid, and default-sized
+// orders floor to syminfo.mincontract (rn.txt: "the smallest number of contracts/shares/lots/units
+// required to trade the current symbol"). Each omitted property keeps resin's default
+// (SYMINFO_NUMBER_PROPS). The other syminfo properties (pointvalue, timezone, currency, ...) are not
+// configurable yet: they stay at resin's fixed values, and keys this type does not name are ignored.
+export interface SymbolGridOptions {
+  mintick?: number;
+  pricescale?: number;
+  minmove?: number;
+  mincontract?: number;
+}
+
+// The syminfo properties SymbolGridOptions sets.
+export const SYMINFO_OPTION_KEYS: readonly string[] = ["mintick", "pricescale", "minmove", "mincontract"];
+
+// The program's syminfo.* number constants: resin's defaults overlaid with the caller's symbol grid.
+// mintick is minmove / pricescale on TradingView ("mintick = minmove / pricescale" — the price grid
+// is one number), so a mintick that disagrees with the two is an error rather than a guess; an
+// omitted mintick is derived from them.
+function resolveSyminfoNumbers(grid: SymbolGridOptions | undefined, errors: string[]): ReadonlyMap<string, number> {
+  if (grid === undefined) return SYMINFO_NUMBER_PROPS;
+  const out = new Map(SYMINFO_NUMBER_PROPS);
+  for (const key of SYMINFO_OPTION_KEYS) {
+    const v = (grid as Record<string, unknown>)[key];
+    if (v === undefined) continue;
+    if (typeof v !== "number" || !(v > 0) || v === Infinity) {
+      errors.push(`syminfo option '${key}' must be a positive finite number, got ${String(v)}`);
+      continue;
+    }
+    out.set(key, v);
+  }
+  const derived = out.get("minmove")! / out.get("pricescale")!;
+  if (grid.mintick === undefined) {
+    out.set("mintick", derived);
+  } else if (Math.abs(out.get("mintick")! - derived) > derived * 1e-9) {
+    errors.push(
+      `syminfo option 'mintick' (${out.get("mintick")}) must equal minmove / pricescale (${out.get("minmove")} / ${out.get("pricescale")})`,
+    );
+  }
+  return out;
 }
 
 export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgram {
   const chartTf = options?.chartTf ?? DEFAULT_CHART_TF;
+  const syminfoErrors: string[] = [];
+  const syminfoNumbers = resolveSyminfoNumbers(options?.syminfo, syminfoErrors);
   // C686: arity-disjoint 함수 오버로드를 AST 사전 개명으로 해소 — 다른 모든 prepass(아래
   // prescanConstVars 포함, 전부 이름 기반)보다 반드시 먼저 실행해야 전 파이프라인이 처음부터
   // 서로 다른 이름의 독립 함수만 본다(func-overloads.ts 주석 참조).
@@ -3369,6 +3419,7 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
   const prog: AnalyzedProgram = {
     script,
     chartTf,
+    syminfoNumbers,
     declaredTypeNames,
     varSlots: [],
     varIndex: new Map(),
@@ -3514,7 +3565,7 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
     constVarShadowFuncs: constVarsPrescan.shadowFuncs,
     funcLocalUniqueEqVars: constVarsPrescan.funcLocalUniqueEq,
     securityTfConstGuards: new Map(),
-    errors: [],
+    errors: syminfoErrors,
   };
 
   const globalScope: LexScope = {
@@ -8273,7 +8324,7 @@ export function analyzeExpr(expr: Expr, prog: AnalyzedProgram, scope: LexScope, 
         return;
       }
       if (expr.obj.kind === "Identifier" && expr.obj.name === "syminfo" && SYMINFO_NUMBER_PROPS.has(expr.attr)) {
-        prog.builtinConstants.set(expr, SYMINFO_NUMBER_PROPS.get(expr.attr)!);
+        prog.builtinConstants.set(expr, prog.syminfoNumbers.get(expr.attr)!);
         return;
       }
       // barstate.*/session.*(ROADMAP P2 첫 슬라이스) — math/color/order와 같은 bare 네임스페이스
