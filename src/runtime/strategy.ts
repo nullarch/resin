@@ -58,6 +58,29 @@ interface EntryBinding {
   entryPrice: number;
 }
 
+// One unfilled strategy.entry() order. Orders with different ids rest side by side; a call with
+// the id of a resting order modifies that order (see entry()).
+interface PendingEntry {
+  id: string;
+  direction: string; // "long" | "short" (entry() validates it)
+  qty: number; // contracts; when qtyAuto, the money budget frozen at placement instead
+  qtyAuto: boolean; // a default-sized limit/stop order: its size resolves at the fill price (see moneyQtyAt)
+  limit: number; // NaN = none; limit and stop both NaN = a market order
+  stop: number; // NaN = none; both given = a stop-limit order
+  comment: string;
+  // Placement order among the orders placed on the current bar (see positionAfterPlacedMarketOrders).
+  seq: number;
+  // Placed, or modified under its id, by the script on the current bar: only those orders are
+  // "created on a bar's close" and get the process_orders_on_close pass. processFills clears it.
+  placedThisBar: boolean;
+  // Scratch for processFills: this bar's fill price, and where the bar's path reaches it (pathLeg
+  // 0 = at the open, 1 = the leg to the extreme nearer the open, 2 = the leg to the other extreme;
+  // pathDist = distance from the open along that leg).
+  fillPrice: number;
+  pathLeg: number;
+  pathDist: number;
+}
+
 // strategy(initial_capital=) when the declaration omits it. props.txt: "Initial Capital (parameter:
 // initial_capital) ... By default, this value is equal to 1,000,000." TradingView measured it
 // (tier 1 resin-harness suites/strategy/tv/barupdn: the script omits initial_capital and its first
@@ -107,13 +130,14 @@ function sig10(money: number): number {
 // 수 없다(주문을 낸 바와 체결되는 바 사이에 포지션이 바뀔 수 있음). DIVERGENCES.md #66/#67의 TV
 // 미검증 가설 축.
 //
-// 상태 표현: 큐(가변 배열) 대신 고정 pending 슬롯 2개(entry/close)를 in-place 뮤테이션으로만 쓴다
-// (GOAL.md "bar loop 안 할당 제로" — 신호 바에서도 객체/배열 할당이 전혀 없음). 마켓 주문은 다음 바
-// open에서 반드시 소진(체결 또는 취소)되고, limit/stop 주문(C166)은 체결/취소까지 슬롯을 점유한 채
-// 이월된다 — "동시 pending entry 1건" 모델: entry는 "첫 주문 유지 + 같은 id 재호출만 수정", close는
-// 멱등. pyramiding>=2에서 서로 다른 id의 entry 주문을 동시에 걸면 첫 주문만 유지된다(LIMITATIONS.md).
+// 상태 표현: close/order/exit는 고정 pending 슬롯을 in-place 뮤테이션으로만 쓴다(close는 멱등,
+// order/exit는 "첫 주문 유지 + 같은 id 재호출만 수정"). 마켓 주문은 다음 바 open에서 반드시
+// 소진(체결 또는 취소)되고, limit/stop 주문(C166)은 체결/취소까지 이월된다.
+// strategy.entry() orders are kept per id (pendingEntries): orders with different ids rest side by
+// side and each is judged on every bar, as TradingView's built-in channel breakout strategy needs
+// (it keeps a long and a short stop entry resting at once; see entry()).
 // The position itself is a list of open trades (one per entry fill) consumed FIFO by closing fills;
-// those arrays grow only at fill events, never on every bar (the same reasoning as
+// those arrays grow only at order and fill events, never on every bar (the same reasoning as
 // closedTradeRecords).
 export class StrategyState {
   // Running sum of the open trades' signed sizes (strategy.position_size): >0 long, <0 short, 0 flat.
@@ -258,14 +282,14 @@ export class StrategyState {
   // 마켓 주문은 다음 바 open에서 반드시 소진(체결 또는 취소)되지만, limit/stop 주문(C166 넷째
   // 슬라이스)은 가격 조건 미충족 시 **바를 넘어 이월**된다(pine2py _pending_orders 존속과 동형 —
   // 취소 수단은 cancel/cancel_all, 같은 id 재호출은 주문 수정).
-  entryPending: boolean;
-  entryOrderId: string;
-  entryDirection: string; // "long" | "short" (entry()가 검증)
-  entryQty: number; // contracts; when entryQtyAuto, the money budget frozen at placement instead
-  entryQtyAuto: boolean; // a default-sized limit/stop order: its size resolves at the fill price (see moneyQtyAt)
-  entryLimit: number; // 지정가(NaN=없음) — limit/stop 둘 다 NaN이면 마켓 주문
-  entryStop: number; // 역지정가(NaN=없음) — 둘 다 지정되면 stop-limit
-  entryOrderComment: string; // strategy.entry(comment=, C173) — 이 pending 주문 자체의 comment(체결 시 새 포지션이면 entryComment로 승격)
+  // The unfilled strategy.entry() orders, in placement order (a modification keeps its place).
+  pendingEntries: PendingEntry[];
+  // Reused by processFills/processFillsAtClose to order one bar's entry fills without allocating.
+  private entryScratch: PendingEntry[];
+  // Counts order placements (entry orders and the close slot); orders placed on one bar are walked
+  // in this order (positionAfterPlacedMarketOrders).
+  orderSeq: number;
+  closeSeq: number; // orderSeq of the pending close/close_all order
   closePending: boolean;
   closeOrderId: string;
   closeQty: number; // strategy.close(qty=) 부분 청산 수량(C168) — Infinity=전량(기본)
@@ -334,10 +358,11 @@ export class StrategyState {
   // (limit=+profit=, stop=+loss=), the absolute level is used.
   exitProfitPoints: number; // take-profit distance in ticks (NaN = not given; limit= is used instead)
   exitLossPoints: number; // stop-loss distance in ticks (NaN = not given; stop= is used instead)
-  // pending order(넷팅 주문) 슬롯(C169 일곱째 슬라이스) — entry 슬롯과 별개: entry의 체결 판정
+  // pending order(넷팅 주문) 슬롯(C169 일곱째 슬라이스) — entry 주문과 별개: entry의 체결 판정
   // (리버스 전량 청산 + pyramiding 게이트)과 달리 order는 반대 방향을 |posSize|와 상쇄하고
   // 같은 방향 추가엔 pyramiding 게이트가 없어 체결 경로가 다르다. 마켓/limit/stop·이월·같은 id
-  // 수정·다른 id 첫 주문 유지 규칙은 entry 슬롯 모델과 동형.
+  // 수정은 entry와 같지만, 슬롯이 하나라 다른 id의 주문은 첫 주문 유지(not covered yet: entry
+  // orders are kept per id, see pendingEntries).
   orderPending: boolean;
   orderOrderId: string;
   orderDirection: string; // "long" | "short" (order()가 검증)
@@ -348,8 +373,7 @@ export class StrategyState {
   orderOrderComment: string; // strategy.order(comment=, C173)
   // Whether the entry/exit/order slot was placed (or re-placed under the same id) by the script
   // on the current bar — only those orders are "created on a bar's close" and get the close pass.
-  // processFills clears them at every bar's open.
-  entryPlacedThisBar: boolean;
+  // processFills clears them at every bar's open. (An entry order carries its own flag.)
   exitPlacedThisBar: boolean;
   orderPlacedThisBar: boolean;
 
@@ -469,14 +493,9 @@ export class StrategyState {
     this.lastClosedMaxRunup = NaN;
     this.lastClosedMaxDrawdown = NaN;
     this.closedTradeRecords = [];
-    this.entryPending = false;
-    this.entryOrderId = "";
-    this.entryDirection = "long";
-    this.entryQty = 0;
-    this.entryQtyAuto = false;
-    this.entryLimit = NaN;
-    this.entryStop = NaN;
-    this.entryOrderComment = "";
+    this.pendingEntries = [];
+    this.orderSeq = 0;
+    this.closeSeq = 0;
     this.closePending = false;
     this.closeOrderId = "";
     this.closeQty = Infinity;
@@ -508,7 +527,6 @@ export class StrategyState {
     this.orderLimit = NaN;
     this.orderStop = NaN;
     this.orderOrderComment = "";
-    this.entryPlacedThisBar = false;
     this.exitPlacedThisBar = false;
     this.orderPlacedThisBar = false;
     this.allowedDirection = "all";
@@ -527,6 +545,7 @@ export class StrategyState {
     this.consLossDayCount = 0;
     this.consLossDayStartRealizedPnl = NaN;
     this.consLossLimitReached = false;
+    this.entryScratch = [];
   }
 
   // The position's entry as a single name: the oldest open trade's (strategy.position_entry_name —
@@ -553,6 +572,56 @@ export class StrategyState {
   // (strategies.txt). An entry keeps its slot until its own bound quantity is spent.
   get entryCount(): number {
     return this.entryBook.length;
+  }
+
+  // Whether any strategy.entry() order is unfilled.
+  get entryPending(): boolean {
+    return this.pendingEntries.length > 0;
+  }
+
+  // The unfilled entry order with this id, if any.
+  private pendingEntry(id: string): PendingEntry | undefined {
+    for (const e of this.pendingEntries) if (e.id === id) return e;
+    return undefined;
+  }
+
+  // Whether an unfilled entry order has this id ("" = any id).
+  private hasPendingEntry(id: string): boolean {
+    return id === "" ? this.pendingEntries.length > 0 : this.pendingEntry(id) !== undefined;
+  }
+
+  private removePendingEntry(e: PendingEntry): void {
+    const i = this.pendingEntries.indexOf(e);
+    if (i >= 0) this.pendingEntries.splice(i, 1);
+  }
+
+  // The signed position the market orders already placed on this bar will leave, walked in
+  // placement order: the close slot shrinks it (close_all flattens it), a market entry adds to it or,
+  // opposite, reverses it to its own size. Resting limit/stop orders do not count. This is what the
+  // pyramiding gate of a new strategy.entry() call reads — the oracle's `_size_flippable_by_entry`,
+  // measured on TradingView: "a close hands its slot over (a close_all ahead of a same-id re-entry is
+  // what lets that entry through under pyramiding=1), and a pending reversal entry makes the next
+  // opposite-direction entry a reversal of its own instead of a pyramid add". Every market order
+  // pending while the script body runs was placed on this bar (processFills consumes them).
+  private positionAfterPlacedMarketOrders(): number {
+    let size = this.posSize;
+    let closeWalked = !this.closePending;
+    for (const e of this.pendingEntries) {
+      if (StrategyState.isPriceBased(e)) continue;
+      if (!closeWalked && this.closeSeq < e.seq) {
+        size = this.sizeAfterPendingClose(size);
+        closeWalked = true;
+      }
+      const q = e.direction === "long" ? e.qty : -e.qty;
+      size = size * q >= 0 ? size + q : q;
+    }
+    return closeWalked ? size : this.sizeAfterPendingClose(size);
+  }
+
+  private sizeAfterPendingClose(size: number): number {
+    if (this.closeAllPending) return 0;
+    const rest = Math.abs(size) - this.closeQty;
+    return rest > 0 ? Math.sign(size) * rest : 0;
   }
 
   // Open quantity bound to an entry id — what strategy.close(id) closes by default.
@@ -655,11 +724,11 @@ export class StrategyState {
     this.lotsPerContract = lotsPerContract(mincontract);
   }
 
-  // Snaps a price level derived from a tick distance onto the symbol's tick grid, rounding up
-  // (`up`) or down, so the level is a price the chart can print. A level within 1e-4 tick of a grid
-  // point counts as on it, which absorbs the float error of `price ± ticks * mintick`. This is the
-  // oracle's `_price_round` (tier 2, measured on TradingView — see resin-harness
-  // state/repros/ticks-seed-1.json).
+  // Snaps an order's price level (an entry's limit/stop, or a level derived from a tick distance)
+  // onto the symbol's tick grid, rounding up (`up`) or down, so the level is a price the chart can
+  // print. A level within 1e-4 tick of a grid point counts as on it, which absorbs the float error of
+  // `price ± ticks * mintick`. This is the oracle's `_price_round` (tier 2, measured on TradingView —
+  // see resin-harness state/repros/ticks-seed-1.json).
   private snapToTick(price: number, up: boolean): number {
     const ticks = (price * this.pricescale) / this.minmove;
     return ((up ? Math.ceil(ticks - 1e-4) : Math.floor(ticks + 1e-4)) * this.minmove) / this.pricescale;
@@ -1247,11 +1316,21 @@ export class StrategyState {
     // na 안전성: id가 na(null)이거나 qty가 na(NaN) 또는 0 이하면 주문을 내지 않는다(LIMITATIONS.md).
     // `!(qty > 0)`은 NaN에서도 안전한 긍정형 가드(MEMORY.md C91 — NaN 비교는 항상 false).
     if (id === null || id === undefined) return;
+    // The order's levels are put on the symbol's tick grid when it is placed, on the side the market
+    // has to travel further to reach: a buy limit and a sell stop round down, a sell limit and a buy
+    // stop round up (a level within 1e-4 tick of a grid point is on it; snapToTick). rn.txt (July
+    // 2023) fixed "improper tick rounding of the limit price"; the oracle rounds entry levels this
+    // way (`_price_round`, measured on TradingView). Tier 1 needs it: the channel breakout short stop
+    // `ta.lowest(low, 5) - syminfo.mintick` is 1.13641 - 0.00001 = 1.1363999999999999 in floating
+    // point, and TradingView fills it at 1.1364 on the bar whose low is 1.1364 (resin-harness
+    // suites/strategy/tv/channelbreakout trade 28; keltnerchannel trade 141 likewise).
+    const sign = direction === "long" ? 1 : -1;
+    if (limit !== undefined && !Number.isNaN(limit)) limit = this.snapToTick(limit, sign < 0);
+    if (stop !== undefined && !Number.isNaN(stop)) stop = this.snapToTick(stop, sign > 0);
     // An explicit qty is a number of contracts whatever default_qty_type says; an omitted one is
     // resolved now, on the placement bar (see defaultOrderQty).
     let qtyAuto = false;
     if (qty === undefined) {
-      const sign = direction === "long" ? 1 : -1;
       const reverses = this.posSize !== 0 && this.posSize > 0 !== sign > 0;
       const sized = this.defaultOrderQty(sign, limit ?? NaN, stop ?? NaN, reverses);
       if (sized === null) return;
@@ -1260,31 +1339,45 @@ export class StrategyState {
     } else if (!(qty > 0)) {
       return;
     }
+    const existing = this.pendingEntry(id);
+    // The pyramiding limit is also judged when the call runs, not only at the fill: a same-direction
+    // entry placed while the position already holds `pyramiding` entries is dropped, whatever its
+    // id, and does not wait for a later bar. strategies.txt ("Pyramiding"): "After the number of
+    // open trades from strategy.entry() calls reaches the pyramiding limit, the strategy does not
+    // execute new orders from subsequent calls to the command until at least one of those trades
+    // closes." TradingView's built-in channel breakout strategy shows it (tier 1 resin-harness
+    // suites/strategy/tv/channelbreakout): it calls a long and a short stop entry on every bar, and
+    // on the 257 bars whose range crosses both stops TradingView only reverses, never adds the second
+    // fill, because the stop in the position's direction was never placed. The oracle measured the
+    // same on TradingView (`entry()`: "a second entry placed while the position is open never fills
+    // ... regardless of the entry id"), with the position read as this bar's market orders leave it.
+    // Re-issuing this bar's own unfilled order under its id adds no entry, so it is not judged.
+    if (!(existing !== undefined && existing.placedThisBar)) {
+      const pos = this.positionAfterPlacedMarketOrders();
+      if (pos !== 0 && pos > 0 === sign > 0 && this.entryCount >= this.pyramiding) return;
+    }
     const cmt = comment ?? "";
-    if (this.entryPending) {
-      // 같은 id 재호출 = 기존 주문 수정(TV: 동일 id 주문은 대체 — qty/direction/limit/stop 전부.
-      // 이월 중인 limit 주문을 마켓으로 바꾸는 것도 이 경로). 다른 id면 첫 주문 유지
-      // (LIMITATIONS.md — pyramiding>=2에서 동시 pending entry 2건 이상은 미지원).
-      if (this.entryOrderId === id) {
-        this.entryQty = qty;
-        this.entryQtyAuto = qtyAuto;
-        this.entryDirection = direction;
-        this.entryLimit = limit ?? NaN;
-        this.entryStop = stop ?? NaN;
-        this.entryOrderComment = cmt;
-        this.entryPlacedThisBar = true;
-      }
+    // Entry orders are kept per id. A call with the id of an unfilled order modifies it — qty,
+    // direction, limit, stop, comment (a resting limit order can become a market order this way);
+    // a call with a new id places another order beside the ones already resting. strategies.txt
+    // names orders by id ("The strategy.cancel() command cancels all unfilled orders that have the
+    // specified entry ID") and has several rest at once ("OCA groups": a long stop order "at the
+    // bar's high" and a short one "at the bar's low"); the channel breakout strategy above keeps its
+    // two stop entries resting together, and TradingView reverses at whichever the price reaches.
+    if (existing !== undefined) {
+      existing.direction = direction;
+      existing.qty = qty;
+      existing.qtyAuto = qtyAuto;
+      existing.limit = limit ?? NaN;
+      existing.stop = stop ?? NaN;
+      existing.comment = cmt;
+      existing.placedThisBar = true;
       return;
     }
-    this.entryPlacedThisBar = true;
-    this.entryPending = true;
-    this.entryOrderId = id;
-    this.entryDirection = direction;
-    this.entryQty = qty;
-    this.entryQtyAuto = qtyAuto;
-    this.entryLimit = limit ?? NaN;
-    this.entryStop = stop ?? NaN;
-    this.entryOrderComment = cmt;
+    this.pendingEntries.push({
+      id, direction, qty, qtyAuto, limit: limit ?? NaN, stop: stop ?? NaN, comment: cmt,
+      seq: ++this.orderSeq, placedThisBar: true, fillPrice: NaN, pathLeg: 0, pathDist: 0,
+    });
   }
 
   // strategy.order(id, direction, qty=, limit=, stop=) — 넷팅 주문 큐잉(C169). entry와 시그니처는
@@ -1400,7 +1493,7 @@ export class StrategyState {
     // (strategies.txt: "instructing the command to create exit orders only for open trades that
     // have the "buy2" entry ID").
     const bindsPosition = this.posSize !== 0 && (from === "" || this.hasBound(from));
-    const bindsPendingEntry = !bindsPosition && this.entryPending && (from === "" || from === this.entryOrderId);
+    const bindsPendingEntry = !bindsPosition && this.hasPendingEntry(from);
     if (!bindsPosition && !bindsPendingEntry) return;
     // qty_percent of a pending entry is a share of its size at the fill (see exitQtyPercent).
     const deferPercent = bindsPendingEntry && qty === undefined && qtyPercent !== undefined;
@@ -1432,8 +1525,8 @@ export class StrategyState {
     }
     if (this.exitPending) {
       // 같은 id 재호출 = 주문 수정(pine2py exit()의 "같은 ID 이전 exit 제거 후 재등록" 동형 —
-      // 매 바 재호출로 브래킷 가격을 갱신하는 표준 패턴). 다른 id면 첫 주문 유지(entry 슬롯과
-      // 동일한 "동시 pending 1건" 모델, LIMITATIONS.md).
+      // 매 바 재호출로 브래킷 가격을 갱신하는 표준 패턴). 다른 id면 첫 주문 유지("동시 pending exit
+      // 1건" 모델, LIMITATIONS.md — entry orders are already kept per id, exits not yet).
       if (this.exitOrderId === id) {
         this.exitFromEntry = from;
         this.exitLimit = lim;
@@ -1479,19 +1572,24 @@ export class StrategyState {
     this.exitTrailPrice = NaN; // 신규 등록은 항상 미활성에서 시작(이전 주문의 잔류 라인 차단)
   }
 
-  // strategy.cancel(id) — 미체결 가격 기반 주문(limit/stop) 취소. **마켓 주문은 취소 대상이 아니다**:
-  // pine2py cancel()은 _pending_orders에서 id 매칭 제거인데 마켓 주문은 콜타임 즉시 체결이라 애초에
-  // pending에 없고(구조적 참조), TV도 마켓 주문은 다음 틱 무조건 실행이라 취소 불가로 문서화돼 있다
-  // (TV 실측 미검증 — DIVERGENCES #69). close의 마켓 청산 주문도 같은 이유로 cancel 대상이 아님.
+  // strategy.cancel(id) — 미체결 주문 취소. An entry order is cancelled whatever its type, a market
+  // entry included: strategies.txt ("strategy.cancel() and strategy.cancel_all()"): "The
+  // strategy.cancel() and strategy.cancel_all() commands can cancel orders of any type, including
+  // market orders. However, ... either command can cancel a market order only if its call occurs on
+  // the same script execution as the order placement command." A market entry is only ever pending
+  // during the execution that placed it (processFills fills it at the next open), so any one found
+  // here qualifies. Repros: resin-harness state/repros/mixed-seed-199.json, mixed-seed-333.json
+  // (the oracle cancels the same-bar market entry). Not covered yet: the market strategy.order()
+  // and strategy.close() orders keep the older rule below (only price-based orders are cancelled;
+  // close의 마켓 청산 주문은 cancel 대상이 아님, DIVERGENCES #69).
   // when=(C708) — entry/order/close/close_all/exit(C372/C293/C378/C380)과 동일한 게이트를 마저
   // 이식(hand-verified, DIVERGENCES 신규 — pine2py engine.py cancel(id, when=True)는 when을
   // named parameter로 받으나 본문에서 전혀 참조하지 않는 latent 미적용, literal port 대상 아님).
   cancel(id: string | null | undefined, when: boolean = true): void {
     if (!when) return;
     if (id === null || id === undefined) return;
-    if (this.entryPending && this.entryOrderId === id && this.entryIsPriceBased()) {
-      this.entryPending = false;
-    }
+    const e = this.pendingEntry(id);
+    if (e !== undefined) this.removePendingEntry(e);
     // exit 주문도 id로 취소 가능(pine2py cancel의 _pending_orders id 매칭이 exit 주문을 포함하는
     // 것과 동형, C167) — exit는 항상 가격 기반이라 마켓 제외 검사가 불필요.
     if (this.exitPending && this.exitOrderId === id) {
@@ -1503,12 +1601,10 @@ export class StrategyState {
     }
   }
 
-  // strategy.cancel_all() — 모든 미체결 가격 기반 주문 취소(pine2py cancel_all의 pending 전체 clear
-  // 에서 마켓 제외 축만 다름 — cancel과 동일한 근거).
+  // strategy.cancel_all() — 모든 미체결 주문 취소: every entry order (market ones included, see
+  // cancel), the exit, and a price-based strategy.order() (its market order is not covered yet).
   cancel_all(): void {
-    if (this.entryPending && this.entryIsPriceBased()) {
-      this.entryPending = false;
-    }
+    this.pendingEntries.length = 0;
     this.exitPending = false;
     if (this.orderPending && this.orderIsPriceBased()) {
       this.orderPending = false;
@@ -1517,8 +1613,8 @@ export class StrategyState {
 
   // limit/stop 중 하나라도 지정된 주문인가(둘 다 NaN이면 마켓). NaN 판별은 자기 비교(x !== x)가
   // 아니라 Number.isNaN으로 명시(가독성 — hot path 아님: 호출 지점이 전부 주문 이벤트 시점).
-  private entryIsPriceBased(): boolean {
-    return !Number.isNaN(this.entryLimit) || !Number.isNaN(this.entryStop);
+  private static isPriceBased(e: PendingEntry): boolean {
+    return !Number.isNaN(e.limit) || !Number.isNaN(e.stop);
   }
 
   private orderIsPriceBased(): boolean {
@@ -1579,6 +1675,7 @@ export class StrategyState {
     }
     if (this.closeAllPending) return;
     this.closePending = true;
+    this.closeSeq = ++this.orderSeq;
     this.closeOrderId = id;
     this.closeQty = q;
     this.closeOrderComment = cmt;
@@ -1608,6 +1705,7 @@ export class StrategyState {
       return;
     }
     this.closePending = true;
+    this.closeSeq = ++this.orderSeq;
     this.closeAllPending = true;
     this.closeQty = Infinity;
     this.closeOrderComment = cmt;
@@ -1664,7 +1762,7 @@ export class StrategyState {
       }
     }
     this.updateTradeExcursion(high, low);
-    this.entryPlacedThisBar = false;
+    for (const e of this.pendingEntries) e.placedThisBar = false;
     this.exitPlacedThisBar = false;
     this.orderPlacedThisBar = false;
     // An exit bound to a pending entry order lives only as long as that order: once it is gone
@@ -1672,7 +1770,7 @@ export class StrategyState {
     // from_entry-less exit is not bound to one entry and keeps waiting for the next position.
     if (
       this.exitPending && this.posSize === 0 && this.exitFromEntry !== "" &&
-      !(this.entryPending && this.entryOrderId === this.exitFromEntry)
+      !this.hasPendingEntry(this.exitFromEntry)
     ) {
       this.exitPending = false;
     }
@@ -1683,21 +1781,7 @@ export class StrategyState {
     // 발생 가능 — TV 실측 미검증 가설, DIVERGENCES #70). from_entry 매칭은 체결 시점에 재검사
     // (콜타임과 체결 바 사이에 포지션이 바뀔 수 있음 — 불일치면 이월, 포지션 청산 시 자동 소멸).
     this.fillPendingExit(openPrice, high, low, barIndex, barTimeMs);
-    const flatBeforeEntry = this.posSize === 0;
-    if (this.entryPending) {
-      const fillPrice = this.entryFillPrice(openPrice, high, low);
-      // NaN이면 limit/stop 가격 조건 미충족 — 주문 이월(마켓은 NaN 불가). early return이 아니라
-      // 분기 스킵인 이유(C169): 아래 order 슬롯 판정이 entry 이월 여부와 무관하게 이 바에서
-      // 실행돼야 한다(entry가 마지막 블록이던 시절의 return을 order 추가와 함께 구조 변경 — 동작 동치).
-      if (!Number.isNaN(fillPrice)) this.fillPendingEntry(fillPrice, barIndex, barTimeMs);
-    }
-    // An exit bound to an entry that just opened a position from flat is live on the fill bar
-    // itself, not from the next one: the order exists before the fill, so the rest of this bar can
-    // trigger it (the manual's "Take-profit and stop-loss demo" places both on one bar). A position
-    // that was already open had its exit judged above, so it is not judged twice.
-    if (flatBeforeEntry && this.posSize !== 0) {
-      this.fillPendingExit(openPrice, high, low, barIndex, barTimeMs);
-    }
+    if (this.pendingEntries.length > 0) this.fillPendingEntries(openPrice, high, low, barIndex, barTimeMs);
     // order 넷팅 주문(C169)은 마지막에 판정한다 — 처리 순서 close→exit→entry→order: 청산 계열
     // 먼저 원칙(기존 순서 불변) + 같은 바에 entry와 order가 둘 다 체결되면 entry가 만든 포지션에
     // 대해 order가 넷팅한다(고정 슬롯 모델의 결정론적 순서 — pine2py는 _pending_orders 삽입 순서,
@@ -1723,12 +1807,7 @@ export class StrategyState {
   processFillsAtClose(closePrice: number, barIndex: number = NaN, barTimeMs: number = NaN): void {
     if (!this.processOrdersOnClose) return;
     if (this.closePending) this.fillPendingClose(closePrice, barIndex, barTimeMs);
-    if (this.entryPending && this.entryPlacedThisBar) {
-      const fillPrice = this.directionalFillPrice(
-        this.entryDirection, this.entryLimit, this.entryStop, closePrice, closePrice, closePrice,
-      );
-      if (!Number.isNaN(fillPrice)) this.fillPendingEntry(fillPrice, barIndex, barTimeMs);
-    }
+    if (this.pendingEntries.length > 0) this.fillPendingEntriesAtClose(closePrice, barIndex, barTimeMs);
     if (this.orderPending && this.orderPlacedThisBar) {
       const orderFill = this.directionalFillPrice(
         this.orderDirection, this.orderLimit, this.orderStop, closePrice, closePrice, closePrice,
@@ -1755,22 +1834,80 @@ export class StrategyState {
     }
   }
 
-  // Fills the pending entry order at `fillPrice`, its trigger already judged: a reversal closes the
+  // Judges every unfilled entry order against this bar and fills the triggered ones in the order the
+  // bar's assumed intrabar path reaches them. strategies.txt ("Broker emulator"): "If the opening
+  // price of a bar is closer to the high than it is to the low, the emulator assumes that the market
+  // price moved in this order: open → high → low → close. If the opening price of a bar is closer to
+  // the low than it is to the high, the emulator assumes that the market price moved in this order:
+  // open → low → high → close." (An open halfway between them walks down first, as in the oracle.)
+  // A market order, or one whose level the open already crossed, fills at the open, first; the rest
+  // fill where the path reaches their level: on the leg to the nearer extreme before the leg to the
+  // farther one, and on one leg nearer the open first. Orders reached at one point fill in placement
+  // order. Each fill meets the position the previous one left, so the second of two stop entries a
+  // bar crosses reverses the first one's position (or is dropped by the pyramiding gate at the fill).
+  private fillPendingEntries(openPrice: number, high: number, low: number, barIndex: number, barTimeMs: number): void {
+    const upFirst = high - openPrice < openPrice - low;
+    const due = this.entryScratch;
+    due.length = 0;
+    for (const e of this.pendingEntries) {
+      const price = this.directionalFillPrice(e.direction, e.limit, e.stop, openPrice, high, low);
+      if (Number.isNaN(price)) continue; // its level is not reached on this bar: the order rests
+      e.fillPrice = price;
+      e.pathLeg = price === openPrice ? 0 : price > openPrice === upFirst ? 1 : 2;
+      e.pathDist = Math.abs(price - openPrice);
+      due.push(e);
+    }
+    if (due.length > 1) due.sort((a, b) => a.pathLeg - b.pathLeg || a.pathDist - b.pathDist || a.seq - b.seq);
+    // An exit bound to an entry that opens a position from flat is live on the fill bar itself, not
+    // from the next one: the order exists before the fill, so the rest of this bar can trigger it
+    // (the manual's "Take-profit and stop-loss demo" places both on one bar). The fills at the open
+    // all happen before any intrabar price, so such an exit is judged once they are all done (a
+    // second market entry meets the position the first one opened, not the exit's close; repro
+    // resin-harness state/repros/mixed-seed-475.json), and after each intrabar fill. A position that
+    // was already open had its exit judged before the entries, so it is not judged twice.
+    let i = 0;
+    const flatAtOpen = this.posSize === 0;
+    for (; i < due.length && due[i]!.pathLeg === 0; i++) this.fillPendingEntry(due[i]!, due[i]!.fillPrice, barIndex, barTimeMs);
+    if (flatAtOpen && this.posSize !== 0) this.fillPendingExit(openPrice, high, low, barIndex, barTimeMs);
+    for (; i < due.length; i++) {
+      const wasFlat = this.posSize === 0;
+      this.fillPendingEntry(due[i]!, due[i]!.fillPrice, barIndex, barTimeMs);
+      if (wasFlat && this.posSize !== 0) this.fillPendingExit(openPrice, high, low, barIndex, barTimeMs);
+    }
+    due.length = 0;
+  }
+
+  // The close pass (processFillsAtClose) for the entry orders placed on this bar: the market ones
+  // first, then the price-based ones the close has reached, each group in placement order, as the
+  // oracle's close pass collects its candidates.
+  private fillPendingEntriesAtClose(closePrice: number, barIndex: number, barTimeMs: number): void {
+    const due = this.entryScratch;
+    due.length = 0;
+    for (const e of this.pendingEntries) if (e.placedThisBar && !StrategyState.isPriceBased(e)) due.push(e);
+    for (const e of this.pendingEntries) if (e.placedThisBar && StrategyState.isPriceBased(e)) due.push(e);
+    for (const e of due) {
+      const price = this.directionalFillPrice(e.direction, e.limit, e.stop, closePrice, closePrice, closePrice);
+      if (!Number.isNaN(price)) this.fillPendingEntry(e, price, barIndex, barTimeMs);
+    }
+    due.length = 0;
+  }
+
+  // Fills the entry order `e` at `fillPrice`, its trigger already judged: a reversal closes the
   // opposite position first, then the risk and pyramiding gates decide whether it opens a trade.
   // The order is consumed either way.
-  private fillPendingEntry(fillPrice: number, barIndex: number, barTimeMs: number): void {
-    this.entryPending = false;
-    const sign = this.entryDirection === "long" ? 1 : -1;
+  private fillPendingEntry(e: PendingEntry, fillPrice: number, barIndex: number, barTimeMs: number): void {
+    this.removePendingEntry(e);
+    const sign = e.direction === "long" ? 1 : -1;
     // A market or stop entry fills slipped against it, the reversal's closing leg included (one
     // order, one price); a limit entry, and a stop-limit (a limit order once its stop triggers),
     // keeps its price.
-    if (Number.isNaN(this.entryLimit)) fillPrice = this.slipped(fillPrice, sign);
+    if (Number.isNaN(e.limit)) fillPrice = this.slipped(fillPrice, sign);
     // A default-sized limit/stop entry divides its frozen budget by the actual fill price now (see
     // defaultOrderQty). Nothing sizable consumes the order unfilled, reversal included. Zero lots
     // still close an opposite position and open nothing (the oracle keeps the reversal leg).
-    let qty = this.entryQty;
-    if (this.entryQtyAuto) {
-      qty = this.moneyQtyAt(this.entryQty, fillPrice);
+    let qty = e.qty;
+    if (e.qtyAuto) {
+      qty = this.moneyQtyAt(e.qty, fillPrice);
       if (Number.isNaN(qty)) return;
     }
     // strategy.risk.allow_entry_in(C309) — 금지된 방향의 entry는 아래 리버스-청산(있었다면)
@@ -1778,7 +1915,7 @@ export class StrategyState {
     // instead of a reversal" — call-expr.ts strategy.risk.allow_entry_in 분기 주석의 TV 문서
     // 발췌 근거 참조). "all"(기본값)이면 이 게이트는 항상 false — 기존 무제한 동작 무변화.
     const directionForbidden =
-      this.allowedDirection !== "all" && this.entryDirection !== this.allowedDirection;
+      this.allowedDirection !== "all" && e.direction !== this.allowedDirection;
     // strategy.risk.max_intraday_filled_orders(C320) — 오늘 이미 상한만큼 신규 체결됐으면
     // directionForbidden과 동일하게 "위 리버스 청산까지만" 허용하고 아래 오픈/피라미딩 분기는
     // 막는다(REMARKS "market order to exit ... still allowed"). 카운터는 오픈/피라미딩 분기가
@@ -1800,7 +1937,7 @@ export class StrategyState {
       // exit_comment(C173)는 pine2py `self._close_position(id, comment)`처럼 **청산을 유발한
       // 새 entry 주문 자신의 comment**를 쓴다(_close_position이 exit_id/comment 인자를
       // exit()의 그것이 아니라 리버스를 일으킨 entry()의 id/comment로 호출하는 것의 미러).
-      this.closeAt(fillPrice, Infinity, this.entryOrderComment, barIndex, this.entryOrderId, barTimeMs);
+      this.closeAt(fillPrice, Infinity, e.comment, barIndex, e.id, barTimeMs);
     }
     // strategy.risk.max_position_size(value)(C324) — 위 3형제(directionForbidden 등)와 달리
     // "전면 차단"이 아니라 "부족분만 체결"이다(TV 문서: "quantity of new strategy.entry orders
@@ -1814,7 +1951,7 @@ export class StrategyState {
     if (directionForbidden || intradayLimitReached || drawdownForbidden || qty <= 0) {
       // 위 청산까지만 — 아래 신규/피라미딩 분기 스킵(주문 자체는 소진, 이월 없음).
     } else if (this.posSize === 0) {
-      this.openTradeAt(this.entryOrderId, this.entryOrderComment, fillPrice, sign * qty, barIndex, barTimeMs);
+      this.openTradeAt(e.id, e.comment, fillPrice, sign * qty, barIndex, barTimeMs);
       this.intradayFilledCount += 1;
       if (this.exitPending && !Number.isNaN(this.exitQtyPercent)) {
         this.exitQty = (qty * this.exitQtyPercent) / 100;
@@ -1826,7 +1963,7 @@ export class StrategyState {
       // by strategy.entry() calls, that a strategy allows for a single position"
       // (strategies.txt). pyramiding=0 never gets here (0 < 0), the same as 1.
       // 자동 수량의 추가 진입 equity에는 기존 포지션의 미실현 손익(체결가 기준)이 포함된다.
-      this.openTradeAt(this.entryOrderId, this.entryOrderComment, fillPrice, sign * qty, barIndex, barTimeMs);
+      this.openTradeAt(e.id, e.comment, fillPrice, sign * qty, barIndex, barTimeMs);
       this.intradayFilledCount += 1;
     }
     // else: 같은 방향 + pyramiding 소진 → 주문 취소(이월 없음)
@@ -1922,21 +2059,16 @@ export class StrategyState {
     }
   }
 
-  // pending entry 주문의 이번 바 체결가 — NaN이면 미체결(이월). pine2py _check_fill의 entry 분기
-  // (long limit: low<=limit → limit 체결, long stop: high>=stop → stop 체결, stop-limit: 두 조건
+  // pending entry/order 주문의 이번 바 체결가 — NaN이면 미체결(이월). pine2py _check_fill의 entry
+  // 분기(long limit: low<=limit → limit 체결, long stop: high>=stop → stop 체결, stop-limit: 두 조건
   // 동시 충족 시 limit 체결, 숏은 부등호 반전)를 기본으로 하되, **트리거 조건이 이 바 open에서
   // 이미 충족돼 있으면 open으로 체결**한다(갭 오픈: pine2py는 갭에서도 정확히 limit/stop 가격을
   // 반환해 "시장에 존재하지 않았던 가격" 체결이 되는데, TV 브로커 에뮬레이터는 limit을 "지정가
   // 이하/이상(or better)", stop을 "트리거 시점 시장가"로 채우므로 open 체결이 정합 — TV 실측
-  // 미검증 가설, DIVERGENCES #69). intrabar O→H→L→C 세부 경로는 도입하지 않고 "open 스냅샷 →
-  // 바 전체 H/L" 2단 모델만 쓴다(next_hint의 단순 모델 — stop-limit의 트리거-후-limit 시차도
-  // pine2py와 동일하게 같은 바 결합 조건으로 접는다: stop 트리거 상태의 바 넘어 존속 없음).
-  private entryFillPrice(openPrice: number, high: number, low: number): number {
-    return this.directionalFillPrice(this.entryDirection, this.entryLimit, this.entryStop, openPrice, high, low);
-  }
-
-  // entry/order 공용 방향 주문 체결 판정(C169에서 entryFillPrice 본문을 파라미터화 추출 — 동작
-  // 동치, exit의 부등호 반전판(exitFillPrice)과는 별개). direction 기준 부등호는 entry 분기 그대로.
+  // 미검증 가설, DIVERGENCES #69). 한 주문의 체결가는 "open 스냅샷 → 바 전체 H/L" 2단 모델로 정하고
+  // (stop-limit의 트리거-후-limit 시차도 같은 바 결합 조건으로 접는다), 여러 entry가 한 바에서
+  // 트리거되면 그 순서는 fillPendingEntries가 봉 내 경로로 정한다. exit의 부등호 반전판
+  // (exitFillPrice)과는 별개.
   private directionalFillPrice(
     direction: string, limitV: number, stopV: number, openPrice: number, high: number, low: number,
   ): number {

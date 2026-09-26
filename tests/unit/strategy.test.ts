@@ -95,13 +95,15 @@ describe("StrategyState (runtime, hand-verified)", () => {
     expect(st.posSize).toBe(5);
   });
 
-  it("same-bar entry with a different id keeps the first order (pyramiding=1 동치)", () => {
+  it("same-bar entries with different ids both rest; pyramiding=1 lets only the first fill", () => {
     const st = new StrategyState();
     st.entry("A", "long", 1);
-    st.entry("B", "long", 7);
-    st.processFills(10);
+    st.entry("B", "long", 7); // A is not filled yet, so the call-time pyramiding gate lets B in
+    expect(st.pendingEntries.map((e) => e.id)).toEqual(["A", "B"]);
+    st.processFills(10); // A opens; B meets a full position at its fill and is dropped
     expect(st.posSize).toBe(1);
     expect(st.entryId).toBe("A");
+    expect(st.entryPending).toBe(false);
   });
 
   it("entry while already long is canceled at fill time (pyramiding=1) and does not persist", () => {
@@ -461,15 +463,20 @@ describe("StrategyState limit/stop 주문 + 이월 + cancel (C166 넷째 슬라�
     expect(st.entryPending).toBe(false);
   });
 
-  it("cancel does NOT cancel a pending market entry (마켓 주문 취소 불가 — TV 가설)", () => {
+  // strategies.txt: cancel/cancel_all "can cancel orders of any type, including market orders", when
+  // called in the execution that placed the order (a pending market entry always is). The oracle
+  // agrees: resin-harness state/repros/mixed-seed-199.json and mixed-seed-333.json. (These two used
+  // to assert the unverified "a market entry cannot be cancelled" hypothesis.)
+  it("cancel cancels a pending market entry placed in the same execution", () => {
     const st = new StrategyState();
     st.entry("L", "long", 1);
     st.cancel("L");
+    expect(st.entryPending).toBe(false);
     st.processFills(10);
-    expect(st.posSize).toBe(1);
+    expect(st.posSize).toBe(0);
   });
 
-  it("cancel_all removes the pending price-based entry but keeps a market entry", () => {
+  it("cancel_all removes pending entries of every type, market included", () => {
     const st = new StrategyState();
     st.entry("L", "long", 1, 100);
     st.cancel_all();
@@ -479,7 +486,7 @@ describe("StrategyState limit/stop 주문 + 이월 + cancel (C166 넷째 슬라�
     st2.entry("L", "long", 1);
     st2.cancel_all();
     st2.processFills(10);
-    expect(st2.posSize).toBe(1);
+    expect(st2.posSize).toBe(0);
   });
 
   it("cancel does not touch a queued strategy.close market order", () => {
@@ -1878,15 +1885,19 @@ describe("StrategyState exit 브래킷 청산 (C167 다섯째 슬라이스, hand
     expect(st.grossLoss).toBe(0);
   });
 
-  it("same-bar exit fill → pending entry re-entry (청산 먼저 → entry 순서)", () => {
+  // The pyramiding limit is judged when strategy.entry() is called: a same-direction entry placed
+  // while the position is full never fills, even though the exit flattens the position at the very
+  // open the entry would fill at. Oracle (tier 2) and resin agree on resin-harness
+  // state/repros/pyramid-gate-at-placement.json (this scenario); tier 1 channelbreakout shows the
+  // gate on TradingView. (It used to assert the unverified re-entry: posSize 1 at 16 under "L2".)
+  it("same-bar exit fill does not revive an entry the pyramiding gate dropped at its call", () => {
     const st = longAt12();
     st.exit("X", "", 15);
-    st.entry("L2", "long", 1); // 같은 방향 재진입 주문(마켓) — pyramiding=1이지만 exit가 먼저 flat을 만든다
-    st.processFills(16, 17, 15); // exit: open 16 >= 15 → open 체결 → flat → entry가 open 16에 새 포지션
+    st.entry("L2", "long", 1); // 같은 방향 마켓 주문 — pyramiding=1이 이미 차 있어 호출 시점에 버려진다
+    expect(st.entryPending).toBe(false);
+    st.processFills(16, 17, 15); // exit: open 16 >= 15 → open 체결 → flat
     expect(st.realizedPnl).toBe(4); // (16-12)*1
-    expect(st.posSize).toBe(1);
-    expect(st.posAvgPrice).toBe(16);
-    expect(st.entryId).toBe("L2");
+    expect(st.posSize).toBe(0);
   });
 });
 
@@ -5966,21 +5977,21 @@ describe("strategy.* E2E (hand-verified: closedtrades/opentrades.entry_time/exit
 //   bar7: crossover(long) 재발화 -> entry("L",1) 큐잉(2번째 신호, 이월). ps=1/ap=104 그대로
 //   bar8: open 105 체결 -> pyramiding 가중평균(entryCount 1<2 통과): ap=(104*1+105*1)/2=104.5,
 //         ps=2, entryCount=2(게이트 소진).
-//   bar9: crossover(long) 재발화 -> entry("L",1) 큐잉(3번째 신호)
-//   bar10: open 106에서 체결 시도하나 entryCount(2)>=pyramiding(2) -> 주문 소진(이월 없음). ps/ap
-//         불변(2/104.5). high 107<activation 109라 트레일링도 미활성 -> 이중으로 불변 확인
-//   bar11: crossover(long) 재발화 -> entry("L",1) 큐잉(4번째 신호). high 108<109라 트레일링
-//         여전히 미활성. ps/ap 불변(2/104.5)
+//   bar9: crossover(long) 재발화 -> entry("L",1) 호출(3번째 신호) — entryCount(2)>=pyramiding(2)라
+//         호출 시점에 버려진다(주문 없음, 이월 없음)
+//   bar10: ps/ap 불변(2/104.5). high 107<activation 109라 트레일링도 미활성 -> 이중으로 불변 확인
+//   bar11: crossover(long) 재발화 -> entry("L",1) 호출(4번째 신호) — 역시 호출 시점에 버려진다.
+//         high 108<109라 트레일링 여전히 미활성. ps/ap 불변(2/104.5)
 //   bar12: high 111 activates the trailing stop of both lots, line 111-1=110, low 106<=110 -> both
 //         lots exit at 110: (110-104)+(110-105)=11. np=11
 //   bar13-15: no new signal, np stays 11.
 // Revised for ticks (trail_points=4, trail_offset=1 were price points). Activation is measured from
 // each entry's own fill (104+5=109 and 105+5=110), not from the 104.5 average; trail_points=500 is
 // chosen so both lots activate on bar 12 and trail one line. Checked against the oracle:
-// resin-harness state/repros/trail-pyramid-legs.json. The same repro shows the 4th entry (queued on
-// bar 11) rejected at bar 12's open, where pyramiding=2 is still full — the trailing exit fills
-// later in the bar. resin still judges the exit before that entry and re-enters at 107; that
-// divergence is pinned by the it.fails case below.
+// resin-harness state/repros/trail-pyramid-legs.json. The same repro shows the 4th entry (called on
+// bar 11) never filling: pyramiding=2 is full when the call runs, so the order is dropped there and
+// the trailing exit on bar 12 leaves the position flat (the pyramiding gate at the call, see
+// StrategyState.entry()).
 describe("strategy.* E2E 열두째 슬라이스 (hand-verified: MACD crossover 진입 + pyramiding 가중평균 + trailing stop 청산 조합, C193)", () => {
   const close = [100, 102, 101, 103, 102, 104, 103, 105, 104, 106, 105, 107, 110, 106, 103, 101];
   const open = [99, 101, 102, 101, 103, 102, 104, 103, 105, 104, 106, 105, 107, 110, 106, 103];
@@ -6027,11 +6038,9 @@ describe("strategy.* E2E 열두째 슬라이스 (hand-verified: MACD crossover �
     expect(result.bars.slice(0, 12).map((b) => b["var:__obs_ps"])).toEqual(PS.slice(0, 12));
   });
 
-  // Known divergence (see the scenario comment): the oracle rejects the entry queued on bar 11 at
-  // bar 12's open, because both lots are still open there; resin judges the intrabar trailing exit
-  // first and re-enters at 107. Flip this to `it` once resin fills bar-open orders before intrabar
-  // exits.
-  it.fails("rejects the entry queued on bar 11 at bar 12's open while pyramiding=2 is still full", () => {
+  // The oracle's values (trail-pyramid-legs.json): the entry called on bar 11 is dropped at the call
+  // (pyramiding=2 is full), so the bar-12 trailing exit leaves the position flat.
+  it("drops the entry called on bar 11 while pyramiding=2 is full", () => {
     const result = runPipeline(src, data);
     expect(result.bars.map((b) => b["var:__obs_ps"])).toEqual(PS);
   });
@@ -6103,8 +6112,8 @@ describe("strategy.* E2E 열두째 슬라이스 (hand-verified: MACD crossover �
     }
   });
 
-  // The oracle is flat from bar 12 on; resin holds its bar-12 re-entry — the known divergence above.
-  it.fails("ends flat after the trailing exit with no residual position (bar14/bar15 see no new signal)", () => {
+  // The oracle is flat from bar 12 on (trail-pyramid-legs.json).
+  it("ends flat after the trailing exit with no residual position (bar14/bar15 see no new signal)", () => {
     const result = runPipeline(src, data);
     expect(result.bars[14]!["var:__obs_ps"]).toBe(0);
     expect(result.bars[15]!["var:__obs_ps"]).toBe(0);
@@ -8505,5 +8514,96 @@ describe("syminfo option: the chart symbol's tick and lot grids", () => {
     // 1.12905, and bar 1's low 1.1285 takes it, slipped 5 ticks down to 1.129.
     expect(result.bars[1]!["var:__net"]).toBeCloseTo(1.129 - 1.13005, 12);
     expect(result.bars[0]!["var:r"]).toBeCloseTo(1.23457, 12);
+  });
+});
+
+// strategy.entry() orders are kept per id, and the pyramiding limit is judged when the call runs.
+// Ground truth: tier 1 resin-harness suites/strategy/tv/channelbreakout (TradingView's built-in
+// channel breakout keeps a long and a short stop entry resting on every bar; 2945/2945 trades) and
+// the oracle on the twin cases named in each test (resin-harness state/repros/).
+describe("StrategyState entry orders per id + pyramiding gate at the call", () => {
+  it("two stop entries with different ids rest together and the channel strategy reverses at each", () => {
+    const st = new StrategyState();
+    st.entry("LE", "long", 1, undefined, 110);
+    st.entry("SE", "short", 1, undefined, 90);
+    st.processFills(100, 105, 95); // neither level reached: both rest
+    expect(st.pendingEntries.map((e) => e.id)).toEqual(["LE", "SE"]);
+    st.entry("LE", "long", 1, undefined, 110); // re-issued every bar: modifies in place
+    st.entry("SE", "short", 1, undefined, 90);
+    st.processFills(100, 111, 99); // the long stop fills at 110
+    expect(st.posSize).toBe(1);
+    expect(st.posAvgPrice).toBe(110);
+    st.entry("LE", "long", 1, undefined, 112); // long and full (pyramiding=1): dropped at the call
+    st.entry("SE", "short", 1, undefined, 90);
+    expect(st.pendingEntries.map((e) => e.id)).toEqual(["SE"]);
+    st.processFills(100, 101, 89); // the short stop reverses the long at 90
+    expect(st.posSize).toBe(-1);
+    expect(st.closedTradeRecords[0]).toMatchObject({ entryId: "LE", exitId: "SE", entryPrice: 110, exitPrice: 90 });
+  });
+
+  it("orders two triggered entries by the bar's path (repro entry-path-order.json)", () => {
+    // Open nearer the high: open → high → low → close, so the stop at 105 fills before the limit at 95.
+    const up = new StrategyState();
+    up.configure(1, 2);
+    up.entry("A", "long", 1, undefined, 105);
+    up.entry("B", "long", 1, 95);
+    up.processFills(100, 106, 90);
+    expect(up.openTrades.map((t) => t.entryId)).toEqual(["A", "B"]);
+    // Open nearer the low: open → low → high → close, so the limit fills first even though placed second.
+    const down = new StrategyState();
+    down.configure(1, 2);
+    down.entry("C", "long", 1, undefined, 105);
+    down.entry("D", "long", 1, 95);
+    down.processFills(100, 110, 94);
+    expect(down.openTrades.map((t) => t.entryId)).toEqual(["D", "C"]);
+  });
+
+  it("a close_all placed before a same-direction entry hands its slot over, one placed after does not (repro pyramid-gate-close-all-order.json)", () => {
+    const st = new StrategyState();
+    st.entry("A", "long", 1);
+    st.processFills(101);
+    st.close_all();
+    st.entry("B", "long", 1); // the close placed ahead of it leaves the position flat
+    st.processFills(103);
+    expect(st.posSize).toBe(1);
+    expect(st.entryId).toBe("B");
+    st.entry("C", "long", 1); // long and full: dropped at the call
+    st.close_all();
+    st.processFills(105);
+    expect(st.posSize).toBe(0);
+    expect(st.closedTradeRecords.map((r) => r.entryId)).toEqual(["A", "B"]);
+  });
+
+  it("fills every entry due at the open before the exit bound to the new position (repro mixed-seed-475.json)", () => {
+    const st = new StrategyState();
+    st.entry("R", "long", 1);
+    st.exit("RX", "R", 101); // bound to the pending R
+    st.entry("Q", "long", 4); // R is not filled yet, so the call-time gate lets Q in
+    st.processFills(100, 102, 99); // R opens at 100, Q meets the full position and is dropped, then RX takes profit at 101
+    expect(st.posSize).toBe(0);
+    expect(st.closedTradeRecords).toHaveLength(1);
+    expect(st.closedTradeRecords[0]).toMatchObject({ entryId: "R", exitId: "RX", exitPrice: 101 });
+  });
+
+  it("puts an entry's stop and limit on the tick grid, away from the market (tier 1 channelbreakout trade 28)", () => {
+    const st = new StrategyState();
+    st.setSymbol(0.00001, 100000, 1, 0.0001);
+    const stop = 1.13641 - 0.00001; // ta.lowest(low, 5) - syminfo.mintick in the channel strategy
+    expect(stop).toBeLessThan(1.1364); // 1.1363999999999999 in floating point
+    st.entry("SE", "short", 1, undefined, stop);
+    expect(st.pendingEntries[0]!.stop).toBe(1.1364);
+    st.processFills(1.13731, 1.13749, 1.1364); // the bar's low touches the stop: TradingView fills here
+    expect(st.posSize).toBe(-1);
+    expect(st.posAvgPrice).toBe(1.1364);
+    // A buy limit rounds down and a buy stop up; a sell limit rounds up and a sell stop down.
+    const g = new StrategyState();
+    g.setSymbol(0.01, 100, 1, 1);
+    g.entry("BL", "long", 1, 100.005);
+    g.entry("SL", "short", 1, 100.005);
+    expect(g.pendingEntries.map((e) => e.limit)).toEqual([100, 100.01]);
+    g.cancel_all();
+    g.entry("BS", "long", 1, undefined, 100.005);
+    g.entry("SS", "short", 1, undefined, 100.005);
+    expect(g.pendingEntries.map((e) => e.stop)).toEqual([100.01, 100]);
   });
 });
