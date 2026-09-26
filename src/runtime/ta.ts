@@ -63,16 +63,24 @@ export interface EmaState {
   prevEma?: number;
 }
 
-// ta.ema - 처음 length바는 합계를 축적하고, length번째 바에서 SMA로 시드한 뒤 이후부터
-// alpha=2/(length+1)로 지수 스무딩(GOAL.md "EMA는 SMA seed"). pine2py wavealgo/ta/ema.py와
-// 동일한 2단계 상태 전이 검증됨 — na 입력은 상태를 건드리지 않고 그대로 NaN 통과(초기화 진행이
-// 멈춘 것처럼 취급, 이후 non-na가 오면 이어서 계속).
+// ta.ema - seeded with the SMA of the first `length` non-na values, then smoothed with
+// alpha = 2 / (length + 1). An na source is skipped whole: na on its bar, state untouched
+// (ref_v6_ta_math.txt ta.ema: "`na` values in the `source` series are ignored; the function
+// calculates on the `length` quantity of non-`na` values").
+// The manual writes the step as `alpha * source + (1 - alpha) * EMA[1]`; that is the algebra, not
+// TradingView's floating-point order. TradingView computes `prev + alpha * (source - prev)`: tier 1
+// ta_245_ema_rma_exact logs ema(a, 5) at exactly 100.79423868312757 on bar 10, which the manual's
+// order misses by one ulp (oracle pynecore lib/ta.py ema, "Measured law (probes m558 ...)": the
+// algebraically equal forms "drift from TradingView on more than half of the bars").
+// Length 1 is the identity (the oracle's shortcut): `prev + (source - prev)` is not always
+// `source` in doubles.
 export function ema(state: EmaState, value: number, length: number): number {
   if (state.initCount === undefined) {
     state.initCount = 0;
     state.initSum = 0;
     state.prevEma = NaN;
   }
+  if (length === 1) return value;
   if (Number.isNaN(value)) return NaN;
 
   if (state.initCount < length) {
@@ -86,7 +94,7 @@ export function ema(state: EmaState, value: number, length: number): number {
   }
 
   const alpha = 2 / (length + 1);
-  const emaVal = alpha * value + (1 - alpha) * state.prevEma!;
+  const emaVal = state.prevEma! + alpha * (value - state.prevEma!);
   state.prevEma = emaVal;
   return emaVal;
 }
@@ -180,18 +188,21 @@ export interface RmaState {
   prevRma?: number;
 }
 
-// ta.rma - Wilder's smoothing(alpha=1/length). ta.ema와 완전히 동일한 2단계 상태 전이 구조
-// (처음 length바 축적 후 SMA로 시드, 이후 지수 스무딩)이고 alpha 공식만 다르다. pine2py
-// wavealgo/ta/rma.py의 인크리멘탈 모드는 매 바 length폭 윈도우를 처음부터 재스캔해 SMA를
-// 구하는 방식이지만(초기화 구간에 한해 O(length) 재계산), 그 결과는 "처음 length개 non-na
-// 값의 합계/length"와 동치이므로(연속 데이터에 embedded na gap이 없는 한) ta.ema와 동일한
-// 러닝 합계(initSum/initCount) O(1) incremental로 이식했다(GOAL.md "바당 히스토리 재계산 금지").
+// ta.rma - Wilder's smoothing: ta.ema's seed and na handling (ref_v6_ta_math.txt pine_rma seeds
+// with `ta.sma(src, length)`; "`na` values in the `source` series are ignored"), alpha = 1 / length.
+// The manual writes the step as `alpha * src + (1 - alpha) * nz(sum[1])`; TradingView computes
+// `(prev * (length - 1) + source) / length`, a different rounding: tier 1 ta_245_ema_rma_exact logs
+// rma(a, 3) and rma(a, 5) at exactly their probe values, which the alpha form misses by one and two
+// ulps (oracle pynecore lib/ta.py rma, "Measured law (probes m558)": "This is NOT ``ema`` with
+// alpha = 1 / length -- both alpha shapes drift from TradingView on the majority of bars").
+// Length 1 is the identity (the oracle's shortcut).
 export function rma(state: RmaState, value: number, length: number): number {
   if (state.initCount === undefined) {
     state.initCount = 0;
     state.initSum = 0;
     state.prevRma = NaN;
   }
+  if (length === 1) return value;
   if (Number.isNaN(value)) return NaN;
 
   if (state.initCount < length) {
@@ -204,8 +215,7 @@ export function rma(state: RmaState, value: number, length: number): number {
     return NaN;
   }
 
-  const alpha = 1 / length;
-  const rmaVal = alpha * value + (1 - alpha) * state.prevRma!;
+  const rmaVal = (state.prevRma! * (length - 1) + value) / length;
   state.prevRma = rmaVal;
   return rmaVal;
 }

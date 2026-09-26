@@ -330,6 +330,42 @@ describe("ta.ema", () => {
   });
 });
 
+// TradingView's floating-point order for the two smoothing steps: ema is
+// `prev + alpha * (source - prev)`, rma is `(prev * (length - 1) + source) / length`. The references
+// are TradingView's full-precision values logged by tier 1 resin-harness ta_245_ema_rma_exact
+// (PyneCore tests/t01_lib/t20_ta/test_245_ema_rma_exact.py, probe m558); the manual's
+// `alpha * src + (1 - alpha) * prev` misses ema(a, 5) by one ulp and rma(a, 5) by two.
+describe("ta.ema / ta.rma: TradingView's rounding (tier 1 ta_245_ema_rma_exact)", () => {
+  const run = (fn: (s: object, v: number, l: number) => number, length: number, gapped: boolean) => {
+    const state = {};
+    const out: number[] = [];
+    for (let i = 0; i < 12; i++) {
+      const a = 100.0 + (i % 7) / 3.0;
+      out.push(fn(state, gapped && i % 3 === 0 ? NaN : a, length));
+    }
+    return [out[10], out[11]];
+  };
+
+  it("ema matches TradingView bit for bit", () => {
+    expect(run(ema, 3, false)).toEqual([100.8125, 101.07291666666666]);
+    expect(run(ema, 5, false)).toEqual([100.79423868312757, 100.97393689986282]);
+    expect(run(ema, 4, true)).toEqual([100.696, 100.95093333333332]);
+    expect(run(ema, 1, false)).toEqual([101.0, 101.33333333333333]);
+  });
+
+  it("rma matches TradingView bit for bit", () => {
+    expect(run(rma, 3, false)).toEqual([100.80724483056444, 100.98260766482075]);
+    expect(run(rma, 5, false)).toEqual([100.79716266666667, 100.9043968]);
+    expect(run(rma, 4, true)).toEqual([100.734375, 100.88411458333333]);
+  });
+
+  it("length 1 is the identity even after a huge value", () => {
+    const state = {};
+    ema(state, 1e20, 1);
+    expect(ema(state, 1, 1)).toBe(1);
+  });
+});
+
 describe("ta.rsi", () => {
   it("returns NaN for the seed bar (no prior value to diff against)", () => {
     const state = {};
