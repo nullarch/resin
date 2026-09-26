@@ -347,6 +347,9 @@ export const rt = {
     getFromArrayHist: securityFns.getFromArrayHist,
     // C739: bare 필드 + 요청 tf 문맥 런타임 오프셋(HTF 행 단위) — security.ts 주석 참조.
     getFieldHtfOffset: securityFns.getFieldHtfOffset,
+    // Nested requests read inside the prepass of the request that depends on them.
+    pairNested: securityFns.pairNested,
+    readNested: securityFns.readNested,
   },
   // label/line/box/table/polyline(신규, corpus 93개 파일 실측) — array/map/matrix/input과 동일한
   // 중첩 네임스페이스 원칙(builtinCalls 값이 "label.set_text"처럼 점 경로라 codegen의 범용

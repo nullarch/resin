@@ -221,6 +221,9 @@ interface SecurityExprGenContext {
   // C738: top-level var 상태 변수 리플레이 슬라이스(analyzer SecurityVarSlice)의 이름 → 프리패스
   // 함수 로컬(__svN). genIdentifier가 최우선으로 조회한다 — 미설정(기존 전 경로)이면 출력 불변.
   sliceLocals?: ReadonlyMap<string, string>;
+  // Nested requests this prepass reads (program.securityNestedReads) -> the local holding their
+  // pairing with this prepass's rows (rt.security.pairNested).
+  nestedPairs?: ReadonlyMap<Expr, string>;
 }
 
 // 프리패스 함수 로컬 히스토리 버퍼 이름 — 선언(generateSecurityExprPreamble)과 읽기(genIndexAccess)
@@ -559,7 +562,9 @@ export function generateSecurityExprPreamble(program: AnalyzedProgram): string[]
   // C453: udf-param 다중 콜사이트 프리패스(securityParamExprPrepasses — 노드 키가 없는 배열이라
   // 맵과 별도, 값 구조는 동일)도 같은 방출 로직을 그대로 탄다. 순회 순서는 슬롯 번호와 무관하게
   // 안전하다 — 각 프리패스 함수가 자기 슬롯만 읽고 쓴다.
-  for (const info of [...program.securityExprCallSlots.values(), ...program.securityParamExprPrepasses]) {
+  // Nested requests' prepasses first (innermost first, analyzer securityNestedPrepasses): the
+  // prepasses that read them pair their results with their own rows.
+  for (const info of [...program.securityNestedPrepasses, ...program.securityExprCallSlots.values(), ...program.securityParamExprPrepasses]) {
     const fnName = `__secExpr${info.slot}`;
     // C370 hist-on-expr: histReads(안쪽 서브식 먼저 순서)의 배열 인덱스가 곧 버퍼 인덱스 —
     // 콜사이트마다 프리패스 함수가 독립이라 secCtx도 콜사이트별로 새로 만든다(버퍼 맵 격리).
@@ -571,7 +576,9 @@ export function generateSecurityExprPreamble(program: AnalyzedProgram): string[]
       sliceLocals = new Map();
       info.varSlice.varNames.forEach((n, i) => sliceLocals!.set(n, `__sv${i}`));
     }
-    const secCtx: SecurityExprGenContext = { cacheVar: "cache", loopVar: "h", histBufs, sliceLocals };
+    const nestedPairs = new Map<Expr, string>();
+    (info.nested ?? []).forEach((node, i) => nestedPairs.set(node, `__nest${i}`));
+    const secCtx: SecurityExprGenContext = { cacheVar: "cache", loopVar: "h", histBufs, sliceLocals, nestedPairs };
     // fill 문: 행마다 서브식을 정확히 1회 평가해 버퍼에 기록(ta 상태 전진과 히스토리 기록이 이
     // 한 지점에서 동시에 일어남 — bodyExpr 안의 해당 IndexAccess 노드는 genIndexAccess가 버퍼
     // 읽기로 치환하므로 서브식이 본식에서 이중 평가되지 않는다). 중첩 히스토리는 안쪽 버퍼가 앞
@@ -603,6 +610,10 @@ export function generateSecurityExprPreamble(program: AnalyzedProgram): string[]
     }
     if (info.varSlice !== null) {
       for (const n of info.varSlice.varNames) lines.push(`let ${sliceLocals!.get(n)!} = NaN;`);
+    }
+    for (const [node, pairVar] of nestedPairs) {
+      const nr = program.securityNestedReads.get(node)!;
+      lines.push(`const ${pairVar} = rt.security.pairNested($.securityCache[${nr.slot}], ${secCtx.cacheVar}, ${nr.lookahead});`);
     }
     lines.push(
       `for (let ${secCtx.loopVar} = 0; ${secCtx.loopVar} < out.length; ${secCtx.loopVar}++) {`,
@@ -3813,6 +3824,12 @@ function genCallExpr(
   if (tupleTaRead !== undefined) {
     const callCode = genExpr(tupleTaRead.taCall, program, funcCtx, secCtx);
     return `(${callCode}, $.taScratch[${tupleTaRead.index}])`;
+  }
+  // A nested request read inside the prepass of the request that depends on it: this row's paired
+  // bar of the nested request's own prepass (analyzer securityNestedReads).
+  const nestedRead = secCtx !== null ? program.securityNestedReads.get(expr) : undefined;
+  if (nestedRead !== undefined) {
+    return `rt.security.readNested($.securityExprCache[${nestedRead.slot}], ${secCtx!.nestedPairs!.get(expr)!}, ${secCtx!.loopVar}, ${nestedRead.gaps})`;
   }
   const stateCall = program.stateCallSlots.get(expr);
   if (stateCall !== undefined) {

@@ -8,6 +8,7 @@
 import { describe, expect, it } from "vitest";
 import { Context, type SecurityFeed } from "../../src/runtime/context";
 import { ExchangeCalendar, calendarSpecOf } from "../../src/runtime/calendar";
+import { pairNested, readNested, type SecurityCache } from "../../src/runtime/security";
 import { compile, transpile } from "../../src/index";
 
 const NYSE = {
@@ -99,6 +100,90 @@ plot(request.security("A:B", "D", close) + f("C:D") + request.security(syminfo.t
 `);
     // Slots follow analysis order: the function body comes first.
     expect(r.ok && r.securitySymbols).toEqual(["C:D", "A:B", null]);
+  });
+});
+
+// The chart symbol named by the syminfo option (prefix/ticker): syminfo.tickerid folds to
+// "PREFIX:TICKER", and a request on it finds that symbol's feeds. A feed keyed "SYMBOL:TF" is read
+// before one keyed "SYMBOL" (the reference's key order, pynecore ScriptRunner._resolve_security_data),
+// so one symbol can be handed at several timeframes (resin-harness tier 1
+// sec_032_dependent_cross_context hands CAPITALCOM:EURUSD at "D" and "W").
+describe("request.security on the chart symbol's own feeds", () => {
+  // Monday 2003-09-22 to Friday 2003-10-03, New York trading days; closes 1..10.
+  const days = Array.from({ length: 10 }, (_, k) => Date.UTC(2003, 8, 22 + k + 2 * Math.floor(k / 5), 13, 30));
+  const daily = feed(days.map((_, k) => k + 1), days);
+  const weekly: SecurityFeed = { ...feed([50, 60], [days[0]!, days[5]!]), timeframe: "1W" };
+  const runAs = (src: string, security: Record<string, SecurityFeed>): (number | null)[] => {
+    const r = transpile(src, { chartTf: "D", syminfo: { ...NYSE, prefix: "USI", ticker: "ADVN.NY" } });
+    if (!r.ok) throw new Error(r.errors.join("; "));
+    const ctx = Context.from(r, chart(days), { security });
+    const bar = compile(r.code)(ctx);
+    for (let i = 0; i < ctx.barCount; i++) {
+      ctx.advance();
+      bar();
+    }
+    return ctx.plots[0]!.toArray().map((v) => (Number.isFinite(v) ? v : null));
+  };
+
+  it("folds syminfo.prefix, syminfo.ticker and syminfo.tickerid to the syminfo option's identity", () => {
+    const r = transpile(`//@version=6
+indicator("x")
+plot(request.security(syminfo.tickerid, "D", close))
+`, { syminfo: { prefix: "USI", ticker: "ADVN.NY" } });
+    expect(r.ok && r.securitySymbols).toEqual(["USI:ADVN.NY"]);
+    const bad = transpile(`indicator("x")\nplot(close)`, { syminfo: { ticker: "A:B" } });
+    expect(bad.ok).toBe(false);
+  });
+
+  it("reads the feed keyed SYMBOL:TF before the one keyed SYMBOL", () => {
+    const src = `//@version=6
+indicator("x")
+plot(request.security(syminfo.tickerid, "W", close), "p")
+`;
+    expect(runAs(src, { "USI:ADVN.NY": daily, "USI:ADVN.NY:W": weekly })).toEqual([null, null, null, null, 50, 50, 50, 50, 50, 60]);
+    // Without the weekly feed the daily one is grouped into weeks.
+    expect(runAs(src, { "USI:ADVN.NY": daily })).toEqual([null, null, null, null, 5, 5, 5, 5, 5, 10]);
+  });
+
+  it("reads a nested request in the outer request's context: a week reads its last day, a day the last week it closes", () => {
+    const feeds = { "USI:ADVN.NY:D": daily, "USI:ADVN.NY:W": weekly };
+    // In the weekly context the nested "" request inherits the symbol: week 0 reads day 4 (5),
+    // week 1 day 9 (10); d - d[1] is that change, shown from the day that closes the week.
+    const weekOfDays = `//@version=6
+indicator("x")
+d = request.security("", "D", close)
+plot(request.security(syminfo.tickerid, "W", d - d[1]), "p")
+`;
+    expect(runAs(weekOfDays, feeds)).toEqual([null, null, null, null, null, null, null, null, null, 5]);
+    // In the daily context each day reads the last week closed at or before its close: none until
+    // Friday's close, then week 0 (50), week 1 (60) on day 9.
+    const dayOfWeeks = `//@version=6
+indicator("x")
+w = request.security(syminfo.tickerid, "W", close)
+plot(request.security(syminfo.tickerid, "D", w), "p")
+`;
+    expect(runAs(dayOfWeeks, feeds)).toEqual([null, null, null, null, 50, 50, 50, 50, 50, 60]);
+  });
+});
+
+describe("pairNested / readNested", () => {
+  // Inner bars close at 10, 20, 30, 40; outer bars open at 0 and 25, close at 25 and 45.
+  const cache = (open: number[], close: number[]) =>
+    ({ timeOpen: Float64Array.from(open), timeClose: Float64Array.from(close) }) as unknown as SecurityCache;
+  const inner = cache([0, 10, 20, 30], [10, 20, 30, 40]);
+  const outer = cache([0, 25], [25, 45]);
+  const values = Float64Array.from([1, 2, 3, 4]);
+
+  it("pairs each outer bar with the last inner bar closed by its close, or opened before it with lookahead", () => {
+    expect(Array.from(pairNested(inner, outer, false))).toEqual([1, 3]);
+    expect(Array.from(pairNested(inner, outer, true))).toEqual([2, 3]);
+    expect(Array.from(pairNested(inner, cache([0], [5]), false))).toEqual([-1]);
+  });
+
+  it("is na before the first pair, and with gaps on shows a value only where its inner bar first appears", () => {
+    const pair = Int32Array.from([-1, 1, 1, 3]);
+    expect([0, 1, 2, 3].map((h) => readNested(values, pair, h, false))).toEqual([NaN, 2, 2, 4]);
+    expect([0, 1, 2, 3].map((h) => readNested(values, pair, h, true))).toEqual([NaN, 2, NaN, 4]);
   });
 });
 

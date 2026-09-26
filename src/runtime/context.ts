@@ -150,9 +150,11 @@ export class Context {
   // strategy, reused bar after bar. Both undefined when no feed was given.
   private subStart: Int32Array | undefined;
   private subWindow: SubBarWindow | undefined;
-  // Per security slot, the other symbol's feed it reads and that symbol's calendar
-  // (setSecurityFeeds), and the chart's calendar they pair with. Empty without feeds.
-  private slotFeeds: ({ symbol: string; feed: SecurityFeed } | undefined)[] = [];
+  // The other symbols' feeds (setSecurityFeeds), the compile-time symbol of each security slot,
+  // and the chart's calendar the feeds pair with. Empty without feeds.
+  private securityFeeds: Readonly<Record<string, SecurityFeed>> = {};
+  private slotSymbols: readonly (string | null)[] = [];
+  private chartSpec: CalendarSpec | undefined;
   private chartCalendar: ExchangeCalendar | undefined;
 
   // Object form (viz S0): build a Context straight from a TranspileOk instead of
@@ -186,21 +188,33 @@ export class Context {
     tfs: readonly string[],
     chartSpec: CalendarSpec | undefined,
   ): void {
-    this.slotFeeds = symbols.map((symbol) =>
-      symbol !== null && Object.prototype.hasOwnProperty.call(feeds, symbol) ? { symbol, feed: feeds[symbol]! } : undefined,
-    );
-    if (!this.slotFeeds.some((f) => f !== undefined)) return;
-    if (this.time === undefined) throw new Error("Context: request.security feeds need a time channel on the chart data");
-    this.chartCalendar = new ExchangeCalendar(chartSpec ?? calendarSpecOf("D", undefined, "chart"));
+    this.securityFeeds = feeds;
+    this.slotSymbols = symbols;
+    this.chartSpec = chartSpec;
     tfs.forEach((tf, slot) => {
-      if (this.slotFeeds[slot] !== undefined) this.securityCache[slot] = this.buildFeedCache(slot, tf);
+      const found = this.feedOf(slot, tf);
+      if (found !== undefined) this.securityCache[slot] = this.buildFeedCache(found.key, found.feed, tf);
     });
   }
 
-  private buildFeedCache(slot: number, tf: string): SecurityCache {
-    const { symbol, feed } = this.slotFeeds[slot]!;
-    const feedCal = new ExchangeCalendar(calendarSpecOf(feed.timeframe ?? tf, feed.syminfo, `request.security feed '${symbol}'`));
-    return buildFromFeed(feed, feedCal, tf, this.time!, this.chartCalendar!);
+  // The feed security slot `slot` reads at timeframe `tf`: the one keyed "SYMBOL:TF", else the one
+  // keyed "SYMBOL" (the reference's key order, pynecore ScriptRunner._resolve_security_data: "Try
+  // exact "SYMBOL:TF" match, then symbol-only"), so that one symbol can be handed at several
+  // timeframes.
+  private feedOf(slot: number, tf: string): { key: string; feed: SecurityFeed } | undefined {
+    const symbol = this.slotSymbols[slot];
+    if (symbol === null || symbol === undefined) return undefined;
+    for (const key of [`${symbol}:${tf}`, symbol]) {
+      if (Object.prototype.hasOwnProperty.call(this.securityFeeds, key)) return { key, feed: this.securityFeeds[key]! };
+    }
+    return undefined;
+  }
+
+  private buildFeedCache(key: string, feed: SecurityFeed, tf: string): SecurityCache {
+    if (this.time === undefined) throw new Error("Context: request.security feeds need a time channel on the chart data");
+    this.chartCalendar ??= new ExchangeCalendar(this.chartSpec ?? calendarSpecOf("D", undefined, "chart"));
+    const feedCal = new ExchangeCalendar(calendarSpecOf(feed.timeframe ?? tf, feed.syminfo, `request.security feed '${key}'`));
+    return buildFromFeed(feed, feedCal, tf, this.time, this.chartCalendar);
   }
 
   // Takes the bar magnifier's feed (ContextOptions.magnifier) and finds each chart bar's sub-bars in
@@ -281,8 +295,9 @@ export class Context {
   // has already filled those with the chart timeframe as a harmless
   // placeholder, so slots that are never rebuilt behave exactly as before.
   rebuildSecurityCache(slot: number, tf: string): void {
-    if (this.slotFeeds[slot] !== undefined) {
-      this.securityCache[slot] = this.buildFeedCache(slot, tf);
+    const found = this.feedOf(slot, tf);
+    if (found !== undefined) {
+      this.securityCache[slot] = this.buildFeedCache(found.key, found.feed, tf);
       return;
     }
     this.securityCache[slot] = buildSecurityCache(

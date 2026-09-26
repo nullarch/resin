@@ -347,6 +347,39 @@ export function buildFromFeed(
   };
 }
 
+// A nested request (a request.security call another one's expression depends on) runs within the
+// outer request's context (concepts_other-timeframes-and-data.txt "Nested requests"): the outer
+// context's bars are its chart. Each outer bar reads, with lookahead off, the last inner bar whose
+// scheduled close is at or before its own, the rule a chart bar reads a request by (buildFromFeed;
+// pynecore core/security.py _get_confirmed_time, "the chart is just another consumer"), and with
+// lookahead on the last inner bar that opened before that close. Per outer row: the inner row it
+// reads, -1 before there is one.
+export function pairNested(inner: SecurityCache, outer: SecurityCache, lookahead: boolean): Int32Array {
+  const m = outer.timeOpen.length;
+  const n = inner.timeOpen.length;
+  const pair = new Int32Array(m);
+  let k = -1;
+  for (let h = 0; h < m; h++) {
+    const asof = outer.timeClose[h]!;
+    if (lookahead) {
+      while (k + 1 < n && inner.timeOpen[k + 1]! < asof) k++;
+    } else {
+      while (k + 1 < n && inner.timeClose[k + 1]! <= asof) k++;
+    }
+    pair[h] = k;
+  }
+  return pair;
+}
+
+// The nested request's value on outer row `h` (pairNested): its prepass result on the paired row,
+// na before there is one; with gaps on, only on the outer row where that inner row first shows.
+export function readNested(values: Float64Array, pair: Int32Array, h: number, gaps: boolean): number {
+  const k = pair[h]!;
+  if (k < 0) return NaN;
+  if (gaps && h > 0 && pair[h - 1] === k) return NaN;
+  return values[k]!;
+}
+
 // barMap+gaps+lookahead -> htfIdx 인덱스 해석부만 분리(3c, ROADMAP [hard->분할] 셋째 슬라이스) —
 // get()/getFromArray() 공용. 반환값 -1은 "na 신호"(호출부가 NaN으로 변환) — 실제 htfIdx는 항상
 // 0 이상이라(barMap 값 자체가 항상 0 이상, SecurityCache 파일 헤더 참조) -1과 절대 충돌하지 않는다.

@@ -1979,10 +1979,13 @@ function resolveSecurityTfParamSiteValues(
 // timeframe resolver folds (a literal, a constant variable, an input's default, a constant
 // ternary, ...), or, for a parameter of the enclosing function, the one string every call site
 // passes. null is the chart's own symbol (syminfo.tickerid and the like) or a symbol known only
-// at run time; both read the chart's bars. The fold registers no input freeze guard: those guard
-// the timeframe's aggregation cache.
+// at run time; both read the chart's bars. syminfo.tickerid is the chart's "PREFIX:TICKER" when the
+// caller named the chart symbol (the syminfo option's prefix/ticker), so that a feed of the chart's
+// own symbol at another timeframe can be found. The fold registers no input freeze guard: those
+// guard the timeframe's aggregation cache.
 function resolveSecuritySymbol(symbolArg: Expr, prog: AnalyzedProgram, scope: LexScope): string | null {
   if (symbolArg.kind === "NaLiteral") return null;
+  if (isSyminfoTickerid(symbolArg)) return prog.syminfoStrings.get("tickerid") || null;
   const guardKeysBefore = new Set(prog.securityTfConstGuards.keys());
   let symbol = resolveSecurityTfLiteral(symbolArg, prog, undefined, undefined, scope.func?.name ?? null);
   if (symbol === undefined) {
@@ -1993,6 +1996,35 @@ function resolveSecuritySymbol(symbolArg: Expr, prog: AnalyzedProgram, scope: Le
     if (!guardKeysBefore.has(k)) prog.securityTfConstGuards.delete(k);
   }
   return symbol === undefined || symbol === "" ? null : symbol;
+}
+
+// Gives each nested request a build read (SecurityNestedRead) its own slot on its requested symbol
+// and timeframe, registers its expression's ta calls in `scope` (the scope the reading request
+// registers its own in), and queues its prepass. Innermost first: a prepass may read only prepasses
+// queued before it (codegen generateSecurityExprPreamble emits them in this order, ahead of the
+// others).
+function registerSecurityNestedReads(nested: readonly SecurityNestedRead[], prog: AnalyzedProgram, scope: LexScope): void {
+  for (const n of nested) {
+    registerSecurityNestedReads(n.build.nested, prog, scope);
+    for (const tc of n.build.taCalls) analyzeStatefulCall(tc.taCall, tc.fn, tc.entry, prog, scope);
+    const slot = prog.securityTfs.length;
+    prog.securityTfs.push(n.tf);
+    prog.securitySymbols[slot] = n.symbol;
+    prog.securityNestedReads.set(n.node, { slot, gaps: n.gaps, lookahead: n.lookahead });
+    prog.securityNestedPrepasses.push({
+      slot,
+      gaps: n.gaps,
+      lookahead: n.lookahead,
+      bodyExpr: n.build.bodyExpr,
+      histReads: n.build.histReads,
+      varSlice: n.build.varSlice,
+      nested: n.build.nested.map((m) => m.node),
+    });
+  }
+}
+
+function isSyminfoTickerid(e: Expr): boolean {
+  return e.kind === "DotAccess" && e.obj.kind === "Identifier" && e.obj.name === "syminfo" && e.attr === "tickerid";
 }
 
 // Gives the security slots assigned since `fromSlot` their call's symbol. A slot already named
@@ -2300,7 +2332,39 @@ export interface SecurityExprBuild {
   // C738: top-level var 상태 변수 리플레이 슬라이스(analyzer.ts SecurityVarSlice 주석 참조) —
   // null이면 기존 경로 그대로.
   varSlice: SecurityVarSlice | null;
+  // The nested requests the expression reads (SecurityNestedRead), empty unless the build was
+  // asked to evaluate them.
+  nested: SecurityNestedRead[];
 }
+
+// A nested request: a request.security call that another request.security call's expression
+// depends on. Pine v6 evaluates it within the outer call's context (concepts_other-timeframes-and-
+// data.txt "Nested requests": "the second call evaluates the first call within its own context",
+// and a nested call naming syminfo.tickerid/"" or timeframe.period/"" "inherits that request.*()
+// call's ticker ID or timeframe information"). The inner call keeps its own expression, run on its
+// own context's bars (`build`, its own slot and prepass), and each bar of the outer context reads it
+// with the rule a chart bar reads a request by (runtime/security.ts pairNested). `node` is the clone
+// the outer build embeds where the value is read; `symbol` (null: the chart's own) and `tf` are the
+// requested context with inheritance resolved.
+export interface SecurityNestedRead {
+  node: CallExpr;
+  symbol: string | null;
+  tf: string;
+  gaps: boolean;
+  lookahead: boolean;
+  build: SecurityExprBuild;
+}
+
+// The context of the request whose expression is being built, while buildSecurityExpr was asked
+// to evaluate nested requests (its `nest` argument), and the nested requests met so far. A module
+// state like secVarSliceCtx, for the same reason: the builder's recursion has too many call sites
+// to thread it through.
+interface SecurityNestCtx {
+  symbol: string | null;
+  tf: string;
+  nested: SecurityNestedRead[];
+}
+let secNestCtx: SecurityNestCtx | null = null;
 
 // C542: seriesArg 서브트리 안에서 참조되는 Identifier 이름 전부를 모은다(secParamMultiSiteGeneric
 // 후보 판정 전용 — buildSecurityExprNode가 실제로 재귀하는 노드 종류(BinOp/UnaryOp/TernaryOp/
@@ -2631,6 +2695,9 @@ function stmtContainsClosureWrite(stmt: Stmt, closure: ReadonlySet<string>): boo
   return found;
 }
 
+// `nest`: the context this request asks for (symbol, null for the chart's own, and timeframe),
+// given when the caller registers the nested requests the expression reads (SecurityNestedRead);
+// without it a request.security call in the expression is outside the grammar, as before.
 function buildSecurityExpr(
   root: Expr,
   prog: AnalyzedProgram,
@@ -2638,7 +2705,28 @@ function buildSecurityExpr(
   funcName: string | null,
   outerSymbol: Expr | null = null,
   outerTf: Expr | null = null,
+  nest: { symbol: string | null; tf: string } | null = null,
 ): SecurityExprBuild | null {
+  const savedNest = secNestCtx;
+  const nested: SecurityNestedRead[] = [];
+  secNestCtx = nest === null ? null : { symbol: nest.symbol, tf: nest.tf, nested };
+  try {
+    const built = buildSecurityExprTree(root, prog, callLine, funcName, outerSymbol, outerTf, nested);
+    return built === null ? null : { ...built, nested };
+  } finally {
+    secNestCtx = savedNest;
+  }
+}
+
+function buildSecurityExprTree(
+  root: Expr,
+  prog: AnalyzedProgram,
+  callLine: number,
+  funcName: string | null,
+  outerSymbol: Expr | null,
+  outerTf: Expr | null,
+  nested: SecurityNestedRead[],
+): Omit<SecurityExprBuild, "nested"> | null {
   const taCalls: SecurityExprTaCallRef[] = [];
   const histReads: SecurityExprHistRead[] = [];
   // C738: top-level 루트(funcName===null)에서만 var 슬라이스를 시도한다 — 콜이 UDF 본문 안이면
@@ -2665,12 +2753,14 @@ function buildSecurityExpr(
           secVarSliceCtx = null;
           taCalls.length = 0;
           histReads.length = 0;
+          nested.length = 0;
         } else {
           ctx.bodyPhase = true;
           ctx.useLine = callLine;
         }
         const sliceTaEnd = taCalls.length;
         const sliceHistEnd = histReads.length;
+        const sliceNestedEnd = nested.length;
         const bodyExpr = buildSecurityExprNode(root, prog, callLine, new Set(), taCalls, true, false, histReads, false, funcName, null, false, outerSymbol, outerTf);
         if (bodyExpr === null) return null;
         if (varSlice !== null && !ctx.bodyUsed) {
@@ -2678,6 +2768,7 @@ function buildSecurityExpr(
           // 기존 출력을 바이트 단위로 보존한다.
           taCalls.splice(0, sliceTaEnd);
           histReads.splice(0, sliceHistEnd);
+          nested.splice(0, sliceNestedEnd);
           varSlice = null;
         }
         return { bodyExpr, taCalls, histReads, varSlice };
@@ -2709,6 +2800,73 @@ function tryResolveSecurityLeadArgsQuiet(node: Expr): { symbolArg: Expr; tfArg: 
   }
   if (slots[0] === undefined || slots[1] === undefined || slots[2] === undefined) return null;
   return { symbolArg: slots[0], tfArg: slots[1], seriesArg: slots[2] };
+}
+
+// A request.security call met while building the expression of another, when that build evaluates
+// nested requests (secNestCtx, SecurityNestedRead): resolves the context it requests — a
+// syminfo.tickerid or "" symbol and a timeframe.period or "" timeframe are the outer request's
+// (concepts_other-timeframes-and-data.txt "Nested requests": "the nested request inherits that
+// request.*() call's ticker ID or timeframe information"), anything else must fold at compile time
+// — builds its own expression for that context, records it, and returns the clone that reads it.
+// undefined: `node` is not a request.security call; null: a nested request outside the grammar.
+function buildSecurityNestedRead(node: CallExpr, prog: AnalyzedProgram, funcName: string | null): Expr | null | undefined {
+  const lead = tryResolveSecurityLeadArgsQuiet(node);
+  if (lead === null) return undefined;
+  const outer = secNestCtx!;
+  if (node.args.length > 5) return null;
+  let gaps = false;
+  let lookahead = false;
+  const flags: [Expr, "gaps" | "lookahead"][] = node.args.slice(3).map((a, i) => [a, i === 0 ? "gaps" : "lookahead"]);
+  for (const kw of node.kwargs) {
+    if (SECURITY_LEAD_PARAM_NAMES.includes(kw.name as (typeof SECURITY_LEAD_PARAM_NAMES)[number])) continue;
+    if (kw.name === "ignore_invalid_symbol" || kw.name === "currency" || kw.name === "calc_bars_count") continue;
+    if (kw.name !== "gaps" && kw.name !== "lookahead") return null;
+    flags.push([kw.value, kw.name]);
+  }
+  if (new Set(flags.map(([, name]) => name)).size !== flags.length) return null;
+  for (const [value, name] of flags) {
+    const v = resolveSecurityBooleanKwarg(value, prog, undefined, undefined, funcName);
+    if (v === undefined) return null;
+    if (name === "gaps") gaps = v;
+    else lookahead = v;
+  }
+  const isEmptyString = (e: Expr): boolean => e.kind === "StringLiteral" && e.value === "";
+  let symbol: string | null;
+  if (isSyminfoTickerid(lead.symbolArg) || isEmptyString(lead.symbolArg)) {
+    symbol = outer.symbol;
+  } else {
+    // A symbol is not a timeframe: the fold's input freeze guards (they protect an aggregation
+    // cache from a timeframe input override) are rolled back, as resolveSecuritySymbol does.
+    const guardKeysBefore = new Set(prog.securityTfConstGuards.keys());
+    const s = resolveSecurityTfLiteral(lead.symbolArg, prog, undefined, undefined, funcName);
+    for (const k of prog.securityTfConstGuards.keys()) {
+      if (!guardKeysBefore.has(k)) prog.securityTfConstGuards.delete(k);
+    }
+    if (s === undefined) return null;
+    symbol = s === "" ? outer.symbol : s;
+  }
+  let tf: string;
+  const tfArg = lead.tfArg;
+  if ((tfArg.kind === "DotAccess" && tfArg.obj.kind === "Identifier" && tfArg.obj.name === "timeframe" && tfArg.attr === "period") || isEmptyString(tfArg)) {
+    tf = outer.tf;
+  } else {
+    const t = resolveSecurityTfLiteral(tfArg, prog, undefined, undefined, funcName);
+    if (t === undefined) return null;
+    tf = t === "" ? outer.tf : t;
+  }
+  // The inner build runs outside the outer build's var slice: its expression is its own.
+  const savedSlice = secVarSliceCtx;
+  secVarSliceCtx = null;
+  let build: SecurityExprBuild | null;
+  try {
+    build = buildSecurityExpr(lead.seriesArg, prog, node.line, funcName, lead.symbolArg, lead.tfArg, { symbol, tf });
+  } finally {
+    secVarSliceCtx = savedSlice;
+  }
+  if (build === null) return null;
+  const clone: CallExpr = { ...node };
+  outer.nested.push({ node: clone, symbol, tf, gaps, lookahead, build });
+  return clone;
 }
 
 // C616: symbol/tf 인자 AST 구조적 동치 비교 — line/col은 무시하고 그 외 전 필드가 재귀적으로 동일해야
@@ -3795,6 +3953,13 @@ function buildSecurityExprNode(
         if (chainLead !== null && astExprEqual(outerSymbol, chainLead.symbolArg) && astExprEqual(outerTf, chainLead.tfArg)) {
           return buildSecurityExprNode(chainLead.seriesArg, prog, callLine, visiting, taCalls, allowTa, inSubst, histReads, allowTernary, funcName, paramEnv, allowString, outerSymbol, outerTf);
         }
+      }
+      // Any other request.security call is a nested request, read in this request's context when
+      // the build evaluates them (buildSecurityNestedRead). The read is a lookup into the inner
+      // request's own prepass, so it takes no state of its own at this position.
+      if (secNestCtx !== null) {
+        const nestedRead = buildSecurityNestedRead(node, prog, funcName);
+        if (nestedRead !== undefined) return nestedRead;
       }
       const taMatch = matchSecurityExprTaCall(node);
       if (taMatch !== null) {
@@ -7665,10 +7830,13 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           }
         }
       }
+      // A request with one compile-time timeframe gets one slot and one prepass (the exprMatch
+      // branch below), so its expression can read nested requests (SecurityNestedRead); they are
+      // registered with it.
       const exprMatch =
         isBareSeries || isTupleArg || bareUdfInner !== undefined || bareTaInner !== undefined || scalarBareUdfInner !== undefined
           ? null
-          : buildSecurityExpr(seriesArg, prog, expr.line, scope.func?.name ?? null, symbolArg, tfArg);
+          : buildSecurityExpr(seriesArg, prog, expr.line, scope.func?.name ?? null, symbolArg, tfArg, tfLiteral !== undefined ? { symbol, tf: tfLiteral } : null);
       // C453: expression 인자가 bare UDF 매개변수이고 그 함수의 콜사이트가 2개 이상(전원 top-level,
       // 각 콜사이트가 이 매개변수 위치에 실인자를 실제로 전달)이면 — 지금 즉시 빌드하지 않고 메인
       // 루프 종료 후로 미룬다(processPendingSecurityParamExprs — 함수 뒤에 오는 콜사이트의 인자가
@@ -8275,6 +8443,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             prog.securityParamExprCalls.set(expr, { base, gaps, lookahead });
             registerSecurityTfSiteOrdinals(prog, scope.func!);
           } else {
+            registerSecurityNestedReads(exprMatch.nested, prog, taCloneRegScope);
             for (const tc of exprMatch.taCalls) analyzeStatefulCall(tc.taCall, tc.fn, tc.entry, prog, taCloneRegScope);
             const slot = prog.securityTfs.length;
             // 배치31 (b)-1, C599: 런타임 tf면 자리표시(chartTf) + securityRuntimeTfSlots 등록(bare
@@ -8291,6 +8460,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
               bodyExpr: exprMatch.bodyExpr,
               histReads: exprMatch.histReads,
               varSlice: exprMatch.varSlice,
+              nested: exprMatch.nested.map((n) => n.node),
             });
           }
           analyzeExpr(symbolArg, prog, scope, false);
@@ -8836,7 +9006,7 @@ export function processPendingSecurityParamExprs(prog: AnalyzedProgram, rootScop
           break;
         }
         // C738: pending 경로는 buildSecurityExprNode 직접 호출(슬라이스 ctx 비활성)이라 varSlice 없음.
-        builds.push({ bodyExpr, taCalls, histReads, varSlice: null });
+        builds.push({ bodyExpr, taCalls, histReads, varSlice: null, nested: [] });
       }
     }
     if (builds === null) {

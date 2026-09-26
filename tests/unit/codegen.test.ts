@@ -16388,16 +16388,52 @@ describe("CodeGen request.security expression via chained security-var substitut
     expect(Array.from(plots[1]!.values)).toEqual(Array.from(plots[0]!.values));
   });
 
-  it("still rejects (no silent wrong answer) when the outer call's tf differs from the chained variable's own definition tf — falls back to the pre-existing generic unsupported-expression error", () => {
-    const source = [
-      'dailyMa = request.security(syminfo.tickerid, "D", ta.sma(close, 2))',
-      'x = request.security(syminfo.tickerid, "W", dailyMa + 1)',
-      "plot(x)",
-    ].join("\n");
+});
+
+// Nested requests: a request.security call another one's expression depends on runs within the
+// outer call's context (concepts_other-timeframes-and-data.txt "Nested requests"; resin-harness
+// tier 1 sec_032_dependent_cross_context). Each outer bar reads the last inner bar whose close is at
+// or before its own (runtime/security.ts pairNested). This replaces a test that asserted the
+// rejection of `request.security(syminfo.tickerid, "W", dailyMa + 1)` over a daily dailyMa; tier 1
+// needs the read. Hand-verified on 12-hour bars, 21 days from Monday 2024-01-01, close = 100 + bar:
+// day d closes at 101 + 2d, week k (days 7k..7k+6) at 113 + 14k.
+describe("CodeGen nested request.security", () => {
+  const n = 42;
+  const DATA: OHLCVData = {
+    open: Array.from({ length: n }, (_, i) => 100 + i),
+    high: Array.from({ length: n }, (_, i) => 100 + i),
+    low: Array.from({ length: n }, (_, i) => 100 + i),
+    close: Array.from({ length: n }, (_, i) => 100 + i),
+    volume: Array.from({ length: n }, () => 1),
+    time: Array.from({ length: n }, (_, i) => Date.UTC(2024, 0, 1) + i * 43_200_000),
+  };
+  const plotsOf = (source: string) => {
     const result = transpile(source);
-    expect(result.ok).toBe(false);
-    if (result.ok) throw new Error("unreachable");
-    expect(result.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
+    const out = run(result.code, result.varSlots, result.taSlotCount, DATA, result.fnVarSlotCount, result.historySlotCount, result.taScratchSize, {}, result.plotTitles, result.securityTfs).plots;
+    return out.map((p) => Array.from(p!.values).map((v) => (Number.isFinite(v) ? v : null)));
+  };
+
+  it("a weekly consumer of a daily producer reads each week's last day: ta.sma over it equals the weekly ta.sma of close", () => {
+    const [nested, direct] = plotsOf(
+      [
+        'd = request.security(syminfo.tickerid, "D", close)',
+        'plot(request.security(syminfo.tickerid, "W", ta.sma(d, 2)))',
+        'plot(request.security(syminfo.tickerid, "W", ta.sma(close, 2)))',
+      ].join("\n"),
+    );
+    expect(nested).toEqual(direct);
+    // The chart shows week k - 1 during week k, so only week 2's bars show a two-week average:
+    // (113 + 127) / 2.
+    expect(nested).toEqual([...Array(28).fill(null), ...Array(14).fill(120)]);
+  });
+
+  it("a daily consumer of a weekly producer reads the last week closed by each day's close", () => {
+    const [x] = plotsOf(['w = request.security(syminfo.tickerid, "W", close)', 'plot(request.security(syminfo.tickerid, "D", w))'].join("\n"));
+    // In the daily context, day e reads week floor((e + 1) / 7) - 1: none before Sunday day 6, then
+    // 113 (days 6..12), 127 (days 13..19). The chart reads the previous day's value.
+    expect(x).toEqual([...Array(14).fill(null), ...Array(14).fill(113), ...Array(14).fill(127)]);
   });
 });
 

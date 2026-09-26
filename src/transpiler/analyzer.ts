@@ -2294,6 +2294,7 @@ export interface AnalyzedProgram {
     histReads: { node: IndexAccess; obj: Expr }[];
     // C738: securityExprCallSlots.varSlice와 동형(SecurityVarSlice 주석 참조).
     varSlice: SecurityVarSlice | null;
+    nested?: readonly Expr[];
   }>;
   // C453: 위 큐 처리 결과 (2) — body의 request.security CallExpr -> 연속 슬롯 블록의 시작(base).
   // codegen이 `$.securityExprCache[base + __secIdx]`로 방출한다(서수 __secIdx는 함수 파라미터).
@@ -2732,8 +2733,26 @@ export interface AnalyzedProgram {
       // C738: top-level var 상태 변수 리플레이 슬라이스(SecurityVarSlice 주석 참조) — null이면
       // 기존 경로 그대로(방출 바이트 불변).
       varSlice: SecurityVarSlice | null;
+      // The securityNestedReads nodes bodyExpr, histReads and varSlice read.
+      nested?: readonly Expr[];
     }
   >;
+  // Nested requests (call-expr.ts SecurityNestedRead): the clone an outer request's prepass reads a
+  // nested request's value through -> that request's slot. Its value is the slot's prepass
+  // (securityNestedPrepasses), paired with the outer request's bars by runtime/security.ts
+  // pairNested.
+  securityNestedReads: Map<Expr, { slot: number; gaps: boolean; lookahead: boolean }>;
+  // The nested requests' prepasses, securityExprCallSlots' shape, innermost first: codegen emits
+  // them ahead of every other prepass, in this order.
+  securityNestedPrepasses: Array<{
+    slot: number;
+    gaps: boolean;
+    lookahead: boolean;
+    bodyExpr: Expr;
+    histReads: { node: IndexAccess; obj: Expr }[];
+    varSlice: SecurityVarSlice | null;
+    nested?: readonly Expr[];
+  }>;
   // C605: 위 uniqueTopEqTuples 치환이 만든 합성 CallExpr 래퍼(codegen 전용 센티널, 원본 소스에
   // 대응 없음) → 실제 다중 반환 ta.* 클론 + 읽을 원소 index. genCallExpr이 이 맵을 stateCallSlots
   // 조회보다 먼저 확인해 `(rt.ta.XXX(...,$.taScratch), $.taScratch[index])` comma-식을 낸다 —
@@ -3400,6 +3419,13 @@ export interface AnalyzeOptions {
 // str.format_time, ...) still default to UTC. Without a schedule resin assumes a market open around
 // the clock, every day starting at 00:00 and ending at 23:59:59.
 //
+// The symbol's identity comes with them too (SYMINFO_IDENTITY_KEYS): its exchange `prefix` and
+// its `ticker`. syminfo.prefix and syminfo.ticker fold to them and syminfo.tickerid to
+// "PREFIX:TICKER" (ref_v6_lang.txt syminfo.tickerid: "Symbol name with exchange prefix, e.g.
+// 'BATS:MSFT', 'NASDAQ:MSFT'"; syminfo.ticker: "Symbol name without exchange prefix"), which is how
+// a request.security call on the chart's own symbol finds that symbol's feed (runtime/context.ts
+// setSecurityFeeds).
+//
 // Other syminfo properties (currency, ...) are not configurable yet: they stay at resin's fixed
 // values, and keys this type does not name are ignored.
 export interface SymbolGridOptions {
@@ -3413,6 +3439,8 @@ export interface SymbolGridOptions {
   opening_hours?: readonly { day: number; start: string; end: string }[];
   session_starts?: readonly { day: number; time: string }[];
   session_ends?: readonly { day: number; time: string }[];
+  prefix?: string;
+  ticker?: string;
 }
 
 // The syminfo properties SymbolGridOptions sets, in StrategyState.setSymbol's argument order.
@@ -3420,6 +3448,26 @@ export const SYMINFO_OPTION_KEYS: readonly string[] = ["mintick", "pricescale", 
 
 // The exchange-calendar properties SymbolGridOptions sets.
 export const SYMINFO_CALENDAR_KEYS: readonly string[] = ["timezone", "type", "opening_hours", "session_starts", "session_ends"];
+
+// The identity properties SymbolGridOptions sets.
+export const SYMINFO_IDENTITY_KEYS: readonly string[] = ["prefix", "ticker"];
+
+// syminfo.prefix, syminfo.ticker and syminfo.tickerid of the chart symbol: the caller's identity
+// over resin's defaults (all ""). A tickerid needs both parts; a ticker alone is its own tickerid.
+function resolveSymbolIdentity(opts: SymbolGridOptions | undefined, errors: string[], strings: Map<string, string>): void {
+  for (const key of SYMINFO_IDENTITY_KEYS) {
+    const v = (opts as Record<string, unknown> | undefined)?.[key];
+    if (v === undefined) continue;
+    if (typeof v !== "string" || v.includes(":")) {
+      errors.push(`syminfo option '${key}' must be a string without ':', got ${JSON.stringify(v)}`);
+      continue;
+    }
+    strings.set(key, v);
+  }
+  const prefix = strings.get("prefix")!;
+  const ticker = strings.get("ticker")!;
+  if (ticker !== "") strings.set("tickerid", prefix === "" ? ticker : `${prefix}:${ticker}`);
+}
 
 // The resolved exchange calendar of the chart symbol (times in seconds of the day), the spec
 // runtime/calendar.ts builds its ExchangeCalendar from.
@@ -3531,6 +3579,7 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
   const syminfoStrings = new Map(SYMINFO_STRING_PROPS);
   syminfoStrings.set("timezone", calendar.timezone);
   syminfoStrings.set("type", calendar.type);
+  resolveSymbolIdentity(options?.syminfo, syminfoErrors, syminfoStrings);
   // C686: arity-disjoint 함수 오버로드를 AST 사전 개명으로 해소 — 다른 모든 prepass(아래
   // prescanConstVars 포함, 전부 이름 기반)보다 반드시 먼저 실행해야 전 파이프라인이 처음부터
   // 서로 다른 이름의 독립 함수만 본다(func-overloads.ts 주석 참조).
@@ -3689,6 +3738,8 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
     securitySymbols: [],
     securityRuntimeTfSlots: new Map(),
     securityExprCallSlots: new Map(),
+    securityNestedReads: new Map(),
+    securityNestedPrepasses: [],
     securityExprTupleTaReads: new Map(),
     securityTupleCallSlots: new Map(),
     securityBareUdfCallSlots: new Map(),

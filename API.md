@@ -35,7 +35,7 @@ script stopped itself on purpose" from "the engine broke".
 
 | Name | Module | Role |
 |---|---|---|
-| `AnalyzeOptions` | `src/transpiler/analyzer` | options for `transpile()` (`chartTf?: string`; `syminfo?: { mintick?, pricescale?, minmove?, mincontract?, pointvalue?, timezone?, type?, opening_hours?, session_starts?, session_ends? }` — the chart symbol's tick and lot grids, default 0.01 / 100 / 1 / 1, `mintick` must equal `minmove / pricescale`; its point value, default 1; its exchange calendar: timezone (IANA name or `"UTC±h"`, default `"UTC"`), market type (default `"stock"`) and weekly session schedule (`opening_hours: [{ day, start, end }]`, `session_starts: [{ day, time }]`, `session_ends: [{ day, time }]`, day 0 = Monday, `"HH:MM[:SS]"` exchange time; default open around the clock, 00:00 to 23:59:59), read by `syminfo.timezone`/`syminfo.type`, `timeframe.change` and `session.*`) |
+| `AnalyzeOptions` | `src/transpiler/analyzer` | options for `transpile()` (`chartTf?: string`; `syminfo?: { mintick?, pricescale?, minmove?, mincontract?, pointvalue?, timezone?, type?, opening_hours?, session_starts?, session_ends?, prefix?, ticker? }` — the chart symbol's tick and lot grids, default 0.01 / 100 / 1 / 1, `mintick` must equal `minmove / pricescale`; its point value, default 1; its exchange calendar: timezone (IANA name or `"UTC±h"`, default `"UTC"`), market type (default `"stock"`) and weekly session schedule (`opening_hours: [{ day, start, end }]`, `session_starts: [{ day, time }]`, `session_ends: [{ day, time }]`, day 0 = Monday, `"HH:MM[:SS]"` exchange time; default open around the clock, 00:00 to 23:59:59), read by `syminfo.timezone`/`syminfo.type`, `timeframe.change` and `session.*`; its identity: exchange `prefix` and `ticker`, default `""`, read by `syminfo.prefix`/`syminfo.ticker` and `syminfo.tickerid` (`"PREFIX:TICKER"`), which names the chart symbol's own `request.security` feeds) |
 | `BarSnapshot` | `src/runtime/engine` | `Record<string, number>`, keyed `var:<name>` |
 | `OHLCVData` | `src/runtime/context` | `Context` input: `open/high/low/close/volume: ArrayLike<number>`, optional `time` |
 | `PlotResult` | `src/runtime/engine` | `{ title, values }` |
@@ -54,15 +54,17 @@ you only want the result. `opts.inputs` overrides `input.*` defaults.
 `opts.magnifier` (an `OHLCVData` with `time`, as is the chart data's) is the bar
 magnifier's lower-timeframe feed: a chart bar owns the sub-bars opening from its
 time up to the next bar's, and a `strategy(use_bar_magnifier=true)` fills its
-orders on them; other scripts ignore it. `opts.security` maps symbol strings to
-other symbols' feeds (each an `OHLCVData` with `time`, plus the bars' optional
+orders on them; other scripts ignore it. `opts.security` maps symbol strings (or
+`"SYMBOL:TF"`, read first, for one symbol at several timeframes) to other symbols' feeds (each an `OHLCVData` with `time`, plus the bars' optional
 `timeframe`, default the requested one, and the symbol's optional `syminfo`
 calendar in the `transpile()` option's shape, default open around the clock in
 UTC): a `request.security` call whose symbol folds to one of those strings at
 compile time (`TranspileOk.securitySymbols`) runs its expression on that feed,
 grouped to the requested timeframe on the symbol's calendar, and each chart bar
 reads the last feed bar whose scheduled close is at or before its own; other
-calls read the chart's bars. All three options work the same on `Context.from`.
+calls read the chart's bars. A `request.security` call another one's expression
+depends on (a nested request) runs in that call's context, each of its bars
+reading the nested request the same way. All three options work the same on `Context.from`.
 
 **Streaming.** `compile()` gives you a per-bar function and
 `Context.from(transpileOk, data, opts?)` holds the state; you drive the loop

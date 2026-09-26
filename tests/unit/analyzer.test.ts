@@ -19114,9 +19114,18 @@ describe("Analyzer request.security expression call site (C180, third slice sub-
     expect([...prog.stateCallSlots.values()].filter((v) => v.fn === "fixnan").length).toBe(1);
   });
 
-  it("rejects a nested request.security call inside the expression", () => {
+  // A nested request.security call is evaluated within the outer call's context (Pine v6 dynamic
+  // requests, concepts_other-timeframes-and-data.txt "Nested requests"; resin-harness tier 1
+  // sec_032_dependent_cross_context, TradingView's export of daily/weekly/cross-symbol nested
+  // requests). It used to be rejected here; it gets its own slot, read by the outer prepass.
+  it("accepts a nested request.security call inside the expression: its own slot, read in the outer request's context", () => {
     const prog = analyzeSource('x = request.security("", "D", request.security("", "60", close))');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(prog.errors).toEqual([]);
+    // The nested request's slot comes first (its prepass runs before the outer one's).
+    expect(prog.securityTfs).toEqual(["60", "D"]);
+    expect(prog.securityNestedReads.size).toBe(1);
+    expect([...prog.securityNestedReads.values()][0]).toEqual({ slot: 0, gaps: false, lookahead: false });
+    expect(prog.securityNestedPrepasses.map((p) => p.slot)).toEqual([0]);
   });
 
   // C436 계약 갱신: 이 시점(C180/C367)엔 UDF 콜이 buildSecurityExpr 좁은 문법 밖이라 거부됐으나,
@@ -24421,7 +24430,11 @@ describe("Analyzer request.security expression via chained security-var substitu
     expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
   });
 
-  it("rejects the same func-local chain when the outer call's symbol differs from the inner definition's symbol (unsafe — different HTF replay)", () => {
+  // Formerly rejected as unsafe. The inner call is a nested request (Pine v6 evaluates it within
+  // the outer call's context — concepts_other-timeframes-and-data.txt "Nested requests"; resin-harness
+  // tier 1 sec_032_dependent_cross_context measures a cross-symbol one), so it reads BINANCE:BTCUSDT's
+  // daily bars paired with the outer request's bars.
+  it("reads the same func-local chain as a nested request when the outer call's symbol differs from the inner definition's symbol", () => {
     const prog = analyzeSource(
       [
         "f(src) =>",
@@ -24430,7 +24443,10 @@ describe("Analyzer request.security expression via chained security-var substitu
         "y = f(close)",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
+    expect(prog.errors).toEqual([]);
+    const [nested] = [...prog.securityNestedReads.values()];
+    expect(prog.securitySymbols[nested!.slot]).toBe("BINANCE:BTCUSDT");
+    expect(prog.securityTfs[nested!.slot]).toBe("D");
   });
 
   it("does not disturb the plain (non-chained) func-local substitution from C692 when the func-local var's value is not itself a request.security call (regression guard)", () => {
@@ -28822,27 +28838,40 @@ describe("Analyzer request.security expression via chained security-var substitu
     expect(prog.stateCallSlots.has(bin.left as CallExpr)).toBe(true);
   });
 
-  it("rejects the same chain when the outer call's tf differs from the inner definition's tf (unsafe — different HTF replay)", () => {
+  // The next three were rejected as unsafe ("different HTF replay") before nested requests were
+  // read in the outer request's context (concepts_other-timeframes-and-data.txt "Nested requests";
+  // resin-harness tier 1 sec_032_dependent_cross_context: `smaDofW = request.security(syminfo.tickerid,
+  // "D", ta.sma(rsiWeek, 3))` over `rsiWeek = request.security(syminfo.tickerid, "W", ta.rsi(close,
+  // 14))` is exactly this shape, and TradingView's values need the nested read).
+  it("reads the chain as a nested request when the outer call's tf differs from the inner definition's tf", () => {
     const prog = analyzeSource(
       [
         'weeklyRsi = request.security(syminfo.tickerid, "W", ta.rsi(close, 14))',
         'x = request.security(syminfo.tickerid, "D", weeklyRsi + 1)',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
+    expect(prog.errors).toEqual([]);
+    // weeklyRsi's own slot, the nested weekly request x reads, x's daily slot.
+    expect(prog.securityTfs).toEqual(["W", "W", "D"]);
+    const stmt = prog.script.body[1] as Assignment;
+    const info = prog.securityExprCallSlots.get(stmt.value as CallExpr)!;
+    const bin = info.bodyExpr as BinOp;
+    expect(prog.securityNestedReads.get(bin.left)).toEqual({ slot: 1, gaps: false, lookahead: false });
+    expect(info.nested).toEqual([bin.left]);
   });
 
-  it("rejects the same chain when the outer call's symbol differs from the inner definition's symbol (unsafe — different HTF replay)", () => {
+  it("reads the chain as a nested request when the outer call's symbol differs from the inner definition's symbol", () => {
     const prog = analyzeSource(
       [
         'weeklyRsi = request.security("BINANCE:BTCUSDT", "W", ta.rsi(close, 14))',
         'x = request.security(syminfo.tickerid, "W", weeklyRsi + 1)',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
+    expect(prog.errors).toEqual([]);
+    expect(prog.securitySymbols).toEqual(["BINANCE:BTCUSDT", "BINANCE:BTCUSDT", null]);
   });
 
-  it("rejects when the outer tf is a different (but value-equal) AST shape from the inner definition's tf (conservative — structural equality only, not value equality)", () => {
+  it("reads the chain as a nested request when the outer tf is a different (but value-equal) AST shape from the inner definition's tf (a weekly request in a weekly context pairs each week with itself)", () => {
     const prog = analyzeSource(
       [
         'tfW = "W"',
@@ -28850,7 +28879,23 @@ describe("Analyzer request.security expression via chained security-var substitu
         'x = request.security(syminfo.tickerid, tfW, weeklyRsi + 1)',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
+    expect(prog.errors).toEqual([]);
+    expect(prog.securityNestedReads.size).toBe(1);
+  });
+
+  it("inherits the outer request's symbol and timeframe for a nested syminfo.tickerid/\"\" symbol and timeframe.period/\"\" timeframe", () => {
+    const prog = analyzeSource(
+      [
+        'inner = request.security("", timeframe.period, close)',
+        'x = request.security("A:B", "W", inner + request.security(syminfo.tickerid, "", close))',
+      ].join("\n"),
+    );
+    expect(prog.errors).toEqual([]);
+    const nestedSlots = [...prog.securityNestedReads.values()].map((n) => n.slot);
+    expect(nestedSlots.map((s) => [prog.securitySymbols[s], prog.securityTfs[s]])).toEqual([
+      ["A:B", "W"],
+      ["A:B", "W"],
+    ]);
   });
 
   it("does not disturb a plain top-level arithmetic use of a security-result variable outside any request.security call (regression guard — chained-security-var judgment only fires when outerSymbol/outerTf are set)", () => {
