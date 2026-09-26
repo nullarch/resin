@@ -3718,6 +3718,10 @@ const STRATEGY_TRADE_ACCESSOR_RT_METHODS: Readonly<Record<string, string>> = {
   "strategy.opentrades.profit_percent": "openTradeProfitPercent",
   "strategy.opentrades.max_drawdown": "openTradeMaxDrawdown",
   "strategy.opentrades.max_runup": "openTradeMaxRunup",
+  "strategy.closedtrades.max_drawdown_percent": "closedTradeMaxDrawdownPercent",
+  "strategy.closedtrades.max_runup_percent": "closedTradeMaxRunupPercent",
+  "strategy.opentrades.max_drawdown_percent": "openTradeMaxDrawdownPercent",
+  "strategy.opentrades.max_runup_percent": "openTradeMaxRunupPercent",
   // C418: entry_time/exit_time/commission(wild "지원하지 않는 호출" '?.' 서브클러스터).
   "strategy.closedtrades.entry_time": "closedTradeEntryTime",
   "strategy.closedtrades.exit_time": "closedTradeExitTime",

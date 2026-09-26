@@ -29,6 +29,8 @@ interface ClosedTradeRecord {
   size: number;
   maxRunup: number;
   maxDrawdown: number;
+  maxRunupPercent: number; // as the open trade last reported it (see updateTradeExcursion)
+  maxDrawdownPercent: number;
   commission: number; // the entry leg's share plus the exit leg
   profitRatio: number; // profit over the entry cost (its value plus its entry fee)
   profitPercent: number; // profitRatio × 100
@@ -47,6 +49,8 @@ interface OpenTrade {
   size: number;
   maxRunup: number;
   maxDrawdown: number;
+  maxRunupPercent: number;
+  maxDrawdownPercent: number;
   commission: number; // the entry fee still carried by the open part of the trade
 }
 
@@ -289,11 +293,10 @@ export class StrategyState {
   // lifecycle의 시간판(ms). entryTimeOpen의 청산 시점 스냅샷 + closeAt이 받는 barTimeMs 그대로.
   lastClosedEntryTime: number;
   lastClosedExitTime: number;
-  // strategy.closedtrades/opentrades.max_drawdown/max_runup(hand-verified, C312) — TV MFE/MAE류
-  // "트레이드 생존 기간 중 최대 유리/불리 가격 이탈"(둘 다 통화 단위, 항상 >= 0). pine2py
-  // Trade/Position dataclass 어디에도 대응 필드가 없어(types.py 전체 grep 0건) 전부 신규 설계다.
-  // Each open trade carries its own running excursion (OpenTrade.maxRunup/maxDrawdown, updated by
-  // updateTradeExcursion every bar); closeAt() snapshots the closed share of it into the record.
+  // The latest closed trade's strategy.closedtrades.max_drawdown/max_runup (money, never below 0).
+  // Each open trade carries its own running excursion (OpenTrade.maxRunup/maxDrawdown and their
+  // percents, updated by updateTradeExcursion every bar); closeAt() snapshots the closed share of it
+  // into the record.
   lastClosedMaxRunup: number;
   lastClosedMaxDrawdown: number;
   // strategy.closedtrades.<method>(trade_num) 전 인덱스 조회용 레코드 배열(C579) — closeAt()이
@@ -725,7 +728,7 @@ export class StrategyState {
     this.updateRunupTrough(fillPrice);
     this.openTrades.push({
       entryId, entryComment, entryPrice: fillPrice, entryBarIndex: barIndex, entryTime: barTimeMs,
-      size: signedQty, maxRunup: 0, maxDrawdown: 0, commission,
+      size: signedQty, maxRunup: 0, maxDrawdown: 0, maxRunupPercent: 0, maxDrawdownPercent: 0, commission,
     });
     this.entryBook.push({ entryId, bound: Math.abs(signedQty), entryPrice: fillPrice });
     this.posSize += signedQty;
@@ -1027,18 +1030,18 @@ export class StrategyState {
     return this.closedTrades > CLOSED_TRADES_KEPT ? this.closedTrades - CLOSED_TRADES_KEPT : 0;
   }
 
-  // strategy.closedtrades/opentrades.max_drawdown/max_runup(hand-verified, C312) — processFills가
-  // 이번 바의 fills를 반영하기 **전에**(processFills 첫 줄) 호출된다: 이번 바에 청산되는 트레이드는
-  // 청산을 유발한 손절/익절 등 극값이 바로 이 바의 high/low에 있으므로, 그 갱신이 먼저 반영된
-  // 뒤에야 closeAt()이 정확한 값을 스냅샷할 수 있다(반대로 이번 바에 새로 열리는 트레이드는 자신의
-  // 진입 바 자체의 인트라바 구간은 반영되지 않고 다음 바부터 누적되는 알려진 단순화 — LIMITATIONS.md).
-  // openProfit과 동일한 부호 공식((price-avg)*posSize, 롱/숏 무관)으로 이번 바 high/low 각각의
-  // 미실현 손익을 구해 러닝 최대/최소에 반영 — 둘 다 0 미만으로는 안 내려간다(TV: 한 번도 유리(불리)
-  // 했던 적이 없으면 runup(drawdown)은 0). high/low가 NaN(마켓 전용 단위 테스트 기본값)이면 모든
-  // 비교가 false라 안전하게 no-op(MEMORY.md C91 축).
-  // Per open trade, against its own entry price and size, with its entry fee counted in (the oracle,
-  // tier 2, measured on TradingView at 0.05% commission: a long of 1 at 93761.9 whose worst low is
-  // 93500.0 "reports max_drawdown 308.78095 = (93761.9 - 93500.0) + 46.88095").
+  // strategy.opentrades/closedtrades.max_drawdown/max_runup and their percents: each open trade's
+  // largest paper loss and profit, marked at the bar's high and low against its own entry price and
+  // size, with its entry fee counted in; neither goes below 0. Run at the end of processFills, after
+  // the bar's fills: a trade opened at this bar's open is marked at this bar's high and low, and a
+  // trade closed on this bar is no longer marked by it. Trades opened in the process_orders_on_close
+  // pass are first marked on the next bar. The percents are over the trade's entry cost, its value
+  // plus its entry fee, like profit_percent (rn.txt, November 2023: "the maximum possible loss during
+  // the trade, expressed as a percentage"). Tier 1 resin-harness suites/strategy/tv/trade_percents
+  // (1 BTC long at 93761.9 on bar 1 at 0.05%): max_runup 700.63905 = (94509.42 - 93761.9) - 46.88095
+  // is the entry bar's own high, max_drawdown 308.78095 is 0.3291599644223016% of 93808.78095; the
+  // 2-BTC leg at 94098.9 reports 1291.8989 as 0.686114966999266% of 188291.8989. This is the oracle's
+  // _finalize_bar_pnl (tier 2), which also stores the percents rather than deriving them later.
   updateTradeExcursion(high: number, low: number): void {
     for (const t of this.openTrades) {
       const pnlAtHigh = (high - t.entryPrice) * t.size - t.commission;
@@ -1047,123 +1050,105 @@ export class StrategyState {
       const worstPnl = pnlAtHigh < pnlAtLow ? pnlAtHigh : pnlAtLow;
       if (bestPnl > t.maxRunup) t.maxRunup = bestPnl;
       if (-worstPnl > t.maxDrawdown) t.maxDrawdown = -worstPnl;
+      const entryCost = Math.abs(t.size) * t.entryPrice + t.commission;
+      if (entryCost > 0) {
+        t.maxDrawdownPercent = (t.maxDrawdown / entryCost) * 100;
+        t.maxRunupPercent = (t.maxRunup / entryCost) * 100;
+      }
     }
   }
 
-  // strategy.closedtrades.<method>(trade_num)(C579, 배치28 (1)) — closedTradeRecords 전 인덱스
-  // 지원(0=가장 오래된 트레이드 ~ closedTrades-1=가장 최근). 범위 밖 index는 pine2js가 갖고 있지
-  // 않은 데이터라 조용히 얼버무리지 않고 명시적으로 던진다(MEMORY.md "조용한 오답 방지" 축과 동일
-  // 원칙). 가드는 긍정형(index>=0 && index<closedTrades, MEMORY.md C91)으로 NaN/비정상 index가
-  // 실수로 통과하지 않게 한다 — 단 index===-1 && closedTrades===0(청산 전 `closedtrades-1` 관용구가
-  // 자연히 만드는 값)은 예외로 계속 허용해 na 기본값을 반환한다(C173 이래 기존 관례, 아래
-  // closedTradeRecordAt 참조). 모든 closedTradeXxx 접근자가 공유하는 단일 검증 지점.
-  private assertValidClosedTradeIndex(method: string, index: number): void {
-    const validBeforeAnyClose = index === -1 && this.closedTrades === 0;
-    if (!validBeforeAnyClose && !(index >= 0 && index < this.closedTrades)) {
-      throw new Error(
-        `strategy.closedtrades.${method}: index ${index} is out of range — valid range 0..${this.closedTrades - 1} (closedTrades=${this.closedTrades})`,
-      );
-    }
-  }
-
-  // 청산 전(closedTrades===0)의 index===-1 요청은 실제 레코드가 없어 배열 인덱싱이 불가능하다 —
-  // 기존 lastClosed* 필드의 생성자 초기값(NaN/"")과 동일한 "빈 트레이드" 스냅샷을 반환해 C173 이래
-  // 기존 관례(청산 전 조회는 예외가 아니라 na)를 유지한다.
-  private static readonly EMPTY_CLOSED_TRADE_RECORD: ClosedTradeRecord = {
-    entryComment: "", exitComment: "", entryPrice: NaN, exitPrice: NaN,
-    entryBarIndex: NaN, exitBarIndex: NaN, entryTime: NaN, exitTime: NaN,
-    entryId: "", exitId: "", profit: NaN, size: NaN, maxRunup: NaN, maxDrawdown: NaN,
-    commission: NaN, profitRatio: NaN, profitPercent: NaN,
-  };
-
-  private closedTradeRecordAt(index: number): ClosedTradeRecord {
-    if (index === -1 && this.closedTrades === 0) return StrategyState.EMPTY_CLOSED_TRADE_RECORD;
-    return this.closedTradeRecords[index]!;
+  // strategy.closedtrades.<method>(trade_num): trade 0 is the first closed trade, strategy.closedtrades
+  // - 1 the latest (strategies.txt: "The index of the first open/closed trade is 0, and the last
+  // trade's index is one less than the value of the strategy.opentrades/strategy.closedtrades
+  // variable"). A number with no listed trade behind it (not closed yet, negative, or older than
+  // strategy.closedtrades.first_index) is not an error: the amounts (profit, profit_percent, size,
+  // commission, max_drawdown/max_runup and their percents) read 0, the prices, bar indexes and times
+  // na, the ids and comments an empty string. Tier 1 resin-harness suites/strategy/tv/trade_percents
+  // plots closedtrades.profit_percent/max_drawdown/max_drawdown_percent/max_runup/max_runup_percent
+  // of trades 0 and 1 as 0.0 on the 11 bars before any trade closed; the oracle (tier 2) returns the
+  // same 0/na per accessor, and reads an na trade number as trade 0 and a fractional one truncated.
+  private closedTradeAt(index: number): ClosedTradeRecord | undefined {
+    const i = Number.isNaN(index) ? 0 : Math.trunc(index);
+    if (!(i >= this.closedTradesFirstIndex() && i < this.closedTrades)) return undefined;
+    return this.closedTradeRecords[i];
   }
 
   closedTradeEntryComment(index: number): string {
-    this.assertValidClosedTradeIndex("entry_comment", index);
-    return this.closedTradeRecordAt(index).entryComment;
+    return this.closedTradeAt(index)?.entryComment ?? "";
   }
 
   closedTradeExitComment(index: number): string {
-    this.assertValidClosedTradeIndex("exit_comment", index);
-    return this.closedTradeRecordAt(index).exitComment;
+    return this.closedTradeAt(index)?.exitComment ?? "";
   }
 
   closedTradeEntryPrice(index: number): number {
-    this.assertValidClosedTradeIndex("entry_price", index);
-    return this.closedTradeRecordAt(index).entryPrice;
+    return this.closedTradeAt(index)?.entryPrice ?? NaN;
   }
 
   closedTradeExitPrice(index: number): number {
-    this.assertValidClosedTradeIndex("exit_price", index);
-    return this.closedTradeRecordAt(index).exitPrice;
+    return this.closedTradeAt(index)?.exitPrice ?? NaN;
   }
 
   closedTradeEntryBarIndex(index: number): number {
-    this.assertValidClosedTradeIndex("entry_bar_index", index);
-    return this.closedTradeRecordAt(index).entryBarIndex;
+    return this.closedTradeAt(index)?.entryBarIndex ?? NaN;
   }
 
   closedTradeExitBarIndex(index: number): number {
-    this.assertValidClosedTradeIndex("exit_bar_index", index);
-    return this.closedTradeRecordAt(index).exitBarIndex;
+    return this.closedTradeAt(index)?.exitBarIndex ?? NaN;
   }
 
   closedTradeEntryId(index: number): string {
-    this.assertValidClosedTradeIndex("entry_id", index);
-    return this.closedTradeRecordAt(index).entryId;
+    return this.closedTradeAt(index)?.entryId ?? "";
   }
 
   closedTradeExitId(index: number): string {
-    this.assertValidClosedTradeIndex("exit_id", index);
-    return this.closedTradeRecordAt(index).exitId;
+    return this.closedTradeAt(index)?.exitId ?? "";
   }
 
   closedTradeProfit(index: number): number {
-    this.assertValidClosedTradeIndex("profit", index);
-    return this.closedTradeRecordAt(index).profit;
+    return this.closedTradeAt(index)?.profit ?? 0;
   }
 
   closedTradeSize(index: number): number {
-    this.assertValidClosedTradeIndex("size", index);
-    return this.closedTradeRecordAt(index).size;
+    return this.closedTradeAt(index)?.size ?? 0;
   }
 
-  // strategy.closedtrades.entry_time/exit_time(index)(C418) — entry_bar_index/exit_bar_index와
-  // 동일 원칙의 시간판(ms, entryTimeOpen/closeAt의 barTimeMs 스냅샷).
   closedTradeEntryTime(index: number): number {
-    this.assertValidClosedTradeIndex("entry_time", index);
-    return this.closedTradeRecordAt(index).entryTime;
+    return this.closedTradeAt(index)?.entryTime ?? NaN;
   }
 
   closedTradeExitTime(index: number): number {
-    this.assertValidClosedTradeIndex("exit_time", index);
-    return this.closedTradeRecordAt(index).exitTime;
+    return this.closedTradeAt(index)?.exitTime ?? NaN;
   }
 
   // strategy.closedtrades.commission(index): the fees the trade paid, entry and exit (see closeAt).
   closedTradeCommission(index: number): number {
-    this.assertValidClosedTradeIndex("commission", index);
-    return this.closedTradeRecordAt(index).commission;
+    return this.closedTradeAt(index)?.commission ?? 0;
   }
 
   // strategy.closedtrades.profit_percent(index): the profit after commission over the trade's entry
   // cost, its value plus its entry fee (see closeAt); 0 when that cost is 0.
   closedTradeProfitPercent(index: number): number {
-    this.assertValidClosedTradeIndex("profit_percent", index);
-    return this.closedTradeRecordAt(index).profitPercent;
+    return this.closedTradeAt(index)?.profitPercent ?? 0;
   }
 
   closedTradeMaxRunup(index: number): number {
-    this.assertValidClosedTradeIndex("max_runup", index);
-    return this.closedTradeRecordAt(index).maxRunup;
+    return this.closedTradeAt(index)?.maxRunup ?? 0;
   }
 
   closedTradeMaxDrawdown(index: number): number {
-    this.assertValidClosedTradeIndex("max_drawdown", index);
-    return this.closedTradeRecordAt(index).maxDrawdown;
+    return this.closedTradeAt(index)?.maxDrawdown ?? 0;
+  }
+
+  // strategy.closedtrades.max_runup_percent/max_drawdown_percent(index): as the trade last reported
+  // them while open (see updateTradeExcursion).
+  closedTradeMaxRunupPercent(index: number): number {
+    return this.closedTradeAt(index)?.maxRunupPercent ?? 0;
+  }
+
+  closedTradeMaxDrawdownPercent(index: number): number {
+    return this.closedTradeAt(index)?.maxDrawdownPercent ?? 0;
   }
 
   // strategy.opentrades.<method>(index) — index 0 is the oldest open trade, strategy.opentrades - 1
@@ -1245,6 +1230,14 @@ export class StrategyState {
 
   openTradeMaxDrawdown(index: number): number {
     return this.openTradeAtIndex("max_drawdown", index)?.maxDrawdown ?? NaN;
+  }
+
+  openTradeMaxRunupPercent(index: number): number {
+    return this.openTradeAtIndex("max_runup_percent", index)?.maxRunupPercent ?? NaN;
+  }
+
+  openTradeMaxDrawdownPercent(index: number): number {
+    return this.openTradeAtIndex("max_drawdown_percent", index)?.maxDrawdownPercent ?? NaN;
   }
 
   // The money a default-sized order spends, fixed when the order is placed: percent_of_equity is
@@ -1399,6 +1392,9 @@ export class StrategyState {
         size: sign * take,
         maxRunup: t.maxRunup * share,
         maxDrawdown: t.maxDrawdown * share,
+        // A split scales the excursion and the entry cost alike, so the percents carry over as is.
+        maxRunupPercent: t.maxRunupPercent,
+        maxDrawdownPercent: t.maxDrawdownPercent,
         commission,
         profitRatio,
         profitPercent: profitRatio * 100,
@@ -2095,7 +2091,6 @@ export class StrategyState {
         this.consLossDayStartRealizedPnl = this.realizedPnl;
       }
     }
-    this.updateTradeExcursion(high, low);
     for (const e of this.pendingEntries) e.placedThisBar = false;
     this.exitPlacedThisBar = false;
     this.orderPlacedThisBar = false;
@@ -2125,6 +2120,7 @@ export class StrategyState {
       const orderFill = this.directionalFillPrice(this.orderDirection, this.orderLimit, this.orderStop, openPrice, high, low);
       if (!Number.isNaN(orderFill)) this.fillPendingOrder(orderFill, barIndex, barTimeMs);
     }
+    this.updateTradeExcursion(high, low);
   }
 
   // strategy(process_orders_on_close=true): the extra fill attempt at the bar's close, after the

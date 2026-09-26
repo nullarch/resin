@@ -5374,14 +5374,17 @@ describe("StrategyState 트레이드 comment 실소비 (C173 열한째 슬라이
     expect(st.posSize).toBe(1); // 잔여 포지션은 그대로 열려 있음
   });
 
-  it("throws for any closed-trade index other than the most recent (트레이드 히스토리 미보유)", () => {
+  // A closed-trade number with no trade behind it is not an error: TradingView plots 0 for the
+  // amounts of a trade not closed yet (tier 1 resin-harness suites/strategy/tv/trade_percents), and
+  // the oracle returns na for its text.
+  it("reads an empty comment for a closed-trade number with no trade behind it", () => {
     const st = new StrategyState();
     st.entry("L", "long", 1, undefined, undefined, "open1");
     st.processFills(10);
     st.close("L", undefined, "shut1");
     st.processFills(11); // closedTrades=1, 유효 index=0
-    expect(() => st.closedTradeEntryComment(1)).toThrow(/index 1 is out of range/);
-    expect(() => st.closedTradeExitComment(-1)).toThrow(/index -1 is out of range/);
+    expect(st.closedTradeEntryComment(1)).toBe("");
+    expect(st.closedTradeExitComment(-1)).toBe("");
   });
 
   it("returns empty string before any trade has closed (closedTrades=0 경계)", () => {
@@ -5568,14 +5571,16 @@ describe("StrategyState 트레이드 접근자 확장 (C308, hand-verified — e
     expect(st.closedTradeExitId(0)).toBe("B");
   });
 
-  it("throws for any closed-trade index other than the most recent (트레이드 히스토리 미보유)", () => {
+  // Tier 1 resin-harness suites/strategy/tv/trade_percents: an amount of a trade not closed yet is
+  // 0.0; the oracle returns na for its prices.
+  it("reads na prices and a 0 profit for a closed-trade number with no trade behind it", () => {
     const st = new StrategyState();
     st.entry("L", "long", 1);
     st.processFills(10, undefined, undefined, 0);
     st.close("L");
     st.processFills(11, undefined, undefined, 1); // closedTrades=1, 유효 index=0
-    expect(() => st.closedTradeEntryPrice(1)).toThrow(/index 1 is out of range/);
-    expect(() => st.closedTradeProfit(-1)).toThrow(/index -1 is out of range/);
+    expect(Number.isNaN(st.closedTradeEntryPrice(1))).toBe(true);
+    expect(st.closedTradeProfit(-1)).toBe(0);
   });
 
   it("returns na-ish defaults before any trade has closed (closedTrades=0 경계, entry_comment와 동일 관례)", () => {
@@ -5708,16 +5713,55 @@ describe("StrategyState.closedtrades/opentrades.max_drawdown/max_runup/profit_pe
     expect(st.openTradeProfitPercent(18, 0)).toBeCloseTo(10); // (20-18)/20*100
   });
 
-  it("tracks running max_runup/max_drawdown across bars using bar high/low (직전-바 상태 기준, 진입 바 자체는 미반영)", () => {
+  it("tracks running max_runup/max_drawdown across bars using bar high/low", () => {
     const st = new StrategyState();
     st.entry("L", "long", 1);
-    st.processFills(100, 100, 100, 0); // entry fill — 진입 바 자체는 excursion에 미반영(C312 단순화)
-    st.processFills(105, 110, 104, 1); // pre-fill avg=100: high pnl=10, low pnl=4 -> runup=10, drawdown=0
+    st.processFills(100, 100, 100, 0); // entry fill; a flat entry bar adds nothing
+    st.processFills(105, 110, 104, 1); // entry 100: high pnl=10, low pnl=4 -> runup=10, drawdown=0
     expect(st.openTradeMaxRunup(0)).toBe(10);
     expect(st.openTradeMaxDrawdown(0)).toBe(0);
     st.processFills(103, 105, 95, 2); // high pnl=5(runup 불변), low pnl=-5 -> drawdown=5
     expect(st.openTradeMaxRunup(0)).toBe(10);
     expect(st.openTradeMaxDrawdown(0)).toBe(5);
+  });
+
+  // The excursion is marked after the bar's fills: the entry bar's own high and low count, the bar
+  // a trade closes on at its open does not. Tier 1 resin-harness suites/strategy/tv/trade_percents:
+  // trade 0 (long 1 filled at bar 1's open 93761.9, 0.05% commission) reports max_runup 700.63905 =
+  // (94509.42 - 93761.9) - 46.88095, bar 1's own high; it closes at bar 11's open and bar 11's range
+  // leaves it alone.
+  it("marks a trade at its entry bar's high/low and not at the bar it closes on (tier 1 trade_percents)", () => {
+    const st = new StrategyState();
+    st.setCommission("percent", 0.05);
+    st.entry("L1", "long", 1);
+    st.processFills(93761.9, 94509.42, 93761.89, 1);
+    expect(st.openTradeMaxRunup(0)).toBeCloseTo(700.63905, 6);
+    expect(st.openTradeMaxRunupPercent(0)).toBeCloseTo(0.7468800286120659, 9);
+    st.processFills(93738.09, 93738.1, 93500.0, 9);
+    expect(st.openTradeMaxDrawdown(0)).toBeCloseTo(308.78095, 6);
+    expect(st.openTradeMaxDrawdownPercent(0)).toBeCloseTo(0.3291599644223016, 9);
+    st.close_all();
+    st.processFills(93891.74, 99000, 90000, 11); // closes at the open; the wide range comes after
+    expect(st.closedTradeMaxRunup(0)).toBeCloseTo(700.63905, 6);
+    expect(st.closedTradeMaxDrawdown(0)).toBeCloseTo(308.78095, 6);
+    expect(st.closedTradeMaxRunupPercent(0)).toBeCloseTo(0.7468800286120659, 9);
+    expect(st.closedTradeMaxDrawdownPercent(0)).toBeCloseTo(0.3291599644223016, 9);
+  });
+
+  // The percents are over the entry cost, value plus entry fee: 20 / (2 × 100) = 10%, 10 / 200 = 5%.
+  // A partial close keeps them on both pieces.
+  it("reports max_runup_percent/max_drawdown_percent over the entry cost, unchanged by a partial close", () => {
+    const st = new StrategyState();
+    st.entry("L", "long", 2);
+    st.processFills(100, 110, 95, 0);
+    expect(st.openTradeMaxRunupPercent(0)).toBe(10);
+    expect(st.openTradeMaxDrawdownPercent(0)).toBe(5);
+    st.close("L", 1);
+    st.processFills(103, 104, 102, 1);
+    expect(st.closedTradeMaxRunupPercent(0)).toBe(10);
+    expect(st.closedTradeMaxDrawdownPercent(0)).toBe(5);
+    expect(st.openTradeMaxRunupPercent(0)).toBe(10);
+    expect(st.openTradeMaxDrawdownPercent(0)).toBe(5);
   });
 
   it("snapshots max_runup/max_drawdown into closedtrades at full close, then resets the running trackers for the next trade", () => {
@@ -5727,7 +5771,7 @@ describe("StrategyState.closedtrades/opentrades.max_drawdown/max_runup/profit_pe
     st.processFills(105, 110, 104, 1); // runup=10
     st.processFills(103, 105, 95, 2); // drawdown=5
     st.close("L");
-    st.processFills(102, 103, 101, 3); // 청산 바 자신의 pre-fill excursion(고정 100 기준): 3/1 -- 기존 10/5 안 바꿈
+    st.processFills(102, 103, 101, 3); // closed at the open: this bar's range does not mark it
     expect(st.closedTradeMaxRunup(0)).toBe(10);
     expect(st.closedTradeMaxDrawdown(0)).toBe(5);
     // 새 트레이드는 0에서 재시작
@@ -5743,7 +5787,7 @@ describe("StrategyState.closedtrades/opentrades.max_drawdown/max_runup/profit_pe
     const st = new StrategyState();
     st.entry("L", "long", 2);
     st.processFills(100, 100, 100, 0);
-    st.processFills(105, 110, 95, 1); // pre-fill avg=100,size=2: high pnl=20, low pnl=-10 -> runup=20, drawdown=10
+    st.processFills(105, 110, 95, 1); // entry 100, size 2: high pnl=20, low pnl=-10 -> runup=20, drawdown=10
     st.close("L", 1); // 부분 청산(qty=1, 잔여 1)
     st.processFills(103, 104, 102, 2);
     expect(st.closedTradeMaxRunup(0)).toBe(10); // half of the size closed → half of 20
@@ -5764,14 +5808,20 @@ describe("StrategyState.closedtrades/opentrades.max_drawdown/max_runup/profit_pe
     expect(() => st.openTradeMaxRunup(1)).toThrow(/index 1 is out of range/);
   });
 
-  it("throws for closedtrades.profit_percent/max_drawdown/max_runup at a non-latest index", () => {
+  // Tier 1 resin-harness suites/strategy/tv/trade_percents plots 0.0 for these on the bars before
+  // trades 0 and 1 closed.
+  it("reads 0 for closedtrades.profit_percent/max_drawdown/max_runup and percents of a trade not closed yet", () => {
     const st = new StrategyState();
+    expect(st.closedTradeProfitPercent(0)).toBe(0);
+    expect(st.closedTradeMaxDrawdownPercent(0)).toBe(0);
     st.entry("L", "long", 1);
     st.processFills(10, undefined, undefined, 0);
     st.close("L");
     st.processFills(11, undefined, undefined, 1);
-    expect(() => st.closedTradeProfitPercent(1)).toThrow(/index 1 is out of range/);
-    expect(() => st.closedTradeMaxDrawdown(-1)).toThrow(/index -1 is out of range/);
+    expect(st.closedTradeProfitPercent(1)).toBe(0);
+    expect(st.closedTradeMaxDrawdown(-1)).toBe(0);
+    expect(st.closedTradeMaxRunup(1)).toBe(0);
+    expect(st.closedTradeMaxRunupPercent(1)).toBe(0);
   });
 });
 
@@ -5819,15 +5869,17 @@ describe("StrategyState.closedtrades/opentrades.entry_time/exit_time/commission 
     expect(st.openTradeEntryTime(0)).toBe(3000); // 새 트레이드는 새 entry_time
   });
 
-  it("throws for entry_time/exit_time/commission at a non-latest closed-trade index; open-trade index is na once flat (not a throw, C578)", () => {
+  // A closed-trade number with no trade behind it: na times, 0 commission (the oracle; tier 1
+  // resin-harness suites/strategy/tv/trade_percents shows 0 for the amounts).
+  it("reads na entry_time/exit_time and 0 commission for a closed-trade number with no trade behind it; open-trade index is na once flat (not a throw, C578)", () => {
     const st = new StrategyState();
     st.entry("L", "long", 1);
     st.processFills(10, undefined, undefined, 0, 1000);
     st.close("L");
     st.processFills(11, undefined, undefined, 1, 2000);
-    expect(() => st.closedTradeEntryTime(1)).toThrow(/index 1 is out of range/);
-    expect(() => st.closedTradeExitTime(-1)).toThrow(/index -1 is out of range/);
-    expect(() => st.closedTradeCommission(1)).toThrow(/index 1 is out of range/);
+    expect(Number.isNaN(st.closedTradeEntryTime(1))).toBe(true);
+    expect(Number.isNaN(st.closedTradeExitTime(-1))).toBe(true);
+    expect(st.closedTradeCommission(1)).toBe(0);
     expect(Number.isNaN(st.openTradeEntryTime(1))).toBe(true); // 이 시점 flat(posSize=0) — 잘못된 index가 아니라 "트레이드 없음"
   });
 
@@ -5950,6 +6002,17 @@ describe("strategy.closedtrades/opentrades.max_drawdown/max_runup/profit_percent
     expect(code).toContain("$.strategy.openTradeProfitPercent($.close.get(0), 0)");
     expect(code).toContain("$.strategy.openTradeMaxDrawdown(0)");
     expect(code).toContain("$.strategy.openTradeMaxRunup(0)");
+  });
+
+  // Tier 1 resin-harness suites/strategy/tv/trade_percents plots all four.
+  it("emits max_drawdown_percent/max_runup_percent for closedtrades and opentrades", () => {
+    const code = transpileCode(
+      'strategy("s")\nplot(strategy.closedtrades.max_drawdown_percent(0))\nplot(strategy.closedtrades.max_runup_percent(1))\nplot(strategy.opentrades.max_drawdown_percent(0))\nplot(strategy.opentrades.max_runup_percent(0))',
+    );
+    expect(code).toContain("$.strategy.closedTradeMaxDrawdownPercent(0)");
+    expect(code).toContain("$.strategy.closedTradeMaxRunupPercent(1)");
+    expect(code).toContain("$.strategy.openTradeMaxDrawdownPercent(0)");
+    expect(code).toContain("$.strategy.openTradeMaxRunupPercent(0)");
   });
 });
 
@@ -7952,7 +8015,9 @@ describe("StrategyState.closedTradeRecords — trade_num 전 인덱스 지원 (C
     expect(st.closedTradeExitComment(2)).toBe("shut3");
   });
 
-  it("still throws outside [0, closedTrades) once history has grown past 1 trade", () => {
+  // Outside [0, closedTrades) the amounts read 0 (tier 1 resin-harness suites/strategy/tv/
+  // trade_percents); an na trade number is trade 0 and a fractional one is truncated (the oracle).
+  it("reads 0 outside [0, closedTrades); na is trade 0, a fraction truncates", () => {
     const st = new StrategyState();
     st.entry("L1", "long", 1);
     st.processFills(10, undefined, undefined, 0);
@@ -7962,8 +8027,11 @@ describe("StrategyState.closedTradeRecords — trade_num 전 인덱스 지원 (C
     st.processFills(12, undefined, undefined, 2);
     st.close("L2");
     st.processFills(13, undefined, undefined, 3); // closedTrades=2, 유효 index는 0/1뿐
-    expect(() => st.closedTradeProfit(2)).toThrow(/index 2 is out of range/);
-    expect(() => st.closedTradeProfit(-1)).toThrow(/index -1 is out of range/);
+    expect(st.closedTradeProfit(2)).toBe(0);
+    expect(st.closedTradeProfit(-1)).toBe(0);
+    expect(st.closedTradeProfit(NaN)).toBe(1);
+    expect(st.closedTradeProfit(1.9)).toBe(1);
+    expect(st.closedTradeEntryPrice(1.9)).toBe(12);
   });
 
   it("closedTradeProfitPercent computes per-trade_num, not just the latest", () => {

@@ -2181,7 +2181,9 @@ function matchSecurityExprMathCall(node: CallExpr): string | null {
 // 배열을 보유하지 않아(GOAL.md "bar loop 안 할당 제로") closedtrades는 entry_comment/exit_comment와
 // 동일하게 **가장 최근 청산 트레이드 1건만**(runtime/strategy.ts lastClosed* 필드), opentrades reads
 // the engine's open trades (one per entry fill, index 0 = oldest; runtime/strategy.ts openTrades) —
-// an index outside them is a hard runtime error, not a made-up value. profit/profit_percent/max_drawdown/max_runup(C312, C308이 범위 밖으로 보류했던 4종)은
+// an index outside the open trades is a hard runtime error, not a made-up value. A closed-trade
+// number with no trade behind it reads 0 or na (runtime/strategy.ts closedTradeAt, tier 1
+// trade_percents). profit/profit_percent/max_drawdown/max_runup(C312, C308이 범위 밖으로 보류했던 4종)은
 // codegen.ts OPEN_TRADE_CLOSE_PRICE_METHODS(opentrades.profit/profit_percent만 `$.close.get(0)`
 // 암묵 주입 — 미실현 손익 계산에 종가가 필요, C308 원래 우려 해소)와 runtime/strategy.ts
 // updateTradeExcursion(max_drawdown/max_runup의 바별 인트라바 추적) 참조.
@@ -2201,6 +2203,8 @@ const STRATEGY_TRADE_ACCESSOR_METHODS: Readonly<Record<string, ReadonlySet<strin
     "profit_percent",
     "max_drawdown",
     "max_runup",
+    "max_drawdown_percent",
+    "max_runup_percent",
     // C418: entry_time/exit_time/commission(wild "지원하지 않는 호출" '?.' 서브클러스터 — 3-level
     // 체이닝이라 위 namespace 판별로는 못 잡히던 진짜 TV 빌트인 갭, LIMITATIONS.md 참조).
     "entry_time",
@@ -2217,6 +2221,8 @@ const STRATEGY_TRADE_ACCESSOR_METHODS: Readonly<Record<string, ReadonlySet<strin
     "profit_percent",
     "max_drawdown",
     "max_runup",
+    "max_drawdown_percent",
+    "max_runup_percent",
     // C418: entry_time/commission(exit_time은 opentrades에 없음 — 아직 청산 전이라 TV에도 대응
     // 함수 자체가 없음, wild grep 0건으로 sanity 확인).
     "entry_time",
