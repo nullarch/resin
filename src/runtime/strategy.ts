@@ -30,7 +30,8 @@ interface ClosedTradeRecord {
   maxRunup: number;
   maxDrawdown: number;
   commission: number; // the entry leg's share plus the exit leg
-  profitPercent: number;
+  profitRatio: number; // profit over the entry cost (its value plus its entry fee)
+  profitPercent: number; // profitRatio × 100
 }
 
 // One open trade. The manual (strategies.txt, "Orders and trades"): "a trade is the resulting
@@ -93,6 +94,10 @@ interface PendingEntry {
 // 10%-of-equity entry buys 87927.5 units at 1.1373), and so does the oracle (tier 2, its strategy()
 // default).
 export const DEFAULT_INITIAL_CAPITAL = 1000000;
+
+// How many of the latest closed trades TradingView keeps outside Deep Backtesting (strategies.txt,
+// "Trade limit"; the oracle's closed-trade deque has the same length).
+const CLOSED_TRADES_KEPT = 9000;
 
 // Lots per contract of a syminfo.mincontract: the quantity grid step is 1 / lotsPerContract. A lot
 // larger than one contract keeps the whole-contract grid, as in the oracle (`_size_round_factor`).
@@ -248,15 +253,18 @@ export class StrategyState {
   lossTrades: number; // strategy.losstrades — profit < 0 트레이드 수
   evenTrades: number; // strategy.eventrades(C331, wild 신규) — profit === 0 트레이드 수(win/lossTrades가
   // 원래 안 세던 나머지 축을 명시적으로 채움 — DIVERGENCES #68 (c)가 미리 지적해둔 gap)
-  grossProfit: number; // strategy.grossprofit — 양수 profit 합
-  grossLoss: number; // strategy.grossloss — 음수 profit 합(pine2py와 동일하게 0 이하 값 — DIVERGENCES #68)
-  // strategy.avg_winning_trade_percent/avg_losing_trade_percent(C674, wild 신규 — pine2py에 대응
-  // 구현 전무, grep 0건) — closedTradeProfitPercent와 동일 공식(entryPrice===0 가드, 방향은 profit
-  // 부호와 항상 일치하므로 별도 sign 재계산 없이 closeAt()에서 profit 분기와 나란히 누적)을 트레이드당
-  // 계산해 win/loss 트레이드 각각의 profit_percent 합만 스칼라로 유지(GOAL.md "bar loop 안 할당
-  // 제로"와 동일하게 트레이드 리스트 재스캔 없이 grossProfit/grossLoss와 동형 누적기). avg_*=합/카운트.
-  sumWinProfitPercent: number;
-  sumLossProfitPercent: number;
+  grossProfit: number; // the winning trades' profits
+  // The losing trades' profits, kept negative. strategy.grossloss reports it positive with the open
+  // trades' entry fees added (see reportedGrossLoss).
+  grossLoss: number;
+  // Sums of the closed trades' profit ratios (profit over entry cost) — all trades, the winning ones,
+  // the losing ones — behind strategy.avg_trade_percent/avg_winning_trade_percent/
+  // avg_losing_trade_percent. rn.txt (May 2024): "the sum of all profit and loss percentages divided
+  // by the number of closed trades". The ratios are summed and the average scaled to percent last, as
+  // the oracle does (tier 2): (1 + 0.1) / 2 × 100 is 55.00000000000001, not the 55 of (100 + 10) / 2.
+  sumProfitRatio: number;
+  sumWinProfitRatio: number;
+  sumLossProfitRatio: number;
 
   // 트레이드 접근자 실소비(C173 열한째 슬라이스 entry_comment/exit_comment → C308이 나머지
   // 필드로 확장) — pine2py는 Trade 리스트 전체를 보관해 임의 인덱스로 재조회 가능하지만
@@ -295,41 +303,26 @@ export class StrategyState {
   // 화이트박스 테스트 호환을 위해 그대로 유지하며 항상 이 배열의 마지막 원소와 동치.
   closedTradeRecords: ClosedTradeRecord[];
 
-  // equity 히스토리 누적기(C172 열째 슬라이스) — pine2py에 drawdown 구현이 전무하다(grep 0건,
-  // C171/C172 확인)라 아래 설계 전부가 TV 실측 미검증 가설이다(DIVERGENCES #75). peakEquity는
-  // "지금까지 관측된 equity의 최고값"(NaN=아직 첫 바 미관측 — updateDrawdown이 initialCapital로
-  // 1회 시드), maxDrawdown은 "peakEquity에서 그 이후 최대로 떨어진 폭"(통화 단위, 항상 >= 0)의
-  // 누적 최대치 — 둘 다 표준 온라인 max-drawdown 알고리즘(GOAL.md "TA는 전부 incremental O(1)/bar"
-  // 축과 동일 모양, sma류 누적기와 같은 급).
-  peakEquity: number; // strategy.max_drawdown의 내부 상태 — 사용자 노출 프로퍼티 아님
-  maxDrawdown: number; // strategy.max_drawdown
-  // strategy.max_drawdown_percent(C333, next_hint(C331/C332) 1순위) — maxDrawdown(통화 절대값)을
-  // 퍼센트로 정규화하려면 "그 최댓값이 갱신된 시점의 peakEquity" 스냅샷이 필요하다(현재 peakEquity를
-  // 그대로 나누면 이후 신고점 갱신 시 분모가 달라져 과거 최대낙폭의 퍼센트가 조용히 줄어든다).
-  // updateDrawdown()의 최초 시드 시점과 maxDrawdown 갱신 시점 두 곳에서만 함께 갱신 — peakEquity와
-  // 동일한 "NaN이 절대 관측되지 않는" lifecycle(항상 시드 직후에만 읽힘)이라 사용 전 NaN 가드 불필요.
-  peakEquityAtMaxDrawdown: number;
+  // The close-marked equity peak the strategy.risk.max_drawdown/max_intraday_loss latches measure
+  // against (updateDrawdown), and the largest drop from it. Not the reported statistics below.
+  peakEquity: number;
+  riskMaxDrawdown: number;
 
-  // strategy.max_runup/max_runup_percent(C674, wild 신규 — pine2py에 대응 구현 전무, grep 0건)는
-  // max_drawdown을 뒤집은 대칭 축: peakEquity(러닝 최댓값) 대신 troughEquity(러닝 최솟값)를 추적해
-  // "트로프 이후 최대로 오른 폭"의 러닝 최댓값을 유지한다. troughEquityAtMaxRunup은
-  // peakEquityAtMaxDrawdown과 동일한 이유(퍼센트 정규화 분모가 그 최댓값이 갱신된 시점 값으로
-  // 고정돼야 이후 신저점 갱신에 조용히 안 흔들림)로 별도 스냅샷. updateDrawdown()과 같은 호출
-  // 위치에서 함께 갱신 — 둘 다 "이 바에 스크립트가 보게 될 equity"의 히스토리 하나를 공유하는
-  // 독립 축이라 별도 사후 훅 불필요(updateDrawdown 주석 참조). TV 미검증(가설), DIVERGENCES #75.
-  troughEquity: number;
+  // strategy.max_drawdown/max_runup and their percents (updateStatistics). The drawdown runs from the
+  // realized equity's high-water mark `maxRealizedEquity` (never below the initial capital) down to
+  // the worst intrabar mark; the run-up runs from `runupTrough` — the lowest equity at an entry fill
+  // (updateRunupTrough) — up to the best intrabar mark. rn.txt (November 2023): max_drawdown_percent
+  // is "The maximum drop from a peak in the equity curve, expressed as a percentage of the peak
+  // value"; the run-up percent is taken over the top it rose to (see updateStatistics).
+  maxDrawdown: number;
+  maxDrawdownPercent: number;
   maxRunup: number;
-  troughEquityAtMaxRunup: number;
+  maxRunupPercent: number;
+  maxRealizedEquity: number; // -Infinity until the first bar
+  runupTrough: number; // Infinity until the first entry fill
 
-  // strategy.max_contracts_held_all/long/short(C334, next_hint(C333) 1순위) — pine2py에 대응 구현이
-  // 전무해(grep 0건) hand-verified 설계, "TV 미검증(가설)": 지금까지 보유했던 |posSize|의 러닝
-  // 최댓값. updateMaxContractsHeld()가 updateDrawdown()과 같은 위치(Context.advance()가 매 바
-  // processFills() 직후, barFn 실행 전)에서 갱신 — 이 시점의 posSize는 이번 바의 모든 체결이 반영된
-  // 최종값이라(processFills가 한 바의 entry/order/exit/close/pyramiding 전부를 단일 호출로 정산)
-  // 개별 posSize 대입 지점(entry/order 체결, closeAt 부분청산 등 5곳)마다 훅을 심을 필요가 없다.
-  // all=방향 무관 |posSize|, long=posSize>0일 때만, short=posSize<0일 때 |posSize| — 셋 다 한 번도
-  // 그 방향으로 보유한 적이 없으면 TV 관례대로 0(마이너스 무한대 시드 아님).
-  maxContractsHeldAll: number;
+  // strategy.max_contracts_held_long/short: the largest long and short position held. Only an entry
+  // fill can raise them (openTradeAt); max_contracts_held_all is the larger of the two.
   maxContractsHeldLong: number;
   maxContractsHeldShort: number;
 
@@ -538,15 +531,17 @@ export class StrategyState {
     this.evenTrades = 0;
     this.grossProfit = 0;
     this.grossLoss = 0;
-    this.sumWinProfitPercent = 0;
-    this.sumLossProfitPercent = 0;
+    this.sumProfitRatio = 0;
+    this.sumWinProfitRatio = 0;
+    this.sumLossProfitRatio = 0;
     this.peakEquity = NaN;
+    this.riskMaxDrawdown = 0;
     this.maxDrawdown = 0;
-    this.peakEquityAtMaxDrawdown = NaN;
-    this.troughEquity = NaN;
+    this.maxDrawdownPercent = 0;
     this.maxRunup = 0;
-    this.troughEquityAtMaxRunup = NaN;
-    this.maxContractsHeldAll = 0;
+    this.maxRunupPercent = 0;
+    this.maxRealizedEquity = -Infinity;
+    this.runupTrough = Infinity;
     this.maxContractsHeldLong = 0;
     this.maxContractsHeldShort = 0;
     this.lastClosedEntryComment = "";
@@ -727,13 +722,38 @@ export class StrategyState {
     const commission = this.bookCommission(Math.abs(signedQty), fillPrice);
     this.openCommission += commission;
     this.updateNetProfit();
+    this.updateRunupTrough(fillPrice);
     this.openTrades.push({
       entryId, entryComment, entryPrice: fillPrice, entryBarIndex: barIndex, entryTime: barTimeMs,
       size: signedQty, maxRunup: 0, maxDrawdown: 0, commission,
     });
     this.entryBook.push({ entryId, bound: Math.abs(signedQty), entryPrice: fillPrice });
     this.posSize += signedQty;
+    // The peak is the position's, not one trade's: the oracle (tier 2, measured on TradingView with
+    // pyramiding 3) reports 3 for long legs of 1 and 2, and 7 for short legs of 4 and 3; tier 1
+    // resin-harness suites/strategy/tv/stats_variables agrees on every bar.
+    if (this.posSize > this.maxContractsHeldLong) this.maxContractsHeldLong = this.posSize;
+    else if (-this.posSize > this.maxContractsHeldShort) this.maxContractsHeldShort = -this.posSize;
     this.recalcAvgPrice();
+  }
+
+  // strategy.max_contracts_held_all: the larger of the long and short peaks.
+  get maxContractsHeldAll(): number {
+    return this.maxContractsHeldLong > this.maxContractsHeldShort ? this.maxContractsHeldLong : this.maxContractsHeldShort;
+  }
+
+  // Lowers the run-up anchor to the equity at an entry fill: the realized equity (this fill's fee
+  // already taken) plus the paper profit of the position held before it, when that is a profit.
+  // This is the oracle's entry-fill low-water mark (tier 2, measured on TradingView: "a second long
+  // leg added at 94802.99 on top of one leg from 94711.84 anchors the run-up at 994705.330255, the
+  // 91.15 the first leg was ahead by, and not at the realized equity below it").
+  private updateRunupTrough(fillPrice: number): void {
+    let mark = this.initialCapital + this.realizedPnl;
+    if (this.posSize !== 0) {
+      const open = this.posSize * (fillPrice - this.posAvgPrice);
+      if (open > 0) mark += open;
+    }
+    if (mark < this.runupTrough) this.runupTrough = mark;
   }
 
   // position_avg_price is the size-weighted entry price of the trades still open — it moves when
@@ -916,46 +936,23 @@ export class StrategyState {
     return this.initialCapital + this.realizedPnl + this.openProfit(closePrice);
   }
 
-  // strategy.max_drawdown — Context.advance()가 매 바 processFills() 직후, barFn 실행 **전에**
-  // 호출한다(C172). next_hint는 이 갱신에 "barFn 실행 후" 훅이 필요하다고 예상했으나 재검토 결과
-  // 불필요하다고 판단했다: 이 엔진은 스트리밍이 아니라 배치 리플레이라 Context가 OHLCV 전 배열을
-  // 생성 시점에 이미 쥐고 있고(context.ts Series 생성자), close.advance()도 processFills보다
-  // 먼저 실행되므로 이 시점의 `this.close.get(0)`은 이미 "이 바의 실제 close"다 — barFn이 나중에
-  // strategy.equity를 읽어도 정확히 같은 값을 본다(같은 Series 커서). 즉 "이 바에 스크립트가 보게 될
-  // equity"의 히스토리를 여기서 그대로 누적하면 충분하고 별도 사후 훅이 필요 없다(MEMORY.md
-  // "next_hint도 틀릴 수 있다" 원칙 재확인 — 소스를 실행 흐름까지 추적해 재검증함).
-  // peakEquity가 NaN(첫 호출)이면 initialCapital로 시드한다 — configure()는 프리앰블(바 루프 시작
-  // 전 정확히 1회)에서 이미 끝나 있으므로 이 시점의 initialCapital은 최종값이다. TV 실측 미검증
-  // 가설(DIVERGENCES #75): (a) close 기준(intrabar high/low 미반영), (b) 통화 절대값(퍼센트 아님).
+  // The strategy.risk.max_drawdown/max_intraday_loss latches, on the equity marked at the bar's close.
+  // Context.advance() calls it every bar after processFills() and before the script body; this is a
+  // batch replay, so the close is already the one the body will read. peakEquity is seeded with the
+  // initial capital on the first call. (Unverified hypothesis, DIVERGENCES #75; the oracle measures the
+  // risk drawdown from the realized peak and judges it only on bars that close a trade.)
   updateDrawdown(closePrice: number): void {
-    if (Number.isNaN(this.peakEquity)) {
-      this.peakEquity = this.initialCapital;
-      this.peakEquityAtMaxDrawdown = this.initialCapital; // maxDrawdown=0 시점의 분모 시드(C333)
-    }
+    if (Number.isNaN(this.peakEquity)) this.peakEquity = this.initialCapital;
     const currentEquity = this.equity(closePrice);
     if (currentEquity > this.peakEquity) this.peakEquity = currentEquity;
     const drawdown = this.peakEquity - currentEquity;
-    if (drawdown > this.maxDrawdown) {
-      this.maxDrawdown = drawdown;
-      this.peakEquityAtMaxDrawdown = this.peakEquity; // C333: 이 최댓값이 갱신된 시점의 peak 스냅샷
-    }
-
-    // strategy.max_runup(C674) — max_drawdown을 뒤집은 대칭 축(위 클래스 필드 주석 참조).
-    if (Number.isNaN(this.troughEquity)) {
-      this.troughEquity = this.initialCapital;
-      this.troughEquityAtMaxRunup = this.initialCapital;
-    }
-    if (currentEquity < this.troughEquity) this.troughEquity = currentEquity;
-    const runup = currentEquity - this.troughEquity;
-    if (runup > this.maxRunup) {
-      this.maxRunup = runup;
-      this.troughEquityAtMaxRunup = this.troughEquity;
-    }
+    if (drawdown > this.riskMaxDrawdown) this.riskMaxDrawdown = drawdown;
 
     // strategy.risk.max_drawdown(C322) — 영구 래치. peakEquity가 시드된 이 시점 이후에만 의미가
     // 있어 위 두 줄 다음에 판정(같은 바에서 peakEquity가 이미 이번 equity를 반영한 뒤).
     if (!this.drawdownLimitReached && !Number.isNaN(this.maxDrawdownValue)) {
-      const measure = this.maxDrawdownType === "percent_of_equity" ? (this.maxDrawdown / this.peakEquity) * 100 : this.maxDrawdown;
+      const measure =
+        this.maxDrawdownType === "percent_of_equity" ? (this.riskMaxDrawdown / this.peakEquity) * 100 : this.riskMaxDrawdown;
       if (measure >= this.maxDrawdownValue) this.drawdownLimitReached = true;
     }
 
@@ -972,13 +969,62 @@ export class StrategyState {
     }
   }
 
-  // strategy.max_contracts_held_all/long/short(C334) — updateDrawdown()과 동일 호출 위치(Context.advance()
-  // 참조)에서 이번 바 최종 posSize로 러닝 최댓값을 갱신. posSize===0(flat)이면 어느 방향도 갱신하지 않는다.
-  updateMaxContractsHeld(): void {
-    const size = Math.abs(this.posSize);
-    if (size > this.maxContractsHeldAll) this.maxContractsHeldAll = size;
-    if (this.posSize > 0 && size > this.maxContractsHeldLong) this.maxContractsHeldLong = size;
-    else if (this.posSize < 0 && size > this.maxContractsHeldShort) this.maxContractsHeldShort = size;
+  // strategy.max_drawdown/max_runup and their percents, after the bar's fills (Context.advance(),
+  // before the script body). The drop runs from the realized high-water mark — the largest realized
+  // equity (initial capital + netprofit) seen, never below the initial capital; open paper profit
+  // does not lift it — to the worst mark of the bar, the open trades marked at the bar's high or low
+  // against the position's average price. The rise runs from the run-up trough (updateRunupTrough) to
+  // the best mark. The drawdown percent is over the peak (rn.txt, November 2023: "expressed as a
+  // percentage of the peak value"); the run-up percent is over the top it rose to, not over the
+  // trough: tier 1 resin-harness suites/strategy/tv/stats_variables bar 1 reports 747.52 as
+  // 0.07469966249943294% = 747.52 / 1000700.63905, where the trough 999953.11905 would give 0.07475.
+  // This is the oracle's _finalize_bar_pnl (tier 2, measured on TradingView: "a bar whose intrabar
+  // mark peaked at 1000700.63905 still reports the next drawdown against 1000000.0"). Both maxima and
+  // both percent maxima are kept separately: a percent maximum can be set on another bar.
+  updateStatistics(high: number, low: number): void {
+    let drawdownSum = 0;
+    let runupSum = 0;
+    for (const t of this.openTrades) {
+      const atHigh = t.size * (high - this.posAvgPrice);
+      const atLow = t.size * (low - this.posAvgPrice);
+      drawdownSum += -Math.min(atHigh, atLow, 0);
+      runupSum += Math.max(atHigh, atLow, 0);
+    }
+    const realized = this.initialCapital + this.realizedPnl;
+    if (realized > this.maxRealizedEquity) this.maxRealizedEquity = realized;
+    const peak = this.maxRealizedEquity > this.initialCapital ? this.maxRealizedEquity : this.initialCapital;
+    const drawdown = peak - realized + drawdownSum;
+    if (drawdown > this.maxDrawdown) this.maxDrawdown = drawdown;
+    if (peak > 0) {
+      const percent = (drawdown / peak) * 100;
+      if (percent > this.maxDrawdownPercent) this.maxDrawdownPercent = percent;
+    }
+    // Before the first entry fill the trough is Infinity: no run-up yet.
+    const runup = realized + runupSum - this.runupTrough;
+    if (runup > this.maxRunup) this.maxRunup = runup;
+    const top = this.runupTrough + runup;
+    if (top > 0) {
+      const percent = (runup / top) * 100;
+      if (percent > this.maxRunupPercent) this.maxRunupPercent = percent;
+    }
+  }
+
+  // strategy.grossloss: the losing trades' losses as a positive amount, plus the entry fees of the
+  // open trades, which netprofit has already taken. Tier 1 resin-harness suites/strategy/tv/
+  // stats_variables: with one 1-BTC long open at 0.05% commission and no trade closed yet,
+  // grossloss_percent is 0.004688095 (the 46.88095 entry fee over the 1,000,000 capital), and with one
+  // loss of 602.31064 closed and a short open, avg_losing_trade is 789.13114 (+186.8205 of fees).
+  // The manual compares it against grossprofit as a positive amount (strategies.txt: "strategy.
+  // grossprofit > strategy.grossloss ? color.lime : color.red").
+  reportedGrossLoss(): number {
+    return -this.grossLoss + this.openCommission;
+  }
+
+  // strategy.closedtrades.first_index: the number of the oldest closed trade still listed.
+  // strategies.txt, "Trade limit": "By default, strategies preserve information for up to the latest
+  // 9000 trades ... If the strategy simulates fewer than 9000 trades ..., the variable's value is 0".
+  closedTradesFirstIndex(): number {
+    return this.closedTrades > CLOSED_TRADES_KEPT ? this.closedTrades - CLOSED_TRADES_KEPT : 0;
   }
 
   // strategy.closedtrades/opentrades.max_drawdown/max_runup(hand-verified, C312) — processFills가
@@ -1027,7 +1073,7 @@ export class StrategyState {
     entryComment: "", exitComment: "", entryPrice: NaN, exitPrice: NaN,
     entryBarIndex: NaN, exitBarIndex: NaN, entryTime: NaN, exitTime: NaN,
     entryId: "", exitId: "", profit: NaN, size: NaN, maxRunup: NaN, maxDrawdown: NaN,
-    commission: NaN, profitPercent: NaN,
+    commission: NaN, profitRatio: NaN, profitPercent: NaN,
   };
 
   private closedTradeRecordAt(index: number): ClosedTradeRecord {
@@ -1337,6 +1383,7 @@ export class StrategyState {
         profit -= exitFee;
       }
       const entryCost = take * t.entryPrice + entryFee;
+      const profitRatio = entryCost === 0 ? 0 : profit / entryCost;
       records.push({
         entryComment: t.entryComment,
         exitComment,
@@ -1353,7 +1400,8 @@ export class StrategyState {
         maxRunup: t.maxRunup * share,
         maxDrawdown: t.maxDrawdown * share,
         commission,
-        profitPercent: entryCost === 0 ? 0 : (profit / entryCost) * 100,
+        profitRatio,
+        profitPercent: profitRatio * 100,
       });
       if (whole) {
         this.openTrades.shift();
@@ -1373,7 +1421,8 @@ export class StrategyState {
         rec.commission += (fee * Math.abs(rec.size)) / closedQty;
         rec.profit -= rec.commission;
         const entryCost = Math.abs(rec.size) * rec.entryPrice + entryFee;
-        rec.profitPercent = entryCost === 0 ? 0 : (rec.profit / entryCost) * 100;
+        rec.profitRatio = entryCost === 0 ? 0 : rec.profit / entryCost;
+        rec.profitPercent = rec.profitRatio * 100;
       }
     }
     for (const rec of records) this.recordClosedTrade(rec);
@@ -1418,14 +1467,15 @@ export class StrategyState {
     this.lastClosedMaxRunup = rec.maxRunup;
     this.lastClosedMaxDrawdown = rec.maxDrawdown;
     this.closedTradeRecords.push(rec);
+    this.sumProfitRatio += rec.profitRatio;
     if (rec.profit > 0) {
       this.winTrades += 1;
       this.grossProfit += rec.profit;
-      this.sumWinProfitPercent += rec.profitPercent;
+      this.sumWinProfitRatio += rec.profitRatio;
     } else if (rec.profit < 0) {
       this.lossTrades += 1;
       this.grossLoss += rec.profit;
-      this.sumLossProfitPercent += rec.profitPercent;
+      this.sumLossProfitRatio += rec.profitRatio;
     } else {
       this.evenTrades += 1;
     }
@@ -2099,7 +2149,6 @@ export class StrategyState {
       if (!Number.isNaN(orderFill)) this.fillPendingOrder(orderFill, barIndex, barTimeMs);
     }
     if (this.exitPlacedThisBar) this.fillPendingExitAtClose(closePrice, barIndex, barTimeMs);
-    this.updateMaxContractsHeld();
   }
 
   // Fills the pending strategy.close()/close_all() market order at `fillPrice`, slipped against the

@@ -1592,10 +1592,13 @@ describe("strategy.* E2E 셋째 슬라이스 (hand-verified: 리버스 연쇄의
     expect(result.bars.map((b) => b["var:__obs_lt"])).toEqual([0, 0, 0, 1, 1]);
   });
 
-  it("accumulates grossprofit(양수 합)/grossloss(음수 합 — DIVERGENCES #68)", () => {
+  // grossloss is reported positive: tier 1 resin-harness suites/strategy/tv/stats_variables prints
+  // grossloss_percent and avg_losing_trade as positive amounts (0.004688095, 602.31064), and the
+  // oracle's strategy.grossloss agrees (repro resin-harness state/repros/stats-variables-mixed.json).
+  it("accumulates grossprofit and grossloss as positive amounts", () => {
     const result = runPipeline(src, data);
     expect(result.bars.map((b) => b["var:__obs_gp"])).toEqual([0, 0, 1, 1, 2]);
-    expect(result.bars.map((b) => b["var:__obs_gl"])).toEqual([0, 0, 0, -2, -2]);
+    expect(result.bars.map((b) => b["var:__obs_gl"])).toEqual([0, 0, 0, 2, 2]);
   });
 });
 
@@ -4636,14 +4639,17 @@ describe("strategy.* E2E — default_qty_type=cash (hand-verified, C330)", () =>
   });
 });
 
-describe("StrategyState.updateDrawdown (C172 열째 슬라이스: max_drawdown, hand-verified)", () => {
+// updateDrawdown now only feeds the strategy.risk.max_drawdown/max_intraday_loss latches (their
+// close-marked peak and drop, riskMaxDrawdown). The reported strategy.max_drawdown is
+// updateStatistics' (see "StrategyState.updateStatistics" below).
+describe("StrategyState.updateDrawdown — the risk latches' close-marked drawdown (C172, hand-verified)", () => {
   // pine2py에 drawdown 구현이 전무하다(grep 0건, C171/C172 확인) — 표준 온라인 max-drawdown
   // 알고리즘(peak 갱신 → peak-현재 격차의 누적 최대)을 hand-verified로만 검증한다(DIVERGENCES #75).
   it("seeds peakEquity from initialCapital on the first call (flat position)", () => {
     const st = new StrategyState();
     st.updateDrawdown(123); // 플랫 — closePrice는 openProfit에 영향 없음
     expect(st.peakEquity).toBe(1000000);
-    expect(st.maxDrawdown).toBe(0);
+    expect(st.riskMaxDrawdown).toBe(0);
   });
 
   it("seeds from a custom initial_capital set via configure()", () => {
@@ -4651,7 +4657,7 @@ describe("StrategyState.updateDrawdown (C172 열째 슬라이스: max_drawdown, 
     st.configure(1, 1, 50000);
     st.updateDrawdown(999);
     expect(st.peakEquity).toBe(50000);
-    expect(st.maxDrawdown).toBe(0);
+    expect(st.riskMaxDrawdown).toBe(0);
   });
 
   it("stays at 0 while equity only rises (no peak-to-trough gap yet)", () => {
@@ -4659,7 +4665,7 @@ describe("StrategyState.updateDrawdown (C172 열째 슬라이스: max_drawdown, 
     st.configure(1, 1, 1000);
     st.updateDrawdown(10); // eq=1000
     st.updateDrawdown(20); // eq=1000, 아직 포지션 없음 -> 여전히 1000
-    expect(st.maxDrawdown).toBe(0);
+    expect(st.riskMaxDrawdown).toBe(0);
     expect(st.peakEquity).toBe(1000);
   });
 
@@ -4669,18 +4675,19 @@ describe("StrategyState.updateDrawdown (C172 열째 슬라이스: max_drawdown, 
     st.entry("L", "long", 10);
     st.processFills(10); // 롱 10 @ 10
     st.updateDrawdown(10); // eq=1000 (avg=close) -> peak=1000, dd=0
-    expect(st.maxDrawdown).toBe(0);
+    expect(st.riskMaxDrawdown).toBe(0);
     st.updateDrawdown(12); // eq=1000+(12-10)*10=1020 -> 새 peak, dd=0
     expect(st.peakEquity).toBe(1020);
-    expect(st.maxDrawdown).toBe(0);
+    expect(st.riskMaxDrawdown).toBe(0);
     st.updateDrawdown(8); // eq=1000+(8-10)*10=980 -> peak 유지 1020, dd=40
     expect(st.peakEquity).toBe(1020);
-    expect(st.maxDrawdown).toBe(40);
-    st.updateDrawdown(15); // eq=1050 -> 새 peak(회복), dd=0이지만 maxDrawdown은 40 그대로(리셋 안 됨)
+    expect(st.riskMaxDrawdown).toBe(40);
+    st.updateDrawdown(15); // eq=1050 -> 새 peak(회복), dd=0이지만 riskMaxDrawdown은 40 그대로(리셋 안 됨)
     expect(st.peakEquity).toBe(1050);
-    expect(st.maxDrawdown).toBe(40);
-    st.updateDrawdown(5); // eq=1000+(5-10)*10=950 -> dd=1050-950=100 > 40 -> maxDrawdown 갱신
-    expect(st.maxDrawdown).toBe(100);
+    expect(st.riskMaxDrawdown).toBe(40);
+    st.updateDrawdown(5); // eq=1000+(5-10)*10=950 -> dd=1050-950=100 > 40 -> 갱신
+    expect(st.riskMaxDrawdown).toBe(100);
+    expect(st.maxDrawdown).toBe(0); // the reported statistic is not this method's
   });
 
   it("counts a realized loss toward the drawdown just like an unrealized one", () => {
@@ -4693,7 +4700,125 @@ describe("StrategyState.updateDrawdown (C172 열째 슬라이스: max_drawdown, 
     st.processFills(7); // 청산 (7-10)*10 = -30 실현
     st.updateDrawdown(999); // flat -> eq=1000-30=970
     expect(st.realizedPnl).toBe(-30);
-    expect(st.maxDrawdown).toBe(30);
+    expect(st.riskMaxDrawdown).toBe(30);
+  });
+});
+
+// strategy.max_drawdown/max_runup and their percents. Values are TradingView's (tier 1 resin-harness
+// suites/strategy/tv/stats_variables, bar 1) or the oracle's (tier 2, bit-identical on the repro
+// resin-harness state/repros/stats-variables-mixed.json).
+describe("StrategyState.updateStatistics (strategy.max_drawdown/max_runup and percents)", () => {
+  // Tier 1 bar 1: a 1-BTC long filled at the open 93761.9 at 0.05% commission (fee 46.88095), the bar's
+  // high 94509.42 and low 93761.89. TradingView prints md 46.89095000002999, mdp 0.004689095000002999,
+  // mr 747.5200000000186, mrp 0.07469966249943294.
+  function tierOneBar1(): StrategyState {
+    const st = new StrategyState();
+    st.configure(1, 3, 1000000);
+    st.setCommission("percent", 0.05);
+    st.entry("L1", "long", 1);
+    st.processFills(93761.9, 94509.42, 93761.89, 1);
+    st.updateStatistics(94509.42, 93761.89);
+    return st;
+  }
+
+  it("measures the drawdown from the initial capital to the bar's worst mark, the entry fee included", () => {
+    const st = tierOneBar1();
+    expect(st.maxDrawdown).toBeCloseTo(46.89095000002999, 9);
+    expect(st.maxDrawdownPercent).toBeCloseTo(0.004689095000002999, 12);
+  });
+
+  it("measures the run-up from the equity at the entry fill, as a percent of the top it rose to", () => {
+    const st = tierOneBar1();
+    expect(st.runupTrough).toBe(1000000 - 46.88095);
+    expect(st.maxRunup).toBeCloseTo(747.5200000000186, 9);
+    expect(st.maxRunupPercent).toBeCloseTo(0.07469966249943294, 12);
+  });
+
+  it("reports no run-up before the first entry fill, and no drawdown while flat at the initial capital", () => {
+    const st = new StrategyState();
+    st.configure(1, 1, 1000);
+    st.updateStatistics(12, 8);
+    expect(st.maxRunup).toBe(0);
+    expect(st.maxRunupPercent).toBe(0);
+    expect(st.maxDrawdown).toBe(0);
+    expect(st.maxDrawdownPercent).toBe(0);
+  });
+
+  it("keeps the percent maximum on its own: it can be set on another bar than the currency maximum", () => {
+    // Long 10 @ 10 on capital 1000, no fees. Bar A low 8: drawdown 20 of peak 1000 (2%). Then the
+    // trade closes at 20 (+100, realized 1100 is the new peak) and a long 10 @ 20 dips to 17.9:
+    // drawdown 21 of peak 1100 (1.909...%): the currency maximum moves to 21, the percent stays 2.
+    const st = new StrategyState();
+    st.configure(1, 1, 1000);
+    st.entry("L", "long", 10);
+    st.processFills(10, 10, 8, 0);
+    st.updateStatistics(10, 8);
+    expect(st.maxDrawdown).toBe(20);
+    expect(st.maxDrawdownPercent).toBe(2);
+    st.close("L");
+    st.processFills(20, 20, 20, 1);
+    st.updateStatistics(20, 20);
+    st.entry("L", "long", 10);
+    st.processFills(20, 20, 17.9, 2);
+    st.updateStatistics(20, 17.9);
+    expect(st.maxDrawdown).toBeCloseTo(21, 9);
+    expect(st.maxDrawdownPercent).toBe(2);
+  });
+
+  it("marks a pyramid add's run-up trough at the realized equity plus the paper profit held", () => {
+    // Capital 1000, no fees. A 10 @ 12, B 10 @ 8, A closed at 10 (-20: realized 980, B 20 ahead), then
+    // C 10 @ 10: the mark at C's fill is 980 + 20 = 1000, so the trough stays 1000, not 980. On a bar
+    // with high 13 the run-up is 980 + 2 × 10 × (13 - 9) - 1000 = 60, over the top 1060. The oracle
+    // gives mr 60 and mrp 5.660377358490567 on the same bars (oracle: "a second long leg added at
+    // 94802.99 on top of one leg from 94711.84 anchors the run-up at 994705.330255, the 91.15 the first
+    // leg was ahead by").
+    const st = new StrategyState();
+    st.configure(1, 3, 1000);
+    st.entry("A", "long", 10);
+    st.processFills(12, 12, 12, 1);
+    st.entry("B", "long", 10);
+    st.processFills(8, 8, 8, 2);
+    st.close("A");
+    st.processFills(10, 10, 10, 3);
+    expect(st.realizedPnl).toBe(-20);
+    st.entry("C", "long", 10);
+    st.processFills(10, 10, 10, 4);
+    expect(st.runupTrough).toBe(1000);
+    st.updateStatistics(13, 11);
+    expect(st.maxRunup).toBe(60);
+    expect(st.maxRunupPercent).toBe(5.660377358490567);
+  });
+});
+
+describe("strategy.grossloss/grossloss_percent/grossprofit_percent and closedtrades.first_index", () => {
+  it("reports grossloss positive, with the open trades' entry fees (tier 1 stats_variables bar 1)", () => {
+    // A 1-BTC long open at 93761.9 at 0.05% and no closed trade: TradingView prints grossloss_percent
+    // 0.004688095 — the 46.88095 fee over the 1,000,000 capital.
+    const st = new StrategyState();
+    st.configure(1, 3, 1000000);
+    st.setCommission("percent", 0.05);
+    st.entry("L1", "long", 1);
+    st.processFills(93761.9, 94509.42, 93761.89, 1);
+    expect(st.reportedGrossLoss()).toBeCloseTo(46.88095, 9);
+    expect((st.reportedGrossLoss() / st.initialCapital) * 100).toBeCloseTo(0.004688095, 12);
+    st.close("L1");
+    st.processFills(93000, 93000, 93000, 2); // a loss: the fees move into the closed trade's loss
+    expect(st.reportedGrossLoss()).toBe(-st.grossLoss);
+    expect(st.reportedGrossLoss()).toBeGreaterThan(761.9);
+  });
+
+  it("transpiles strategy.closedtrades.first_index to the runtime read", () => {
+    const code = transpileCode('strategy("s")\nvar float a = na\na := strategy.closedtrades.first_index');
+    expect(code).toContain("$.strategy.closedTradesFirstIndex()");
+  });
+
+  it("is 0 up to 9000 closed trades, then the number of trimmed trades (strategies.txt, \"Trade limit\")", () => {
+    const st = new StrategyState();
+    expect(st.closedTradesFirstIndex()).toBe(0);
+    st.closedTrades = 9000;
+    expect(st.closedTradesFirstIndex()).toBe(0);
+    st.closedTrades = 9005;
+    expect(st.closedTradesFirstIndex()).toBe(5);
   });
 });
 
@@ -4712,13 +4837,11 @@ describe("strategy.max_drawdown analyzer/codegen (C172 열째 슬라이스)", ()
   });
 });
 
-describe("strategy.* E2E 열째 슬라이스 (hand-verified: max_drawdown, close 기준 unrealized 반영)", () => {
-  // 손 계산 시나리오 (initial_capital=1000, 고정 qty=10 롱 진입 후 보유만 — close/exit 없음):
-  //   bar0: O=10 C=11 양봉&flat -> entry 큐잉. 체결 전이라 flat: eq=1000, dd=0.
-  //   bar1: O=10 -> 체결(롱 10@10). C=8 -> eq=1000+(8-10)*10=980 (peak 1000 유지) -> dd=20.
-  //   bar2: O=14 C=15 -> eq=1000+(15-10)*10=1050 -> 새 peak(1050), dd=0(이지만 maxDrawdown은 20 유지).
-  //   bar3: O=6 C=5 -> eq=1000+(5-10)*10=950 -> dd=1050-950=100(>20) -> maxDrawdown=100.
-  //   bar4: O=11 C=12 -> eq=1000+(12-10)*10=1020 -> dd=1050-1020=30(<100) -> maxDrawdown 유지 100.
+describe("strategy.* E2E (max_drawdown: from the realized peak to the bar's worst intrabar mark)", () => {
+  // initial_capital=1000, long 10 filled at bar1's open 10 and held. The drawdown runs from the
+  // realized high-water mark (1000 — open paper profit does not lift it) to the worst mark of each
+  // bar, its low: bar1 low 7.5 -> 25, bar3 low 4.5 -> 55. Oracle values on the same bars (tier 2,
+  // bit-identical): [0, 25, 25, 55, 55].
   const data: OHLCVData = {
     open: [10, 10, 14, 6, 11],
     high: [11, 10.5, 15.5, 6.5, 12.5],
@@ -4741,9 +4864,9 @@ describe("strategy.* E2E 열째 슬라이스 (hand-verified: max_drawdown, close
     expect(result.bars.map((b) => b["var:__obs_eq"])).toEqual([1000, 980, 1050, 950, 1020]);
   });
 
-  it("accumulates the max peak-to-trough gap and never decreases on recovery", () => {
+  it("accumulates the max drop to the intrabar low and never decreases on recovery", () => {
     const result = runPipeline(src, data);
-    expect(result.bars.map((b) => b["var:__obs_dd"])).toEqual([0, 20, 20, 100, 100]);
+    expect(result.bars.map((b) => b["var:__obs_dd"])).toEqual([0, 25, 25, 55, 55]);
   });
 });
 
@@ -4787,44 +4910,42 @@ describe("strategy.default_qty_value/netprofit_percent/openprofit_percent/eventr
   });
 });
 
-describe("StrategyState.updateDrawdown — peakEquityAtMaxDrawdown snapshot (C333, next_hint(C332) 1순위)", () => {
-  // max_drawdown_percent = maxDrawdown / peakEquityAtMaxDrawdown * 100 (통화 절대값을 "그 최댓값이
-  // 갱신된 시점의" peak 대비 %로 정규화 — 라이브 peakEquity로 나누면 이후 신고점 갱신 시 과거
-  // 최대낙폭의 퍼센트가 조용히 줄어들어 틀린다).
-  it("seeds peakEquityAtMaxDrawdown from initialCapital on the first call, alongside peakEquity", () => {
+describe("StrategyState.updateStatistics — max_drawdown_percent over the realized peak", () => {
+  // rn.txt (November 2023): "The maximum drop from a peak in the equity curve, expressed as a
+  // percentage of the peak value". The peak is the realized high-water mark: paper profit does not
+  // lift it (oracle, tier 2, measured on TradingView: "a bar whose intrabar mark peaked at
+  // 1000700.63905 still reports the next drawdown against 1000000.0").
+  it("is 0 while flat at the initial capital", () => {
     const st = new StrategyState();
     st.configure(1, 1, 1000);
-    st.updateDrawdown(999); // flat, maxDrawdown은 0 그대로
+    st.updateStatistics(999, 998);
     expect(st.maxDrawdown).toBe(0);
-    expect(st.peakEquityAtMaxDrawdown).toBe(1000);
+    expect(st.maxDrawdownPercent).toBe(0);
   });
 
-  it("does not move on a new peak (recovery) that doesn't beat the existing maxDrawdown", () => {
+  it("does not move on a recovery", () => {
     const st = new StrategyState();
     st.configure(1, 1, 1000);
     st.entry("L", "long", 10);
     st.processFills(10); // 롱 10 @ 10
-    st.updateDrawdown(10); // eq=1000, peak=1000, dd=0
-    st.updateDrawdown(8); // eq=980 -> dd=20 -> maxDrawdown=20, snapshot peakEquity=1000
+    st.updateStatistics(10, 8); // worst mark 980 -> 20, 2%
     expect(st.maxDrawdown).toBe(20);
-    expect(st.peakEquityAtMaxDrawdown).toBe(1000);
-    st.updateDrawdown(15); // eq=1050 -> 새 peak(회복), dd=0 -> maxDrawdown 갱신 없음
-    expect(st.peakEquity).toBe(1050);
+    expect(st.maxDrawdownPercent).toBe(2);
+    st.updateStatistics(16, 15); // paper profit only: no drop, and the peak stays 1000
     expect(st.maxDrawdown).toBe(20);
-    expect(st.peakEquityAtMaxDrawdown).toBe(1000); // 새 peak가 갱신을 안 트리거했으니 스냅샷도 그대로
+    expect(st.maxDrawdownPercent).toBe(2);
   });
 
-  it("re-snapshots peakEquityAtMaxDrawdown to the new (higher) peak once maxDrawdown itself updates again", () => {
+  it("measures a later, deeper drop against the realized peak, not a paper-profit high", () => {
     const st = new StrategyState();
     st.configure(1, 1, 1000);
     st.entry("L", "long", 10);
     st.processFills(10);
-    st.updateDrawdown(10); // eq=1000, peak=1000
-    st.updateDrawdown(8); // dd=20 -> maxDrawdown=20, snapshot=1000
-    st.updateDrawdown(15); // eq=1050 -> 새 peak, dd=0 (maxDrawdown 갱신 없음)
-    st.updateDrawdown(5); // eq=950 -> dd=1050-950=100 > 20 -> maxDrawdown=100, snapshot=1050(새 peak)
-    expect(st.maxDrawdown).toBe(100);
-    expect(st.peakEquityAtMaxDrawdown).toBe(1050);
+    st.updateStatistics(10, 8); // 20, 2%
+    st.updateStatistics(16, 15); // equity marked up to 1060, not a peak
+    st.updateStatistics(6, 5); // worst mark 950 -> 50 below the peak 1000, 5%
+    expect(st.maxDrawdown).toBe(50);
+    expect(st.maxDrawdownPercent).toBe(5);
   });
 });
 
@@ -4837,19 +4958,15 @@ describe("strategy.max_drawdown_percent analyzer/codegen (C333, next_hint(C332) 
     expect(transpile("x = strategy.max_drawdown_percent").ok).toBe(true);
   });
 
-  it("emits the exact runtime expression (maxDrawdown / peakEquityAtMaxDrawdown * 100)", () => {
+  it("emits a read of the separately kept percent maximum", () => {
     const code = transpileCode('strategy("s")\nvar float a = na\na := strategy.max_drawdown_percent');
-    expect(code).toContain("($.strategy.maxDrawdown / $.strategy.peakEquityAtMaxDrawdown * 100)");
+    expect(code).toContain("($.strategy.maxDrawdownPercent)");
   });
 });
 
-describe("strategy.* E2E (hand-verified: max_drawdown_percent, C333 — max_drawdown(C172) 시나리오 재사용)", () => {
-  // 손 계산 (max_drawdown E2E 시나리오와 동일 데이터, initial_capital=1000):
-  //   bar0: flat, eq=1000, maxDrawdown=0(peakEquityAtMaxDrawdown 시드=1000) -> pct=0.
-  //   bar1: eq=980, dd=20>0 -> maxDrawdown=20, snapshot=peakEquity(1000) -> pct=20/1000*100=2.
-  //   bar2: eq=1050 -> 새 peak, dd=0(maxDrawdown 갱신 없음) -> snapshot 그대로 1000 -> pct=2(불변).
-  //   bar3: eq=950 -> dd=1050-950=100>20 -> maxDrawdown=100, snapshot=peakEquity(1050) -> pct=100/1050*100.
-  //   bar4: eq=1020 -> dd=30<100(갱신 없음) -> pct 그대로.
+describe("strategy.* E2E (max_drawdown_percent — the max_drawdown E2E bars)", () => {
+  // Drops 25 and 55 below the realized peak 1000 (see the max_drawdown E2E): 2.5% and 5.5%. Oracle
+  // values on the same bars (tier 2, bit-identical): [0, 2.5, 2.5, 5.5, 5.5].
   const data: OHLCVData = {
     open: [10, 10, 14, 6, 11],
     high: [11, 10.5, 15.5, 6.5, 12.5],
@@ -4865,9 +4982,9 @@ describe("strategy.* E2E (hand-verified: max_drawdown_percent, C333 — max_draw
     "__obs_ddp := strategy.max_drawdown_percent",
   ].join("\n");
 
-  it("normalizes max_drawdown by the peak equity snapshotted when that max was set, not the live peak", () => {
+  it("expresses each drop as a percent of the realized peak", () => {
     const result = runPipeline(src, data);
-    expect(result.bars.map((b) => b["var:__obs_ddp"])).toEqual([0, 2, 2, (100 / 1050) * 100, (100 / 1050) * 100]);
+    expect(result.bars.map((b) => b["var:__obs_ddp"])).toEqual([0, 2.5, 2.5, 5.5, 5.5]);
   });
 });
 
@@ -4892,13 +5009,12 @@ describe("strategy.max_contracts_held_all/long/short analyzer/codegen (C334, nex
   });
 });
 
-describe("StrategyState.updateMaxContractsHeld — running max ratchet (C334, next_hint(C333) 1순위)", () => {
-  // pine2py에 대응 구현이 전무해(grep 0건) hand-verified 설계: 지금까지 보유했던 |posSize|의 러닝
-  // 최댓값(all=방향 무관, long/short=그 방향으로 보유했을 때만) — updateDrawdown과 동일하게 축소되지
-  // 않는 단조 래칫이라 부분청산/리버스로 posSize가 줄어들어도 과거 피크는 유지돼야 한다.
+// The peaks are raised by entry fills (openTradeAt), on the position: the oracle (tier 2, measured on
+// TradingView) reports 3 for long legs of 1 and 2 and 7 for short legs of 4 and 3; tier 1
+// resin-harness suites/strategy/tv/stats_variables matches on all 400 bars.
+describe("StrategyState max_contracts_held — running peaks raised by entry fills (C334)", () => {
   it("stays 0/0/0 while flat", () => {
     const st = new StrategyState();
-    st.updateMaxContractsHeld();
     expect(st.maxContractsHeldAll).toBe(0);
     expect(st.maxContractsHeldLong).toBe(0);
     expect(st.maxContractsHeldShort).toBe(0);
@@ -4909,7 +5025,6 @@ describe("StrategyState.updateMaxContractsHeld — running max ratchet (C334, ne
     st.configure(1, 1);
     st.entry("L", "long", 5);
     st.processFills(10);
-    st.updateMaxContractsHeld();
     expect(st.maxContractsHeldAll).toBe(5);
     expect(st.maxContractsHeldLong).toBe(5);
     expect(st.maxContractsHeldShort).toBe(0);
@@ -4920,7 +5035,6 @@ describe("StrategyState.updateMaxContractsHeld — running max ratchet (C334, ne
     st.configure(1, 1);
     st.entry("S", "short", 3);
     st.processFills(10);
-    st.updateMaxContractsHeld();
     expect(st.maxContractsHeldAll).toBe(3);
     expect(st.maxContractsHeldShort).toBe(3);
     expect(st.maxContractsHeldLong).toBe(0);
@@ -4931,17 +5045,14 @@ describe("StrategyState.updateMaxContractsHeld — running max ratchet (C334, ne
     st.configure(1, 2);
     st.entry("A", "long", 2);
     st.processFills(10); // posSize=2
-    st.updateMaxContractsHeld();
     st.entry("B", "long", 3);
     st.processFills(11); // pyramiding 추가 -> posSize=5
-    st.updateMaxContractsHeld();
     expect(st.maxContractsHeldAll).toBe(5);
     expect(st.maxContractsHeldLong).toBe(5);
     // close("A", qty=4) is capped at A's open quantity (2), leaving B's 3 — oracle-certified on the
     // same shape (one closed trade A size 2).
     st.close("A", 4); // 부분 청산
     st.processFills(12); // posSize=3
-    st.updateMaxContractsHeld();
     expect(st.posSize).toBe(3);
     expect(st.maxContractsHeldAll).toBe(5); // 축소돼도 과거 피크 유지
     expect(st.maxContractsHeldLong).toBe(5);
@@ -4952,14 +5063,26 @@ describe("StrategyState.updateMaxContractsHeld — running max ratchet (C334, ne
     st.configure(1, 1);
     st.entry("L", "long", 5);
     st.processFills(10);
-    st.updateMaxContractsHeld();
     st.entry("S", "short", 2);
     st.processFills(12); // 리버스: 청산 후 숏 2 진입
-    st.updateMaxContractsHeld();
     expect(st.posSize).toBe(-2);
     expect(st.maxContractsHeldLong).toBe(5); // 그대로 유지
     expect(st.maxContractsHeldShort).toBe(2);
     expect(st.maxContractsHeldAll).toBe(5); // 롱 피크(5) > 숏 피크(2)라 all은 그대로
+  });
+
+  it("counts a peak the position reaches and leaves within one bar", () => {
+    // A long of 4 fills at the bar's open and its stop exit fills on the same bar's low: the position
+    // is flat when the bar ends, but the fill raised the peak to 4.
+    const st = new StrategyState();
+    st.configure(1, 1);
+    st.entry("L", "long", 4);
+    st.exit("X", "L", undefined, 9.5);
+    st.processFills(10, 11, 9, 0);
+    expect(st.posSize).toBe(0);
+    expect(st.closedTrades).toBe(1);
+    expect(st.maxContractsHeldLong).toBe(4);
+    expect(st.maxContractsHeldAll).toBe(4);
   });
 });
 
@@ -7913,117 +8036,129 @@ describe("strategy.* E2E (hand-verified: `for i = 0 to strategy.closedtrades - 1
 // 클러스터 — pine2py에 대응 구현이 전무해 avg_*/max_runup*은 hand-verified 설계, position_entry_name만
 // pine2py engine.py position_entry_name = position.entry_id(types.py 기본값 "")로 오라클 검증됨.
 // strategy.oca.* constants are folded now (OCA groups, see "StrategyState OCA groups").
-describe("StrategyState.closeAt — sumWinProfitPercent/sumLossProfitPercent accumulation (C674)", () => {
-  it("accumulates profit_percent for a winning long trade using the same formula as closedTradeProfitPercent", () => {
+// The accumulators hold profit ratios (profit over entry cost); the analyzer scales the average to
+// percent last, as the oracle does (see "strategy.* E2E ... avg_*" below: 55.00000000000001).
+describe("StrategyState.closeAt — sumProfitRatio/sumWinProfitRatio/sumLossProfitRatio accumulation (C674)", () => {
+  it("accumulates the profit ratio for a winning long trade using the same formula as closedTradeProfitPercent", () => {
     const st = new StrategyState();
     st.entry("L", "long", 2);
     st.processFills(10); // 진입 10
     st.close("L");
-    st.processFills(15); // 청산 15 -> profit_percent = (15-10)/10*100 = 50
-    expect(st.sumWinProfitPercent).toBe(50);
-    expect(st.sumLossProfitPercent).toBe(0);
+    st.processFills(15); // 청산 15 -> ratio = (15-10)*2 / 20 = 0.5
+    expect(st.sumWinProfitRatio).toBe(0.5);
+    expect(st.sumLossProfitRatio).toBe(0);
+    expect(st.sumProfitRatio).toBe(0.5);
   });
 
-  it("accumulates profit_percent for a losing long trade (negative sum, mirrors grossLoss sign)", () => {
+  it("accumulates the profit ratio for a losing long trade (negative sum)", () => {
     const st = new StrategyState();
     st.entry("L", "long", 2);
     st.processFills(10);
     st.close("L");
-    st.processFills(7); // profit_percent = (7-10)/10*100 = -30
-    expect(st.sumLossProfitPercent).toBe(-30);
-    expect(st.sumWinProfitPercent).toBe(0);
+    st.processFills(7); // ratio = (7-10)*2 / 20 = -0.3
+    expect(st.sumLossProfitRatio).toBe(-0.3);
+    expect(st.sumWinProfitRatio).toBe(0);
   });
 
-  it("accumulates profit_percent for a winning short trade (direction-mirrored formula)", () => {
+  it("accumulates the profit ratio for a winning short trade (direction-mirrored formula)", () => {
     const st = new StrategyState();
     st.entry("S", "short", 3);
     st.processFills(20); // 진입 20
     st.close("S");
-    st.processFills(15); // profit_percent = (20-15)/20*100 = 25
-    expect(st.sumWinProfitPercent).toBe(25);
+    st.processFills(15); // ratio = (20-15)*3 / 60 = 0.25
+    expect(st.sumWinProfitRatio).toBe(0.25);
   });
 
-  it("sums percent across multiple trades (average is sum/count at the analyzer expression level)", () => {
+  it("sums ratios across multiple trades (average is sum/count*100 at the analyzer expression level)", () => {
     const st = new StrategyState();
     st.entry("A", "long", 1);
     st.processFills(10);
     st.close("A");
-    st.processFills(20); // +100%
+    st.processFills(20); // +1
     st.entry("B", "long", 1);
     st.processFills(10);
     st.close("B");
-    st.processFills(15); // +50%
+    st.processFills(15); // +0.5
     expect(st.winTrades).toBe(2);
-    expect(st.sumWinProfitPercent).toBe(150);
+    expect(st.sumWinProfitRatio).toBe(1.5);
   });
 
-  it("does not touch either accumulator for a break-even (profit===0) trade", () => {
+  it("counts a break-even (profit===0) trade in the all-trades sum only", () => {
     const st = new StrategyState();
     st.entry("L", "long", 1);
     st.processFills(10);
     st.close("L");
     st.processFills(10);
     expect(st.evenTrades).toBe(1);
-    expect(st.sumWinProfitPercent).toBe(0);
-    expect(st.sumLossProfitPercent).toBe(0);
+    expect(st.sumWinProfitRatio).toBe(0);
+    expect(st.sumLossProfitRatio).toBe(0);
+    expect(st.sumProfitRatio).toBe(0);
   });
 });
 
-describe("StrategyState.updateDrawdown — troughEquity/maxRunup/troughEquityAtMaxRunup mirror (C674)", () => {
-  // max_drawdown의 peakEquity/peakEquityAtMaxDrawdown 스냅샷 로직을 그대로 뒤집은 대칭 축 — 위
-  // "peakEquityAtMaxDrawdown snapshot (C333)" describe 블록의 시나리오를 그대로 재사용해 대칭성을 검증.
-  it("seeds troughEquity/troughEquityAtMaxRunup from initialCapital on the first call", () => {
+// strategy.max_runup/max_runup_percent: the rise from the equity at an entry fill (the trough moves
+// only at entry fills) to the best intrabar mark, as a percent of the top it rose to (tier 1
+// resin-harness suites/strategy/tv/stats_variables bar 1: 747.52 / 1000700.63905; oracle, tier 2).
+describe("StrategyState.updateStatistics — max_runup from the entry-fill trough", () => {
+  it("has no run-up before the first entry fill", () => {
     const st = new StrategyState();
     st.configure(1, 1, 1000);
-    st.updateDrawdown(999); // flat, maxRunup은 0 그대로
+    st.updateStatistics(999, 998);
+    expect(st.runupTrough).toBe(Infinity);
     expect(st.maxRunup).toBe(0);
-    expect(st.troughEquityAtMaxRunup).toBe(1000);
+    expect(st.maxRunupPercent).toBe(0);
   });
 
-  it("does not move on a new trough (further loss) that doesn't beat the existing maxRunup", () => {
+  it("does not lower the trough on a losing bar", () => {
     const st = new StrategyState();
     st.configure(1, 1, 1000);
     st.entry("L", "long", 10);
-    st.processFills(10); // 롱 10 @ 10
-    st.updateDrawdown(10); // eq=1000, trough=1000, runup=0
-    st.updateDrawdown(15); // eq=1050 -> runup=50 -> maxRunup=50, snapshot trough=1000
+    st.processFills(10); // 롱 10 @ 10: trough 1000
+    st.updateStatistics(15, 10); // best mark 1050 -> 50, over the top 1050
     expect(st.maxRunup).toBe(50);
-    expect(st.troughEquityAtMaxRunup).toBe(1000);
-    st.updateDrawdown(8); // eq=980 -> 새 trough(하락), runup=0 -> maxRunup 갱신 없음
-    expect(st.troughEquity).toBe(980);
+    expect(st.maxRunupPercent).toBe((50 / 1050) * 100);
+    st.updateStatistics(9, 8); // marked down to 980: not an entry fill, the trough stays 1000
+    expect(st.runupTrough).toBe(1000);
     expect(st.maxRunup).toBe(50);
-    expect(st.troughEquityAtMaxRunup).toBe(1000); // 새 trough가 갱신을 안 트리거했으니 스냅샷도 그대로
   });
 
-  it("re-snapshots troughEquityAtMaxRunup to the new (lower) trough once maxRunup itself updates again", () => {
+  it("lowers the trough to the realized equity at a later entry fill", () => {
     const st = new StrategyState();
     st.configure(1, 1, 1000);
     st.entry("L", "long", 10);
     st.processFills(10);
-    st.updateDrawdown(10); // eq=1000, trough=1000
-    st.updateDrawdown(15); // eq=1050 -> runup=50 -> maxRunup=50, snapshot=1000
-    st.updateDrawdown(8); // eq=980 -> 새 trough, runup=0(maxRunup 갱신 없음)
-    st.updateDrawdown(19); // eq=1090 -> runup=1090-980=110 > 50 -> maxRunup=110, snapshot=980(새 trough)
+    st.updateStatistics(15, 10); // 50
+    st.close("L");
+    st.processFills(8); // (8-10)*10 = -20 realized: 980
+    st.entry("L", "long", 10);
+    st.processFills(8); // the fill marks the trough at 980
+    expect(st.runupTrough).toBe(980);
+    st.updateStatistics(19, 8); // best mark 980 + 110 -> 110 over the top 1090
     expect(st.maxRunup).toBe(110);
-    expect(st.troughEquityAtMaxRunup).toBe(980);
+    expect(st.maxRunupPercent).toBe((110 / 1090) * 100);
   });
 });
 
 describe("strategy.avg_winning_trade/avg_losing_trade/avg_winning_trade_percent/avg_losing_trade_percent/position_entry_name/max_runup/max_runup_percent analyzer/codegen (C674)", () => {
   const cases: Array<[string, string]> = [
-    ["avg_winning_trade", "$.strategy.winTrades === 0 ? 0 : $.strategy.grossProfit / $.strategy.winTrades"],
-    ["avg_losing_trade", "$.strategy.lossTrades === 0 ? 0 : $.strategy.grossLoss / $.strategy.lossTrades"],
+    ["avg_trade", "$.strategy.closedTrades === 0 ? NaN : $.strategy.realizedPnl / $.strategy.closedTrades"],
+    ["avg_trade_percent", "$.strategy.closedTrades === 0 ? NaN : $.strategy.sumProfitRatio / $.strategy.closedTrades * 100"],
+    ["avg_winning_trade", "$.strategy.winTrades === 0 ? NaN : $.strategy.grossProfit / $.strategy.winTrades"],
+    ["avg_losing_trade", "$.strategy.lossTrades === 0 ? NaN : $.strategy.reportedGrossLoss() / $.strategy.lossTrades"],
     [
       "avg_winning_trade_percent",
-      "$.strategy.winTrades === 0 ? 0 : $.strategy.sumWinProfitPercent / $.strategy.winTrades",
+      "$.strategy.winTrades === 0 ? NaN : $.strategy.sumWinProfitRatio / $.strategy.winTrades * 100",
     ],
     [
       "avg_losing_trade_percent",
-      "$.strategy.lossTrades === 0 ? 0 : $.strategy.sumLossProfitPercent / $.strategy.lossTrades",
+      "$.strategy.lossTrades === 0 ? NaN : $.strategy.sumLossProfitRatio / $.strategy.lossTrades * 100",
     ],
     ["position_entry_name", '$.strategy.entryId ?? ""'],
     ["max_runup", "$.strategy.maxRunup"],
-    ["max_runup_percent", "$.strategy.maxRunup / $.strategy.troughEquityAtMaxRunup * 100"],
+    ["max_runup_percent", "$.strategy.maxRunupPercent"],
+    ["grossloss", "$.strategy.reportedGrossLoss()"],
+    ["grossprofit_percent", "$.strategy.grossProfit / $.strategy.initialCapital * 100"],
+    ["grossloss_percent", "$.strategy.reportedGrossLoss() / $.strategy.initialCapital * 100"],
   ];
 
   it.each(cases)("accepts strategy.%s after a strategy() declaration", (attr) => {
@@ -8045,12 +8180,16 @@ describe("strategy.avg_winning_trade/avg_losing_trade/avg_winning_trade_percent/
   });
 });
 
-describe("strategy.* E2E (hand-verified: avg_winning_trade/avg_losing_trade/avg_winning_trade_percent/avg_losing_trade_percent, C674)", () => {
+describe("strategy.* E2E (avg_trade/avg_winning_trade/avg_losing_trade and their percents)", () => {
   // 시나리오(C579 전수순회 E2E와 동일한 "신호 바 / 체결 바 분리" 관례로 트레이드마다 별도 바 사용):
   //   trade0: entry 신호 bar0 -> bar1 open(10)에 체결. close 신호 bar1 -> bar2 open(20)에 체결:
-  //           profit=(20-10)*1=10(WIN), pct=(20-10)/10*100=100.
+  //           profit=(20-10)*1=10(WIN), ratio=1.
   //   trade1: entry 신호 bar2 -> bar3 open(20)에 체결. close 신호 bar3 -> bar4 open(22)에 체결:
-  //           profit=(22-20)*1=2(WIN), pct=(22-20)/20*100=10.
+  //           profit=(22-20)*1=2(WIN), ratio=0.1.
+  // The oracle on the same bars (tier 2, bit-identical): avg_winning_trade [na, na, 10, 10, 6, 6],
+  // avg_winning_trade_percent [na, na, 100, 100, 55.00000000000001, 55.00000000000001] — the ratios
+  // are averaged, then scaled — and na for the losing averages, which have no trade to average (tier 1
+  // resin-harness suites/strategy/tv/stats_variables prints NaN until the first close).
   const data: OHLCVData = {
     open: [10, 10, 20, 20, 22, 22],
     high: [11, 11, 21, 21, 23, 23],
@@ -8078,17 +8217,24 @@ describe("strategy.* E2E (hand-verified: avg_winning_trade/avg_losing_trade/avg_
     "__obs_avgwp := strategy.avg_winning_trade_percent",
     "var float __obs_avglp = na",
     "__obs_avglp := strategy.avg_losing_trade_percent",
+    "var float __obs_avg = na",
+    "__obs_avg := strategy.avg_trade",
+    "var float __obs_avgp = na",
+    "__obs_avgp := strategy.avg_trade_percent",
   ].join("\n");
 
-  it("computes running avg_winning_trade/avg_losing_trade (currency + percent) across 2 winning trades", () => {
+  it("computes running averages across 2 winning trades, na where there is no trade to average", () => {
     const result = runPipeline(src, data);
     // bar2 open(20)에서 trade0 청산 체결 -> avgw=10, avgwp=100(그 바부터).
-    // bar4 open(22)에서 trade1 청산 체결 -> avgw=(10+2)/2=6, avgwp=(100+10)/2=55(그 바부터).
-    expect(result.bars.map((b) => b["var:__obs_avgw"])).toEqual([0, 0, 10, 10, 6, 6]);
-    expect(result.bars.map((b) => b["var:__obs_avgwp"])).toEqual([0, 0, 100, 100, 55, 55]);
-    // 손실 트레이드가 없으므로 avg_losing_trade*는 0-나눗셈 가드로 0 유지.
-    expect(result.bars.map((b) => b["var:__obs_avgl"])).toEqual([0, 0, 0, 0, 0, 0]);
-    expect(result.bars.map((b) => b["var:__obs_avglp"])).toEqual([0, 0, 0, 0, 0, 0]);
+    // bar4 open(22)에서 trade1 청산 체결 -> avgw=(10+2)/2=6, avgwp=(1+0.1)/2*100(그 바부터).
+    const pct = ((1 + 0.1) / 2) * 100;
+    expect(result.bars.map((b) => b["var:__obs_avgw"])).toEqual([NaN, NaN, 10, 10, 6, 6]);
+    expect(result.bars.map((b) => b["var:__obs_avgwp"])).toEqual([NaN, NaN, 100, 100, pct, pct]);
+    expect(pct).toBe(55.00000000000001);
+    expect(result.bars.map((b) => b["var:__obs_avg"])).toEqual([NaN, NaN, 10, 10, 6, 6]);
+    expect(result.bars.map((b) => b["var:__obs_avgp"])).toEqual([NaN, NaN, 100, 100, pct, pct]);
+    expect(result.bars.map((b) => b["var:__obs_avgl"])).toEqual([NaN, NaN, NaN, NaN, NaN, NaN]);
+    expect(result.bars.map((b) => b["var:__obs_avglp"])).toEqual([NaN, NaN, NaN, NaN, NaN, NaN]);
   });
 });
 
@@ -8120,13 +8266,11 @@ describe("strategy.position_entry_name E2E (오라클: pine2py engine.py positio
   });
 });
 
-describe("strategy.max_runup/max_runup_percent E2E (hand-verified, C674 — max_drawdown E2E 시나리오 대칭 재사용)", () => {
-  // max_drawdown_percent E2E와 동일 데이터(initial_capital=1000), 대칭 손 계산:
-  //   bar0: flat, eq=1000, trough=1000(시드) -> runup=0.
-  //   bar1: eq=980 -> 새 trough(하락), runup=0(갱신 없음).
-  //   bar2: eq=1050 -> runup=1050-980=70>0 -> maxRunup=70, snapshot trough=980 -> pct=70/980*100.
-  //   bar3: eq=950 -> 새 trough 아님(980이 이미 더 낮음) 대신 950<980이라 새 trough=950, runup=0(갱신없음).
-  //   bar4: eq=1020 -> runup=1020-950=70(70과 동률, 갱신 없음 — strict > 비교).
+describe("strategy.max_runup/max_runup_percent E2E (the max_drawdown E2E bars)", () => {
+  // Long 10 filled at bar1's open 10, trough 1000 (the equity at that fill). The rise runs to each
+  // bar's high: bar1 10.5 -> 5 over the top 1005, bar2 15.5 -> 55 over 1055. Oracle values on the same
+  // bars (tier 2, bit-identical): mr [0, 5, 55, 55, 55], mrp [0, 0.4975124378109453,
+  // 5.213270142180095, ...].
   const data: OHLCVData = {
     open: [10, 10, 14, 6, 11],
     high: [11, 10.5, 15.5, 6.5, 12.5],
@@ -8144,10 +8288,12 @@ describe("strategy.max_runup/max_runup_percent E2E (hand-verified, C674 — max_
     "__obs_rup := strategy.max_runup_percent",
   ].join("\n");
 
-  it("normalizes max_runup by the trough equity snapshotted when that max was set, not the live trough", () => {
+  it("measures the rise to the intrabar high as a percent of the top it rose to", () => {
     const result = runPipeline(src, data);
-    expect(result.bars.map((b) => b["var:__obs_ru"])).toEqual([0, 0, 70, 70, 70]);
-    expect(result.bars.map((b) => b["var:__obs_rup"])).toEqual([0, 0, (70 / 980) * 100, (70 / 980) * 100, (70 / 980) * 100]);
+    expect(result.bars.map((b) => b["var:__obs_ru"])).toEqual([0, 5, 55, 55, 55]);
+    expect(result.bars.map((b) => b["var:__obs_rup"])).toEqual([
+      0, 0.4975124378109453, 5.213270142180095, 5.213270142180095, 5.213270142180095,
+    ]);
   });
 });
 

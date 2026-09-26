@@ -878,8 +878,7 @@ export function timeframeBooleanPropValue(attr: string, chartTf: string): boolea
 // `$.strategy.openProfit($.close.get(0))`으로 등록한다 — builtinRuntimeExprs의 값은 임의 JS 식
 // 문자열이라 barstate와 등록 메커니즘이 완전히 동일하고 식 내용만 다르다(codegen 변경 0).
 // opentrades counts the open trades — one per entry fill, so pyramided entries count separately
-// (strategies.txt: "A market position is total of all open trades"). grossloss는
-// pine2py와 동일하게 음수 합(DIVERGENCES #68 — TV 미검증 가설, 절댓값일 가능성 있음).
+// (strategies.txt: "A market position is total of all open trades").
 export const STRATEGY_RUNTIME_PROPS: ReadonlyMap<string, string> = new Map([
   ["position_size", "$.strategy.posSize"],
   ["position_avg_price", "$.strategy.posAvgPrice"],
@@ -892,7 +891,12 @@ export const STRATEGY_RUNTIME_PROPS: ReadonlyMap<string, string> = new Map([
   ["wintrades", "$.strategy.winTrades"],
   ["losstrades", "$.strategy.lossTrades"],
   ["grossprofit", "$.strategy.grossProfit"],
-  ["grossloss", "$.strategy.grossLoss"],
+  // Positive, with the open trades' entry fees (StrategyState.reportedGrossLoss).
+  ["grossloss", "$.strategy.reportedGrossLoss()"],
+  // rn.txt (November 2023): "The total gross profit [loss] value of all completed winning [losing]
+  // trades, expressed as a percentage of the initial capital."
+  ["grossprofit_percent", "$.strategy.grossProfit / $.strategy.initialCapital * 100"],
+  ["grossloss_percent", "$.strategy.reportedGrossLoss() / $.strategy.initialCapital * 100"],
   // max_drawdown(C172) — netprofit/closedtrades와 동일한 순수 프로퍼티 식(메서드 호출 아님):
   // Context.advance()가 barFn 실행 전에 이미 매 바 갱신을 마쳐 두므로(runtime/strategy.ts
   // updateDrawdown) 여기서 close를 다시 넘길 필요가 없다 — equity/openprofit과 다른 이유.
@@ -910,35 +914,29 @@ export const STRATEGY_RUNTIME_PROPS: ReadonlyMap<string, string> = new Map([
   ["netprofit_percent", "$.strategy.realizedPnl / $.strategy.initialCapital * 100"],
   ["openprofit_percent", "$.strategy.openProfit($.close.get(0)) / $.strategy.initialCapital * 100"],
   ["eventrades", "$.strategy.evenTrades"],
-  // max_drawdown_percent(C333, next_hint(C331/C332) 1순위) — max_drawdown(통화 절대값)을 그
-  // 최댓값이 갱신된 시점의 peakEquity(peakEquityAtMaxDrawdown, runtime/strategy.ts updateDrawdown)
-  // 대비 %로 정규화. 현재(라이브) peakEquity로 나누면 그 이후 신고점 갱신 시 과거 최대낙폭의 퍼센트가
-  // 조용히 줄어들어 틀린다 — strategy.risk.max_drawdown(percent_of_equity 타입, C322)이 "지금 이
-  // 순간의 낙폭율"이라는 별개 질문(라이브 peakEquity가 정답)인 것과 다른 축.
-  ["max_drawdown_percent", "$.strategy.maxDrawdown / $.strategy.peakEquityAtMaxDrawdown * 100"],
-  // max_contracts_held_all/long/short(C334, next_hint(C333) 1순위) — updateMaxContractsHeld()가
-  // 매 바 갱신하는 순수 러닝 최댓값 프로퍼티(max_drawdown과 동일하게 메서드 호출 아님).
+  // The running maxima StrategyState.updateStatistics keeps (percent maxima kept on their own).
+  ["max_drawdown_percent", "$.strategy.maxDrawdownPercent"],
+  // Running peaks of the position, raised by entry fills (StrategyState.openTradeAt).
   ["max_contracts_held_all", "$.strategy.maxContractsHeldAll"],
   ["max_contracts_held_long", "$.strategy.maxContractsHeldLong"],
   ["max_contracts_held_short", "$.strategy.maxContractsHeldShort"],
-  // avg_winning_trade/avg_losing_trade(C674, wild 신규) — pine2py에 대응 구현 전무(grep 0건)이나
-  // grossProfit/grossLoss와 win/lossTrades가 이미 있어 새 런타임 상태 없이 순수 나눗셈만으로
-  // 충분(0-나눗셈은 TV 관례대로 0 — 트레이드 0건일 때 na가 아니라 0을 반환하는 다른 속성들과 동형).
-  ["avg_winning_trade", "$.strategy.winTrades === 0 ? 0 : $.strategy.grossProfit / $.strategy.winTrades"],
-  ["avg_losing_trade", "$.strategy.lossTrades === 0 ? 0 : $.strategy.grossLoss / $.strategy.lossTrades"],
-  // avg_winning_trade_percent/avg_losing_trade_percent(C674) — closeAt()이 트레이드마다 누적하는
-  // sumWinProfitPercent/sumLossProfitPercent(closedTradeProfitPercent와 동일 공식)를 카운트로 나눈
-  // 평균 — "각 트레이드 percent 손익의 평균"이지 "합계 손익을 initial_capital로 정규화"가 아니다
-  // (TV 공식 문구 "average percentage gained by winning trades"와 정합하는 유일한 해석).
-  ["avg_winning_trade_percent", "$.strategy.winTrades === 0 ? 0 : $.strategy.sumWinProfitPercent / $.strategy.winTrades"],
-  ["avg_losing_trade_percent", "$.strategy.lossTrades === 0 ? 0 : $.strategy.sumLossProfitPercent / $.strategy.lossTrades"],
+  // The averages (rn.txt, May 2024): avg_trade is "the sum of all profits and losses divided by the
+  // number of closed trades", avg_trade_percent "the sum of all profit and loss percentages divided
+  // by the number of closed trades", the winning/losing ones over the winning/losing trades. With no
+  // such trade there is nothing to average: na (tier 1 resin-harness suites/strategy/tv/
+  // stats_variables prints NaN until the first close). avg_losing_trade is positive, over grossloss;
+  // avg_losing_trade_percent stays negative (tier 1: 602.31064 and -0.3198813350540844).
+  ["avg_trade", "$.strategy.closedTrades === 0 ? NaN : $.strategy.realizedPnl / $.strategy.closedTrades"],
+  ["avg_trade_percent", "$.strategy.closedTrades === 0 ? NaN : $.strategy.sumProfitRatio / $.strategy.closedTrades * 100"],
+  ["avg_winning_trade", "$.strategy.winTrades === 0 ? NaN : $.strategy.grossProfit / $.strategy.winTrades"],
+  ["avg_losing_trade", "$.strategy.lossTrades === 0 ? NaN : $.strategy.reportedGrossLoss() / $.strategy.lossTrades"],
+  ["avg_winning_trade_percent", "$.strategy.winTrades === 0 ? NaN : $.strategy.sumWinProfitRatio / $.strategy.winTrades * 100"],
+  ["avg_losing_trade_percent", "$.strategy.lossTrades === 0 ? NaN : $.strategy.sumLossProfitRatio / $.strategy.lossTrades * 100"],
   // position_entry_name(C674, 오라클 검증: pine2py engine.py position_entry_name = position.entry_id,
   // types.py Position.entry_id 기본값 "") — entryId(flat=null)를 pine2py와 동일하게 빈 문자열로 치환.
   ["position_entry_name", '$.strategy.entryId ?? ""'],
-  // max_runup/max_runup_percent(C674) — max_drawdown_percent와 완전히 동일한 설계(troughEquityAtMaxRunup
-  // 스냅샷 분모, runtime/strategy.ts updateDrawdown() 주석 참조). TV 미검증(가설), DIVERGENCES #75.
   ["max_runup", "$.strategy.maxRunup"],
-  ["max_runup_percent", "$.strategy.maxRunup / $.strategy.troughEquityAtMaxRunup * 100"],
+  ["max_runup_percent", "$.strategy.maxRunupPercent"],
 ]);
 
 // strategy.commission.*: the values of strategy()'s commission_type= argument, folded to strings at
@@ -8431,7 +8429,7 @@ export function analyzeExpr(expr: Expr, prog: AnalyzedProgram, scope: LexScope, 
           return;
         }
         prog.errors.push(
-          `unsupported strategy property: 'strategy.${expr.attr}' — only the long/short/fixed/cash/percent_of_equity/account_currency constants and position_size/position_avg_price/position_entry_name/netprofit/openprofit/equity/initial_capital/closedtrades/opentrades/wintrades/losstrades/grossprofit/grossloss/max_drawdown/max_drawdown_percent/max_runup/max_runup_percent/default_qty_value/netprofit_percent/openprofit_percent/eventrades/avg_winning_trade/avg_losing_trade/avg_winning_trade_percent/avg_losing_trade_percent/max_contracts_held_all/max_contracts_held_long/max_contracts_held_short are supported (L${expr.line}:${expr.col})`,
+          `unsupported strategy property: 'strategy.${expr.attr}' — only the long/short/fixed/cash/percent_of_equity/account_currency constants and ${[...STRATEGY_RUNTIME_PROPS.keys()].join("/")} are supported (L${expr.line}:${expr.col})`,
         );
         return;
       }
@@ -8467,6 +8465,18 @@ export function analyzeExpr(expr: Expr, prog: AnalyzedProgram, scope: LexScope, 
           prog.builtinStringConstants.set(expr, STRATEGY_DIRECTION_CONSTANTS.get(expr.attr)!);
           return;
         }
+      }
+      // strategy.closedtrades.first_index: a runtime value under the closedtrades namespace, whose
+      // other members are functions (call-expr.ts).
+      if (
+        expr.obj.kind === "DotAccess" &&
+        expr.obj.obj.kind === "Identifier" &&
+        expr.obj.obj.name === "strategy" &&
+        expr.obj.attr === "closedtrades" &&
+        expr.attr === "first_index"
+      ) {
+        prog.builtinRuntimeExprs.set(expr, "$.strategy.closedTradesFirstIndex()");
+        return;
       }
       // strategy.oca.* — the same two-level folding as strategy.commission.*.
       if (

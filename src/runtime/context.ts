@@ -323,9 +323,8 @@ export class Context {
     // it afterwards: this is a batch replay, so the bar's close is already
     // fixed and equals whatever the script will read later.
     this.strategy.updateDrawdown(this.close.get(0));
-    // Same reasoning — posSize already reflects this bar's final fills, so no
-    // post-bar hook is needed.
-    this.strategy.updateMaxContractsHeld();
+    // strategy.max_drawdown/max_runup see this bar's high and low after its fills.
+    this.strategy.updateStatistics(this.high.get(0), this.low.get(0));
   }
 
   // The end of a bar, after the script body ran. With
