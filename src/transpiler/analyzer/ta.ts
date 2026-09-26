@@ -517,9 +517,9 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   },
   // ta.mfi(source, length) — Money Flow Index. Pine 문법상 volume은 인자가 아니라 내장 bar series를
   // 암묵 사용한다(vwma와 동일한 특수 케이스 — codegen.genCallExpr이 $.volume.get(0)을 source와
-  // length 사이에 끼워 넣는다). length는 posBuffer/negBuffer의 고정폭 순환 버퍼 크기를 결정하므로
-  // sma와 동일하게 lengthArgIndex: 1(series 하드 에러). runtime/ta.ts mfi() 주석 참조 — prevTp는
-  // cmo의 무조건 raw-passthrough와 달리 source/volume이 둘 다 유효한 바에서만 갱신된다.
+  // length 사이에 끼워 넣는다). length는 upperBuffer/lowerBuffer의 고정폭 순환 버퍼 크기를 결정하므로
+  // sma와 동일하게 lengthArgIndex: 1(series 하드 에러). The rule (first bar in both sums, na source
+  // skipped, na volume stores nothing) is in the runtime/ta.ts mfi() comment.
   mfi: { dispatch: "ta", displayName: "ta.mfi", argCount: 2, lengthArgIndex: 1, conditionalForbidden: true, rtPath: "rt.ta.mfi" },
   // ta.cog(source, length) — Center of Gravity. pine2py wavealgo/ta/cog.py 소스 대조 결과
   // num=Σsource.get(i)*(i+1)/denom=Σsource.get(i)에 대해 result=-num/denom(음수 부호), 창 안

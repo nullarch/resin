@@ -273,15 +273,37 @@ describe("ta.rsi", () => {
     expect(rsi(state, 104, 3)).toBeCloseTo(100, 9); // +1, avgLoss=0
   });
 
-  it("matches the pine2py-verified sample10.json trace (close, length=3)", () => {
+  // The first bar has no x[1], so it only seeds: the rma seed holds the first `length` CHANGES and
+  // the first value lands on bar `length` (ref_v6_ta_math.txt "ta.rsi"; tier 1 resin-harness
+  // suites/indicators/tv/ta_211_mfi_rsi_stoch: rsi(close, 14) na on bar 13). pine2py counted the
+  // first bar toward the seed (bar 2 = 100, bar 3 = 57.1428571429); the values below are the PyneCore
+  // oracle's (harness state/repros/mfi-rsi-warmup.json, channel rsi3).
+  it("matches the PyneCore oracle on sample10.json (close, length=3)", () => {
     const state = {};
     const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
     const results = closes.map((c) => rsi(state, c, 3));
     expect(results[0]).toBeNaN();
     expect(results[1]).toBeNaN();
-    expect(results[2]).toBeCloseTo(100, 9);
-    expect(results[3]).toBeCloseTo(57.1428571429, 9);
-    expect(results[9]).toBeCloseTo(85.7684313486, 9);
+    expect(results[2]).toBeNaN();
+    expect(results[3]).toBeCloseTo(66.66666666666666, 9);
+    expect(results[4]).toBeCloseTo(83.33333333333333, 9);
+    expect(results[7]).toBeCloseTo(63.670411985018724, 9);
+    expect(results[9]).toBeCloseTo(85.98772119898881, 9);
+  });
+
+  it("saturates a side within 1e-10 of zero instead of dividing (down side first)", () => {
+    const up = {};
+    rsi(up, 100, 2);
+    rsi(up, 101, 2); // +1
+    expect(rsi(up, 101 - 1e-11, 2)).toBe(100); // avgLoss 5e-12
+    const down = {};
+    rsi(down, 100, 2);
+    rsi(down, 99, 2); // -1
+    expect(rsi(down, 99 + 1e-11, 2)).toBe(0); // avgGain 5e-12
+    const flat = {};
+    rsi(flat, 100, 2);
+    rsi(flat, 100, 2);
+    expect(rsi(flat, 100, 2)).toBe(100); // both sides dormant
   });
 
   it("keeps independent state across two call sites", () => {
@@ -295,10 +317,11 @@ describe("ta.rsi", () => {
 
   it("passes a NaN input through without disturbing init state (resumes counting afterward)", () => {
     const state = {};
-    expect(rsi(state, 101, 3)).toBeNaN(); // seed, initCount -> 1
+    expect(rsi(state, 101, 3)).toBeNaN(); // seed only, no change yet
     expect(rsi(state, NaN, 3)).toBeNaN(); // ignored entirely (prevValue untouched)
-    expect(rsi(state, 102, 3)).toBeNaN(); // change vs 101, initCount -> 2 (< length=3)
-    expect(rsi(state, 103, 3)).toBeCloseTo(100, 9); // change vs 102, initCount -> 3 == length, avgLoss=0
+    expect(rsi(state, 102, 3)).toBeNaN(); // change vs 101: 1 of 3
+    expect(rsi(state, 103, 3)).toBeNaN(); // 2 of 3
+    expect(rsi(state, 104, 3)).toBeCloseTo(100, 9); // 3 changes == length, avgLoss=0
   });
 });
 
@@ -3151,42 +3174,79 @@ describe("ta.atr", () => {
 });
 
 // ta.mfi(source, length) — Money Flow Index. volume is Pine-implicit (codegen injects
-// $.volume.get(0)) so the runtime signature takes it as an explicit second arg. Unlike ta.cmo's
-// prevValue (raw-passthrough every call, even to NaN), mfi's prevTp only updates on a bar where
-// *both* source and volume are non-NaN (pine2py mfi.py: the prevTp write sits after both NaN
-// checks) — a NaN-volume bar leaves prevTp exactly as it was, not overwritten with this bar's
-// source. scratch/probe_mfi.mjs cross-checked this design against a literal port of mfi.py.
+// $.volume.get(0)) so the runtime signature takes it as an explicit second arg. The rule is the
+// manual's reference (ref_v6_ta_math.txt "ta.mfi"): upper/lower = math.sum(volume * (ta.change(src)
+// <= 0 / >= 0 ? 0 : src), length). The first bar's ta.change is na, so its money flow enters both
+// sums and the first value lands on bar length - 1 (tier 1 resin-harness suites/indicators/tv/
+// ta_211_mfi_rsi_stoch; harness twin state/repros/mfi-rsi-warmup.json). The old expectations were
+// pine2py's (first bar skipped, a NaN-volume bar freezing prevTp) and are replaced by the PyneCore
+// oracle's (lib/ta.py mfi over change + the na-compacted math.sum).
 describe("ta.mfi", () => {
-  it("returns NaN for the first two calls (no prevTp yet, then window still empty)", () => {
+  // Literal port of PyneCore lib/ta.py mfi: an na source returns na before change() runs; change()
+  // runs on every other bar (an na volume included); math.sum keeps the last `length` non-na terms
+  // and reports the standing sum on a bar whose term is na.
+  function oracleMfi(sources: number[], volumes: number[], len: number): number[] {
+    let prev = NaN;
+    const up: number[] = [];
+    const down: number[] = [];
+    const out: number[] = [];
+    for (let i = 0; i < sources.length; i++) {
+      const src = sources[i]!;
+      if (Number.isNaN(src)) {
+        out.push(NaN);
+        continue;
+      }
+      const chg = src - prev;
+      prev = src;
+      const vol = volumes[i]!;
+      if (!Number.isNaN(vol)) {
+        up.push(vol * (!Number.isNaN(chg) && chg <= 1e-10 ? 0 : src));
+        down.push(vol * (!Number.isNaN(chg) && chg >= -1e-10 ? 0 : src));
+      }
+      if (up.length < len) {
+        out.push(NaN);
+        continue;
+      }
+      let u = up.slice(-len).reduce((a, b) => a + b, 0);
+      let d = down.slice(-len).reduce((a, b) => a + b, 0);
+      if (Math.abs(u) <= 1e-10) u = 0;
+      if (Math.abs(d) <= 1e-10) d = 0;
+      out.push(d === 0 ? 100 : 100 - 100 / (1 + u / d));
+    }
+    return out;
+  }
+
+  it("counts the first bar's money flow on both sides: the first value lands on bar length - 1", () => {
     const state = {};
-    expect(mfi(state, 10, 100, 2)).toBeNaN(); // no prevTp yet
-    expect(mfi(state, 11, 100, 2)).toBeNaN(); // window len 1 < 2
+    expect(mfi(state, 10, 100, 2)).toBeNaN(); // one term stored, 1 < 2
+    // bar0 (change na): up 1000, down 1000; bar1 (+1): up 1100, down 0
+    expect(mfi(state, 11, 100, 2)).toBeCloseTo((100 * 2100) / 3100, 9);
   });
 
-  it("matches a hand-computed MFI once the window fills (length=2)", () => {
+  it("matches a hand-computed MFI as the window slides (length=2)", () => {
     const state = {};
-    mfi(state, 10, 100, 2); // NaN, no prevTp yet -> prevTp <- 10
-    // bar1: tp=11>prevTp(10) -> push (1100,0); window len 1 < 2 -> still NaN
-    expect(mfi(state, 11, 100, 2)).toBeNaN();
-    // bar2: tp=9<prevTp(11) -> push (0,900); window=[(1100,0),(0,900)] -> pos_sum=1100, neg_sum=900
+    mfi(state, 10, 100, 2);
+    mfi(state, 11, 100, 2);
+    // bar2: 9 < 11 -> (0, 900); window bars 1..2: upper 1100, lower 900
     expect(mfi(state, 9, 100, 2)).toBeCloseTo((100 * 1100) / 2000, 9);
-    // bar3: tp=13>prevTp(9) -> push (1300,0), evicts oldest (1100,0) -> pos_sum=1300, neg_sum=900
+    // bar3: 13 > 9 -> (1300, 0); window bars 2..3: upper 1300, lower 900
     expect(mfi(state, 13, 100, 2)).toBeCloseTo((100 * 1300) / 2200, 9);
   });
 
-  it("matches the pine2py-verified sample10.json trace (length=3)", () => {
+  it("matches the PyneCore oracle on sample10.json (length=3)", () => {
     const state = {};
     const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
     const volumes = [1000, 1100, 1200, 1150, 1300, 1250, 1400, 1350, 1500, 1450];
     const results = closes.map((c, i) => mfi(state, c, volumes[i]!, 3));
-    expect(results.slice(0, 3).every((r) => Number.isNaN(r))).toBe(true);
-    expect(results[3]).toBeCloseTo(66.7799490229, 9);
-    expect(results[4]).toBeCloseTo(68.8114863068, 9);
-    expect(results[5]).toBeCloseTo(69.4332247557, 9);
-    expect(results[6]).toBeCloseTo(100.0, 9);
-    expect(results[7]).toBeCloseTo(66.3621262458, 9);
-    expect(results[8]).toBeCloseTo(68.5454343726, 9);
-    expect(results[9]).toBeCloseTo(69.1075514874, 9);
+    // harness state/repros/mfi-rsi-warmup.json, channel mfi3
+    const oracle = [
+      NaN, NaN, 76.9301050708086, 66.77994902293969, 68.81148630683329, 69.43322475570032, 100, 66.36212624584718,
+      68.54543437257294, 69.10755148741418,
+    ];
+    for (let i = 0; i < closes.length; i++) {
+      if (Number.isNaN(oracle[i]!)) expect(results[i], `bar ${i}`).toBeNaN();
+      else expect(results[i], `bar ${i}`).toBeCloseTo(oracle[i]!, 9);
+    }
   });
 
   it("keeps independent state across two call sites", () => {
@@ -3198,115 +3258,78 @@ describe("ta.mfi", () => {
     expect(mfi(stateB, 50, 5, 2)).toBeNaN();
   });
 
-  it("returns NaN when source itself is NaN this bar (prevTp untouched)", () => {
+  it("skips a NaN source entirely: the next change is taken against the last non-na source", () => {
     const state = {};
     mfi(state, 10, 100, 2);
     expect(mfi(state, NaN, 100, 2)).toBeNaN();
+    expect(mfi(state, 11, 100, 2)).toBeCloseTo((100 * 2100) / 3100, 9);
   });
 
-  it("returns NaN when only volume is NaN this bar (source still valid) — and does NOT push or advance the window", () => {
+  it("a NaN volume stores nothing but still moves the change's reference; a full window reports its standing value", () => {
     const state = {};
-    mfi(state, 10, 100, 2); // NaN, prevTp <- 10
-    expect(mfi(state, 11, NaN, 2)).toBeNaN(); // vol NaN -> NaN, prevTp untouched (stays 10)
-    // bar2: prevTp(old) should still be 10 (bar1's source=11 must NOT have overwritten it) -> tp=9<10 -> push (0,900)
-    expect(mfi(state, 9, 100, 2)).toBeNaN(); // window len 1 < 2 still
-    // bar3: prevTp(old)=9 -> tp=9 tie -> push (0,0); window=[(0,900),(0,0)] -> pos_sum=0, neg_sum=900 -> ratio 0 -> MFI 0.0
-    expect(mfi(state, 9, 100, 2)).toBe(0.0);
+    mfi(state, 10, 100, 2); // (1000, 1000)
+    expect(mfi(state, 11, NaN, 2)).toBeNaN(); // nothing stored, 1 < 2; the reference becomes 11
+    // 9 vs 11 (not 10): (0, 900); upper 1000, lower 1900
+    const v = (100 * 1000) / 2900;
+    expect(mfi(state, 9, 100, 2)).toBeCloseTo(v, 9);
+    expect(mfi(state, 12, NaN, 2)).toBeCloseTo(v, 9); // standing sums; the reference becomes 12
+    // 12 vs 12 is a tie: (0, 0); window [(0, 900), (0, 0)] -> upper 0 -> 0
+    expect(mfi(state, 12, 100, 2)).toBe(0);
   });
 
-  it("regression guard: a volume-NaN bar must not raw-passthrough prevTp like ta.cmo's prevValue — doing so would flip the push direction and change the eventual MFI value", () => {
-    // Same source/volume/length as the previous test's second half, isolated as a direct value
-    // assertion: if prevTp were wrongly set to bar1's source (11) despite volume being NaN, bar2's
-    // push would be (900,0) instead of (0,900), and the final MFI would come out 100.0, not 0.0.
+  it("a change within 1e-10 counts on neither side; both sides zero is 100", () => {
     const state = {};
-    mfi(state, 10, 100, 2); // prevTp <- 10
-    mfi(state, 11, NaN, 2); // vol NaN -> prevTp must stay 10
-    mfi(state, 9, 100, 2); // window len 1 < 2
-    expect(mfi(state, 9, 100, 2)).toBe(0.0);
+    mfi(state, 100, 1000, 2); // (100000, 100000)
+    expect(mfi(state, 100 + 5e-11, 1000, 2)).toBeCloseTo(50, 9); // tie: (0, 0)
+    expect(mfi(state, 100, 1000, 2)).toBe(100); // tie again: window [(0, 0), (0, 0)]
   });
 
-  it("pushes (0,0) on a tie (source === prevTp this bar)", () => {
-    const state = {};
-    mfi(state, 100, 1000, 2); // prevTp <- 100
-    mfi(state, 100, 1000, 2); // tie -> push (0,0); window len 1 < 2
-    // bar2: tie again -> push (0,0); window=[(0,0),(0,0)] -> pos_sum=0, neg_sum=0 -> negSum===0 -> 100.0
-    expect(mfi(state, 100, 1000, 2)).toBe(100.0);
-  });
-
-  it("returns 100.0 when negSum===0 (monotonically rising source, all pushes positive)", () => {
+  it("returns 100.0 once the lower sum is 0 (monotonically rising source)", () => {
     const state = {};
     const closes = [100, 101, 102, 103, 104];
-    const volumes = [1000, 1000, 1000, 1000, 1000];
-    const results = closes.map((c, i) => mfi(state, c, volumes[i]!, 3));
-    expect(results.slice(0, 3).every((r) => Number.isNaN(r))).toBe(true);
+    const results = closes.map((c) => mfi(state, c, 1000, 3));
+    expect(results[0]).toBeNaN();
+    expect(results[1]).toBeNaN();
+    // bars 0..2: upper 100000 + 101000 + 102000, lower 100000 (bar 0 counts on both sides)
+    expect(results[2]).toBeCloseTo((100 * 303000) / 403000, 9);
     expect(results[3]).toBe(100.0);
     expect(results[4]).toBe(100.0);
   });
 
-  it("matches a from-scratch brute-force cross-check (literal pine2py mfi.py port) across a sequence with embedded source/volume NaN gaps", () => {
-    const state = {};
+  it("matches a literal port of the oracle across a sequence with embedded source/volume NaN gaps", () => {
     const length = 3;
-    const closeSeq = [100, 101, 102, NaN, 104, 105, 106, 105, 103, 101, 99, 100];
-    const volSeq = [1000, 1000, 1000, 1000, 1000, NaN, 1000, 1000, 1000, 1000, 1000, 1000];
-
-    function bruteForce(sources: number[], volumes: number[], len: number): number[] {
-      const st = { prevTp: NaN, posFlows: [] as number[], negFlows: [] as number[], count: 0 };
-      const out: number[] = [];
-      for (let i = 0; i < sources.length; i++) {
-        const tp = sources[i]!;
-        if (Number.isNaN(tp)) {
-          out.push(NaN);
-          continue;
-        }
-        const vol = volumes[i]!;
-        if (Number.isNaN(vol)) {
-          out.push(NaN);
-          continue;
-        }
-        const prevTp = st.prevTp;
-        st.prevTp = tp;
-        if (Number.isNaN(prevTp)) {
-          out.push(NaN);
-          continue;
-        }
-        const moneyFlow = tp * vol;
-        if (tp > prevTp) {
-          st.posFlows.push(moneyFlow);
-          st.negFlows.push(0);
-        } else if (tp < prevTp) {
-          st.posFlows.push(0);
-          st.negFlows.push(moneyFlow);
-        } else {
-          st.posFlows.push(0);
-          st.negFlows.push(0);
-        }
-        st.count += 1;
-        if (st.count < len) {
-          out.push(NaN);
-          continue;
-        }
-        if (st.posFlows.length > len) {
-          st.posFlows = st.posFlows.slice(-len);
-          st.negFlows = st.negFlows.slice(-len);
-        }
-        const posSum = st.posFlows.reduce((a, b) => a + b, 0);
-        const negSum = st.negFlows.reduce((a, b) => a + b, 0);
-        if (negSum === 0) {
-          out.push(100.0);
-          continue;
-        }
-        out.push(100.0 - 100.0 / (1.0 + posSum / negSum));
-      }
-      return out;
-    }
-
-    const expected = bruteForce(closeSeq, volSeq, length);
+    const closeSeq = [100, 101, 102, NaN, 104, 105, 106, 105, 103, 101, 99, 100, 100, NaN, 98, 99];
+    const volSeq = [1000, 1000, 1000, 1000, 1000, NaN, 1000, 1000, 1000, 1000, NaN, 1000, 1000, 1000, 1000, NaN];
+    const expected = oracleMfi(closeSeq, volSeq, length);
+    const state = {};
     const actual = closeSeq.map((c, i) => mfi(state, c, volSeq[i]!, length));
     for (let i = 0; i < closeSeq.length; i++) {
-      if (Number.isNaN(expected[i])) {
-        expect(actual[i]).toBeNaN();
-      } else {
-        expect(actual[i]).toBeCloseTo(expected[i]!, 9);
+      if (Number.isNaN(expected[i]!)) expect(actual[i], `bar ${i}`).toBeNaN();
+      else expect(actual[i], `bar ${i}`).toBeCloseTo(expected[i]!, 9);
+    }
+  });
+
+  it("matches the literal oracle port on a 5,000-bar series with ties and NaN gaps (length 1..20)", () => {
+    let seed = 7;
+    const rnd = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
+    for (const length of [1, 2, 5, 14, 20]) {
+      const n = 5000;
+      const src: number[] = [];
+      const vol: number[] = [];
+      let p = 100;
+      for (let i = 0; i < n; i++) {
+        const r = rnd();
+        p = r < 0.2 ? p : Math.round((p + (rnd() - 0.5) * 4) * 100) / 100;
+        src.push(rnd() < 0.03 ? NaN : p);
+        vol.push(rnd() < 0.03 ? NaN : Math.round(rnd() * 5000));
+      }
+      const expected = oracleMfi(src, vol, length);
+      const state = {};
+      for (let i = 0; i < n; i++) {
+        const a = mfi(state, src[i]!, vol[i]!, length);
+        const e = expected[i]!;
+        if (Number.isNaN(e)) expect(a, `len ${length} bar ${i}`).toBeNaN();
+        else expect(Math.abs(a - e), `len ${length} bar ${i}: ${a} vs ${e}`).toBeLessThanOrEqual(1e-7);
       }
     }
   });

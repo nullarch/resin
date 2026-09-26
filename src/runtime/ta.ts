@@ -109,6 +109,10 @@ export function dema(state: DemaState, value: number, length: number): number {
   return 2 * ema1Val - ema2Val;
 }
 
+// Pine's comparison tolerance: two floats at most 1e-10 apart compare equal (the EPS of the
+// manual's pine_stdev reference, ref_v6_ta_math.txt "ta.stdev"; PyneCore core/pine_compare.py).
+const PINE_EPS = 1e-10;
+
 export interface RsiState {
   initCount?: number;
   prevValue?: number;
@@ -118,12 +122,16 @@ export interface RsiState {
   avgLoss?: number;
 }
 
-// ta.rsi - avgGain/avgLoss를 Wilder's smoothing(alpha=1/length)으로 갱신 후
-// 100 - 100/(1+avgGain/avgLoss). pine2py wavealgo/ta/rsi.py는 초기화 구간(첫 length개 변화량)의
-// gain/loss를 리스트에 모았다가 sum()으로 평균을 내는데, 리스트 전체가 합계 하나로만 쓰이므로
-// pine2js는 리스트 없이 러닝 합계(initGainSum/initLossSum) 두 값으로 단순화했다(GOAL.md "bar loop
-// 안 할당 제로" 원칙에 더 잘 맞음 — 매 바 배열 push 대신 스칼라 누적, 수학적으로 완전히 동치).
-// 첫 non-na 바는 "이전 값"이 없어 변화량을 계산할 수 없으므로 prevValue만 시드하고 NaN 반환.
+// ta.rsi - the manual's reference (ref_v6_ta_math.txt "ta.rsi"): u = math.max(x - x[1], 0),
+// d = math.max(x[1] - x, 0), 100 - 100 / (1 + ta.rma(u, y) / ta.rma(d, y)). avgGain/avgLoss are
+// the two rmas: seeded by the SMA of the first `length` changes, then (prev*(length-1)+v)/length.
+// The first non-na bar has no x[1]: u and d are na there, and rma ignores na, so that bar only
+// seeds prevValue and does NOT count toward the seed; the first value lands on the bar holding
+// the (length+1)-th non-na source (tier 1 ta_211_mfi_rsi_stoch: rsi(close, 14) na on bar 13,
+// 35.699373695 on bar 14 over the changes of bars 1..14). An na source is skipped entirely
+// ("`na` values in the `source` series are ignored").
+// A side within 1e-10 of zero saturates instead of dividing, the down side tested first (both
+// dormant is 100): PyneCore lib/ta.py rsi, measured on TradingView (probe rsiconst_probe).
 export function rsi(state: RsiState, value: number, length: number): number {
   if (state.initCount === undefined) {
     state.initCount = 0;
@@ -137,10 +145,7 @@ export function rsi(state: RsiState, value: number, length: number): number {
 
   const prev = state.prevValue!;
   state.prevValue = value;
-  if (Number.isNaN(prev)) {
-    state.initCount += 1;
-    return NaN;
-  }
+  if (Number.isNaN(prev)) return NaN;
 
   const change = value - prev;
   const gain = Math.max(change, 0);
@@ -150,18 +155,15 @@ export function rsi(state: RsiState, value: number, length: number): number {
   if (state.initCount <= length) {
     state.initGainSum! += gain;
     state.initLossSum! += loss;
-    if (state.initCount === length) {
-      state.avgGain = state.initGainSum! / length;
-      state.avgLoss = state.initLossSum! / length;
-      if (state.avgLoss === 0) return 100;
-      return 100 - 100 / (1 + state.avgGain / state.avgLoss);
-    }
-    return NaN;
+    if (state.initCount < length) return NaN;
+    state.avgGain = state.initGainSum! / length;
+    state.avgLoss = state.initLossSum! / length;
+  } else {
+    state.avgGain = (state.avgGain! * (length - 1) + gain) / length;
+    state.avgLoss = (state.avgLoss! * (length - 1) + loss) / length;
   }
-
-  state.avgGain = (state.avgGain! * (length - 1) + gain) / length;
-  state.avgLoss = (state.avgLoss! * (length - 1) + loss) / length;
-  if (state.avgLoss === 0) return 100;
+  if (state.avgLoss <= PINE_EPS) return 100;
+  if (state.avgGain <= PINE_EPS) return 0;
   return 100 - 100 / (1 + state.avgGain / state.avgLoss);
 }
 
@@ -1960,106 +1962,80 @@ export function atr(state: AtrState, high: number, low: number, prevClose: numbe
 }
 
 export interface MfiState {
-  prevTp?: number;
-  posBuffer?: number[];
-  negBuffer?: number[];
+  prevSource?: number;
+  upperBuffer?: number[];
+  lowerBuffer?: number[];
   writeIdx?: number;
-  sumPos?: number;
-  sumNeg?: number;
+  stored?: number;
+  sumUpper?: number;
+  sumLower?: number;
+  nonZeroUpper?: number;
+  nonZeroLower?: number;
 }
 
-// ta.mfi(source, length) - Money Flow Index = 100*posSum/(posSum+negSum) over a fixed-width window
-// of per-bar money flow (source*volume) split into positive/negative buckets by the direction of
-// source vs the previous bar's source. Pine syntax omits volume; codegen injects $.volume.get(0)
-// between source and length (vwma's implicit-arg precedent, C29).
-//
-// pine2py wavealgo/ta/mfi.py's prevTp update is gated on **both** source and volume being non-NaN
-// this bar (`if isnan(current_tp): return NaN` then `if isnan(current_vol): return NaN`, both
-// *before* `state["prev_tp"] = current_tp`) - unlike cmo's prevValue (C31), which is unconditional
-// raw-passthrough every call regardless of the value's own NaN-ness. A bar with a NaN volume (source
-// still valid) leaves prevTp untouched, not overwritten with this bar's tp - scratch/probe_mfi.mjs
-// confirmed this against a literal brute-force port of mfi.py (including a volume-NaN-gap case where
-// naively always-updating prevTp would silently diverge from pine2py).
-//
-// Once past that gate (source, volume, and prevTp all non-NaN), pine2py *always* pushes to
-// pos_flows/neg_flows every bar - (moneyFlow,0) if tp rose, (0,moneyFlow) if it fell, (0,0) on a tie
-// - unlike cmo's "skip push on NaN momentum" (there is no NaN-momentum case here, since both operands
-// of the tp comparison are already guaranteed non-NaN by the gate above). This makes the window a
-// plain fixed-width running sum exactly like sma's buffer - no derived-append skip needed - so it's
-// wired the same way as cmo's gains/losses buffers (NaN-primed circular buffer + recompute-on-
-// pollution), just without cmo's extra "skip the whole push" branch. pine2py's explicit `count<length`
-// warmup gate is redundant with this buffer's own NaN-priming (a skipped bar never advances writeIdx,
-// so the buffer can't be mistaken for "full" until `length` real pushes have landed) - scratch/
-// probe_mfi.mjs cross-checked this NaN-priming-only design (no separate count field) against a literal
-// count-gated port of mfi.py across sample10, tie, NaN-gap, length=1, and 5,000-sample fuzz cases.
-//
-// negSum===0 guards the division (pine2py mfi.py: return 100.0 in that case, same shape as cmo's
-// denom===0 guard but a different fallback value).
+// ta.mfi(source, length) - the manual's reference (ref_v6_ta_math.txt "ta.mfi"):
+//   upper = math.sum(volume * (ta.change(src) <= 0.0 ? 0.0 : src), length)
+//   lower = math.sum(volume * (ta.change(src) >= 0.0 ? 0.0 : src), length)
+//   mfi = 100.0 - (100.0 / (1.0 + upper / lower))
+// Pine syntax omits volume; codegen injects $.volume.get(0) between source and length (C29).
+// - An na source returns na and leaves the state alone ("`na` values in the `source` series are
+//   ignored; the function calculates on the `length` quantity of non-`na` values"), so the change
+//   is taken against the previous non-na source.
+// - On the first non-na bar ta.change is na, both comparisons are false, and the bar's money flow
+//   enters BOTH sums: the first value lands on the bar holding the length-th non-na source (tier 1
+//   ta_211_mfi_rsi_stoch bar 13 of mfi(close, 14): 46.173185267; the window of bars 1..14 on).
+// - The direction test is tolerant: a change within PINE_EPS counts as neither side (PyneCore
+//   lib/ta.py mfi, TradingView probes m548/m549).
+// - An na volume makes both terms na; math.sum's window is na-compacted, so the bar stores
+//   nothing and reports the standing sums (na while fewer than length terms are stored).
+// - A side within PINE_EPS of zero is zero (the rolling sums keep dust when their whole window is
+//   zero; probe m566), and a zero lower side is 100 (both sides zero included; probe m550).
+//   resin's running sums are not compensated, so their dust can exceed PINE_EPS on large money
+//   flows; a side whose window holds only zeros is therefore reset to an exact 0 (the count of
+//   non-zero terms says when), which is what the tolerance makes of TradingView's residue.
 export function mfi(state: MfiState, source: number, volume: number, length: number): number {
-  length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조)
-  if (state.prevTp === undefined) {
-    state.prevTp = NaN;
-    state.posBuffer = new Array(length).fill(NaN);
-    state.negBuffer = new Array(length).fill(NaN);
+  length = Math.trunc(length); // C569: restore the int length (see sma())
+  if (state.upperBuffer === undefined) {
+    state.prevSource = NaN;
+    state.upperBuffer = new Array(length).fill(0);
+    state.lowerBuffer = new Array(length).fill(0);
     state.writeIdx = 0;
-    state.sumPos = NaN;
-    state.sumNeg = NaN;
+    state.stored = 0;
+    state.sumUpper = 0;
+    state.sumLower = 0;
+    state.nonZeroUpper = 0;
+    state.nonZeroLower = 0;
   }
   if (Number.isNaN(source)) return NaN;
-  if (Number.isNaN(volume)) return NaN;
 
-  const prevTp = state.prevTp;
-  state.prevTp = source;
-  if (Number.isNaN(prevTp!)) return NaN;
+  const change = source - state.prevSource!;
+  state.prevSource = source;
 
-  const moneyFlow = source * volume;
-  let posFlow: number;
-  let negFlow: number;
-  if (source > prevTp!) {
-    posFlow = moneyFlow;
-    negFlow = 0;
-  } else if (source < prevTp!) {
-    posFlow = 0;
-    negFlow = moneyFlow;
-  } else {
-    posFlow = 0;
-    negFlow = 0;
+  if (!Number.isNaN(volume)) {
+    // NaN <= x is false: the na change of the first bar takes `src` on both sides.
+    const up = volume * (change <= PINE_EPS ? 0 : source);
+    const down = volume * (change >= -PINE_EPS ? 0 : source);
+    const writeIdx = state.writeIdx!;
+    // Until the window is full the slot holds its initial 0, so nothing leaves.
+    const oldUp = state.upperBuffer[writeIdx]!;
+    const oldDown = state.lowerBuffer![writeIdx]!;
+    state.nonZeroUpper! += (up !== 0 ? 1 : 0) - (oldUp !== 0 ? 1 : 0);
+    state.nonZeroLower! += (down !== 0 ? 1 : 0) - (oldDown !== 0 ? 1 : 0);
+    state.sumUpper = state.nonZeroUpper === 0 ? 0 : state.sumUpper! - oldUp + up;
+    state.sumLower = state.nonZeroLower === 0 ? 0 : state.sumLower! - oldDown + down;
+    state.upperBuffer[writeIdx] = up;
+    state.lowerBuffer![writeIdx] = down;
+    state.writeIdx = (writeIdx + 1) % length;
+    state.stored! += 1;
   }
+  if (state.stored! < length) return NaN;
 
-  const posBuffer = state.posBuffer!;
-  const negBuffer = state.negBuffer!;
-  const writeIdx = state.writeIdx!;
-  const oldPos = posBuffer[writeIdx]!;
-  const oldNeg = negBuffer[writeIdx]!;
-  posBuffer[writeIdx] = posFlow;
-  negBuffer[writeIdx] = negFlow;
-  state.writeIdx = (writeIdx + 1) % length;
-
-  if (Number.isNaN(oldPos) || Number.isNaN(state.sumPos!)) {
-    let totalPos = 0;
-    let totalNeg = 0;
-    let hasNaN = false;
-    for (let i = 0; i < length; i++) {
-      const p = posBuffer[i]!;
-      if (Number.isNaN(p)) {
-        hasNaN = true;
-        break;
-      }
-      totalPos += p;
-      totalNeg += negBuffer[i]!;
-    }
-    state.sumPos = hasNaN ? NaN : totalPos;
-    state.sumNeg = hasNaN ? NaN : totalNeg;
-  } else {
-    state.sumPos = state.sumPos! - oldPos + posFlow;
-    state.sumNeg = state.sumNeg! - oldNeg + negFlow;
-  }
-
-  if (Number.isNaN(state.sumPos!)) return NaN;
-  if (state.sumNeg === 0) return 100.0;
-
-  const mfRatio = state.sumPos! / state.sumNeg!;
-  return 100.0 - 100.0 / (1.0 + mfRatio);
+  let upper = state.sumUpper!;
+  let lower = state.sumLower!;
+  if (Math.abs(upper) <= PINE_EPS) upper = 0;
+  if (Math.abs(lower) <= PINE_EPS) lower = 0;
+  if (lower === 0) return 100.0;
+  return 100.0 - 100.0 / (1.0 + upper / lower);
 }
 
 export interface FixnanState {

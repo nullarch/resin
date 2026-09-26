@@ -25,17 +25,26 @@ function loadCaseSource(name: string): string {
   return readFileSync(join(ROOT, "oracle", "cases", `${name}.pine`), "utf-8");
 }
 
+// __obs_o is `close < 0 or ta.rsi(close, 2) > 60 ? 1.0 : 0.0`. The pine2py golden reads 1 on bar 1,
+// where its rsi(close, 2) was already valid (it counted the first bar, which has no x[1], toward
+// the rma seed). ref_v6_ta_math.txt "ta.rsi" seeds on the first `length` changes, so rsi(close, 2)
+// is na on bar 1 and the comparison is false; PyneCore on the harness twin (resin-harness
+// state/repros/mfi-rsi-warmup.json, channel rsi2: na, na, 100, 50, 83.3, 90, 94.4, 50, 82.7, 89.5)
+// and tier 1 ta_211_mfi_rsi_stoch agree. That channel is asserted from the oracle.
+const ORACLE_OBS_O: readonly number[] = [0, 0, 1, 0, 1, 1, 1, 0, 1, 1];
+
 describe("oracle: cond_lazy_ta (stateful calls in ternary/and/or lazy positions, eager-hoisted)", () => {
-  it("matches golden bar-for-bar on all four constant-condition channels", () => {
+  it("matches golden bar-for-bar on all four constant-condition channels (__obs_o from the oracle)", () => {
     const data = loadOracleData(CASE_NAME);
     const source = loadCaseSource(CASE_NAME);
     const result = runPipeline(source, data);
     const golden = loadGolden(CASE_NAME);
 
     expect(result.bars).toHaveLength(golden.bars.length);
+    expect(golden.bars[1]!["var:__obs_o"]).toBe(1);
     for (let i = 0; i < golden.bars.length; i++) {
       for (const key of OBS_KEYS) {
-        const expected = decodeSentinel(golden.bars[i]![`var:${key}`]!);
+        const expected = key === "__obs_o" ? ORACLE_OBS_O[i]! : decodeSentinel(golden.bars[i]![`var:${key}`]!);
         expect(
           nearlyEqual(result.bars[i]![`var:${key}`]!, expected),
           `bar ${i} ${key}: actual=${result.bars[i]![`var:${key}`]} golden=${expected}`,

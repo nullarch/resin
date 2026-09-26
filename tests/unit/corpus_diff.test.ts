@@ -521,8 +521,18 @@ describe("corpus diff: sample bar-by-bar replay against pine2py golden", () => {
     // around the clock is its own period and the VWAP is the bar's source. Tier 1: resin-harness
     // suites/indicators/tv/ta_301_vwap (ta.vwap(close) restarts on each session's first bar).
     // Floor moved to the observed matched 2637 / mismatch 278; nothing else changed.
-    expect(matched.length).toBeGreaterThanOrEqual(2637);
-    expect(mismatched.length).toBeLessThanOrEqual(278);
+    // 2026-09-26 ta.rsi seeds its rmas on the first `length` changes (the first bar has no x[1]) and
+    // ta.mfi counts the first bar's money flow in both sums: 303 hashes went matched -> mismatch and
+    // one (751030f158ff) mismatch -> matched; a source scan finds ta.rsi or ta.mfi in every one of
+    // the 304. This data has 10 bars, so most read rsi(close, 2..5) or mfi(close, 3), whose first
+    // value moved one bar (rsi later, mfi earlier). pine2py (not ground truth) counted the first bar
+    // toward the rsi seed and skipped it in mfi; ref_v6_ta_math.txt "ta.rsi" (u = math.max(x - x[1],
+    // 0), ta.rma ignores na) and "ta.mfi" (ta.change(src) <= 0.0 ? 0.0 : src, false on the first
+    // bar's na change) say otherwise, as do the PyneCore oracle and tier 1 resin-harness
+    // suites/indicators/tv/ta_211_mfi_rsi_stoch (rsi(close, 14) first valued on bar 14, mfi(close,
+    // 14) on bar 13). Floor moved to the observed matched 2335 / mismatch 580; nothing else changed.
+    expect(matched.length).toBeGreaterThanOrEqual(2335);
+    expect(mismatched.length).toBeLessThanOrEqual(580);
     expect(transpileFailed.length).toBeLessThanOrEqual(86);
     expect(runtimeFailed.length, `runtime failures: ${runtimeFailed.map((o) => `${o.hash}: ${o.detail}`).join(" | ")}`).toBe(0);
     expect(noComparable.length, `no comparable key: ${noComparable.map((o) => o.hash).join(", ")}`).toBeLessThanOrEqual(2);
