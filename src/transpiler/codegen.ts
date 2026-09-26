@@ -3080,26 +3080,25 @@ function genExpr(
     case "DotAccess": {
       // C446: barstate.isrealtime, request.security narrow-grammar 오프셋 위치(buildSecurityExprNode
       // DotAccess case, call-expr.ts) 전용 leaf — 이 서브트리는 일반 analyzeExpr를 안 거쳐(C180)
-      // analyzer.ts BARSTATE_PROPS의 builtinRuntimeExprs 등록("$.idx === $.barCount - 1", 메인
-      // 컨텍스트의 현재 바 인덱스)이 애초에 없다. 설령 있어도 그 문자열은 프리패스 루프 h와
-      // 무관해 틀린 값이 된다 — 프리패스는 전체 원본 바를 한 번에 훑는 별도 루프이므로 "마지막
-      // 바인가"는 h와 캐시 길이(barCount 동형, generateSecurityExprPreamble의 out.length와 동일
-      // 산식)로 다시 판정해야 한다. 다른 barstate.* 프로퍼티는 이 위치 wild 근거가 없어 미포함.
+      // analyzer.ts BARSTATE_PROPS의 builtinRuntimeExprs 등록이 애초에 없다.
+      // A requested context runs the same closed dataset, so its bars are historical too: isrealtime
+      // is false and ishistory true on every one (BARSTATE_PROPS, analyzer.ts; oracle
+      // core/security_process.py sets them from the live phase only).
       if (secCtx !== null && expr.obj.kind === "Identifier" && expr.obj.name === "barstate" && expr.attr === "isrealtime") {
-        return `(${secCtx.loopVar} === ${secCtx.cacheVar}.close.length - 1)`;
+        return "false";
       }
       // C481: barstate.isconfirmed는 BARSTATE_PROPS에서 위치 무관 상수 "true"(배치 리플레이 엔진
       // 전제, analyzer.ts 주석 참조) — isrealtime과 달리 secCtx.loopVar 재작성이 필요 없다.
       if (secCtx !== null && expr.obj.kind === "Identifier" && expr.obj.name === "barstate" && expr.attr === "isconfirmed") {
         return "true";
       }
-      // C628: barstate.ishistory — isrealtime과 정확히 대칭인 재작성("$.idx < $.barCount-1", 메인
-      // BARSTATE_PROPS 산식과 동형)의 프리패스 h/cacheVar 버전. wild `ds[barstate.ishistory ? 0 : 1]`.
+      // C628: barstate.ishistory — isrealtime의 부정(위 주석). wild `ds[barstate.ishistory ? 0 : 1]`.
       if (secCtx !== null && expr.obj.kind === "Identifier" && expr.obj.name === "barstate" && expr.attr === "ishistory") {
-        return `(${secCtx.loopVar} < ${secCtx.cacheVar}.close.length - 1)`;
+        return "true";
       }
-      // C669: barstate.islast — 메인 BARSTATE_PROPS 산식이 isrealtime과 완전히 동일한 문자열
-      // ("$.idx === $.barCount - 1")이라 프리패스 재작성도 동일 공식 재사용(analyzer.ts 주석 참조).
+      // C669: barstate.islast — 메인 BARSTATE_PROPS 산식("$.idx === $.barCount - 1")의 프리패스
+      // h/cacheVar 버전: 프리패스는 전체 원본 바를 한 번에 훑는 별도 루프라 "마지막 바인가"는 h와
+      // 캐시 길이(generateSecurityExprPreamble의 out.length와 동일 산식)로 다시 판정한다.
       if (secCtx !== null && expr.obj.kind === "Identifier" && expr.obj.name === "barstate" && expr.attr === "islast") {
         return `(${secCtx.loopVar} === ${secCtx.cacheVar}.close.length - 1)`;
       }

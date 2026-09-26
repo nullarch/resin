@@ -9,6 +9,13 @@
 // session_002_24x7; PyneCore lib/session.py). sample10.json has no time channel and runs on resin's
 // default daily chart open around the clock, so every bar holds its day's 00:00 session start and
 // 23:59:59 session end: all four read true on every bar.
+//
+// barstate.ishistory/isrealtime are NOT compared to the pine2py golden either: pine2py makes the last
+// bar realtime (ishistory false, isrealtime true on bar 9). A closed dataset has no realtime bar, so
+// every bar, the last one included, is historical (language_execution-model.txt: "When the script
+// first loads, all bars, including the latest one, have an orange background because they initially
+// represent historical data"; PyneCore core/script_runner.py keeps ishistory=True, isrealtime=False
+// outside live mode; resin-harness suites/lang/probes/L32, oracle-certified).
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -29,6 +36,10 @@ const SESSION_BAR_KEYS = [
   "var:__obs_sess_islastbar_regular",
 ];
 
+// The historical/realtime channels, judged against the closed-dataset rule rather than the golden.
+const HISTORY_KEYS = ["var:__obs_bs_ishistory", "var:__obs_bs_isrealtime"];
+const NOT_GOLDEN_KEYS = [...SESSION_BAR_KEYS, ...HISTORY_KEYS];
+
 function loadCaseSource(name: string): string {
   return readFileSync(join(ROOT, "oracle", "cases", `${name}.pine`), "utf-8");
 }
@@ -42,7 +53,7 @@ describe("oracle: barstate_session", () => {
     const result = runPipeline(source, data);
 
     expect(result.bars).toHaveLength(golden.bars.length);
-    const keys = Object.keys(golden.bars[0]!).filter((k) => !SESSION_BAR_KEYS.includes(k));
+    const keys = Object.keys(golden.bars[0]!).filter((k) => !NOT_GOLDEN_KEYS.includes(k));
     compareToGolden(result.bars, golden, keys);
   });
 
@@ -53,6 +64,12 @@ describe("oracle: barstate_session", () => {
     }
   });
 
+  it("reads barstate.ishistory true and isrealtime false on every bar of a closed dataset, the last one included", () => {
+    const result = runPipeline(loadCaseSource(CASE_NAME), loadOracleData(CASE_NAME));
+    expect(result.bars.map((b) => b["var:__obs_bs_ishistory"])).toEqual(new Array(10).fill(1));
+    expect(result.bars.map((b) => b["var:__obs_bs_isrealtime"])).toEqual(new Array(10).fill(0));
+  });
+
   it("matches the pine2py golden final var state", () => {
     const golden = loadGolden(CASE_NAME);
     const data = loadOracleData(CASE_NAME);
@@ -61,7 +78,7 @@ describe("oracle: barstate_session", () => {
     const result = runPipeline(source, data);
 
     for (const [key, expected] of Object.entries(golden.finalVarState)) {
-      if (SESSION_BAR_KEYS.includes(`var:${key}`)) continue;
+      if (NOT_GOLDEN_KEYS.includes(`var:${key}`)) continue;
       expect(result.finalVarState[key]).toBeCloseTo(expected as number, 6);
     }
   });

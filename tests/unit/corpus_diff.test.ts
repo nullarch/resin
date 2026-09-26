@@ -617,8 +617,15 @@ describe("corpus diff: sample bar-by-bar replay against pine2py golden", () => {
     // (863.5) where pine2py (not ground truth) interpolated 2.25 (863.75); twin
     // state/repros/percentile-sample10.json channel pli10_25 runs this shape through the oracle.
     // Floor moved to the observed matched 2305 / mismatch 610; nothing else changed.
-    expect(matched.length).toBeGreaterThanOrEqual(2305);
-    expect(mismatched.length).toBeLessThanOrEqual(610);
+    // 2026-09-27 a closed dataset has no realtime bar: barstate.ishistory is true and isrealtime false
+    // on every bar, the last one included (language_execution-model.txt "all bars, including the
+    // latest one, ... initially represent historical data"; PyneCore core/script_runner.py outside
+    // live mode; resin-harness suites/lang/probes/L32). Exactly one hash went matched -> mismatch:
+    // 8fd09e30af1f (`if barstate.ishistory` counts bars), which now counts the last bar too where
+    // pine2py (not ground truth) made it realtime. Floor moved to the observed matched 2304 /
+    // mismatch 611; nothing else changed.
+    expect(matched.length).toBeGreaterThanOrEqual(2304);
+    expect(mismatched.length).toBeLessThanOrEqual(611);
     expect(transpileFailed.length).toBeLessThanOrEqual(86);
     expect(runtimeFailed.length, `runtime failures: ${runtimeFailed.map((o) => `${o.hash}: ${o.detail}`).join(" | ")}`).toBe(0);
     expect(noComparable.length, `no comparable key: ${noComparable.map((o) => o.hash).join(", ")}`).toBeLessThanOrEqual(2);

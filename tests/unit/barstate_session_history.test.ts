@@ -52,10 +52,9 @@ describe("barstate/session-builtin history (C521, hand-verified)", () => {
     expect(obs(src)).toEqual([NaN, false, false, false, false, false, false, true]);
   });
 
-  // 구조적 항등식: ishistory[N>=1] = ((idx-N) < barCount-1). idx<=barCount-1이고 N>=1이므로
-  // idx-N <= barCount-1-N < barCount-1이 항상 성립 — 워밍업 이후 항상 true(버그 아님, 배치 리플레이
-  // 에서 "N바 전이 마지막 바 이전이었는가"는 N>=1일 때 구조적으로 항상 참).
-  it("keeps barstate.ishistory[N>=1] always true after warmup (structural invariant)", () => {
+  // Every bar of a closed dataset is historical (resin-harness suites/lang/probes/L32), so
+  // ishistory[N] is the constant true once N bars exist.
+  it("keeps barstate.ishistory[N>=1] always true after warmup", () => {
     const src = ["var bool __obs_a = na", "__obs_a := barstate.ishistory[1]"].join("\n");
     expect(obs(src)).toEqual([NaN, true, true, true, true, true, true, true]);
   });
@@ -67,7 +66,7 @@ describe("barstate/session-builtin history (C521, hand-verified)", () => {
     expect(obs(src)).toEqual([NaN, false, false, false, false, false, false, false]);
   });
 
-  it("computes barstate.isrealtime[1] identically to islast[1] (backtest-mode alias, same base expr)", () => {
+  it("computes barstate.isrealtime[1] as a warmup-guarded constant false (no bar of a closed dataset is realtime)", () => {
     const src = ["var bool __obs_a = na", "__obs_a := barstate.isrealtime[1]"].join("\n");
     expect(obs(src)).toEqual([NaN, false, false, false, false, false, false, false]);
   });
@@ -114,7 +113,9 @@ describe("barstate/session-builtin history (C521, hand-verified)", () => {
     const bare = obs(src, "__obs_bare");
     const zero = obs(src, "__obs_zero");
     expect(zero).toEqual(bare);
-    expect(bare).toEqual([true, true, true, true, true, true, true, false]);
+    // Every bar of a closed dataset, the last one included, is historical (resin-harness
+    // suites/lang/probes/L32, oracle-certified).
+    expect(bare).toEqual([true, true, true, true, true, true, true, true]);
   });
 
   it("keeps exact values inside a conditional branch (stateless derivation — no record-gap axis)", () => {

@@ -749,11 +749,17 @@ export const SYMINFO_NUMBER_PROPS: ReadonlyMap<string, number> = new Map([
 // 재현(오라클 실측: gen_oracle.py가 매 바 push_bar 시 index를 0,1,2,...로 순증가시켜 idx 의미가
 // 정확히 동형임을 codegen 소스 대조로 확인). 백테스트 모드 전제(pine2py 주석 그대로)라 isnew/
 // isconfirmed는 항상 true. session.* reads the symbol's session schedule instead (SESSION_PROPS).
+// resin runs a closed dataset with no realtime feed, so every bar, the last one included, is a
+// historical bar: ishistory is true and isrealtime false on all of them (language_execution-model.txt:
+// "When the script first loads, all bars, including the latest one, have an orange background
+// because they initially represent historical data"; ishistory "is true for every closed bar
+// accessed during the script's loading time"; oracle core/script_runner.py keeps ishistory=True,
+// isrealtime=False outside live mode; lang.probes L32). pine2py made the last bar realtime.
 export const BARSTATE_PROPS: ReadonlyMap<string, string> = new Map([
   ["isfirst", "$.idx === 0"],
   ["islast", "$.idx === $.barCount - 1"],
-  ["ishistory", "$.idx < $.barCount - 1"],
-  ["isrealtime", "$.idx === $.barCount - 1"],
+  ["ishistory", "true"],
+  ["isrealtime", "false"],
   ["isnew", "true"],
   ["isconfirmed", "true"],
   ["islastconfirmedhistory", "$.idx === $.barCount - 2"],

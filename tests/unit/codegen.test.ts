@@ -414,14 +414,17 @@ describe("CodeGen", () => {
     expect(code).toBe("var x = ($.idx === 0);");
   });
 
-  it("emits barstate.islast/isrealtime as $.idx === $.barCount - 1", () => {
+  // A closed dataset has no realtime bar: isrealtime is false and ishistory true on every bar, the
+  // last one included (resin-harness suites/lang/probes/L32, oracle-certified; language_execution-
+  // model.txt "all bars, including the latest one, ... initially represent historical data").
+  it("emits barstate.islast as $.idx === $.barCount - 1 and isrealtime as false", () => {
     const code = codegenSource("x = barstate.islast\ny = barstate.isrealtime");
-    expect(code).toBe("var x = ($.idx === $.barCount - 1);\nvar y = ($.idx === $.barCount - 1);");
+    expect(code).toBe("var x = ($.idx === $.barCount - 1);\nvar y = (false);");
   });
 
-  it("emits barstate.ishistory/islastconfirmedhistory with the expected $.idx comparisons", () => {
+  it("emits barstate.ishistory as true and islastconfirmedhistory as a $.idx comparison", () => {
     const code = codegenSource("x = barstate.ishistory\ny = barstate.islastconfirmedhistory");
-    expect(code).toBe("var x = ($.idx < $.barCount - 1);\nvar y = ($.idx === $.barCount - 2);");
+    expect(code).toBe("var x = (true);\nvar y = ($.idx === $.barCount - 2);");
   });
 
   it("emits barstate.isnew/isconfirmed as bare boolean literals (always true in batch mode)", () => {
@@ -14416,16 +14419,15 @@ describe("CodeGen request.security expression 확장 좁은 문법 (C367)", () =
   // C446: 삼항이 IndexAccess의 offset(index) 위치에서만 지원된다 — wild
   // `X[barstate.isrealtime ? 1 : 0]`류(repaint 방지 관용구, "index-dynamic-or-negative" 서브클러스터
   // 14/20건: 1c922280df57/4878fb987f2e/5bbb62f2d83d/6bb7ade749b0/6e8eb2f215d2.pine 등). offset은
-  // 항상 정수 카운트라 VERIFIED_SEMANTICS.md OPEN(삼항 na 시맨틱)의 "값 위치" 우려와 무관 — barstate.
-  // isrealtime은 analyzer.ts BARSTATE_PROPS의 메인 컨텍스트 문자열("$.idx===$.barCount-1")이 프리패스
-  // h와 무관해 그대로 못 쓰므로, genExpr DotAccess가 secCtx일 때 loopVar/cacheVar 기반 식으로
-  // 재작성한다(genExpr TernaryOp 자신도 이전엔 세 서브식 전부 secCtx를 안 물려줘 — nz(C444)가 고친
-  // 것과 동일 계열의 latent 갭이었다, 이번에 같이 수정).
+  // 항상 정수 카운트라 VERIFIED_SEMANTICS.md OPEN(삼항 na 시맨틱)의 "값 위치" 우려와 무관.
+  // A requested context runs the same closed dataset, so barstate.isrealtime is the constant false
+  // there as on the chart (resin-harness suites/lang/probes/L32, oracle-certified: no bar of a
+  // closed dataset is realtime).
   it("emits rt.secHistGet with a ternary offset expression for a bare bar-series obj (barstate.isrealtime ? 1 : 0)", () => {
     const program = analyzeSecuritySource('x = request.security("", "D", close[barstate.isrealtime ? 1 : 0])');
     expect(program.errors).toEqual([]);
     const lines = generateSecurityExprPreamble(program).join("\n");
-    expect(lines).toContain("out[h] = rt.secHistGet(cache.close, h, ((h === cache.close.length - 1) ? 1 : 0));");
+    expect(lines).toContain("out[h] = rt.secHistGet(cache.close, h, (false ? 1 : 0));");
   });
 
   it("emits rt.secHistGet with a ternary offset expression for a derived-price obj (hl2[barstate.isrealtime ? 0 : 1])", () => {
@@ -14433,7 +14435,7 @@ describe("CodeGen request.security expression 확장 좁은 문법 (C367)", () =
     expect(program.errors).toEqual([]);
     const lines = generateSecurityExprPreamble(program).join("\n");
     expect(lines).toContain(
-      "out[h] = ((rt.secHistGet(cache.high, h, ((h === cache.close.length - 1) ? 0 : 1)) + rt.secHistGet(cache.low, h, ((h === cache.close.length - 1) ? 0 : 1))) / 2);",
+      "out[h] = ((rt.secHistGet(cache.high, h, (false ? 0 : 1)) + rt.secHistGet(cache.low, h, (false ? 0 : 1))) / 2);",
     );
   });
 
@@ -14443,7 +14445,7 @@ describe("CodeGen request.security expression 확장 좁은 문법 (C367)", () =
     );
     expect(program.errors).toEqual([]);
     const lines = generateSecurityExprPreamble(program).join("\n");
-    expect(lines).toContain("out[h] = rt.secHistGet(__secHist0, h, ((h === cache.close.length - 1) ? 0 : 1));");
+    expect(lines).toContain("out[h] = rt.secHistGet(__secHist0, h, (false ? 0 : 1));");
   });
 
   it("does not change codegen for a non-security ternary (secCtx===null path is byte-identical to before the secCtx threading fix)", () => {
@@ -14453,22 +14455,15 @@ describe("CodeGen request.security expression 확장 좁은 문법 (C367)", () =
     expect(result.code).toContain("(rt.pineGt($.close.get(0), $.open.get(0)) ? 1 : 0)");
   });
 
-  // secCtx.loopVar(h)는 원본 바가 아니라 **HTF 행**(day1/day2/day3/day4-forming) 단위로 순회한다
-  // (resolveHtfIndex, runtime/security.ts — lookahead=off는 rawHtfIdx-1로 항상 직전 확정 행만
-  // 노출해 마지막 행(forming, h===length-1)이 어떤 원본 바에서도 절대 안 읽힌다 — barstate.isrealtime의
-  // 실측 효과는 lookahead=on에서만 관찰 가능, 직접 dump로 확인 후 반영). lookahead=off는 이미 항상
-  // "직전 확정 값"을 쓰므로 이 관용구가 무의미(no-op)한 것도 TV 정합 — repaint 방지가 애초에 lookahead
-  // 설정 자체로 해결되기 때문(lookahead=on 스크립트에서만 이 관용구로 별도 방지 필요).
-  it("hand-verified E2E: under lookahead=on, close[barstate.isrealtime ? 1 : 0] uses the current (possibly still-forming) HTF row on every bar except the very last one, where it falls back to the previous confirmed row (the idiom's actual repaint-avoidance purpose)", () => {
+  // The repaint-avoidance idiom only bites on a realtime bar. A closed dataset has none (resin-harness
+  // suites/lang/probes/L32, oracle-certified: barstate.isrealtime is false on every bar, the last one
+  // included), so under lookahead=on and off alike it reads the offset-0 value on every bar.
+  it("hand-verified E2E: on a closed dataset close[barstate.isrealtime ? 1 : 0] reads the offset-0 row on every bar, the last one included, under lookahead=on and off", () => {
     const ternaryBars = runOf(
       'var float x = na\nx := request.security("", "D", close[barstate.isrealtime ? 1 : 0], lookahead=barmerge.lookahead_on)',
     );
     const offset0Bars = runOf('var float x = na\nx := request.security("", "D", close, lookahead=barmerge.lookahead_on)');
-    const offset1Bars = runOf('var float x = na\nx := request.security("", "D", close[1], lookahead=barmerge.lookahead_on)');
-    const expected = offset0Bars.map((v, i) => (i === offset0Bars.length - 1 ? offset1Bars[i] : v));
-    expect(ternaryBars).toEqual(expected);
-    // lookahead=on이 아니면 h===length-1(forming 행)이 어느 원본 바에서도 안 읽혀 이 관용구가
-    // 관찰 가능한 차이를 전혀 안 낸다는 것도 함께 확인(no-op이지 오답은 아님 — TV 정합).
+    expect(ternaryBars).toEqual(offset0Bars);
     const ternaryDefault = runOf('var float x = na\nx := request.security("", "D", close[barstate.isrealtime ? 1 : 0])');
     const offset0Default = runOf('var float x = na\nx := request.security("", "D", close)');
     expect(ternaryDefault).toEqual(offset0Default);
@@ -14477,20 +14472,21 @@ describe("CodeGen request.security expression 확장 좁은 문법 (C367)", () =
   // C628: barstate.ishistory — isrealtime의 정확한 대칭 leaf(TV 정의상 isrealtime===!ishistory).
   // wild 실측(scratch/c628_dump.txt, corrected wild v5+ #2 cluster) 6f3c1f8d09d2.pine/
   // d43000b2c8ed.pine `base_ds = request.security('', reso, ds[barstate.ishistory ? 0 : 1])`.
-  // genExpr DotAccess가 secCtx일 때 "h < cache.close.length - 1"(isrealtime의 "==="을 "<"로)로
-  // 재작성한다 — 나머지(rt.secHistGet 배선/prepass h 루프)는 C446 인프라 그대로 재사용.
-  it("emits rt.secHistGet with a ternary offset expression using barstate.ishistory (h < cache.close.length - 1)", () => {
+  // Every bar of a closed dataset is historical, so it is the constant true in a requested context
+  // too (resin-harness suites/lang/probes/L32) — 나머지(rt.secHistGet 배선/prepass h 루프)는 C446
+  // 인프라 그대로 재사용.
+  it("emits rt.secHistGet with a ternary offset expression using barstate.ishistory (constant true)", () => {
     const program = analyzeSecuritySource('x = request.security("", "D", close[barstate.ishistory ? 0 : 1])');
     expect(program.errors).toEqual([]);
     const lines = generateSecurityExprPreamble(program).join("\n");
-    expect(lines).toContain("out[h] = rt.secHistGet(cache.close, h, ((h < cache.close.length - 1) ? 0 : 1));");
+    expect(lines).toContain("out[h] = rt.secHistGet(cache.close, h, (true ? 0 : 1));");
   });
 
-  it("emits barstate.ishistory as the whole expression argument as a loopVar-based boolean (not the position-independent 'true' isconfirmed uses)", () => {
+  it("emits barstate.ishistory as the whole expression argument as the position-independent true (every bar of a closed dataset is historical)", () => {
     const program = analyzeSecuritySource('x = request.security("", "D", barstate.ishistory)');
     expect(program.errors).toEqual([]);
     const lines = generateSecurityExprPreamble(program).join("\n");
-    expect(lines).toContain("out[h] = (h < cache.close.length - 1);");
+    expect(lines).toContain("out[h] = true;");
   });
 
   it("hand-verified E2E: close[barstate.ishistory ? 0 : 1] is the exact same repaint-avoidance idiom as close[barstate.isrealtime ? 1 : 0] just with the branches swapped (isrealtime === !ishistory)", () => {
@@ -14519,7 +14515,7 @@ describe("CodeGen request.security expression 확장 좁은 문법 (C367)", () =
     expect(substituted.errors).toEqual([]);
     const inlineLines = generateSecurityExprPreamble(inline).join("\n");
     const substLines = generateSecurityExprPreamble(substituted).join("\n");
-    expect(substLines).toContain("out[h] = rt.secHistGet(cache.close, h, ((h === cache.close.length - 1) ? 1 : 0));");
+    expect(substLines).toContain("out[h] = rt.secHistGet(cache.close, h, (false ? 1 : 0));");
     expect(substLines).toEqual(inlineLines);
   });
 
@@ -14533,11 +14529,10 @@ describe("CodeGen request.security expression 확장 좁은 문법 (C367)", () =
     expect(substBars).toEqual(inlineBars);
   });
 
-  // C669(배치34 (2) 4순위 '튜플리터럴-series'): barstate.islast — 메인 BARSTATE_PROPS 산식이
-  // isrealtime과 완전히 동일한 문자열("$.idx === $.barCount - 1")이라 프리패스 재작성도 isrealtime과
-  // 동일 공식을 그대로 재사용(analyzer.test.ts C669 주석 참조). wild ced265149e8d.pine
-  // `[..., barstate.islast, close[1]]`.
-  it("emits barstate.islast as the whole expression argument as a loopVar-based boolean, using the exact same formula as isrealtime", () => {
+  // C669(배치34 (2) 4순위 '튜플리터럴-series'): barstate.islast — 메인 BARSTATE_PROPS 산식
+  // ("$.idx === $.barCount - 1")의 프리패스 h/cacheVar 버전(analyzer.test.ts C669 주석 참조). wild
+  // ced265149e8d.pine `[..., barstate.islast, close[1]]`.
+  it("emits barstate.islast as the whole expression argument as a loopVar-based boolean", () => {
     const program = analyzeSecuritySource('x = request.security("", "D", barstate.islast)');
     expect(program.errors).toEqual([]);
     const lines = generateSecurityExprPreamble(program).join("\n");
@@ -17702,8 +17697,8 @@ describe("CodeGen request.security expression via UDF parameter multi-call-site 
     );
     const p0 = /function __secExpr0\(\) \{[\s\S]*?\n\}/.exec(code)![0];
     const p1 = /function __secExpr1\(\) \{[\s\S]*?\n\}/.exec(code)![0];
-    expect(p0).toContain("out[h] = rt.secHistGet(cache.close, h, ((h === cache.close.length - 1) ? 1 : 0));");
-    expect(p1).toContain("out[h] = rt.secHistGet(cache.open, h, ((h === cache.close.length - 1) ? 1 : 0));");
+    expect(p0).toContain("out[h] = rt.secHistGet(cache.close, h, (false ? 1 : 0));");
+    expect(p1).toContain("out[h] = rt.secHistGet(cache.open, h, (false ? 1 : 0));");
   });
 
   it("hand-verified E2E: each call site's wrapped value equals calling request.security directly with that argument's history offset inlined at top level (fixed literal offset AND ternary offset)", () => {
