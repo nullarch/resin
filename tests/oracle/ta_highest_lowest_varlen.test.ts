@@ -1,7 +1,8 @@
 // oracle/cases/ta_highest_lowest_varlen.pine: ta.highest/ta.lowest series(가변) length 검증
 // (배치25 (4) 첫 착수, runtime/ta.ts highestVarLen/lowestVarLen). len1(1~5 순환, named local
-// source)과 len2(0~2 순환, inline expression source — length<1일 때 pine2py highest.py의 실측
-// 버그인 -Infinity/+Infinity까지 포함) 둘 다 커버.
+// source)과 len2(0~2 순환, inline expression source) 둘 다 커버. A length of 0 returns the source,
+// as the oracle does (golden hand-edited from pine2py's -Infinity/+Infinity; resin-harness twin
+// state/repros/extreme-varlen-sample10.json).
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";

@@ -3964,6 +3964,15 @@ function genCallExpr(
       // rci; tier 1 ta_251_rci), so it reads bar_index: $.idx, or the prepass row in request.security.
       args.push(secCtx === null ? "$.idx" : secCtx.loopVar);
     }
+    if (
+      !stateCall.seriesLength &&
+      (stateCall.fn === "highest" || stateCall.fn === "lowest" || stateCall.fn === "highestbars" || stateCall.fn === "lowestbars")
+    ) {
+      // The extremes run a ring addressed by bar_index (runtime/ta.ts highest; pynecore lib/ta.py
+      // highest): $.idx, or the prepass row in request.security. A series length gets it with the
+      // *VarLen suffix below.
+      args.push(secCtx === null ? "$.idx" : secCtx.loopVar);
+    }
     if (stateCall.fn === "wpr") {
       // ta.wpr(length) — Pine 문법에 close/high/low 인자가 없고 내장 bar series를 암묵 사용한다
       // (analyzer.ts TA_REGISTRY.wpr 주석 참조). 유일한 사용자 인자 length(index 0) 앞에 셋을 끼워

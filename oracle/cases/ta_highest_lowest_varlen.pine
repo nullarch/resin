@@ -11,8 +11,9 @@ var float __obs_lo1 = na
 __obs_hi1 := ta.highest(close, len1)
 __obs_lo1 := ta.lowest(close, len1)
 
-// len2 = bar_index % 3: 0,1,2 순환 — 0이 되는 바(0/3/6/9)에서 length<1 분기(pine2py highest.py
-// range(0) 빈 루프 실측 버그, highest=-inf/lowest=+inf)를 오라클로 직접 검증. source는 named
+// len2 = bar_index % 3: 0,1,2 순환 — 0이 되는 바(0/3/6/9)에서 length<1 분기를 검증. The golden was
+// hand-edited from pine2py's -inf/+inf to the oracle's answer, the source itself (high - low = 3):
+// resin-harness state/repros/extreme-varlen-sample10.json runs this case through PyneCore. source는 named
 // local이 아니라 인라인 표현식(high-low)이라 Series 백업 없이도 콜사이트 자체 히스토리 버퍼만으로
 // 동작함을 함께 확인.
 len2 = bar_index % 3

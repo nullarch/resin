@@ -3545,28 +3545,30 @@ describe("CodeGen", () => {
     expect(code).toBe("var x = rt.ta.stdev($.taSlots[0], $.close.get(0), 3, false);");
   });
 
+  // The extremes run a ring addressed by bar_index (runtime/ta.ts highest; pynecore lib/ta.py
+  // highest), so every call passes $.idx last (resin-harness tier 1 ta_370_gated_lowest_window).
   it("emits ta.highest call through $.taSlots[slot]", () => {
     const code = codegenSource("x = ta.highest(close, 4)");
-    expect(code).toBe("var x = rt.ta.highest($.taSlots[0], $.close.get(0), 4);");
+    expect(code).toBe("var x = rt.ta.highest($.taSlots[0], $.close.get(0), 4, $.idx);");
   });
 
   it("emits ta.lowest call through $.taSlots[slot]", () => {
     const code = codegenSource("x = ta.lowest(close, 4)");
-    expect(code).toBe("var x = rt.ta.lowest($.taSlots[0], $.close.get(0), 4);");
+    expect(code).toBe("var x = rt.ta.lowest($.taSlots[0], $.close.get(0), 4, $.idx);");
   });
 
   it("emits ta.highest(length)/ta.lowest(length) 1-argument implicit-source form with an unshifted $.high/$.low.get(0) (C250)", () => {
     const codeHi = codegenSource("x = ta.highest(4)");
-    expect(codeHi).toBe("var x = rt.ta.highest($.taSlots[0], $.high.get(0), 4);");
+    expect(codeHi).toBe("var x = rt.ta.highest($.taSlots[0], $.high.get(0), 4, $.idx);");
     const codeLo = codegenSource("x = ta.lowest(4)");
-    expect(codeLo).toBe("var x = rt.ta.lowest($.taSlots[0], $.low.get(0), 4);");
+    expect(codeLo).toBe("var x = rt.ta.lowest($.taSlots[0], $.low.get(0), 4, $.idx);");
   });
 
   it("2-argument ta.highest/ta.lowest explicit-source form is untouched by the C250 implicit-source unshift (regression guard)", () => {
     const codeHi = codegenSource("x = ta.highest(open, 4)");
-    expect(codeHi).toBe("var x = rt.ta.highest($.taSlots[0], $.open.get(0), 4);");
+    expect(codeHi).toBe("var x = rt.ta.highest($.taSlots[0], $.open.get(0), 4, $.idx);");
     const codeLo = codegenSource("x = ta.lowest(open, 4)");
-    expect(codeLo).toBe("var x = rt.ta.lowest($.taSlots[0], $.open.get(0), 4);");
+    expect(codeLo).toBe("var x = rt.ta.lowest($.taSlots[0], $.open.get(0), 4, $.idx);");
   });
 
   it("emits ta.stoch call through $.taSlots[slot] (no codegen special-casing — 4 args pass through in order)", () => {
@@ -3577,8 +3579,8 @@ describe("CodeGen", () => {
   // 배치25 (4) 첫 착수 — length가 series면 analyzer가 stateCall.seriesLength를 세우고 codegen이
   // rt.ta.highest/lowest 대신 highestVarLen/lowestVarLen으로 분기하며 $.barCount, $.idx를 마지막
   // 두 인자로 붙인다(runtime/ta.ts 주석 참조 — $.idx는 같은 바 반복 호출을 push 대신 덮어쓰기로
-  // 판별하는 기준, corpus_diff 회귀로 발견). 리터럴 length(위 테스트들)는 이 분기를 안 타 기존
-  // 출력이 그대로. 아래 테스트는 length 인자로 bar_index($.idx)를 재사용해 length 자리의 $.idx와
+  // 판별하는 기준, corpus_diff 회귀로 발견). 리터럴 length(위 테스트들)는 이 분기를 안 타고 $.idx
+  // 하나만 붙는다(같은 ring 기계). 아래 테스트는 length 인자로 bar_index($.idx)를 재사용해 length 자리의 $.idx와
   // 새로 붙는 barIdx 자리의 $.idx가 둘 다 나타난다.
   it("emits ta.highest through highestVarLen with trailing $.barCount, $.idx when length is a series expression", () => {
     const code = codegenSource("x = ta.highest(close, bar_index)");
@@ -3727,11 +3729,13 @@ describe("CodeGen", () => {
     expect(code).toBe("var x = rt.ta.lowestbarsVarLen($.taSlots[0], $.close.get(0), $.idx, $.barCount, $.idx);");
   });
 
-  it("keeps emitting the state-fixed deque-based rt.ta.highestbars/lowestbars for a literal length (C549 — 기존 fast path 출력 바이트 불변)", () => {
+  // A literal length keeps the fixed rtPath; it appends only the bar index its bar-addressed ring
+  // reads (runtime/ta.ts highest; resin-harness tier 1 ta_370_gated_lowest_window).
+  it("emits rt.ta.highestbars/lowestbars with a trailing $.idx for a literal length (C549)", () => {
     const codeHb = codegenSource("x = ta.highestbars(close, 4)");
-    expect(codeHb).toBe("var x = rt.ta.highestbars($.taSlots[0], $.close.get(0), 4);");
+    expect(codeHb).toBe("var x = rt.ta.highestbars($.taSlots[0], $.close.get(0), 4, $.idx);");
     const codeLb = codegenSource("x = ta.lowestbars(close, 4)");
-    expect(codeLb).toBe("var x = rt.ta.lowestbars($.taSlots[0], $.close.get(0), 4);");
+    expect(codeLb).toBe("var x = rt.ta.lowestbars($.taSlots[0], $.close.get(0), 4, $.idx);");
   });
 
   it("emits ta.wpr call with the implicit close/high/low args unshifted before length", () => {
@@ -3743,28 +3747,28 @@ describe("CodeGen", () => {
 
   it("emits ta.highestbars call through $.taSlots[slot] (no codegen special-casing — 2 args pass through in order)", () => {
     const code = codegenSource("x = ta.highestbars(close, 4)");
-    expect(code).toBe("var x = rt.ta.highestbars($.taSlots[0], $.close.get(0), 4);");
+    expect(code).toBe("var x = rt.ta.highestbars($.taSlots[0], $.close.get(0), 4, $.idx);");
   });
 
   it("emits ta.lowestbars call through $.taSlots[slot] (no codegen special-casing — 2 args pass through in order)", () => {
     const code = codegenSource("x = ta.lowestbars(close, 4)");
-    expect(code).toBe("var x = rt.ta.lowestbars($.taSlots[0], $.close.get(0), 4);");
+    expect(code).toBe("var x = rt.ta.lowestbars($.taSlots[0], $.close.get(0), 4, $.idx);");
   });
 
   // C655: ta.highestbars(length)/ta.lowestbars(length) 1-인자 implicit-source 폼 — highest/lowest
   // (C250)/pivothigh/pivotlow(C509)와 동일한 unshift 패턴(analyzer.ts TA_REGISTRY 주석 참조).
   it("emits ta.highestbars(length)/ta.lowestbars(length) 1-argument implicit-source form with an unshifted $.high/$.low.get(0) (C655)", () => {
     const codeHi = codegenSource("x = ta.highestbars(4)");
-    expect(codeHi).toBe("var x = rt.ta.highestbars($.taSlots[0], $.high.get(0), 4);");
+    expect(codeHi).toBe("var x = rt.ta.highestbars($.taSlots[0], $.high.get(0), 4, $.idx);");
     const codeLo = codegenSource("x = ta.lowestbars(4)");
-    expect(codeLo).toBe("var x = rt.ta.lowestbars($.taSlots[0], $.low.get(0), 4);");
+    expect(codeLo).toBe("var x = rt.ta.lowestbars($.taSlots[0], $.low.get(0), 4, $.idx);");
   });
 
   it("2-argument explicit-source ta.highestbars/ta.lowestbars is untouched by the C655 implicit-source unshift (regression guard)", () => {
     const codeHi = codegenSource("x = ta.highestbars(open, 4)");
-    expect(codeHi).toBe("var x = rt.ta.highestbars($.taSlots[0], $.open.get(0), 4);");
+    expect(codeHi).toBe("var x = rt.ta.highestbars($.taSlots[0], $.open.get(0), 4, $.idx);");
     const codeLo = codegenSource("x = ta.lowestbars(open, 4)");
-    expect(codeLo).toBe("var x = rt.ta.lowestbars($.taSlots[0], $.open.get(0), 4);");
+    expect(codeLo).toBe("var x = rt.ta.lowestbars($.taSlots[0], $.open.get(0), 4, $.idx);");
   });
 
   it("emits ta.highestbars(length)/ta.lowestbars(length) identically to the explicit high/low source form (C655 codegen equivalence, hand-verified — pine2py highest.py has no runtime sniffing for this oracle-unreachable overload)", () => {
@@ -4089,12 +4093,12 @@ describe("CodeGen", () => {
         "var r = rt.ta.cum($.taSlots[19], $.close.get(0));",
         "var s = rt.ta.barssince($.taSlots[20], rt.pineGt($.close.get(0), $.open.get(0)));",
         "var t = rt.ta.valuewhen($.taSlots[21], rt.pineGt($.close.get(0), $.open.get(0)), $.close.get(0), 0);",
-        "var w = rt.ta.highest($.taSlots[22], $.close.get(0), 4);",
-        "var z = rt.ta.lowest($.taSlots[23], $.close.get(0), 4);",
+        "var w = rt.ta.highest($.taSlots[22], $.close.get(0), 4, $.idx);",
+        "var z = rt.ta.lowest($.taSlots[23], $.close.get(0), 4, $.idx);",
         "var y = rt.ta.stoch($.taSlots[24], $.close.get(0), $.high.get(0), $.low.get(0), 4);",
         "var x1 = rt.ta.wpr($.taSlots[25], $.close.get(0), $.high.get(0), $.low.get(0), 4);",
-        "var x2 = rt.ta.highestbars($.taSlots[26], $.close.get(0), 4);",
-        "var x3 = rt.ta.lowestbars($.taSlots[27], $.close.get(0), 4);",
+        "var x2 = rt.ta.highestbars($.taSlots[26], $.close.get(0), 4, $.idx);",
+        "var x3 = rt.ta.lowestbars($.taSlots[27], $.close.get(0), 4, $.idx);",
         "var x4 = rt.ta.mfi($.taSlots[28], $.close.get(0), $.volume.get(0), 3);",
         "var x5 = rt.ta.cog($.taSlots[29], $.close.get(0), 3);",
         "var x6 = rt.ta.correlation($.taSlots[30], $.close.get(0), $.open.get(0), 3);",
@@ -27745,7 +27749,7 @@ describe("ta.<fn>(...)[N] historical indexing analyzer/codegen (C340)", () => {
   it("offset>=1 wraps the call in a record+get comma expression at the call's own codegen site", () => {
     const code = codegenSource("var float a = na\na := ta.highest(high, 5)[1]");
     expect(code).toContain(
-      "$.vars[0] = ($.histSlots[0].record(rt.ta.highest($.taSlots[0], $.high.get(0), 5)), $.histSlots[0].get(1));",
+      "$.vars[0] = ($.histSlots[0].record(rt.ta.highest($.taSlots[0], $.high.get(0), 5, $.idx)), $.histSlots[0].get(1));",
     );
   });
 
@@ -27761,7 +27765,7 @@ describe("ta.<fn>(...)[N] historical indexing analyzer/codegen (C340)", () => {
   it("accepts the call in the rightmost (lazy) operand of a top-level 'or' chain via eager-hoisted prelude", () => {
     const code = codegenSource("x = close > high or low <= ta.lowest(low, 10)[1]");
     expect(code).toContain(
-      "let __lazy0 = ($.histSlots[0].record(rt.ta.lowest($.taSlots[0], $.low.get(0), 10)), $.histSlots[0].get(1));",
+      "let __lazy0 = ($.histSlots[0].record(rt.ta.lowest($.taSlots[0], $.low.get(0), 10, $.idx)), $.histSlots[0].get(1));",
     );
     expect(code).toContain("rt.pineOr(rt.pineGt($.close.get(0), $.high.get(0)), rt.pineLe($.low.get(0), __lazy0))");
   });
@@ -27773,7 +27777,7 @@ describe("ta.<fn>(...)[N] historical indexing analyzer/codegen (C340)", () => {
   it("accepts the call in a ternary branch via the if-body compressed slot, inline in the branch", () => {
     const code = codegenSource('x = close > open ? ta.lowest(low, 11)[1] : 1.0');
     expect(code).toContain(
-      "(rt.pineGt($.close.get(0), $.open.get(0)) ? ($.condCallHistSlots[0].push(rt.ta.lowest($.taSlots[0], $.low.get(0), 11)), $.condCallHistSlots[0].get(1)) : 1.0)",
+      "(rt.pineGt($.close.get(0), $.open.get(0)) ? ($.condCallHistSlots[0].push(rt.ta.lowest($.taSlots[0], $.low.get(0), 11, $.idx)), $.condCallHistSlots[0].get(1)) : 1.0)",
     );
     expect(code).not.toContain("__lazy");
   });
@@ -27831,7 +27835,7 @@ describe("ta.<fn>(...)[N] historical indexing analyzer/codegen (C340)", () => {
   it("accepts a lazy-expr call inside a UDF body via the __histBase-relative eager-hoisted prelude (C484)", () => {
     const code = codegenSource("f(x) =>\n    true or ta.highest(x, 5)[1] > 0.0\ny = f(close)");
     expect(code).toContain(
-      "let __lazy0 = ($.histSlots[__histBase + 0].record(rt.ta.highest($.taSlots[__taBase + 0], x, 5)), $.histSlots[__histBase + 0].get(1));",
+      "let __lazy0 = ($.histSlots[__histBase + 0].record(rt.ta.highest($.taSlots[__taBase + 0], x, 5, $.idx)), $.histSlots[__histBase + 0].get(1));",
     );
     expect(code).toContain("return rt.pineOr(true, rt.pineGt(__lazy0, 0.0));");
   });
@@ -27839,15 +27843,15 @@ describe("ta.<fn>(...)[N] historical indexing analyzer/codegen (C340)", () => {
   it("accepts an 'or' operand call inside a ternary branch (the branch's compressed slot, inline in the branch)", () => {
     const code = codegenSource("x = close > open ? (true or ta.highest(high, 5)[1] > 0.0) : false");
     expect(code).toContain(
-      "? rt.pineOr(true, rt.pineGt(($.condCallHistSlots[0].push(rt.ta.highest($.taSlots[0], $.high.get(0), 5)), $.condCallHistSlots[0].get(1)), 0.0)) : false",
+      "? rt.pineOr(true, rt.pineGt(($.condCallHistSlots[0].push(rt.ta.highest($.taSlots[0], $.high.get(0), 5, $.idx)), $.condCallHistSlots[0].get(1)), 0.0)) : false",
     );
     expect(code).not.toContain("__lazy");
   });
 
   it("gives independent history slots and lazy temp names to two distinct ta.*(...)[N] calls sharing one lazy 'or' chain", () => {
     const code = codegenSource("x = close > 0.0 or (ta.highest(high, 5)[1] > ta.lowest(low, 5)[1])");
-    expect(code).toContain("let __lazy0 = ($.histSlots[0].record(rt.ta.highest($.taSlots[0], $.high.get(0), 5)), $.histSlots[0].get(1));");
-    expect(code).toContain("let __lazy1 = ($.histSlots[1].record(rt.ta.lowest($.taSlots[1], $.low.get(0), 5)), $.histSlots[1].get(1));");
+    expect(code).toContain("let __lazy0 = ($.histSlots[0].record(rt.ta.highest($.taSlots[0], $.high.get(0), 5, $.idx)), $.histSlots[0].get(1));");
+    expect(code).toContain("let __lazy1 = ($.histSlots[1].record(rt.ta.lowest($.taSlots[1], $.low.get(0), 5, $.idx)), $.histSlots[1].get(1));");
     expect(code).toContain("rt.pineGt(__lazy0, __lazy1)");
   });
 
@@ -27921,7 +27925,7 @@ describe("ta.<fn>(...)[N] historical indexing analyzer/codegen (C340)", () => {
     const code = codegenSource("f(x) =>\n    ta.highest(x, 5)[1]\ny = f(close)");
     expect(code).toContain("function f(__slotBase, __taBase, __histBase, x) {");
     expect(code).toContain(
-      "return ($.histSlots[__histBase + 0].record(rt.ta.highest($.taSlots[__taBase + 0], x, 5)), $.histSlots[__histBase + 0].get(1));",
+      "return ($.histSlots[__histBase + 0].record(rt.ta.highest($.taSlots[__taBase + 0], x, 5, $.idx)), $.histSlots[__histBase + 0].get(1));",
     );
     expect(code).toContain("var y = f(0, 0, 0, $.close.get(0));");
   });
@@ -27942,13 +27946,13 @@ describe("ta.<fn>(...)[N] historical indexing analyzer/codegen (C340)", () => {
   it("emits offset 0 on a UDF-body call history as a plain (non-indexed) call — identical to a bare call", () => {
     const code = codegenSource("f(x) =>\n    ta.highest(x, 5)[0]\ny = f(close)");
     expect(code).not.toContain("histSlots");
-    expect(code).toContain("return rt.ta.highest($.taSlots[__taBase + 0], x, 5);");
+    expect(code).toContain("return rt.ta.highest($.taSlots[__taBase + 0], x, 5, $.idx);");
   });
 
   it("emits a dynamic offset on a UDF-body call history through the same __histBase-relative slot", () => {
     const code = codegenSource("f(x, n) =>\n    ta.highest(x, 5)[n]\ny = f(close, 1)");
     expect(code).toContain(
-      "return ($.histSlots[__histBase + 0].record(rt.ta.highest($.taSlots[__taBase + 0], x, 5)), $.histSlots[__histBase + 0].get(n));",
+      "return ($.histSlots[__histBase + 0].record(rt.ta.highest($.taSlots[__taBase + 0], x, 5, $.idx)), $.histSlots[__histBase + 0].get(n));",
     );
   });
 
@@ -27961,7 +27965,7 @@ describe("ta.<fn>(...)[N] historical indexing analyzer/codegen (C340)", () => {
     );
     expect(code).toContain("function f(__slotBase, __taBase, __condHistBase, x) {");
     expect(code).toContain(
-      "($.condCallHistSlots[__condHistBase + 0].push(rt.ta.highest($.taSlots[__taBase + 0], x, 5)), $.condCallHistSlots[__condHistBase + 0].get(1))",
+      "($.condCallHistSlots[__condHistBase + 0].push(rt.ta.highest($.taSlots[__taBase + 0], x, 5, $.idx)), $.condCallHistSlots[__condHistBase + 0].get(1))",
     );
     expect(code).toContain("var y = f(0, 0, 0, $.close.get(0));");
   });
@@ -27979,7 +27983,7 @@ describe("ta.<fn>(...)[N] historical indexing analyzer/codegen (C340)", () => {
       ["f(x) =>", "    x > 0.0 ? ta.highest(x, 5)[1] : 0.0"].join("\n") + "\ny = f(close)",
     );
     expect(code).toContain(
-      "return (rt.pineGt(x, 0.0) ? ($.condCallHistSlots[__condHistBase + 0].push(rt.ta.highest($.taSlots[__taBase + 0], x, 5)), $.condCallHistSlots[__condHistBase + 0].get(1)) : 0.0);",
+      "return (rt.pineGt(x, 0.0) ? ($.condCallHistSlots[__condHistBase + 0].push(rt.ta.highest($.taSlots[__taBase + 0], x, 5, $.idx)), $.condCallHistSlots[__condHistBase + 0].get(1)) : 0.0);",
     );
     expect(code).not.toContain("__lazy");
   });
@@ -28110,10 +28114,10 @@ describe("ta.<fn>(...)[N] historical indexing analyzer/codegen (C340)", () => {
   it("gives independent history slots and lazy temp names to two distinct UDF-body ta.*(...)[N] calls sharing one lazy chain (C484)", () => {
     const code = codegenSource("f(x) =>\n    true or (ta.highest(x, 5)[1] > ta.lowest(x, 5)[1])\ny = f(close)");
     expect(code).toContain(
-      "let __lazy0 = ($.histSlots[__histBase + 0].record(rt.ta.highest($.taSlots[__taBase + 0], x, 5)), $.histSlots[__histBase + 0].get(1));",
+      "let __lazy0 = ($.histSlots[__histBase + 0].record(rt.ta.highest($.taSlots[__taBase + 0], x, 5, $.idx)), $.histSlots[__histBase + 0].get(1));",
     );
     expect(code).toContain(
-      "let __lazy1 = ($.histSlots[__histBase + 1].record(rt.ta.lowest($.taSlots[__taBase + 1], x, 5)), $.histSlots[__histBase + 1].get(1));",
+      "let __lazy1 = ($.histSlots[__histBase + 1].record(rt.ta.lowest($.taSlots[__taBase + 1], x, 5, $.idx)), $.histSlots[__histBase + 1].get(1));",
     );
     expect(code).toContain("rt.pineGt(__lazy0, __lazy1)");
   });

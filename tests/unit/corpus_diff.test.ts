@@ -576,8 +576,17 @@ describe("corpus diff: sample bar-by-bar replay against pine2py golden", () => {
     // suites/indicators/tv/ta_051_iii_nvi_obv and ta_341_accdist_pvi_pvt_wad_wvad (obv/pvt na on bar
     // 0), the PyneCore oracle (lib/ta.py cum). Floor moved to the observed matched 2318 / mismatch
     // 597; nothing else changed.
-    expect(matched.length).toBeGreaterThanOrEqual(2318);
-    expect(mismatched.length).toBeLessThanOrEqual(597);
+    // 2026-09-26 ta.highest/ta.lowest run the oracle's bar-addressed ring, whose na source resets the
+    // window and whose warm-up counts bars (na while bar_index < length - 1): exactly three hashes
+    // went matched -> mismatch, each a ta.highest/lowest(x, 5) of a source that is na through a moving
+    // average's warm-up, now valued from bar 4 where pine2py's poison window (not ground truth) gave
+    // na (670560d9b52e highest(|close - sma|), 5e4c810b368c highest - lowest of close - sma,
+    // 8fffc707456c highest(|ema3 - ema7|)). PyneCore lib/ta.py highest ("A na input RESETS the
+    // machine", measured on TradingView); resin-harness twin state/repros/extreme-na-reset.json
+    // channels hi_warm/rs_warm/osc_warm run these shapes through the oracle. Floor moved to the
+    // observed matched 2315 / mismatch 600; nothing else changed.
+    expect(matched.length).toBeGreaterThanOrEqual(2315);
+    expect(mismatched.length).toBeLessThanOrEqual(600);
     expect(transpileFailed.length).toBeLessThanOrEqual(86);
     expect(runtimeFailed.length, `runtime failures: ${runtimeFailed.map((o) => `${o.hash}: ${o.detail}`).join(" | ")}`).toBe(0);
     expect(noComparable.length, `no comparable key: ${noComparable.map((o) => o.hash).join(", ")}`).toBeLessThanOrEqual(2);

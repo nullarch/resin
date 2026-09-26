@@ -365,11 +365,9 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
     rtPath: "rt.ta.valuewhen",
     kwargParamNames: ["condition", "source", "occurrence"],
   },
-  // ta.highest(source, length)/ta.lowest(source, length) — pine2py wavealgo/ta/highest.py 소스 대조
-  // 결과 매 호출 source.get(0..length-1) 전체를 O(length) 재스캔해 그 중 하나라도 NaN이면 즉시 NaN을
-  // 반환한다(runtime/ta.ts highest/lowest 주석의 monotonic deque 유도 참조). length가 창 폭(버퍼 크기)을
-  // 결정하므로 sma와 동일하게 lengthArgIndex: 1(series 하드 에러). codegen 특수 분기 불필요(2개 인자가
-  // 그대로 순서대로 전달) — **C250**: pine2py의 `ta.highest(length)`(source 생략, 암묵 high/low)
+  // ta.highest(source, length)/ta.lowest(source, length) — the oracle's bar-addressed ring, one
+  // machine for a literal and a series length; an na source resets it (runtime/ta.ts highest). codegen
+  // appends the bar index it reads — **C250**: pine2py의 `ta.highest(length)`(source 생략, 암묵 high/low)
   // 1-인자 축약형은 highest.py/lowest.py가 `isinstance(source,(int,float))` 런타임 스니핑으로 실제
   // 지원함을 확인(소스 20-35행) — minArgCount:1 + sourceOmittable:true로 신규 지원(genCallExpr의
   // "highest"/"lowest" 분기가 1-인자 호출에서만 암묵 high/low를 unshift). change의 선택적 length와
@@ -483,16 +481,9 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
     kwargParamNames: ["length"],
   },
   // ta.highestbars(source, length)/ta.lowestbars(source, length) — 최근 length바 중 최댓값/최솟값이
-  // 발생한 바의 오프셋(0=현재바, -1=1바 전 ...). pine2py wavealgo/ta/highest.py의 highestbars()/
-  // lowestbars()는 highest()/lowest()와 완전히 동일한 NaN-poison window(창 안 하나라도 NaN이면 즉시
-  // NaN)라 divergence 없이 그대로 이식(wpr(C44)과 달리 highest.py 한 파일 안에서 poison window로
-  // 이미 일관됨). runtime/ta.ts highestbars()/lowestbars() 주석 + scratch/probe_highestbars.mjs
-  // 검증대로 rt.ta.highest/rt.ta.lowest(C42)의 ExtremeState 부수 정보(seq/dequeSeq[dequeHead])만
-  // 읽어 offset을 유도하는 합성(hma/linreg/stoch과 동일 "이미 구현된 TA 재사용" 원칙) — 새 상태
-  // 모양 불필요. length가 창 폭(deque backing array 크기)을 결정하므로 고정 length 폼은
-  // lengthArgIndex: 1 그대로 — 단 pine2py 원본이 highest/lowest와 동일한 무상태 O(length) 재스캔
-  // (get_ta_state 미사용)이라 series length도 깨지지 않아 seriesLengthOk: true(C549, 배치25 (4) —
-  // codegen이 runtime/ta.ts highestbarsVarLen/lowestbarsVarLen 변형으로 분기).
+  // 발생한 바의 오프셋(0=현재바, -1=1바 전 ...): the age of the kept extreme in ta.highest/ta.lowest's
+  // ring (runtime/ta.ts highestbars; 0 on an na source), for a literal and a series length alike
+  // (seriesLengthOk: true, C549 — codegen이 runtime/ta.ts highestbarsVarLen/lowestbarsVarLen으로 분기).
   // C655: minArgCount:1 + sourceOmittable:true 추가 — TV 실측(scratch/tv_validation/results.jsonl,
   // 배치33 (6) argcount 재조사)이 `ta.highestbars(length)`/`ta.lowestbars(length)`(source 생략,
   // 암묵 high/low) 1-인자 폼을 실제 TV 컴파일러로 4/7 표본에서 accept로 확정(wild

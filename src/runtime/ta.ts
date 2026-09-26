@@ -1125,11 +1125,11 @@ export interface ExtremeState {
 // GOAL.md "bar loop 안 할당 제로"를 지킨다 - 고전적 sliding-window-maximum 증명(창 크기 length 안에서
 // deque가 담을 수 있는 원소 수는 항상 length 이하)이 capacity=length로도 오버플로가 없음을 보장한다.
 //
-// `oldestTie` picks which of several equal extremes the deque head holds: false keeps the newest
-// (pop every element <= the new value; ta.pivothigh reads that), true keeps the oldest (pop only
-// strictly smaller ones; ta.highestbars reads that — see its comment). The extreme's value is the
-// same either way.
-export function highest(state: ExtremeState, value: number, length: number, oldestTie = false): number {
+// ta.highest itself no longer runs here (see highest() below, the oracle's ring). This deque keeps
+// the pine2py poison window for the machines still composed on it: ta.range, ta.stoch, ta.wpr and
+// ta.pivothigh/pivotlow, whose na rules are their own. Of several equal extremes the deque head holds
+// the newest (every element <= the new value is popped): ta.pivothigh reads that.
+function dequeHighest(state: ExtremeState, value: number, length: number): number {
   length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조) — pivothigh는 이 함수를 경유해 함께 해결됨
   if (state.buffer === undefined) {
     state.seq = -1;
@@ -1161,7 +1161,7 @@ export function highest(state: ExtremeState, value: number, length: number, olde
     size--;
   }
   if (!Number.isNaN(value)) {
-    while (size > 0 && (oldestTie ? dequeVal[(head + size - 1) % length]! < value : dequeVal[(head + size - 1) % length]! <= value)) {
+    while (size > 0 && dequeVal[(head + size - 1) % length]! <= value) {
       size--;
     }
     const tail = (head + size) % length;
@@ -1176,9 +1176,8 @@ export function highest(state: ExtremeState, value: number, length: number, olde
   return dequeVal[head]!;
 }
 
-// ta.lowest - highest와 대칭(뒤에서 자신보다 크거나 같은 원소를 pop, deque 맨 앞이 최솟값). 상세는
-// highest 주석 참조.
-export function lowest(state: ExtremeState, value: number, length: number, oldestTie = false): number {
+// dequeHighest mirrored (every element >= the new value is popped; the head is the newest minimum).
+function dequeLowest(state: ExtremeState, value: number, length: number): number {
   length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조) — pivotlow는 이 함수를 경유해 함께 해결됨
   if (state.buffer === undefined) {
     state.seq = -1;
@@ -1210,7 +1209,7 @@ export function lowest(state: ExtremeState, value: number, length: number, oldes
     size--;
   }
   if (!Number.isNaN(value)) {
-    while (size > 0 && (oldestTie ? dequeVal[(head + size - 1) % length]! > value : dequeVal[(head + size - 1) % length]! >= value)) {
+    while (size > 0 && dequeVal[(head + size - 1) % length]! >= value) {
       size--;
     }
     const tail = (head + size) % length;
@@ -1231,81 +1230,73 @@ export interface ExtremeVarLenState {
   lastBarIdx?: number;
 }
 
-// ta.highest/ta.lowest(source, length) - length가 series(바마다 값이 바뀜)인 변형. 위 highest/lowest의
-// monotonic deque(C42)는 첫 호출의 length로 버퍼 크기를 굳혀 series length에서 상태가 깨진다
-// (analyzer.ts TA_REGISTRY.highest/lowest 주석의 하드 에러 근거) - 그러나 pine2py
-// wavealgo/ta/highest.py를 직접 실행해 대조한 결과(scratch/length_series_probe.mjs, 2026-08-01)
-// 원본이 애초에 상태를 안 두고 매 호출 `source.get(0..length-1)`을 O(length) 재스캔하는 방식이라
-// length가 바뀌어도 그 자체로는 깨지지 않음을 확인 - 이 변형은 pine2py를 오라클로 그대로 이식한다
-// (hand-verified 아님, oracle/cases/ta_highest_lowest_varlen.pine 골든으로 수치 확정). 콜사이트별로
-// barCount(전체 바 수, $.barCount) 크기의 평평한 버퍼를 최초 1회만 할당(GOAL.md "bar loop 안 할당
-// 제로" 준수 - 매 바 재할당 없음, Series.preallocate와 동일 원칙)하고 순서대로 채운다 - source 인자가
-// Series로 백업돼 있는지 여부와 무관하게(임의 표현식이어도) 이 콜사이트가 실제로 받은 스칼라 값의
-// 히스토리를 자체적으로 추적한다. **바 인덱스 중복 호출(같은 바 안에서 for/while 루프로 여러 번
-// 호출)은 push가 아니라 덮어쓰기다** - pine2py context.param()(wavealgo/context.py L179)을 직접
-// 읽어 확인: `if len(s) <= self.idx: s.push(...) else: s._data[-1] = ...` - 즉 "이미 이 바에서
-// push했으면 마지막 슬롯을 갱신"이라 같은 바 반복 호출은 데이터 길이를 늘리지 않는다(corpus_diff
-// 회귀 플로어 실측으로 최초 설계의 "매 호출마다 전진" 가정이 틀렸음을 발견 - `for period=3 to 5`
-// 루프 안에서 ta.highest(high,period)를 매 바 3회 호출하는 116e6a965746.pine이 대조 불일치를 내
-// barIdx 인자를 추가해 바로잡음, 2026-08-01). barIdx($.idx)가 이전 호출과 같으면 buffer[writeIdx]를
-// 덮어쓰기만 하고 writeIdx는 그대로 - 다르면(새 바) writeIdx를 전진시킨 뒤 쓴다. length<1(0 또는
-// 음수)은 pine2py highest.py가 `range(length)`를 빈 루프로 통과시켜 초기값(highest: -inf, lowest:
-// +inf)을 그대로 반환하는 실측 버그를 그대로 이식(python 직접 실행 확인, 2026-08-01) - DIVERGENCES에
-// "pine2py 원본 버그 이식" 등재. length가 NaN이면 pine2py는 `range(nan)`에서 TypeError로 크래시해
-// 오라클이 성립하지 않으므로, 그 지점만 VERIFIED_SEMANTICS "산술 연산자 na 전파"를 인자 위치로
-// 외삽해 NaN을 반환한다(hand-verified, DIVERGENCES에 "TV 미검증(가설)"로 별도 등재).
-export function highestVarLen(state: ExtremeVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
-  if (state.buffer === undefined) {
-    state.buffer = new Float64Array(barCount).fill(NaN);
-    state.writeIdx = -1;
-    state.lastBarIdx = -1;
-  }
-  if (barIdx !== state.lastBarIdx) {
-    state.writeIdx = state.writeIdx! + 1;
-    state.lastBarIdx = barIdx;
-  }
-  const writeIdx = state.writeIdx!;
-  state.buffer[writeIdx] = value;
-
+// ta.highest/ta.lowest/ta.highestbars/ta.lowestbars(source, length), with a literal or a series
+// length: one machine, the oracle's, which reads `length` on every call (pynecore lib/ta.py
+// highest/lowest; extremeRing below). Each of its rules is a TradingView measurement quoted there:
+//   - an na source RESETS the machine: na on its bar (the bars form: 0 once past the warm-up), and
+//     the window restarts with the next non-na value ("A na input RESETS the machine ... the reset
+//     model matches TradingView on every bar ... while skipping na or keeping the window diverges
+//     from the first na on", probes hina_probe/hina2_probe). This is the manual's "`na` values in the
+//     `source` series are ignored" (ref_v6_ta_math.txt ta.highest): an na never becomes the extreme
+//     and never blanks the next `length` bars (repro state/repros/ta.extremes-seed-7.json, probe I01);
+//   - the window is a ring of `length + 1` slots addressed by bar_index and written only on the bars
+//     the call runs, so a gated call serves the stale slots of its own window (tier 1
+//     ta_370_gated_lowest_window);
+//   - the kept extreme ages in bars, not calls: a loop call site rewrites the bar's slot;
+//   - na while bar_index < length - 1;
+//   - of equal extremes the offset names the OLDEST (tier 1 ta_141_highest_lowest: bar 20
+//     ta.highestbars(close, 10) is -9, the tied 1.06839 at bars 11 and 13 reported at bar 11).
+// An na length is na. A length below 1 runs the machine as the oracle does, which leaves nothing to
+// rescan and returns the source (bars form 0; twin state/repros/extreme-varlen-sample10.json, length
+// bar_index % 3); TradingView's answer there is not measured. Clamping to 0 changes no output.
+export function highest(state: ExtremeRingState, value: number, length: number, barIdx: number): number {
   const len = Math.trunc(length);
   if (Number.isNaN(len)) return NaN;
-  if (len < 1) return -Infinity;
-  if (len > writeIdx + 1) return NaN;
-  let result = -Infinity;
-  for (let i = writeIdx - len + 1; i <= writeIdx; i++) {
-    const v = state.buffer[i]!;
-    if (Number.isNaN(v)) return NaN;
-    if (v > result) result = v;
-  }
-  return result;
+  return extremeRing(state, value, Math.max(len, 0), barIdx, false);
 }
 
-// ta.lowest series-length 변형 - highest와 대칭(최솟값, length<1은 +Infinity). 상세는 highestVarLen
-// 주석 참조.
-export function lowestVarLen(state: ExtremeVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
-  if (state.buffer === undefined) {
-    state.buffer = new Float64Array(barCount).fill(NaN);
-    state.writeIdx = -1;
-    state.lastBarIdx = -1;
-  }
-  if (barIdx !== state.lastBarIdx) {
-    state.writeIdx = state.writeIdx! + 1;
-    state.lastBarIdx = barIdx;
-  }
-  const writeIdx = state.writeIdx!;
-  state.buffer[writeIdx] = value;
-
+export function lowest(state: ExtremeRingState, value: number, length: number, barIdx: number): number {
   const len = Math.trunc(length);
   if (Number.isNaN(len)) return NaN;
-  if (len < 1) return Infinity;
-  if (len > writeIdx + 1) return NaN;
-  let result = Infinity;
-  for (let i = writeIdx - len + 1; i <= writeIdx; i++) {
-    const v = state.buffer[i]!;
-    if (Number.isNaN(v)) return NaN;
-    if (v < result) result = v;
-  }
-  return result;
+  return extremeRing(state, value, Math.max(len, 0), barIdx, true);
+}
+
+// The bars form reads the kept extreme's age. An na source reset it to 0, which is what the oracle
+// returns on that bar ("the bars form returns 0 (measured, subject to the same warmup gate as any
+// other bar)"). A zero offset is +0, never -0.
+function extremeBars(state: ExtremeRingState, value: number, length: number, barIdx: number, low: boolean): number {
+  const len = Math.max(Math.trunc(length), 0);
+  if (Number.isNaN(len)) return NaN;
+  extremeRing(state, value, len, barIdx, low);
+  if (barIdx < len - 1) return NaN;
+  const age = state.extremeIndex!;
+  return age === 0 ? 0 : -age;
+}
+
+export function highestbars(state: ExtremeRingState, value: number, length: number, barIdx: number): number {
+  return extremeBars(state, value, length, barIdx, false);
+}
+
+export function lowestbars(state: ExtremeRingState, value: number, length: number, barIdx: number): number {
+  return extremeBars(state, value, length, barIdx, true);
+}
+
+// The series-length entry points (codegen VARLEN_RT_PATHS, which appends the bar count and index to
+// every series-length call): the same machine; the ring sizes itself, so the bar count is unused.
+export function highestVarLen(state: ExtremeRingState, value: number, length: number, _barCount: number, barIdx: number): number {
+  return highest(state, value, length, barIdx);
+}
+
+export function lowestVarLen(state: ExtremeRingState, value: number, length: number, _barCount: number, barIdx: number): number {
+  return lowest(state, value, length, barIdx);
+}
+
+export function highestbarsVarLen(state: ExtremeRingState, value: number, length: number, _barCount: number, barIdx: number): number {
+  return highestbars(state, value, length, barIdx);
+}
+
+export function lowestbarsVarLen(state: ExtremeRingState, value: number, length: number, _barCount: number, barIdx: number): number {
+  return lowestbars(state, value, length, barIdx);
 }
 
 // ta.sma(source, length) - length가 series인 변형(배치25 (4) 두 번째, C548). 버퍼/writeIdx/barIdx
@@ -1368,123 +1359,6 @@ function naSkipSumVarLen(state: NaSkipVarLenState, value: number, len: number, b
   const buffer = state.buffer!;
   for (let i = count - Math.max(len, 0); i < count; i++) total += buffer[i]!;
   return total;
-}
-
-// ta.highestbars/ta.lowestbars(source, length) - 최근 length바 중 최댓값/최솟값이 발생한 바의
-// 오프셋(0=현재바, -1=1바 전 ...). pine2py wavealgo/ta/highest.py의 highestbars()/lowestbars()는
-// 매 호출 source.get(0..length-1)을 새로(i=0=현재바 -> length-1=가장 오래된 바 순서로) 스캔해
-// `val > max_val`(엄격 부등호, lowestbars는 `val < min_val`)일 때만 극값 인덱스를 갱신한다 - 동률이면
-// 나중 i(더 오래된 바)는 갱신 조건을 통과 못 해 **먼저 만난(더 작은 i = 더 최근 바)** 인덱스가 남는다.
-// C42의 monotonic deque(highest/lowest)는 새 값 push 시 뒤에서부터 자신 이하인 원소를 pop하는
-// 정책이라 동률이 항상 더 최근 원소로 대체됨(scratch/probe_highestbars.mjs로 5,000샘플 랜덤 퍼즈 +
-// 동률 다발 데이터까지 pine2py 방식과 완전히 동일한 결과임을 확인) - 결국 두 정책이 "동률이면 가장
-// 최근 바가 이긴다"는 동일한 규칙으로 수렴한다. ExtremeState.dequeSeq[dequeHead]는 현재 극값이
-// **기록된 시점의 seq**이므로 `state.seq - dequeSeq[dequeHead]`가 정확히 "몇 바 전에 극값이
-// 나왔는가"(pine2py의 max_idx/min_idx)와 같다 - 새 상태 모양 없이 highest()/lowest()를 그대로
-// 호출해 advance시킨 뒤 이 부수 정보만 읽으면 되는 합성(hma/linreg/stoch과 동일 "이미 구현된 TA
-// 재사용" 원칙). highest()/lowest()가 이미 nanCount>0일 때 NaN을 반환하므로 NaN 전파는 자동.
-// bars===0(현재 바가 극값)일 때 `-bars`는 JS negative zero(-0)를 만든다 — pine2py의 정수 `-max_idx`엔
-// 이 개념이 없으므로(Python int는 -0을 갖지 않음) 0 분기를 명시적으로 분리해 항상 +0을 반환한다.
-//
-// Ties: when the extreme occurs more than once in the window, the offset is to the OLDEST
-// occurrence (the pine2py newest-wins rule above is wrong). The manual only says "Offset to the
-// highest bar" (ref_v6_ta_math.txt ta.highestbars); tier 1 ta_141_highest_lowest settles it: bar 20
-// ta.highestbars(close, 10) is -9, the window's 1.06839 at bars 11 and 13 reported at bar 11, where
-// newest-wins gave -7. The oracle's machine (pynecore lib/ta.py highest/lowest with _bars=True)
-// keeps the older index when an equal value arrives and moves to the older index on a tie while it
-// rescans. ta.pivothigh/pivotlow keep reading the newest occurrence (oldestTie=false).
-export function highestbars(state: ExtremeState, value: number, length: number): number {
-  const maxVal = highest(state, value, length, true);
-  if (Number.isNaN(maxVal)) return NaN;
-  const bars = state.seq! - state.dequeSeq![state.dequeHead!]!;
-  return bars === 0 ? 0 : -bars;
-}
-
-export function lowestbars(state: ExtremeState, value: number, length: number): number {
-  const minVal = lowest(state, value, length, true);
-  if (Number.isNaN(minVal)) return NaN;
-  const bars = state.seq! - state.dequeSeq![state.dequeHead!]!;
-  return bars === 0 ? 0 : -bars;
-}
-
-// ta.highestbars/ta.lowestbars(source, length) - length가 series인 변형(배치25 (4) 세 번째, C549).
-// 버퍼/writeIdx/barIdx 덮어쓰기 메커니즘은 highestVarLen과 완전 동형(ExtremeVarLenState 재사용).
-// 위 고정 length highestbars()는 deque 부수 정보(seq)에서 오프셋을 유도하지만 deque는 첫 호출
-// length로 backing 크기를 굳혀 series length에서 못 쓴다 - pine2py highest.py의 highestbars()/
-// lowestbars() 원본은 highest()와 동일하게 상태 없이 매 호출 source.get(0..length-1)을 O(length)
-// 재스캔(get_ta_state 미사용)이라 length가 바뀌어도 깨지지 않음 - highest/lowest(C547)와 동일하게
-// pine2py를 오라클로 그대로 이식한다(oracle/cases/ta_highestbars_lowestbars_varlen.pine 골든).
-// 스캔은 i=0(현재바=buffer[writeIdx])부터 len-1(가장 오래된 바)까지 엄격 부등호(`>` / `<`)로
-// 극값 인덱스를 갱신 - 동률이면 먼저 만난(더 최근) 인덱스가 남는다(위 고정 length 버전의 deque
-// 정책과 동일 규칙으로 수렴함을 scratch/probe_highestbars.mjs가 이미 확인). 엣지(전부 pine2py
-// highestbars() 직접 대조): 워밍업(len > 관측 바 수)은 NaN(`data_len < length` 게이트), length<1은
-// `range(length)` 빈 루프로 max_idx=0이 그대로 남아 `-max_idx`=0 반환(highest의 -inf와 달리 0 -
-// 크래시 없는 정의된 동작이라 이식, DIVERGENCES #178 계열), length=NaN은 pine2py가 `range(nan)`
-// TypeError 크래시라 오라클 불가 - highestVarLen과 동일하게 na 전파(TV 미검증 가설). 창 안 NaN
-// 하나면 즉시 NaN(poison window). bars===0일 때 `-maxIdx`의 negative zero(-0)는 고정 length
-// 버전과 동일하게 0 분기 분리로 회피(MEMORY C45).
-//
-// Ties go to the OLDEST occurrence, as in the fixed-length highestbars (see its comment; tier 1
-// ta_141_highest_lowest): the newest-to-oldest scan moves to an older index on an equal value
-// (`>=` / `<=`), like the oracle's rescan.
-export function highestbarsVarLen(state: ExtremeVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
-  if (state.buffer === undefined) {
-    state.buffer = new Float64Array(barCount).fill(NaN);
-    state.writeIdx = -1;
-    state.lastBarIdx = -1;
-  }
-  if (barIdx !== state.lastBarIdx) {
-    state.writeIdx = state.writeIdx! + 1;
-    state.lastBarIdx = barIdx;
-  }
-  const writeIdx = state.writeIdx!;
-  state.buffer[writeIdx] = value;
-
-  const len = Math.trunc(length);
-  if (Number.isNaN(len)) return NaN;
-  if (len > writeIdx + 1) return NaN;
-  let maxVal = -Infinity;
-  let maxIdx = 0;
-  for (let i = 0; i < len; i++) {
-    const v = state.buffer[writeIdx - i]!;
-    if (Number.isNaN(v)) return NaN;
-    if (v >= maxVal) {
-      maxVal = v;
-      maxIdx = i;
-    }
-  }
-  return maxIdx === 0 ? 0 : -maxIdx;
-}
-
-// ta.lowestbars series-length 변형 - highestbarsVarLen과 대칭(최솟값 오프셋, 동률이면 가장 오래된 바).
-// 상세는 highestbarsVarLen 주석 참조.
-export function lowestbarsVarLen(state: ExtremeVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
-  if (state.buffer === undefined) {
-    state.buffer = new Float64Array(barCount).fill(NaN);
-    state.writeIdx = -1;
-    state.lastBarIdx = -1;
-  }
-  if (barIdx !== state.lastBarIdx) {
-    state.writeIdx = state.writeIdx! + 1;
-    state.lastBarIdx = barIdx;
-  }
-  const writeIdx = state.writeIdx!;
-  state.buffer[writeIdx] = value;
-
-  const len = Math.trunc(length);
-  if (Number.isNaN(len)) return NaN;
-  if (len > writeIdx + 1) return NaN;
-  let minVal = Infinity;
-  let minIdx = 0;
-  for (let i = 0; i < len; i++) {
-    const v = state.buffer[writeIdx - i]!;
-    if (Number.isNaN(v)) return NaN;
-    if (v <= minVal) {
-      minVal = v;
-      minIdx = i;
-    }
-  }
-  return minIdx === 0 ? 0 : -minIdx;
 }
 
 export interface MedianVarLenState extends NaSkipVarLenState {
@@ -2294,8 +2168,8 @@ export function range(state: RangeState, value: number, length: number): number 
     state.hi = {};
     state.lo = {};
   }
-  const hi = highest(state.hi, value, length);
-  const lo = lowest(state.lo!, value, length);
+  const hi = dequeHighest(state.hi, value, length);
+  const lo = dequeLowest(state.lo!, value, length);
   return hi - lo;
 }
 
@@ -2320,8 +2194,8 @@ export function stoch(state: StochState, source: number, high: number, low: numb
     state.hh = {};
     state.ll = {};
   }
-  const hh = highest(state.hh, high, length);
-  const ll = lowest(state.ll!, low, length);
+  const hh = dequeHighest(state.hh, high, length);
+  const ll = dequeLowest(state.ll!, low, length);
   if (Number.isNaN(hh) || Number.isNaN(ll)) return NaN;
   const diff = hh - ll;
   if (diff === 0) return 50.0;
@@ -2361,8 +2235,8 @@ export function wpr(state: WprState, close: number, high: number, low: number, l
     state.hh = {};
     state.ll = {};
   }
-  const hh = highest(state.hh, high, length);
-  const ll = lowest(state.ll!, low, length);
+  const hh = dequeHighest(state.hh, high, length);
+  const ll = dequeLowest(state.ll!, low, length);
   if (Number.isNaN(hh) || Number.isNaN(ll)) return NaN;
   const diff = hh - ll;
   if (diff === 0) return 0.0;
@@ -3593,7 +3467,7 @@ export function pivothigh(state: PivotState, source: number, left: number, right
     state.extreme = {};
   }
   const length = left + right + 1;
-  const windowMax = highest(state.extreme, source, length);
+  const windowMax = dequeHighest(state.extreme, source, length);
   if (Number.isNaN(windowMax)) return NaN;
   const ext = state.extreme;
   return ext.dequeSeq![ext.dequeHead!] === ext.seq! - right ? windowMax : NaN;
@@ -3607,7 +3481,7 @@ export function pivotlow(state: PivotState, source: number, left: number, right:
     state.extreme = {};
   }
   const length = left + right + 1;
-  const windowMin = lowest(state.extreme, source, length);
+  const windowMin = dequeLowest(state.extreme, source, length);
   if (Number.isNaN(windowMin)) return NaN;
   const ext = state.extreme;
   return ext.dequeSeq![ext.dequeHead!] === ext.seq! - right ? windowMin : NaN;

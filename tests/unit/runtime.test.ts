@@ -2676,217 +2676,212 @@ describe("ta.valuewhen", () => {
 
 });
 
+// ta.highest/ta.lowest run the oracle's bar-addressed ring (runtime/ta.ts highest; pynecore lib/ta.py
+// highest/lowest): every call passes its bar index. An na source resets the window (probe I01,
+// resin-harness state/repros/ta.extremes-seed-7.json and twin extreme-na-reset.json); a gated call
+// serves the stale slots of its own ring (tier 1 ta_370_gated_lowest_window).
+function runBars(fn: (state: object, v: number, len: number, bi: number) => number, values: number[], length: number): number[] {
+  const state = {};
+  return values.map((v, i) => fn(state, v, length, i));
+}
+
+// Brute force of the reset rule: na on an na bar and while bar_index < length - 1, otherwise the
+// extreme of the last `length` bars that follow the latest na.
+function resetWindowExtreme(values: number[], length: number, pick: (...xs: number[]) => number): number[] {
+  let lastNa = -1;
+  return values.map((v, i) => {
+    if (Number.isNaN(v)) {
+      lastNa = i;
+      return NaN;
+    }
+    if (i < length - 1) return NaN;
+    return pick(...values.slice(Math.max(i - length + 1, lastNa + 1), i + 1));
+  });
+}
+
 describe("ta.highest", () => {
-  it("returns NaN for the first length-1 calls (buffer warmup, length=3, data_len<length)", () => {
+  it("returns NaN while bar_index < length - 1 (warm-up, length=3)", () => {
     const state = {};
-    expect(highest(state, 101, 3)).toBeNaN();
-    expect(highest(state, 102, 3)).toBeNaN();
+    expect(highest(state, 101, 3, 0)).toBeNaN();
+    expect(highest(state, 102, 3, 1)).toBeNaN();
   });
 
   it("matches a hand-computed sliding max once the window fills (length=2)", () => {
     const state = {};
-    highest(state, 10, 2); // NaN, buffer [10, NaN]
-    expect(highest(state, 12, 2)).toBe(12); // window [10,12]
-    expect(highest(state, 5, 2)).toBe(12); // window [12,5]
-    expect(highest(state, 3, 2)).toBe(5); // window [5,3]
+    highest(state, 10, 2, 0); // NaN (warm-up)
+    expect(highest(state, 12, 2, 1)).toBe(12); // window [10,12]
+    expect(highest(state, 5, 2, 2)).toBe(12); // window [12,5]
+    expect(highest(state, 3, 2, 3)).toBe(5); // 12 expired: rescan of [5,3]
   });
 
-  it("matches the pine2py-verified sample10.json trace (close, length=4)", () => {
-    const state = {};
-    const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
-    const results = closes.map((c) => highest(state, c, 4));
+  it("matches the sample10.json trace (close, length=4)", () => {
+    const results = runBars(highest, [101, 102, 103, 102, 104, 105, 106, 105, 107, 108], 4);
     expect(results.slice(0, 3).every((r) => Number.isNaN(r))).toBe(true);
-    expect(results[3]).toBe(103);
-    expect(results[4]).toBe(104);
-    expect(results[5]).toBe(105);
-    expect(results[6]).toBe(106);
-    expect(results[7]).toBe(106);
-    expect(results[8]).toBe(107);
-    expect(results[9]).toBe(108);
+    expect(results.slice(3)).toEqual([103, 104, 105, 106, 106, 107, 108]);
   });
 
   it("keeps independent state across two call sites", () => {
     const stateA = {};
     const stateB = {};
-    highest(stateA, 10, 2);
-    expect(highest(stateA, 12, 2)).toBe(12);
-    expect(highest(stateB, 100, 2)).toBeNaN();
+    highest(stateA, 10, 2, 0);
+    expect(highest(stateA, 12, 2, 1)).toBe(12);
+    expect(highest(stateB, 100, 2, 1)).toBe(100);
+    expect(highest(stateB, 1, 2, 2)).toBe(100);
   });
 
-  it("poisons the window across a NaN gap, then recovers once the buffer fills with fresh values", () => {
+  it("resets on an na source: na on that bar, then a fresh window (not a length-bar na hole)", () => {
     const state = {};
-    highest(state, 10, 2); // NaN, buffer [10, NaN]
-    expect(highest(state, 12, 2)).toBe(12); // buffer [10,12]
-    expect(highest(state, NaN, 2)).toBeNaN(); // buffer [NaN,12]
-    expect(highest(state, 20, 2)).toBeNaN(); // buffer [NaN,20] — poisoned slot still in window
-    expect(highest(state, 24, 2)).toBe(24); // buffer [24,20], window fully real again
+    highest(state, 10, 3, 0); // NaN (warm-up)
+    highest(state, 30, 3, 1); // NaN (warm-up)
+    expect(highest(state, 12, 3, 2)).toBe(30);
+    expect(highest(state, NaN, 3, 3)).toBeNaN();
+    expect(highest(state, 20, 3, 4)).toBe(20); // 30 and 12 were forgotten; poison window said na
+    expect(highest(state, 15, 3, 5)).toBe(20);
+    expect(highest(state, 1, 3, 6)).toBe(20);
+    expect(highest(state, 2, 3, 7)).toBe(15);
   });
 
-  it("correctly pops dominated candidates from the back of the monotonic deque (decreasing-then-increasing run)", () => {
-    const state = {};
+  it("follows a decreasing-then-increasing run (the kept extreme expires and is rescanned)", () => {
     const values = [10, 9, 8, 7, 6, 5, 6, 7, 8, 9, 10, 11];
     const length = 3;
-    const results = values.map((v) => highest(state, v, length));
+    const results = runBars(highest, values, length);
     for (let i = length - 1; i < values.length; i++) {
-      const window = values.slice(i - length + 1, i + 1);
-      expect(results[i]).toBe(Math.max(...window));
+      expect(results[i]).toBe(Math.max(...values.slice(i - length + 1, i + 1)));
     }
   });
 
   it("collapses to raw passthrough when length=1 (each bar's own value)", () => {
     const state = {};
-    expect(highest(state, 5, 1)).toBe(5);
-    expect(highest(state, 3, 1)).toBe(3);
-    expect(highest(state, 8, 1)).toBe(8);
+    expect(highest(state, 5, 1, 0)).toBe(5);
+    expect(highest(state, 3, 1, 1)).toBe(3);
+    expect(highest(state, 8, 1, 2)).toBe(8);
   });
 
-  it("matches a from-scratch O(length) brute-force recomputation across a long sequence with embedded NaN gaps and buffer/deque wraparound", () => {
-    const state = {};
+  it("matches a brute-force reset-window recomputation across NaN gaps and ring wraparound", () => {
     const length = 5;
     const raw = [12, 45, 7, 23, NaN, 88, 3, 3, 3, 60, 61, NaN, NaN, 10, 99, 1, 1, 1, 50, 20, 5, 5, 80, 80, 80, 2, 2, 2, 44, 44];
-    const results = raw.map((v) => highest(state, v, length));
-    for (let i = 0; i < raw.length; i++) {
-      if (i < length - 1) {
-        expect(results[i]).toBeNaN();
-        continue;
-      }
-      const window = raw.slice(i - length + 1, i + 1);
-      if (window.some((w) => Number.isNaN(w))) {
-        expect(results[i]).toBeNaN();
-      } else {
-        expect(results[i]).toBe(Math.max(...window));
-      }
-    }
+    expect(runBars(highest, raw, length)).toEqual(resetWindowExtreme(raw, length, Math.max));
+  });
+
+  it("rewrites the bar's slot on a same-bar re-execution and keeps the extreme an earlier one found (per_call)", () => {
+    const state = {};
+    highest(state, 5, 2, 0);
+    expect(highest(state, 9, 2, 1)).toBe(9);
+    expect(highest(state, 4, 2, 1)).toBe(9); // same bar: the kept 9 stands, the slot now holds 4
+    expect(highest(state, 3, 2, 2)).toBe(9); // 9 is one bar old
+    expect(highest(state, 2, 2, 3)).toBe(3); // 9 expired: the rescan reads the slot of bar 2
   });
 });
 
 describe("ta.lowest", () => {
-  it("returns NaN for the first length-1 calls (buffer warmup, length=3, data_len<length)", () => {
+  it("returns NaN while bar_index < length - 1 (warm-up, length=3)", () => {
     const state = {};
-    expect(lowest(state, 101, 3)).toBeNaN();
-    expect(lowest(state, 102, 3)).toBeNaN();
+    expect(lowest(state, 101, 3, 0)).toBeNaN();
+    expect(lowest(state, 102, 3, 1)).toBeNaN();
   });
 
   it("matches a hand-computed sliding min once the window fills (length=2)", () => {
     const state = {};
-    lowest(state, 10, 2); // NaN, buffer [10, NaN]
-    expect(lowest(state, 12, 2)).toBe(10); // window [10,12]
-    expect(lowest(state, 5, 2)).toBe(5); // window [12,5]
-    expect(lowest(state, 20, 2)).toBe(5); // window [5,20]
+    lowest(state, 10, 2, 0); // NaN (warm-up)
+    expect(lowest(state, 12, 2, 1)).toBe(10); // window [10,12]
+    expect(lowest(state, 5, 2, 2)).toBe(5); // window [12,5]
+    expect(lowest(state, 20, 2, 3)).toBe(5); // window [5,20]
   });
 
-  it("matches the pine2py-verified sample10.json trace (close, length=4)", () => {
-    const state = {};
-    const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
-    const results = closes.map((c) => lowest(state, c, 4));
+  it("matches the sample10.json trace (close, length=4)", () => {
+    const results = runBars(lowest, [101, 102, 103, 102, 104, 105, 106, 105, 107, 108], 4);
     expect(results.slice(0, 3).every((r) => Number.isNaN(r))).toBe(true);
-    expect(results[3]).toBe(101);
-    expect(results[4]).toBe(102);
-    expect(results[5]).toBe(102);
-    expect(results[6]).toBe(102);
-    expect(results[7]).toBe(104);
-    expect(results[8]).toBe(105);
-    expect(results[9]).toBe(105);
+    expect(results.slice(3)).toEqual([101, 102, 102, 102, 104, 105, 105]);
   });
 
   it("keeps independent state across two call sites", () => {
     const stateA = {};
     const stateB = {};
-    lowest(stateA, 10, 2);
-    expect(lowest(stateA, 12, 2)).toBe(10);
-    expect(lowest(stateB, 100, 2)).toBeNaN();
+    lowest(stateA, 10, 2, 0);
+    expect(lowest(stateA, 12, 2, 1)).toBe(10);
+    expect(lowest(stateB, 100, 2, 0)).toBeNaN();
   });
 
-  it("poisons the window across a NaN gap, then recovers once the buffer fills with fresh values", () => {
+  it("resets on an na source: na on that bar, then a fresh window (not a length-bar na hole)", () => {
     const state = {};
-    lowest(state, 10, 2); // NaN, buffer [10, NaN]
-    expect(lowest(state, 12, 2)).toBe(10); // buffer [10,12]
-    expect(lowest(state, NaN, 2)).toBeNaN(); // buffer [NaN,12]
-    expect(lowest(state, 20, 2)).toBeNaN(); // buffer [NaN,20] — poisoned slot still in window
-    expect(lowest(state, 8, 2)).toBe(8); // buffer [8,20], window fully real again
+    lowest(state, 10, 2, 0); // NaN (warm-up)
+    expect(lowest(state, 12, 2, 1)).toBe(10);
+    expect(lowest(state, NaN, 2, 2)).toBeNaN();
+    expect(lowest(state, 20, 2, 3)).toBe(20); // poison window said na
+    expect(lowest(state, 8, 2, 4)).toBe(8);
   });
 
-  it("correctly pops dominated candidates from the back of the monotonic deque (increasing-then-decreasing run)", () => {
-    const state = {};
+  it("follows an increasing-then-decreasing run (the kept extreme expires and is rescanned)", () => {
     const values = [1, 2, 3, 4, 5, 4, 3, 2, 1, 0, -1];
     const length = 3;
-    const results = values.map((v) => lowest(state, v, length));
+    const results = runBars(lowest, values, length);
     for (let i = length - 1; i < values.length; i++) {
-      const window = values.slice(i - length + 1, i + 1);
-      expect(results[i]).toBe(Math.min(...window));
+      expect(results[i]).toBe(Math.min(...values.slice(i - length + 1, i + 1)));
     }
   });
 
   it("collapses to raw passthrough when length=1 (each bar's own value)", () => {
     const state = {};
-    expect(lowest(state, 5, 1)).toBe(5);
-    expect(lowest(state, 3, 1)).toBe(3);
-    expect(lowest(state, 8, 1)).toBe(8);
+    expect(lowest(state, 5, 1, 0)).toBe(5);
+    expect(lowest(state, 3, 1, 1)).toBe(3);
+    expect(lowest(state, 8, 1, 2)).toBe(8);
   });
 
-  it("matches a from-scratch O(length) brute-force recomputation across a long sequence with embedded NaN gaps and buffer/deque wraparound", () => {
-    const state = {};
+  it("matches a brute-force reset-window recomputation across NaN gaps and ring wraparound", () => {
     const length = 5;
     const raw = [12, 45, 7, 23, NaN, 88, 3, 3, 3, 60, 61, NaN, NaN, 10, 99, 1, 1, 1, 50, 20, 5, 5, 80, 80, 80, 2, 2, 2, 44, 44];
-    const results = raw.map((v) => lowest(state, v, length));
-    for (let i = 0; i < raw.length; i++) {
-      if (i < length - 1) {
-        expect(results[i]).toBeNaN();
-        continue;
-      }
-      const window = raw.slice(i - length + 1, i + 1);
-      if (window.some((w) => Number.isNaN(w))) {
-        expect(results[i]).toBeNaN();
-      } else {
-        expect(results[i]).toBe(Math.min(...window));
-      }
-    }
+    expect(runBars(lowest, raw, length)).toEqual(resetWindowExtreme(raw, length, Math.min));
+  });
+
+  it("serves a gated call the stale slots of its own ring (tier 1 ta_370_gated_lowest_window)", () => {
+    // `if not (bar_index >= 12 and bar_index <= 23) gated := ta.lowest(low, 4)`: TradingView's
+    // values on bars 24..35, where the call resumes over slots last written on bars 7..11.
+    const lows = [100, 99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89];
+    for (let v = 200; v <= 223; v++) lows.push(v);
+    const state = {};
+    const gated: number[] = [];
+    lows.forEach((low, bi) => {
+      if (bi >= 12 && bi <= 23) return;
+      const v = lowest(state, low, 4, bi);
+      if (bi >= 24) gated.push(v);
+    });
+    expect(gated).toEqual([89, 92, 92, 212, 213, 214, 215, 216, 217, 218, 219, 220]);
   });
 });
 
-// C800: 배치48 (3)/(4) 감사 — ROADMAP이 "highest/lowest/highestbars/lowestbars는 매 호출 윈도우
-// 전체를 재스캔한다"고 전제했으나, 실제 rt.ta.highest/lowest(고정 length 경로, seriesLength=false일
-// 때 codegen이 선택하는 rtPath — VARLEN_RT_PATHS는 length가 런타임 series일 때만 쓰임)는 이미
-// monotonic deque로 O(1) amortized임을 위 describe 블록들의 정확성 테스트가 증명한다. 이 블록은
-// 그 O(1) 보장이 미래에 실수로 O(length) 재스캔으로 퇴행하면(즉 GOAL.md "TA는 전부 incremental
-// O(1)/bar" 위반) 잡아내는 회귀 가드 — length*barCount를 수십억 스케일로 잡아 O(length) 구현이면
-// 수 초~수십 초가 걸리도록(느슨한 시간 상한도 구분 가능한 자릿수 차이) 설계했다.
-describe("ta.highest/ta.lowest O(1) amortized complexity guard (C800)", () => {
-  it("highest() stays fast when length and barCount are both large (O(length*barCount) rescan would blow the budget)", () => {
+// C800 guarded the O(1) amortized deque. The oracle's ring rescans its window only when the kept
+// extreme expires or the length grows, so the cost stays near O(1) per bar on market-like data
+// (an extreme expiring every bar, a strictly monotone run away from it, is O(length) per bar in the
+// oracle as well). This guard keeps a large length on oscillating data within budget.
+describe("ta.highest/ta.lowest cost guard (C800)", () => {
+  it("highest() stays fast when length and barCount are both large", () => {
     const state = {};
     const length = 50_000;
     const barCount = 50_000;
     const start = Date.now();
     for (let i = 0; i < barCount; i++) {
-      highest(state, Math.sin(i), length);
+      highest(state, Math.sin(i), length, i);
     }
-    const elapsedMs = Date.now() - start;
-    // O(1) amortized: ~50k deque ops, well under 100ms even under heavy CI load.
-    // O(length) rescan: ~2.5B comparisons, multiple seconds at minimum. 2s is a generous
-    // discriminator that tolerates background load without being timing-fragile.
-    expect(elapsedMs).toBeLessThan(2000);
+    expect(Date.now() - start).toBeLessThan(2000);
   });
 
-  it("lowest() stays fast when length and barCount are both large (O(length*barCount) rescan would blow the budget)", () => {
+  it("lowest() stays fast when length and barCount are both large", () => {
     const state = {};
     const length = 50_000;
     const barCount = 50_000;
     const start = Date.now();
     for (let i = 0; i < barCount; i++) {
-      lowest(state, Math.cos(i), length);
+      lowest(state, Math.cos(i), length, i);
     }
-    const elapsedMs = Date.now() - start;
-    expect(elapsedMs).toBeLessThan(2000);
+    expect(Date.now() - start).toBeLessThan(2000);
   });
 
-  it("keeps the monotonic deque bounded by length (never grows past the window size)", () => {
-    const state: { dequeSize?: number } = {};
+  it("keeps the ring at length + 1 slots (it grows with the length, never per bar)", () => {
+    const state: { capacity?: number } = {};
     const length = 100;
-    // Strictly increasing values are the worst case for deque growth (every push pops nothing
-    // from the back before the front starts evicting) — still must stay <= length.
     for (let i = 0; i < 10_000; i++) {
-      highest(state, i, length);
-      expect(state.dequeSize!).toBeLessThanOrEqual(length);
+      highest(state, i, length, i);
+      expect(state.capacity).toBe(length + 1);
     }
   });
 });
@@ -3459,8 +3454,8 @@ describe("ta.mfi", () => {
 });
 
 // ta.highest/ta.lowest series(가변) length 변형(highestVarLen/lowestVarLen, 배치25 (4) 첫 착수) —
-// 상세 설계 근거는 runtime/ta.ts 주석 및 oracle/cases/ta_highest_lowest_varlen.pine 참조. state-fixed
-// deque(위 describe 블록들)와 별개 함수라 그 쪽 회귀 위험은 없다. barIdx(마지막 인자, $.idx)는 같은
+// 상세 설계 근거는 runtime/ta.ts 주석 및 oracle/cases/ta_highest_lowest_varlen.pine 참조. The literal-length
+// path (ta.highest/ta.lowest above) runs the same ring machine. barIdx(마지막 인자, $.idx)는 같은
 // 바 반복 호출을 push가 아니라 덮어쓰기로 판별하는 기준(pine2py context.param() 이식) — 아래 대부분의
 // 테스트는 "매 호출이 새 바"(barIdx=호출 순번)를 가정하고, 전용 테스트가 "같은 바 반복 호출"을 검증한다.
 describe("ta.highest/ta.lowest variable(series) length (highestVarLen/lowestVarLen)", () => {
@@ -3479,13 +3474,15 @@ describe("ta.highest/ta.lowest variable(series) length (highestVarLen/lowestVarL
     expect(loResults.slice(2)).toEqual([101, 102, 104, 102, 102, 105, 105, 108]);
   });
 
-  it("returns -Infinity(highest)/+Infinity(lowest) for length<1 — literal-ported pine2py highest.py range(length) empty-loop quirk", () => {
+  // pine2py returned -Infinity/+Infinity here; the oracle runs its machine, which has nothing to
+  // rescan and returns the source (resin-harness twin state/repros/extreme-varlen-sample10.json).
+  it("returns the source for a length below 1, as the oracle does", () => {
     const stateHi = {};
     const stateLo = {};
-    expect(highestVarLen(stateHi, 50, 0, 10, 0)).toBe(-Infinity);
-    expect(lowestVarLen(stateLo, 50, 0, 10, 0)).toBe(Infinity);
-    expect(highestVarLen(stateHi, 50, -3, 10, 1)).toBe(-Infinity);
-    expect(lowestVarLen(stateLo, 50, -3, 10, 1)).toBe(Infinity);
+    expect(highestVarLen(stateHi, 50, 0, 10, 0)).toBe(50);
+    expect(lowestVarLen(stateLo, 50, 0, 10, 0)).toBe(50);
+    expect(highestVarLen(stateHi, 40, -3, 10, 1)).toBe(40);
+    expect(lowestVarLen(stateLo, 60, -3, 10, 1)).toBe(60);
   });
 
   it("returns NaN when length is NaN (hand-verified na-propagation — pine2py's range(nan) would crash, not oracle-able)", () => {
@@ -3502,12 +3499,14 @@ describe("ta.highest/ta.lowest variable(series) length (highestVarLen/lowestVarL
     expect(highestVarLen(state, 30, 3, 10, 2)).toBe(30); // bar 2, data_len=3, window=[10,20,30]
   });
 
-  it("poisons the window when any value in the (variable-width) trailing range is NaN", () => {
+  // An na source resets the machine (pynecore lib/ta.py highest; resin-harness twin
+  // state/repros/extreme-na-reset.json): the poison window gave na on bar 2.
+  it("resets the window on an na source instead of poisoning the next length bars", () => {
     const state = {};
     highestVarLen(state, 10, 2, 10, 0);
     expect(highestVarLen(state, NaN, 2, 10, 1)).toBeNaN();
-    expect(highestVarLen(state, 20, 2, 10, 2)).toBeNaN(); // window still includes the NaN bar
-    expect(highestVarLen(state, 30, 2, 10, 3)).toBe(30); // window [20,30], no NaN
+    expect(highestVarLen(state, 20, 2, 10, 2)).toBe(20); // a fresh window from bar 2
+    expect(highestVarLen(state, 30, 2, 10, 3)).toBe(30);
   });
 
   it("supports length varying up and down bar to bar without corrupting the per-call-site history buffer (unlike the fixed-length deque)", () => {
@@ -3710,7 +3709,9 @@ describe("ta.highestbars/ta.lowestbars variable(series) length (highestbarsVarLe
     expect(lbResults.slice(2)).toEqual([-2, 0, 0, -4, -3, -2, -1, 0]);
   });
 
-  it("returns 0 for length<1 — literal-ported pine2py highestbars() empty range(length) loop leaves max_idx=0 (NOT the -inf/+inf of highest/lowest)", () => {
+  // The oracle runs its machine for a length below 1: nothing to rescan, offset 0 (resin-harness twin
+  // state/repros/extreme-varlen-sample10.json, hb2/lb2).
+  it("returns 0 for a length below 1, as the oracle does", () => {
     const stateHb = {};
     const stateLb = {};
     expect(highestbarsVarLen(stateHb, 50, 0, 10, 0)).toBe(0);
@@ -3733,12 +3734,14 @@ describe("ta.highestbars/ta.lowestbars variable(series) length (highestbarsVarLe
     expect(highestbarsVarLen(state, 30, 3, 10, 2)).toBe(0); // window=[10,20,30], max=현재바
   });
 
-  it("poisons the window when any value in the (variable-width) trailing range is NaN", () => {
+  // An na source resets the ring; the bars form is 0 on that bar (resin-harness twin
+  // state/repros/extreme-na-reset.json). The poison window gave na on bars 1 and 2.
+  it("returns 0 on an na source and restarts the window", () => {
     const state = {};
     highestbarsVarLen(state, 10, 2, 10, 0);
-    expect(highestbarsVarLen(state, NaN, 2, 10, 1)).toBeNaN();
-    expect(highestbarsVarLen(state, 20, 2, 10, 2)).toBeNaN(); // 창에 NaN 바 포함
-    expect(highestbarsVarLen(state, 30, 2, 10, 3)).toBe(0); // 창[20,30], max=현재바
+    expect(highestbarsVarLen(state, NaN, 2, 10, 1)).toBe(0);
+    expect(highestbarsVarLen(state, 20, 2, 10, 2)).toBe(0);
+    expect(highestbarsVarLen(state, 15, 2, 10, 3)).toBe(-1);
   });
 
   it("breaks ties toward the oldest bar (fixed-length parity, tier 1 ta_141_highest_lowest)", () => {
@@ -3749,10 +3752,12 @@ describe("ta.highestbars/ta.lowestbars variable(series) length (highestbarsVarLe
       highestbarsVarLen(stateHb, values[i]!, 1, 10, i);
       lowestbarsVarLen(stateLb, values[i]!, 1, 10, i);
     }
-    // 전 바 동률 창(bar1..3) — 가장 오래된 bar1(오프셋 -2)이 남는다 (resin-harness
-    // state/repros/tv-ta_141_highest_lowest.json; pine2py's newest-wins gave 0).
-    expect(highestbarsVarLen(stateHb, 7, 3, 10, 3)).toBe(-2);
-    expect(lowestbarsVarLen(stateLb, 7, 3, 10, 3)).toBe(-2);
+    // All tied, the length growing 1 -> 3 past the ring (capacity 2): the growth remaps the slot of
+    // bar 1 onto the current bar, so the rescan reaches bar 2 only and reports it, the older of the
+    // ties it sees (resin-harness twin state/repros/extreme-varlen-sample10.json hb3/lb3: the oracle
+    // gives -1 here, then -2 once the ring holds three bars; pine2py's newest-wins gave 0).
+    expect(highestbarsVarLen(stateHb, 7, 3, 10, 3)).toBe(-1);
+    expect(lowestbarsVarLen(stateLb, 7, 3, 10, 3)).toBe(-1);
     // A length-1 window is the current bar alone: a plain +0, never -0.
     expect(Object.is(highestbarsVarLen(stateHb, 7, 1, 10, 4), 0)).toBe(true);
     expect(Object.is(lowestbarsVarLen(stateLb, 7, 1, 10, 4), 0)).toBe(true);
@@ -4142,189 +4147,143 @@ describe("math.sum variable(series) length (sumVarLen)", () => {
   });
 });
 
-// ta.highestbars/ta.lowestbars(source, length) — offset (0=current bar, -1=1 bar ago, ...) to where
-// the max/min occurred over the trailing `length` bars. No new state shape: reuses rt.ta.highest/
-// rt.ta.lowest's ExtremeState and reads `state.seq - state.dequeSeq[state.dequeHead]` (bars elapsed
-// since the current extreme was recorded) after calling highest()/lowest() to advance. Same NaN-poison
-// window as highest/lowest (no divergence from pine2py here — highest.py's own highestbars()/
-// lowestbars() already use poison-window, unlike wpr.py). Tie-break: pine2py scans source.get(0..
-// length-1) newest-to-oldest with a strict `>`/`<` update, so on a tie the smallest i (=most recent
-// occurrence) wins — verified against the deque-based implementation with a 5,000-sample fuzz
-// (including a narrow value range to force frequent ties) in scratch/probe_highestbars.mjs.
+// ta.highestbars/ta.lowestbars(source, length) — offset (0=current bar, -1=1 bar ago, ...) to the
+// max/min of the trailing `length` bars: the age of the kept extreme in ta.highest/ta.lowest's ring
+// (runtime/ta.ts highest; pynecore lib/ta.py highest/lowest with _bars=True). An na source resets the
+// ring and the offset is 0 on that bar, once past the warm-up (twin resin-harness
+// state/repros/extreme-na-reset.json). Of equal extremes the offset names the OLDEST: tier 1
+// resin-harness state/repros/tv-ta_141_highest_lowest.json (bar 20 ta.highestbars(close, 10) is -9,
+// the tied 1.06839 at bars 11 and 13 reported at bar 11). These tests asserted pine2py's poison
+// window and newest-wins rule before.
+
+// Brute force of both rules: the oldest extreme among the last `length` bars that follow the latest
+// na; 0 on an na bar; na while bar_index < length - 1.
+function resetWindowOffsets(values: number[], length: number, better: (a: number, b: number) => boolean): number[] {
+  let lastNa = -1;
+  return values.map((v, i) => {
+    if (Number.isNaN(v)) lastNa = i;
+    if (i < length - 1) return NaN;
+    if (Number.isNaN(v)) return 0;
+    let best = v;
+    let offset = 0;
+    for (let k = 1; k < length && i - k > lastNa; k++) {
+      const x = values[i - k]!;
+      if (better(x, best) || x === best) {
+        best = x;
+        offset = k;
+      }
+    }
+    return offset === 0 ? 0 : -offset;
+  });
+}
+
 describe("ta.highestbars", () => {
-  it("returns NaN for the first length-1 calls (buffer warmup, length=3, data_len<length)", () => {
+  it("returns NaN while bar_index < length - 1 (warm-up, length=3)", () => {
     const state = {};
-    expect(highestbars(state, 101, 3)).toBeNaN();
-    expect(highestbars(state, 102, 3)).toBeNaN();
+    expect(highestbars(state, 101, 3, 0)).toBeNaN();
+    expect(highestbars(state, 102, 3, 1)).toBeNaN();
   });
 
   it("matches a hand-computed offset once the window fills (length=2)", () => {
     const state = {};
-    highestbars(state, 10, 2); // NaN, buffer [10, NaN]
-    expect(highestbars(state, 12, 2)).toBe(0); // window [10,12], max=12 at current bar
-    expect(highestbars(state, 5, 2)).toBe(-1); // window [12,5], max=12 one bar ago
-    expect(highestbars(state, 3, 2)).toBe(-1); // window [5,3], max=5 one bar ago
+    highestbars(state, 10, 2, 0); // NaN (warm-up)
+    expect(highestbars(state, 12, 2, 1)).toBe(0); // window [10,12], max=12 at current bar
+    expect(highestbars(state, 5, 2, 2)).toBe(-1); // window [12,5], max=12 one bar ago
+    expect(highestbars(state, 3, 2, 3)).toBe(-1); // window [5,3], max=5 one bar ago
   });
 
-  it("matches the pine2py-verified sample10.json trace (close, length=4)", () => {
-    const state = {};
-    const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
-    const results = closes.map((c) => highestbars(state, c, 4));
+  it("matches the sample10.json trace (close, length=4)", () => {
+    const results = runBars(highestbars, [101, 102, 103, 102, 104, 105, 106, 105, 107, 108], 4);
     expect(results.slice(0, 3).every((r) => Number.isNaN(r))).toBe(true);
-    expect(results[3]).toBe(-1);
-    expect(results[4]).toBe(0);
-    expect(results[5]).toBe(0);
-    expect(results[6]).toBe(0);
-    expect(results[7]).toBe(-1);
-    expect(results[8]).toBe(0);
-    expect(results[9]).toBe(0);
+    expect(results.slice(3)).toEqual([-1, 0, 0, 0, -1, 0, 0]);
   });
 
   it("keeps independent state across two call sites", () => {
     const stateA = {};
     const stateB = {};
-    highestbars(stateA, 10, 2);
-    expect(highestbars(stateA, 12, 2)).toBe(0);
-    expect(highestbars(stateB, 100, 2)).toBeNaN();
+    highestbars(stateA, 10, 2, 0);
+    expect(highestbars(stateA, 12, 2, 1)).toBe(0);
+    expect(highestbars(stateB, 100, 2, 0)).toBeNaN();
   });
 
-  // Ties resolve to the OLDEST occurrence of the extreme in the window: tier 1
-  // resin-harness state/repros/tv-ta_141_highest_lowest.json (bar 20 ta.highestbars(close, 10) is -9,
-  // the tied 1.06839 at bars 11 and 13 reported at bar 11) and the oracle's machine (pynecore lib/ta.py
-  // highest with _bars=True). These tests asserted pine2py's newest-wins rule before.
-  it("resolves ties toward the oldest occurrence in the window (tier 1 ta_141_highest_lowest)", () => {
+  it("returns 0 on an na source past the warm-up, then counts from a fresh window", () => {
     const state = {};
+    expect(highestbars(state, 10, 2, 0)).toBeNaN();
+    expect(highestbars(state, NaN, 2, 1)).toBe(0);
+    expect(highestbars(state, 20, 2, 2)).toBe(0); // the poison window said na
+    expect(highestbars(state, 15, 2, 3)).toBe(-1);
+  });
+
+  it("resolves ties toward the oldest occurrence in the window (tier 1 ta_141_highest_lowest)", () => {
     // all-equal window: the max is "achieved" at every position; the offset lands on the oldest bar.
-    expect(highestbars(state, 5, 3)).toBeNaN();
-    expect(highestbars(state, 5, 3)).toBeNaN();
-    expect(highestbars(state, 5, 3)).toBe(-2);
-    expect(highestbars(state, 5, 3)).toBe(-2);
+    expect(runBars(highestbars, [5, 5, 5, 5], 3)).toEqual([NaN, NaN, -2, -2]);
   });
 
   it("keeps the older occurrence when a later value ties the running max", () => {
-    const state = {};
     // window fills with [1,9,2] -> max=9 at offset -1. Next bar ties at 9 (now [9,2,9]) -> the offset
     // still points at the original bar (now -2); once it leaves the window the newer 9 takes over.
-    highestbars(state, 1, 3); // NaN
-    highestbars(state, 9, 3); // NaN
-    expect(highestbars(state, 2, 3)).toBe(-1); // window [1,9,2], max=9 one bar ago
-    expect(highestbars(state, 9, 3)).toBe(-2); // window [9,2,9], tie resolves to the older 9
-    expect(highestbars(state, 4, 3)).toBe(-1); // window [2,9,4], max=9 one bar ago (the newer one)
+    expect(runBars(highestbars, [1, 9, 2, 9, 4], 3)).toEqual([NaN, NaN, -1, -2, -1]);
   });
 
-  it("matches a from-scratch O(length) brute-force recomputation (scan newest-to-oldest, '>=' moves to the older index on a tie) across ties, NaN gaps, and deque wraparound", () => {
-    const state = {};
+  it("matches a brute-force recomputation across ties, NaN resets, and ring wraparound", () => {
     const length = 4;
-    const raw = [5, 5, 5, 3, 5, 5, 1, 1, 1, 9, 9, 2, 2, 2, 2, NaN, 6, 6, 6, 6, 6];
-    const results = raw.map((v) => highestbars(state, v, length));
-    for (let i = 0; i < raw.length; i++) {
-      if (i < length - 1) {
-        expect(results[i]).toBeNaN();
-        continue;
-      }
-      const window = raw.slice(i - length + 1, i + 1); // oldest..newest
-      if (window.some((w) => Number.isNaN(w))) {
-        expect(results[i]).toBeNaN();
-        continue;
-      }
-      let maxVal = -Infinity;
-      let maxIdx = 0; // 0=current bar (newest), counting backward
-      for (let k = 0; k < length; k++) {
-        const val = window[length - 1 - k]!; // k=0 -> newest, k=length-1 -> oldest
-        if (val >= maxVal) {
-          maxVal = val;
-          maxIdx = k;
-        }
-      }
-      expect(results[i]).toBe(maxIdx === 0 ? 0 : -maxIdx); // -0 normalized (see runtime/ta.ts highestbars comment)
-    }
+    const raw = [5, 5, 5, 3, 5, 5, 1, 1, 1, 9, 9, 2, 2, 2, 2, NaN, 6, 6, 6, 6, 6, 7, NaN, NaN, 3, 3];
+    expect(runBars(highestbars, raw, length)).toEqual(resetWindowOffsets(raw, length, (a, b) => a > b));
   });
 });
 
 describe("ta.lowestbars", () => {
-  it("returns NaN for the first length-1 calls (buffer warmup, length=3, data_len<length)", () => {
+  it("returns NaN while bar_index < length - 1 (warm-up, length=3)", () => {
     const state = {};
-    expect(lowestbars(state, 101, 3)).toBeNaN();
-    expect(lowestbars(state, 102, 3)).toBeNaN();
+    expect(lowestbars(state, 101, 3, 0)).toBeNaN();
+    expect(lowestbars(state, 102, 3, 1)).toBeNaN();
   });
 
   it("matches a hand-computed offset once the window fills (length=2)", () => {
     const state = {};
-    lowestbars(state, 10, 2); // NaN, buffer [10, NaN]
-    expect(lowestbars(state, 12, 2)).toBe(-1); // window [10,12], min=10 one bar ago
-    expect(lowestbars(state, 5, 2)).toBe(0); // window [12,5], min=5 at current bar
-    expect(lowestbars(state, 20, 2)).toBe(-1); // window [5,20], min=5 one bar ago
+    lowestbars(state, 10, 2, 0); // NaN (warm-up)
+    expect(lowestbars(state, 12, 2, 1)).toBe(-1); // window [10,12], min=10 one bar ago
+    expect(lowestbars(state, 5, 2, 2)).toBe(0); // window [12,5], min=5 at current bar
+    expect(lowestbars(state, 20, 2, 3)).toBe(-1); // window [5,20], min=5 one bar ago
   });
 
   it("matches the sample10.json trace (close, length=4), ties to the oldest occurrence", () => {
-    const state = {};
-    const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
-    const results = closes.map((c) => lowestbars(state, c, 4));
+    const results = runBars(lowestbars, [101, 102, 103, 102, 104, 105, 106, 105, 107, 108], 4);
     expect(results.slice(0, 3).every((r) => Number.isNaN(r))).toBe(true);
-    expect(results[3]).toBe(-3);
-    // bar 4 window [102,103,102,104]: the tied 102s at bars 1 and 3 report bar 1 (tier 1
-    // resin-harness state/repros/tv-ta_141_highest_lowest.json; pine2py gave the newer bar 3, -1).
-    expect(results[4]).toBe(-3);
-    expect(results[5]).toBe(-2);
-    expect(results[6]).toBe(-3);
-    expect(results[7]).toBe(-3);
-    // bar 8 window [105,106,105,107]: the tied 105s at bars 5 and 7 report bar 5.
-    expect(results[8]).toBe(-3);
-    expect(results[9]).toBe(-2);
+    // bar 4 window [102,103,102,104]: the tied 102s at bars 1 and 3 report bar 1; bar 8 window
+    // [105,106,105,107]: the tied 105s at bars 5 and 7 report bar 5 (pine2py gave the newer ones).
+    expect(results.slice(3)).toEqual([-3, -3, -2, -3, -3, -3, -2]);
   });
 
   it("keeps independent state across two call sites", () => {
     const stateA = {};
     const stateB = {};
-    lowestbars(stateA, 10, 2);
-    expect(lowestbars(stateA, 12, 2)).toBe(-1);
-    expect(lowestbars(stateB, 100, 2)).toBeNaN();
+    lowestbars(stateA, 10, 2, 0);
+    expect(lowestbars(stateA, 12, 2, 1)).toBe(-1);
+    expect(lowestbars(stateB, 100, 2, 0)).toBeNaN();
   });
 
-  // Ties resolve to the OLDEST occurrence (see the ta.highestbars tie tests; tier 1 ta_141_highest_lowest).
-  it("resolves ties toward the oldest occurrence in the window (tier 1 ta_141_highest_lowest)", () => {
+  it("returns 0 on an na source past the warm-up, then counts from a fresh window", () => {
     const state = {};
-    expect(lowestbars(state, 5, 3)).toBeNaN();
-    expect(lowestbars(state, 5, 3)).toBeNaN();
-    expect(lowestbars(state, 5, 3)).toBe(-2);
-    expect(lowestbars(state, 5, 3)).toBe(-2);
+    expect(lowestbars(state, 10, 2, 0)).toBeNaN();
+    expect(lowestbars(state, NaN, 2, 1)).toBe(0);
+    expect(lowestbars(state, 20, 2, 2)).toBe(0); // the poison window said na
+    expect(lowestbars(state, 25, 2, 3)).toBe(-1);
+  });
+
+  it("resolves ties toward the oldest occurrence in the window (tier 1 ta_141_highest_lowest)", () => {
+    expect(runBars(lowestbars, [5, 5, 5, 5], 3)).toEqual([NaN, NaN, -2, -2]);
   });
 
   it("keeps the older occurrence when a later value ties the running min", () => {
-    const state = {};
-    lowestbars(state, 9, 3); // NaN
-    lowestbars(state, 1, 3); // NaN
-    expect(lowestbars(state, 8, 3)).toBe(-1); // window [9,1,8], min=1 one bar ago
-    expect(lowestbars(state, 1, 3)).toBe(-2); // window [1,8,1], tie resolves to the older 1
-    expect(lowestbars(state, 6, 3)).toBe(-1); // window [8,1,6], min=1 one bar ago (the newer one)
+    // [9,1,8] min=1 one bar ago; [1,8,1] the tie resolves to the older 1; [8,1,6] the newer 1.
+    expect(runBars(lowestbars, [9, 1, 8, 1, 6], 3)).toEqual([NaN, NaN, -1, -2, -1]);
   });
 
-  it("matches a from-scratch O(length) brute-force recomputation (scan newest-to-oldest, '<=' moves to the older index on a tie) across ties, NaN gaps, and deque wraparound", () => {
-    const state = {};
+  it("matches a brute-force recomputation across ties, NaN resets, and ring wraparound", () => {
     const length = 4;
-    const raw = [5, 5, 5, 7, 5, 5, 9, 9, 9, 1, 1, 8, 8, 8, 8, NaN, 4, 4, 4, 4, 4];
-    const results = raw.map((v) => lowestbars(state, v, length));
-    for (let i = 0; i < raw.length; i++) {
-      if (i < length - 1) {
-        expect(results[i]).toBeNaN();
-        continue;
-      }
-      const window = raw.slice(i - length + 1, i + 1); // oldest..newest
-      if (window.some((w) => Number.isNaN(w))) {
-        expect(results[i]).toBeNaN();
-        continue;
-      }
-      let minVal = Infinity;
-      let minIdx = 0;
-      for (let k = 0; k < length; k++) {
-        const val = window[length - 1 - k]!;
-        if (val <= minVal) {
-          minVal = val;
-          minIdx = k;
-        }
-      }
-      expect(results[i]).toBe(minIdx === 0 ? 0 : -minIdx); // -0 normalized (see runtime/ta.ts lowestbars comment)
-    }
+    const raw = [5, 5, 5, 7, 5, 5, 9, 9, 9, 1, 1, 8, 8, 8, 8, NaN, 4, 4, 4, 4, 4, 3, NaN, NaN, 6, 6];
+    expect(runBars(lowestbars, raw, length)).toEqual(resetWindowOffsets(raw, length, (a, b) => a < b));
   });
 });
 

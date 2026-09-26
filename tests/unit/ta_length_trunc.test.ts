@@ -53,8 +53,20 @@ const CASES: Array<{ name: string; makeStep: (state: object, length: number) => 
   { name: "roc", makeStep: (s, len) => (v) => roc(s as never, v, len) },
   { name: "variance", makeStep: (s, len) => (v) => variance(s as never, v, len) },
   { name: "stdev", makeStep: (s, len) => (v) => stdev(s as never, v, len) },
-  { name: "highest", makeStep: (s, len) => (v) => highest(s as never, v, len) },
-  { name: "lowest", makeStep: (s, len) => (v) => lowest(s as never, v, len) },
+  {
+    name: "highest",
+    makeStep: (s, len) => {
+      let barIdx = 0;
+      return (v) => highest(s as never, v, len, barIdx++);
+    },
+  },
+  {
+    name: "lowest",
+    makeStep: (s, len) => {
+      let barIdx = 0;
+      return (v) => lowest(s as never, v, len, barIdx++);
+    },
+  },
   { name: "mfi", makeStep: (s, len) => (v) => mfi(s as never, v, 1000, len) },
   { name: "correlation", makeStep: (s, len) => (v) => correlation(s as never, v, v * 2 - 1, len) },
   { name: "median", makeStep: (s, len) => (v) => median(s as never, v, len) },
