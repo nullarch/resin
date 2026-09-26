@@ -1652,6 +1652,42 @@ describe("StrategyState exit 브래킷 청산 (C167 다섯째 슬라이스, hand
     expect(st.posSize).toBe(0);
   });
 
+  // Oracle (PyneCore) + manual "Take-profit and stop-loss demo": an exit called on the bar its
+  // entry order is placed binds to that pending order. Harness repro: state/repros/mixed-seed-1.json.
+  it("exit binds to a pending entry order and is live from the entry's fill bar", () => {
+    const st = new StrategyState();
+    st.entry("L", "long", 1);
+    st.exit("X", "L", 15);
+    expect(st.exitPending).toBe(true);
+    st.processFills(12, 13, 11); // entry fills at 12; high 13 < 15
+    expect(st.posSize).toBe(1);
+    st.processFills(13, 16, 12); // limit 15 fills
+    expect(st.posSize).toBe(0);
+    expect(st.realizedPnl).toBe(3);
+
+    const same = new StrategyState();
+    same.entry("L", "long", 1);
+    same.exit("X", "L", 15);
+    same.processFills(12, 16, 11); // entry at 12, then the same bar reaches 15
+    expect(same.posSize).toBe(0);
+    expect(same.realizedPnl).toBe(3);
+  });
+
+  it("exit bound to a pending entry resolves qty_percent at the fill and dies with a cancelled entry", () => {
+    const st = new StrategyState();
+    st.entry("L", "long", 4);
+    st.exit("X", "L", 15, NaN, undefined, undefined, undefined, undefined, undefined, undefined, undefined, 50);
+    st.processFills(12, 16, 11);
+    expect(st.posSize).toBe(2); // 50% of the 4 filled
+
+    const cancelled = new StrategyState();
+    cancelled.entry("L", "long", 1, 10); // limit entry
+    cancelled.exit("X", "L", 15);
+    cancelled.cancel("L");
+    cancelled.processFills(12, 13, 11);
+    expect(cancelled.exitPending).toBe(false);
+  });
+
   it("exit is a no-op when from_entry does not match the position's entry id — \"\"는 전체 대상", () => {
     const st = longAt12();
     st.exit("X", "M", 15); // 포지션 entry id는 "L"

@@ -224,6 +224,10 @@ export class StrategyState {
   exitLimit: number; // 익절 지정가(NaN=없음)
   exitStop: number; // 손절 역지정가(NaN=없음)
   exitQty: number; // strategy.exit(qty=) 부분 청산 수량(C168) — Infinity=전량(기본)
+  // strategy.exit(qty_percent=) of an exit bound to a still-pending entry order: the share is of
+  // that entry's size, which is only known when it fills (percent_of_equity/cash sizing resolves
+  // at the fill price), so it is kept here and turned into exitQty at the fill. NaN = resolved.
+  exitQtyPercent: number;
   exitOrderComment: string; // strategy.exit(comment=, C173)
   // strategy.exit(comment_loss=/comment_profit=, C375, hand-verified) — TV 시그니처는 comment=의
   // 트리거별 오버라이드 축이다: 이 청산 체결이 stop=/loss=(또는 트레일링 스톱)로 발생했으면
@@ -422,6 +426,7 @@ export class StrategyState {
     this.exitLimit = NaN;
     this.exitStop = NaN;
     this.exitQty = Infinity;
+    this.exitQtyPercent = NaN;
     this.exitOrderComment = "";
     this.exitCommentLoss = null;
     this.exitCommentProfit = null;
@@ -891,6 +896,9 @@ export class StrategyState {
     }
     this.posSize -= sign * closeQty;
     if (this.posSize === 0) {
+      // An exit bound to another entry id than the position being closed waits on a pending entry
+      // order (e.g. the one reversing this position) — it is not this position's bracket.
+      const exitIsThisPositions = this.exitFromEntry === "" || this.exitFromEntry === this.entryId;
       this.tradeMaxRunup = 0;
       this.tradeMaxDrawdown = 0;
       this.posAvgPrice = NaN;
@@ -905,7 +913,7 @@ export class StrategyState {
       // 브래킷 의도에 맞는다는 가설(exit 자신의 부분 체결은 processFills가 주문 소비를 별도 수행,
       // DIVERGENCES #71). entryCount(pyramiding 게이트)도 유지 — 부분 청산이 추가 진입 여력을
       // 되돌리는지는 TV 미검증이라 보수적으로 불변(LIMITATIONS.md).
-      this.exitPending = false;
+      if (exitIsThisPositions) this.exitPending = false;
     }
   }
 
@@ -1124,13 +1132,27 @@ export class StrategyState {
   ): void {
     if (!when) return;
     if (id === null || id === undefined) return;
+    const from = fromEntry ?? "";
+    // What the exit binds to: the open position, or else a still-pending entry order. The manual
+    // (strategies.txt, "Exits for multiple entries"): with a from_entry ID, the call "places exit
+    // orders for every corresponding entry created before or on the bar where the call occurs" —
+    // entry orders, filled or not. Its basic bracket example ("Take-profit and stop-loss demo")
+    // calls strategy.entry() and strategy.exit() once, on the same bar, before the entry fills.
+    // Without from_entry, a pending entry is a target only while flat (in a position the exit
+    // already binds to it). Repro: resin-harness state/repros/mixed-seed-1.json.
+    const bindsPosition = this.posSize !== 0 && (from === "" || from === this.entryId);
+    const bindsPendingEntry = !bindsPosition && this.entryPending && (from === "" || from === this.entryOrderId);
+    if (!bindsPosition && !bindsPendingEntry) return;
+    // qty_percent of a pending entry is a share of its size at the fill (see exitQtyPercent).
+    const deferPercent = bindsPendingEntry && qty === undefined && qtyPercent !== undefined;
     const q = qty !== undefined
       ? qty
       : qtyPercent !== undefined
-        ? (Math.abs(this.posSize) * qtyPercent) / 100
+        ? deferPercent ? qtyPercent : (Math.abs(this.posSize) * qtyPercent) / 100
         : Infinity;
     if (!(q > 0)) return; // NaN에서도 안전한 긍정형 가드(MEMORY.md C91)
-    const from = fromEntry ?? "";
+    const exitQty = deferPercent ? Infinity : q;
+    const exitQtyPercent = deferPercent ? q : NaN;
     const lim = limit ?? NaN;
     const stp = stop ?? NaN;
     const tp = trailPoints ?? NaN;
@@ -1148,8 +1170,6 @@ export class StrategyState {
     ) {
       return;
     }
-    if (this.posSize === 0) return;
-    if (from !== "" && from !== this.entryId) return;
     if (this.exitPending) {
       // 같은 id 재호출 = 주문 수정(pine2py exit()의 "같은 ID 이전 exit 제거 후 재등록" 동형 —
       // 매 바 재호출로 브래킷 가격을 갱신하는 표준 패턴). 다른 id면 첫 주문 유지(entry 슬롯과
@@ -1158,7 +1178,8 @@ export class StrategyState {
         this.exitFromEntry = from;
         this.exitLimit = lim;
         this.exitStop = stp;
-        this.exitQty = q;
+        this.exitQty = exitQty;
+        this.exitQtyPercent = exitQtyPercent;
         this.exitTrailPoints = tp;
         this.exitTrailOffset = toff;
         this.exitTrailPriceArg = tprice;
@@ -1182,7 +1203,8 @@ export class StrategyState {
     this.exitFromEntry = from;
     this.exitLimit = lim;
     this.exitStop = stp;
-    this.exitQty = q;
+    this.exitQty = exitQty;
+    this.exitQtyPercent = exitQtyPercent;
     this.exitTrailPoints = tp;
     this.exitTrailOffset = toff;
     this.exitTrailPriceArg = tprice;
@@ -1362,6 +1384,15 @@ export class StrategyState {
       }
     }
     this.updateTradeExcursion(high, low);
+    // An exit bound to a pending entry order lives only as long as that order: once it is gone
+    // (cancelled, or consumed without opening a position) the exit has nothing to close. A
+    // from_entry-less exit is not bound to one entry and keeps waiting for the next position.
+    if (
+      this.exitPending && this.posSize === 0 && this.exitFromEntry !== "" &&
+      !(this.entryPending && this.entryOrderId === this.exitFromEntry)
+    ) {
+      this.exitPending = false;
+    }
     if (this.closePending) {
       this.closePending = false;
       const ignoreId = this.closeAllPending; // close_all(C168) — id 매칭 생략(전량 청산)
@@ -1375,27 +1406,8 @@ export class StrategyState {
     // 기존 "청산 먼저 → entry" 순서 원칙에 합류한다(같은 바에 exit 체결+재진입 entry 체결이 순차
     // 발생 가능 — TV 실측 미검증 가설, DIVERGENCES #70). from_entry 매칭은 체결 시점에 재검사
     // (콜타임과 체결 바 사이에 포지션이 바뀔 수 있음 — 불일치면 이월, 포지션 청산 시 자동 소멸).
-    if (this.exitPending && this.posSize !== 0 && (this.exitFromEntry === "" || this.exitFromEntry === this.entryId)) {
-      const exitFill = this.exitFillPrice(openPrice, high, low);
-      if (!Number.isNaN(exitFill)) {
-        // 주문 소비는 여기서 명시(C168) — 전량 청산은 closeAt의 flat 리셋이 exitPending을 함께
-        // 소멸시키지만, qty= 부분 체결은 포지션이 남아도 브래킷 주문 자체는 체결로 소진돼야 한다
-        // (TV: 주문은 1회 체결로 소멸, 잔여분 브래킷은 스크립트가 매 바 재호출로 재발행 — 가설 #71).
-        this.exitPending = false;
-        // comment_loss=/comment_profit=/comment_trailing=(C375+C673) — exitFillPrice가 남긴
-        // exitFillKind로 트리거별 오버라이드를 선택: "profit"→comment_profit=, "loss"→comment_loss=,
-        // null(순수 트레일링)→comment_trailing=. 셋 다 미지정(null)이면 comment=로 폴백.
-        const exitCmt =
-          this.exitFillKind === "profit" && this.exitCommentProfit !== null
-            ? this.exitCommentProfit
-            : this.exitFillKind === "loss" && this.exitCommentLoss !== null
-              ? this.exitCommentLoss
-              : this.exitFillKind === null && this.exitCommentTrailing !== null
-                ? this.exitCommentTrailing
-                : this.exitOrderComment;
-        this.closeAt(exitFill, this.exitQty, exitCmt, barIndex, this.exitOrderId, barTimeMs);
-      }
-    }
+    this.fillPendingExit(openPrice, high, low, barIndex, barTimeMs);
+    const flatBeforeEntry = this.posSize === 0;
     if (this.entryPending) {
       const fillPrice = this.entryFillPrice(openPrice, high, low);
       // NaN이면 limit/stop 가격 조건 미충족 — 주문 이월(마켓은 NaN 불가). early return이 아니라
@@ -1464,6 +1476,10 @@ export class StrategyState {
             this.entryBarIndexOpen = barIndex;
             this.entryTimeOpen = barTimeMs;
             this.intradayFilledCount += 1;
+            if (this.exitPending && !Number.isNaN(this.exitQtyPercent)) {
+              this.exitQty = (qty * this.exitQtyPercent) / 100;
+              this.exitQtyPercent = NaN;
+            }
           } else if (this.entryCount < this.pyramiding) {
             // 같은 방향 추가 진입(pyramiding) — pine2py _fill_entry의 가중평균 분기 literal port.
             // entryId는 최초 진입 id 유지(pine2py도 pyramiding 분기에서 position.entry_id를 안 바꿈).
@@ -1479,6 +1495,13 @@ export class StrategyState {
           // else: 같은 방향 + pyramiding 소진 → 주문 취소(이월 없음)
         }
       }
+    }
+    // An exit bound to an entry that just opened a position from flat is live on the fill bar
+    // itself, not from the next one: the order exists before the fill, so the rest of this bar can
+    // trigger it (the manual's "Take-profit and stop-loss demo" places both on one bar). A position
+    // that was already open had its exit judged above, so it is not judged twice.
+    if (flatBeforeEntry && this.posSize !== 0) {
+      this.fillPendingExit(openPrice, high, low, barIndex, barTimeMs);
     }
     // order 넷팅 주문(C169)은 마지막에 판정한다 — 처리 순서 close→exit→entry→order: 청산 계열
     // 먼저 원칙(기존 순서 불변) + 같은 바에 entry와 order가 둘 다 체결되면 entry가 만든 포지션에
@@ -1532,6 +1555,33 @@ export class StrategyState {
             }
           }
         }
+      }
+    }
+  }
+
+  // Judges the pending exit bracket against this bar and closes at its fill price. Called before
+  // the entry slot (a position carried in from earlier bars) and again after an entry opens a
+  // position from flat on this bar (see processFills).
+  private fillPendingExit(openPrice: number, high: number, low: number, barIndex: number, barTimeMs: number): void {
+    if (this.exitPending && this.posSize !== 0 && (this.exitFromEntry === "" || this.exitFromEntry === this.entryId)) {
+      const exitFill = this.exitFillPrice(openPrice, high, low);
+      if (!Number.isNaN(exitFill)) {
+        // 주문 소비는 여기서 명시(C168) — 전량 청산은 closeAt의 flat 리셋이 exitPending을 함께
+        // 소멸시키지만, qty= 부분 체결은 포지션이 남아도 브래킷 주문 자체는 체결로 소진돼야 한다
+        // (TV: 주문은 1회 체결로 소멸, 잔여분 브래킷은 스크립트가 매 바 재호출로 재발행 — 가설 #71).
+        this.exitPending = false;
+        // comment_loss=/comment_profit=/comment_trailing=(C375+C673) — exitFillPrice가 남긴
+        // exitFillKind로 트리거별 오버라이드를 선택: "profit"→comment_profit=, "loss"→comment_loss=,
+        // null(순수 트레일링)→comment_trailing=. 셋 다 미지정(null)이면 comment=로 폴백.
+        const exitCmt =
+          this.exitFillKind === "profit" && this.exitCommentProfit !== null
+            ? this.exitCommentProfit
+            : this.exitFillKind === "loss" && this.exitCommentLoss !== null
+              ? this.exitCommentLoss
+              : this.exitFillKind === null && this.exitCommentTrailing !== null
+                ? this.exitCommentTrailing
+                : this.exitOrderComment;
+        this.closeAt(exitFill, this.exitQty, exitCmt, barIndex, this.exitOrderId, barTimeMs);
       }
     }
   }
