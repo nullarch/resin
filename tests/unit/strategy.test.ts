@@ -3531,39 +3531,42 @@ describe("StrategyState exit 트레일링 스톱 (C170 여덟째 슬라이스, h
     expect(st.realizedPnl).toBe(1); // (13-12)*1
   });
 
-  it("trail_offset 생략 시 trail_points를 오프셋으로 재사용 (pine2py 기본 규칙)", () => {
+  // An omitted trail_offset is 0 ticks, not pine2py's reuse of trail_points: the line sits on the
+  // activation level and fills there (the oracle, backed by TradingView exports of offset-less
+  // trails; resin-harness probe C13c, state/repros/trail-na-offset-short.json).
+  it("an omitted trail_offset trails 0 ticks behind: the line fills at the activation level (C13c)", () => {
     const st = longAt12();
-    st.exit("X", "", NaN, NaN, undefined, 200); // 오프셋 = 2
-    st.processFills(14.5, 15, 13.2); // 활성화 → 라인 = 15-2 = 13, low 13.2 > 13 미체결
-    expect(st.exitTrailPrice).toBe(13);
-    st.processFills(13.5, 13.6, 12.9); // 래칫 없음(13.6-2 < 13), low 12.9 <= 13 → 13 체결
-    expect(st.posSize).toBe(0);
-    expect(st.realizedPnl).toBe(1);
-  });
-
-  // C723(배치37 지시 (1)): trail_price 단독(trail_offset/trail_points 둘 다 없음)은 analyzer
-  // 하드 에러를 제거했으므로 runtime이 크래시/NaN 전파 없이 안전하게 저하되는지 확인 — offset이
-  // NaN으로 남아 트레일링 라인이 영구 미형성(다른 청산 조건이 없으면 포지션이 계속 열려 있음).
-  it("trail_price 단독은 offset 근거가 없어 트레일링 영구 비활성 (크래시 없음, C723)", () => {
-    const st = longAt12();
-    st.exit("X", "", NaN, NaN, undefined, undefined, undefined, undefined, 20); // trail_price=20, offset 없음
-    st.processFills(21, 22, 20.5); // activation(22>=20) 시도해도 offset NaN → 라인 NaN
-    expect(st.exitTrailPrice).toBeNaN();
-    expect(st.posSize).toBe(1); // 트레일링으로는 청산되지 않음(다른 조건 없어 계속 보유)
-    st.processFills(25, 30, 24); // 더 크게 움직여도 여전히 NaN 라인 — 체결 없음
+    st.exit("X", "", NaN, NaN, undefined, 200); // activation 12+2 = 14, offset 0
+    st.processFills(13, 13.5, 12.5); // high 13.5 < 14: not armed
     expect(st.exitTrailPrice).toBeNaN();
     expect(st.posSize).toBe(1);
+    // open 13.2 → low 13.1 (nearer the open) → high 15: the rise through 14 arms the line at 14 and fills it.
+    st.processFills(13.2, 15, 13.1);
+    expect(st.posSize).toBe(0);
+    expect(st.realizedPnl).toBe(2);
   });
 
-  // trail_price+trail_points 동시 지정(구 하드 에러) — activation=trail_price(절대가 우선),
-  // offset=trail_points(ticks)로 자연 분리돼 정상 작동함을 확인.
-  it("trail_price+trail_points 동시 지정은 activation=trail_price, offset=trail_points로 정상 작동 (C723)", () => {
+  // trail_price= without trail_offset= arms the same offset-0 trail at the trail_price level
+  // (resin-harness state/repros/trail-price-no-offset.json). It used to stay unarmed forever.
+  it("trail_price without trail_offset arms an offset-0 trail at trail_price (C13c)", () => {
     const st = longAt12();
-    st.exit("X", "", NaN, NaN, undefined, 99900, undefined, undefined, 14); // trail_price=14(활성화), trail_points=999(offset으로만 재사용)
-    st.processFills(14.5, 15, 14.2); // activation(15>=14, trail_points의 12+999 아님) → 라인 = 15-999 = -984
-    expect(st.exitTrailPrice).toBe(15 - 999);
-    st.processFills(-900, -900, -1000); // 라인 밑으로 내려가는 극단값으로 체결 확인
+    st.exit("X", "", NaN, NaN, undefined, undefined, undefined, undefined, 20); // trail_price=20, offset 0
+    st.processFills(19, 19.5, 18.5); // high 19.5 < 20: not armed
+    expect(st.exitTrailPrice).toBeNaN();
+    expect(st.posSize).toBe(1);
+    st.processFills(19, 22, 18.5); // open → low 18.5 → high 22: arms at 20 and fills there
     expect(st.posSize).toBe(0);
+    expect(st.realizedPnl).toBe(8);
+  });
+
+  // trail_price+trail_points together (once a hard error): here trail_price is the nearer activation
+  // level, and trail_points is not an offset — the omitted trail_offset is 0 (C13c).
+  it("trail_price+trail_points: activation at trail_price, an omitted offset is 0 (C723, C13c)", () => {
+    const st = longAt12();
+    st.exit("X", "", NaN, NaN, undefined, 99900, undefined, undefined, 14); // trail_price=14, trail_points=999 (12+999 is farther)
+    st.processFills(13, 15, 12.8); // open → low 12.8 → high 15: arms at 14 (not 1011) and fills there
+    expect(st.posSize).toBe(0);
+    expect(st.realizedPnl).toBe(2);
   });
 
   it("청산 조건 0개(min-1-condition 하드 에러 제거)는 런타임에서 등록 자체를 건너뛰는 no-op (C723)", () => {

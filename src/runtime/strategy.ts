@@ -99,7 +99,7 @@ interface ExitLeg {
   profitPoints: number;
   lossPoints: number;
   // Trailing stop — trail_points=/trail_price= activate it, trail_offset= is the line's distance in
-  // ticks (NaN = reuse trail_points). trailPrice is the line once active (NaN = not active).
+  // ticks (0 when not given, see exit()). trailPrice is the line once active (NaN = not active).
   trailPoints: number;
   trailOffset: number;
   trailPriceArg: number;
@@ -2091,7 +2091,13 @@ export class StrategyState {
     t.limit = limit ?? NaN;
     t.stop = stop ?? NaN;
     t.trailPoints = trailPoints ?? NaN;
-    t.trailOffset = trailOffset ?? NaN;
+    // An omitted or na trail_offset does not disable the trailing stop: it trails 0 ticks behind the
+    // best price, so it fills at its activation level (the oracle's `_trail_offset ... or 0`, backed
+    // by TradingView exports of offset-less trails, PyneCore test_063; resin-harness probe C13c). The
+    // manual's "a strategy.exit() call must specify a trail_offset argument" (strategies.txt) is
+    // TradingView's compile check on a call whose only trigger is the trailing stop; beside another
+    // level the call compiles and the trail is live.
+    t.trailOffset = trailOffset === undefined || Number.isNaN(trailOffset) ? 0 : trailOffset;
     t.trailPriceArg = trailPrice ?? NaN;
     t.profitPoints = profit ?? NaN;
     t.lossPoints = loss ?? NaN;
@@ -3099,7 +3105,7 @@ export class StrategyState {
     const hasTrail = !Number.isNaN(l.trailPoints) || !Number.isNaN(l.trailPriceArg);
     const lim = dir * this.exitLimitLevel(l, isLong, base);
     const stp = dir * this.exitStopLevel(l, isLong, base);
-    const offset = hasTrail ? (Number.isNaN(l.trailOffset) ? l.trailPoints : l.trailOffset) * this.mintick : NaN;
+    const offset = hasTrail ? l.trailOffset * this.mintick : NaN;
     const act = !hasTrail
       ? NaN
       : dir * (Number.isNaN(l.trailPriceArg) ? this.snapToTick(base + dir * l.trailPoints * this.mintick, isLong) : l.trailPriceArg);

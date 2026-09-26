@@ -6752,10 +6752,10 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // 이미 전부 NaN-우선순위 폴백으로 안전하게 흡수하고 있었다(하드 에러가 그 사실을 모르고 남아있던
       // 과잉검증, DIVERGENCES #70/#73/#79/#98 재검토): (1) limit/stop/trail_points/trail_price/profit/
       // loss가 전부 NaN이면 exit()가 등록 자체를 건너뛰는 조용한 no-op 가드가 이미 있음(L1145-1150).
-      // (2) trail_price+trail_points 동시 지정 시 activation은 trail_price(우선), offset은
-      // trail_points로 자연 분리(exitFillPrice L1655-1658, 상충이 아니라 서로 다른 역할). (3) trail_price
-      // 단독(trail_offset/trail_points 둘 다 없음)은 offset이 NaN으로 남아 트레일링 축만 영구 비활성(다른
-      // 청산 조건이 있으면 그쪽으로 청산, wild 표본 4건 전부 limit=/stop=/profit=과 병용). (4) trail_offset
+      // (2) trail_price+trail_points 동시 지정 시 activation은 trail_price(우선); trail_points is not
+      // an offset (the offset is trail_offset, 0 when omitted). (3) Without
+      // trail_offset, trail_price/trail_points arm an offset-0 trail that fills at its activation level
+      // (StrategyState.exit, resin-harness probe C13c; wild 표본 4건 전부 limit=/stop=/profit=과 병용). (4) trail_offset
       // 단독도 활성화 조건(trail_points/trail_price) 부재 시 hasTrail=false로 완전 비활성(no-op). (5)
       // profit/loss는 limit/stop과 같은 NaN-우선순위 폴백(exitFillPrice L1630-1638, limit/stop이 항상
       // 우선)이라 동시 지정도 상충이 아니라 단순 우선순위. 전부 hand-verified(TV 실측 미검증, DIVERGENCES
