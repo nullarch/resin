@@ -5007,6 +5007,22 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             );
           }
         }
+        // margin_long/margin_short set the margin behind margin calls (StrategyState.marginCall).
+        // Both must be compile-time constants >= 0: dropping one would silently keep a position the
+        // broker emulator liquidates, or liquidate one it keeps.
+        for (const key of ["margin_long", "margin_short"] as const) {
+          const m = directiveArgExpr(expr, STRATEGY_PARAM_NAMES, key);
+          if (m === undefined) continue;
+          const v = resolveDirectiveConstNumber(m, prog);
+          if (v !== undefined && v >= 0) {
+            if (key === "margin_long") prog.strategyMarginLong = v;
+            else prog.strategyMarginShort = v;
+          } else {
+            prog.errors.push(
+              `'strategy()' '${key}' argument only supports a number literal >= 0 (requires a compile-time constant) (L${expr.line}:${expr.col})`,
+            );
+          }
+        }
         // commission_type/commission_value charge a fee on every filled order (StrategyState
         // bookCommission). Both must be compile-time constants: dropping them would silently
         // overstate every trade's profit. The type defaults to percent, as in TradingView.

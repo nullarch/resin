@@ -9586,3 +9586,179 @@ describe("strategy.exit legs (one per exit id and entry)", () => {
     expect(st.exitLegs.map((l) => `${l.id}:${l.entryId}`)).toEqual(["Y:A"]);
   });
 });
+
+// ── margin calls ──
+// strategies.txt, "Margin and leverage": "the broker emulator generates margin call events if a
+// strategy's available funds fall below the required margin percentage. Each time that a margin call
+// event occurs, the emulator immediately liquidates four times the number of contracts/shares/lots/
+// units required to cover the loss". mig6.txt: margin_long/margin_short default to 100 in v6 and to
+// 0 in v5. Oracle-checked: resin-harness state/repros/mixed-seed-3.json, qtyType-seed-5.json,
+// mixed-seed-21.json, margin-call-*.json, probe C27.
+describe("StrategyState margin calls", () => {
+  function account(capital: number, long = 100, short = 100): StrategyState {
+    const st = new StrategyState();
+    st.configure(1, 1, capital);
+    st.setMargin(long, short);
+    return st;
+  }
+  const exits = (st: StrategyState) => st.closedTradeRecords.map((r) => [r.exitId, r.exitComment, r.exitPrice, r.size]);
+
+  it("liquidates four times the cover amount at the adverse extreme (probe C27)", () => {
+    const st = account(1000);
+    st.entry("S", "short", 10);
+    // Bar 1 walks down first, then to 101: 10 short of margin, cover TRUNCATE(20 / 101) = 0 -> one
+    // unit (the close is back at 100, so it is not deferred).
+    st.processFills(100, 101, 99, 1, NaN, 100);
+    st.settleMargin(100, 1);
+    expect(exits(st)).toEqual([[null, "Margin call", 101, -1]]);
+    // Bar 2 reaches 151: 819 short, cover TRUNCATE(819 / 151) = 5 -> 20, capped at the 9 left.
+    st.processFills(100, 151, 99, 2, NaN, 150);
+    expect(exits(st).at(-1)).toEqual([null, "Margin call", 151, -9]);
+    expect(st.posSize).toBe(0);
+    expect(st.closedTradeExitId(0)).toBeNull();
+  });
+
+  it("does nothing without a margin (a v5 script's default)", () => {
+    const st = account(1000, 0, 0);
+    st.entry("S", "short", 10);
+    st.processFills(100, 101, 99, 1, NaN, 100);
+    st.processFills(100, 151, 99, 2, NaN, 150);
+    st.settleMargin(150, 2);
+    expect(st.posSize).toBe(-10);
+  });
+
+  it("covers the shortfall of a leveraged long at the low (margin-call-long-leverage.json)", () => {
+    const st = account(1000, 25);
+    st.entry("L", "long", 35);
+    st.processFills(100, 100.3, 99.7, 1, NaN, 100);
+    // Up to 100.5 first, then down to 94: equity 790 against 822.5 of margin -> loss 130 -> cover 1.
+    st.processFills(100, 100.5, 94, 2, NaN, 94.5);
+    expect(exits(st)).toEqual([[null, "Margin call", 94, 4]]);
+  });
+
+  it("an exit whose level the path reaches after the liquidation closes what it left (mixed-seed-3.json)", () => {
+    const st = account(1000);
+    st.entry("S", "short", 10);
+    st.exit("TP", "S", 99.5);
+    // Up to 101 first (a one-unit call, the close 99.8 is covered), then down to 99: the take-profit
+    // closes the other 9.
+    st.processFills(100, 101, 98.5, 1, NaN, 99.8);
+    expect(exits(st)).toEqual([[null, "Margin call", 101, -1], ["TP", "", 99.5, -9]]);
+  });
+
+  it("defers a one-lot call still short at the close to the close, and stops the bar's level fills (margin-call-deferred.json)", () => {
+    const st = account(1000);
+    st.entry("S", "short", 10);
+    st.exit("TP", "S", 99.5);
+    // Up to 100.5 first: 10 short, one lot; at the close 100.2 still 4 short -> deferred. The low
+    // 99 reaches the take-profit, which does not fill on this bar.
+    st.processFills(100, 100.5, 99, 1, NaN, 100.2);
+    expect(st.closedTradeRecords).toEqual([]);
+    st.settleMargin(100.2, 1);
+    expect(exits(st)).toEqual([[null, "Margin call", 100.2, -1]]);
+    st.processFills(100.2, 100.3, 99.4, 2, NaN, 99.6);
+    expect(exits(st).at(-1)).toEqual(["TP", "", 99.5, -9]);
+  });
+
+  it("a second stage at the bar's next checkpoint walks the trades open before the first (margin-call-stage2.json)", () => {
+    const st = account(3000, 100, 50);
+    st.configure(1, 10, 3000);
+    for (let b = 1; b <= 10; b++) {
+      st.entry("S", "short", 5);
+      st.processFills(100, 100.1, 99.9, b, NaN, 100);
+    }
+    // Down to 99.95, then up to 116: 700 short, loss 1400, cover 12 -> 48 at 116. At the close the
+    // stage-2 walk credits the first trade's cost (500) only: 200 left -> loss 400 -> cover 3 -> 12,
+    // capped at the 2 left. Without it the close would be covered (available funds 2087).
+    st.processFills(100, 116, 99.95, 11, NaN, 115);
+    expect(st.posSize).toBe(-2);
+    st.settleMargin(115, 11);
+    expect(exits(st).at(-1)).toEqual([null, "Margin call", 115, -2]);
+    expect(st.posSize).toBe(0);
+  });
+
+  it("covers lots, not contracts, on a fractional lot grid (margin-call-fractional.json)", () => {
+    const st = account(1000);
+    st.setSymbol(0.01, 100, 1, 0.001);
+    st.entry("S", "short", 9.5);
+    st.processFills(100, 101, 99, 1, NaN, 100);
+    // Up to 106: 64 short -> cover TRUNCATE(64 / 106, 0.001) = 0.603 -> 2.412.
+    st.processFills(100, 106, 99, 2, NaN, 105.5);
+    expect(exits(st)).toEqual([[null, "Margin call", 106, -2.412]]);
+  });
+});
+
+describe("strategy(margin_long=, margin_short=) codegen and E2E", () => {
+  it("defaults to 100 from v6 on and to 0 before (mig6.txt \"Default margin percentage\")", () => {
+    expect(transpileCode('//@version=6\nstrategy("s")')).toContain("$.strategy.setMargin(100, 100);");
+    expect(transpileCode('//@version=5\nstrategy("s")')).not.toContain("setMargin");
+    expect(transpileCode('strategy("s")')).not.toContain("setMargin");
+  });
+
+  it("takes the arguments over the default", () => {
+    expect(transpileCode('//@version=5\nstrategy("s", margin_long=25, margin_short=50)')).toContain("$.strategy.setMargin(25, 50);");
+    expect(transpileCode('//@version=6\nstrategy("s", margin_long=0, margin_short=0)')).not.toContain("setMargin");
+    expect(transpileCode('//@version=6\nstrategy("s", margin_short=0)')).toContain("$.strategy.setMargin(100, 0);");
+  });
+
+  it("rejects a margin that is not a constant number >= 0", () => {
+    expect(transpileErrors('strategy("s", margin_short=close)').some((e) => e.includes("'margin_short' argument"))).toBe(true);
+    expect(transpileErrors('strategy("s", margin_long=-1)').some((e) => e.includes("'margin_long' argument"))).toBe(true);
+  });
+
+  it("margin-calls a v6 short losing more than its equity, not a v5 one; the exit id is na", () => {
+    const body = [
+      'strategy("s", initial_capital=1000)',
+      "if bar_index == 0",
+      '    strategy.entry("S", strategy.short, qty=10)',
+      "var float __pos = na",
+      "__pos := strategy.position_size",
+      "var float __idna = na",
+      "__idna := strategy.closedtrades > 0 ? (na(strategy.closedtrades.exit_id(0)) ? 1 : 0) : na",
+    ];
+    const data: OHLCVData = {
+      open: [100, 100, 100, 150], high: [101, 101, 151, 151], low: [99, 99, 99, 149], close: [100, 100, 150, 150],
+      volume: [1, 1, 1, 1], time: [0, 60_000, 120_000, 180_000],
+    };
+    const pos = (version: number) => {
+      const r = transpile([`//@version=${version}`, ...body].join("\n"));
+      if (!r.ok) throw new Error(r.errors.join("; "));
+      return run(r, data).bars.map((b) => [b["var:__pos"], b["var:__idna"]]);
+    };
+    // The position is read by the script before the bar's close check; the call at 101 is bar 1's.
+    expect(pos(6)).toEqual([[0, NaN], [-9, 1], [0, 1], [0, 1]]);
+    expect(pos(5)).toEqual([[0, NaN], [-10, NaN], [-10, NaN], [-10, NaN]]);
+  });
+});
+
+// The fills of one bar happen in the order its path reaches them, segment by segment: a market
+// reversal at the open precedes an intrabar stop of the old position (probe C23: "the L stop (95)
+// belongs to a closed trade -> cancelled"), and the trailing lines are walked ahead of the level
+// fills up to the farther extreme (the oracle's `_process_limit_stop_orders`).
+describe("StrategyState fills in path order", () => {
+  it("a market reversal at the open comes before the old position's stop on the way down (probe C23)", () => {
+    const st = new StrategyState();
+    st.entry("L", "long", 1);
+    st.processFills(100, 101, 99);
+    st.exit("x", "L", undefined, 95);
+    st.entry("S", "short", 1);
+    st.processFills(100, 101, 94, 3, NaN, 95);
+    expect(st.closedTradeRecords.map((r) => [r.exitId, r.exitPrice])).toEqual([["S", 100]]);
+    expect(st.posSize).toBe(-1);
+  });
+
+  it("a trailing line hit on the way back from the low precedes a long limit the way down reaches (mixed-seed-45.json)", () => {
+    const st = new StrategyState();
+    st.entry("R", "short", 1);
+    st.processFills(101.15, 101.15, 101.15);
+    st.exit("RX", "R", undefined, undefined, undefined, 104, 104); // trail_points=104, trail_offset=104
+    st.processFills(101.15, 104.07, 100.31, 1, NaN, 101.76); // arms at 100.11 only on the next bar
+    st.entry("C", "long", 1, 100.07);
+    // Down to 99.79 first (the line follows it to 100.83), then up to 104.03: the line is hit at
+    // 100.83 before the limit at 100.07 fills. The limit, placed against the short, fixed a flip of
+    // 1 at placement and opens it on top of its own 1 (entry flip fixed at placement).
+    st.processFills(101.76, 104.03, 99.79, 2, NaN, 100.78);
+    expect(st.closedTradeRecords.map((r) => [r.exitId, r.exitPrice])).toEqual([["RX", 100.83000000000001]]);
+    expect(st.posSize).toBe(2);
+  });
+});

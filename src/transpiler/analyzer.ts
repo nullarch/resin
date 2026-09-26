@@ -2182,6 +2182,11 @@ export interface AnalyzedProgram {
   // strategy(slippage=N): ticks added against the order to every market and stop fill (0 = none).
   // codegen passes it as configure()'s seventh argument.
   strategySlippage: number;
+  // strategy(margin_long=, margin_short=): the percent of a long/short position the account must
+  // fund (null = not given: the version's default, see strategyMargins). codegen passes both to
+  // $.strategy.setMargin when either is not 0.
+  strategyMarginLong: number | null;
+  strategyMarginShort: number | null;
   // strategy(commission_type=, commission_value=): the fee every filled order pays. The type is
   // "percent" (TradingView's default), "cash_per_contract" or "cash_per_order"; a value of 0 charges
   // nothing. codegen passes both to $.strategy.setCommission when the value is not 0.
@@ -3403,6 +3408,16 @@ function resolveSyminfoNumbers(grid: SymbolGridOptions | undefined, errors: stri
   return out;
 }
 
+// strategy()'s margin_long and margin_short, a default taken from the script's version. mig6.txt
+// ("Default margin percentage"): "In v5, the default value of the margin_long and margin_short
+// parameters is 0, which means that the strategy does not check its available funds ... In Pine v6,
+// the default margin percentage is 100." Every version before v6 has the v5 default, and so does a
+// script without a //@version annotation (a v1 script).
+export function strategyMargins(prog: AnalyzedProgram): { long: number; short: number } {
+  const fallback = (prog.script.version ?? 1) >= 6 ? 100 : 0;
+  return { long: prog.strategyMarginLong ?? fallback, short: prog.strategyMarginShort ?? fallback };
+}
+
 export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgram {
   const chartTf = options?.chartTf ?? DEFAULT_CHART_TF;
   const syminfoErrors: string[] = [];
@@ -3475,6 +3490,8 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
     strategyProcessOrdersOnClose: false,
     strategyUseBarMagnifier: false,
     strategySlippage: 0,
+    strategyMarginLong: null,
+    strategyMarginShort: null,
     strategyCommissionType: "percent",
     strategyCommissionValue: 0,
     strategyCurrency: SYMINFO_STRING_PROPS.get("currency")!,

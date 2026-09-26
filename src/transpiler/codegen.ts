@@ -29,6 +29,7 @@ import {
   resolveTimestampKwargSlots,
   RUNTIME_KWARG_PARAM_NAMES,
   STRATEGY_RUNTIME_PROPS,
+  strategyMargins,
   SYMINFO_NUMBER_PROPS,
   SYMINFO_OPTION_KEYS,
   EARNINGS_NUMBER_PROPS,
@@ -396,6 +397,12 @@ export function generateCode(program: AnalyzedProgram): string {
   // strategy(use_bar_magnifier=true): emitted only when it is on, so other scripts are unchanged.
   if (program.isStrategy && program.strategyUseBarMagnifier) {
     lines.push("$.strategy.useBarMagnifier = true;");
+  }
+  // strategy(margin_long=, margin_short=), or the version's default (strategyMargins): handed to the
+  // strategy engine once per run, only when a margin is set, so a v5 script without them is unchanged.
+  if (program.isStrategy) {
+    const margin = strategyMargins(program);
+    if (margin.long !== 0 || margin.short !== 0) lines.push(`$.strategy.setMargin(${margin.long}, ${margin.short});`);
   }
   // strategy(commission_type=, commission_value=): handed to the strategy engine once per run, only
   // when a fee is actually charged.

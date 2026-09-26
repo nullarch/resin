@@ -24,7 +24,7 @@ interface ClosedTradeRecord {
   entryTime: number;
   exitTime: number;
   entryId: string;
-  exitId: string;
+  exitId: string | null; // null (string na) for a margin call, which is no order of the script
   profit: number; // net of the trade's commission (entry and exit legs)
   size: number;
   maxRunup: number;
@@ -160,6 +160,32 @@ export interface SubBarWindow {
   close: ArrayLike<number>;
   from: number;
   to: number;
+}
+
+// What a margin call that liquidated part of the position leaves for the next checkpoint of its bar
+// (see marginCallStage2): the bar, the shortfall it covered, the price it was judged at, the side,
+// and the open trades before it as (quantity, entry price) pairs, oldest first.
+interface MarginCallStage {
+  bar: number;
+  deficit: number;
+  price: number;
+  short: boolean;
+  trades: number[];
+}
+
+// Python's round(): half to even. The oracle's margin-call arithmetic uses it.
+function roundHalfEven(x: number): number {
+  const r = Math.round(x);
+  return Math.abs(x % 1) === 0.5 && r % 2 !== 0 ? r - 1 : r;
+}
+
+// The lots a margin call covers: `raw` truncated, except that a value within about 2^-26 (relative)
+// of a whole count is that count. The oracle's cover sizing (tier 2, measured on TradingView:
+// "21840.99976 (rel dist 1.10e-8) covered 21841 lots on TV, while 26510.99945 (rel dist 2.08e-8)
+// truncated to 26510").
+function marginCoverLots(raw: number): number {
+  const nearest = roundHalfEven(raw);
+  return Math.abs(raw - nearest) <= raw * 2 ** -26 + 1e-9 ? nearest : Math.trunc(raw);
 }
 
 // strategy(initial_capital=) when the declaration omits it. props.txt: "Initial Capital (parameter:
@@ -320,6 +346,14 @@ export class StrategyState {
   pricescale: number;
   minmove: number;
   lotsPerContract: number;
+  // strategy(margin_long=, margin_short=): the percent of a long/short position's value the account
+  // must fund (setMargin). 0, the engine's default (and a v5 script's), turns margin calls off.
+  marginLong: number;
+  marginShort: number;
+  // A margin call put off to the bar's close (see marginCall), and the second stage a liquidation
+  // arms for the next checkpoint of its bar (marginCallStage2).
+  private mcDeferred: { price: number; short: boolean } | null;
+  private mcStage2: MarginCallStage | null;
   // syminfo.pointvalue: the money one contract makes or loses when the price moves by 1.0. Every
   // money amount the engine derives from a price (profit, entry value, percent commission, the
   // unit cost a default-sized order divides its budget by, the marks behind the statistics) is
@@ -368,7 +402,7 @@ export class StrategyState {
   lastClosedEntryBarIndex: number;
   lastClosedExitBarIndex: number;
   lastClosedEntryId: string;
-  lastClosedExitId: string;
+  lastClosedExitId: string | null;
   lastClosedProfit: number;
   lastClosedSize: number;
   // strategy.closedtrades.entry_time/exit_time(C418) — entry_bar_index/exit_bar_index와 동일
@@ -447,8 +481,12 @@ export class StrategyState {
   // Legs an entry fill of the current bar has just bound or spawned (bindLegs): they are live on the
   // fill bar, so processFills judges them once that fill is done.
   private freshLegs: ExitLeg[];
-  // Reused by fillExitLegs to order one pass of exit fills without allocating.
+  // Reused by runExitLegs to order one pass of exit fills without allocating.
   private legScratch: ExitLeg[];
+  // The exit legs walked on the path being filled whose fill is still ahead on it (queueExitLegs):
+  // runExitLegs fills them segment by segment, so the margin-call checkpoints between the segments
+  // see the position the path has left there.
+  private legQueue: ExitLeg[];
   // The bar processFills is filling: its assumed intrabar path (open, the extreme nearer the open,
   // the other extreme, close; see walkLeg) and whether it runs to the high first.
   private barPath: number[];
@@ -566,6 +604,10 @@ export class StrategyState {
     this.minmove = MINMOVE;
     this.lotsPerContract = lotsPerContract(MINCONTRACT);
     this.pointvalue = POINTVALUE;
+    this.marginLong = 0;
+    this.marginShort = 0;
+    this.mcDeferred = null;
+    this.mcStage2 = null;
     this.realizedPnl = 0;
     this.closedTrades = 0;
     this.winTrades = 0;
@@ -613,6 +655,7 @@ export class StrategyState {
     this.exitSeq = 0;
     this.freshLegs = [];
     this.legScratch = [];
+    this.legQueue = [];
     this.barPath = [NaN, NaN, NaN, NaN];
     this.pathUpFirst = false;
     this.legTemplate = {
@@ -1013,6 +1056,15 @@ export class StrategyState {
     this.commissionValue = value;
   }
 
+  // strategy(margin_long=, margin_short=), or the script version's default (codegen emits this once,
+  // before the first bar, when either is not 0). props.txt: "If a trade has been opened and it
+  // starts losing money to the extent where the trader's funds are not enough to cover their portion
+  // of the trade, a Margin Call occurs and forcibly liquidates a part of the original position."
+  setMargin(long: number, short: number): void {
+    this.marginLong = long;
+    this.marginShort = short;
+  }
+
   // Starts the commission pool of one order's fill. `orderQty` is the order's whole quantity when it
   // is known ahead of its legs — a reversal, whose closing and opening legs are one order — and 0
   // otherwise (the legs are summed as they come).
@@ -1291,8 +1343,10 @@ export class StrategyState {
     return this.closedTradeAt(index)?.entryId ?? "";
   }
 
-  closedTradeExitId(index: number): string {
-    return this.closedTradeAt(index)?.exitId ?? "";
+  // A margin call's exit has no id: na (null).
+  closedTradeExitId(index: number): string | null {
+    const t = this.closedTradeAt(index);
+    return t === undefined ? "" : t.exitId;
   }
 
   closedTradeProfit(index: number): number {
@@ -1525,7 +1579,7 @@ export class StrategyState {
   // processFills, and the immediately= paths of close/close_all.
   private closeAt(
     fillPrice: number, qty: number = Infinity, exitComment: string = "",
-    barIndex: number = NaN, exitId: string = "", barTimeMs: number = NaN,
+    barIndex: number = NaN, exitId: string | null = "", barTimeMs: number = NaN,
     binding: string | EntryBinding | null = null,
   ): void {
     const size = Math.abs(this.posSize);
@@ -2318,19 +2372,32 @@ export class StrategyState {
     }
     if (sub !== undefined && this.useBarMagnifier && sub.from < sub.to) {
       for (let k = sub.from; k < sub.to; k++) {
-        this.fillOnPath(sub.open[k]!, sub.high[k]!, sub.low[k]!, sub.close[k]!, barIndex, barTimeMs);
+        this.fillOnPath(sub.open[k]!, sub.high[k]!, sub.low[k]!, sub.close[k]!, barIndex, barTimeMs, k === sub.from);
       }
     } else {
-      this.fillOnPath(openPrice, high, low, closePrice, barIndex, barTimeMs);
+      this.fillOnPath(openPrice, high, low, closePrice, barIndex, barTimeMs, true);
     }
     this.updateTradeExcursion(high, low);
   }
 
   // Fills what the price path open → nearer extreme → farther extreme → close reaches: the chart bar,
-  // or one of its sub-bars under the bar magnifier (processFills). The market orders are all filled
-  // at the first path's open, so a later sub-bar only meets price-based orders and exit legs.
+  // or one of its sub-bars under the bar magnifier (processFills; `chartOpen` marks the path that
+  // starts at the chart bar's open). The market orders are all filled at the first path's open, so a
+  // later sub-bar only meets price-based orders and exit legs.
+  //
+  // The fills happen segment by segment, in the order the path reaches them: first everything at the
+  // open, then each segment to an extreme, then the closing segment. So a market reversal at the open
+  // closes the old position before its stop-loss further down the bar could (strategies.txt: a market
+  // order executes "on the next available tick"; probe resin-harness suites/strategy/probes/C23.json).
+  // On one segment the exit legs of entries filled on earlier bars go first, then the entry orders
+  // (each followed by the legs its fill binds), then the strategy.order() slot. Between the segments
+  // the broker emulator judges margin calls (marginCheckpoint), so a margin call at an extreme meets
+  // the position the path left there: an exit whose level lies further on fills what the liquidation
+  // left (the oracle, measured on TradingView: "a partial 'Margin call' at the high preceded the
+  // trailing exit filling near the low of the same bar").
   private fillOnPath(
     openPrice: number, high: number, low: number, closePrice: number, barIndex: number, barTimeMs: number,
+    chartOpen: boolean,
   ): void {
     // strategies.txt ("Broker emulator"): open → high → low → close when the open is closer to the
     // high, else open → low → high → close (halfway walks down first, as in the oracle).
@@ -2339,27 +2406,76 @@ export class StrategyState {
     this.barPath[1] = this.pathUpFirst ? high : low;
     this.barPath[2] = this.pathUpFirst ? low : high;
     this.barPath[3] = closePrice;
+    this.legQueue.length = 0;
     if (this.closePending) this.fillPendingClose(openPrice, barIndex, barTimeMs);
     // exit 브래킷(C167)은 close(마켓 청산) 다음, entry 앞에서 판정한다 — 마켓 close는 open 체결이라
     // 항상 이 바의 첫 가격이고, exit도 청산 계열이라 기존 "청산 먼저 → entry" 순서 원칙에 합류한다
     // (같은 바에 exit 체결+재진입 entry 체결이 순차 발생 가능 — TV 실측 미검증 가설, DIVERGENCES #70).
     // These are the legs bound to entries filled on earlier bars; the legs an entry fill of this bar
-    // binds are judged after that fill (fillPendingEntries).
-    this.fillExitLegs(barIndex, barTimeMs, false, 0);
-    if (this.pendingEntries.length > 0) this.fillPendingEntries(openPrice, high, low, barIndex, barTimeMs);
-    // order 넷팅 주문(C169)은 마지막에 판정한다 — 처리 순서 close→exit→entry→order: 청산 계열
-    // 먼저 원칙(기존 순서 불변) + 같은 바에 entry와 order가 둘 다 체결되면 entry가 만든 포지션에
-    // 대해 order가 넷팅한다(고정 슬롯 모델의 결정론적 순서 — pine2py는 _pending_orders 삽입 순서,
-    // TV 실측 미검증 가설 DIVERGENCES #72). 가격 판정은 entry와 동일한 directionalFillPrice
-    // (마켓=open, limit/stop=조건 충족 시 체결·미충족 시 이월, 갭 오픈 or-better #69 (a) 축).
-    if (this.orderPending) {
-      const orderFill = this.directionalFillPrice(this.orderDirection, this.orderLimit, this.orderStop, openPrice, high, low);
-      if (!Number.isNaN(orderFill)) {
-        this.fillPendingOrder(orderFill, barIndex, barTimeMs);
-        const seg = orderFill === openPrice ? 0 : orderFill > openPrice === this.pathUpFirst ? 1 : 2;
-        this.fillExitLegs(barIndex, barTimeMs, true, seg);
-      }
+    // binds are judged after that fill.
+    this.queueExitLegs(false, 0);
+    this.runExitLegs(0, barIndex, barTimeMs, false);
+    // The market orders, and the orders whose level the open is already past, fill at the open, all
+    // before any intrabar price. The legs their fills bind are judged once they are all done (a
+    // second market entry meets the position the first one opened, not the exit's close; repro
+    // resin-harness state/repros/mixed-seed-475.json).
+    const due = this.dueEntries(openPrice, high, low);
+    let i = 0;
+    for (; i < due.length && due[i]!.pathLeg === 0; i++) {
+      if (this.pendingEntries.includes(due[i]!)) this.fillPendingEntry(due[i]!, due[i]!.fillPrice, barIndex, barTimeMs);
     }
+    this.queueExitLegs(true, 0);
+    this.runExitLegs(0, barIndex, barTimeMs, false);
+    // order 넷팅 주문(C169)은 같은 경로 지점의 entry 다음에 판정한다 — 청산 계열 먼저 원칙(기존 순서
+    // 불변) + 같은 지점에서 entry와 order가 둘 다 체결되면 entry가 만든 포지션에 대해 order가
+    // 넷팅한다(고정 슬롯 모델의 결정론적 순서 — pine2py는 _pending_orders 삽입 순서, TV 실측 미검증
+    // 가설 DIVERGENCES #72). 가격 판정은 entry와 동일한 directionalFillPrice(마켓=open,
+    // limit/stop=조건 충족 시 체결·미충족 시 이월, 갭 오픈 or-better #69 (a) 축).
+    let orderFill = NaN;
+    let orderSeg = -1;
+    if (this.orderPending) {
+      orderFill = this.directionalFillPrice(this.orderDirection, this.orderLimit, this.orderStop, openPrice, high, low);
+      if (!Number.isNaN(orderFill)) orderSeg = orderFill === openPrice ? 0 : orderFill > openPrice === this.pathUpFirst ? 1 : 2;
+    }
+    if (orderSeg === 0) this.fillOrderOnPath(orderFill, 0, barIndex, barTimeMs);
+    // The margin call at the open, after the open's fills: only on the chart bar's open (a later
+    // sub-bar's open is inside the bar; the oracle judges it in its at-open phase alone).
+    if (chartOpen) this.marginCall(openPrice, this.posSize < 0, barIndex, barTimeMs, true, false, false);
+    // The trailing lines of the legs bound so far are walked ahead of the level fills, up to the
+    // farther extreme: a line hit on the way back from the nearer extreme closes its trade before an
+    // entry level on the way to that extreme reverses it. This is the oracle's order (tier 2,
+    // `_process_limit_stop_orders`: "Trailing stops walk the assumed intrabar path themselves ... so
+    // they are processed here rather than inside the level-indexed walk — but only up to the second
+    // extreme"; repro resin-harness state/repros/mixed-seed-45.json).
+    this.runExitLegs(2, barIndex, barTimeMs, true);
+    // An entry or strategy.order() level reached on a segment fills there, nearer the segment's start
+    // first; an exit leg of an earlier bar's entry fills on the segment its walk reached (walkLeg).
+    // A margin call deferred at the first extreme stops the level fills for the rest of the path; the
+    // trailing lines still fill (see marginCall).
+    let deferred = false;
+    for (let s = 1; s <= 2; s++) {
+      this.runExitLegs(s, barIndex, barTimeMs, deferred);
+      if (deferred) continue;
+      for (; i < due.length && due[i]!.pathLeg === s; i++) {
+        if (!this.pendingEntries.includes(due[i]!)) continue; // cancelled by an OCA sibling's fill
+        this.fillPendingEntry(due[i]!, due[i]!.fillPrice, barIndex, barTimeMs);
+        this.queueExitLegs(true, s);
+        this.runExitLegs(s, barIndex, barTimeMs, false);
+      }
+      if (orderSeg === s) this.fillOrderOnPath(orderFill, s, barIndex, barTimeMs);
+      deferred = this.marginCheckpoint(s, barIndex, barTimeMs);
+    }
+    this.runExitLegs(3, barIndex, barTimeMs, deferred);
+    this.legQueue.length = 0;
+    due.length = 0;
+  }
+
+  // Fills the strategy.order() slot at `orderFill`, reached on path segment `seg`, and queues the legs
+  // its fill binds.
+  private fillOrderOnPath(orderFill: number, seg: number, barIndex: number, barTimeMs: number): void {
+    this.fillPendingOrder(orderFill, barIndex, barTimeMs);
+    this.queueExitLegs(true, seg);
+    this.runExitLegs(seg, barIndex, barTimeMs, false);
   }
 
   // strategy(process_orders_on_close=true): the extra fill attempt at the bar's close, after the
@@ -2404,51 +2520,35 @@ export class StrategyState {
     }
   }
 
-  // Judges every unfilled entry order against this bar and fills the triggered ones in the order the
-  // bar's assumed intrabar path reaches them. strategies.txt ("Broker emulator"): "If the opening
-  // price of a bar is closer to the high than it is to the low, the emulator assumes that the market
-  // price moved in this order: open → high → low → close. If the opening price of a bar is closer to
-  // the low than it is to the high, the emulator assumes that the market price moved in this order:
-  // open → low → high → close." (An open halfway between them walks down first, as in the oracle.)
-  // A market order, or one whose level the open already crossed, fills at the open, first; the rest
-  // fill where the path reaches their level: on the leg to the nearer extreme before the leg to the
-  // farther one, and on one leg nearer the open first. Orders reached at one point fill in placement
-  // order. Each fill meets the position the previous one left, so the second of two stop entries a
-  // bar crosses reverses the first one's position (or is dropped by the pyramiding gate at the fill).
-  private fillPendingEntries(openPrice: number, high: number, low: number, barIndex: number, barTimeMs: number): void {
-    const upFirst = high - openPrice < openPrice - low;
+  // Judges every unfilled entry order against the path and returns the triggered ones (entryScratch)
+  // in the order the path reaches them. strategies.txt ("Broker emulator"): "If the opening price of
+  // a bar is closer to the high than it is to the low, the emulator assumes that the market price
+  // moved in this order: open → high → low → close. If the opening price of a bar is closer to the low
+  // than it is to the high, the emulator assumes that the market price moved in this order: open →
+  // low → high → close." (An open halfway between them walks down first, as in the oracle.) A market
+  // order, or one whose level the open already crossed, fills at the open, first; the rest fill where
+  // the path reaches their level: on the leg to the nearer extreme before the leg to the farther one,
+  // and on one leg nearer the open first. Orders reached at one point fill in placement order. Each
+  // fill meets the position the previous one left, so the second of two stop entries a bar crosses
+  // reverses the first one's position (or is dropped by the pyramiding gate at the fill); an order an
+  // earlier fill cancelled through its OCA group is no longer in the book by its turn (fillOnPath).
+  // An exit leg an entry fill binds (placed against the pending entry order, or spawned for a pyramid
+  // add; bindLegs) is live on the fill bar itself, not from the next one: the order exists before the
+  // fill, so the rest of this bar can trigger it (the manual's "Take-profit and stop-loss demo" places
+  // both on one bar), over the path from that fill on (walkLeg).
+  private dueEntries(openPrice: number, high: number, low: number): PendingEntry[] {
     const due = this.entryScratch;
     due.length = 0;
     for (const e of this.pendingEntries) {
       const price = this.directionalFillPrice(e.direction, e.limit, e.stop, openPrice, high, low);
       if (Number.isNaN(price)) continue; // its level is not reached on this bar: the order rests
       e.fillPrice = price;
-      e.pathLeg = price === openPrice ? 0 : price > openPrice === upFirst ? 1 : 2;
+      e.pathLeg = price === openPrice ? 0 : price > openPrice === this.pathUpFirst ? 1 : 2;
       e.pathDist = Math.abs(price - openPrice);
       due.push(e);
     }
     if (due.length > 1) due.sort((a, b) => a.pathLeg - b.pathLeg || a.pathDist - b.pathDist || a.seq - b.seq);
-    // An exit leg an entry fill binds (placed against the pending entry order, or spawned for a
-    // pyramid add; bindLegs) is live on the fill bar itself, not from the next one: the order exists
-    // before the fill, so the rest of this bar can trigger it (the manual's "Take-profit and
-    // stop-loss demo" places both on one bar). The fills at the open all happen before any intrabar
-    // price, so such legs are judged once they are all done (a second market entry meets the
-    // position the first one opened, not the exit's close; repro resin-harness
-    // state/repros/mixed-seed-475.json), and after each intrabar fill, over the path from that fill on
-    // (walkLeg). The legs of entries filled on earlier bars were judged before the entries, so they
-    // are not judged twice.
-    // An order an earlier fill of this bar cancelled through its OCA group is no longer in the book.
-    let i = 0;
-    for (; i < due.length && due[i]!.pathLeg === 0; i++) {
-      if (this.pendingEntries.includes(due[i]!)) this.fillPendingEntry(due[i]!, due[i]!.fillPrice, barIndex, barTimeMs);
-    }
-    this.fillExitLegs(barIndex, barTimeMs, true, 0);
-    for (; i < due.length; i++) {
-      if (!this.pendingEntries.includes(due[i]!)) continue;
-      this.fillPendingEntry(due[i]!, due[i]!.fillPrice, barIndex, barTimeMs);
-      this.fillExitLegs(barIndex, barTimeMs, true, due[i]!.pathLeg);
-    }
-    due.length = 0;
+    return due;
   }
 
   // The close pass (processFillsAtClose) for the entry orders placed on this bar: the market ones
@@ -2606,32 +2706,234 @@ export class StrategyState {
     );
   }
 
-  // Judges live exit legs against this bar — every leg bound to a filled entry (`onlyFresh` false), or
-  // only the legs this bar's last entry fill bound (freshLegs), which fill from that entry's fill on
-  // path segment `seg` (0 = at the open) — and fills the triggered ones in the order the bar's path
-  // reaches them (walkLeg: the first tick, then segment by segment, nearer the segment's start first,
-  // placement order at one point). Each fill meets the position the previous one left, so a leg
-  // whose entry an earlier fill spent is gone by its turn.
-  private fillExitLegs(barIndex: number, barTimeMs: number, onlyFresh: boolean, seg: number): void {
+  // Judges live exit legs against the rest of the path — every leg bound to a filled entry
+  // (`onlyFresh` false), or only the legs this bar's last entry fill bound (freshLegs), which fill
+  // from that entry's fill on path segment `seg` (0 = at the open) — and queues the triggered ones
+  // with where the path reaches them (walkLeg: the first tick, then segment by segment). A leg queued
+  // before and bound anew is walked again from its new entry.
+  private queueExitLegs(onlyFresh: boolean, seg: number): void {
     const legs = onlyFresh ? this.freshLegs : this.exitLegs;
     if (legs.length === 0) return;
-    const due = this.legScratch;
-    due.length = 0;
     if (this.posSize !== 0) {
       for (const l of legs) {
         if (l.consumed || l.binding === null) continue;
+        const queued = this.legQueue.indexOf(l);
+        if (queued >= 0) this.legQueue.splice(queued, 1);
         const price = this.walkLeg(l, seg, seg === 0 ? this.barPath[0]! : l.binding.entryPrice);
         if (Number.isNaN(price)) continue;
         l.fillPrice = price;
-        due.push(l);
+        this.legQueue.push(l);
       }
     }
     if (onlyFresh) this.freshLegs.length = 0;
+  }
+
+  // Fills the queued exit legs the path reaches by segment `upTo` (only the trailing lines when
+  // `trailingOnly`, see marginCall), in the order it reaches them: segment, then nearer the segment's
+  // start, then placement order. Each fill meets the position the previous one left, so a leg whose
+  // entry an earlier fill spent is gone by its turn.
+  private runExitLegs(upTo: number, barIndex: number, barTimeMs: number, trailingOnly: boolean): void {
+    const queue = this.legQueue;
+    if (queue.length === 0) return;
+    const due = this.legScratch;
+    due.length = 0;
+    for (let i = 0; i < queue.length; ) {
+      const l = queue[i]!;
+      if (l.pathLeg <= upTo && (!trailingOnly || l.fillKind === null)) {
+        due.push(l);
+        queue.splice(i, 1);
+      } else {
+        i++;
+      }
+    }
     if (due.length > 1) due.sort((a, b) => a.pathLeg - b.pathLeg || a.pathDist - b.pathDist || a.seq - b.seq);
     for (const l of due) {
-      if (this.posSize !== 0 && !l.consumed && this.exitLegs.includes(l)) this.executeLeg(l, l.fillPrice, barIndex, barTimeMs);
+      if (this.posSize !== 0 && !l.consumed && l.binding !== null && this.exitLegs.includes(l)) {
+        this.executeLeg(l, l.fillPrice, barIndex, barTimeMs);
+      }
     }
     due.length = 0;
+  }
+
+  // The margin calls the broker emulator judges after path segment `seg` (1 = the segment to the
+  // extreme nearer the open, 2 = the one to the farther extreme), at the extremes; true when one was
+  // deferred to the bar's close (marginCall). A position is judged at its adverse extreme once the
+  // segment reaching it has filled; the oracle also judges the favourable extreme where fills can
+  // have grown the position (a pyramid entry filled on the way up), or where its equity is compared
+  // in whole ticks (marginCall): after the first segment and, on an open → low → high → close path,
+  // before the second one too. This is the oracle's checkpoint order (tier 2, `_process_limit_stop_orders`,
+  // measured on TradingView: a long's margin call "at H-slip right after the rising leg's fills").
+  private marginCheckpoint(seg: number, barIndex: number, barTimeMs: number): boolean {
+    const near = this.barPath[1]!;
+    const far = this.barPath[2]!;
+    if (seg === 1) {
+      if (this.pathUpFirst) {
+        if (this.marginCall(near, true, barIndex, barTimeMs, false, true, false)) return true;
+        this.marginCall(near, false, barIndex, barTimeMs, false, false, false);
+        this.marginCall(far, true, barIndex, barTimeMs, false, false, false);
+      } else {
+        if (this.marginCall(near, false, barIndex, barTimeMs, false, true, false)) return true;
+        this.marginCall(far, false, barIndex, barTimeMs, false, false, false);
+      }
+    } else if (this.pathUpFirst) {
+      this.marginCall(far, false, barIndex, barTimeMs, false, false, false);
+    } else {
+      this.marginCall(far, true, barIndex, barTimeMs, false, false, false);
+      this.marginCall(far, false, barIndex, barTimeMs, false, false, false);
+    }
+    return false;
+  }
+
+  // The margin calls judged at the bar's close, after the script body and the process_orders_on_close
+  // pass (Context.finishBar): a margin call deferred there from an extreme (marginCall), then the
+  // close itself, where a shortfall is covered in whole contracts. The oracle's
+  // `process_deferred_margin_call` (tier 2, measured on TradingView: "TV trims 1.0 contract at
+  // C=80898.0 on the 02:00 bar while the O/H/L walk points all pass the margin comparison").
+  settleMargin(closePrice: number, barIndex: number = NaN, barTimeMs: number = NaN): void {
+    const d = this.mcDeferred;
+    if (d !== null) {
+      this.mcDeferred = null;
+      this.marginCall(d.price, d.short, barIndex, barTimeMs, true, false, false);
+    }
+    this.marginCall(closePrice, this.posSize < 0, barIndex, barTimeMs, true, false, true);
+  }
+
+  // A margin call on the short (`short`) or long position at `price`. strategies.txt ("Margin and
+  // leverage"): "the broker emulator generates margin call events if a strategy's available funds fall
+  // below the required margin percentage. Each time that a margin call event occurs, the emulator
+  // immediately liquidates four times the number of contracts/shares/lots/units required to cover the
+  // loss", with MVS = size × price, equity = initial capital + net profit + open profit, margin = MVS ×
+  // margin percent / 100, available funds = equity − margin, loss = available funds / margin ratio,
+  // cover amount = TRUNCATE(loss / price) "to the same decimal precision as the minimum position size",
+  // margin call size = cover amount × 4; and "short trades in a strategy that uses any nonzero margin
+  // are subject to forced liquidation from margin call events, even if the margin_short argument is
+  // 100". The liquidation is a market order: it fills at `price`, slipped against the position, as a
+  // closing fill that closes the oldest trades first, and its exit has no id (na) and the comment
+  // "Margin call". Returns true when the call is deferred instead.
+  //
+  // The rest is the oracle's measurement of TradingView (tier 2, `_check_margin_call`):
+  // - From 1e7 of equity upward the trigger compares whole ticks: the equity truncated against the
+  //   margin rounded half-up (to a multiple of 10 ticks from 1e10 margin ticks), so it can fire on a
+  //   sub-tick surplus; above 1e10 margin ticks the cover comes from that tick shortfall.
+  // - A shortfall under one lot on a fractional lot grid closes one whole contract (at most the
+  //   position); on a whole-lot grid it covers one lot. `wholeContracts` (the close check) sizes in
+  //   whole contracts on any grid.
+  // - A one-lot margin call at the first extreme (`canDefer`) whose position would still be short of
+  //   margin at the path's close is deferred to the bar's close (settleMargin); the path's level fills
+  //   stop there, its trailing lines still fill (fillOnPath).
+  // - A liquidation arms a second stage for the next checkpoint of its bar (marginCallStage2).
+  private marginCall(
+    price: number, short: boolean, barIndex: number, barTimeMs: number,
+    atOpen: boolean, canDefer: boolean, wholeContracts: boolean,
+  ): boolean {
+    if (this.openTrades.length === 0 || (short ? this.posSize >= 0 : this.posSize <= 0)) return false;
+    const percent = short ? this.marginShort : this.marginLong;
+    if (!(percent > 0) || Number.isNaN(price)) return false;
+    const stage = this.mcStage2;
+    if (stage !== null) {
+      this.mcStage2 = null;
+      if (stage.bar === barIndex && stage.short === short && this.marginCallStage2(stage, price, short, barIndex, barTimeMs)) {
+        return false;
+      }
+    }
+    const qty = Math.abs(this.posSize);
+    const pv = this.pointvalue;
+    const moneySpent = qty * this.posAvgPrice * pv;
+    const mvs = qty * price * pv;
+    const openProfit = short ? -(mvs - moneySpent) : mvs - moneySpent;
+    const equity = this.initialCapital + this.realizedPnl + openProfit;
+    const ratio = percent / 100;
+    const margin = mvs * ratio;
+    const available = equity - margin;
+    const mintick = this.mintick;
+    let bigMargin = false;
+    let equityTicks = 0;
+    let marginTicks = 0;
+    if (equity >= 1e7 && mintick > 0) {
+      equityTicks = Math.floor(equity / mintick);
+      marginTicks = margin / mintick;
+      bigMargin = marginTicks >= 1e10;
+      marginTicks = bigMargin ? 10 * roundHalfEven(marginTicks / 10) : Math.floor(marginTicks + 0.5);
+      if (equityTicks >= marginTicks) return false;
+    } else if (available >= 0) {
+      return false;
+    }
+    const lots = wholeContracts ? 1 : this.lotsPerContract;
+    let cover: number;
+    if (bigMargin) {
+      cover = Math.max(0, Math.trunc((((marginTicks - equityTicks) * mintick) / ratio / (price * pv)) * lots));
+    } else {
+      cover = marginCoverLots((Math.abs(available / ratio) / (price * pv)) * lots);
+    }
+    let mcLots: number;
+    let size: number;
+    if (cover === 0 && lots > 1) {
+      mcLots = 0;
+      size = Math.min(1, qty);
+    } else {
+      mcLots = Math.max(1, cover * 4);
+      size = mcLots / lots;
+    }
+    if (size > qty) size = qty;
+    const close = this.barPath[3]!;
+    if (!atOpen && canDefer && mcLots === 1 && price !== close) {
+      const closeMvs = qty * close * pv;
+      const closeProfit = short ? -(closeMvs - moneySpent) : closeMvs - moneySpent;
+      if (this.initialCapital + this.realizedPnl + closeProfit - closeMvs * ratio < 0) {
+        this.mcDeferred = { price: close, short };
+        return true;
+      }
+    }
+    const trades: number[] = [];
+    for (const t of this.openTrades) trades.push(Math.abs(t.size), t.entryPrice);
+    this.mcStage2 = {
+      bar: barIndex, deficit: bigMargin ? (marginTicks - equityTicks) * mintick : -available, price, short, trades,
+    };
+    this.beginOrder();
+    this.closeAt(this.slipped(price, short ? 1 : -1), size, "Margin call", barIndex, null, barTimeMs, null);
+    return false;
+  }
+
+  // The second stage of a margin call, at the next checkpoint of the bar whose earlier checkpoint
+  // (`stage.price`) liquidated part of the position. The oracle measured it on TradingView (tier 2,
+  // `_margin_call_stage2`, "848/848 margin-call bars exact"): the available funds there do not reflect
+  // the first liquidation's proceeds; TradingView walks the trades open before it, oldest first,
+  // crediting each one's entry cost at once and its gain at the first stage's price (net of the exit
+  // commission) one trade late, and stops before the credit covers the first stage's shortfall. What
+  // is left is covered four times over, sized at the first stage's price, and filled at `price`. When
+  // the first trade's cost alone covers the shortfall (the common single-trade case) nothing fires
+  // and the checkpoint judges the position as usual. Returns true when the second stage fired.
+  private marginCallStage2(stage: MarginCallStage, price: number, short: boolean, barIndex: number, barTimeMs: number): boolean {
+    const ratio = (short ? this.marginShort : this.marginLong) / 100;
+    const pv = this.pointvalue;
+    let credited = 0;
+    let gain = 0;
+    let steps = 0;
+    let left = stage.deficit;
+    for (let j = 0; j < stage.trades.length; j += 2) {
+      const qty = stage.trades[j]!;
+      const entryPrice = stage.trades[j + 1]!;
+      const cost = qty * entryPrice * pv;
+      if (stage.deficit - (credited + cost) - gain < 0) break;
+      credited += cost;
+      const gainBefore = gain;
+      let tradeGain = qty * (short ? entryPrice - stage.price : stage.price - entryPrice) * pv;
+      if (this.commissionValue !== 0) {
+        if (this.commissionType === "percent") tradeGain -= (qty * stage.price * pv * this.commissionValue) / 100;
+        else if (this.commissionType === "cash_per_contract") tradeGain -= qty * this.commissionValue;
+        else tradeGain -= this.commissionValue;
+      }
+      gain += tradeGain;
+      steps += 1;
+      left = stage.deficit - credited - gainBefore;
+    }
+    if (steps === 0 || left <= 0) return false;
+    const cover = marginCoverLots((left / ratio / (stage.price * pv)) * this.lotsPerContract);
+    if (cover <= 0) return false;
+    const size = Math.min((cover * 4) / this.lotsPerContract, Math.abs(this.posSize));
+    this.beginOrder();
+    this.closeAt(this.slipped(price, short ? 1 : -1), size, "Margin call", barIndex, null, barTimeMs, null);
+    return true;
   }
 
   // The close pass (processFillsAtClose) for the exit legs placed on this bar: each one's price

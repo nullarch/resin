@@ -9,6 +9,9 @@ export interface Pos {
 export interface Script extends Pos {
   kind: "Script";
   body: Stmt[];
+  // The Pine version the `//@version=N` annotation declares (undefined when there is none). Some
+  // defaults depend on it, e.g. strategy()'s margin_long/margin_short (mig6.txt: 100 in v6, 0 in v5).
+  version?: number;
 }
 
 export type Stmt =

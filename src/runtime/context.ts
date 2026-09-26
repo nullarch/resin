@@ -379,9 +379,11 @@ export class Context {
 
   // The end of a bar, after the script body ran. With
   // strategy(process_orders_on_close=true) the broker emulator makes one more
-  // fill attempt at this bar's close for the orders the body just placed;
-  // otherwise this does nothing.
+  // fill attempt at this bar's close for the orders the body just placed.
+  // Then the broker emulator judges margin calls at the close (a strategy with
+  // no margin set skips them).
   finishBar(): void {
     this.strategy.processFillsAtClose(this.close.get(0), this.idx, this.barTimeMs);
+    this.strategy.settleMargin(this.close.get(0), this.idx, this.barTimeMs);
   }
 }

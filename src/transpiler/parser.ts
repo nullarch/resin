@@ -166,10 +166,13 @@ export class Parser {
 
   parseScript(): Script {
     const body: Stmt[] = [];
+    let version: number | undefined;
     this.skipNewlines();
     while (!this.check("EOF")) {
       if (this.check("ANNOTATION")) {
-        this.advance();
+        // The one annotation that carries information: `//@version=N` (the first one counts).
+        const m = /^\/\/@version\s*=\s*(\d+)/.exec(this.advance().value);
+        if (m !== null && version === undefined) version = Number(m[1]);
         this.skipNewlines();
         continue;
       }
@@ -193,7 +196,7 @@ export class Parser {
       body.push(...this.parseStatementWithCommas());
       this.skipNewlines();
     }
-    return { kind: "Script", line: 1, col: 1, body };
+    return version === undefined ? { kind: "Script", line: 1, col: 1, body } : { kind: "Script", line: 1, col: 1, body, version };
   }
 
   // import user/library/version [as alias] — 경로/별칭 전부 버린다(위 parseScript 주석 참조).
