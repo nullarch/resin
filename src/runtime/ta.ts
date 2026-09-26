@@ -3164,46 +3164,34 @@ export function pivotlow(state: PivotState, source: number, left: number, right:
 
 export interface SupertrendState {
   atr?: AtrState;
+  called?: boolean;
   upper?: number;
   lower?: number;
+  close?: number;
   direction?: number;
-  prevClose?: number;
+  value?: number;
 }
 
-// ta.supertrend(factor, atrPeriod) - Supertrend, the fourth multi-return TA (returnArity: 2,
-// [supertrendValue, direction]) and the first non-3-arity use of the multi-return infra (C50/C51/C54
-// were all arity 3) — confirms the infra generalizes to arbitrary arity with 0 analyzer/codegen
-// changes, exactly as C51's next_hint predicted. pine2py wavealgo/ta/supertrend.py's incremental
-// (context-present) branch: basicUpper/basicLower = hl2 ± factor*ATR(atrPeriod) (already-implemented
-// rt.ta.atr, C53, reused via SupertrendState{atr:AtrState} - hma/stoch/tsi/kc "reuse an already-built
-// TA" principle), then a band-hold/direction-flip state machine layered on top.
-//
-// Unlike kc/macd/tsi (which call every inner TA unconditionally every bar and let *that* TA's own
-// top-of-function NaN gate handle skip logic, C49/C50/C54), supertrend has its *own* extra persistent
-// fields beyond atr's internal state (upper/lower/direction/prevClose) - and pine2py's early return
-// (`if math.isnan(atr_val): return (nan, 0)`) happens *before* even fetching/touching that state dict.
-// So rt.ta.atr is still called unconditionally every bar (required for its own O(1) RMA warmup to
-// advance), but supertrend's own state fields are left completely untouched whenever atrVal is NaN -
-// obv's sixth NaN pattern (C55) applied to a multi-field state instead of a single scalar. A transient
-// mid-stream NaN (embedded NaN in high/low/close after warmup) behaves the same way: that bar returns
-// (NaN, 0) and the *next* valid bar resumes from the last-good upper/lower/direction/prevClose as if
-// the gap bar never happened (scratch/probe_supertrend.mjs "NaN gaps" case).
-//
-// pine2py's `state.get("upper", basic_upper)` (and the analogous lower/direction/prev_close defaults)
-// mean the *first* bar where atrVal is valid seeds prevUpper/prevLower with *that same bar's own*
-// basicUpper/basicLower (not a sentinel), prevDir defaults to 1, and prevClose defaults to *that bar's
-// own* close (not NaN or 0) - `state.upper === undefined` doubles as this "first valid bar" flag since
-// pine2py's state dict is otherwise never touched before this point. Direction transition compares
-// against prevUpper/prevLower (the *old* band, pre-this-bar), not the just-computed finalUpper/
-// finalLower - swapping these silently changes flip timing (scratch/probe_supertrend.mjs cross-checked
-// a literal line-by-line port of the python incremental branch against this design across sample10,
-// a zigzag series engineered to force direction flips, individual/leading NaN gaps, atrPeriod=1,
-// factor=0/negative, and 5,000-sample fuzz across 4 (factor,atrPeriod) pairs - all PASS).
+// ta.supertrend(factor, atrPeriod) -> [supertrend, direction]. Direction is 1 in a downtrend (the
+// line is the upper band) and -1 in an uptrend (the line is the lower band): TradingView's built-in
+// "Supertrend Strategy" enters long on `ta.change(direction) < 0` and short on `> 0`, and its tier 1
+// List of Trades export opens long first (harness suites/strategy/tv/supertrend, trade #1 long at
+// bar 62); the oracle agrees (PyneCore lib/ta.py supertrend: "Direction: 1=down, -1=up"). The rule
+// is the reference pine_supertrend():
+//   upper/lower = hl2 ± factor * ta.atr(atrPeriod)
+//   lower := lower > lower[1] or close[1] < lower[1] ? lower : lower[1]   (upper mirrored)
+//   direction := na(atr[1]) ? 1 : supertrend[1] == upper[1] ? (close > upper ? -1 : 1)
+//                                                           : (close < lower ? 1 : -1)
+//   supertrend := direction == -1 ? lower : upper
+// so the flip is judged against this bar's adjusted bands, and the previous line's band (not a
+// stored trend flag) picks which band is tested. The first bar returns (0, 1): close[1] is na there,
+// so the upper band falls back to nz(upper[1]) = 0. Warm-up bars (ATR na) return (na, 1), and the
+// first valid bar returns (upper, 1). Harness repro state/repros/supertrend-direction.json.
 //
 // Pine syntax has no high/low/close parameters; codegen injects $.high.get(0)/$.low.get(0)/
 // $.close.get(0)(current close)/$.close.get(1)(prevClose for the inner atr call) ahead of the two
-// user args (factor, atrPeriod) - the same implicit-injection pattern as ta.atr/ta.kc, just with an
-// extra current-close slot since supertrend's own direction logic needs both current and prior close.
+// user args (factor, atrPeriod). The band adjustment's close[1] is the close stored at the last
+// valid bar (the oracle's prev_close; the same bar unless high/low had a gap).
 export function supertrend(
   state: SupertrendState,
   high: number,
@@ -3216,45 +3204,56 @@ export function supertrend(
 ): void {
   if (state.atr === undefined) state.atr = {};
   const atrVal = atr(state.atr, high, low, prevClose, atrPeriod);
-  if (Number.isNaN(atrVal)) {
-    scratch[0] = NaN;
-    scratch[1] = 0;
+
+  // The first bar: close[1] is na, so the upper band falls back to nz(upperBand[1]) = 0 and the
+  // line reads 0 with direction 1. The ATR above still advances.
+  if (state.called !== true) {
+    state.called = true;
+    scratch[0] = 0;
+    scratch[1] = 1;
     return;
   }
-  const hl2 = (high + low) / 2;
-  const basicUpper = hl2 + factor * atrVal;
-  const basicLower = hl2 - factor * atrVal;
 
-  let prevUpper: number;
-  let prevLower: number;
-  let prevDir: number;
-  let prevCloseState: number;
-  if (state.upper === undefined) {
-    prevUpper = basicUpper;
-    prevLower = basicLower;
-    prevDir = 1;
-    prevCloseState = close;
-  } else {
-    prevUpper = state.upper;
-    prevLower = state.lower!;
-    prevDir = state.direction!;
-    prevCloseState = state.prevClose!;
+  const src = (high + low) / 2;
+  if (Number.isNaN(src) || Number.isNaN(atrVal)) {
+    // Warm-up (or a gap): no line, direction holds (1 before the first valid bar); state untouched.
+    scratch[0] = NaN;
+    scratch[1] = state.direction ?? 1;
+    return;
+  }
+  const upper = src + factor * atrVal;
+  const lower = src - factor * atrVal;
+
+  if (state.direction === undefined) {
+    // na(atr[1]): the first valid bar starts in a downtrend, on the upper band.
+    state.upper = upper;
+    state.lower = lower;
+    state.close = close;
+    state.direction = 1;
+    state.value = upper;
+    scratch[0] = upper;
+    scratch[1] = 1;
+    return;
   }
 
-  const finalUpper = basicUpper < prevUpper || prevCloseState > prevUpper ? basicUpper : prevUpper;
-  const finalLower = basicLower > prevLower || prevCloseState < prevLower ? basicLower : prevLower;
+  const prevUpper = state.upper!;
+  const prevLower = state.lower!;
+  const prevClose1 = state.close!;
+  const currLower = lower > prevLower || prevClose1 < prevLower ? lower : prevLower;
+  const currUpper = upper < prevUpper || prevClose1 > prevUpper ? upper : prevUpper;
+  // The previous line sat on the upper band (downtrend): flip up when the close crosses above this
+  // bar's upper band. Otherwise flip down when the close crosses below this bar's lower band.
+  const direction =
+    state.value === prevUpper ? (close > currUpper ? -1 : 1) : close < currLower ? 1 : -1;
+  const value = direction === 1 ? currUpper : currLower;
 
-  let direction: number;
-  if (prevDir === -1 && close > prevUpper) direction = 1;
-  else if (prevDir === 1 && close < prevLower) direction = -1;
-  else direction = prevDir;
-
-  state.upper = finalUpper;
-  state.lower = finalLower;
+  state.upper = currUpper;
+  state.lower = currLower;
+  state.close = close;
   state.direction = direction;
-  state.prevClose = close;
+  state.value = value;
 
-  scratch[0] = direction === 1 ? finalLower : finalUpper;
+  scratch[0] = value;
   scratch[1] = direction;
 }
 

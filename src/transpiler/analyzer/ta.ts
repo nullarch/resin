@@ -814,8 +814,8 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // ta.supertrend(factor, atrPeriod) — the fourth multi-return TA (returnArity: 2, [value, direction]),
   // and the first non-3-arity use of the C50 infra (macd/bb/kc were all 3) — confirms the infra
   // generalizes to arbitrary arity with 0 analyzer/codegen changes (runtime/ta.ts supertrend() 주석
-  // 참조). pine2py wavealgo/ta/supertrend.py 소스 대조 결과 basicUpper/Lower=hl2±factor*atr(atrPeriod)
-  // (이미 구현된 rt.ta.atr 재호출)에 band-hold/direction-flip 상태 머신을 얹은 순수 O(1) 함수 —
+  // 참조). The reference pine_supertrend() (tier 1 suites/strategy/tv/supertrend, PyneCore lib/ta.py):
+  // upper/lower = hl2±factor*atr(atrPeriod) (이미 구현된 rt.ta.atr 재호출)에 band-hold/direction-flip 상태 머신을 얹은 순수 O(1) 함수 —
   // atrPeriod가 내부 AtrState(RMA)의 초기화 구간을 결정하므로 sma와 동일하게 lengthArgIndex: 1
   // (series 하드 에러); factor는 최종 산술에만 쓰여 series 허용(kc의 mult과 동일 이유). Pine
   // 문법에 high/low/close 인자가 없어 codegen이 $.high.get(0)/$.low.get(0)/$.close.get(0)(현재

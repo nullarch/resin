@@ -6526,14 +6526,15 @@ describe("ta.percentile_nearest_rank/ta.percentile_linear_interpolation variable
   });
 });
 
-// ta.supertrend(factor, atrPeriod) — the fourth multi-return TA (returnArity: 2), and the first
-// non-3-arity use of the C50 multi-return infra. **Intentionally diverges from the pine2py golden**
-// (DIVERGENCES.md #10): supertrend's own band/direction state is seeded from ta.atr's output every
-// bar, and rt.ta.atr (O(1) RMA streaming, C53) warms up one bar earlier than pine2py's re-scan
-// atr.py — so the warmup-bar transient value differs even though, for this short sample10.json
-// series, both converge to identical values from bar4 onward (no long-series windowing drift here,
-// see DIVERGENCES.md #8 point 2). Values below are cross-checked via scratch/probe_supertrend.mjs
-// against a literal line-by-line port of supertrend.py's incremental branch.
+// ta.supertrend(factor, atrPeriod) — returnArity 2: [supertrend, direction]. Direction is 1 in a
+// downtrend (line on the upper band) and -1 in an uptrend (line on the lower band); the first bar
+// is (0, 1), ATR warm-up bars are (NaN, 1), the first valid bar is (upper, 1). Evidence: tier 1
+// TradingView export of the built-in Supertrend Strategy (harness suites/strategy/tv/supertrend,
+// long on ta.change(direction) < 0, 601/601 trades) and the PyneCore oracle (lib/ta.py supertrend);
+// harness repro state/repros/supertrend-direction.json. The sample10 and zigzag expectations below
+// are the oracle's values for the same bars (run through the harness with observe channels).
+// These replace pine2py-derived expectations (direction +1 = up, (NaN, 0) warm-up, flips judged
+// against the previous bar's bands), which tier 1 contradicts.
 describe("ta.supertrend", () => {
   function st2(
     state: Parameters<typeof supertrend>[0],
@@ -6549,37 +6550,34 @@ describe("ta.supertrend", () => {
     return [scratch[0]!, scratch[1]!];
   }
 
-  it("returns (NaN, 0) while atr is still warming up, and leaves its own state untouched", () => {
+  it("returns (0, 1) on the first bar and (NaN, 1) while atr is still warming up, leaving its band state untouched", () => {
     const state: Parameters<typeof supertrend>[0] = {};
     const [v0, d0] = st2(state, 102, 99, 101, NaN, 2, 3);
-    expect(v0).toBeNaN();
-    expect(d0).toBe(0);
-    expect(state.upper).toBeUndefined(); // atr NaN -> own band/direction state never created
+    expect(v0).toBe(0);
+    expect(d0).toBe(1);
+    expect(state.upper).toBeUndefined();
     const [v1, d1] = st2(state, 103, 100, 102, 101, 2, 3);
     expect(v1).toBeNaN();
-    expect(d1).toBe(0);
+    expect(d1).toBe(1);
     expect(state.upper).toBeUndefined();
   });
 
-  it("matches the pine2py-verified sample10.json trace (factor=2, atrPeriod=3) — valid one bar earlier than golden (bar2 vs golden's bar3), same value from bar4 onward", () => {
-    // oracle/golden/ta_supertrend.json: NaN through bar2, then 95.5,97.5,98.5,99.5,99.5,100.5,101.5
-    // (direction=1 throughout once valid) from bar3. pine2js is valid from bar2 with a different
-    // transient value (96.5 vs golden's bar3=95.5), then matches bar-for-bar from bar4 (DIVERGENCES #10).
+  it("matches the oracle on sample10.json (factor=2, atrPeriod=3): starts on the upper band with direction 1, flips to -1 on bar 9", () => {
     const state: Parameters<typeof supertrend>[0] = {};
     const high = [102, 103, 104, 103, 105, 106, 107, 106, 108, 109];
     const low = [99, 100, 101, 100, 102, 103, 104, 103, 105, 106];
     const close = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
     const expected: [number, number][] = [
-      [NaN, 0],
-      [NaN, 0],
-      [96.5, 1],
-      [96.5, 1],
-      [97.5, 1],
-      [98.5, 1],
-      [99.5, 1],
-      [99.5, 1],
-      [100.5, 1],
-      [101.5, 1],
+      [0, 1],
+      [NaN, 1],
+      [108.5, 1],
+      [107.5, 1],
+      [107.5, 1],
+      [107.5, 1],
+      [107.5, 1],
+      [107.5, 1],
+      [107.5, 1],
+      [101.5, -1],
     ];
     for (let i = 0; i < close.length; i++) {
       const prevClose = i === 0 ? NaN : close[i - 1]!;
@@ -6590,26 +6588,24 @@ describe("ta.supertrend", () => {
     }
   });
 
-  it("flips direction bullish->bearish->bullish on a strong zigzag (direction check uses prevUpper/prevLower, not the just-computed final bands)", () => {
-    // 20 rising bars (well above any lower band -> direction stays 1) then 20 falling bars (close
-    // drops below the held lower band -> flips to -1) then rising again (-> flips back to 1).
+  it("flips down->up->down->up on a strong zigzag at the oracle's bars (7, 25, 45)", () => {
+    // 20 rising bars, 20 falling, 20 rising; high/low = close ± 1.
     const state: Parameters<typeof supertrend>[0] = {};
     const closes: number[] = [];
     for (let i = 0; i < 20; i++) closes.push(100 + i);
     for (let i = 0; i < 20; i++) closes.push(119 - i);
     for (let i = 0; i < 20; i++) closes.push(100 + i);
-    const dirs: number[] = [];
+    const flips: number[] = [];
+    let prev = NaN;
     for (let i = 0; i < closes.length; i++) {
       const c = closes[i]!;
       const prevClose = i === 0 ? NaN : closes[i - 1]!;
       const [, d] = st2(state, c + 1, c - 1, c, prevClose, 2, 3);
-      dirs.push(d);
+      if (i > 0 && d !== prev) flips.push(i);
+      prev = d;
     }
-    expect(dirs.slice(0, 5).every((d) => d === 0 || d === 1)).toBe(true);
-    expect(dirs[19]).toBe(1); // top of the rise, still bullish
-    expect(dirs[39]).toBe(-1); // bottom of the fall, flipped bearish
-    expect(dirs[59]).toBe(1); // back to bullish after the second rise
-    expect(dirs.includes(-1)).toBe(true); // an actual flip happened, not a fluke of the fixture
+    expect(flips).toEqual([7, 25, 45]);
+    expect(prev).toBe(-1); // uptrend at the end of the second rise
   });
 
   it("keeps independent state across two call sites", () => {
@@ -6620,9 +6616,9 @@ describe("ta.supertrend", () => {
       const c = closes[i]!;
       st2(stateA, c + 1, c - 2, c, i === 0 ? NaN : closes[i - 1]!, 2, 3);
     }
-    const [v, d] = st2(stateB, 6, 3, 5, NaN, 2, 3); // stateB's own warmup still fresh
-    expect(v).toBeNaN();
-    expect(d).toBe(0);
+    const [v, d] = st2(stateB, 6, 3, 5, NaN, 2, 3); // stateB's own first bar
+    expect(v).toBe(0);
+    expect(d).toBe(1);
     expect(stateA.upper).not.toBe(stateB.upper);
   });
 
@@ -6630,14 +6626,14 @@ describe("ta.supertrend", () => {
     const state: Parameters<typeof supertrend>[0] = {};
     const scratch = new Float64Array(2);
     supertrend(state, 103, 100, 101, NaN, 2, 3, scratch);
-    expect(scratch[0]).toBeNaN();
+    expect(scratch[0]).toBe(0);
     supertrend(state, 104, 101, 102, 101, 2, 3, scratch);
     expect(scratch[0]).toBeNaN(); // still warming up (atrPeriod=3 needs 3 bars)
     supertrend(state, 105, 102, 103, 102, 2, 3, scratch);
-    expect(scratch[0]).not.toBeNaN(); // 같은 배열 인스턴스에 덮어써졌다
+    expect(scratch[0]).not.toBeNaN();
   });
 
-  it("matches a from-scratch literal port of supertrend.py's incremental branch across NaN gaps, atrPeriod=1, negative factor, and a 5,000-sample fuzz", () => {
+  it("matches a literal port of the oracle's supertrend (PyneCore lib/ta.py) across NaN gaps, atrPeriod=1, negative factor, and a 5,000-sample fuzz", () => {
     function mulberry32(seed: number) {
       return function () {
         seed |= 0;
@@ -6647,40 +6643,51 @@ describe("ta.supertrend", () => {
         return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
       };
     }
-    function bruteRun(highs: number[], lows: number[], closes: number[], factor: number, atrPeriod: number) {
-      // literal port of supertrend.py's incremental branch, reusing this module's own atr() for
-      // the inner ATR (already validated independently, C53) — only the band/direction state
-      // machine itself is under test here.
-      const pyState: Record<string, number> = {};
+    function oraclePort(highs: number[], lows: number[], closes: number[], factor: number, atrPeriod: number) {
+      // Line-by-line port of PyneCore lib/ta.py supertrend(), reusing this module's atr() for the
+      // inner ATR; only the band/direction state machine is under test here.
+      let prevLower = NaN;
+      let prevUpper = NaN;
+      let prevClose = NaN;
+      let prevDirection = NaN;
+      let prevSupertrend = NaN;
       const atrState: Parameters<typeof atr>[0] = {};
       const out: [number, number][] = [];
       for (let i = 0; i < closes.length; i++) {
-        const prevClose = i === 0 ? NaN : closes[i - 1]!;
-        const atrVal = atr(atrState, highs[i]!, lows[i]!, prevClose, atrPeriod);
-        if (Number.isNaN(atrVal)) {
-          out.push([NaN, 0]);
+        const c = closes[i]!;
+        const src = (highs[i]! + lows[i]!) / 2;
+        const atrVal = atr(atrState, highs[i]!, lows[i]!, i === 0 ? NaN : closes[i - 1]!, atrPeriod);
+        if (i === 0) {
+          out.push([0, 1]);
           continue;
         }
-        const c = closes[i]!;
-        const hl2 = (highs[i]! + lows[i]!) / 2;
-        const basicUpper = hl2 + factor * atrVal;
-        const basicLower = hl2 - factor * atrVal;
-        const has = "upper" in pyState;
-        const prevUpper = has ? pyState.upper! : basicUpper;
-        const prevLower = has ? pyState.lower! : basicLower;
-        const prevDir = has ? pyState.direction! : 1;
-        const prevCloseState = has ? pyState.prevClose! : c;
-        const finalUpper = basicUpper < prevUpper || prevCloseState > prevUpper ? basicUpper : prevUpper;
-        const finalLower = basicLower > prevLower || prevCloseState < prevLower ? basicLower : prevLower;
+        if (Number.isNaN(src) || Number.isNaN(atrVal)) {
+          out.push([NaN, Number.isNaN(prevDirection) ? 1 : prevDirection]);
+          continue;
+        }
+        const upper = src + factor * atrVal;
+        const lower = src - factor * atrVal;
+        if (Number.isNaN(prevDirection)) {
+          prevDirection = 1;
+          prevSupertrend = upper;
+          prevLower = lower;
+          prevUpper = upper;
+          prevClose = c;
+          out.push([upper, 1]);
+          continue;
+        }
+        const currLower = lower > prevLower || prevClose < prevLower ? lower : prevLower;
+        const currUpper = upper < prevUpper || prevClose > prevUpper ? upper : prevUpper;
         let direction: number;
-        if (prevDir === -1 && c > prevUpper) direction = 1;
-        else if (prevDir === 1 && c < prevLower) direction = -1;
-        else direction = prevDir;
-        pyState.upper = finalUpper;
-        pyState.lower = finalLower;
-        pyState.direction = direction;
-        pyState.prevClose = c;
-        out.push([direction === 1 ? finalLower : finalUpper, direction]);
+        if (prevSupertrend === prevUpper) direction = c > currUpper ? -1 : 1;
+        else direction = c < currLower ? 1 : -1;
+        const value = direction === 1 ? currUpper : currLower;
+        prevDirection = direction;
+        prevSupertrend = value;
+        prevLower = currLower;
+        prevUpper = currUpper;
+        prevClose = c;
+        out.push([value, direction]);
       }
       return out;
     }
@@ -6707,15 +6714,18 @@ describe("ta.supertrend", () => {
         highs.push(base + rng() * 2);
         lows.push(base - rng() * 2);
       }
-      const expected = bruteRun(highs, lows, closes, factor, atrPeriod);
+      const expected = oraclePort(highs, lows, closes, factor, atrPeriod);
       const state: Parameters<typeof supertrend>[0] = {};
+      let flips = 0;
       for (let i = 0; i < n; i++) {
         const prevClose = i === 0 ? NaN : closes[i - 1]!;
         const [v, d] = st2(state, highs[i]!, lows[i]!, closes[i]!, prevClose, factor, atrPeriod);
         if (Number.isNaN(expected[i]![0])) expect(v).toBeNaN();
         else expect(v).toBeCloseTo(expected[i]![0], 9);
         expect(d).toBe(expected[i]![1]);
+        if (i > 1 && expected[i]![1] !== expected[i - 1]![1]) flips++;
       }
+      expect(flips).toBeGreaterThan(0); // the fixture exercises both branches
     }
   });
 });

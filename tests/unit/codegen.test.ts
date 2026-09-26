@@ -15466,9 +15466,11 @@ describe("CodeGen request.security expression tuple-destructure element substitu
   // Same DATA as the C601 ternary describe above — HTF daily rows: day1=(100,105,99,103)/
   // day2=(105,110,103,109)/day3=(110,115,108,114)/day4=(115,117,113,116, forming). Only 4 HTF rows
   // exist and ta.supertrend(2.0, 10) needs an ATR(10) warmup that never completes in 4 rows, so
-  // runtime/ta.ts supertrend() stays in its "atr still NaN" branch for every row — scratch[0]=NaN
-  // (the price line), scratch[1]=0 (the direction default) — this is exactly what distinguishes the
-  // two indices below (a swapped index mapping would flip which one reads NaN vs 0).
+  // runtime/ta.ts supertrend() gives (0, 1) on the first row (close[1] is na) and (NaN, 1) on the
+  // warm-up rows after it (tier 1 suites/strategy/tv/supertrend + PyneCore lib/ta.py; harness repro
+  // state/repros/supertrend-direction.json). Chart bars 3-5 read day1 (row 0), bars 6-8 day2, bar 9
+  // day3 — the line (index 0) is 0 then NaN while the direction (index 1) stays 1, which is exactly
+  // what distinguishes the two indices below (a swapped index mapping would read 1 for the line).
   const DATA_ST: OHLCVData = {
     open: [100, 102, 101, 105, 108, 106, 110, 113, 111, 115],
     high: [103, 105, 102, 108, 110, 108, 112, 115, 113, 117],
@@ -15501,15 +15503,15 @@ describe("CodeGen request.security expression tuple-destructure element substitu
     ).bars.map((b) => b["var:x"]);
   };
 
-  it("hand-verified E2E: index 1 ('stDir') reads 0 (not NaN) for chart bars mapped to a completed HTF row — proves the SECOND scratch slot is read, matching runtime/ta.ts supertrend()'s warmup branch (scratch[1]=0)", () => {
+  it("hand-verified E2E: index 1 ('stDir') reads 1 (not NaN) for chart bars mapped to a completed HTF row — proves the SECOND scratch slot is read, matching runtime/ta.ts supertrend()'s first-bar/warm-up direction (scratch[1]=1)", () => {
     const bars = runOfSt('[supertrend, stDir] = ta.supertrend(2.0, 10)\nvar float x = na\nx := request.security("", "D", stDir)');
-    // bars 0-2: no completed HTF row yet (lookahead=off) -> NaN. bars 3+: completed row(s), all give 0.
-    expect(bars).toEqual([NaN, NaN, NaN, 0, 0, 0, 0, 0, 0, 0]);
+    // bars 0-2: no completed HTF row yet (lookahead=off) -> NaN. bars 3+: completed row(s), all give 1.
+    expect(bars).toEqual([NaN, NaN, NaN, 1, 1, 1, 1, 1, 1, 1]);
   });
 
-  it("hand-verified E2E: index 0 ('supertrend') reads NaN for ALL bars including completed-row ones — proves it reads the FIRST scratch slot (distinct from index 1's 0), matching supertrend()'s scratch[0]=NaN warmup branch", () => {
+  it("hand-verified E2E: index 0 ('supertrend') reads 0 for the first HTF row and NaN for the warm-up rows — proves it reads the FIRST scratch slot (distinct from index 1's 1), matching supertrend()'s scratch[0] (0 on the first bar, NaN in warm-up)", () => {
     const bars = runOfSt('[supertrend, stDir] = ta.supertrend(2.0, 10)\nvar float x = na\nx := request.security("", "D", supertrend)');
-    expect(bars).toEqual([NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN]);
+    expect(bars).toEqual([NaN, NaN, NaN, 0, 0, 0, NaN, NaN, NaN, NaN]);
   });
 
   it("hand-verified E2E: 'stDir == -1' composes the substituted element with the eq operator (C602) inside the same expression tree", () => {
