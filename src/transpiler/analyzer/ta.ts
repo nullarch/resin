@@ -841,12 +841,12 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // sar 자신이 state로 추적하므로 $.close.get(1) 주입 불필요).
   sar: { dispatch: "ta", displayName: "ta.sar", argCount: 3, lengthArgIndex: null, conditionalForbidden: true, rtPath: "rt.ta.sar" },
   // ta.dmi(diLength, adxSmoothing) — Directional Movement Index (returnArity: 3, [plusDi, minusDi,
-  // adx]). pine2py wavealgo/ta/dmi.py 소스 대조 결과(runtime/ta.ts dmi() 주석 참조) diLength는 자체
-  // Wilder 단일값-시드 스무딩(smoothTr/smoothPlus/smoothMinus)의 alpha=1/diLength를 고정하고,
-  // adxSmoothing은 dx를 rt.ta.rma에 합성 호출할 때 워밍업/블렌드 구간을 고정한다 — 둘 다 sma/tsi와
-  // 동일 이유로 series면 하드 에러(lengthArgIndex: [0, 1]). Pine 문법에 high/low/close 인자가 없어
-  // codegen이 $.high.get(0)/$.low.get(0)/$.close.get(0)/$.high.get(1)/$.low.get(1)/$.close.get(1)
-  // 여섯 개(지금까지 최다, dmi.py L74-79 순서 그대로)를 diLength/adxSmoothing 앞에 unshift한다.
+  // adx]). diLength fixes the three rt.ta.rma windows over ta.tr/+DM/-DM and adxSmoothing the ADX
+  // rma (runtime/ta.ts dmi(): TradingView's built-in DMI script); both are simple int in the
+  // manual's signature (ref_v6_ta_math.txt "ta.dmi"), so a series length is a hard error
+  // (lengthArgIndex: [0, 1]). Pine 문법에 high/low/close 인자가 없어 codegen이
+  // $.high.get(0)/$.low.get(0)/$.close.get(0)/$.high.get(1)/$.low.get(1)/$.close.get(1) 여섯 개를
+  // diLength/adxSmoothing 앞에 unshift한다.
   dmi: { dispatch: "ta", displayName: "ta.dmi", argCount: 2, lengthArgIndex: [0, 1], conditionalForbidden: true, rtPath: "rt.ta.dmi", returnArity: 3 },
   // math.sum(source, length) — 고정폭 슬라이딩 윈도우 합계. pine2py wavealgo/math.sum(*args) 소스
   // 대조 결과 `hasattr(source,'get') and hasattr(source,'__len__')`인 경우에만(즉 source가 실제

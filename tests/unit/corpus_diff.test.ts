@@ -531,8 +531,15 @@ describe("corpus diff: sample bar-by-bar replay against pine2py golden", () => {
     // bar's na change) say otherwise, as do the PyneCore oracle and tier 1 resin-harness
     // suites/indicators/tv/ta_211_mfi_rsi_stoch (rsi(close, 14) first valued on bar 14, mfi(close,
     // 14) on bar 13). Floor moved to the observed matched 2335 / mismatch 580; nothing else changed.
-    expect(matched.length).toBeGreaterThanOrEqual(2335);
-    expect(mismatched.length).toBeLessThanOrEqual(580);
+    // 2026-09-26 ta.dmi is TradingView's built-in DMI script (every rma seeded like ta.rma, ta.tr
+    // na on the first bar, tolerant DM selection): exactly three hashes went matched -> mismatch
+    // (1de3134eb38a ta.dmi(5, 5), 4cce134e9644 and bdc1a21ceeae ta.dmi(3, 3)), whose +DI/-DI now
+    // start one bar earlier. pine2py (not ground truth) gated diLength bars and then seeded on one
+    // raw value; the PyneCore oracle (lib/ta.py dmi) and tier 1 resin-harness suites/indicators/tv/
+    // ta_121_dmi (dmi(17, 14) first valued on bar 17) say otherwise. Floor moved to the observed
+    // matched 2332 / mismatch 583; nothing else changed.
+    expect(matched.length).toBeGreaterThanOrEqual(2332);
+    expect(mismatched.length).toBeLessThanOrEqual(583);
     expect(transpileFailed.length).toBeLessThanOrEqual(86);
     expect(runtimeFailed.length, `runtime failures: ${runtimeFailed.map((o) => `${o.hash}: ${o.detail}`).join(" | ")}`).toBe(0);
     expect(noComparable.length, `no comparable key: ${noComparable.map((o) => o.hash).join(", ")}`).toBeLessThanOrEqual(2);

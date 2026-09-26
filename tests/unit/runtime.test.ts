@@ -7017,15 +7017,11 @@ describe("ta.sar", () => {
   });
 });
 
-// ta.dmi(diLength, adxSmoothing) — Directional Movement Index (returnArity: 3, [plusDi, minusDi,
-// adx]). runtime/ta.ts dmi() comment covers the full derivation; the key re-verified fact this
-// cycle (correcting C62's next_hint) is that dmi.py's `data_len<diLength+1` gate is a genuine
-// per-bar warmup barrier - pine2py's Context.push_bar() (runtime.py L150) pushes onto
-// context.data.close *before* the transpiled function runs each bar, so `len(close)` grows by
-// exactly 1 every bar (confirmed via a direct python run: Context()+10x push_bar -> len(close) goes
-// 1,2,...,10). Ported as `state.callCount`, a plain per-callsite invocation counter that is exactly
-// equivalent given this callsite runs unconditionally once per bar (the same invariant every other
-// ta.* already assumes).
+// ta.dmi(diLength, adxSmoothing) — Directional Movement Index (returnArity: 3, [+DI, -DI, ADX]).
+// runtime/ta.ts dmi() comment covers the rule: TradingView's built-in DMI script, every rma entered
+// on every bar and seeded like ta.rma, ta.tr na on the first bar, tolerant DM selection (PyneCore
+// lib/ta.py dmi; tier 1 resin-harness suites/indicators/tv/ta_121_dmi). These tests replaced
+// pine2py's single-value-seeded variant, whose values started one bar late.
 describe("ta.dmi", () => {
   function dmi3(
     state: Parameters<typeof dmi>[0],
@@ -7043,168 +7039,87 @@ describe("ta.dmi", () => {
     return [scratch[0]!, scratch[1]!, scratch[2]!];
   }
 
-  it("matches the pine2py oracle golden for sample10.json (diLength=3, adxSmoothing=2)", () => {
-    // oracle/golden/ta_dmi.json — gate opens at bar3 (0-indexed, diLength=3), NaN triple there too
-    // (single-value Wilder seed), plusDi/minusDi valid from bar4, adx valid from bar5 (2 dx values
-    // accumulated for adxSmoothing=2).
+  function runBars(bars: readonly (readonly number[])[], diLength: number, adxSmoothing: number): [number, number, number][] {
     const state: Parameters<typeof dmi>[0] = {};
-    const high = [102, 103, 104, 103, 105, 106, 107, 106, 108, 109];
-    const low = [99, 100, 101, 100, 102, 103, 104, 103, 105, 106];
-    const close = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
-    const expected: [number, number, number][] = [
-      [NaN, NaN, NaN],
-      [NaN, NaN, NaN],
-      [NaN, NaN, NaN],
-      [NaN, NaN, NaN],
-      [22.222222222222218, 22.222222222222225, NaN],
-      [25.925925925925927, 14.814814814814817, 13.63636363636364],
-      [28.395061728395063, 9.876543209876546, 31.011730205278592],
-      [18.930041152263378, 17.695473251028808, 17.191258361066264],
-      [34.84224965706448, 11.796982167352539, 33.30151153347431],
-      [34.3392775491541, 7.864654778235027, 48.0158695262171],
-    ];
-    for (let i = 0; i < close.length; i++) {
-      const ph = i === 0 ? NaN : high[i - 1]!;
-      const pl = i === 0 ? NaN : low[i - 1]!;
-      const pc = i === 0 ? NaN : close[i - 1]!;
-      const [p, m, a] = dmi3(state, high[i]!, low[i]!, close[i]!, ph, pl, pc, 3, 2);
-      for (const [got, exp] of [
-        [p, expected[i]![0]],
-        [m, expected[i]![1]],
-        [a, expected[i]![2]],
-      ] as const) {
-        if (Number.isNaN(exp)) expect(got).toBeNaN();
-        else expect(got).toBeCloseTo(exp, 9);
-      }
+    return bars.map(([h, l, c], i) => {
+      const prev = i === 0 ? [NaN, NaN, NaN] : bars[i - 1]!;
+      return dmi3(state, h!, l!, c!, prev[0]!, prev[1]!, prev[2]!, diLength, adxSmoothing);
+    });
+  }
+
+  function expectSeries(got: number[], expected: readonly number[]) {
+    expect(got).toHaveLength(expected.length);
+    got.forEach((g, i) => {
+      if (Number.isNaN(expected[i]!)) expect(g, `bar ${i}`).toBeNaN();
+      else expect(g, `bar ${i}`).toBeCloseTo(expected[i]!, 9);
+    });
+  }
+
+  // oracle/data/sample10.json as [high, low, close].
+  const SAMPLE10: readonly (readonly number[])[] = [
+    [102, 99, 101], [103, 100, 102], [104, 101, 103], [103, 100, 102], [105, 102, 104],
+    [106, 103, 105], [107, 104, 106], [106, 103, 105], [108, 105, 107], [109, 106, 108],
+  ];
+
+  it("matches the PyneCore oracle on sample10.json (diLength=3, adxSmoothing=2)", () => {
+    // resin-harness state/repros/dmi-warmup.json, channels a.plus/a.minus/a.adx: the rmas seed over
+    // bars 1..3 (bar 0 has no close[1] and no change), so +DI/-DI start on bar 3 and ADX on bar 4.
+    const out = runBars(SAMPLE10, 3, 2);
+    expectSeries(out.map((v) => v[0]), [
+      NaN, NaN, NaN, 22.222222222222218, 37.03703703703703, 35.80246913580246, 34.97942386831276, 23.319615912208505,
+      37.76863283036123, 36.29019966468526,
+    ]);
+    expectSeries(out.map((v) => v[1]), [
+      NaN, NaN, NaN, 11.111111111111109, 7.407407407407407, 4.938271604938271, 3.2921810699588474, 13.305898491083676,
+      8.870598994055785, 5.913732662703857,
+    ]);
+    expectSeries(out.map((v) => v[2]), [
+      NaN, NaN, NaN, NaN, 50, 62.87878787878787, 72.83724340175952, 50.089033685898485, 56.024908999811984,
+      64.00017569889481,
+    ]);
+  });
+
+  it("starts +DI/-DI on bar diLength and ADX adxSmoothing - 1 bars later (tier 1 ta_121_dmi: dmi(17, 14) on bar 17)", () => {
+    const bars: number[][] = [];
+    for (let i = 0; i < 60; i++) {
+      const c = 100 + 5 * Math.sin(i / 3) + i * 0.1;
+      bars.push([c + 1 + (i % 3) * 0.5, c - 1 - (i % 4) * 0.25, c]);
     }
-  });
-
-  it("returns the NaN triple for every bar of a 10-bar run under the default diLength=14 (data_len gate never opens — matches golden sample10 all-NaN)", () => {
-    const state: Parameters<typeof dmi>[0] = {};
-    const high = [102, 103, 104, 103, 105, 106, 107, 106, 108, 109];
-    const low = [99, 100, 101, 100, 102, 103, 104, 103, 105, 106];
-    const close = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
-    for (let i = 0; i < close.length; i++) {
-      const ph = i === 0 ? NaN : high[i - 1]!;
-      const pl = i === 0 ? NaN : low[i - 1]!;
-      const pc = i === 0 ? NaN : close[i - 1]!;
-      const [p, m, a] = dmi3(state, high[i]!, low[i]!, close[i]!, ph, pl, pc, 14, 14);
-      expect(p).toBeNaN();
-      expect(m).toBeNaN();
-      expect(a).toBeNaN();
+    for (const [diLength, adxSmoothing] of [[1, 1], [2, 3], [3, 2], [5, 5], [17, 14]] as const) {
+      const out = runBars(bars, diLength, adxSmoothing);
+      expect(out.findIndex((v) => !Number.isNaN(v[0])), `+DI ${diLength}`).toBe(diLength);
+      expect(out.findIndex((v) => !Number.isNaN(v[1])), `-DI ${diLength}`).toBe(diLength);
+      expect(out.findIndex((v) => !Number.isNaN(v[2])), `ADX ${diLength}/${adxSmoothing}`).toBe(diLength + adxSmoothing - 1);
     }
-    expect(state.smoothTr).toBeUndefined(); // gate never even reaches the smoothTr seed step
+    // sample10 has 10 bars: dmi(14, 14) never leaves na.
+    expect(runBars(SAMPLE10, 14, 14).flat().every(Number.isNaN)).toBe(true);
   });
 
-  it("the data_len gate opens at exactly bar_index===diLength (0-indexed) regardless of h/l/c validity, for several diLength values", () => {
-    // Isolates the gate itself from the downstream h/l/c-NaN and smoothTr-seed steps by feeding
-    // valid OHLC throughout and checking exactly which bar first produces a non-gate-blocked result
-    // (still NaN there — the smoothTr seed step — but callCount has cleared diLength+1).
-    for (const diLength of [1, 2, 3, 5, 9]) {
-      const state: Parameters<typeof dmi>[0] = {};
-      let gateOpenBar = -1;
-      for (let i = 0; i < 15; i++) {
-        const before = state.callCount ?? 0;
-        dmi3(state, 105, 100, 102, 104, 99, 101, diLength, 2);
-        if (before + 1 >= diLength + 1 && gateOpenBar === -1) gateOpenBar = i;
-      }
-      expect(gateOpenBar).toBe(diLength);
-    }
+  it("picks no directional movement when up and down differ within Pine's 1e-10 tolerance", () => {
+    // resin-harness state/repros/dmi-edges.json bar 5: high 1.1 -> 1.2, low 1.0 -> 0.9, so up =
+    // 0.09999999999999987 and down = 0.09999999999999998. A strict `down > up` would book -DM.
+    const bars = [[1.1, 1.0, 1.05], [1.2, 0.9, 1.0], [0.8, 0.4, 0.6], [0.7, 0.5, 0.6], [0.8, 0.4, 0.6]];
+    const out = runBars(bars, 1, 1);
+    expect(out[1]).toEqual([0, 0, 0]);
+    expect(out[2]![1]).toBeGreaterThan(0); // a real down move (0.9 -> 0.4)
+    expect(out[4]).toEqual([0, 0, 0]); // bar 7 of the repro: high 0.7 -> 0.8, low 0.5 -> 0.4
   });
 
-  it("advances only callCount (mirroring pine2py's unconditional data_len growth) and leaves every other field untouched on a NaN bar after the gate has opened", () => {
-    // dmi.py computes `data_len = len(close)` (and checks it) *before* ever touching h/l/c or the
-    // ta_state dict, and pine2py's push_bar() grows `close` on every bar regardless of NaN content —
-    // so unlike sar (whose entire state, including its own bar counter, is skipped on any NaN),
-    // dmi's callCount must advance even on a gated-out NaN bar; only the smoothTr/smoothPlus/
-    // smoothMinus/adx fields (which sit behind the NaN check) stay frozen.
-    const state: Parameters<typeof dmi>[0] = {};
-    // clear the data_len gate (diLength=2) and reach the post-seed blending phase
-    dmi3(state, 102, 99, 101, NaN, NaN, NaN, 2, 2);
-    dmi3(state, 103, 100, 102, 102, 99, 101, 2, 2);
-    dmi3(state, 104, 101, 103, 103, 100, 102, 2, 2);
-    const snapshot = { ...state };
-    const [pNaN, mNaN, aNaN] = dmi3(state, NaN, 102, 105, 104, 101, 103, 2, 2);
-    expect(pNaN).toBeNaN();
-    expect(mNaN).toBeNaN();
-    expect(aNaN).toBeNaN();
-    expect(state.callCount).toBe(snapshot.callCount! + 1); // the gate counter DOES advance on a NaN bar
-    expect(state.smoothTr).toBe(snapshot.smoothTr); // but the post-gate smoothing state is untouched
-    expect(state.smoothPlus).toBe(snapshot.smoothPlus);
-    expect(state.smoothMinus).toBe(snapshot.smoothMinus);
-    expect(state.adx).toEqual(snapshot.adx);
-    const [pResume, mResume] = dmi3(state, 106, 103, 107, 104, 101, 103, 2, 2);
-    const freshState: Parameters<typeof dmi>[0] = {};
-    dmi3(freshState, 102, 99, 101, NaN, NaN, NaN, 2, 2);
-    dmi3(freshState, 103, 100, 102, 102, 99, 101, 2, 2);
-    dmi3(freshState, 104, 101, 103, 103, 100, 102, 2, 2);
-    const [pNoGap, mNoGap] = dmi3(freshState, 106, 103, 107, 104, 101, 103, 2, 2);
-    expect(pResume).toBeCloseTo(pNoGap, 9); // the gap bar is fully invisible to the smoothing trajectory
-    expect(mResume).toBeCloseTo(mNoGap, 9);
+  it("returns the na triple while the true-range rma is 0 and does not feed the ADX rma there", () => {
+    // resin-harness state/repros/dmi-edges.json, dmi(2, 2): bars 0..3 flat, the first move on bar 4.
+    const bars = [[1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1.1, 1.0, 1.05], [1.2, 0.9, 1.0], [0.7, 0.5, 0.6]];
+    const out = runBars(bars, 2, 2);
+    for (let i = 0; i < 4; i++) expect(out[i]!.every(Number.isNaN), `bar ${i}`).toBe(true);
+    expect(out[4]![0]).toBeCloseTo(100, 12);
+    expect(out[4]![1]).toBe(0);
+    expect(out[4]![2]).toBeNaN(); // one dx so far: the flat bars were not fed to the ADX rma
+    expect(out[5]![0]).toBeCloseTo(14.285714285714286, 12);
+    expect(out[5]![2]).toBeCloseTo(100, 12);
+    expect(out[6]![1]).toBeCloseTo(59.25925925925926, 12);
+    expect(out[6]![2]).toBeCloseTo(94.11764705882354, 12);
   });
 
-  it("seeds smoothTr/smoothPlus/smoothMinus from the raw TR/+DM/-DM of the first bar past the gate, and returns the NaN triple without touching adx state", () => {
-    const state: Parameters<typeof dmi>[0] = {};
-    // diLength=1 so the gate opens on bar0 itself (callCount=1 >= diLength+1=2 is false actually;
-    // need callCount>=2, so gate opens at bar1) — use diLength=1 and inspect bar1 (the seed bar).
-    dmi3(state, 102, 99, 101, NaN, NaN, NaN, 1, 2); // bar0: gated (callCount=1 < 2)
-    const [p, m, a] = dmi3(state, 105, 100, 103, 102, 99, 101, 1, 2); // bar1: gate open, seeds smoothTr
-    expect(p).toBeNaN();
-    expect(m).toBeNaN();
-    expect(a).toBeNaN();
-    // tr = max(105-100, |105-101|, |100-101|) = max(5,4,1) = 5; up=105-102=3, down=99-100=-1 -> plusDm=3, minusDm=0
-    expect(state.smoothTr).toBe(5);
-    expect(state.smoothPlus).toBe(3);
-    expect(state.smoothMinus).toBe(0);
-    expect(state.adx).toBeUndefined(); // adx-related fields never touched during the seed bar
-  });
-
-  it("dx falls back to 0 (not NaN) when plusDi+minusDi<=0 (flat trend, no directional movement)", () => {
-    // high constant, low constant, close constant -> up_move=down_move=0 both bars -> plusDm=minusDm=0
-    // every bar -> smoothPlus/smoothMinus converge to 0 -> plusDi=minusDi=0 -> diSum=0 -> dx=0 (not NaN)
-    const state: Parameters<typeof dmi>[0] = {};
-    const high = new Array(8).fill(100);
-    const low = new Array(8).fill(98);
-    const close = new Array(8).fill(99);
-    let lastAdx = NaN;
-    for (let i = 0; i < high.length; i++) {
-      const ph = i === 0 ? NaN : high[i - 1]!;
-      const pl = i === 0 ? NaN : low[i - 1]!;
-      const pc = i === 0 ? NaN : close[i - 1]!;
-      const [p, m, a] = dmi3(state, high[i]!, low[i]!, close[i]!, ph, pl, pc, 2, 2);
-      if (!Number.isNaN(a)) lastAdx = a;
-      if (i >= 4) {
-        expect(p).toBeCloseTo(0, 9);
-        expect(m).toBeCloseTo(0, 9);
-      }
-    }
-    expect(lastAdx).toBeCloseTo(0, 9); // dx was always exactly 0, never NaN, so adx converges to 0
-  });
-
-  it("keeps independent state across two call sites", () => {
-    const stateA: Parameters<typeof dmi>[0] = {};
-    const stateB: Parameters<typeof dmi>[0] = {};
-    dmi3(stateA, 102, 99, 101, 101, 98, 100, 2, 2);
-    dmi3(stateA, 103, 100, 102, 102, 99, 101, 2, 2);
-    const [vB] = dmi3(stateB, 6, 3, 5, 5, 2, 4, 2, 2); // stateB's own gate still fresh
-    expect(vB).toBeNaN();
-    expect(stateA.callCount).not.toBe(stateB.callCount);
-  });
-
-  it("reuses the same scratch array across calls without allocating (values overwritten in place)", () => {
-    const state: Parameters<typeof dmi>[0] = {};
-    const scratch = new Float64Array(3);
-    dmi(state, 102, 99, 101, NaN, NaN, NaN, 2, 2, scratch);
-    expect(scratch[0]).toBeNaN(); // callCount=1 < diLength+1=3 — gate blocked
-    dmi(state, 103, 100, 102, 102, 99, 101, 2, 2, scratch);
-    expect(scratch[0]).toBeNaN(); // callCount=2 < 3 — still gate blocked
-    dmi(state, 104, 101, 103, 103, 100, 102, 2, 2, scratch);
-    expect(scratch[0]).toBeNaN(); // callCount=3 — gate just opened, but this bar only seeds smoothTr
-    dmi(state, 105, 102, 104, 104, 101, 103, 2, 2, scratch);
-    expect(scratch[0]).not.toBeNaN(); // first post-seed blend — 같은 배열 인스턴스에 덮어써졌다
-  });
-
-  it("matches a from-scratch literal port of dmi.py (growing len(close) reproduced via a push-count field) across NaN gaps, degenerate params, and a 5,000-sample fuzz", () => {
+  it("matches a series-level port of the built-in DMI script across na gaps and a 5,000-bar fuzz", () => {
     function mulberry32(seed: number) {
       return function () {
         seed |= 0;
@@ -7214,87 +7129,63 @@ describe("ta.dmi", () => {
         return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
       };
     }
-    // literal port of pine2py dmi.py, independently re-derived (snake_case, dmi.py field/line order)
-    // rather than reused from the implementation under test. `data_len` is reproduced as a counter
-    // that increments unconditionally every call, mirroring context.data.close's per-bar push().
-    function bruteRun(
-      highs: number[],
-      lows: number[],
-      closes: number[],
-      diLength: number,
-      adxSmoothing: number,
-    ): [number, number, number][] {
-      const s: {
-        data_len: number;
-        smooth_tr?: number;
-        smooth_plus?: number;
-        smooth_minus?: number;
-        adx_values?: number[];
-        adx?: number;
-      } = { data_len: 0 };
-      const out: [number, number, number][] = [];
-      for (let i = 0; i < closes.length; i++) {
-        s.data_len += 1;
-        if (s.data_len < diLength + 1) {
-          out.push([NaN, NaN, NaN]);
+    // Re-derived from the script, not from the implementation under test: whole-series ta.change,
+    // ta.tr(false), and an rma that skips na and seeds on the mean of its first `length` values.
+    function rmaSeries(xs: number[], length: number): number[] {
+      const out: number[] = [];
+      const seen: number[] = [];
+      let prev = NaN;
+      for (const x of xs) {
+        if (Number.isNaN(x)) {
+          out.push(NaN);
           continue;
         }
-        const h = highs[i]!;
-        const l = lows[i]!;
-        const c = closes[i]!;
-        const ph = i === 0 ? NaN : highs[i - 1]!;
-        const pl = i === 0 ? NaN : lows[i - 1]!;
-        const pc = i === 0 ? NaN : closes[i - 1]!;
-        if ([h, l, c, ph, pl, pc].some(Number.isNaN)) {
-          out.push([NaN, NaN, NaN]);
-          continue;
-        }
-        const tr_val = Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc));
-        const up_move = h - ph;
-        const down_move = pl - l;
-        const plus_dm = up_move > down_move && up_move > 0 ? up_move : 0.0;
-        const minus_dm = down_move > up_move && down_move > 0 ? down_move : 0.0;
-        if (s.smooth_tr === undefined) {
-          s.smooth_tr = tr_val;
-          s.smooth_plus = plus_dm;
-          s.smooth_minus = minus_dm;
-          s.adx_values = [];
-          s.adx = NaN;
-          out.push([NaN, NaN, NaN]);
-          continue;
-        }
-        const alpha = 1.0 / diLength;
-        s.smooth_tr = alpha * tr_val + (1 - alpha) * s.smooth_tr;
-        s.smooth_plus = alpha * plus_dm + (1 - alpha) * s.smooth_plus!;
-        s.smooth_minus = alpha * minus_dm + (1 - alpha) * s.smooth_minus!;
-        const str_val = s.smooth_tr;
-        if (str_val === 0) {
-          out.push([NaN, NaN, NaN]);
-          continue;
-        }
-        const plus_di = (100.0 * s.smooth_plus!) / str_val;
-        const minus_di = (100.0 * s.smooth_minus!) / str_val;
-        const di_sum = plus_di + minus_di;
-        const dx = di_sum > 0 ? (Math.abs(plus_di - minus_di) / di_sum) * 100.0 : 0.0;
-        if (Number.isNaN(s.adx!)) {
-          s.adx_values!.push(dx);
-          if (s.adx_values!.length >= adxSmoothing) {
-            const last = s.adx_values!.slice(-adxSmoothing);
-            s.adx = last.reduce((a, b) => a + b, 0) / adxSmoothing;
-          }
-        } else {
-          const adx_alpha = 1.0 / adxSmoothing;
-          s.adx = adx_alpha * dx + (1 - adx_alpha) * s.adx!;
-        }
-        out.push([plus_di, minus_di, Number.isNaN(s.adx!) ? NaN : s.adx!]);
+        if (seen.length < length) {
+          seen.push(x);
+          prev = seen.length === length ? seen.reduce((a, b) => a + b, 0) / length : NaN;
+        } else prev = (prev * (length - 1) + x) / length;
+        out.push(prev);
       }
       return out;
+    }
+    function reference(highs: number[], lows: number[], closes: number[], diLength: number, adxSmoothing: number) {
+      const n = closes.length;
+      const trs: number[] = [];
+      const plusDm: number[] = [];
+      const minusDm: number[] = [];
+      for (let i = 0; i < n; i++) {
+        const pc = i === 0 ? NaN : closes[i - 1]!;
+        trs.push(Number.isNaN(pc) ? NaN : Math.max(highs[i]! - lows[i]!, Math.abs(highs[i]! - pc), Math.abs(lows[i]! - pc)));
+        const up = i === 0 ? NaN : highs[i]! - highs[i - 1]!;
+        const down = i === 0 ? NaN : lows[i - 1]! - lows[i]!;
+        const na = Number.isNaN(up) || Number.isNaN(down);
+        plusDm.push(na ? NaN : up - down > 1e-10 && up > 1e-10 ? up : 0);
+        minusDm.push(na ? NaN : down - up > 1e-10 && down > 1e-10 ? down : 0);
+      }
+      const a = rmaSeries(trs, diLength);
+      const p = rmaSeries(plusDm, diLength);
+      const m = rmaSeries(minusDm, diLength);
+      const di: [number, number][] = [];
+      const dx: number[] = [];
+      for (let i = 0; i < n; i++) {
+        if ([a[i]!, p[i]!, m[i]!].some(Number.isNaN) || a[i] === 0) {
+          di.push([NaN, NaN]);
+          dx.push(NaN);
+          continue;
+        }
+        const pd = (100 * p[i]!) / a[i]!;
+        const md = (100 * m[i]!) / a[i]!;
+        di.push([pd, md]);
+        dx.push(Math.abs(pd - md) / (pd + md !== 0 ? pd + md : 1));
+      }
+      const adx = rmaSeries(dx, adxSmoothing);
+      return di.map(([pd, md], i) => [pd, md, adx[i]! * 100] as [number, number, number]);
     }
     for (const [diLength, adxSmoothing, seed] of [
       [3, 2, 8001],
       [5, 3, 8002],
       [1, 1, 8003],
-      [9, 7, 8004],
+      [14, 14, 8004],
     ] as const) {
       const rng = mulberry32(seed);
       const n = 5000;
@@ -7315,22 +7206,43 @@ describe("ta.dmi", () => {
         highs.push(Math.max(c, base) + rng() * 2);
         lows.push(Math.min(c, base) - rng() * 2);
       }
-      const expected = bruteRun(highs, lows, closes, diLength, adxSmoothing);
+      const expected = reference(highs, lows, closes, diLength, adxSmoothing);
       const state: Parameters<typeof dmi>[0] = {};
       for (let i = 0; i < n; i++) {
         const ph = i === 0 ? NaN : highs[i - 1]!;
         const pl = i === 0 ? NaN : lows[i - 1]!;
         const pc = i === 0 ? NaN : closes[i - 1]!;
-        const [p, m, a] = dmi3(state, highs[i]!, lows[i]!, closes[i]!, ph, pl, pc, diLength, adxSmoothing);
-        const [ep, em, ea] = expected[i]!;
-        if (Number.isNaN(ep)) expect(p).toBeNaN();
-        else expect(p).toBeCloseTo(ep, 9);
-        if (Number.isNaN(em)) expect(m).toBeNaN();
-        else expect(m).toBeCloseTo(em, 9);
-        if (Number.isNaN(ea)) expect(a).toBeNaN();
-        else expect(a).toBeCloseTo(ea, 9);
+        const got = dmi3(state, highs[i]!, lows[i]!, closes[i]!, ph, pl, pc, diLength, adxSmoothing);
+        for (let k = 0; k < 3; k++) {
+          if (Number.isNaN(expected[i]![k]!)) expect(got[k], `bar ${i} channel ${k}`).toBeNaN();
+          else expect(got[k], `bar ${i} channel ${k}`).toBeCloseTo(expected[i]![k]!, 9);
+        }
       }
     }
+  });
+
+  it("keeps independent state across two call sites", () => {
+    const stateA: Parameters<typeof dmi>[0] = {};
+    const stateB: Parameters<typeof dmi>[0] = {};
+    dmi3(stateA, 102, 99, 101, NaN, NaN, NaN, 1, 1);
+    const [vA] = dmi3(stateA, 103, 100, 102, 102, 99, 101, 1, 1);
+    const [vB] = dmi3(stateB, 103, 100, 102, 102, 99, 101, 1, 1); // stateB's own rmas still empty
+    expect(vA).toBeCloseTo(100 / 3, 12);
+    expect(vB).toBeCloseTo(100 / 3, 12);
+    const [vB2] = dmi3(stateB, 6, 3, 5, 103, 100, 102, 1, 1);
+    expect(vB2).toBe(0);
+    expect(stateA.tr).not.toBe(stateB.tr);
+  });
+
+  it("reuses the same scratch array across calls without allocating (values overwritten in place)", () => {
+    const state: Parameters<typeof dmi>[0] = {};
+    const scratch = new Float64Array(3);
+    dmi(state, 102, 99, 101, NaN, NaN, NaN, 2, 2, scratch);
+    expect(scratch[0]).toBeNaN(); // bar 0: no close[1], no change
+    dmi(state, 103, 100, 102, 102, 99, 101, 2, 2, scratch);
+    expect(scratch[0]).toBeNaN(); // one value in each rma
+    dmi(state, 104, 101, 103, 103, 100, 102, 2, 2, scratch);
+    expect(scratch[0]).not.toBeNaN(); // bar diLength: the rmas are seeded, written into the same array
   });
 });
 

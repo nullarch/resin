@@ -7,7 +7,7 @@ indicator("Directional Movement Index")
 // 튜플 + 3-plot 슬롯 배정, macd/bb와 동일 returnArity:3 패턴)를 검증한다. ta.dmi(diLength,
 // adxSmoothing)는 high/low/close를 bar series 암묵 사용해 소스 선택이 없는 지표라 input.source는
 // 쓰지 않는다(stoch와 동일 사유). diLength=3/adxSmoothing=2는 ta_dmi.pine과 동일 파라미터를
-// 재사용(sample10.json 10바 안에서 게이트/시드/DI-only/DI+ADX 네 구간을 이미 커버해둔 조합 그대로
+// 재사용(sample10.json 10바 안에서 워밍업/DI-only/DI+ADX 세 구간을 이미 커버해둔 조합 그대로
 // 재사용).
 diLengthInput = input.int(3, "DI Length")
 adxSmoothingInput = input.int(2, "ADX Smoothing")

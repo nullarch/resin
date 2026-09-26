@@ -3404,68 +3404,34 @@ export function sar(
 }
 
 export interface DmiState {
-  callCount?: number;
-  smoothTr?: number;
-  smoothPlus?: number;
-  smoothMinus?: number;
+  tr?: RmaState;
+  plus?: RmaState;
+  minus?: RmaState;
   adx?: RmaState;
 }
 
-// ta.dmi(diLength, adxSmoothing) - Directional Movement Index, returnArity:3 ([plusDi, minusDi,
-// adx]). pine2py wavealgo/ta/dmi.py: +DI/-DI = 100*RMA(+DM/-DM, diLength)/RMA(TR, diLength) (its
-// own single-value-seeded Wilder smoothing, NOT rt.ta.rma's SMA-seeded warmup - see below), ADX =
-// RMA(|+DI--DI|/(+DI+-DI)*100, adxSmoothing).
-//
-// **data_len<diLength+1 gate (dmi.py L66-68) - re-verified this cycle, correcting the prior
-// next_hint (C62)**: that hint claimed this gate is "a static condition on the whole dataset
-// length" and therefore not a real per-bar warmup barrier. Directly reading pine2py's execution
-// loop (wavealgo/runtime.py Runner.execute L148-157) shows `context.push_bar()` is called once per
-// bar *before* the transpiled function runs, and `context.push_bar` (context.py L135-155) does
-// `self.data.close.push(close)` - Series.push() appends to a plain Python list (series.py). A
-// direct python run (Context() + 10x push_bar) confirms `len(ctx.data.close)` is exactly
-// `bar_index+1` and grows every bar - **not** a fixed whole-run constant. So this gate genuinely
-// blocks output until `bar_index >= diLength` (0-indexed), which for the realistic default
-// diLength=14 is a *much* stronger constraint than the h/l/c/prevH/prevL/prevC NaN check below (that
-// alone would only need bar_index>=1). Ported here as `state.callCount` - a plain per-callsite
-// invocation counter - which is exactly equivalent to pine2py's growing `len(close)` *because* this
-// callsite is guaranteed to execute exactly once per bar starting at bar 0 (same "no conditional
-// stateful calls" architecture invariant every other ta.* already relies on, GOAL.md/analyzer
-// conditionalForbidden) - verified byte-for-byte against dmi.py's literal `len(close)` growth via
-// scratch/probe_dmi.mjs case 3 (gate opens at exactly bar_index===diLength for diLength in
-// [1,2,3,5,9]). No $.close.length / total-bar-count plumbing needed - the counter alone suffices,
-// and unlike a "check the whole dataset length upfront" read this stays true streaming O(1)/bar
-// (GOAL.md "바당 히스토리 재계산 금지" - this isn't a recompute, just a monotonic counter).
-//
-// After the gate opens, any NaN among h/l/c/prevH/prevL/prevC returns the NaN triple *without*
-// touching state at all (obv's sixth NaN pattern, C55) - note this NaN check runs *after* the gate,
-// so the gate's own counter still advances even on NaN bars (matches pine2py: `data_len` is
-// unconditional, the NaN check is a separate branch below it).
-//
-// The very first call that clears both gates seeds smoothTr/smoothPlus/smoothMinus from that bar's
-// raw TR/+DM/-DM values (a *single-value* seed, not rt.ta.rma's length-bar SMA seed - dmi.py's Wilder
-// smoothing here is its own inline recurrence, structurally distinct from rt.ta.rma's warmup) and
-// returns the NaN triple without touching adx-related fields at all. Every call after that blends
-// smoothTr/smoothPlus/smoothMinus with alpha=1/diLength (unconditionally - this happens even if the
-// blended smoothTr comes out to exactly 0, checked *after* the blend/state-write, matching dmi.py
-// L104-112's partial-state-update order: smoothTr/smoothPlus/smoothMinus/bar_count are already
-// written by the time the str_val===0 early return fires, but adx_values/adx are not touched that
-// bar - the same "gate splits which fields update" shape as ta.kc's basis/range gate, C54).
-//
-// dx (the per-bar ADX input) is only ever computed once smoothTr is confirmed nonzero, so it is
-// always a finite number by the time it reaches the ADX step - never NaN. This means the ADX
-// warmup (dmi.py L121-129: accumulate dx into a list until adxSmoothing values collected, seed with
-// their plain average, then switch to alpha=1/adxSmoothing exponential blending) is *exactly*
-// rt.ta.rma's own two-phase warmup (accumulate `length` values -> seed with sum/length -> alpha
-// blend) applied to the dx sequence - confirmed by direct comparison in scratch/probe_dmi.mjs
-// (tsi/macd/kc "reuse an already-built TA by composition" principle, C49/C50/C54): feeding dx into
-// `rma(state.adx, dx, adxSmoothing)` on exactly the bars where dmi.py would have appended to its own
-// adx_values list reproduces the identical seed-then-blend sequence with zero new logic, since rma's
-// own "value is never NaN here" fast path never triggers its NaN early-return.
+// ta.dmi(diLength, adxSmoothing) - Directional Movement Index, returnArity:3 ([+DI, -DI, ADX]).
+// The manual gives no formula (ref_v6_ta_math.txt "ta.dmi" only names the three series); the rule
+// is TradingView's built-in "Directional Movement Index" script, as the PyneCore oracle measured it
+// (pynecore lib/ta.py dmi):
+//   up = ta.change(high), down = -ta.change(low)
+//   +DM = up if up > down and up > 0, else 0; -DM mirrored; both na while up or down is na
+//   +DI = 100 * ta.rma(+DM, diLength) / ta.rma(ta.tr, diLength), -DI mirrored
+//   ADX = ta.rma(|+DI - -DI| / (sum == 0 ? 1 : sum), adxSmoothing) * 100, sum = +DI + -DI
+// Every rma is entered on every bar, the first included, and seeds on its first diLength non-na
+// values like any ta.rma. ta.tr here is ta.tr(false): na on the first bar (no close[1]), exact from
+// the second; +DM/-DM are na there too, so all three seed over bars 1..diLength and the DIs start on
+// bar diLength (tier 1 resin-harness suites/indicators/tv/ta_121_dmi: ta.dmi(17, 14) +DI na on bar
+// 16, 11.454965358 on bar 17). resin had pine2py's variant (seeded on one raw value, one bar late).
+// The DM selection compares with Pine's 1e-10 tolerance: a bar whose high and low moved by the same
+// quantized amount has no directional movement even when the float differences land ~1e-18 apart
+// (PyneCore, measured on TradingView). A bar where any rma is na or the true-range rma is 0 returns
+// the na triple and does not feed the ADX rma.
 export function dmi(
   state: DmiState,
   high: number,
   low: number,
-  close: number,
+  _close: number,
   prevHigh: number,
   prevLow: number,
   prevClose: number,
@@ -3473,68 +3439,32 @@ export function dmi(
   adxSmoothing: number,
   scratch: Float64Array,
 ): void {
-  state.callCount = (state.callCount ?? 0) + 1;
-  if (state.callCount < diLength + 1) {
+  if (state.tr === undefined) {
+    state.tr = {};
+    state.plus = {};
+    state.minus = {};
+    state.adx = {};
+  }
+  const up = high - prevHigh;
+  const down = -(low - prevLow);
+  const trRma = rma(state.tr, tr(undefined, high, low, prevClose, false), diLength);
+  const dmNa = Number.isNaN(up) || Number.isNaN(down);
+  const plusDm = dmNa ? NaN : up - down > PINE_EPS && up > PINE_EPS ? up : 0;
+  const minusDm = dmNa ? NaN : down - up > PINE_EPS && down > PINE_EPS ? down : 0;
+  const plusRma = rma(state.plus!, plusDm, diLength);
+  const minusRma = rma(state.minus!, minusDm, diLength);
+  if (Number.isNaN(trRma) || Number.isNaN(plusRma) || Number.isNaN(minusRma) || trRma === 0) {
     scratch[0] = NaN;
     scratch[1] = NaN;
     scratch[2] = NaN;
     return;
   }
-
-  if (
-    Number.isNaN(high) ||
-    Number.isNaN(low) ||
-    Number.isNaN(close) ||
-    Number.isNaN(prevHigh) ||
-    Number.isNaN(prevLow) ||
-    Number.isNaN(prevClose)
-  ) {
-    scratch[0] = NaN;
-    scratch[1] = NaN;
-    scratch[2] = NaN;
-    return;
-  }
-
-  const trVal = Math.max(high - low, Math.abs(high - prevClose), Math.abs(low - prevClose));
-  const upMove = high - prevHigh;
-  const downMove = prevLow - low;
-  const plusDm = upMove > downMove && upMove > 0 ? upMove : 0;
-  const minusDm = downMove > upMove && downMove > 0 ? downMove : 0;
-
-  if (state.smoothTr === undefined) {
-    state.smoothTr = trVal;
-    state.smoothPlus = plusDm;
-    state.smoothMinus = minusDm;
-    scratch[0] = NaN;
-    scratch[1] = NaN;
-    scratch[2] = NaN;
-    return;
-  }
-
-  const alpha = 1 / diLength;
-  state.smoothTr = alpha * trVal + (1 - alpha) * state.smoothTr;
-  state.smoothPlus = alpha * plusDm + (1 - alpha) * state.smoothPlus!;
-  state.smoothMinus = alpha * minusDm + (1 - alpha) * state.smoothMinus!;
-
-  const strVal = state.smoothTr;
-  if (strVal === 0) {
-    scratch[0] = NaN;
-    scratch[1] = NaN;
-    scratch[2] = NaN;
-    return;
-  }
-
-  const plusDi = (100 * state.smoothPlus!) / strVal;
-  const minusDi = (100 * state.smoothMinus!) / strVal;
-  const diSum = plusDi + minusDi;
-  const dx = diSum > 0 ? (Math.abs(plusDi - minusDi) / diSum) * 100 : 0;
-
-  if (state.adx === undefined) state.adx = {};
-  const adxVal = rma(state.adx, dx, adxSmoothing);
-
+  const plusDi = (100 * plusRma) / trRma;
+  const minusDi = (100 * minusRma) / trRma;
+  const sum = plusDi + minusDi;
   scratch[0] = plusDi;
   scratch[1] = minusDi;
-  scratch[2] = adxVal;
+  scratch[2] = rma(state.adx!, Math.abs(plusDi - minusDi) / (sum !== 0 ? sum : 1), adxSmoothing) * 100;
 }
 
 export interface SumState {
