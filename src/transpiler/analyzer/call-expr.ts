@@ -8691,27 +8691,49 @@ function dispatchUdtMethodCall(
     }
   }
   prog.udtMethodCallTypes.set(expr, typeName);
-  if (methodInfo.localVarSlots.length > 0) {
-    prog.funcCallSlots.set(expr, prog.fnVarSlotCount);
-    prog.fnVarSlotCount += methodInfo.localVarSlots.length;
+  placeFuncCall(expr, methodInfo, prog, scope);
+}
+
+// Where a UDF/method call's state blocks go. A call written in a UDF/method body belongs to the
+// calling function's scope (FuncInfo.nestedCalls): its blocks are laid out inside the caller's,
+// once the caller's own slots are known (finalizeFuncSlotLayout). A top-level call takes global
+// blocks sized by the callee's final layout: placed at once when every body it reaches is analyzed,
+// else (a forward reference, C255) by resolvePendingFuncCallSlots after the main loop.
+function placeFuncCall(expr: CallExpr, func: FuncInfo, prog: AnalyzedProgram, scope: LexScope): void {
+  if (scope.func !== null) {
+    scope.func.nestedCalls.set(expr, func);
+    prog.relativeFuncCalls.set(expr, func);
+    // Keeps funcCallSlots.has(expr) true for codegen's UDF-call dispatch until the layout is final.
+    if (!prog.funcCallSlots.has(expr)) prog.funcCallSlots.set(expr, 0);
+  } else if (prog.funcSlotsFinal || slotLayoutReady(func, new Set())) {
+    allocateFuncCallSlots(expr, func, prog);
   } else {
-    prog.funcCallSlots.set(expr, 0);
+    prog.pendingFuncCallSlots.push({ expr, func });
   }
-  if (methodInfo.localTaSlotCount > 0) {
-    prog.funcTaBases.set(expr, prog.taSlotCount);
-    prog.taSlotCount += methodInfo.localTaSlotCount;
+}
+
+// Whether func's layout can be finalized now: its body and the bodies of every call written in it
+// (transitively) are analyzed. A cycle (recursion, rejected later) is never ready.
+function slotLayoutReady(func: FuncInfo, seen: Set<FuncInfo>): boolean {
+  if (func.slotLayout === "final") return true;
+  if (!func.bodyAnalyzed || seen.has(func)) return false;
+  seen.add(func);
+  for (const callee of func.nestedCalls.values()) {
+    if (!slotLayoutReady(callee, seen)) return false;
   }
-  allocateFuncHistSlots(expr, methodInfo, prog);
+  return true;
 }
 
 // UDF 호출: 인자 개수 검증 + (그 함수에 var/varip가 있으면) 이 콜사이트 전용 $.fnVars 슬롯
 // 베이스를 새로 할당한다. 같은 함수를 부르는 서로 다른 콜사이트는 서로 다른 슬롯 베이스를 받으므로
 // 함수 내부 var 상태가 콜사이트별로 완전히 독립된다(GOAL.md "slotBase/callSiteId 전파" —
 // pine2py는 이름 문자열 하나로 모든 콜사이트가 공유해 버그가 있었음, MEMORY.md 참조).
-// UDF 안에서 다른 UDF를 호출하는 것(중첩 콜)도 동일한 콜사이트별(AST 노드 키) 슬롯 배정으로 그대로
-// 성립한다(C267[part2]) — slotBase는 "이 CallExpr이 소스 어디에 있는가"만으로 정해지는 컴파일타임
-// 상수라 바깥 함수가 몇 번/어디서 호출되든 무관하게 독립적이다("중첩 전파" 합성이 필요하다는 이전
-// 가정은 재검증 결과 틀렸음 — 스코프 체인이 아니라 AST 노드 자체가 키이므로 중첩 깊이와 무관).
+// A call written inside another UDF's body is NOT one global instance: it belongs to the scope of
+// each call of that UDF ("Every call written in the source code establishes a separate local scope
+// ... The parameters, variables, and expressions created for each function call are unique to that
+// call", language_user-defined-functions.txt), so `g(x) => f()` called twice runs two f() states
+// (harness lang.udf udf_nested; C267[part2]'s one-slot-per-AST-node model shared them). Its blocks
+// are offsets inside the caller's blocks (placeFuncCall / finalizeFuncSlotLayout).
 // 단 재귀(직접 자기호출 + 상호 호출 사이클)는 정적 call-site 하나가 무한히 재사용돼야 해서 이
 // 모델이 성립하지 않고, TV v5도 재귀 UDF를 지원하지 않으므로(pine2py는 재귀를 막지 않지만
 // var 상태 자체가 이름 문자열 하나로 전역 공유돼 있어 재귀의 올바른 상태 시맨틱을 오라클로 검증할
@@ -8764,22 +8786,53 @@ function analyzeUserFuncCall(expr: CallExpr, func: FuncInfo, prog: AnalyzedProgr
   }
   for (const arg of expr.args) analyzeExpr(arg, prog, scope, false);
 
-  // C255: forward-reference 콜사이트(callee가 아직 본문 분석 전 — registerFuncSignature prepass가
-  // 시그니처만 등록한 상태)는 localVarSlots.length/localTaSlotCount를 아직 몰라 슬롯 배정을
-  // 지금 할 수 없다 — analyze() 메인 루프가 끝난 뒤(모든 top-level FuncDecl 본문이 분석 완료된
-  // 시점) resolvePendingFuncCallSlots가 이 목록을 일괄 처리한다. 일반 콜(callee가 이미 본문까지
-  // 분석된 경우, 압도적 다수)은 기존과 동일하게 여기서 즉시 배정한다.
-  if (func.bodyAnalyzed) {
-    allocateFuncCallSlots(expr, func, prog);
-  } else {
-    prog.pendingFuncCallSlots.push({ expr, func });
+  // The callee's block sizes include the calls written in its own body, which may be forward
+  // references (C255) not analyzed yet, so the blocks are placed once every body is analyzed.
+  placeFuncCall(expr, func, prog, scope);
+}
+
+// Lays out one call's blocks of `func`: its own slots first (assigned while its body was analyzed),
+// then one block per call written in its body, each sized by that callee's final layout. The
+// offsets go into funcCallSlots/funcTaBases/... of the nested call (relativeFuncCalls: codegen adds
+// the caller's __slotBase/__taBase/...). Recursion is rejected by detectRecursiveFuncCalls; a cycle
+// met here ("visiting") only stops the walk.
+function finalizeFuncSlotLayout(func: FuncInfo, prog: AnalyzedProgram): void {
+  if (func.slotLayout !== "open") return;
+  func.slotLayout = "visiting";
+  func.varSlotCount = func.localVarSlots.length;
+  for (const [expr, callee] of func.nestedCalls) {
+    finalizeFuncSlotLayout(callee, prog);
+    prog.funcCallSlots.set(expr, callee.varSlotCount > 0 ? func.varSlotCount : 0);
+    func.varSlotCount += callee.varSlotCount;
+    if (callee.localTaSlotCount > 0) {
+      prog.funcTaBases.set(expr, func.localTaSlotCount);
+      func.localTaSlotCount += callee.localTaSlotCount;
+    }
+    if (callee.localHistSlotCount > 0) {
+      prog.funcHistBases.set(expr, func.localHistSlotCount);
+      func.localHistSlotCount += callee.localHistSlotCount;
+    }
+    if (callee.localCondHistSlotCount > 0) {
+      prog.funcCondHistBases.set(expr, func.localCondHistSlotCount);
+      func.localCondHistSlotCount += callee.localCondHistSlotCount;
+    }
+    if (callee.localCondRefHistSlotCount > 0) {
+      prog.funcCondRefHistBases.set(expr, func.localCondRefHistSlotCount);
+      func.localCondRefHistSlotCount += callee.localCondRefHistSlotCount;
+    }
+    if (callee.localRefHistSlotCount > 0) {
+      prog.funcRefHistBases.set(expr, func.localRefHistSlotCount);
+      func.localRefHistSlotCount += callee.localRefHistSlotCount;
+    }
   }
+  func.slotLayout = "final";
 }
 
 function allocateFuncCallSlots(expr: CallExpr, func: FuncInfo, prog: AnalyzedProgram): void {
-  if (func.localVarSlots.length > 0) {
+  finalizeFuncSlotLayout(func, prog);
+  if (func.varSlotCount > 0) {
     prog.funcCallSlots.set(expr, prog.fnVarSlotCount);
-    prog.fnVarSlotCount += func.localVarSlots.length;
+    prog.fnVarSlotCount += func.varSlotCount;
   } else {
     prog.funcCallSlots.set(expr, 0); // var 없는 함수 — slotBase는 codegen에서 참조되지 않음
   }
@@ -8804,16 +8857,8 @@ function allocateFuncCallSlots(expr: CallExpr, func: FuncInfo, prog: AnalyzedPro
 // 이 함수 직전에 같은 함수 기준으로 배정돼(funcCallSlots) 항상 존재한다.
 function allocateFuncHistSlots(expr: CallExpr, func: FuncInfo, prog: AnalyzedProgram): void {
   if (func.localHistSlotCount > 0) {
-    const histBase = prog.historySlotCount;
-    prog.funcHistBases.set(expr, histBase);
+    prog.funcHistBases.set(expr, prog.historySlotCount);
     prog.historySlotCount += func.localHistSlotCount;
-    const slotBase = prog.funcCallSlots.get(expr) ?? 0;
-    for (const [name, relIdx] of func.localHistSlots) {
-      if (func.localHistKinds.get(name) !== "var") continue;
-      const varSlot = func.localVarIndex.get(name);
-      if (varSlot === undefined) continue; // 발생 불가(localHistKinds "var"는 localVarIndex 등록 이름만)
-      prog.funcHistVarRecords.push({ histIdx: histBase + relIdx, fnVarIdx: slotBase + varSlot });
-    }
   }
   // UDF 본문 조건부 위치 stateful 콜 압축 히스토리 판(C672, FuncInfo.localCondCallHistSlots 주석
   // 참조) — 위와 동형이나 베이스가 condCallHistorySlotCount($.condCallHistSlots 물리 배열, C671)
@@ -8836,10 +8881,42 @@ function allocateFuncHistSlots(expr: CallExpr, func: FuncInfo, prog: AnalyzedPro
   // refHistorySlotCount(별도 카운터, $.refHistSlots 물리 배열)이고 var-kind 바 종료 record 목록도
   // funcRefHistVarRecords로 분리된다(codegen generateCode의 record 루프/`__refHistBase` 인자와 짝).
   if (func.localRefHistSlotCount > 0) {
-    const refHistBase = prog.refHistorySlotCount;
-    prog.funcRefHistBases.set(expr, refHistBase);
+    prog.funcRefHistBases.set(expr, prog.refHistorySlotCount);
     prog.refHistorySlotCount += func.localRefHistSlotCount;
-    const slotBase = prog.funcCallSlots.get(expr) ?? 0;
+  }
+  pushFuncHistVarRecords(
+    func,
+    prog.funcCallSlots.get(expr) ?? 0,
+    prog.funcHistBases.get(expr),
+    prog.funcRefHistBases.get(expr),
+    prog,
+    new Set(),
+  );
+}
+
+// Bar-end history records of function-internal vars (localHistKinds/localRefHistKinds "var") for
+// one top-level call: its own vars at the call's absolute bases, then those of every call written
+// in its body at the bases nested inside them (finalizeFuncSlotLayout), recursively. `path` stops
+// a recursive cycle (rejected by detectRecursiveFuncCalls after this runs).
+function pushFuncHistVarRecords(
+  func: FuncInfo,
+  slotBase: number,
+  histBase: number | undefined,
+  refHistBase: number | undefined,
+  prog: AnalyzedProgram,
+  path: Set<FuncInfo>,
+): void {
+  if (path.has(func)) return;
+  path.add(func);
+  if (histBase !== undefined) {
+    for (const [name, relIdx] of func.localHistSlots) {
+      if (func.localHistKinds.get(name) !== "var") continue;
+      const varSlot = func.localVarIndex.get(name);
+      if (varSlot === undefined) continue; // 발생 불가(localHistKinds "var"는 localVarIndex 등록 이름만)
+      prog.funcHistVarRecords.push({ histIdx: histBase + relIdx, fnVarIdx: slotBase + varSlot });
+    }
+  }
+  if (refHistBase !== undefined) {
     for (const [name, relIdx] of func.localRefHistSlots) {
       if (func.localRefHistKinds.get(name) !== "var") continue;
       const varSlot = func.localVarIndex.get(name);
@@ -8847,15 +8924,31 @@ function allocateFuncHistSlots(expr: CallExpr, func: FuncInfo, prog: AnalyzedPro
       prog.funcRefHistVarRecords.push({ refHistIdx: refHistBase + relIdx, fnVarIdx: slotBase + varSlot });
     }
   }
+  for (const [expr, callee] of func.nestedCalls) {
+    const nestedHist = prog.funcHistBases.get(expr);
+    const nestedRefHist = prog.funcRefHistBases.get(expr);
+    pushFuncHistVarRecords(
+      callee,
+      slotBase + (prog.funcCallSlots.get(expr) ?? 0),
+      nestedHist !== undefined && histBase !== undefined ? histBase + nestedHist : undefined,
+      nestedRefHist !== undefined && refHistBase !== undefined ? refHistBase + nestedRefHist : undefined,
+      prog,
+      path,
+    );
+  }
+  path.delete(func);
 }
 
-// analyzer.ts analyze()가 메인 루프(모든 top-level 문장 analyzeStmt) 종료 직후 호출한다 — 그
-// 시점엔 모든 top-level FuncDecl의 bodyAnalyzed가 true라 pendingFuncCallSlots에 쌓인 forward-ref
-// 콜사이트도 안전하게 즉시 배정과 동일한 로직으로 슬롯을 받을 수 있다.
+// analyzer.ts analyze()가 메인 루프(모든 top-level 문장 analyzeStmt) 종료 직후 호출한다 — every
+// body is analyzed then, so each function's layout (own slots + the blocks of the calls written in
+// it) can be finalized, and the top-level calls get their global blocks.
 export function resolvePendingFuncCallSlots(prog: AnalyzedProgram): void {
+  for (const func of prog.funcs.values()) finalizeFuncSlotLayout(func, prog);
   for (const { expr, func } of prog.pendingFuncCallSlots) {
     allocateFuncCallSlots(expr, func, prog);
   }
+  prog.pendingFuncCallSlots.length = 0;
+  prog.funcSlotsFinal = true;
 }
 
 // C453: udf-param 다중 콜사이트 security expression 지연 처리(AnalyzedProgram.

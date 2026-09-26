@@ -1323,6 +1323,19 @@ export interface FuncInfo {
   // slotBase 패턴이지만 값이 "베이스 인덱스"가 아니라 "서수"인 이유: 슬롯 블록이 body 콜 단위로
   // 연속 배정되므로(base_k + 서수) 함수당 서수 하나로 body의 모든 해당 콜을 커버할 수 있다.
   hasSecParamCalls: boolean;
+  // UDF/method calls written in this body -> their callee. language_user-defined-functions.txt
+  // "Scope of a function call": "Every call written in the source code establishes a separate local
+  // scope ... The parameters, variables, and expressions created for each function call are unique
+  // to that call". A call written in this body is one of those expressions, so every call of this
+  // function owns its own instance of it: `g(x) => f()` called twice runs two f() states. Their
+  // blocks are laid out inside this function's own blocks, after its own slots
+  // (finalizeFuncSlotLayout), and the call passes `__slotBase + offset` (etc.) down.
+  nestedCalls: Map<CallExpr, FuncInfo>;
+  // Size of one call's $.fnVars block: localVarSlots, then each nested call's block. Final once
+  // slotLayout is "final"; localTaSlotCount/localHistSlotCount/localRefHistSlotCount/
+  // localCondHistSlotCount/localCondRefHistSlotCount then include the nested blocks the same way.
+  varSlotCount: number;
+  slotLayout: "open" | "visiting" | "final";
 }
 
 // "왜 depth가 늘었는가" 태그(C64, ROADMAP P2 조건부 stateful call 항목). stateful 콜(ta.*/fixnan)
@@ -2400,6 +2413,12 @@ export interface AnalyzedProgram {
   // localVarSlots.length/localTaSlotCount를 아직 몰라 즉시 슬롯 배정이 불가능하므로 analyze()의
   // 메인 루프가 끝난 뒤(모든 top-level FuncDecl 본문이 분석 완료된 시점) 일괄 배정한다.
   pendingFuncCallSlots: Array<{ expr: CallExpr; func: FuncInfo }>;
+  // Calls written in a UDF/method body (FuncInfo.nestedCalls) -> callee: their funcCallSlots/
+  // funcTaBases/... entries are offsets from the calling function's own bases, not global indices.
+  relativeFuncCalls: Map<CallExpr, FuncInfo>;
+  // True once every function's slot layout is final and the pending top-level calls got their
+  // blocks (resolvePendingFuncCallSlots); a top-level call analyzed after that is placed at once.
+  funcSlotsFinal: boolean;
   // C412: forward-reference UDF 튜플 디스트럭처 콜사이트(analyzeTupleDestructure의 pendingUdfFunc
   // 주석 참조) — 함수 이름 -> 그 이름을 부르는 미해소 콜사이트 목록. analyzeFuncDecl이 그 이름의
   // 본문 분석을 마치는 즉시(bodyAnalyzed=true 직후) resolvePendingTupleDestructuresFor가 소비한다.
@@ -3759,6 +3778,8 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
     funcCallSlots: new Map(),
     fnVarSlotCount: 0,
     pendingFuncCallSlots: [],
+    relativeFuncCalls: new Map(),
+    funcSlotsFinal: false,
     pendingTupleDestructures: new Map(),
     funcTaBases: new Map(),
     varQualifiers: new Map(),
@@ -4648,6 +4669,9 @@ function registerFuncSignature(stmt: FuncDecl, prog: AnalyzedProgram): void {
     localAmbiguousNestedRefReadSlots: new Map(),
     shadowedByTopLevelLocal: false,
     hasSecParamCalls: false,
+    nestedCalls: new Map(),
+    varSlotCount: 0,
+    slotLayout: "open",
   };
   stmt.params.forEach((p, i) => {
     const hasDefault = p.default !== null;
@@ -5918,6 +5942,9 @@ function analyzeMethodDecl(stmt: MethodDecl, prog: AnalyzedProgram, scope: LexSc
     localAmbiguousNestedRefReadSlots: new Map(),
     shadowedByTopLevelLocal: false,
     hasSecParamCalls: false,
+    nestedCalls: new Map(),
+    varSlotCount: 0,
+    slotLayout: "open",
   };
   stmt.params.forEach((p, i) => {
     info.paramHasDefault.push(p.default !== null);

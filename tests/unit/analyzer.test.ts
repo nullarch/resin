@@ -10513,7 +10513,7 @@ describe("Analyzer", () => {
     expect(prog.taSlotCount).toBe(1);
   });
 
-  it("allows calling a UDF from inside another UDF's body (C267[part2] positive migration — call-site slotBase is an AST-node key, nesting depth doesn't matter)", () => {
+  it("allows calling a UDF from inside another UDF's body (C267[part2] positive migration)", () => {
     const prog = analyzeSource(["f(x) => x + 1", "g(x) =>", "    f(x) + 1", "y = g(close)"].join("\n"));
     expect(prog.errors).toEqual([]);
   });
@@ -10525,7 +10525,12 @@ describe("Analyzer", () => {
     expect(prog.errors).toEqual([]);
   });
 
-  it("allocates independent fnVars slot bases for two distinct call sites of the same stateful callee reached from inside two different caller bodies (diamond call graph, no cycle)", () => {
+  it("lays out a stateful callee's block inside each caller that calls it (diamond call graph, no cycle)", () => {
+    // A call written in a UDF body belongs to each call of that UDF ("Every call written in the
+    // source code establishes a separate local scope ... unique to that call",
+    // language_user-defined-functions.txt; harness state/repros/lang.udf-seed-1.json: g0(close) and
+    // g0(close * 10) each run their own f0() state). The d(x) sites are offsets inside b's and c's
+    // blocks, and the top-level b(close)/c(close) calls own distinct global blocks.
     const prog = analyzeSource(
       ["d(x) =>", "    var float n = 0.0", "    n := n + x", "    n", "b(x) =>", "    d(x)", "c(x) =>", "    d(x)", "y = b(close) + c(close)"].join(
         "\n",
@@ -10536,11 +10541,19 @@ describe("Analyzer", () => {
     const cBody = prog.script.body.find((s) => s.kind === "FuncDecl" && s.name === "c") as { body: ExprStmt[] };
     const callInB = bBody.body[0]!.expr as CallExpr;
     const callInC = cBody.body[0]!.expr as CallExpr;
-    const slotInB = prog.funcCallSlots.get(callInB);
-    const slotInC = prog.funcCallSlots.get(callInC);
-    expect(slotInB).toBeDefined();
-    expect(slotInC).toBeDefined();
-    expect(slotInB).not.toBe(slotInC);
+    expect(prog.relativeFuncCalls.get(callInB)?.name).toBe("d");
+    expect(prog.relativeFuncCalls.get(callInC)?.name).toBe("d");
+    expect(prog.funcCallSlots.get(callInB)).toBe(0);
+    expect(prog.funcCallSlots.get(callInC)).toBe(0);
+    expect(prog.funcs.get("b")!.varSlotCount).toBe(1);
+    expect(prog.funcs.get("c")!.varSlotCount).toBe(1);
+    const sum = (prog.script.body.at(-1) as Assignment).value as BinOp;
+    const topB = prog.funcCallSlots.get(sum.left as CallExpr);
+    const topC = prog.funcCallSlots.get(sum.right as CallExpr);
+    expect(topB).toBeDefined();
+    expect(topC).toBeDefined();
+    expect(topB).not.toBe(topC);
+    expect(prog.fnVarSlotCount).toBe(2);
   });
 
   it("allows a UDF to call the same other UDF from two different call sites within its own body (not a cycle)", () => {

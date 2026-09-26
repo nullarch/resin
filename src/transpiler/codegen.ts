@@ -1407,6 +1407,8 @@ function hoistLazyStatefulCalls(
 // 이미 확립한 "콜만 최소 단위로 끌어올린다" 원칙 재적용 — 불필요한 임시변수를 만들지 않음).
 // 본문에 ta 상태만 있는 UDF(var 0개 + localTaSlotCount > 0)도 lazy로 두면 그 콜사이트의 ta
 // 상태가 조건이 갈리는 바에서 조용히 전진을 건너뛰므로 반드시 포함해야 한다.
+// State held by the calls written in its body counts too: varSlotCount/localTaSlotCount include
+// their blocks (analyzer finalizeFuncSlotLayout).
 // 사용자 선언 method 콜(`obj.method(args)`, callee가 DotAccess)도 일반 UDF와 완전히 동일한
 // funcCallSlots/localVarSlots/localTaSlotCount 메커니즘으로 상태를 갖는다(analyzer.ts
 // analyzeCallExpr의 method 분기 참조) — DotAccess 분기 부재로 lazy 위치의 stateful method 콜이
@@ -1425,14 +1427,14 @@ function isVarStatefulUdfCall(expr: CallExpr, program: AnalyzedProgram): boolean
       bareMethodType !== undefined
         ? lookupMethodOverload(program, bareMethodType, expr.callee.name, expr.args.length + expr.kwargs.length, expr)
         : program.funcs.get(expr.callee.name);
-    return func !== undefined && (func.localVarSlots.length > 0 || func.localTaSlotCount > 0);
+    return func !== undefined && (func.varSlotCount > 0 || func.localTaSlotCount > 0);
   }
   if (expr.callee.kind === "DotAccess") {
     const methodTypeName = program.udtMethodCallTypes.get(expr);
     if (methodTypeName === undefined) return false;
     // C687: dot-sugar는 receiver(callee.obj) 몫 +1.
     const func = lookupMethodOverload(program, methodTypeName, expr.callee.attr, 1 + expr.args.length + expr.kwargs.length, expr);
-    return func !== undefined && (func.localVarSlots.length > 0 || func.localTaSlotCount > 0);
+    return func !== undefined && (func.varSlotCount > 0 || func.localTaSlotCount > 0);
   }
   return false;
 }
@@ -4798,18 +4800,8 @@ function genCallExpr(
     // (genFuncDecl/genBaseParams)와 항상 짝이 맞는다(없으면 기존 출력 그대로). __secIdx(C453,
     // udf-param 다중 콜사이트 security)도 동일 원리 — funcSecIdxArgs에 등록된 콜사이트만 서수를
     // 전달한다(등록은 함수 단위 all-or-nothing이라 시그니처와 항상 짝이 맞는다).
-    const taBase = program.funcTaBases.get(expr);
-    const histBase = program.funcHistBases.get(expr);
-    const refHistBase = program.funcRefHistBases.get(expr);
-    const condHistBase = program.funcCondHistBases.get(expr);
-    const condRefHistBase = program.funcCondRefHistBases.get(expr);
+    const baseArgs = genFuncCallBaseArgs(expr, program);
     const secIdx = program.funcSecIdxArgs.get(expr);
-    const baseArgs = [String(userSlotBase)];
-    if (taBase !== undefined) baseArgs.push(String(taBase));
-    if (histBase !== undefined) baseArgs.push(String(histBase));
-    if (refHistBase !== undefined) baseArgs.push(String(refHistBase));
-    if (condHistBase !== undefined) baseArgs.push(String(condHistBase));
-    if (condRefHistBase !== undefined) baseArgs.push(String(condRefHistBase));
     if (secIdx !== undefined) baseArgs.push(String(secIdx));
     return `${funcName}(${[...baseArgs, ...args].join(", ")})`;
   }
@@ -4868,7 +4860,6 @@ function genCallExpr(
     // C687: 오버로드는 receiver 몫 +1로 선택(analyzer dispatch와 동일 공유 헬퍼·동일 입력) —
     // 오버로드 없는 method는 기존 mangleMethodName 재계산과 완전히 같은 이름이 나온다.
     const mangledName = lookupMethodOverload(program, methodTypeName, expr.callee.attr, 1 + expr.args.length + expr.kwargs.length, expr)!.name;
-    const slotBase = program.funcCallSlots.get(expr)!;
     const objCode = genExpr(expr.callee.obj, program, funcCtx);
     // C408: 키워드 인자 — bare UDF 콜(line ~2778 주석)과 완전히 동일한 원리로 값이 실제로 지정된
     // 가장 뒤쪽 슬롯까지만 채우고, 그 범위 안에서 kwargs가 건너뛴 슬롯만 리터럴 "undefined"로
@@ -4897,18 +4888,30 @@ function genCallExpr(
           })();
     // __taBase/__histBase/__refHistBase 조건부 전달은 일반 UDF 콜과 동일(C162/C364/C541 —
     // genMethodDecl의 조건부 파라미터와 짝).
-    const taBase = program.funcTaBases.get(expr);
-    const histBase = program.funcHistBases.get(expr);
-    const refHistBase = program.funcRefHistBases.get(expr);
-    const condHistBase = program.funcCondHistBases.get(expr);
-    const condRefHistBase = program.funcCondRefHistBases.get(expr);
-    const baseArgs = [String(slotBase)];
-    if (taBase !== undefined) baseArgs.push(String(taBase));
-    if (histBase !== undefined) baseArgs.push(String(histBase));
-    if (refHistBase !== undefined) baseArgs.push(String(refHistBase));
-    if (condHistBase !== undefined) baseArgs.push(String(condHistBase));
-    if (condRefHistBase !== undefined) baseArgs.push(String(condRefHistBase));
+    const baseArgs = genFuncCallBaseArgs(expr, program);
     return `${mangledName}(${[...baseArgs, objCode, ...args].join(", ")})`;
   }
   throw new Error("internal: unknown CallExpr (unreachable after analyzer pass)");
+}
+
+// The base arguments of a UDF/method call, in genBaseParams order. A call written in a UDF/method
+// body (relativeFuncCalls) passes offsets from the calling function's own bases: its state lives
+// inside the block of each call of that function (analyzer finalizeFuncSlotLayout).
+function genFuncCallBaseArgs(expr: CallExpr, program: AnalyzedProgram): string[] {
+  const callee = program.relativeFuncCalls.get(expr);
+  const at = (param: string, offset: number): string =>
+    callee === undefined ? String(offset) : offset === 0 ? param : `${param} + ${offset}`;
+  const slotBase = program.funcCallSlots.get(expr)!;
+  const baseArgs = [callee !== undefined && callee.varSlotCount === 0 ? "0" : at("__slotBase", slotBase)];
+  const taBase = program.funcTaBases.get(expr);
+  const histBase = program.funcHistBases.get(expr);
+  const refHistBase = program.funcRefHistBases.get(expr);
+  const condHistBase = program.funcCondHistBases.get(expr);
+  const condRefHistBase = program.funcCondRefHistBases.get(expr);
+  if (taBase !== undefined) baseArgs.push(at("__taBase", taBase));
+  if (histBase !== undefined) baseArgs.push(at("__histBase", histBase));
+  if (refHistBase !== undefined) baseArgs.push(at("__refHistBase", refHistBase));
+  if (condHistBase !== undefined) baseArgs.push(at("__condHistBase", condHistBase));
+  if (condRefHistBase !== undefined) baseArgs.push(at("__condRefHistBase", condRefHistBase));
+  return baseArgs;
 }

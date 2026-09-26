@@ -27963,13 +27963,18 @@ describe("ta.<fn>(...)[N] historical indexing analyzer/codegen (C340)", () => {
     expect(code).toContain("$.condCallHistSlots[__condHistBase + 0].push(");
   });
 
-  it("threads a literal __condHistBase through a nested UDF call site (UDF body calling another UDF with a conditional history, C672)", () => {
+  it("threads the caller's own __taBase/__condHistBase through a nested UDF call site (UDF body calling another UDF with a conditional history, C672)", () => {
+    // The nested g(x) belongs to each call of f (language_user-defined-functions.txt "Every call
+    // written in the source code establishes a separate local scope"; harness
+    // state/repros/lang.udf-seed-1.json), so its blocks sit inside f's and f passes its own bases.
     const code = codegenSource(
       ["g(x) =>", "    if x > 0.0", "        ta.highest(x, 5)[1]", "    else", "        0.0", "f(x) =>", "    g(x) + 1.0", "y = f(close)"].join(
         "\n",
       ),
     );
-    expect(code).toContain("g(0, 0, 0, x)");
+    expect(code).toContain("function f(__slotBase, __taBase, __condHistBase, x) {");
+    expect(code).toContain("g(0, __taBase, __condHistBase, x)");
+    expect(code).toContain("var y = f(0, 0, 0, $.close.get(0));");
   });
 
   it("hand-verified E2E: UDF-body compressed call-count semantics — [] indexes 'N calls ago' per call site (C672)", () => {
@@ -28239,7 +28244,8 @@ describe("drawing-constructor CallExpr(...)[N] inside a UDF body — call-site-r
     expect(code).toContain("$.condCallRefHistSlots[__condRefHistBase + 0].push(");
   });
 
-  it("threads a literal __condRefHistBase through a nested UDF call site", () => {
+  it("threads the caller's own __condRefHistBase through a nested UDF call site", () => {
+    // Nested call blocks sit inside the caller's (harness state/repros/lang.udf-seed-1.json).
     const code = codegenSource(
       [
         "g() =>",
@@ -28249,7 +28255,28 @@ describe("drawing-constructor CallExpr(...)[N] inside a UDF body — call-site-r
         "y = f()",
       ].join("\n"),
     );
-    expect(code).toContain("g(0, 0)");
+    expect(code).toContain("g(0, __condRefHistBase)");
+    expect(code).toContain("var y = f(0, 0);");
+  });
+
+  it("gives each call of a UDF its own instance of the stateful calls written in its body", () => {
+    // Harness state/repros/lang.udf-seed-1.json (oracle: both plots 1 on bar 0; resin shared one f0
+    // counter across the two g0 calls and plotted 2 for the second). language_user-defined-functions.txt:
+    // "The parameters, variables, and expressions created for each function call are unique to that call".
+    const code = codegenSource(
+      ["f0() =>", "    var int c = 0", "    c += 1", "    c", "g0(float x) => f0()", "n0_0 = g0(close)", "n0_1 = g0(close * 10)"].join("\n"),
+    );
+    expect(code).toContain("return f0(__slotBase);");
+    expect(code).toContain("var n0_0 = g0(0, $.close.get(0));");
+    expect(code).toContain("var n0_1 = g0(1, ($.close.get(0) * 10));");
+    // Two levels: h's block holds g's, which holds f's; the two h calls own blocks 0 and 1.
+    const deep = codegenSource(
+      ["f() =>", "    var int c = 0", "    c += 1", "    c", "g() => f()", "h() => g()", "a = h()", "b = h()"].join("\n"),
+    );
+    expect(deep).toContain("return f(__slotBase);");
+    expect(deep).toContain("return g(__slotBase);");
+    expect(deep).toContain("var a = h(0);");
+    expect(deep).toContain("var b = h(1);");
   });
 
   it("hand-verified E2E: UDF-body compressed call-count semantics carry over from top-level C700 unchanged", () => {
