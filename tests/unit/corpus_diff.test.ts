@@ -538,8 +538,14 @@ describe("corpus diff: sample bar-by-bar replay against pine2py golden", () => {
     // raw value; the PyneCore oracle (lib/ta.py dmi) and tier 1 resin-harness suites/indicators/tv/
     // ta_121_dmi (dmi(17, 14) first valued on bar 17) say otherwise. Floor moved to the observed
     // matched 2332 / mismatch 583; nothing else changed.
-    expect(matched.length).toBeGreaterThanOrEqual(2332);
-    expect(mismatched.length).toBeLessThanOrEqual(583);
+    // 2026-09-26 ta.linreg evaluates its line offset bars BACK from the newest bar: exactly one hash
+    // went matched -> mismatch (6408411bb7d1, ta.linreg(close, 5, 1)). pine2py (not ground truth)
+    // projected forward (n - 1 + offset); ref_v6_ta_math.txt "ta.linreg" gives intercept + slope *
+    // (length - 1 - offset), as do the PyneCore oracle (lib/ta.py linreg) and tier 1 resin-harness
+    // suites/indicators/tv/ta_181_linreg (linreg(close, 20, 10)). Floor moved to the observed
+    // matched 2331 / mismatch 584; nothing else changed.
+    expect(matched.length).toBeGreaterThanOrEqual(2331);
+    expect(mismatched.length).toBeLessThanOrEqual(584);
     expect(transpileFailed.length).toBeLessThanOrEqual(86);
     expect(runtimeFailed.length, `runtime failures: ${runtimeFailed.map((o) => `${o.hash}: ${o.detail}`).join(" | ")}`).toBe(0);
     expect(noComparable.length, `no comparable key: ${noComparable.map((o) => o.hash).join(", ")}`).toBeLessThanOrEqual(2);

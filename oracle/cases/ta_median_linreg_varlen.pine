@@ -20,10 +20,9 @@ __obs_lr1 := ta.linreg(close, lenA)
 // 실측) — 바마다 변하는 high+close로 기울기가 실제로 실리는 채널을 쓴다.
 var float __obs_lr2 = na
 __obs_lr2 := ta.linreg(high + close, lenA, 2)
-// lenB: -1/2 교대 — length<0에서 pine2py linreg가 크래시 없이 +0.0을 반환하는 실측 동작
-// (빈 창 → slope=0/intercept=±0, python 직접 확인)의 literal port를 골든으로 직접 검증
-// (highest의 -inf #178과 동일 축). length=0은 pine2py ZeroDivisionError 크래시라 여기 못 넣고
-// na 자체 결정(DIVERGENCES #181, 유닛 테스트로 커버). median은 len<1 전부 크래시라 lenA만.
+// lenB: -1/2 교대 — a length below 1 is na and stores nothing in resin (the PyneCore oracle
+// rejects it; pine2py returned +0.0, which the golden still holds — tests/oracle/
+// ta_median_linreg_varlen.test.ts asserts resin's values). median은 len<1 전부 크래시라 lenA만.
 lenB = bar_index % 2 == 0 ? -1 : 2
 var float __obs_lr3 = na
 __obs_lr3 := ta.linreg(close, lenB)

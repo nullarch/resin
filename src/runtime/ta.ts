@@ -465,39 +465,96 @@ export function ao(state: AoState, hl2: number): number {
 }
 
 export interface LinregState {
-  inner?: WmaState;
+  buf?: Float64Array; // the non-na sources in arrival order, read modulo buf.length
+  size?: number; // non-na sources stored so far
+  count?: number; // warm-up counter: one more per stored source while it is below the length
+  val?: number; // the last full-window value, held while the source is na
+  constLen?: number; // the length sumX/denom were accumulated for
+  sumX?: number;
+  denom?: number;
 }
 
-// ta.linreg - Linear Regression: least-squares fit of `value` over `length` bars, projected forward by
-// `offset` bars. pine2py wavealgo/ta/linreg.py recomputes sum_y (Σv) and sum_xy (Σi*v, i=0-based
-// oldest..length-1 newest) from a fresh oldest-to-newest window every bar (O(length)). sum_x/sum_x2
-// depend only on n(=length), a compile-time-fixed constant (same lengthArgIndex hard-error premise as
-// sma/wma), so the only per-bar work pine2py actually needs is sum_y/sum_xy — and those are
-// algebraically identical to ta.wma's own running totals: wma's weightedSum uses 1-based weights
-// (oldest=1..newest=length), so Σ(i+1)*v = Σ(i*v) + Σv, i.e. sum_xy = weightedSum - sum(=sum_y). Rather
-// than deriving a new O(1) recurrence, this reuses rt.ta.wma's internal state (same "compose from an
-// already-implemented TA" principle as hma, C40) — a call to wma() populates state.inner.sum/
-// weightedSum, and linreg reads them back instead of maintaining its own buffer.
-// offset defaults to 0 (pine2py linreg.py `offset: int = 0`, C252 2-arg call form) — same JS default-
-// parameter idiom as change()'s length=1; no codegen padding needed since offset is the trailing arg.
-export function linreg(state: LinregState, value: number, length: number, offset: number = 0): number {
-  if (state.inner === undefined) {
-    state.inner = {};
+// ta.linreg - TradingView's least-squares line. ref_v6_ta_math.txt "ta.linreg": "linreg = intercept +
+// slope * (length - 1 - offset), where intercept and slope are the values calculated with the least
+// squares method on `source` series" — the line is evaluated `offset` bars BACK from the newest bar
+// (resin had pine2py's `n - 1 + offset`, projecting forward; tier 1 resin-harness
+// suites/indicators/tv/ta_181_linreg: linreg(close, 20, 10) is 1.06784563158 on bar 19, resin had
+// 1.06596036842). The rest is the oracle's TradingView-measured machine (PyneCore lib/ta.py linreg):
+// - length (and offset) are truncated to ints; length 1 returns the source as is and stores nothing;
+// - an na source is skipped: nothing is stored and the last full-window value is held (na while
+//   warming up), so the window is the last `length` NON-na sources;
+// - the value is na until `length` sources have been stored;
+// - TradingView recomputes the window every bar, oldest first with x = 1..length ("its distance from
+//   the exact rational result stays flat over 22k bars ... while a rolling update of the two sums
+//   drifts"), and anchors the line one step short: intercept = sumY / length - slope * sumX / length
+//   + slope ("the algebraically equal intercept + slope * (length - offset) rounds differently and
+//   misses TradingView on a quarter to a half of the bars"). The arithmetic below is in that order.
+// A length below 1 is na here (the oracle rejects it with an assertion).
+function linregStep(state: LinregState, value: number, length: number, offset: number): number {
+  length = Math.trunc(length);
+  offset = Math.trunc(offset);
+  if (!(length >= 1)) return NaN;
+  if (length === 1) return value;
+  if (Number.isNaN(value)) return state.count! < length ? NaN : state.val!;
+
+  const buf = state.buf!;
+  const cap = buf.length;
+  buf[state.size! % cap] = value;
+  state.size = state.size! + 1;
+  if (state.count! < length) {
+    state.count = state.count! + 1;
+    if (state.count < length) return NaN;
   }
-  const wmaVal = wma(state.inner, value, length);
-  if (Number.isNaN(wmaVal)) return NaN;
 
-  const n = length;
-  const sumY = state.inner.sum!;
-  const sumXY = state.inner.weightedSum! - sumY;
-  const sumX = (n * (n - 1)) / 2;
-  const sumX2 = (n * (n - 1) * (2 * n - 1)) / 6;
-  const denom = n * sumX2 - sumX * sumX;
-  if (Math.abs(denom) < 1e-15) return sumY / n;
+  if (state.constLen !== length) {
+    let sx = 0;
+    let sx2 = 0;
+    for (let i = 1; i <= length; i++) {
+      sx = sx + i;
+      sx2 = sx2 + i * i;
+    }
+    state.constLen = length;
+    state.sumX = sx;
+    state.denom = length * sx2 - sx * sx;
+  }
+  const sumX = state.sumX!;
 
-  const slope = (n * sumXY - sumX * sumY) / denom;
-  const intercept = (sumY - slope * sumX) / n;
-  return intercept + slope * (n - 1 + offset);
+  let sumY = 0;
+  let sumXY = 0;
+  let per = 0;
+  for (let i = state.size - length; i < state.size; i++) {
+    const y = buf[i % cap]!;
+    per = per + 1;
+    sumY = sumY + y;
+    sumXY = sumXY + y * per;
+  }
+  const slope = (length * sumXY - sumX * sumY) / state.denom!;
+  const average = sumY / length;
+  const intercept = average - (slope * sumX) / length + slope;
+  state.val = intercept + slope * (length - 1 - offset);
+  return state.val;
+}
+
+// Fixed length: a ring of `length` slots holds the window. offset defaults to 0 (C252 2-arg form).
+export function linreg(state: LinregState, value: number, length: number, offset: number = 0): number {
+  const len = Math.trunc(length);
+  if (state.buf === undefined) {
+    if (!(len >= 1)) return NaN;
+    state.buf = new Float64Array(len);
+    state.size = 0;
+    state.count = 0;
+    state.val = NaN;
+  } else if (len > state.buf.length) {
+    // A longer length than the ring holds (a fixed-length call site never does this): keep the
+    // stored sources, oldest first, in a ring of the new size.
+    const old = state.buf;
+    const grown = new Float64Array(len);
+    const kept = Math.min(state.size!, old.length);
+    for (let k = 0; k < kept; k++) grown[k] = old[(state.size! - kept + k) % old.length]!;
+    state.buf = grown;
+    state.size = kept;
+  }
+  return linregStep(state, value, length, offset);
 }
 
 export interface VwmaState {
@@ -1493,55 +1550,38 @@ export function medianVarLen(state: ExtremeVarLenState, value: number, length: n
   return window[mid]!;
 }
 
-// ta.linreg(source, length, offset) - length가 series인 변형(C550, medianVarLen과 같은 묶음). 버퍼
-// 메커니즘은 highestVarLen과 완전 동형. pine2py wavealgo/ta/linreg.py도 상태 없이 매 호출 현재
-// length로 창을 재구축하는 무상태 재스캔(get_ta_state 미사용, 가변 length 정상 동작 python 직접
-// 확인)이라 오라클 성립 - 값 계산(최소제곱 회귀 + offset 투영)은 고정 length linreg()와 동일한
-// pine2py 공식 literal port다(고정 버전은 wma 상태 재사용 최적화를 얹었지만 여기선 창 재스캔이라
-// 원본 공식 그대로가 더 단순). 엣지(전부 python 직접 실행 확정 2026-08-01): 워밍업은 NaN,
-// length=0은 pine2py가 `sum_y/n` ZeroDivisionError 크래시라 na 자체 결정(DIVERGENCES #181),
-// **length<0은 크래시가 아니라 +0.0 반환**(빈 창에서 sum_y=sum_xy=0 → slope=0/intercept=±0,
-// precision()이 +0.0으로 정규화 - highest -inf(C547 #178)와 동일한 "크래시 없는 정의된 동작"
-// literal port, -0은 MEMORY C45대로 0 분기 분리로 +0 고정). length=NaN은 na 전파(TV 미검증 가설).
-// 창 안 NaN 하나면 즉시 NaN(length<0은 창 자체가 비어 이 게이트를 안 탐 - pine2py 동일).
-export function linregVarLen(state: ExtremeVarLenState, value: number, length: number, offset: number, barCount: number, barIdx: number): number {
-  if (state.buffer === undefined) {
-    state.buffer = new Float64Array(barCount).fill(NaN);
-    state.writeIdx = -1;
-    state.lastBarIdx = -1;
-  }
-  if (barIdx !== state.lastBarIdx) {
-    state.writeIdx = state.writeIdx! + 1;
-    state.lastBarIdx = barIdx;
-  }
-  const writeIdx = state.writeIdx!;
-  state.buffer[writeIdx] = value;
+interface LinregVarLenState extends LinregState {
+  lastBar?: number;
+  barSize?: number; // size/count/val as the bar began
+  barCount?: number;
+  barVal?: number;
+}
 
-  const len = Math.trunc(length);
-  if (Number.isNaN(len)) return NaN;
-  if (len === 0) return NaN;
-  if (len > writeIdx + 1) return NaN;
-  let sumY = 0;
-  let sumXY = 0;
-  const start = writeIdx - len + 1;
-  for (let i = start; i <= writeIdx; i++) {
-    const v = state.buffer[i]!;
-    if (Number.isNaN(v)) return NaN;
-    sumY += v;
-    sumXY += (i - start) * v;
+// ta.linreg with a series length: the same machine as linreg() above (linregStep), over every non-na
+// source stored so far, so a length that grows reads the sources it already skipped past. The warm-up
+// counter only steps while it is below the CURRENT length, one stored source at a time (PyneCore
+// lib/ta.py linreg `count`), so a length that grows past it is na again until it catches up, and a
+// length-1 bar stores nothing. The machine is bar-keyed like the other *VarLen variants: a second
+// execution on the same bar (a loop call site) starts again from the bar-start size/count/val.
+export function linregVarLen(state: LinregVarLenState, value: number, length: number, offset: number, barCount: number, barIdx: number): number {
+  if (state.buf === undefined) {
+    state.buf = new Float64Array(Math.max(1, barCount));
+    state.size = 0;
+    state.count = 0;
+    state.val = NaN;
+    state.lastBar = -1;
   }
-  const n = len;
-  const sumX = (n * (n - 1)) / 2;
-  const sumX2 = (n * (n - 1) * (2 * n - 1)) / 6;
-  const denom = n * sumX2 - sumX * sumX;
-  if (Math.abs(denom) < 1e-15) {
-    const mean = sumY / n;
-    return mean === 0 ? 0 : mean;
+  if (barIdx !== state.lastBar) {
+    state.lastBar = barIdx;
+    state.barSize = state.size;
+    state.barCount = state.count;
+    state.barVal = state.val;
+  } else {
+    state.size = state.barSize;
+    state.count = state.barCount;
+    state.val = state.barVal;
   }
-  const slope = (n * sumXY - sumX * sumY) / denom;
-  const intercept = (sumY - slope * sumX) / n;
-  const result = intercept + slope * (n - 1 + offset);
-  return result === 0 ? 0 : result;
+  return linregStep(state, value, length, offset);
 }
 
 // ta.wma(source, length) - length가 series인 변형(C550, 같은 묶음). 버퍼 메커니즘은 highestVarLen과

@@ -191,10 +191,9 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // rt.ta.ema를 두 겹 내부 재호출로 구성하므로(hma()가 rt.ta.wma를 세 겹 재사용하는 것과 동일
   // 원칙) sma/hma와 동일한 표준 시그니처(source, length)로 lengthArgIndex:1 그대로 재사용.
   dema: { dispatch: "ta", displayName: "ta.dema", argCount: 2, lengthArgIndex: 1, conditionalForbidden: true, rtPath: "rt.ta.dema" },
-  // ta.linreg(source, length, offset) — pine2py wavealgo/ta/linreg.py 소스 대조 결과 sum_x/sum_x2는
-  // length만으로 결정되는 상수, sum_xy는 rt.ta.wma의 내부 weightedSum(1-based)-sum과 대수적으로
-  // 동일해(runtime/ta.ts linreg 주석 참조) codegen 특수 분기 없이 WmaState 재사용으로 구현. length는
-  // sma와 동일하게 버퍼 크기를 고정하므로 lengthArgIndex:1(series 하드 에러). offset은 최종 산술에만
+  // ta.linreg(source, length, offset) — runtime/ta.ts linreg/linregVarLen (the oracle's machine over
+  // the last `length` non-na sources, read at x = length - 1 - offset). A fixed length sizes the
+  // ring, so lengthArgIndex:1; a series length takes linregVarLen. offset은 최종 산술에만
   // 쓰이고 버퍼 크기를 결정하지 않아 series여도 안전 — lengthArgIndex 대상이 아님(valuewhen의
   // occurrence와 다른 지점, occurrence는 버퍼 크기를 결정해서 lengthArgIndex였음).
   // C252: pine2py linreg.py 시그니처가 이미 `offset: int = 0`이라 2-인자 호출(offset 생략)이

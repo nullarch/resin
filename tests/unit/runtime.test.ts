@@ -845,26 +845,31 @@ describe("ta.linreg", () => {
     expect(results[9]).toBeCloseTo(107.7, 9);
   });
 
-  it("projects forward when offset>0 (pine2py-verified sample10.json trace, length=4, offset=2)", () => {
+  it("evaluates the line offset bars back from the newest bar (sample10.json trace, length=4, offset=2)", () => {
+    // ref_v6_ta_math.txt "ta.linreg": "linreg = intercept + slope * (length - 1 - offset)". pine2py
+    // projected forward (n - 1 + offset: 103.4 on bar 3); TradingView evaluates the line offset bars
+    // back (tier 1 resin-harness suites/indicators/tv/ta_181_linreg, linreg(close, 20, 10)). Values:
+    // the PyneCore oracle on resin-harness state/repros/linreg-offset-na.json, channel lr2.
     const state = {};
     const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
     const results = closes.map((c) => linreg(state, c, 4, 2));
-    expect(results[3]).toBeCloseTo(103.4, 9);
-    expect(results[4]).toBeCloseTo(104.5, 9);
-    expect(results[5]).toBeCloseTo(106.3, 9);
-    expect(results[6]).toBeCloseTo(108.8, 9);
-    expect(results[7]).toBeCloseTo(106.4, 9);
-    expect(results[8]).toBeCloseTo(107.5, 9);
-    expect(results[9]).toBeCloseTo(109.3, 9);
+    for (let i = 0; i < 3; i++) expect(results[i]).toBeNaN();
+    expect(results[3]).toBeCloseTo(101.8, 9);
+    expect(results[4]).toBeCloseTo(102.5, 9);
+    expect(results[5]).toBeCloseTo(103.1, 9);
+    expect(results[6]).toBeCloseTo(103.6, 9);
+    expect(results[7]).toBeCloseTo(104.8, 9);
+    expect(results[8]).toBeCloseTo(105.5, 9);
+    expect(results[9]).toBeCloseTo(106.1, 9);
   });
 
-  it("collapses to the raw input value regardless of offset when length=1 (denom~0 branch: a single point has no slope)", () => {
-    // n=1 -> sum_x=sum_x2=0 -> denom=0 exactly, taking the `abs(denom)<1e-15` early return (sum_y/n),
-    // which never reads offset — pine2py linreg.py L58-60 does the same before computing slope.
+  it("returns the source unchanged regardless of offset when length=1", () => {
+    // PyneCore lib/ta.py linreg: `if length == 1: return source` (twin channel lr_len1).
     const stateZero = {};
     const stateOffset = {};
-    expect(linreg(stateZero, 42, 1, 0)).toBeCloseTo(42, 9);
-    expect(linreg(stateOffset, 42, 1, 100)).toBeCloseTo(42, 9);
+    expect(linreg(stateZero, 42, 1, 0)).toBe(42);
+    expect(linreg(stateOffset, 42, 1, 100)).toBe(42);
+    expect(linreg(stateOffset, NaN, 1, 100)).toBeNaN();
   });
 
   it("keeps independent state across two call sites", () => {
@@ -892,30 +897,37 @@ describe("ta.linreg", () => {
     expect(resultDefault).toBeCloseTo(107.7, 9);
   });
 
-  it("cross-checked against a from-scratch direct recomputation of pine2py's linreg.py algorithm (embedded NaN gap)", () => {
-    // Independent of the wma() this file's linreg() delegates to internally — reimplements pine2py's
-    // window-scan sum_y/sum_xy/slope/intercept formula directly against an oldest-to-newest window.
+  it("cross-checked against a from-scratch least-squares fit over the last length non-na sources (embedded NaN gap)", () => {
+    // PyneCore lib/ta.py linreg (TradingView-measured): an na source stores nothing and holds the
+    // last full-window value, so the window is the last `length` NON-na sources; the line is read
+    // at x = length - 1 - offset with x = 0 on the oldest source (ref_v6_ta_math.txt "ta.linreg").
+    // The reference below fits the textbook normal equations on that window, independently of the
+    // runtime's arithmetic order (twin channel lr_na covers the same rule against the oracle).
     function directLinreg(values: number[], length: number, offset: number): number {
-      if (values.length < length) return NaN;
-      const window = values.slice(values.length - length);
-      if (window.some((v) => Number.isNaN(v))) return NaN;
+      const kept = values.filter((v) => !Number.isNaN(v));
+      if (kept.length < length) return NaN;
+      const window = kept.slice(kept.length - length);
       const n = length;
-      const sumX = (n * (n - 1)) / 2;
-      const sumX2 = (n * (n - 1) * (2 * n - 1)) / 6;
-      const sumY = window.reduce((a, b) => a + b, 0);
-      const sumXY = window.reduce((acc, v, i) => acc + i * v, 0);
-      const denom = n * sumX2 - sumX * sumX;
-      if (Math.abs(denom) < 1e-15) return sumY / n;
-      const slope = (n * sumXY - sumX * sumY) / denom;
-      const intercept = (sumY - slope * sumX) / n;
-      return intercept + slope * (n - 1 + offset);
+      const meanX = (n - 1) / 2;
+      const meanY = window.reduce((a, b) => a + b, 0) / n;
+      let sxy = 0;
+      let sxx = 0;
+      window.forEach((v, i) => {
+        sxy += (i - meanX) * (v - meanY);
+        sxx += (i - meanX) * (i - meanX);
+      });
+      const slope = sxy / sxx;
+      return meanY + slope * (n - 1 - offset - meanX);
     }
 
-    const values = [10, 11, 12, 13, NaN, 14, 15, 16, 17, 18, 19, 20];
+    const values = [10, 11, 12, 13, NaN, 14, 15, 17, 16, 18, NaN, NaN, 19, 21];
     const state = {};
     for (let i = 0; i < values.length; i++) {
       const got = linreg(state, values[i]!, 4, 1);
-      const want = directLinreg(values.slice(0, i + 1), 4, 1);
+      // An na bar reports the value of the last bar that had a source.
+      let last = i;
+      while (last >= 0 && Number.isNaN(values[last]!)) last--;
+      const want = last < 0 ? NaN : directLinreg(values.slice(0, last + 1), 4, 1);
       if (Number.isNaN(want)) {
         expect(got).toBeNaN();
       } else {
@@ -3757,41 +3769,69 @@ describe("ta.median/ta.linreg/ta.wma variable(series) length (medianVarLen/linre
     expect(medianVarLen(state, 50, 2, 10, 1)).toBe(40); // 창=[30(bar0 최종),50]
   });
 
-  it("linregVarLen: matches the least-squares fit + offset projection as length varies (pine2py 무상태 재스캔 literal port)", () => {
-    const state = {};
-    // pine2py 직접 실행 골든(2026-08-01 프로브): vals/lens 조합의 linreg(offset 0/2)
+  // linregVarLen expectations: the PyneCore oracle (lib/ta.py linreg, TradingView-measured) on
+  // resin-harness state/repros/linreg-varlen.json, whose closes are the value sequences below. The
+  // pine2py values these blocks held before read the line forward (n - 1 + offset, against
+  // ref_v6_ta_math.txt "linreg = intercept + slope * (length - 1 - offset)") and re-read the last
+  // `length` bars on every call, na included.
+  it("linregVarLen: the warm-up counter steps one stored source at a time while below the current length; length 1 stores nothing", () => {
     const vals = [10.0, 12.0, 11.0, 15.0, 13.0, 14.0, 16.0, 12.5];
     const lens = [1, 2, 3, 4, 5, 1, 2, 3];
-    const expected0 = [10.0, 12.0, 11.5, 14.1, 14.0, 14.0, 16.0, 13.4166666667];
-    const expected2 = [10.0, 16.0, 12.5, 16.9, 15.8, 14.0, 20.0, 11.9166666667];
-    for (let i = 0; i < vals.length; i++) {
-      const r0 = linregVarLen(state, vals[i]!, lens[i]!, 0, 10, i);
-      expect(r0).toBeCloseTo(expected0[i]!, 9);
-    }
+    const expected0 = [10, NaN, NaN, NaN, NaN, 14, 16, 13.5833333333]; // channel v0
+    const expected2 = [10, NaN, NaN, NaN, NaN, 14, 10, 14.0833333333]; // channel v2
+    const state = {};
     const stateB = {};
     for (let i = 0; i < vals.length; i++) {
+      const r0 = linregVarLen(state, vals[i]!, lens[i]!, 0, 10, i);
       const r2 = linregVarLen(stateB, vals[i]!, lens[i]!, 2, 10, i);
-      expect(r2).toBeCloseTo(expected2[i]!, 9);
+      if (Number.isNaN(expected0[i]!)) expect(r0).toBeNaN();
+      else expect(r0).toBeCloseTo(expected0[i]!, 9);
+      if (Number.isNaN(expected2[i]!)) expect(r2).toBeNaN();
+      else expect(r2).toBeCloseTo(expected2[i]!, 9);
     }
   });
 
-  it("linregVarLen: length=0 → NaN (pine2py ZeroDivisionError crash → hand-verified na), length<0 → +0 (pine2py crash-free +0.0 literal port)", () => {
+  it("linregVarLen: a length that grows past the counter is na until the counter catches up", () => {
+    const vals = [10.0, 12.0, 11.0, 15.0, 13.0, 14.0, 16.0, 12.5];
+    const expected = [NaN, 12, 11, 15, NaN, 14.3, 15.1, 13.95]; // channel vgrow
     const state = {};
-    expect(linregVarLen(state, 10, 0, 0, 10, 0)).toBeNaN();
-    const neg = linregVarLen(state, 20, -1, 0, 10, 1);
-    expect(neg).toBe(0);
-    expect(Object.is(neg, -0)).toBe(false); // MEMORY C45 — +0 고정
-    expect(Object.is(linregVarLen(state, 30, -3, 0, 10, 2), 0)).toBe(true);
-    expect(linregVarLen(state, 40, NaN, 0, 10, 3)).toBeNaN();
-    expect(linregVarLen(state, 50, 2, 0, 10, 4)).toBeCloseTo(50, 9); // [40,50] 회귀 → 현재 바 50
+    for (let i = 0; i < vals.length; i++) {
+      const r = linregVarLen(state, vals[i]!, i < 4 ? 2 : 4, 0, 10, i);
+      if (Number.isNaN(expected[i]!)) expect(r).toBeNaN();
+      else expect(r).toBeCloseTo(expected[i]!, 9);
+    }
   });
 
-  it("linregVarLen: warmup NaN and NaN-poison window parity with the fixed-length linreg", () => {
+  it("linregVarLen: length < 1 and length NaN are na and store nothing (the oracle rejects them)", () => {
     const state = {};
-    expect(linregVarLen(state, 10, 2, 0, 10, 0)).toBeNaN(); // 워밍업
-    expect(linregVarLen(state, NaN, 1, 0, 10, 1)).toBeNaN();
-    expect(linregVarLen(state, 20, 2, 0, 10, 2)).toBeNaN(); // 창=[NaN,20]
-    expect(linregVarLen(state, 30, 2, 0, 10, 3)).toBeCloseTo(30, 9); // 창=[20,30]
+    expect(linregVarLen(state, 10, 0, 0, 10, 0)).toBeNaN();
+    expect(linregVarLen(state, 20, -1, 0, 10, 1)).toBeNaN();
+    expect(linregVarLen(state, 40, NaN, 0, 10, 2)).toBeNaN();
+    expect(linregVarLen(state, 50, 2, 0, 10, 3)).toBeNaN(); // the first stored source
+    expect(linregVarLen(state, 70, 2, 0, 10, 4)).toBeCloseTo(70, 9); // [50, 70]
+  });
+
+  it("linregVarLen: an na source stores nothing and holds the last full value (fixed-length linreg parity)", () => {
+    const vals = [10.0, 12.0, 11.0, 15.0, 13.0, 14.0, 16.0, 12.5];
+    const expected = [NaN, NaN, NaN, 12.3333333333, 13.3333333333, 14, 14.3333333333, 14.1666666667]; // channel vna3
+    const state = {};
+    for (let i = 0; i < vals.length; i++) {
+      const r = linregVarLen(state, i === 2 ? NaN : vals[i]!, 3, 1, 10, i);
+      if (Number.isNaN(expected[i]!)) expect(r).toBeNaN();
+      else expect(r).toBeCloseTo(expected[i]!, 9);
+    }
+  });
+
+  it("linregVarLen: same-bar repeated calls start again from the bar-start state (loop-body parity)", () => {
+    const state = {};
+    linregVarLen(state, 10, 2, 0, 10, 0);
+    linregVarLen(state, 90, 2, 0, 10, 1);
+    linregVarLen(state, 70, 2, 0, 10, 1);
+    expect(linregVarLen(state, 20, 2, 0, 10, 1)).toBeCloseTo(20, 9); // [10, 20]
+    expect(linregVarLen(state, 40, 2, 0, 10, 2)).toBeCloseTo(40, 9); // [20, 40]
+    expect(linregVarLen(state, NaN, 2, 0, 10, 3)).toBeCloseTo(40, 9); // held
+    // bar 3 again, from its start (the na call undone): 10 is stored and the counter reaches 3.
+    expect(linregVarLen(state, 10, 3, 0, 10, 3)).toBeCloseTo(55 / 3, 9); // [20, 40, 10]
   });
 
   it("wmaVarLen: computes the linearly-weighted mean over the *current* length as it varies (TV semantics, hand-verified — pine2py 고정 윈도우 버그라 오라클 불가)", () => {
@@ -3841,8 +3881,9 @@ describe("ta.median/ta.linreg/ta.wma variable(series) length (medianVarLen/linre
     medianVarLen(m, 10, 1, 10, 0);
     expect(medianVarLen(m, 20, 2.9, 10, 1)).toBe(15);
     const l = {};
-    linregVarLen(l, 10, 1, 0, 10, 0);
-    expect(linregVarLen(l, 20, 2.7, 0, 10, 1)).toBeCloseTo(20, 9);
+    linregVarLen(l, 10, 2, 0, 10, 0);
+    linregVarLen(l, 20, 2, 0, 10, 1);
+    expect(linregVarLen(l, 40, 2.7, 0, 10, 2)).toBeCloseTo(40, 9); // [20, 40]; a length of 3 reads 38.33
     const w = {};
     wmaVarLen(w, 10, 1, 10, 0);
     expect(wmaVarLen(w, 20, 2.5, 10, 1)).toBeCloseTo((10 + 40) / 3, 12);
