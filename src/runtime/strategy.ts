@@ -52,6 +52,7 @@ interface OpenTrade {
   maxRunupPercent: number;
   maxDrawdownPercent: number;
   commission: number; // the entry fee still carried by the open part of the trade
+  entryMoment: number; // the fillMoment its entry filled at (see closeAt)
 }
 
 // One filled entry as the order commands see it: it holds a pyramiding slot and sizes the exits
@@ -491,6 +492,10 @@ export class StrategyState {
   // the other extreme, close; see walkLeg) and whether it runs to the high first.
   private barPath: number[];
   private pathUpFirst: boolean;
+  // The point of the run the fills being made happen at: a new value for every point of a path
+  // fillOnPath walks (the open, then each segment) and for the process_orders_on_close pass. Two
+  // fills with the same value happened at the same moment (see closeAt).
+  private fillMoment: number;
   // What the strategy.exit() call being run states, reused across calls (see exit()).
   private legTemplate: ExitLeg;
   // pending order(넷팅 주문) 슬롯(C169 일곱째 슬라이스) — entry 주문과 별개: entry의 체결 판정
@@ -658,6 +663,7 @@ export class StrategyState {
     this.legQueue = [];
     this.barPath = [NaN, NaN, NaN, NaN];
     this.pathUpFirst = false;
+    this.fillMoment = 0;
     this.legTemplate = {
       id: "", entryId: "", binding: null, reserved: 0, boundSize: NaN, qty: NaN, qtyPercent: NaN,
       limit: NaN, stop: NaN, profitPoints: NaN, lossPoints: NaN, trailPoints: NaN, trailOffset: NaN,
@@ -933,6 +939,7 @@ export class StrategyState {
     this.openTrades.push({
       entryId, entryComment, entryPrice: fillPrice, entryBarIndex: barIndex, entryTime: barTimeMs,
       size: signedQty, maxRunup: 0, maxDrawdown: 0, maxRunupPercent: 0, maxDrawdownPercent: 0, commission,
+      entryMoment: this.fillMoment,
     });
     const binding = { entryId, bound: Math.abs(signedQty), entryPrice: fillPrice, size: Math.abs(signedQty) };
     this.entryBook.push(binding);
@@ -1577,10 +1584,24 @@ export class StrategyState {
   // is bound to — an exit leg's entry, a strategy.close() id, or null when unbound — used to settle
   // the entry book (settleEntryBook). Callers: the close/exit fills and the reversal/netting legs in
   // processFills, and the immediately= paths of close/close_all.
+  //
+  // `reversal` marks the closing leg of an order that also opens a position in its own direction.
+  // When such a long order closes a short trade opened at the same moment (fillMoment) and price,
+  // the two orders waited in the book together and annihilate at one instant, and that closed trade
+  // is booked long side first: the long order is its entry, the short one its exit, and its size is
+  // positive. The oracle (tier 2, `_fill_order`) measured this on TradingView: "the lots they
+  // annihilate are booked LONG side first, whichever order came first", for strategy.entry and
+  // strategy.order alike; "a reversal whose legs land on different bars or different points of the
+  // bar walk keeps its order even when both legs price identically". Its other exception, an order
+  // placed by a calc_on_order_fills re-execution after the trade opened, cannot happen in resin:
+  // every order is placed by the script body, before the fills of the moment it fills at. The price,
+  // bar and P&L of the record are the same either way. Repro: resin-harness
+  // state/repros/mixed-seed-17.json (short "S" then long "Q" placed on one bar, both filled at the
+  // next open: TradingView books Q → S, size 3).
   private closeAt(
     fillPrice: number, qty: number = Infinity, exitComment: string = "",
     barIndex: number = NaN, exitId: string | null = "", barTimeMs: number = NaN,
-    binding: string | EntryBinding | null = null,
+    binding: string | EntryBinding | null = null, reversal: boolean = false,
   ): void {
     const size = Math.abs(this.posSize);
     const sign = this.posSize > 0 ? 1 : -1;
@@ -1622,19 +1643,20 @@ export class StrategyState {
       }
       const entryCost = take * t.entryPrice * this.pointvalue + entryFee;
       const profitRatio = entryCost === 0 ? 0 : profit / entryCost;
+      const longFirst = reversal && sign < 0 && t.entryMoment === this.fillMoment && t.entryPrice === fillPrice;
       records.push({
-        entryComment: t.entryComment,
-        exitComment,
+        entryComment: longFirst ? exitComment : t.entryComment,
+        exitComment: longFirst ? t.entryComment : exitComment,
         entryPrice: t.entryPrice,
         exitPrice: fillPrice,
         entryBarIndex: t.entryBarIndex,
         exitBarIndex: barIndex,
         entryTime: t.entryTime,
         exitTime: barTimeMs,
-        entryId: t.entryId,
-        exitId,
+        entryId: longFirst ? exitId ?? "" : t.entryId,
+        exitId: longFirst ? t.entryId : exitId,
         profit,
-        size: sign * take,
+        size: longFirst ? take : sign * take,
         maxRunup: t.maxRunup * share,
         maxDrawdown: t.maxDrawdown * share,
         // A split scales the excursion and the entry cost alike, so the percents carry over as is.
@@ -2407,6 +2429,7 @@ export class StrategyState {
     this.barPath[2] = this.pathUpFirst ? low : high;
     this.barPath[3] = closePrice;
     this.legQueue.length = 0;
+    this.fillMoment++; // the open
     if (this.closePending) this.fillPendingClose(openPrice, barIndex, barTimeMs);
     // exit 브래킷(C167)은 close(마켓 청산) 다음, entry 앞에서 판정한다 — 마켓 close는 open 체결이라
     // 항상 이 바의 첫 가격이고, exit도 청산 계열이라 기존 "청산 먼저 → entry" 순서 원칙에 합류한다
@@ -2454,6 +2477,7 @@ export class StrategyState {
     // trailing lines still fill (see marginCall).
     let deferred = false;
     for (let s = 1; s <= 2; s++) {
+      this.fillMoment++; // segment s
       this.runExitLegs(s, barIndex, barTimeMs, deferred);
       if (deferred) continue;
       for (; i < due.length && due[i]!.pathLeg === s; i++) {
@@ -2491,6 +2515,7 @@ export class StrategyState {
   // Repro: resin-harness state/repros/mixed-seed-4.json.
   processFillsAtClose(closePrice: number, barIndex: number = NaN, barTimeMs: number = NaN): void {
     if (!this.processOrdersOnClose) return;
+    this.fillMoment++;
     if (this.closePending) this.fillPendingClose(closePrice, barIndex, barTimeMs);
     if (this.pendingEntries.length > 0) this.fillPendingEntriesAtClose(closePrice, barIndex, barTimeMs);
     if (this.orderPending && this.orderPlacedThisBar) {
@@ -2638,7 +2663,7 @@ export class StrategyState {
       // exit_comment(C173)는 pine2py `self._close_position(id, comment)`처럼 **청산을 유발한
       // 새 entry 주문 자신의 comment**를 쓴다(_close_position이 exit_id/comment 인자를
       // exit()의 그것이 아니라 리버스를 일으킨 entry()의 id/comment로 호출하는 것의 미러).
-      this.closeAt(fillPrice, closesAll ? Infinity : closeQty, e.comment, barIndex, e.id, barTimeMs);
+      this.closeAt(fillPrice, closesAll ? Infinity : closeQty, e.comment, barIndex, e.id, barTimeMs, null, qty > 0);
     }
     // strategy.risk.max_position_size(value)(C324) — 위 3형제(directionForbidden 등)와 달리
     // "전면 차단"이 아니라 "부족분만 체결"이다(TV 문서: "quantity of new strategy.entry orders
@@ -2691,7 +2716,7 @@ export class StrategyState {
       const reduceQty = qty < size ? qty : size;
       // exit_comment(C173)는 entry 리버스 분기와 같은 가설(주문 자신의 comment) — order()엔
       // pine2py 대응 구현이 없어(DIVERGENCES #72) 대칭성만 근거로 삼는다.
-      this.closeAt(orderFill, reduceQty, this.orderOrderComment, barIndex, this.orderOrderId, barTimeMs);
+      this.closeAt(orderFill, reduceQty, this.orderOrderComment, barIndex, this.orderOrderId, barTimeMs, null, qty > size);
       qty -= reduceQty;
     }
     if (qty > 0) {

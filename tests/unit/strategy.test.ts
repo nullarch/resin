@@ -9762,3 +9762,65 @@ describe("StrategyState fills in path order", () => {
     expect(st.posSize).toBe(2);
   });
 });
+
+// Two opposite orders that waited in the book together and fill at one moment: the lots they
+// annihilate are booked long side first, whichever was placed first. The oracle (tier 2,
+// `_fill_order`) measured it on TradingView. Oracle-checked: resin-harness
+// state/repros/mixed-seed-17.json (and ad-hoc twins for strategy.order, the exact netting, the
+// process_orders_on_close pass and a reversal on a later bar).
+describe("StrategyState opposite orders filled at one moment are booked long side first", () => {
+  const trades = (st: StrategyState) =>
+    st.closedTradeRecords.map((r) => [r.entryId, r.exitId, r.size, r.entryComment, r.exitComment]);
+
+  it("a short placed before a long reversing it at the same open books the long as the entry (mixed-seed-17.json)", () => {
+    const st = new StrategyState();
+    st.entry("S", "short", 3, undefined, undefined, "cs");
+    st.entry("Q", "long", 4, undefined, undefined, "cq");
+    st.processFills(107.24, 109.13, 105.2, 8);
+    expect(trades(st)).toEqual([["Q", "S", 3, "cq", "cs"]]);
+    expect(st.posSize).toBe(4);
+    expect(st.closedTradeEntryId(0)).toBe("Q");
+    expect(st.closedTradeSize(0)).toBe(3);
+  });
+
+  it("a long placed first stays the entry", () => {
+    const st = new StrategyState();
+    st.entry("L", "long", 3);
+    st.entry("S", "short", 4);
+    st.processFills(107.24, 109.13, 105.2, 8);
+    expect(trades(st)).toEqual([["L", "S", 3, "", ""]]);
+    expect(st.posSize).toBe(-4);
+  });
+
+  it("a strategy.order() reversal is booked the same way; one that only nets the short out is not", () => {
+    const rev = new StrategyState();
+    rev.entry("S", "short", 1);
+    rev.order("O", "long", 2);
+    rev.processFills(107.24, 109.13, 105.2, 8);
+    expect(trades(rev)).toEqual([["O", "S", 1, "", ""]]);
+    const net = new StrategyState();
+    net.entry("S", "short", 2);
+    net.order("O", "long", 2);
+    net.processFills(107.24, 109.13, 105.2, 8);
+    expect(trades(net)).toEqual([["S", "O", -2, "", ""]]);
+  });
+
+  it("the process_orders_on_close pass is one moment too", () => {
+    const st = new StrategyState();
+    st.configure(1, 1, 100000, false, false, true);
+    st.processFills(104.63, 105.75, 103.44, 6);
+    st.entry("S", "short", 2);
+    st.entry("Q", "long", 1);
+    st.processFillsAtClose(105.44, 6);
+    expect(trades(st)).toEqual([["Q", "S", 2, "", ""]]);
+  });
+
+  it("a reversal at another moment keeps the chronological order, even at the same price", () => {
+    const st = new StrategyState();
+    st.entry("S", "short", 1);
+    st.processFills(100, 101, 99, 1);
+    st.entry("Q", "long", 1);
+    st.processFills(100, 101, 99, 2);
+    expect(trades(st)).toEqual([["S", "Q", -1, "", ""]]);
+  });
+});
