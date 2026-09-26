@@ -3681,9 +3681,8 @@ function genBinOp(
       return program.idivBinOps.has(expr) ? `rt.idiv(${l}, ${r})` : `rt.pineDiv(${l}, ${r})`;
     case "%":
       return `rt.pineMod(${l}, ${r})`;
-    // na가 하나라도 있으면 결과도 na — JS 네이티브 </>/<=/>=는 NaN에서 항상 false를 반환해 na가
-    // 조용히 사라지므로(DIVERGENCES.md #4, C25 pineNot과 같은 클래스) rt.pineLt/pineGt/pineLe/pineGe로
-    // 우회(ROADMAP P2 "C25 발견" 항목).
+    // rt.pineLt & co.: TradingView's tolerant comparison, false when an operand is na
+    // (language_type-system.txt "all other comparison operators always return false"; numeric.ts).
     case "<":
       return `rt.pineLt(${l}, ${r})`;
     case ">":
@@ -3692,7 +3691,7 @@ function genBinOp(
       return `rt.pineLe(${l}, ${r})`;
     case ">=":
       return `rt.pineGe(${l}, ${r})`;
-    // na가 하나라도 있으면 무조건 na인 pineLt류와 달리 and/or는 진짜 Kleene 3치 논리(false가
+    // and/or는 진짜 Kleene 3치 논리(false가
     // AND를, true가 OR를 다른 피연산자의 na 여부와 무관하게 결정) — JS 네이티브 &&/||는 NaN을
     // falsy로만 취급해 `na && false`(NaN 반환, true 이면 false여야 함) 등 여러 조합에서 어긋나므로
     // rt.pineAnd/pineOr로 우회(numeric.ts 주석 참조, ROADMAP P2 "C67 발견" 항목).

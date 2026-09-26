@@ -62,11 +62,13 @@ export function pineNot(x: boolean | number): boolean | number {
   return x !== x ? NaN : !x;
 }
 
-// 비교 연산자(</>/<=/>=) — DIVERGENCES.md #4(pineNot/C25와 같은 클래스): JS `NaN < x`/`NaN > x`
-// 등은 항상 false를 반환해 na가 조용히 사라지지만(false로 위장), TV는 "피연산자 중 하나라도 na면
-// 결과도 na"다. pine2py도 Python `nan > x`가 False라 이 갭을 오라클로 검증할 수 없음(C25 not과
-// 동일 사정) — 두 피연산자 모두 유한할 때만 네이티브 비교를 적용하고, 하나라도 na면 na(NaN)를
-// 그대로 전파한다(ROADMAP P2 "C25 발견" 항목).
+// Comparison operators (</>/<=/>=, and ==/!= below). A na operand makes the comparison false, not
+// na: "The == , != operators, and all other comparison operators always return false if at least
+// one of the operands is a variable with an na value" (language_type-system.txt, "na value"); in v6
+// a bool "is never na" (rn.txt), so `not (f > 1)` with f na is true. The oracle does the same
+// (pynecore types/na.py: "Comparisons — all False (Pine semantics)"); lang probes L17
+// (not_gt_na_v6, eqfalse_v6, not_hist_first, flag_v6) and L19 (ne_na). pine2py propagated na here
+// (DIVERGENCES.md #4), which turned `not (close[1] > 0)` on bar 0 and `x != x[1]` on bar 0 wrong.
 //
 // The comparison itself is tolerant, as TradingView's is: "comparison operators automatically
 // round “float” operands to nine fractional digits" (language_type-system.txt, "float"). The
@@ -80,20 +82,22 @@ export function pineNot(x: boolean | number): boolean | number {
 // keeps two equal infinities equal (their difference is NaN).
 const CMP_EPS = 1e-10;
 
-export function pineLt(a: number, b: number): boolean | number {
-  return a !== a || b !== b ? NaN : -CMP_EPS > a - b;
+export function pineLt(a: number, b: number): boolean {
+  return -CMP_EPS > a - b;
 }
 
-export function pineGt(a: number, b: number): boolean | number {
-  return a !== a || b !== b ? NaN : CMP_EPS < a - b;
+export function pineGt(a: number, b: number): boolean {
+  return CMP_EPS < a - b;
 }
 
-export function pineLe(a: number, b: number): boolean | number {
-  return a !== a || b !== b ? NaN : a <= b || CMP_EPS >= a - b;
+// The strict forms above are false on a na operand by themselves (the NaN difference fails the
+// band); here the raw test cannot pass on NaN either.
+export function pineLe(a: number, b: number): boolean {
+  return a <= b || CMP_EPS >= a - b;
 }
 
-export function pineGe(a: number, b: number): boolean | number {
-  return a !== a || b !== b ? NaN : a >= b || -CMP_EPS <= a - b;
+export function pineGe(a: number, b: number): boolean {
+  return a >= b || -CMP_EPS <= a - b;
 }
 
 // 논리 AND/OR — pine2py 문서(docs/pinescript/03-operators.md L60-62, docs/pinescript/09-edge-cases.md
@@ -152,9 +156,11 @@ export function pineOrLazy(a: boolean | number, b: () => boolean | number): bool
 // 판정이 정상 스크립트의 숫자 비교를 바꿀 여지는 없다. 그 밖의 모든 타입(number/string/null/
 // 참조형)은 기존 `===` 시맨틱 그대로 — NaN===NaN이 false인 것(na끼리 비교는 genEquality의
 // NaLiteral 분기가 rt.na로 따로 처리)도 그대로 유지된다.
-// Two numbers compare with the tolerance of pineLt & co. (see there); a na operand's NaN
-// difference fails the band, so na == x stays false.
+// Two numbers compare with the tolerance of pineLt & co. (see there). A na operand (NaN, or null for
+// a reference type) makes both == and != false, as every comparison with na is (see pineLt): two
+// na strings are not equal, and `x != x[1]` is false on bar 0. (`x == na` is rt.na, genEquality.)
 export function pineEq(a: unknown, b: unknown): boolean {
+  if (a === null || b === null) return false;
   if (typeof a === "boolean") {
     if (typeof b === "number") return b === (a ? 1 : 0);
   } else if (typeof b === "boolean" && typeof a === "number") {
@@ -167,6 +173,7 @@ export function pineEq(a: unknown, b: unknown): boolean {
 }
 
 export function pineNeq(a: unknown, b: unknown): boolean {
+  if (a !== a || b !== b || a === null || b === null) return false;
   return !pineEq(a, b);
 }
 

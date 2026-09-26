@@ -36,7 +36,8 @@ describe("tolerant comparison operators", () => {
     expect(pineGe(100, 100 + 1e-8)).toBe(false);
   });
 
-  it("ints stay exact, equal infinities stay equal, na stays na", () => {
+  // A na operand makes every comparison false (language_type-system.txt; harness lang probes L17/L19).
+  it("ints stay exact, equal infinities stay equal, a comparison with na is false", () => {
     expect(pineGt(2, 1)).toBe(true);
     expect(pineEq(2, 1)).toBe(false);
     expect(pineEq(Infinity, Infinity)).toBe(true);
@@ -44,8 +45,9 @@ describe("tolerant comparison operators", () => {
     expect(pineLe(-Infinity, -Infinity)).toBe(true);
     expect(pineGt(Infinity, Infinity)).toBe(false);
     expect(pineLt(-Infinity, Infinity)).toBe(true);
-    expect(pineGt(NaN, 1)).toBeNaN();
-    expect(pineLe(1, NaN)).toBeNaN();
+    expect(pineGt(NaN, 1)).toBe(false);
+    expect(pineLe(1, NaN)).toBe(false);
+    expect(pineNeq(NaN, 1)).toBe(false);
     expect(pineEq(NaN, NaN)).toBe(false);
     expect(pineEq(NaN, 1)).toBe(false);
   });

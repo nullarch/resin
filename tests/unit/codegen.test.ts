@@ -8975,10 +8975,13 @@ describe("CodeGen", () => {
     expect(bars.map((b) => b["var:__obs_x"])).toEqual([5, 10, 3]);
   });
 
-  // ── 비교 연산자(</>/<=/>=)의 na 시맨틱(rt.pineLt/pineGt/pineLe/pineGe) — ROADMAP P2 "C25 발견",
-  // DIVERGENCES.md #4(pineNot/C25와 같은 클래스) ──────────────────────────
+  // ── 비교 연산자(</>/<=/>=)의 na 시맨틱(rt.pineLt/pineGt/pineLe/pineGe): a comparison with a na
+  // operand is false, not na — "all other comparison operators always return false if at least one
+  // of the operands is a variable with an na value" (language_type-system.txt); harness lang probes
+  // L17 (not_gt_na_v6: `not (f > 1)` with f na is true) and L19 (ne_na). These asserted pine2py's
+  // na propagation (DIVERGENCES.md #4) until then. ──────────────────────────
 
-  it("hand-verified: 'close < na' evaluates to na (NaN) when observed as a value, not false (JS 'x < NaN' would silently yield false — the exact bug this fixes)", () => {
+  it("'close < na' evaluates to false when observed as a value (a comparison with na is false)", () => {
     const source = ["x = close < na", "var float __obs_x = na", "__obs_x := x"].join("\n");
     const result = transpile(source);
     expect(result.ok).toBe(true);
@@ -8986,10 +8989,10 @@ describe("CodeGen", () => {
 
     const data: OHLCVData = { open: [5, 10, 3], high: [10, 10, 8], low: [5, 5, 3], close: [10, 5, 8], volume: [1, 1, 1] };
     const { bars } = run(result.code, result.varSlots, result.taSlotCount, data, result.fnVarSlotCount, result.historySlotCount);
-    for (const b of bars) expect(b["var:__obs_x"]).toBeNaN();
+    for (const b of bars) expect(b["var:__obs_x"]).toBe(false);
   });
 
-  it("hand-verified: 'not (close < na)' evaluates to na, not true — na propagates through a comparison and then through pineNot (chained fix: without this, the comparison would collapse na to false, and pineNot(false) would wrongly report true)", () => {
+  it("'not (close < na)' evaluates to true: the comparison is false, and not false is true (lang probe L17 not_gt_na_v6)", () => {
     const source = ["x = not (close < na)", "var float __obs_x = na", "__obs_x := x"].join("\n");
     const result = transpile(source);
     expect(result.ok).toBe(true);
@@ -8997,7 +9000,7 @@ describe("CodeGen", () => {
 
     const data: OHLCVData = { open: [5, 10, 3], high: [10, 10, 8], low: [5, 5, 3], close: [10, 5, 8], volume: [1, 1, 1] };
     const { bars } = run(result.code, result.varSlots, result.taSlotCount, data, result.fnVarSlotCount, result.historySlotCount);
-    for (const b of bars) expect(b["var:__obs_x"]).toBeNaN();
+    for (const b of bars) expect(b["var:__obs_x"]).toBe(true);
   });
 
   it("hand-verified: 'close >= na' used as an if-condition takes the else branch on every bar (na is falsy, matching TV — branching was already correct before this fix, only the observed value changes)", () => {
@@ -9032,7 +9035,7 @@ describe("CodeGen", () => {
     for (const b of bars.slice(0, 3)) expect(b["var:__obs_x"]).toBe(false);
   });
 
-  it("hand-verified: 'na or false' evaluates to na, not false (C69) — TV Kleene logic: only a 'true' operand can override na for OR, so 'na or false' stays na. Without rt.pineOr, native JS '||' short-circuits past the na (NaN, falsy) left operand and wrongly reports false", () => {
+  it("'close[3] > 0 or false' is false on the warm-up bars: the comparison with na is false, so no na reaches 'or' (Kleene 'na or false' itself stays in pineOr's runtime tests)", () => {
     const source = ["a = close[3] > 0", "b = close > 1000000", "x = a or b", "var float __obs_x = na", "__obs_x := x"].join("\n");
     const result = transpile(source);
     expect(result.ok).toBe(true);
@@ -9040,7 +9043,7 @@ describe("CodeGen", () => {
 
     const data: OHLCVData = { open: [5, 10, 3, 8], high: [10, 10, 8, 12], low: [5, 5, 3, 6], close: [10, 5, 8, 9], volume: [1, 1, 1, 1] };
     const { bars } = run(result.code, result.varSlots, result.taSlotCount, data, result.fnVarSlotCount, result.historySlotCount);
-    for (const b of bars.slice(0, 3)) expect(b["var:__obs_x"]).toBeNaN();
+    for (const b of bars.slice(0, 3)) expect(b["var:__obs_x"]).toBe(false);
   });
 });
 
@@ -27926,9 +27929,9 @@ describe("ta.<fn>(...)[N] historical indexing analyzer/codegen (C340)", () => {
 
     const values = bars.map((b) => b["var:__obs"] as boolean | number);
     // ta.highest(high,2) per-bar series is [NaN,5,5,8,8,10] (2-bar warmup gate); [1] shifts one bar
-    // later -> [NaN,NaN,5,5,8,8]. rt.pineGe(NaN,5.0) is na-safe NaN, and rt.pineOr(false, NaN) stays
-    // NaN (Kleene: 'false or na' can't be decided by false alone) for the first two bars.
-    expect(values).toEqual([NaN, NaN, true, true, true, true]);
+    // later -> [NaN,NaN,5,5,8,8]. rt.pineGe(NaN,5.0) is false (a comparison with na is false,
+    // language_type-system.txt; harness lang probes L17/L19), so 'false or ...' is false there.
+    expect(values).toEqual([false, false, true, true, true, true]);
   });
 
   it("accepts the call nested inside a for-loop body via the compressed call-count slot (C671)", () => {
@@ -28224,7 +28227,8 @@ describe("ta.<fn>(...)[N] historical indexing analyzer/codegen (C340)", () => {
     const { bars } = run(result.code, result.varSlots, result.taSlotCount, data, result.fnVarSlotCount, result.historySlotCount, result.taScratchSize);
 
     const values = bars.map((b) => b["var:__obs"] as boolean | number);
-    expect(values).toEqual([NaN, NaN, true, true, true, true]);
+    // `na >= 5.0` on the first two bars is false (language_type-system.txt; harness lang probes L17/L19).
+    expect(values).toEqual([false, false, true, true, true, true]);
   });
 
   it("rejects a non-stateful, non-numeric-builtin CallExpr obj (e.g. str.tostring) without an internal codegen crash", () => {

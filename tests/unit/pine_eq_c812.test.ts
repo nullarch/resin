@@ -60,14 +60,24 @@ describe("C812 rt.pineEq/pineNeq 런타임 시맨틱", () => {
     expect(pineEq(0, -0)).toBe(true); // `===`와 동일(Object.is가 아님)
   });
 
-  it("na 3분할(NaN/null)의 기존 동작을 바꾸지 않는다", () => {
+  // A na operand (NaN, or null for a reference type) makes == and != both false: "The == , !=
+  // operators, and all other comparison operators always return false if at least one of the
+  // operands is a variable with an na value" (language_type-system.txt; harness lang probe L19
+  // ne_na). This asserted null == null until then.
+  it("na 피연산자(NaN/null)가 있으면 ==와 != 모두 false다", () => {
     expect(pineEq(NaN, NaN)).toBe(false); // `x == na`는 genEquality의 rt.na 분기가 따로 처리
     expect(pineEq(NaN, 1)).toBe(false);
     expect(pineEq(NaN, true)).toBe(false);
-    expect(pineEq(null, null)).toBe(true);
+    expect(pineEq(null, null)).toBe(false);
     expect(pineEq(null, 0)).toBe(false);
     expect(pineEq(null, false)).toBe(false);
     expect(pineEq(undefined, null)).toBe(false);
+    expect(pineNeq(NaN, 1)).toBe(false);
+    expect(pineNeq(1, NaN)).toBe(false);
+    expect(pineNeq(NaN, NaN)).toBe(false);
+    expect(pineNeq(NaN, true)).toBe(false);
+    expect(pineNeq(null, "ab")).toBe(false);
+    expect(pineNeq(null, null)).toBe(false);
   });
 
   it("참조형은 동일성(identity) 비교 그대로다", () => {
@@ -76,8 +86,8 @@ describe("C812 rt.pineEq/pineNeq 런타임 시맨틱", () => {
     expect(pineEq(a, { x: 1 })).toBe(false);
   });
 
-  it("pineNeq는 항상 pineEq의 정확한 부정이다", () => {
-    const values: unknown[] = [1, 0, 2, true, false, NaN, null, "ab", ""];
+  it("na가 아닌 두 피연산자에서 pineNeq는 pineEq의 정확한 부정이다", () => {
+    const values: unknown[] = [1, 0, 2, true, false, "ab", ""];
     for (const a of values) {
       for (const b of values) {
         expect(pineNeq(a, b)).toBe(!pineEq(a, b));

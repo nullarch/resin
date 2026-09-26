@@ -8205,9 +8205,10 @@ describe("numeric helpers", () => {
     expect(pineNot(NaN)).toBeNaN();
   });
 
-  // ── pineLt/pineGt/pineLe/pineGe(a, b) — </>/<=/>= 의 na 시맨틱(DIVERGENCES.md #4, C25와 같은
-  // 클래스, ROADMAP P2 "C25 발견" 항목): JS `NaN < x`/`NaN > x` 등은 항상 false를 반환해 na가
-  // 조용히 사라지지만, TV는 피연산자 중 하나라도 na면 결과도 na다. ──────────────────
+  // ── pineLt/pineGt/pineLe/pineGe(a, b) — </>/<=/>= with a na operand are false, not na:
+  // "all other comparison operators always return false if at least one of the operands is a
+  // variable with an na value" (language_type-system.txt); oracle pynecore types/na.py, harness
+  // lang probes L17/L19 (not_gt_na_v6, ne_na). pine2py propagated na here (DIVERGENCES.md #4). ──
 
   it("pineLt() compares two finite numbers like plain JS '<'", () => {
     expect(pineLt(1, 2)).toBe(true);
@@ -8215,10 +8216,10 @@ describe("numeric helpers", () => {
     expect(pineLt(2, 2)).toBe(false);
   });
 
-  it("pineLt() propagates na (NaN) instead of JS 'NaN < x'===false (TV: 'na < x'===na)", () => {
-    expect(pineLt(NaN, 2)).toBeNaN();
-    expect(pineLt(2, NaN)).toBeNaN();
-    expect(pineLt(NaN, NaN)).toBeNaN();
+  it("pineLt() is false when an operand is na (TV: 'na < x' is false; harness lang probes L17/L19)", () => {
+    expect(pineLt(NaN, 2)).toBe(false);
+    expect(pineLt(2, NaN)).toBe(false);
+    expect(pineLt(NaN, NaN)).toBe(false);
   });
 
   it("pineGt() compares two finite numbers like plain JS '>'", () => {
@@ -8227,10 +8228,10 @@ describe("numeric helpers", () => {
     expect(pineGt(2, 2)).toBe(false);
   });
 
-  it("pineGt() propagates na (NaN) instead of JS 'NaN > x'===false (TV: 'na > x'===na)", () => {
-    expect(pineGt(NaN, 2)).toBeNaN();
-    expect(pineGt(2, NaN)).toBeNaN();
-    expect(pineGt(NaN, NaN)).toBeNaN();
+  it("pineGt() is false when an operand is na (TV: 'na > x' is false; harness lang probes L17/L19)", () => {
+    expect(pineGt(NaN, 2)).toBe(false);
+    expect(pineGt(2, NaN)).toBe(false);
+    expect(pineGt(NaN, NaN)).toBe(false);
   });
 
   it("pineLe() compares two finite numbers like plain JS '<=' (including the equal case)", () => {
@@ -8239,10 +8240,10 @@ describe("numeric helpers", () => {
     expect(pineLe(2, 1)).toBe(false);
   });
 
-  it("pineLe() propagates na (NaN) instead of JS 'NaN <= x'===false (TV: 'na <= x'===na)", () => {
-    expect(pineLe(NaN, 2)).toBeNaN();
-    expect(pineLe(2, NaN)).toBeNaN();
-    expect(pineLe(NaN, NaN)).toBeNaN();
+  it("pineLe() is false when an operand is na (TV: 'na <= x' is false; harness lang probes L17/L19)", () => {
+    expect(pineLe(NaN, 2)).toBe(false);
+    expect(pineLe(2, NaN)).toBe(false);
+    expect(pineLe(NaN, NaN)).toBe(false);
   });
 
   it("pineGe() compares two finite numbers like plain JS '>=' (including the equal case)", () => {
@@ -8251,14 +8252,14 @@ describe("numeric helpers", () => {
     expect(pineGe(1, 2)).toBe(false);
   });
 
-  it("pineGe() propagates na (NaN) instead of JS 'NaN >= x'===false (TV: 'na >= x'===na)", () => {
-    expect(pineGe(NaN, 2)).toBeNaN();
-    expect(pineGe(2, NaN)).toBeNaN();
-    expect(pineGe(NaN, NaN)).toBeNaN();
+  it("pineGe() is false when an operand is na (TV: 'na >= x' is false; harness lang probes L17/L19)", () => {
+    expect(pineGe(NaN, 2)).toBe(false);
+    expect(pineGe(2, NaN)).toBe(false);
+    expect(pineGe(NaN, NaN)).toBe(false);
   });
 
   // ── pineAnd/pineOr(a, b) — and/or의 na 시맨틱(C69, ROADMAP P2 "C67 발견" 항목). 이 둘은
-  // pineLt류("피연산자 중 하나라도 na면 무조건 na")와 다른 패턴이다 — TV는 진짜 Kleene 3치 논리를
+  // pineLt류(na 피연산자면 false)와 다른 패턴이다 — TV는 진짜 Kleene 3치 논리를
   // 쓴다: false는 AND를, true는 OR를 다른 피연산자의 na 여부와 무관하게 절대적으로 결정한다
   // (pine2py docs/pinescript/03-operators.md L60-62, 09-edge-cases.md L5-11이 명시하는 시맨틱 —
   // pine2py 자체 codegen은 Python 네이티브 and/or를 그대로 방출해 이 문서를 따르지 않으므로
