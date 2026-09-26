@@ -5294,7 +5294,7 @@ describe("CodeGen", () => {
       ),
     );
     expect(code).toBe(
-      'function pt(p0 = 0) {\n  return { "v": p0 };\n}\nfunction pt$inc(__slotBase, this_) {\nlet r = (this_.v + 1);\nreturn r;\n}\nvar p = pt(1.0);\nvar z = pt$inc(0, p);',
+      'function pt(p0 = NaN) {\n  return { "v": p0 };\n}\nfunction pt$inc(__slotBase, this_) {\nlet r = (this_.v + 1);\nreturn r;\n}\nvar p = pt(1.0);\nvar z = pt$inc(0, p);',
     );
   });
 
@@ -5463,7 +5463,7 @@ describe("CodeGen", () => {
 
   it("mangles the UDF's own JS function name with a '$fn' suffix when a same-named type declaration exists (C710)", () => {
     const code = codegenSource(["type f", "    float x", "f(y) => y + 1", "z = f(2.0)"].join("\n"));
-    expect(code).toContain("function f(p0 = 0) {\n  return { \"x\": p0 };\n}");
+    expect(code).toContain("function f(p0 = NaN) {\n  return { \"x\": p0 };\n}");
     expect(code).toContain("function f$fn(__slotBase, y) {\nreturn (y + 1);\n}");
     expect(code).toContain("var z = f$fn(0, 2.0);");
   });
@@ -9371,11 +9371,14 @@ describe("CodeGen UDT (type declarations, slice 1)", () => {
     expect(code).toContain('function Bar(p0 = 1.0, p1 = "hi") {\n  return { "x": p0, "label": p1 };\n}');
   });
 
-  it("emits the pine2py-derived implicit default table (0/0/false/\"\"/\"\") for fields with no explicit default", () => {
+  // The manual: "If not specified, the field's default value is na, or false if the field's
+  // type is 'bool'" (language_type-system.txt); resin-harness state/repros/lang.udt-seed-1.json.
+  // This test used to pin pine2py's table (0/0/false/""/"").
+  it("emits the manual's implicit defaults (na, false for bool) for fields with no explicit default", () => {
     const code = moduleSource(
       ["type Bar", "    float x", "    int n", "    bool flag", "    string s", "    color c"].join("\n"),
     );
-    expect(code).toContain('function Bar(p0 = 0, p1 = 0, p2 = false, p3 = "", p4 = "") {');
+    expect(code).toContain("function Bar(p0 = NaN, p1 = NaN, p2 = false, p3 = null, p4 = null) {");
   });
 
   it("lowers an explicit 'na' default on a string field to 'null' (GOAL.md reference-type na)", () => {
@@ -9474,7 +9477,9 @@ describe("CodeGen UDT (type declarations, slice 1)", () => {
     expect(bars.map((b) => b["var:__obs_x"])).toEqual([11, 12, 13]);
   });
 
-  it("end-to-end: a field left at its implicit default (0) reads back as 0 when the constructor omits it", () => {
+  // The manual: "If not specified, the field's default value is na" (language_type-system.txt);
+  // resin-harness state/repros/lang.udt-seed-1.json. This test used to expect pine2py's 0.
+  it("end-to-end: a field left at its implicit default (na) reads back as na when the constructor omits it", () => {
     const source = [
       "type Bar",
       "    float x = 1.0",
@@ -9490,7 +9495,7 @@ describe("CodeGen UDT (type declarations, slice 1)", () => {
     const close = [1, 2];
     const data: OHLCVData = { open: close, high: close, low: close, close, volume: close };
     const { bars } = run(result.code, result.varSlots, result.taSlotCount, data, result.fnVarSlotCount);
-    expect(bars.map((b) => b["var:__obs_y"])).toEqual([0, 0]);
+    expect(bars.map((b) => b["var:__obs_y"])).toEqual([NaN, NaN]);
   });
 
   it("end-to-end: a string field written to 'na' reads back as a JS null reference, not NaN", () => {

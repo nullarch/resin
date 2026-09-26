@@ -1009,19 +1009,20 @@ function genFuncParam(param: FuncParam, program: AnalyzedProgram): string {
   return param.default !== null ? `${name} = ${genExpr(param.default, program, null)}` : name;
 }
 
-// UDT 필드 생략 시 암시 기본값 — pine2py codegen._type_default(float/int/bool/str 리터럴) 그대로
-// literal port(color도 str과 동일 취급, pine2py _pine_type_to_python이 둘 다 "str"로 매핑) —
-// TV 실제 규칙은 이 세션에서 검증 불가(WebSearch 미승인, VERIFIED_SEMANTICS.md 근거 없음)라
-// "TV 미검증 가설"로 DIVERGENCES.md 등재. 주의: string/color도 na(null)가 아니라 빈 문자열 ""이다
-// (pine2py가 필드 기본값을 na로 두지 않는 자체 결정 — explicit `= na` 대입과는 다른 경로). 중첩
-// UDT 필드(C123)는 이 표에 없다 — pine2py _type_default가 매핑에 없는 타입명(=UDT 타입명)엔
-// "None"으로 떨어지는 것과 동일하게(codegen.py 소스 대조 확인) genUdtFieldDefault가 별도 분기.
+// The implicit default of a UDT field declared without one. The manual's rule: "If not
+// specified, the field's default value is na, or false if the field's type is 'bool'"
+// (docs/manual language_type-system.txt, "User-defined types"). pine2py's _type_default gave
+// float/int 0 and string/color "", so `na(P.new().x)` was false (harness repro
+// state/repros/lang.udt-seed-1.json). na is NaN for the numeric types and null for the
+// reference types string/color, the same values an explicit `= na` default lowers to
+// (genUdtValueForFieldType). Nested UDT, enum and drawing fields (null) and collection fields
+// are handled in genUdtFieldDefault.
 const UDT_IMPLICIT_FIELD_DEFAULTS: Readonly<Record<string, string>> = {
-  float: "0",
-  int: "0",
+  float: "NaN",
+  int: "NaN",
   bool: "false",
-  string: '""',
-  color: '""',
+  string: "null",
+  color: "null",
 };
 
 // TypeField 기본값/obj.field := value 양쪽이 공유하는 na 리터럴 특수화 — genValueCode(var 전용)와

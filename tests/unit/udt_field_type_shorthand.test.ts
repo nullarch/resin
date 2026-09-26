@@ -29,7 +29,10 @@ function runSource(source: string) {
 }
 
 describe("UDT varip field qualifier (C725, hand-verified)", () => {
-  it("constructs a UDT with a 'varip float' field defaulting to 0 (no override)", () => {
+  // A field with no default is na (manual, language_type-system.txt: "If not specified, the
+  // field's default value is na, or false if the field's type is 'bool'"; resin-harness
+  // state/repros/lang.udt-seed-1.json). This test used to expect pine2py's 0.
+  it("constructs a UDT with a 'varip float' field defaulting to na (no override)", () => {
     const source = [
       "type Dom",
       "    varip float totalVolume",
@@ -37,7 +40,7 @@ describe("UDT varip field qualifier (C725, hand-verified)", () => {
       "var float __obs_a = na",
       "__obs_a := d.totalVolume",
     ].join("\n");
-    expect(runSource(source).bars.map((b) => b["var:__obs_a"])).toEqual([0, 0, 0]);
+    expect(runSource(source).bars.map((b) => b["var:__obs_a"])).toEqual([NaN, NaN, NaN]);
   });
 
   it("honors an explicit default value on a 'varip' field", () => {
@@ -74,7 +77,8 @@ describe("UDT varip field qualifier (C725, hand-verified)", () => {
       "var float __obs_a = na",
       "__obs_a := d.totalVolume",
     ].join("\n");
-    expect(runSource(source).bars.map((b) => b["var:__obs_a"])).toEqual([0, 42, 42]);
+    // Bar 0 reads the field's implicit default, na (see the first test in this block).
+    expect(runSource(source).bars.map((b) => b["var:__obs_a"])).toEqual([NaN, 42, 42]);
   });
 
   it("supports a 'varip' generic field ('varip map<float,float>') constructing an empty Map default", () => {

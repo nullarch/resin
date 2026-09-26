@@ -18,7 +18,9 @@ type Bar
     color c = color.red
     float y
 
-// 채널 A: 인자 없는 '.new()' — 명시 기본값 5종(x/n/flag/label/c) + 암시 기본값(y, float -> 0.0)
+// Channel A: '.new()' with no arguments: five explicit defaults (x/n/flag/label/c) and one
+// implicit default (y, a float field with none: na, per the manual's "If not specified, the
+// field's default value is na"; pine2py's golden said 0.0 and was hand-edited to NaN)
 var Bar b1 = Bar.new()
 var float __obs_b1_x = na
 __obs_b1_x := b1.x

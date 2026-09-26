@@ -1,6 +1,6 @@
 // oracle/cases/udt_basic.pine: type 선언 + Type.new(...) 생성 + 필드 읽기/':=' 대입(ROADMAP P2
 // 첫 UDT 슬라이스). 채널 A(인자 없는 .new())는 명시 기본값 5종(float/int/bool/string/color) +
-// 암시 기본값(생략된 float 필드 -> 0.0)을 검증하고, 채널 B는 위치 인자 부분 채움을, 채널 C는
+// 암시 기본값(생략된 float 필드 -> na; the manual's rule, pine2py's 0.0 hand-edited)을 검증하고, 채널 B는 위치 인자 부분 채움을, 채널 C는
 // 필드 대입(':=')을 매 바 갱신하는 러닝 합계로 동적 신호까지 검증한다. na 생성자 인자/na 필드
 // 대입은 pine2py가 na를 타입 무관 float('nan')으로 컴파일해 오라클 비교가 구조적으로 불가능한
 // 영역이라(C107/C110급) 이 케이스에서 제외했다 — tests/unit/codegen.test.ts의 hand-verified
@@ -67,7 +67,12 @@ describe("oracle: udt_basic", () => {
       const expected = golden.finalVarState[key];
       if (expected === undefined) continue;
       const actual = result.finalVarState[key];
-      if (typeof expected === "number" && typeof actual === "number") {
+      // __obs_b1_y/__obs_b2_y are na: `y` has no default (manual: "If not specified, the
+      // field's default value is na"; resin-harness state/repros/lang.udt-seed-1.json). pine2py
+      // gave 0.0; the golden was hand-edited to the "NaN" sentinel.
+      if (expected === "NaN") {
+        expect(Number.isNaN(actual)).toBe(true);
+      } else if (typeof expected === "number" && typeof actual === "number") {
         expect(actual).toBeCloseTo(expected, 6);
       } else {
         expect(actual).toBe(expected);

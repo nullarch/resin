@@ -61,7 +61,12 @@ describe("oracle: udt_kwargs", () => {
       const expected = golden.finalVarState[key];
       if (expected === undefined) continue;
       const actual = result.finalVarState[key];
-      if (typeof expected === "number" && typeof actual === "number") {
+      // __obs_c_y is na: `y` has no default (manual: "If not specified, the field's default
+      // value is na"; resin-harness state/repros/lang.udt-seed-1.json). pine2py gave 0.0; the
+      // golden was hand-edited to the "NaN" sentinel.
+      if (expected === "NaN") {
+        expect(Number.isNaN(actual)).toBe(true);
+      } else if (typeof expected === "number" && typeof actual === "number") {
         expect(actual).toBeCloseTo(expected, 6);
       } else {
         expect(actual).toBe(expected);
