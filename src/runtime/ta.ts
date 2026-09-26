@@ -916,107 +916,50 @@ export function falling(state: StreakState, value: number, length: number): bool
 }
 
 export interface StdevState {
-  buffer?: number[];
-  writeIdx?: number;
-  sum?: number;
-  sumSq?: number;
+  p?: SmaState; // math.sum(source, length)
+  q?: SmaState; // math.sum(source * source, length)
+  sum?: number; // the last bar's p: ta.bb's basis is it / length
 }
 
-// ta.variance - population variance over a fixed window (no Bessel correction — divides by
-// length, not length-1). pine2py wavealgo/ta/stdev.py recomputes mean/variance from a fresh
-// list window every bar (O(length)): mean=Σv/length, variance=Σ(v-mean)²/length. pine2js reuses
-// ta.sma's fixed-width NaN-primed circular buffer (single allocation on first call) plus a
-// second running sum of squares (Σv²) and derives variance via the standard identity
-// E[X²]-(E[X])² = Σv²/length - (Σv/length)² for O(1) incremental updates (GOAL.md "바당 히스토리
-// 재계산 금지") — same "two sma-style running sums in parallel" shape as ta.vwma (no positional
-// weighting involved, unlike ta.wma). Verified numerically against the direct Σ(v-mean)² formula
-// on realistic price magnitudes: floating-point cancellation stays within ~1e-12, well inside
-// GOAL.md's oracle tolerance (1e-9) and pine2py's own precision(10 decimals) rounding. Near-constant
-// windows can push this identity slightly below 0 (verified: up to ~1e-11 for a near-flat window) —
-// pine2py's direct Σ(v-mean)² formula can never go negative (it's a literal sum of squares), so a
-// negative result here is purely a cancellation artifact and is clamped to 0. This clamp also
-// prevents ta.stdev's sqrt() from producing a spurious NaN on an otherwise-near-zero variance.
-// C296: biased (default true) selects population variance (divide by length, the pine2py-ported
-// formula above) vs. unbiased/sample variance with Bessel's correction (divide by length-1). TV's
-// official ta.variance/ta.stdev signature has this as an optional 3rd positional arg, but pine2py
-// wavealgo/ta/stdev.py's variance(source, length, **kwargs) is fixed 2-positional (a 3rd positional
-// arg is a Python TypeError) — this parameter is structurally impossible to oracle-verify, so it's
-// hand-verified only ("TV 미검증(가설)", DIVERGENCES #110). Derived from the already-clamped
-// population variance via the standard identity Σ(v-mean)²/(n-1) = [Σ(v-mean)²/n]·n/(n-1) — reusing
-// the clamp (rather than re-deriving from sumSq) keeps the same floating-point-cancellation safety
-// net C36 established. length=1 with biased=false divides by zero (0/0=NaN when v=0, otherwise
-// Infinity) — a natural IEEE754 fallout, not a special-cased guard (GOAL.md 안전 연산 principle
-// applies to user-facing '/' only; this is an internal runtime helper's own division, MEMORY.md
-// Pitfalls C113 precedent).
+// ta.variance(source, length, biased): "`na` values in the `source` series are ignored; the
+// function calculates on the `length` quantity of non-`na` values" (ref_v6_ta_math.txt
+// "ta.variance", "ta.stdev"). The oracle's measured law (pynecore lib/ta.py variance, probes m556):
+// p = math.sum(source, length), q = math.sum(source * source, length), m = p / length; biased
+// max(0, q / length - m * m), unbiased max(0, q / (length - 1) - p * m / (length - 1)), an
+// unbiased length 1 na. Both sums are naSkipSum windows, so an na bar neither enters nor evicts
+// and reports the standing variance (repro state/repros/ta.volatility-seed-10.json, probe I01).
+// resin used to keep pine2py's window, na for `length` bars after one na source. varianceVarLen
+// is the same law with a series length.
 export function variance(state: StdevState, value: number, length: number, biased: boolean = true): number {
-  length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조) — stdev/bb는 이 함수를 경유해 함께 해결됨
-  if (state.buffer === undefined) {
-    state.buffer = new Array(length).fill(NaN);
-    state.writeIdx = 0;
-    state.sum = NaN;
-    state.sumSq = NaN;
+  const len = Math.trunc(length);
+  if (state.p === undefined) {
+    state.p = {};
+    state.q = {};
   }
-  const buffer = state.buffer;
-  const writeIdx = state.writeIdx!;
-  const oldVal = buffer[writeIdx]!;
-  buffer[writeIdx] = value;
-  state.writeIdx = (writeIdx + 1) % length;
-
-  if (Number.isNaN(value) || Number.isNaN(oldVal) || Number.isNaN(state.sum!)) {
-    let total = 0;
-    let totalSq = 0;
-    let hasNaN = false;
-    for (const v of buffer) {
-      if (Number.isNaN(v)) {
-        hasNaN = true;
-        break;
-      }
-      total += v;
-      totalSq += v * v;
-    }
-    state.sum = hasNaN ? NaN : total;
-    state.sumSq = hasNaN ? NaN : totalSq;
-  } else {
-    state.sum = state.sum! - oldVal + value;
-    state.sumSq = state.sumSq! - oldVal * oldVal + value * value;
-  }
-
-  if (Number.isNaN(state.sum!)) return NaN;
-  const mean = state.sum! / length;
-  const v = state.sumSq! / length - mean * mean;
-  const population = v < 0 ? 0 : v;
-  return biased ? population : (population * length) / (length - 1);
+  const p = naSkipSum(state.p, value, len);
+  const q = naSkipSum(state.q!, value * value, len);
+  state.sum = p;
+  if (!(len >= 1) || Number.isNaN(p) || Number.isNaN(q)) return NaN;
+  if (!biased && len === 1) return NaN;
+  const m = p / len;
+  const v = biased ? q / len - m * m : q / (len - 1) - (p * m) / (len - 1);
+  // Python's max(0.0, var): the clamp keeps 0.0 unless var is greater.
+  return v > 0 ? v : 0;
 }
 
-// ta.stdev - sqrt(ta.variance). pine2py wavealgo/ta/stdev.py duplicates variance's entire
-// mean/sum-of-squared-deviations computation independently (not a call to variance()), but since
-// both are byte-identical up to the final sqrt, pine2js's stdev() simply calls variance() on its
-// own StdevState (each ta.stdev call site still owns its own independent taSlots slot — this is
-// plain function composition, not state sharing across call sites, so the "call-site-independent
-// state" invariant is untouched). biased passthrough — see variance() comment (C296).
+// ta.stdev(source, length[, biased]) = sqrt(ta.variance) (lib/ta.py stdev, "TradingView's stdev
+// is exactly sqrt of its variance on both paths", probes m556).
 export function stdev(state: StdevState, value: number, length: number, biased: boolean = true): number {
-  const v = variance(state, value, length, biased);
-  return Number.isNaN(v) ? NaN : Math.sqrt(v);
+  return Math.sqrt(variance(state, value, length, biased));
 }
 
 export interface BbState {
   inner?: StdevState;
 }
 
-// ta.bb(source, length, mult) - Bollinger Bands, the second multi-return TA
-// ([middle, upper, lower] tuple, after ta.macd/C50). pine2py wavealgo/ta/bb.py computes
-// middle=SMA(source,length) and stdev=population stdev of the same window (no Bessel correction -
-// byte-identical formula to ta.variance/ta.stdev, C36), then upper/lower=middle±mult*stdev.
-// Poison window: data_len<length or any NaN in the window -> (NaN, NaN, NaN), the same class as
-// ta.highest (C42). Rather than allocating an independent SMA buffer alongside a stdev buffer
-// (two circular buffers), bb() calls variance() once on a single nested StdevState and reads
-// state.inner.sum (already = length*mean as a side effect of that call) to derive middle - the
-// "call for its side effect, read the internal running sum" composition from linreg/cog (C41/C47)
-// generalized here to cover all three outputs from one shared buffer. Verified against a literal
-// bb.py port via scratch/probe_bb.mjs (sample10 + constant/near-constant windows + embedded NaN +
-// length=1 degenerate + mult sign variations + 5,000-sample fuzz, all PASS) - the near-constant
-// case uses C36-scale (not C36's outer numerical-precision floor) magnitudes since variance's
-// sum-of-squares identity is a known, already-accepted precision limit independent of bb.
+// ta.bb(series, length, mult) (lib/ta.py bb): basis = ta.sma(series, length), deviation = mult *
+// ta.stdev(series, length); a na basis is the na triple. The sma's window is the variance's first
+// sum, so the basis is read from it.
 export function bb(
   state: BbState,
   value: number,
@@ -1025,37 +968,23 @@ export function bb(
   scratch: Float64Array,
 ): void {
   if (state.inner === undefined) state.inner = {};
-  const v = variance(state.inner, value, length);
-  if (Number.isNaN(v)) {
+  const sd = Math.sqrt(variance(state.inner, value, length));
+  const len = Math.trunc(length);
+  const middle = len >= 1 ? state.inner.sum! / len : NaN;
+  if (Number.isNaN(middle)) {
     scratch[0] = NaN;
     scratch[1] = NaN;
     scratch[2] = NaN;
     return;
   }
-  const middle = state.inner.sum! / length;
-  const sd = Math.sqrt(v);
+  const dev = sd * mult;
   scratch[0] = middle;
-  scratch[1] = middle + mult * sd;
-  scratch[2] = middle - mult * sd;
+  scratch[1] = middle + dev;
+  scratch[2] = middle - dev;
 }
 
-// ta.bbw(source, length, mult) - Bollinger Bands Width: (upper-lower)/basis*100. pine2py
-// wavealgo/ta/bbw.py calls bb(source, length, mult) to get (basis, upper, lower), then returns
-// NaN if basis is NaN or exactly 0, else (upper-lower)/basis*100. Unlike ta.bb (returnArity: 3,
-// scratch-array output), bbw returns a single scalar, so it follows the standard single-return
-// TA_REGISTRY pattern from before macd/bb (C50/C51) - it reuses the same BbState{inner:StdevState}
-// and calls variance() for its side effect (state.inner.sum), but inlines the bb math into local
-// variables consumed immediately by the arithmetic instead of writing to a shared scratch array
-// (the "call for its side effect, read the internal running sum" composition from linreg/cog/bb,
-// applied here without the scratch-array leg since there's only one output).
-// Verified against a literal bbw.py+bb.py port via scratch/probe_bbw.mjs (sample10 + constant +
-// basis===0-exactly + near-constant + embedded NaN + length=1 + mult sign variations + 5,000-
-// sample symmetric-range fuzz, all PASS). Precision note: bbw's percentage form divides out
-// basis's magnitude, which strips away the "large basis dominates" masking that let ta.bb (C51)
-// tolerate the variance sum-of-squares identity's cancellation error at 1e-3-unit near-constant
-// windows - bbw exposes that same cancellation directly (verified floor: 1e-3-unit deltas fail at
-// oracle tolerance, 1e-2-unit deltas pass), a tighter-but-same-class instance of C36's documented
-// precision limit, not a new bug.
+// ta.bbw(series, length, mult) (lib/ta.py bbw): ((upper - lower) / basis) * 100 of ta.bb, na when
+// the basis is na or zero.
 export function bbw(
   state: BbState,
   value: number,
@@ -1063,14 +992,12 @@ export function bbw(
   mult: number,
 ): number {
   if (state.inner === undefined) state.inner = {};
-  const v = variance(state.inner, value, length);
-  if (Number.isNaN(v)) return NaN;
-  const basis = state.inner.sum! / length;
-  if (basis === 0) return NaN;
-  const sd = Math.sqrt(v);
-  const upper = basis + mult * sd;
-  const lower = basis - mult * sd;
-  return ((upper - lower) / basis) * 100;
+  const sd = Math.sqrt(variance(state.inner, value, length));
+  const len = Math.trunc(length);
+  const basis = len >= 1 ? state.inner.sum! / len : NaN;
+  if (Number.isNaN(basis) || basis === 0) return NaN;
+  const dev = sd * mult;
+  return ((basis + dev - (basis - dev)) / basis) * 100;
 }
 
 export interface CumState {

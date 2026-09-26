@@ -2338,13 +2338,18 @@ describe("ta.variance", () => {
     expect(v).toBeCloseTo(0, 9);
   });
 
-  it("poisons the window across a NaN gap, then recovers once the buffer fills with fresh values", () => {
+  // "`na` values in the `source` series are ignored; the function calculates on the `length`
+  // quantity of non-`na` values" (ref_v6_ta_math.txt ta.variance; oracle lib/ta.py variance on
+  // math.sum; harness repro state/repros/ta.volatility-seed-10.json). pine2py's window went na for
+  // `length` bars after one na source.
+  it("skips an na source: the na bar reports the standing variance, the window keeps the last `length` non-na values", () => {
     const state = {};
-    variance(state, 10, 2); // NaN, buffer [10, NaN]
-    expect(variance(state, 12, 2)).toBeCloseTo(1, 9); // buffer [10, 12]
-    expect(variance(state, NaN, 2)).toBeNaN(); // buffer [NaN, 12]
-    expect(variance(state, 20, 2)).toBeNaN(); // buffer [NaN, 20] — poisoned slot still in window
-    expect(variance(state, 24, 2)).toBeCloseTo(4, 9); // buffer [24, 20], mean=22, var=4
+    expect(variance(state, NaN, 2)).toBeNaN(); // warm-up counts non-na values only
+    expect(variance(state, 10, 2)).toBeNaN(); // [10]
+    expect(variance(state, 12, 2)).toBeCloseTo(1, 9); // [10, 12]
+    expect(variance(state, NaN, 2)).toBeCloseTo(1, 9); // still [10, 12]
+    expect(variance(state, 20, 2)).toBeCloseTo(16, 9); // [12, 20], mean=16, var=16
+    expect(variance(state, 24, 2)).toBeCloseTo(4, 9); // [20, 24], mean=22, var=4
   });
 
   it("matches a direct O(length) recomputation across many bars (buffer wraparound regression)", () => {
@@ -2360,8 +2365,8 @@ describe("ta.variance", () => {
     }
   });
 
-  // C296: biased(3rd positional, TV 공식 ta.variance/ta.stdev 시그니처) — pine2py wavealgo/ta/
-  // stdev.py는 2-positional 고정이라 오라클 구조적 불가, hand-verified만 가능(DIVERGENCES #110).
+  // biased (ref_v6_ta_math.txt "ta.variance(source, length, biased)"): the oracle's measured
+  // unbiased form q / (length - 1) - p * m / (length - 1) (lib/ta.py variance, probes m556).
   it("biased=true (default, explicit or omitted) matches the population variance (divide by length)", () => {
     const stateOmitted = {};
     const stateExplicit = {};
@@ -2378,9 +2383,9 @@ describe("ta.variance", () => {
     expect(variance(state, 12, 2, false)).toBeCloseTo(2, 9);
   });
 
-  it("biased=false with length=1 divides by zero (natural IEEE754 fallout, not a special-cased guard)", () => {
+  it("biased=false with length=1 is na (oracle lib/ta.py variance: an unbiased length 1 na)", () => {
     const stateZeroVariance = {};
-    expect(variance(stateZeroVariance, 10, 1, false)).toBeNaN(); // population=0 -> 0/0=NaN
+    expect(variance(stateZeroVariance, 10, 1, false)).toBeNaN();
   });
 });
 
@@ -5063,18 +5068,24 @@ describe("ta.bb", () => {
     expect(neg[2]).toBeCloseTo(104, 9);
   });
 
-  it("poisons the window for `length` bars after an embedded NaN, then recovers (recompute-on-pollution)", () => {
+  // basis = ta.sma, deviation = ta.stdev (oracle lib/ta.py bb), both on the last `length` non-na
+  // values (ref_v6_ta_math.txt ta.sma, ta.stdev: "`na` values in the `source` series are
+  // ignored"; harness repro state/repros/ta.volatility-seed-10.json). pine2py's window went na for
+  // `length` bars after one na source.
+  it("skips an na source: the na bar reports the standing bands, the window keeps the last `length` non-na values", () => {
     const state = {};
-    const closes = [101, 102, NaN, 102, 104, 105];
+    const closes = [101, 102, 103, NaN, 104];
     const out = closes.map((c) => bb3(state, c, 3, 2));
-    // 바0~1: 워밍업. 바2: NaN 입력 자체가 창을 오염 -> NaN. 바3: 창=[102,NaN,102] 여전히 NaN 포함
-    // -> NaN. 바4: 창=[104,102,NaN] 여전히 NaN 포함 -> NaN. 바5: 창=[105,104,102] NaN 없음 -> 회복.
-    for (let i = 0; i <= 4; i++) {
-      expect(out[i]![0]).toBeNaN();
-      expect(out[i]![1]).toBeNaN();
-      expect(out[i]![2]).toBeNaN();
+    for (let i = 0; i <= 1; i++) expect(out[i]![0]).toBeNaN();
+    const sd = Math.sqrt(2 / 3);
+    for (const i of [2, 3]) {
+      // [101, 102, 103]; the na bar leaves it as it is
+      expect(out[i]![0]).toBeCloseTo(102, 9);
+      expect(out[i]![1]).toBeCloseTo(102 + 2 * sd, 9);
+      expect(out[i]![2]).toBeCloseTo(102 - 2 * sd, 9);
     }
-    expect(Number.isNaN(out[5]![0])).toBe(false);
+    expect(out[4]![0]).toBeCloseTo(103, 9); // [102, 103, 104]
+    expect(out[4]![1]).toBeCloseTo(103 + 2 * sd, 9);
   });
 
   it("reuses the same scratch array across calls without allocating (values overwritten in place)", () => {
@@ -5088,7 +5099,7 @@ describe("ta.bb", () => {
     expect(scratch[0]).toBeCloseTo(103, 9);
   });
 
-  it("matches a from-scratch brute-force cross-check (literal pine2py bb.py port) with NaN gaps (length=4, mult=1.5)", () => {
+  it("matches a from-scratch brute-force cross-check (window of the last `length` non-na values) with NaN gaps (length=4, mult=1.5)", () => {
     const state = {};
     const length = 4;
     const mult = 1.5;
@@ -5098,26 +5109,19 @@ describe("ta.bb", () => {
     ];
 
     function bruteForce(sources: number[]): [number, number, number][] {
-      // pine2py bb.py 그대로: 매 바 O(length) 재스캔, source.get(i) i=0(현재)..length-1(가장 오래된)
+      // Every bar rescans back for the last `length` non-na values ("`na` values in the `source`
+      // series are ignored", ref_v6_ta_math.txt ta.sma, ta.stdev); na until that many exist.
       const out: [number, number, number][] = [];
       for (let bar = 0; bar < sources.length; bar++) {
-        if (bar + 1 < length) {
-          out.push([NaN, NaN, NaN]);
-          continue;
-        }
         let total = 0;
         const win: number[] = [];
-        let hasNaN = false;
-        for (let i = 0; i < length; i++) {
-          const v = sources[bar - i]!;
-          if (Number.isNaN(v)) {
-            hasNaN = true;
-            break;
-          }
+        for (let i = bar; i >= 0 && win.length < length; i--) {
+          const v = sources[i]!;
+          if (Number.isNaN(v)) continue;
           total += v;
           win.push(v);
         }
-        if (hasNaN) {
+        if (win.length < length) {
           out.push([NaN, NaN, NaN]);
           continue;
         }
@@ -5200,14 +5204,22 @@ describe("ta.bbw", () => {
     expect(bbw(state, 1, 3, 2)).toBeNaN(); // window=[1,0,-1], sum=0 -> basis===0 exactly
   });
 
-  it("poisons the window for `length` bars after an embedded NaN, then recovers (recompute-on-pollution)", () => {
+  // ta.bb's bands on the last `length` non-na values (see the ta.bb na test; harness repro
+  // state/repros/ta.volatility-seed-10.json). pine2py's window went na for `length` bars after one
+  // na source.
+  it("skips an na source: the window keeps the last `length` non-na values", () => {
     const state = {};
     const closes = [101, 102, NaN, 102, 104, 105];
     const out = closes.map((c) => bbw(state, c, 3, 2));
-    // 바0~1: 워밍업. 바2: NaN 입력이 창을 오염. 바3~4: 창에 NaN이 여전히 남아 NaN. 바5: 창=[105,104,102]
-    // NaN 없음 -> 회복(basis=103.6666...!=0 이라 NaN 아닌 실수 반환).
-    for (let i = 0; i <= 4; i++) expect(out[i]).toBeNaN();
-    expect(out[5]).toBeCloseTo(4.812421076236585, 9);
+    const width = (w: number[]): number => {
+      const m = w.reduce((a, b) => a + b, 0) / w.length;
+      const sd = Math.sqrt(w.reduce((a, v) => a + (v - m) ** 2, 0) / w.length);
+      return ((4 * sd) / m) * 100;
+    };
+    for (let i = 0; i <= 2; i++) expect(out[i]).toBeNaN(); // two non-na values by bar 2
+    expect(out[3]).toBeCloseTo(width([101, 102, 102]), 9);
+    expect(out[4]).toBeCloseTo(width([102, 102, 104]), 9);
+    expect(out[5]).toBeCloseTo(4.812421076236585, 9); // [102, 104, 105]
   });
 
   it("applies mult algebraically (mult<=0 collapses to 0, no absolute-value clamp)", () => {
@@ -5222,7 +5234,7 @@ describe("ta.bbw", () => {
     expect(bbw(stateNeg, 104, 2, -1)).toBeCloseTo((-2 / 103) * 100, 9);
   });
 
-  it("matches a from-scratch brute-force cross-check (literal pine2py bbw.py+bb.py port) with NaN gaps (length=4, mult=1.5)", () => {
+  it("matches a from-scratch brute-force cross-check (window of the last `length` non-na values) with NaN gaps (length=4, mult=1.5)", () => {
     const state = {};
     const length = 4;
     const mult = 1.5;
@@ -5232,26 +5244,18 @@ describe("ta.bbw", () => {
     ];
 
     function bruteForce(sources: number[]): number[] {
-      // pine2py bbw.py+bb.py 그대로: 매 바 O(length) 재스캔.
+      // Every bar rescans back for the last `length` non-na values (see the ta.bb cross-check).
       const out: number[] = [];
       for (let bar = 0; bar < sources.length; bar++) {
-        if (bar + 1 < length) {
-          out.push(NaN);
-          continue;
-        }
         let total = 0;
         const win: number[] = [];
-        let hasNaN = false;
-        for (let i = 0; i < length; i++) {
-          const v = sources[bar - i]!;
-          if (Number.isNaN(v)) {
-            hasNaN = true;
-            break;
-          }
+        for (let i = bar; i >= 0 && win.length < length; i--) {
+          const v = sources[i]!;
+          if (Number.isNaN(v)) continue;
           total += v;
           win.push(v);
         }
-        if (hasNaN) {
+        if (win.length < length) {
           out.push(NaN);
           continue;
         }
