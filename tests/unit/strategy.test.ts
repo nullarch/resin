@@ -2822,14 +2822,20 @@ describe("StrategyState close_all + qty 부분 청산 (C168 여섯째 슬라이�
   });
 });
 
-describe("StrategyState close/close_all immediately= (C379, hand-verified — pine2py 오라클 불가)", () => {
+// immediately=true fills at the bar's close once the script body has run (Context.finishBar →
+// settleImmediateCloses), so the body keeps reading the pre-close position. Tier 2: resin-harness
+// suites/strategy/probes/C59.json (bars 3 and 18) and C60.json; these tests used to read the fill
+// right after the call, when resin filled it inside the body.
+describe("StrategyState close/close_all immediately= (C379; settled after the body: C59, C60)", () => {
   it("close(immediately=true) fills at the current bar's close, not the next bar's open", () => {
     const st = new StrategyState();
     st.entry("A", "long", 2);
     st.processFills(10); // 롱 2 @ 10
-    st.close("A", undefined, undefined, true, undefined, true, 13, 5); // 이번 바 close=13, idx=5
-    expect(st.posSize).toBe(0); // 큐잉 없이 콜타임에 즉시 체결
+    st.close("A", undefined, undefined, true, undefined, true);
+    expect(st.posSize).toBe(2); // the body still sees the open position
     expect(st.closePending).toBe(false); // pending 큐를 아예 안 거침
+    st.settleImmediateCloses(13, 5); // 이번 바 close=13, idx=5
+    expect(st.posSize).toBe(0);
     expect(st.realizedPnl).toBe(6); // (13-10)*2
     expect(st.closedTrades).toBe(1);
     expect(st.lastClosedExitBarIndex).toBe(5);
@@ -2839,7 +2845,8 @@ describe("StrategyState close/close_all immediately= (C379, hand-verified — pi
     const st = new StrategyState();
     st.entry("A", "long", 2);
     st.processFills(10);
-    st.close("A", undefined, undefined, true, undefined, false, 13, 5);
+    st.close("A", undefined, undefined, true, undefined, false);
+    st.settleImmediateCloses(13, 5);
     expect(st.posSize).toBe(2); // 아직 미체결 — 큐잉만 됨
     expect(st.closePending).toBe(true);
     st.processFills(20);
@@ -2851,7 +2858,8 @@ describe("StrategyState close/close_all immediately= (C379, hand-verified — pi
     const st = new StrategyState();
     st.entry("A", "long", 2);
     st.processFills(10);
-    st.close("B", undefined, undefined, true, undefined, true, 13, 5); // id 불일치
+    st.close("B", undefined, undefined, true, undefined, true); // id 불일치
+    st.settleImmediateCloses(13, 5);
     expect(st.posSize).toBe(2);
     expect(st.realizedPnl).toBe(0);
   });
@@ -2860,27 +2868,33 @@ describe("StrategyState close/close_all immediately= (C379, hand-verified — pi
     const st = new StrategyState();
     st.entry("A", "long", 2);
     st.processFills(10);
-    st.close("A", undefined, undefined, false, undefined, true, 13, 5);
+    st.close("A", undefined, undefined, false, undefined, true);
+    st.settleImmediateCloses(13, 5);
     expect(st.posSize).toBe(2);
     expect(st.closePending).toBe(false);
   });
 
-  it("close(qty=, immediately=true) partially closes now, leaving the remainder open", () => {
+  it("close(qty=, immediately=true) partially closes at the close, leaving the remainder open", () => {
     const st = new StrategyState();
     st.entry("A", "long", 4);
     st.processFills(10);
-    st.close("A", 1, undefined, true, undefined, true, 13, 5);
+    st.close("A", 1, undefined, true, undefined, true);
+    expect(st.posSize).toBe(4);
+    st.settleImmediateCloses(13, 5);
     expect(st.posSize).toBe(3); // 잔여 포지션은 그대로
     expect(st.posAvgPrice).toBe(10); // avg 유지
     expect(st.entryId).toBe("A");
     expect(st.realizedPnl).toBe(3); // (13-10)*1
   });
 
-  it("close_all(immediately=true) closes the entire position now, ignoring id", () => {
+  it("close_all(immediately=true) closes the entire position at the close, ignoring id", () => {
     const st = new StrategyState();
     st.entry("A", "long", 2);
     st.processFills(10);
-    st.close_all("bye", true, true, 17, 9);
+    st.close_all("bye", true, true);
+    expect(st.posSize).toBe(2);
+    expect(st.closedTrades).toBe(0);
+    st.settleImmediateCloses(17, 9);
     expect(st.posSize).toBe(0);
     expect(st.closePending).toBe(false);
     expect(st.realizedPnl).toBe(14); // (17-10)*2
@@ -2894,7 +2908,9 @@ describe("StrategyState close/close_all immediately= (C379, hand-verified — pi
     st.processFills(10);
     st.exit("X", null, 15, 8);
     expect(st.exitPending).toBe(true);
-    st.close_all(undefined, true, true, 12, 3);
+    st.close_all(undefined, true, true);
+    expect(st.exitPending).toBe(true);
+    st.settleImmediateCloses(12, 3);
     expect(st.posSize).toBe(0);
     expect(st.exitPending).toBe(false);
   });
@@ -2903,7 +2919,8 @@ describe("StrategyState close/close_all immediately= (C379, hand-verified — pi
     const st = new StrategyState();
     st.entry("A", "long", 2);
     st.processFills(10);
-    st.close_all(undefined, false, true, 17, 9);
+    st.close_all(undefined, false, true);
+    st.settleImmediateCloses(17, 9);
     expect(st.posSize).toBe(2);
   });
 
@@ -2913,12 +2930,42 @@ describe("StrategyState close/close_all immediately= (C379, hand-verified — pi
     st.processFills(10);
     st.close_all(); // 다음 바 open 큐잉
     expect(st.closeAllPending).toBe(true);
-    st.close("A", undefined, undefined, true, undefined, true, 13, 5); // 즉시 체결이 먼저 발동
+    st.close("A", undefined, undefined, true, undefined, true);
+    st.settleImmediateCloses(13, 5); // 즉시 체결이 먼저 발동
     expect(st.posSize).toBe(0);
     expect(st.realizedPnl).toBe(6); // (13-10)*2 — close 가격 기준
     st.processFills(20); // 이미 flat이라 남아있던 close_all pending은 no-op
     expect(st.posSize).toBe(0);
     expect(st.realizedPnl).toBe(6);
+  });
+
+  // C60 bar 15: two immediate closes of one id; the first flattens, the second meets no position.
+  it("an immediate close meeting a position an earlier one flattened fills nothing", () => {
+    const st = new StrategyState();
+    st.entry("A", "long", 1);
+    st.processFills(10);
+    st.site(1).close("A", undefined, "a", true, undefined, true);
+    st.site(2).close("A", undefined, "again", true, undefined, true);
+    st.settleImmediateCloses(12, 4);
+    expect(st.posSize).toBe(0);
+    expect(st.closedTrades).toBe(1);
+    expect(st.lastClosedExitComment).toBe("a");
+  });
+
+  // C60 bar 12: the immediate close_all counts among the bar's placed orders, so the same-direction
+  // entry placed after it is not a pyramid add under pyramiding=1 and fills at the next open.
+  it("an entry placed after an immediate close_all passes the pyramiding gate", () => {
+    const st = new StrategyState();
+    st.entry("A", "long", 3);
+    st.processFills(10);
+    st.close_all("now", true, true);
+    st.entry("B", "long", 1);
+    expect(st.entryPending).toBe(true);
+    st.settleImmediateCloses(12, 4);
+    expect(st.posSize).toBe(0);
+    st.processFills(13);
+    expect(st.posSize).toBe(1);
+    expect(st.entryId).toBe("B");
   });
 });
 
@@ -3163,21 +3210,23 @@ describe("strategy.close_all / qty= codegen emission (C168)", () => {
       '$.strategy.site(1).close_all("bye!");',
     );
     expect(transpileCode('strategy("s")\nstrategy.close_all("EOD", "End of Day Exit", true)')).toContain(
-      '$.strategy.site(1).close_all("EOD", undefined, true, $.close.get(0), $.idx, $.barTimeMs);',
+      '$.strategy.site(1).close_all("EOD", undefined, true);',
     );
     expect(transpileCode('strategy("s")\nstrategy.close_all(close > open, "bye!")')).toContain(
       '$.strategy.site(1).close_all("bye!", rt.pineGt($.close.get(0), $.open.get(0)));',
     );
     // v6 has no `when` overload.
     expect(transpileCode(V6 + 'strategy("s")\nstrategy.close_all("bye!", "msg", true)')).toContain(
-      '$.strategy.site(1).close_all("bye!", undefined, true, $.close.get(0), $.idx, $.barTimeMs);',
+      '$.strategy.site(1).close_all("bye!", undefined, true);',
     );
   });
 
-  it("lowers immediately= on strategy.close_all to the 3rd slot + implicit close/idx/barTimeMs (C379/C418)", () => {
+  // The bar's close/index/time are not passed: the fill happens in Context.finishBar
+  // (StrategyState.settleImmediateCloses; resin-harness suites/strategy/probes/C59.json, C60.json).
+  it("lowers immediately= on strategy.close_all to the 3rd slot", () => {
     const code = transpileCode('strategy("s")\nstrategy.close_all(immediately=true)');
     expect(code).toContain(
-      "$.strategy.site(1).close_all(undefined, undefined, true, $.close.get(0), $.idx, $.barTimeMs);",
+      "$.strategy.site(1).close_all(undefined, undefined, true);",
     );
   });
 
@@ -3213,10 +3262,10 @@ describe("strategy.close_all / qty= codegen emission (C168)", () => {
     expect(code).toContain('$.strategy.site(1).close("L", undefined, undefined, rt.pineGt($.close.get(0), $.open.get(0)));');
   });
 
-  it("lowers immediately= on strategy.close to the 6th slot + implicit close/idx/barTimeMs (C379/C418)", () => {
+  it("lowers immediately= on strategy.close to the 6th slot (no bar values: see close_all above)", () => {
     const code = transpileCode('strategy("s")\nstrategy.close("L", immediately=true)');
     expect(code).toContain(
-      '$.strategy.site(1).close("L", undefined, undefined, undefined, undefined, true, $.close.get(0), $.idx, $.barTimeMs);',
+      '$.strategy.site(1).close("L", undefined, undefined, undefined, undefined, true);',
     );
   });
 
@@ -6342,17 +6391,21 @@ describe("StrategyState.closedtrades/opentrades.entry_time/exit_time/commission 
     expect(Number.isNaN(st.closedTradeExitTime(0))).toBe(true);
   });
 
-  it("close(immediately=true)/close_all(immediately=true) also capture exit_time via the injected currentBarTimeMs (C418 threads it alongside currentClose/currentBarIndex)", () => {
+  // The bar's time comes with the settlement at the bar's end (Context.finishBar), no longer injected
+  // into the call (resin-harness suites/strategy/probes/C59.json).
+  it("close(immediately=true)/close_all(immediately=true) also capture exit_time from the bar they settle on (C418)", () => {
     const st = new StrategyState();
     st.entry("A", "long", 1);
     st.processFills(10, undefined, undefined, 0, 1000);
-    st.close("A", undefined, undefined, true, undefined, true, 13, 5, 4000); // 즉시 체결
+    st.close("A", undefined, undefined, true, undefined, true);
+    st.settleImmediateCloses(13, 5, 4000); // 즉시 체결
     expect(st.closedTradeExitTime(0)).toBe(4000);
 
     const st2 = new StrategyState();
     st2.entry("B", "long", 1);
     st2.processFills(10, undefined, undefined, 0, 1000);
-    st2.close_all("bye", true, true, 17, 9, 5000);
+    st2.close_all("bye", true, true);
+    st2.settleImmediateCloses(17, 9, 5000);
     expect(st2.closedTradeExitTime(0)).toBe(5000);
   });
 });
@@ -9323,7 +9376,8 @@ describe("StrategyState slippage (market and stop fills move N ticks against the
     const st = slip(5);
     st.entry("L", "long", 1);
     st.processFills(100, 101, 99.5, 0);
-    st.close("L", undefined, undefined, true, undefined, true, 105, 0);
+    st.close("L", undefined, undefined, true, undefined, true);
+    st.settleImmediateCloses(105, 0);
     expect(st.closedTradeRecords[0]!.exitPrice).toBe(104.95);
   });
 

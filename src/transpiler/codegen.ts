@@ -4808,10 +4808,9 @@ function genCallExpr(
       // comment_trailing=(C673, hand-verified)는 when=보다도 뒤(exit 15번, C129 "실제 지정된 가장
       // 뒤쪽 슬롯까지만" 원칙 — 기존 when= 전용 출력도 무변화) — 값은 그대로 넘기고 트리거별 선택은
       // comment_loss/profit과 동일하게 runtime/strategy.ts가 체결 시점에 수행.
-      // immediately=(C379, hand-verified)는 close 5번(qty_percent 뒤)/close_all 2번(when 뒤) — 값
-      // 자체는 그대로 넘기되, 이 kwarg가 실제로 쓰였을 때만 이어서 currentClose/currentBarIndex를
-      // 암묵 추가 슬롯으로 붙인다(아래 별도 블록, C129 "실제 지정된 가장 뒤쪽 슬롯까지만" 원칙 —
-      // immediately 없는 기존 콜사이트는 바이트 무변화). exit의 when=(C380)은 entry/order/close/
+      // immediately=(C379)는 close 5번(qty_percent 뒤)/close_all 2번(when 뒤) — the runtime fills
+      // those orders at the bar's close after the body (StrategyState.settleImmediateCloses), so
+      // nothing about the bar is passed with them. exit의 when=(C380)은 entry/order/close/
       // close_all(C372/C293/C378)과 동일 게이트를 comment_profit= 뒤 14번 슬롯으로 마저 이식(기존
       // 마지막 슬롯 전용 출력 무변화). cancel의 when=(C708)은 id 뒤 1번 슬롯(기존 id 전용 출력
       // 무변화) — runtime StrategyState.cancel(id, when)이 함수 최상단에서 게이팅(hand-verified,
@@ -4877,17 +4876,6 @@ function genCallExpr(
           if (slot === undefined) continue; // 방어적 fallback(현재 전 kwargs가 슬롯을 가짐)
           while (args.length < slot) args.push("undefined");
           args[slot] = genExpr(kw.value, program, funcCtx);
-        }
-        if (
-          (builtinName === "strategy.close" || builtinName === "strategy.close_all") &&
-          namedArgs.some((kw) => kw.name === "immediately")
-        ) {
-          // immediately=(C379) — 런타임이 "이 바의 close가로 지금 체결"하려면 codegen이 현재 바의
-          // close 가격/인덱스를 암묵 주입해야 한다(트레이드 접근자 OPEN_TRADE_CLOSE_PRICE_METHODS의
-          // $.close.get(0) unshift와 동일 원리). immediately가 안 쓰이면 이 세 슬롯 자체가 안 생겨
-          // 기존 출력 무변화(C129). $.barTimeMs(C418)는 이 즉시 체결 경로의 closedtrades.exit_time
-          // 스냅샷 소스 — time() 빌트인(위 "time" 분기)이 쓰는 것과 동일한 Context 필드.
-          args.push("$.close.get(0)", "$.idx", "$.barTimeMs");
         }
       }
       if (builtinName === "strategy.close" || builtinName === "strategy.close_all") {

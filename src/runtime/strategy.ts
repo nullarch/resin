@@ -91,6 +91,16 @@ interface PendingClose {
   seq: number;
 }
 
+// A strategy.close()/close_all() order placed with immediately=true, waiting for the end of the
+// script body (settleImmediateCloses). `id` null = close_all; `qty` is sized when the call is made;
+// `seq` is its place among the orders placed on the bar (positionAfterPlacedMarketOrders).
+interface ImmediateClose {
+  id: string | null;
+  qty: number;
+  comment: string;
+  seq: number;
+}
+
 // One exit order of a strategy.exit() call. A call places one per filled entry it covers — each
 // entry of its from_entry id, or every entry of the position without one — and one for a still
 // pending entry order it covers, which is handed to the entry the order produces when it fills
@@ -540,6 +550,9 @@ export class StrategyState {
   orderSeq: number;
   // The unfilled strategy.close()/close_all() orders, in placement order.
   pendingCloses: PendingClose[];
+  // The strategy.close()/close_all(immediately=true) orders the body placed on this bar, in call
+  // order (see settleImmediateCloses).
+  immediateCloses: ImmediateClose[];
   // The statement the next close()/close_all() call comes from (site; see PendingClose).
   private nextSite: number;
   // The strategy.exit() orders (see ExitLeg), in placement order. A consumed leg stays here, out of
@@ -729,6 +742,7 @@ export class StrategyState {
     this.pendingEntries = [];
     this.orderSeq = 0;
     this.pendingCloses = [];
+    this.immediateCloses = [];
     this.nextSite = 0;
     this.exitLegs = [];
     this.exitSeq = 0;
@@ -827,10 +841,16 @@ export class StrategyState {
   // measured on TradingView: "a close hands its slot over (a close_all ahead of a same-id re-entry is
   // what lets that entry through under pyramiding=1), and a pending reversal entry makes the next
   // opposite-direction entry a reversal of its own instead of a pyramid add". Every market order
-  // pending while the script body runs was placed on this bar (processFills consumes them).
+  // pending while the script body runs was placed on this bar (processFills consumes them). The
+  // closes placed with immediately=true count among them in their place: they wait in the oracle's
+  // market book like the others until the body ends (settleImmediateCloses), so an entry placed
+  // after an immediate close_all under pyramiding=1 goes through (resin-harness
+  // suites/strategy/probes/C60.json, bar 12).
   private positionAfterPlacedMarketOrders(): number {
     let size = this.posSize;
-    const closes = this.pendingCloses;
+    const closes = this.immediateCloses.length === 0
+      ? this.pendingCloses
+      : [...this.pendingCloses, ...this.immediateCloses].sort((a, b) => a.seq - b.seq);
     let c = 0;
     for (const e of this.pendingEntries) {
       if (StrategyState.isPriceBased(e)) continue;
@@ -843,7 +863,7 @@ export class StrategyState {
   }
 
   // A close order only ever shrinks the position; an over-close lands flat.
-  private static sizeAfterClose(size: number, c: PendingClose): number {
+  private static sizeAfterClose(size: number, c: PendingClose | ImmediateClose): number {
     const rest = Math.abs(size) - c.qty;
     return rest > 0 ? Math.sign(size) * rest : 0;
   }
@@ -1679,7 +1699,7 @@ export class StrategyState {
   // it closed; a partly consumed trade stays open with the rest. `binding` is what the closing order
   // is bound to — an exit leg's entry, a strategy.close() id, or null when unbound — used to settle
   // the entry book (settleEntryBook). Callers: the close/exit fills and the reversal/netting legs in
-  // processFills, and the immediately= paths of close/close_all.
+  // processFills, and the immediately= closes (settleImmediateCloses).
   //
   // `reversal` marks the closing leg of an order that also opens a position in its own direction.
   // When such a long order closes a short trade opened at the same moment (fillMoment) and price,
@@ -2399,10 +2419,8 @@ export class StrategyState {
   // 파라미터가 "생략"과 "명시적 undefined"를 동일 취급)은 항상 true로 떨어져 기존 호출 무변화.
   // qty_percent=(C373, hand-verified) — exit()의 qty_percent와 동일 메커니즘(qty 우선, 생략 시에만
   // |posSize|*percent/100 콜타임 계산). posSize===0 조기 반환이 이 계산보다 먼저라 division 걱정 없음.
-  // immediately=(C379, hand-verified — pine2py는 close()가 **kwargs로 흡수해 오라클 불가, TV 공식
-  // 시맨틱은 "다음 바 open" 큐잉을 건너뛰고 이 바에서 즉시 체결) — currentClose/currentBarIndex는
-  // codegen이 $.close.get(0)/$.idx를 암묵 주입한다(트레이드 접근자 OPEN_TRADE_CLOSE_PRICE_METHODS의
-  // unshift와 동일 원리). id 매칭/when 게이트는 즉시·큐잉 두 경로가 공유(분기는 그 이후에만 갈림).
+  // immediately=true fills the order at this bar's close instead of the next open, once the body has
+  // run (settleImmediateCloses); the id/when gates and the sizing are the queued path's.
   // The id of the exit order strategy.close(id) creates. strategies.txt: the command's id
   // "specifies the entry ID of an open trade. It does not represent the ID of the resulting exit
   // order." TradingView names that order "Close entry(s) order <id>" (the oracle's exit_id).
@@ -2414,14 +2432,13 @@ export class StrategyState {
   // suites/strategy/probes/C03.json, C56.json).
   private static readonly CLOSE_ALL_EXIT_ID = "Close position order";
 
-  private static pendingCloseExitId(c: PendingClose): string {
+  private static pendingCloseExitId(c: PendingClose | ImmediateClose): string {
     return c.id === null ? StrategyState.CLOSE_ALL_EXIT_ID : StrategyState.closeExitId(c.id);
   }
 
   close(
     id: string | null | undefined, qty?: number, comment?: string, when: boolean = true,
-    qtyPercent?: number, immediately?: boolean, currentClose?: number, currentBarIndex?: number,
-    currentBarTimeMs?: number,
+    qtyPercent?: number, immediately?: boolean,
   ): void {
     const site = this.nextSite;
     this.nextSite = 0;
@@ -2449,13 +2466,38 @@ export class StrategyState {
       // (pynecore lib/strategy `_discard_deferred_immediate_closes`: "Undo any immediate close a
       // COOF trial body run enqueued (position-side analog of the restored var state)").
       if (this.recalc) return;
-      // A market order at the close: slipped against the position (closing a long sells).
-      const fill = this.slipped(currentClose ?? NaN, this.posSize > 0 ? -1 : 1);
-      this.beginOrder();
-      this.closeAt(fill, q, cmt, currentBarIndex ?? NaN, StrategyState.closeExitId(id), currentBarTimeMs ?? NaN, id);
+      this.immediateCloses.push({ id, qty: q, comment: cmt, seq: ++this.orderSeq });
       return;
     }
     this.queueClose(site, id, q, cmt);
+  }
+
+  // Fills the strategy.close()/close_all(immediately=true) orders the body placed on this bar, in
+  // call order, at this bar's close (Context.finishBar, before the process_orders_on_close pass).
+  // strategies.txt (the immediately tip under "process_orders_on_close"): "If the value is true, the
+  // broker emulator fills the resulting market order on the same tick where the strategy calls the
+  // command"; faq.txt: it "causes the broker emulator to close a position on the same tick that the
+  // strategy creates the close order – meaning, when bar closes instead of the beginning of the next
+  // one." The fill comes after the script's execution on that tick, so the body never sees it:
+  // every strategy.* value it reads after the call (position_size, closedtrades, equity, ...) is
+  // still the pre-close one, as after any order placement. The oracle defers them the same way
+  // (tier 2, pynecore
+  // `settle_immediate_closes`: "Runs right AFTER the body ... so the whole position stays coherent
+  // — fully open — for the rest of the bar and every strategy.* series ... reads its pre-close
+  // value"). A close meeting a position an earlier one already flattened fills nothing. Each is a
+  // market order at the close, slipped against the position (closing a long sells). Repro:
+  // resin-harness suites/strategy/probes/C59.json (bars 3 and 18: position_size 1 and 3, not 0).
+  settleImmediateCloses(closePrice: number, barIndex: number = NaN, barTimeMs: number = NaN): void {
+    if (this.immediateCloses.length === 0) return;
+    for (const c of this.immediateCloses) {
+      if (this.posSize === 0) break;
+      this.beginOrder();
+      this.closeAt(
+        this.slipped(closePrice, this.posSize > 0 ? -1 : 1), c.qty, c.comment, barIndex,
+        StrategyState.pendingCloseExitId(c), barTimeMs, c.id,
+      );
+    }
+    this.immediateCloses.length = 0;
   }
 
   // Sets the statement the next close()/close_all() call comes from (codegen:
@@ -2489,13 +2531,10 @@ export class StrategyState {
   // behind a same-bar partial close fills too"). when=(C378)은 pine2py
   // close_all(comment: str="", when: bool=True)의 게이트 파라미터 literal port — entry/order
   // (C372)/close(C293)와 동일하게 함수 최상단에서 flat 검증보다 먼저 판정한다(when=false면 posSize
-  // 상태와 무관하게 무조건 no-op). immediately=(C379) — close()와 동일 원리(pine2py close_all()은
-  // **kwargs 자체가 없어 구조적 크래시, hand-verified). The order has no entry id; TradingView
-  // names it "Close position order" (CLOSE_ALL_EXIT_ID), on both paths.
-  close_all(
-    comment?: string, when: boolean = true, immediately?: boolean,
-    currentClose?: number, currentBarIndex?: number, currentBarTimeMs?: number,
-  ): void {
+  // 상태와 무관하게 무조건 no-op). immediately=true fills at this bar's close once the body has run,
+  // as in close() (settleImmediateCloses). The order has no entry id; TradingView names it "Close
+  // position order" (CLOSE_ALL_EXIT_ID), on both paths.
+  close_all(comment?: string, when: boolean = true, immediately?: boolean): void {
     const site = this.nextSite;
     this.nextSite = 0;
     if (!when) return;
@@ -2503,9 +2542,7 @@ export class StrategyState {
     const cmt = comment ?? "";
     if (immediately) {
       if (this.recalc) return; // as in close()
-      const fill = this.slipped(currentClose ?? NaN, this.posSize > 0 ? -1 : 1); // as in close()
-      this.beginOrder();
-      this.closeAt(fill, Infinity, cmt, currentBarIndex ?? NaN, StrategyState.CLOSE_ALL_EXIT_ID, currentBarTimeMs ?? NaN);
+      this.immediateCloses.push({ id: null, qty: Infinity, comment: cmt, seq: ++this.orderSeq });
       return;
     }
     this.queueClose(site, null, Infinity, cmt);

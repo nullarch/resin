@@ -648,12 +648,14 @@ export class Context {
     this.strategy.updateStatistics(this.high.get(0), this.low.get(0));
   }
 
-  // The end of a bar, after the script body ran. With
+  // The end of a bar, after the script body ran. The closes the body placed
+  // with immediately=true fill at this bar's close first. With
   // strategy(process_orders_on_close=true) the broker emulator makes one more
   // fill attempt at this bar's close for the orders the body just placed.
   // Then the broker emulator judges margin calls at the close (a strategy with
   // no margin set skips them).
   finishBar(): void {
+    this.strategy.settleImmediateCloses(this.close.get(0), this.idx, this.barTimeMs);
     this.strategy.processFillsAtClose(this.close.get(0), this.idx, this.barTimeMs);
     this.strategy.settleMargin(this.close.get(0), this.idx, this.barTimeMs);
   }
