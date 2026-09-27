@@ -10289,6 +10289,50 @@ describe("strategy.exit legs (one per exit id and entry)", () => {
     expect(st.posSize).toBe(-1);
   });
 
+  // The oracle (tier 2) fixes a leg's side when the call places it: placed while entry "B" was a
+  // short order, it is a buy, and the long the re-placed "B" order opens is not what it closes.
+  it("a leg placed on a short entry order re-placed as a long closes nothing (repro mixed-seed-575.json)", () => {
+    const st = new StrategyState();
+    st.entry("B", "short", 1);
+    st.exit("BX", "B", 97.76, 99.13);
+    st.entry("B", "long", 2);
+    // The long fills at the open; the buy leg is reached on the way down to 97.45 and leaves the book.
+    st.processFills(98.38, 99.88, 97.45);
+    expect(st.posSize).toBe(2);
+    expect(st.closedTradeRecords).toEqual([]);
+    expect(st.exitLegs).toEqual([]);
+    st.exit("BX", "B", 97.76, 99.13); // re-issued on the long: a sell, past both levels at the next open
+    st.processFills(98.75, 99.33, 96.86);
+    expect(st.closedTradeRecords.map((r) => [r.exitId, r.exitBarIndex, r.exitPrice, r.size])).toEqual([["BX", NaN, 98.75, 2]]);
+  });
+
+  it("a leg placed for the other side and not re-issued never closes the position", () => {
+    const st = new StrategyState();
+    st.entry("B", "long", 2);
+    st.exit("BX", "B", 97.76, 99.13);
+    st.entry("B", "short", 1);
+    st.processFills(98.38, 99.88, 97.45);
+    st.processFills(98.75, 99.33, 96.86);
+    expect(st.posSize).toBe(-1);
+    expect(st.closedTradeRecords).toEqual([]);
+  });
+
+  it("a leg placed for the other side still cuts its named OCA group by its slice when reached", () => {
+    const st = new StrategyState();
+    st.configure(1, 3);
+    st.entry("B", "short", 1);
+    st.exit(
+      "BX", "B", 97.76, 99.13, undefined, undefined, undefined, undefined, undefined, undefined, undefined,
+      undefined, undefined, undefined, true, undefined, "G",
+    );
+    st.entry("B", "long", 2);
+    st.entry("C", "long", 3, undefined, 99.5, undefined, true, "G", "reduce");
+    // BX (a buy of 2 after the long fill) is reached at 97.76 and cuts C from 3 to 1; C then fills
+    // at 99.5 on the way up. The oracle: resin-harness state/repros/exit-leg-side-oca.json.
+    st.processFills(98.38, 99.88, 97.45);
+    expect(st.posSize).toBe(3);
+  });
+
   it("cancel(id) removes every leg of the exit id", () => {
     const st = new StrategyState();
     st.configure(1, 2);

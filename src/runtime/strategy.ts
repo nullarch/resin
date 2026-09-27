@@ -119,6 +119,11 @@ interface ExitLeg {
   id: string;
   entryId: string; // the id of the entry it is bound to (its from_entry, or the entry's own id)
   binding: EntryBinding | null; // the filled entry; null while it waits on a pending entry order
+  // The side of the position it closes (1 = long, it sells; -1 = short, it buys), fixed by the call
+  // that places or modifies it: its filled entry's side, or the pending entry order's direction at
+  // that moment. A leg whose pending order is re-placed in the other direction later on the bar keeps
+  // it and cannot close the position that order opens (see executeLeg).
+  side: number;
   reserved: number; // its slice of the entry, in contracts
   boundSize: number; // the entry size the slice was taken off; NaN = not sized yet (see exit())
   qty: number; // strategy.exit(qty=) (NaN = not given)
@@ -753,7 +758,7 @@ export class StrategyState {
     this.pathUpFirst = false;
     this.fillMoment = 0;
     this.legTemplate = {
-      id: "", entryId: "", binding: null, reserved: 0, boundSize: NaN, qty: NaN, qtyPercent: NaN,
+      id: "", entryId: "", binding: null, side: 0, reserved: 0, boundSize: NaN, qty: NaN, qtyPercent: NaN,
       limit: NaN, stop: NaN, profitPoints: NaN, lossPoints: NaN, trailPoints: NaN, trailOffset: NaN,
       trailPriceArg: NaN, trailPrice: NaN, comment: "", commentLoss: null, commentProfit: null,
       commentTrailing: null, ocaName: "", ocaCut: 0, consumed: false, placedThisBar: false, seq: 0,
@@ -961,8 +966,9 @@ export class StrategyState {
   // stands on its from_entry id, not on the one entry that was open when the script issued it: an
   // entry filling LATER gets its own leg off the same call, priced from its OWN fill". A waiting leg
   // with no slice yet is sized now; a leg taking all that is left grows to the fill. Both kinds are
-  // live on the fill bar (freshLegs).
-  private bindLegs(b: EntryBinding): void {
+  // live on the fill bar (freshLegs). A waiting leg keeps the side it was placed with; a spawned one
+  // closes the fill's `side`.
+  private bindLegs(b: EntryBinding, side: number): void {
     const n = this.exitLegs.length;
     for (let i = 0; i < this.exitLegs.length; ) {
       const l = this.exitLegs[i]!;
@@ -991,7 +997,7 @@ export class StrategyState {
       const reserved = this.legSlice(src.qty, src.qtyPercent, b.size, 0);
       if (!(reserved > 0)) continue;
       const leg: ExitLeg = {
-        ...src, binding: b, reserved, boundSize: b.size, trailPrice: NaN, ocaCut: 0, consumed: false,
+        ...src, binding: b, side, reserved, boundSize: b.size, trailPrice: NaN, ocaCut: 0, consumed: false,
         placedThisBar: false, seq: ++this.exitSeq,
       };
       this.exitLegs.push(leg);
@@ -1051,7 +1057,7 @@ export class StrategyState {
     });
     const binding = { entryId, bound: Math.abs(signedQty), entryPrice: fillPrice, size: Math.abs(signedQty) };
     this.entryBook.push(binding);
-    this.bindLegs(binding);
+    this.bindLegs(binding, Math.sign(signedQty));
     this.posSize += signedQty;
     // The peak is the position's, not one trade's: the oracle (tier 2, measured on TradingView with
     // pyramiding 3) reports 3 for long legs of 1 and 2, and 7 for short legs of 4 and 3; tier 1
@@ -2298,17 +2304,20 @@ export class StrategyState {
       return;
     }
     const from = fromEntry ?? "";
-    for (const b of this.entryBook) if (from === "" || b.entryId === from) this.placeLeg(b.entryId, b, b.size);
+    const posSide = this.posSize > 0 ? 1 : -1;
+    for (const b of this.entryBook) if (from === "" || b.entryId === from) this.placeLeg(b.entryId, b, b.size, posSide);
     for (const e of this.pendingEntries) {
       if (from !== "" ? e.id !== from : this.posSize !== 0 && this.posSize > 0 !== (e.direction === "long")) continue;
-      this.placeLeg(e.id, null, this.pendingEntryOpens(e));
+      this.placeLeg(e.id, null, this.pendingEntryOpens(e), e.direction === "long" ? 1 : -1);
     }
   }
 
   // Places (or modifies) the leg of the call in legTemplate on one target: a filled entry
-  // (`binding`), or the pending entry order `entryId` (binding null) opening `bound` contracts.
-  private placeLeg(entryId: string, binding: EntryBinding | null, bound: number): void {
+  // (`binding`), or the pending entry order `entryId` (binding null) opening `bound` contracts, on
+  // the position side `side` (see ExitLeg.side).
+  private placeLeg(entryId: string, binding: EntryBinding | null, bound: number, side: number): void {
     const t = this.legTemplate;
+    t.side = side;
     const existing = this.findLeg(t.id, entryId, binding);
     // A leg that has filled is not placed again while its entry is open (see ExitLeg).
     if (existing !== undefined && existing.consumed) return;
@@ -2341,6 +2350,7 @@ export class StrategyState {
 
   // Copies what a strategy.exit() call states onto a leg.
   private static assignLegSpec(dst: ExitLeg, src: ExitLeg): void {
+    dst.side = src.side;
     dst.qty = src.qty;
     dst.qtyPercent = src.qtyPercent;
     dst.limit = src.limit;
@@ -3529,7 +3539,7 @@ export class StrategyState {
     for (const l of this.exitLegs) if (l.placedThisBar && !l.consumed && l.binding !== null) due.push(l);
     for (const l of due) {
       if (this.posSize === 0 || l.consumed || !this.exitLegs.includes(l)) continue;
-      const isLong = this.posSize > 0;
+      const isLong = l.side > 0;
       const base = l.binding!.entryPrice;
       const stop = this.exitStopLevel(l, isLong, base);
       const limit = this.exitLimitLevel(l, isLong, base);
@@ -3548,7 +3558,28 @@ export class StrategyState {
   // closing fill (closeAt), and settles the one entry it is bound to. Having closed all of its slice
   // it is consumed and stays behind while that entry is open (see ExitLeg); having closed less (the
   // position was smaller) it is gone.
+  // A leg placed for the other side (ExitLeg.side: placed while its pending entry order pointed the
+  // other way, and the order was re-placed in this direction afterwards) would add to the position,
+  // and an exit order only ever reduces it: reached, it closes nothing and leaves the book, cutting
+  // its whole slice off the other orders of its named group. This is the oracle's (tier 2) exit
+  // order, whose side `strategy.exit` fixes when it is issued (`_exit_leg`: `size = -direction *
+  // reserved`, the direction "of the position (or pending entry) the leg closes"); `_fill_order`
+  // books no trade for a close order on the position's own side, and `_reduce_oca_group` then
+  // takes the filled size off every order of its group, the leg's own included. A re-issue of the
+  // call on a later bar places it on the side of the position again. The manual is silent on an
+  // entry order re-placed in the other direction after its exit. Repros: resin-harness
+  // state/repros/mixed-seed-575.json (short entry "B", then its exit, then a long entry "B" on one
+  // bar: the long's exit fills on the next bar, from the re-issued call), exit-leg-side-sibling.json
+  // (gone from the book, it no longer holds its slice against a later exit id), exit-leg-side-oca.json
+  // (the cut of its named group).
+  // Not covered: the oracle also counts that no-op as a fill (a calc_on_order_fills re-execution).
   private executeLeg(l: ExitLeg, fill: number, barIndex: number, barTimeMs: number): void {
+    if (l.side > 0 !== this.posSize > 0) {
+      const i = this.exitLegs.indexOf(l);
+      if (i >= 0) this.exitLegs.splice(i, 1);
+      if (l.ocaName !== "") this.applyOca(l.ocaName, "reduce", toUnits(l.reserved - l.ocaCut, this.lotsPerContract));
+      return;
+    }
     if (l.fillKind !== "profit") fill = this.slipped(fill, this.posSize > 0 ? -1 : 1);
     // comment_loss=/comment_profit=/comment_trailing=(C375+C673) — 체결을 결정한 축으로 트리거별
     // 오버라이드를 선택: "profit"→comment_profit=, "loss"→comment_loss=, null(순수 트레일링)→
@@ -3650,8 +3681,9 @@ export class StrategyState {
   // it. The stop-loss and trailing legs are stop orders and the take-profit a limit order
   // (executeLeg prices the slippage).
   //
-  // The walk runs in the position's favourable direction: x = dir × price rises when the market moves
-  // the position's way, so one pass serves longs and shorts. A trailing stop mutates l.trailPrice (its
+  // The walk runs in the favourable direction of the side the leg closes (ExitLeg.side, the
+  // position's but for a leg placed for the other side, see executeLeg): x = dir × price rises when
+  // the market moves that side's way, so one pass serves longs and shorts. A trailing stop mutates l.trailPrice (its
   // line, NaN until it arms): it arms where the path reaches the activation level (trail_price=, or
   // trail_points ticks from the bound entry's fill), sits trail_offset ticks behind the best price
   // since, and with an offset of 0 fills on the arming tick itself. On one segment reaching both, the
@@ -3664,7 +3696,7 @@ export class StrategyState {
   // fills at `gapFill` when given (the pass's node, see queueExitLegs), and at node 2 the take-profit
   // and stop-loss levels are not reached on the leg to the nearer extreme (the trailing line is).
   private walkLeg(l: ExitLeg, seg: number, first: number, gapFill: number = NaN): number {
-    const isLong = this.posSize > 0;
+    const isLong = l.side > 0;
     const dir = isLong ? 1 : -1;
     const base = l.binding!.entryPrice;
     const hasTrail = !Number.isNaN(l.trailPoints) || !Number.isNaN(l.trailPriceArg);
