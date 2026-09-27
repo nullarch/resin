@@ -2986,26 +2986,31 @@ describe("ta.highest/ta.lowest cost guard (C800)", () => {
   });
 });
 
+// ta.stoch/ta.wpr run the extremes' bar-addressed ring (runtime/ta.ts stoch/wpr; PyneCore lib/ta.py
+// stoch/wpr): the calls take the bar index, the warm-up counts bars, an na stoch input skips the
+// extremes on its bar (ref_v6_ta_math.txt ta.stoch "`na` values in the `source` series are
+// ignored"), an na high/low resets them. resin-harness twin state/repros/stoch-wpr-na.json runs
+// these shapes through the oracle (na source, Stoch RSI warm-up, gated and loop call sites, wpr(1)).
 describe("ta.stoch", () => {
-  it("returns NaN while hh/ll are still in warmup (data_len<length)", () => {
+  it("returns NaN while bar_index < length - 1", () => {
     const state = {};
-    expect(stoch(state, 101, 102, 99, 3)).toBeNaN();
-    expect(stoch(state, 102, 103, 100, 3)).toBeNaN();
+    expect(stoch(state, 101, 102, 99, 3, 0)).toBeNaN();
+    expect(stoch(state, 102, 103, 100, 3, 1)).toBeNaN();
   });
 
   it("matches a hand-computed %K once hh/ll fill (length=2)", () => {
     const state = {};
-    stoch(state, 10, 12, 8, 2); // NaN, hh/ll warmup
+    stoch(state, 10, 12, 8, 2, 0); // NaN, warm-up
     // window: high=[12,14] -> hh=14, low=[8,9] -> ll=8, source=13 -> %K=100*(13-8)/(14-8)
-    expect(stoch(state, 13, 14, 9, 2)).toBeCloseTo((100 * (13 - 8)) / (14 - 8), 9);
+    expect(stoch(state, 13, 14, 9, 2, 1)).toBeCloseTo((100 * (13 - 8)) / (14 - 8), 9);
   });
 
-  it("matches the pine2py-verified sample10.json trace (source=close, length=4)", () => {
+  it("matches the sample10.json trace (source=close, length=4)", () => {
     const state = {};
     const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
     const highs = [102, 103, 104, 103, 105, 106, 107, 106, 108, 109];
     const lows = [99, 100, 101, 100, 102, 103, 104, 103, 105, 106];
-    const results = closes.map((c, i) => stoch(state, c, highs[i]!, lows[i]!, 4));
+    const results = closes.map((c, i) => stoch(state, c, highs[i]!, lows[i]!, 4, i));
     expect(results.slice(0, 3).every((r) => Number.isNaN(r))).toBe(true);
     expect(results[3]).toBeCloseTo(60.0, 9);
     expect(results[4]).toBeCloseTo(80.0, 9);
@@ -3019,88 +3024,82 @@ describe("ta.stoch", () => {
   it("keeps independent state across two call sites", () => {
     const stateA = {};
     const stateB = {};
-    stoch(stateA, 10, 12, 8, 2);
-    expect(stoch(stateA, 13, 14, 9, 2)).toBeCloseTo((100 * (13 - 8)) / (14 - 8), 9);
-    expect(stoch(stateB, 100, 102, 98, 2)).toBeNaN();
+    stoch(stateA, 10, 12, 8, 2, 0);
+    stoch(stateB, 100, 102, 98, 2, 0);
+    expect(stoch(stateA, 13, 14, 9, 2, 1)).toBeCloseTo((100 * (13 - 8)) / (14 - 8), 9);
+    expect(stoch(stateB, 101, 103, 99, 2, 1)).toBeCloseTo((100 * (101 - 98)) / (103 - 98), 9);
   });
 
-  it("returns NaN when the high channel value is NaN this bar, poisoning hh even though source/low are valid", () => {
+  it("returns NaN when the high channel value is NaN this bar", () => {
     const state = {};
-    stoch(state, 10, 12, 8, 2); // warm up window
-    expect(stoch(state, 13, NaN, 9, 2)).toBeNaN();
+    stoch(state, 10, 12, 8, 2, 0);
+    expect(stoch(state, 13, NaN, 9, 2, 1)).toBeNaN();
   });
 
-  it("returns NaN when hh/ll are valid but source is NaN this bar (and diff != 0)", () => {
+  it("returns NaN when source is NaN this bar", () => {
     const state = {};
-    stoch(state, 10, 12, 8, 2);
-    expect(stoch(state, NaN, 14, 9, 2)).toBeNaN();
+    stoch(state, 10, 12, 8, 2, 0);
+    expect(stoch(state, NaN, 14, 9, 2, 1)).toBeNaN();
   });
 
   // A flat window divides by zero: na, not pine2py's 50.0 (oracle lib/ta.py stoch divides unguarded;
   // harness ta.osc seed 1 bar 35 and state/repros/div-zero-flat.json).
   it("is NaN for a fully flat window (hh===ll), and for an NaN source", () => {
     const stateA = {};
-    stoch(stateA, 100, 100, 100, 2);
-    expect(stoch(stateA, 100, 100, 100, 2)).toBeNaN();
-    expect(stoch(stateA, 101, 100, 100, 2)).toBe(Infinity);
+    stoch(stateA, 100, 100, 100, 2, 0);
+    expect(stoch(stateA, 100, 100, 100, 2, 1)).toBeNaN();
+    expect(stoch(stateA, 101, 100, 100, 2, 2)).toBe(Infinity);
     const stateB = {};
-    stoch(stateB, NaN, 100, 100, 2);
-    expect(stoch(stateB, NaN, 100, 100, 2)).toBeNaN();
+    stoch(stateB, NaN, 100, 100, 2, 0);
+    expect(stoch(stateB, NaN, 100, 100, 2, 1)).toBeNaN();
   });
 
-  it("matches a from-scratch O(length) brute-force cross-check (Math.max/min over the window) across a sequence with an embedded source NaN gap", () => {
+  // The bar of an na source is skipped: its high and low never enter the window (repro
+  // state/repros/ta.osc-seed-3.json: the na source on bar 12 keeps that bar's high out of bar 17's
+  // window, 79.92 where pine2py's port, which ran the extremes on every bar, gave 76.06).
+  it("leaves the high and low of an na source's bar out of the window (brute-force cross-check)", () => {
     const state = {};
     const length = 3;
     const closeSeq = [10, 11, NaN, 9, 8, 12, 15, 15, 15, 3, 4, 5];
     const highSeq = [11, 12, 13, 10, 9, 13, 16, 16, 16, 4, 5, 6];
     const lowSeq = [9, 10, 11, 8, 7, 11, 14, 14, 14, 2, 3, 4];
-    const results = closeSeq.map((c, i) => stoch(state, c, highSeq[i]!, lowSeq[i]!, length));
+    const results = closeSeq.map((c, i) => stoch(state, c, highSeq[i]!, lowSeq[i]!, length, i));
     for (let i = 0; i < closeSeq.length; i++) {
-      if (i < length - 1) {
+      if (i < length - 1 || Number.isNaN(closeSeq[i])) {
         expect(results[i]).toBeNaN();
         continue;
       }
-      const hiWindow = highSeq.slice(i - length + 1, i + 1);
-      const loWindow = lowSeq.slice(i - length + 1, i + 1);
-      const hh = Math.max(...hiWindow);
-      const ll = Math.min(...loWindow);
-      const diff = hh - ll;
-      if (diff === 0) {
-        expect(results[i]).toBe(50.0);
-      } else if (Number.isNaN(closeSeq[i])) {
-        expect(results[i]).toBeNaN();
-      } else {
-        expect(results[i]).toBeCloseTo((100 * (closeSeq[i]! - ll)) / diff, 9);
-      }
+      const bars = [];
+      for (let b = i - length + 1; b <= i; b++) if (!Number.isNaN(closeSeq[b])) bars.push(b);
+      const hh = Math.max(...bars.map((b) => highSeq[b]!));
+      const ll = Math.min(...bars.map((b) => lowSeq[b]!));
+      expect(results[i]).toBeCloseTo((100 * (closeSeq[i]! - ll)) / (hh - ll), 9);
     }
+    // bar 3's window is bars 1 and 3: hh = 12, not bar 2's 13.
+    expect(results[3]).toBeCloseTo((100 * (9 - 8)) / (12 - 8), 9);
   });
 });
 
-// ta.wpr(length) — Williams %R = 100*(close-hh)/(hh-ll), hh=highest(high,length)/ll=lowest(low,length).
-// **Deliberate divergence from pine2py** (DIVERGENCES.md #7, runtime/ta.ts wpr() comment): reuses
-// rt.ta.highest/rt.ta.lowest's NaN-poison window (a NaN anywhere in the trailing `length` bars poisons
-// the result until that bar ages out of the window) instead of pine2py wpr.py's own skip-NaN window
-// (which only checks the *current* bar and silently skips NaN bars rather than being poisoned by them).
 describe("ta.wpr", () => {
-  it("returns NaN while hh/ll are still in warmup (data_len<length)", () => {
+  it("returns NaN while bar_index < length - 1", () => {
     const state = {};
-    expect(wpr(state, 101, 102, 99, 3)).toBeNaN();
-    expect(wpr(state, 102, 103, 100, 3)).toBeNaN();
+    expect(wpr(state, 101, 102, 99, 3, 0)).toBeNaN();
+    expect(wpr(state, 102, 103, 100, 3, 1)).toBeNaN();
   });
 
   it("matches a hand-computed %R once hh/ll fill (length=2)", () => {
     const state = {};
-    wpr(state, 10, 12, 8, 2); // NaN, hh/ll warmup
+    wpr(state, 10, 12, 8, 2, 0); // NaN, warm-up
     // window: high=[12,14] -> hh=14, low=[8,9] -> ll=8, close=13 -> %R=100*(13-14)/(14-8)
-    expect(wpr(state, 13, 14, 9, 2)).toBeCloseTo((100 * (13 - 14)) / (14 - 8), 9);
+    expect(wpr(state, 13, 14, 9, 2, 1)).toBeCloseTo((100 * (13 - 14)) / (14 - 8), 9);
   });
 
-  it("matches the pine2py-verified sample10.json trace (length=4)", () => {
+  it("matches the sample10.json trace (length=4)", () => {
     const state = {};
     const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
     const highs = [102, 103, 104, 103, 105, 106, 107, 106, 108, 109];
     const lows = [99, 100, 101, 100, 102, 103, 104, 103, 105, 106];
-    const results = closes.map((c, i) => wpr(state, c, highs[i]!, lows[i]!, 4));
+    const results = closes.map((c, i) => wpr(state, c, highs[i]!, lows[i]!, 4, i));
     expect(results.slice(0, 3).every((r) => Number.isNaN(r))).toBe(true);
     expect(results[3]).toBeCloseTo(-40.0, 9);
     expect(results[4]).toBeCloseTo(-20.0, 9);
@@ -3111,54 +3110,61 @@ describe("ta.wpr", () => {
     expect(results[9]).toBeCloseTo(-16.6666666667, 9);
   });
 
+  // PyneCore lib/ta.py wpr: `if length == 1: return close`; twin channel wpr1.
+  it("is the close for length 1", () => {
+    const state = {};
+    expect(wpr(state, 101, 102, 99, 1, 0)).toBe(101);
+    expect(wpr(state, 97.5, 103, 96, 1, 1)).toBe(97.5);
+  });
+
   it("keeps independent state across two call sites", () => {
     const stateA = {};
     const stateB = {};
-    wpr(stateA, 10, 12, 8, 2);
-    expect(wpr(stateA, 13, 14, 9, 2)).toBeCloseTo((100 * (13 - 14)) / (14 - 8), 9);
-    expect(wpr(stateB, 100, 102, 98, 2)).toBeNaN();
+    wpr(stateA, 10, 12, 8, 2, 0);
+    wpr(stateB, 100, 102, 98, 2, 0);
+    expect(wpr(stateA, 13, 14, 9, 2, 1)).toBeCloseTo((100 * (13 - 14)) / (14 - 8), 9);
+    expect(wpr(stateB, 101, 103, 99, 2, 1)).toBeCloseTo((100 * (101 - 103)) / (103 - 98), 9);
   });
 
-  it("returns NaN when the high channel value is NaN this bar, poisoning hh even though close/low are valid", () => {
+  it("returns NaN when the high channel value is NaN this bar", () => {
     const state = {};
-    wpr(state, 10, 12, 8, 2); // warm up window
-    expect(wpr(state, 13, NaN, 9, 2)).toBeNaN();
+    wpr(state, 10, 12, 8, 2, 0);
+    expect(wpr(state, 13, NaN, 9, 2, 1)).toBeNaN();
   });
 
-  it("returns NaN when hh/ll are valid but close is NaN this bar (and diff != 0)", () => {
+  it("returns NaN when hh/ll are valid but close is NaN this bar", () => {
     const state = {};
-    wpr(state, 10, 12, 8, 2);
-    expect(wpr(state, NaN, 14, 9, 2)).toBeNaN();
+    wpr(state, 10, 12, 8, 2, 0);
+    expect(wpr(state, NaN, 14, 9, 2, 1)).toBeNaN();
   });
 
   // A flat window divides by zero: na, not pine2py's 0.0 (oracle lib/ta.py wpr divides unguarded;
   // harness ta.osc seed 1 bar 35 and state/repros/div-zero-flat.json).
   it("is NaN for a fully flat window (hh===ll), and for an NaN close", () => {
     const stateA = {};
-    wpr(stateA, 100, 100, 100, 2);
-    expect(wpr(stateA, 100, 100, 100, 2)).toBeNaN();
+    wpr(stateA, 100, 100, 100, 2, 0);
+    expect(wpr(stateA, 100, 100, 100, 2, 1)).toBeNaN();
     const stateB = {};
-    wpr(stateB, NaN, 100, 100, 2);
-    expect(wpr(stateB, NaN, 100, 100, 2)).toBeNaN();
+    wpr(stateB, NaN, 100, 100, 2, 0);
+    expect(wpr(stateB, NaN, 100, 100, 2, 1)).toBeNaN();
   });
 
-  it("poisons results for `length` bars after a NaN gap (unlike pine2py wpr.py's own skip-NaN window, which would only skip the NaN bar itself and resume immediately — the deliberate divergence documented in DIVERGENCES.md #7)", () => {
+  // An na high/low resets the extremes as it resets ta.highest/ta.lowest (PyneCore lib/ta.py
+  // highest: "A na input RESETS the machine", measured on TradingView): the next bars read the
+  // window restarted after it, where pine2py's poison window stayed na for `length` bars.
+  it("restarts the window after an na high/low instead of blanking the next `length` bars", () => {
     const state = {};
     const length = 3;
-    // idx2 is a NaN bar. Under the poison-window semantics (rt.ta.highest/rt.ta.lowest), that NaN stays
-    // inside the trailing 3-bar window through idx2,3,4 and only exits at idx5 - three consecutive NaN
-    // results (idx2-4), not one.
     const closeSeq = [10, 11, NaN, 9, 8, 12];
     const highSeq = [11, 12, NaN, 10, 9, 13];
     const lowSeq = [9, 10, NaN, 8, 7, 11];
-    const results = closeSeq.map((c, i) => wpr(state, c, highSeq[i]!, lowSeq[i]!, length));
-    expect(results[0]).toBeNaN(); // warmup
-    expect(results[1]).toBeNaN(); // warmup
-    expect(results[2]).toBeNaN(); // the NaN bar itself
-    expect(results[3]).toBeNaN(); // still poisoned - idx2 remains in the trailing 3-bar window
-    expect(results[4]).toBeNaN(); // still poisoned - idx2 is the oldest bar in [2,3,4]
-    // idx5: window is [3,4,5], idx2 has aged out - hh=max(10,9,13)=13, ll=min(8,7,11)=7, close=12
-    expect(results[5]).toBeCloseTo((100 * (12 - 13)) / (13 - 7), 9);
+    const results = closeSeq.map((c, i) => wpr(state, c, highSeq[i]!, lowSeq[i]!, length, i));
+    expect(results[0]).toBeNaN(); // warm-up
+    expect(results[1]).toBeNaN(); // warm-up
+    expect(results[2]).toBeNaN(); // the na bar itself
+    expect(results[3]).toBeCloseTo((100 * (9 - 10)) / (10 - 8), 9); // window [3]
+    expect(results[4]).toBeCloseTo((100 * (8 - 10)) / (10 - 7), 9); // window [3, 4]
+    expect(results[5]).toBeCloseTo((100 * (12 - 13)) / (13 - 7), 9); // window [3, 4, 5]
   });
 
   it("matches a from-scratch O(length) brute-force cross-check (Math.max/min over the window) across a sequence with an embedded close NaN gap", () => {
@@ -3167,26 +3173,16 @@ describe("ta.wpr", () => {
     const closeSeq = [10, 11, NaN, 9, 8, 12, 15, 15, 15, 3, 4, 5];
     const highSeq = [11, 12, 13, 10, 9, 13, 16, 16, 16, 4, 5, 6];
     const lowSeq = [9, 10, 11, 8, 7, 11, 14, 14, 14, 2, 3, 4];
-    const results = closeSeq.map((c, i) => wpr(state, c, highSeq[i]!, lowSeq[i]!, length));
+    const results = closeSeq.map((c, i) => wpr(state, c, highSeq[i]!, lowSeq[i]!, length, i));
     for (let i = 0; i < closeSeq.length; i++) {
-      if (i < length - 1) {
+      if (i < length - 1 || Number.isNaN(closeSeq[i])) {
         expect(results[i]).toBeNaN();
         continue;
       }
-      const hiWindow = highSeq.slice(i - length + 1, i + 1);
-      const loWindow = lowSeq.slice(i - length + 1, i + 1);
-      const hh = Math.max(...hiWindow);
-      const ll = Math.min(...loWindow);
-      const diff = hh - ll;
-      if (Number.isNaN(hh) || Number.isNaN(ll)) {
-        expect(results[i]).toBeNaN();
-      } else if (diff === 0) {
-        expect(results[i]).toBe(0.0);
-      } else if (Number.isNaN(closeSeq[i])) {
-        expect(results[i]).toBeNaN();
-      } else {
-        expect(results[i]).toBeCloseTo((100 * (closeSeq[i]! - hh)) / diff, 9);
-      }
+      // An na close does not stop the extremes: bar 2's high and low stay in the window.
+      const hh = Math.max(...highSeq.slice(i - length + 1, i + 1));
+      const ll = Math.min(...lowSeq.slice(i - length + 1, i + 1));
+      expect(results[i]).toBeCloseTo((100 * (closeSeq[i]! - hh)) / (hh - ll), 9);
     }
   });
 });

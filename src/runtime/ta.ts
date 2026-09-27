@@ -1167,130 +1167,6 @@ export function valuewhen(state: ValueWhenState, condition: boolean, value: numb
   return state.buffer[idx]!;
 }
 
-export interface ExtremeState {
-  seq?: number;
-  buffer?: number[];
-  writeIdx?: number;
-  nanCount?: number;
-  dequeSeq?: number[];
-  dequeVal?: number[];
-  dequeHead?: number;
-  dequeSize?: number;
-}
-
-// ta.highest/ta.lowest(source, length) - 최근 length바(현재 포함) 중 최댓값/최솟값. pine2py
-// wavealgo/ta/highest.py는 매 호출 source.get(0..length-1) 전체를 O(length) 재스캔해 그 중 하나라도
-// NaN이면 즉시 NaN을 반환하고(위치 가중이 없어 wma식 대수 유도 불가), 아니면 max()/min()을 취한다.
-// O(1) amortized 갱신은 monotonic deque(단조 감소/증가 순서를 유지하는 인덱스 큐)로: 새 값이 들어오면
-// 뒤에서부터 자신보다 덜 극단적인(highest면 <=, lowest면 >=) 원소를 전부 pop한 뒤 append(그 원소들은
-// 새 값이 창에 남아있는 한 절대 극값이 될 수 없다 - 더 최근이면서 최소 그만큼 극단적이므로), 맨 앞
-// 원소가 창 밖(seq 기준 length바 초과)으로 밀려나면 evict. sma와 동일한 "NaN-프라임 순환 버퍼"로
-// nanCount(창 안 NaN 개수)를 병행 추적해 data_len<length(버퍼가 아직 NaN으로 덜 밀림)와 "창 안에
-// 진짜 na가 있음"(pine2py의 즉시 NaN 반환)을 게이트 하나로 통합한다 - nanCount>0이면 항상 NaN, 0이면
-// deque 맨 앞이 곧 창의 극값이다(NaN은 애초에 deque에 push하지 않는다 - nanCount가 0이 아닌 한 결과가
-// 어차피 NaN이라 deque 안에서 NaN의 위치를 추적할 필요가 없기 때문). deque의 backing array도 sma의
-// buffer처럼 최초 1회만 length 크기로 할당하고 push/shift 대신 head+size 정수 인덱스로 순환시켜
-// GOAL.md "bar loop 안 할당 제로"를 지킨다 - 고전적 sliding-window-maximum 증명(창 크기 length 안에서
-// deque가 담을 수 있는 원소 수는 항상 length 이하)이 capacity=length로도 오버플로가 없음을 보장한다.
-//
-// ta.highest, ta.range and the pivots no longer run here (see highest(), range() and pivot(), the
-// oracle's ring). This deque keeps the pine2py poison window for the machines still composed on it:
-// the literal-length ta.stoch and ta.wpr, whose na rules are their own.
-function dequeHighest(state: ExtremeState, value: number, length: number): number {
-  length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조) — pivothigh는 이 함수를 경유해 함께 해결됨
-  if (state.buffer === undefined) {
-    state.seq = -1;
-    state.buffer = new Array(length).fill(NaN);
-    state.writeIdx = 0;
-    state.nanCount = length;
-    state.dequeSeq = new Array(length).fill(0);
-    state.dequeVal = new Array(length).fill(0);
-    state.dequeHead = 0;
-    state.dequeSize = 0;
-  }
-  const seq = state.seq! + 1;
-  state.seq = seq;
-
-  const buffer = state.buffer;
-  const writeIdx = state.writeIdx!;
-  const oldVal = buffer[writeIdx]!;
-  buffer[writeIdx] = value;
-  state.writeIdx = (writeIdx + 1) % length;
-  if (Number.isNaN(oldVal)) state.nanCount = state.nanCount! - 1;
-  if (Number.isNaN(value)) state.nanCount = state.nanCount! + 1;
-
-  const dequeSeq = state.dequeSeq!;
-  const dequeVal = state.dequeVal!;
-  let head = state.dequeHead!;
-  let size = state.dequeSize!;
-  while (size > 0 && dequeSeq[head]! <= seq - length) {
-    head = (head + 1) % length;
-    size--;
-  }
-  if (!Number.isNaN(value)) {
-    while (size > 0 && dequeVal[(head + size - 1) % length]! <= value) {
-      size--;
-    }
-    const tail = (head + size) % length;
-    dequeSeq[tail] = seq;
-    dequeVal[tail] = value;
-    size++;
-  }
-  state.dequeHead = head;
-  state.dequeSize = size;
-
-  if (state.nanCount! > 0) return NaN;
-  return dequeVal[head]!;
-}
-
-// dequeHighest mirrored (every element >= the new value is popped; the head is the newest minimum).
-function dequeLowest(state: ExtremeState, value: number, length: number): number {
-  length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조) — pivotlow는 이 함수를 경유해 함께 해결됨
-  if (state.buffer === undefined) {
-    state.seq = -1;
-    state.buffer = new Array(length).fill(NaN);
-    state.writeIdx = 0;
-    state.nanCount = length;
-    state.dequeSeq = new Array(length).fill(0);
-    state.dequeVal = new Array(length).fill(0);
-    state.dequeHead = 0;
-    state.dequeSize = 0;
-  }
-  const seq = state.seq! + 1;
-  state.seq = seq;
-
-  const buffer = state.buffer;
-  const writeIdx = state.writeIdx!;
-  const oldVal = buffer[writeIdx]!;
-  buffer[writeIdx] = value;
-  state.writeIdx = (writeIdx + 1) % length;
-  if (Number.isNaN(oldVal)) state.nanCount = state.nanCount! - 1;
-  if (Number.isNaN(value)) state.nanCount = state.nanCount! + 1;
-
-  const dequeSeq = state.dequeSeq!;
-  const dequeVal = state.dequeVal!;
-  let head = state.dequeHead!;
-  let size = state.dequeSize!;
-  while (size > 0 && dequeSeq[head]! <= seq - length) {
-    head = (head + 1) % length;
-    size--;
-  }
-  if (!Number.isNaN(value)) {
-    while (size > 0 && dequeVal[(head + size - 1) % length]! >= value) {
-      size--;
-    }
-    const tail = (head + size) % length;
-    dequeSeq[tail] = seq;
-    dequeVal[tail] = value;
-    size++;
-  }
-  state.dequeHead = head;
-  state.dequeSize = size;
-
-  if (state.nanCount! > 0) return NaN;
-  return dequeVal[head]!;
-}
-
 export interface ExtremeVarLenState {
   buffer?: Float64Array;
   writeIdx?: number;
@@ -2085,57 +1961,9 @@ function extremeRing(state: ExtremeRingState, value: number, len: number, bi: nu
   return bi < len - 1 ? NaN : extreme;
 }
 
-export interface StochVarLenState {
+export interface StochState {
   hh?: ExtremeRingState;
   ll?: ExtremeRingState;
-}
-
-// ta.stoch(source, high, low, length) with a series length (lib/ta.py stoch): na when any input is
-// na (the extremes do not run that bar); hh = ta.highest(high, length), ll = ta.lowest(low, length);
-// na while bar_index < length - 1; 100 * (source - ll) / (hh - ll), unclamped ("Measured law (probes
-// m561)"), a flat window dividing to a non-finite value, na on a plot.
-export function stochVarLen(
-  state: StochVarLenState,
-  source: number,
-  high: number,
-  low: number,
-  length: number,
-  _barCount: number,
-  barIdx: number,
-): number {
-  if (state.hh === undefined) {
-    state.hh = {};
-    state.ll = {};
-  }
-  const len = Math.trunc(length);
-  if (!(len >= 1) || Number.isNaN(source) || Number.isNaN(high) || Number.isNaN(low)) return NaN;
-  const hh = extremeRing(state.hh, high, len, barIdx, false);
-  const ll = extremeRing(state.ll!, low, len, barIdx, true);
-  if (barIdx < len - 1) return NaN;
-  return (100 * (source - ll)) / (hh - ll);
-}
-
-// ta.wpr(length) with a series length (lib/ta.py wpr): length 1 is the close (the extremes do not run
-// that bar); otherwise 100 * (close - hh) / (hh - ll) over ta.highest(length) / ta.lowest(length).
-export function wprVarLen(
-  state: StochVarLenState,
-  close: number,
-  high: number,
-  low: number,
-  length: number,
-  _barCount: number,
-  barIdx: number,
-): number {
-  if (state.hh === undefined) {
-    state.hh = {};
-    state.ll = {};
-  }
-  const len = Math.trunc(length);
-  if (!(len >= 1)) return NaN;
-  if (len === 1) return close;
-  const hh = extremeRing(state.hh, high, len, barIdx, false);
-  const ll = extremeRing(state.ll!, low, len, barIdx, true);
-  return (100 * (close - hh)) / (hh - ll);
 }
 
 // ta.percentrank(source, length) with a series length (lib/ta.py percentrank: array.percentrank of
@@ -2280,68 +2108,73 @@ export function rangeVarLen(state: RangeState, value: number, length: number, _b
   return range(state, value, length, barIdx);
 }
 
-export interface StochState {
-  hh?: ExtremeState;
-  ll?: ExtremeState;
-}
-
-// ta.stoch(source, high, low, length) - Stochastic %K = 100*(source-ll)/(hh-ll), hh=highest(high,
-// length)/ll=lowest(low,length) (pine2py wavealgo/ta/stoch.py). Reuses rt.ta.highest/rt.ta.lowest
-// (C42) as two independent ExtremeState nested in one taSlot (HmaState/LinregState precedent -
-// "already-built TA reused inside a new TA's body" over deriving a fresh recurrence). Unlike hma's
-// conditional outer-wma skip, hh/ll here are stoch's *primary* window state (not a derived append
-// gated on an inner TA being non-NaN) - pine2py calls highest()/lowest() unconditionally every bar,
-// so both sub-calls must always advance regardless of whether source(close) is itself NaN this bar.
-// A flat window (hh === ll) is 100 * (source - ll) / 0: non-finite, na on a plot, not pine2py's 50.0
-// (see "Division by zero" at ta.iii; oracle lib/ta.py stoch divides unguarded, as stochVarLen does).
-export function stoch(state: StochState, source: number, high: number, low: number, length: number): number {
+// ta.stoch(source, high, low, length), with a literal or a series length: one machine, the oracle's
+// composition (pynecore lib/ta.py stoch): na when any input is na, and then the extremes do not run
+// that bar, so its high and low never enter the window (ref_v6_ta_math.txt ta.stoch: "`na` values
+// in the `source` series are ignored"; repro state/repros/ta.osc-seed-3.json: the na source on bar
+// 12 keeps that bar's high out of bar 17's window); hh = ta.highest(high, length), ll =
+// ta.lowest(low, length) on the extremes' ring (extremeRing: a gated call serves its own stale slots,
+// a loop call site advances per execution); na while bar_index < length - 1; 100 * (source - ll) /
+// (hh - ll), unclamped ("Measured law (probes m561)"), a flat window dividing to a non-finite value,
+// na on a plot (see "Division by zero" at ta.iii). pine2py's port ran a call-counted poison window
+// on every bar, the high and low of an na source's bar included.
+export function stoch(state: StochState, source: number, high: number, low: number, length: number, barIdx: number): number {
   if (state.hh === undefined) {
     state.hh = {};
     state.ll = {};
   }
-  const hh = dequeHighest(state.hh, high, length);
-  const ll = dequeLowest(state.ll!, low, length);
-  if (Number.isNaN(hh) || Number.isNaN(ll)) return NaN;
-  if (Number.isNaN(source)) return NaN;
-  return (100.0 * (source - ll)) / (hh - ll);
+  const len = Math.trunc(length);
+  if (!(len >= 1) || Number.isNaN(source) || Number.isNaN(high) || Number.isNaN(low)) return NaN;
+  const hh = extremeRing(state.hh, high, len, barIdx, false);
+  const ll = extremeRing(state.ll!, low, len, barIdx, true);
+  if (barIdx < len - 1) return NaN;
+  return (100 * (source - ll)) / (hh - ll);
 }
 
-export interface WprState {
-  hh?: ExtremeState;
-  ll?: ExtremeState;
+// The series-length entry point (codegen VARLEN_RT_PATHS): the same machine; the rings size
+// themselves, so the bar count is unused.
+export function stochVarLen(
+  state: StochState,
+  source: number,
+  high: number,
+  low: number,
+  length: number,
+  _barCount: number,
+  barIdx: number,
+): number {
+  return stoch(state, source, high, low, length, barIdx);
 }
 
-// ta.wpr(length) - Williams %R = -100*(hh-close)/(hh-ll) (equivalently 100*(close-hh)/(hh-ll)),
-// hh=highest(high,length)/ll=lowest(low,length). Pine syntax takes only length; high/low/close come
-// from the implicit bar series (codegen injects $.close.get(0)/$.high.get(0)/$.low.get(0), vwma's
-// volume-injection precedent).
-//
-// **Deliberate divergence from pine2py** (DIVERGENCES.md): pine2py wavealgo/ta/wpr.py implements its
-// own high_win/low_win list (append + pop(0) on overflow) instead of reusing highest()/lowest(). That
-// custom window only NaN-checks the *current* bar's high/low/close before appending - a NaN bar returns
-// NaN for itself but is never appended, so the window silently skips NaN bars rather than being poisoned
-// by them (unlike highest.py, which NaN-poisons the whole window if any of the trailing `length` bars is
-// NaN). TradingView's actual built-in "Williams %R" script is documented to compose from
-// `ta.highest(length)`/`ta.lowest(length)` (the same poison-window semantics already implemented and
-// oracle-verified for C42's rt.ta.highest/rt.ta.lowest), so pine2py's own window here is treated as a
-// latent inconsistency, not a semantic to port (GOAL.md "pine2py의 알려진 버그는 따르지 않는다" - same
-// precedent as rt.max/rt.min, C13). Reuses StochState's two-ExtremeState shape (C43) and its
-// unconditional-advance rule (hh/ll are wpr's primary window state, not a derived append gated on
-// another TA being non-NaN, so both sub-calls must run every bar).
-//
-// A flat window (hh === ll) is 100 * (close - hh) / 0: non-finite, na on a plot, not pine2py's 0.0
-// (see "Division by zero" at ta.iii; oracle lib/ta.py wpr divides unguarded, as wprVarLen does).
-export function wpr(state: WprState, close: number, high: number, low: number, length: number): number {
+// ta.wpr(length), with a literal or a series length (pynecore lib/ta.py wpr): length 1 is the close
+// (the extremes do not run that bar); otherwise 100 * (close - hh) / (hh - ll) over
+// ta.highest(high, length) / ta.lowest(low, length) on the extremes' ring, so an na high or low
+// resets them as it resets ta.highest/ta.lowest (ref_v6_ta_math.txt ta.wpr: "`na` values in the
+// `source` series are ignored") instead of blanking the next `length` bars (pine2py's poison
+// window). Pine syntax takes only the length; codegen injects close/high/low. A flat window divides
+// to a non-finite value, na on a plot (see "Division by zero" at ta.iii).
+export function wpr(state: StochState, close: number, high: number, low: number, length: number, barIdx: number): number {
   if (state.hh === undefined) {
     state.hh = {};
     state.ll = {};
   }
-  const hh = dequeHighest(state.hh, high, length);
-  const ll = dequeLowest(state.ll!, low, length);
-  if (Number.isNaN(hh) || Number.isNaN(ll)) return NaN;
-  const diff = hh - ll;
-  if (Number.isNaN(close)) return NaN;
-  return (100.0 * (close - hh)) / diff;
+  const len = Math.trunc(length);
+  if (!(len >= 1)) return NaN;
+  if (len === 1) return close;
+  const hh = extremeRing(state.hh, high, len, barIdx, false);
+  const ll = extremeRing(state.ll!, low, len, barIdx, true);
+  return (100 * (close - hh)) / (hh - ll);
+}
+
+export function wprVarLen(
+  state: StochState,
+  close: number,
+  high: number,
+  low: number,
+  length: number,
+  _barCount: number,
+  barIdx: number,
+): number {
+  return wpr(state, close, high, low, length, barIdx);
 }
 
 // ta.tr(handle_na) - True Range = max(high-low, |high-prevClose|, |low-prevClose|); prevClose가

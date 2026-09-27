@@ -3585,9 +3585,11 @@ describe("CodeGen", () => {
     expect(codeLo).toBe("var x = rt.ta.lowest($.taSlots[0], $.open.get(0), 4, $.idx);");
   });
 
-  it("emits ta.stoch call through $.taSlots[slot] (no codegen special-casing — 4 args pass through in order)", () => {
+  // The 4 args pass through in order, then the bar index of the extremes' ring (runtime/ta.ts stoch;
+  // resin-harness twin state/repros/stoch-wpr-na.json).
+  it("emits ta.stoch call through $.taSlots[slot] (4 args in order, then $.idx)", () => {
     const code = codegenSource("x = ta.stoch(close, high, low, 4)");
-    expect(code).toBe("var x = rt.ta.stoch($.taSlots[0], $.close.get(0), $.high.get(0), $.low.get(0), 4);");
+    expect(code).toBe("var x = rt.ta.stoch($.taSlots[0], $.close.get(0), $.high.get(0), $.low.get(0), 4, $.idx);");
   });
 
   // 배치25 (4) 첫 착수 — length가 series면 analyzer가 stateCall.seriesLength를 세우고 codegen이
@@ -3754,9 +3756,10 @@ describe("CodeGen", () => {
 
   it("emits ta.wpr call with the implicit close/high/low args unshifted before length", () => {
     // ta.wpr(length)는 Pine 문법에 close/high/low 인자가 없다 — codegen이 $.close/$.high/$.low.get(0)을
-    // length 앞에 순서대로 끼워 넣어 런타임 시그니처 (state, close, high, low, length)를 맞춘다.
+    // length 앞에 순서대로 끼워 넣고, the extremes' ring takes the bar index last: runtime signature
+    // (state, close, high, low, length, barIdx).
     const code = codegenSource("x = ta.wpr(4)");
-    expect(code).toBe("var x = rt.ta.wpr($.taSlots[0], $.close.get(0), $.high.get(0), $.low.get(0), 4);");
+    expect(code).toBe("var x = rt.ta.wpr($.taSlots[0], $.close.get(0), $.high.get(0), $.low.get(0), 4, $.idx);");
   });
 
   it("emits ta.highestbars call through $.taSlots[slot] (no codegen special-casing — 2 args pass through in order)", () => {
@@ -4109,8 +4112,8 @@ describe("CodeGen", () => {
         "var t = rt.ta.valuewhen($.taSlots[21], rt.pineGt($.close.get(0), $.open.get(0)), $.close.get(0), 0);",
         "var w = rt.ta.highest($.taSlots[22], $.close.get(0), 4, $.idx);",
         "var z = rt.ta.lowest($.taSlots[23], $.close.get(0), 4, $.idx);",
-        "var y = rt.ta.stoch($.taSlots[24], $.close.get(0), $.high.get(0), $.low.get(0), 4);",
-        "var x1 = rt.ta.wpr($.taSlots[25], $.close.get(0), $.high.get(0), $.low.get(0), 4);",
+        "var y = rt.ta.stoch($.taSlots[24], $.close.get(0), $.high.get(0), $.low.get(0), 4, $.idx);",
+        "var x1 = rt.ta.wpr($.taSlots[25], $.close.get(0), $.high.get(0), $.low.get(0), 4, $.idx);",
         "var x2 = rt.ta.highestbars($.taSlots[26], $.close.get(0), 4, $.idx);",
         "var x3 = rt.ta.lowestbars($.taSlots[27], $.close.get(0), 4, $.idx);",
         "var x4 = rt.ta.mfi($.taSlots[28], $.close.get(0), $.volume.get(0), 3);",

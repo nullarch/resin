@@ -624,8 +624,17 @@ describe("corpus diff: sample bar-by-bar replay against pine2py golden", () => {
     // 8fd09e30af1f (`if barstate.ishistory` counts bars), which now counts the last bar too where
     // pine2py (not ground truth) made it realtime. Floor moved to the observed matched 2304 /
     // mismatch 611; nothing else changed.
-    expect(matched.length).toBeGreaterThanOrEqual(2304);
-    expect(mismatched.length).toBeLessThanOrEqual(611);
+    // 2026-09-27 the literal-length ta.stoch/ta.wpr run the extremes' bar-addressed ring as the
+    // series-length ones do: an na stoch input skips the extremes on its bar, the warm-up counts
+    // bars, ta.wpr(1) is the close (ref_v6_ta_math.txt ta.stoch "`na` values in the `source` series
+    // are ignored"; PyneCore lib/ta.py stoch/wpr). Exactly one hash went matched -> mismatch:
+    // 4241a442ac70 (Stoch RSI `ta.stoch(rsi, rsi, rsi, 5)` with rsi na through its warm-up), whose
+    // k is valued from bar 6 where pine2py's poison window (not ground truth) waited until bar 9;
+    // resin-harness twin state/repros/stoch-wpr-na.json channels stoch_rsi/stoch_rsi_signal run
+    // this script through the oracle. Floor moved to the observed matched 2303 / mismatch 612;
+    // nothing else changed.
+    expect(matched.length).toBeGreaterThanOrEqual(2303);
+    expect(mismatched.length).toBeLessThanOrEqual(612);
     expect(transpileFailed.length).toBeLessThanOrEqual(86);
     expect(runtimeFailed.length, `runtime failures: ${runtimeFailed.map((o) => `${o.hash}: ${o.detail}`).join(" | ")}`).toBe(0);
     expect(noComparable.length, `no comparable key: ${noComparable.map((o) => o.hash).join(", ")}`).toBeLessThanOrEqual(2);
