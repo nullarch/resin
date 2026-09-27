@@ -7041,102 +7041,96 @@ describe("ta.supertrend", () => {
   });
 });
 
-// ta.sar(start, inc, maxAf) — Parabolic SAR. Unlike every other ta.* ported so far, sar doesn't
-// compose an already-built TA (no inner atr/ema/wma call) — it's a literal port of pine2py's
-// self-contained 9-field state machine (runtime/ta.ts sar() comment). This session had no
-// WebSearch grant to cross-check TV's Script Reference against the "re-reversal on the init bar"
-// quirk the PROGRESS next_hint flagged, so per that next_hint's fallback this is a byte-for-byte
-// port of sar.py, cross-checked via scratch/probe_sar.mjs (a fresh snake_case literalPort against
-// this candidate) across sample10, forced re-reversal, NaN gaps, degenerate params, and 5,000-sample
-// fuzz — all PASS.
+// ta.sar(start, inc, maxAf) — Parabolic SAR (runtime/ta.ts sar comment: PyneCore lib/ta.py sar,
+// tier 1 resin-harness suites/indicators/tv/ta_261_sar and ta_366_conditional_sar). The expected
+// values are the oracle's on the crafted bars of resin-harness state/repros/sar-rules.json. These
+// tests replaced pine2py's port, which started the trend from close vs the previous close, re-ran
+// the recurrence on the start bar, counted its own calls instead of bar_index and skipped na bars.
 describe("ta.sar", () => {
-  it("matches the pine2py oracle golden for sample10.json (start=0.02, inc=0.02, maxAf=0.2)", () => {
-    // oracle/golden/ta_sar.json — bar0 NaN (seed only), real values from bar1 (2-bar delay, unlike
-    // obv's 1-bar seed-on-first-valid-bar).
+  // sar-rules.json bars; bar i is called with bar_index i.
+  const high = [105, 104, 96, 106, 108, 110, 112, 111.5, 103, 101, 99, 102, 107, 109, 108.5, 106, 104, 110, 111, 110.5];
+  const low = [95, 96, 93, 93.5, 104, 106, 108, 100, 99, 97, 95, 95.5, 100, 105, 104, 103, 104, 103, 108, 102];
+  const open = [100, 100, 95, 94, 105, 107, 109, 111, 101, 100, 98, 96, 101, 106, 108, 105, 104, 104, 109, 110];
+  const close = [100, 98, 94, 105, 107, 109, 111, 101, 100, 98, 96, 101, 106, 108, 105, 104, 104, 109, 110, 103];
+
+  function run(args: (i: number) => [number, number, number], bars: number[] = high.map((_, i) => i)): number[] {
     const state: Parameters<typeof sar>[0] = {};
-    const high = [102, 103, 104, 103, 105, 106, 107, 106, 108, 109];
-    const low = [99, 100, 101, 100, 102, 103, 104, 103, 105, 106];
-    const close = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
-    const expected = [NaN, 99, 99, 99.2, 99.392, 99.72848, 100.2302016, 100.90718144, 101.516463296, 102.2944877005];
-    for (let i = 0; i < close.length; i++) {
-      const v = sar(state, high[i]!, low[i]!, close[i]!, 0.02, 0.02, 0.2);
+    return bars.map((i) => sar(state, high[i]!, low[i]!, ...args(i), i));
+  }
+
+  function expectSeries(actual: number[], expected: number[]): void {
+    expect(actual).toHaveLength(expected.length);
+    actual.forEach((v, i) => {
       if (Number.isNaN(expected[i]!)) expect(v).toBeNaN();
       else expect(v).toBeCloseTo(expected[i]!, 9);
-    }
+    });
+  }
+
+  it("follows the oracle's recurrence (sar-rules.json every/fast/over)", () => {
+    expectSeries(run(() => [0.02, 0.02, 0.2]), [
+      NaN, 105, 105, 93, 93, 93.5, 94.49, 95.8908, 97.179536, 112, 111.7, 111.032, 110.39072, 109.7750912,
+      109.184087552, 109, 108.5, 95, 95.3, 95.928,
+    ]);
+    expectSeries(run(() => [0.5, 0.5, 0.9]), [
+      NaN, 105, 105, 93, 93, 110, 104, 112, 112, 97, 103, 95, 95, 109, 100, 109, 108.5, 103, 103, 111,
+    ]);
+    // start above max is not clamped: "TradingView validates NONE of the three arguments" (oracle)
+    expectSeries(run(() => [0.3, 0.1, 0.2]), [
+      NaN, 105, 105, 93, 93, 93.5, 96.8, 99.84, 112, 111.5, 108.6, 105.88, 95, 95.5, 98.2, 100.36, 102.088, 110, 103, 111,
+    ]);
   });
 
-  it("returns NaN on the very first successful call and only seeds prevHigh/prevLow/prevClose (result/maxMin stay at their untouched defaults)", () => {
-    const state: Parameters<typeof sar>[0] = {};
-    const v = sar(state, 102, 99, 101, 0.02, 0.02, 0.2);
-    expect(v).toBeNaN();
-    expect(state.barIndex).toBe(1);
-    expect(state.prevHigh).toBe(102);
-    expect(state.prevLow).toBe(99);
-    expect(state.prevClose).toBe(101);
-    expect(Number.isNaN(state.result!)).toBe(true); // written back as NaN, not left undefined
+  it("starts the trend on bar_index 1: short from high[1] when high[1] > high, else long from low[1]", () => {
+    const short: Parameters<typeof sar>[0] = {};
+    expect(sar(short, 105, 95, 0.02, 0.02, 0.2, 0)).toBeNaN();
+    expect(sar(short, 104, 96, 0.02, 0.02, 0.2, 1)).toBe(105);
+    expect(short.posLong).toBe(false);
+    expect(short.ep).toBe(96);
+    const long: Parameters<typeof sar>[0] = {};
+    sar(long, 100, 90, 0.02, 0.02, 0.2, 0);
+    expect(sar(long, 100, 95, 0.02, 0.02, 0.2, 1)).toBe(90); // an equal high starts long
+    expect(long.posLong).toBe(true);
+    expect(long.ep).toBe(100);
   });
 
-  it("leaves state completely untouched on a NaN bar (mid-stream gap resumes as if the gap bar never happened)", () => {
-    const state: Parameters<typeof sar>[0] = {};
-    sar(state, 102, 99, 101, 0.02, 0.02, 0.2);
-    sar(state, 103, 100, 102, 0.02, 0.02, 0.2);
-    const snapshot = { ...state };
-    const vNaNHigh = sar(state, NaN, 105, 106, 0.02, 0.02, 0.2);
-    const vNaNLow = sar(state, 107, NaN, 106, 0.02, 0.02, 0.2);
-    const vNaNClose = sar(state, 107, 104, NaN, 0.02, 0.02, 0.2);
-    expect(vNaNHigh).toBeNaN();
-    expect(vNaNLow).toBeNaN();
-    expect(vNaNClose).toBeNaN();
-    expect(state).toEqual(snapshot); // state object identical field-for-field — not even barIndex advanced
-    const vResume = sar(state, 104, 101, 103, 0.02, 0.02, 0.2);
-    const freshState: Parameters<typeof sar>[0] = {};
-    sar(freshState, 102, 99, 101, 0.02, 0.02, 0.2);
-    sar(freshState, 103, 100, 102, 0.02, 0.02, 0.2);
-    const vNoGap = sar(freshState, 104, 101, 103, 0.02, 0.02, 0.2);
-    expect(vResume).toBeCloseTo(vNoGap, 9); // gap bars are fully invisible to the trajectory
+  it("reverses only when the bar crosses the stop strictly (sar-rules.json tie: bar 2's high equals the stop)", () => {
+    // ta.sar(1, 0, 1) projects the extreme point itself: bar 2 projects 96 (bar 1's low) and its high
+    // is 96, so the short holds and is clipped to max(96, high[1], high[2]) = 105; bar 3 reverses.
+    expectSeries(run(() => [1, 0, 1]), [
+      NaN, 105, 105, 93, 108, 93.5, 112, 100, 112, 97, 103, 95, 107, 95.5, 109, 103, 108.5, 103, 111, 102,
+    ]);
   });
 
-  it("can re-flip isBelow within the trend-init bar itself (bar_idx==1) when the first two bars are highly volatile — not unreachable dead code", () => {
-    // Hand-derived: bar0 seeds prevLow=90/prevHigh=100/prevClose=95. bar1 (close=190>prevClose=95)
-    // inits isBelow=true/maxMin=high=200/result=prevLow=90, then the SAME call's main block
-    // recomputes result=90+0.5*(200-90)=145, sees 145>low(50) -> re-reverses to isBelow=false,
-    // result=max(high,maxMin)=max(200,200)=200, maxMin=low=50 - then the upper-side clamp against
-    // prevHigh=100 leaves it at max(200,100)=200 (prevHigh2 doesn't apply yet, barIndex==1).
-    const state: Parameters<typeof sar>[0] = {};
-    sar(state, 100, 90, 95, 0.5, 0.5, 0.9);
-    const v = sar(state, 200, 50, 190, 0.5, 0.5, 0.9);
-    expect(v).toBe(200);
-    expect(state.isBelow).toBe(false); // ended up bearish-side despite the bullish init a moment earlier
+  it("seeds af with the start of the first call after bar 0 and reads series arguments per call (sar-rules.json ser)", () => {
+    expectSeries(run((i) => [close[i]! > open[i]! ? 0.02 : 0.1, i % 2 === 0 ? 0.02 : 0.05, 0.2]), [
+      NaN, 105, 105, 93, 93, 93.5, 94.985, 96.85665, 98.5224185, 112, 110.5, 108.64, 107.0032, 95, 95.28, 95.5544,
+      95.823312, 96.08684576, 97.0607665568, 98.3152975667,
+    ]);
   });
 
-  it("applies the 2-bars-back penetration clamp (prevHigh2) distinctly from the 1-bar-back clamp (prevHigh), only once barIndex > 1", () => {
-    // Hand-derived (node): a sharp reversal bar (i=3) followed by i=4 where the raw computed result
-    // (128.6) clears the 1-bar-back high (90) but NOT the 2-bars-back high (130) - so the clamp
-    // against prevHigh2 is the only thing holding the result at 130 instead of leaking to 128.6.
-    const state: Parameters<typeof sar>[0] = {};
-    const high = [102, 104, 130, 90, 91];
-    const low = [99, 101, 105, 60, 62];
-    const close = [101, 103, 110, 70, 75];
-    const expected = [NaN, 99, 99, 130, 130];
-    for (let i = 0; i < close.length; i++) {
-      const v = sar(state, high[i]!, low[i]!, close[i]!, 0.02, 0.02, 0.2);
-      if (Number.isNaN(expected[i]!)) expect(v).toBeNaN();
-      else expect(v).toBeCloseTo(expected[i]!, 9);
-    }
-    expect(state.isBelow).toBe(false); // i=3 flipped bullish(isBelow=true)->bearish(isBelow=false)
+  it("stays na for good when first called on bar_index 1 or later (tier 1 ta_366_conditional_sar; sar-rules.json g1/g3)", () => {
+    const all = high.map((_, i) => i);
+    for (const v of run(() => [0.02, 0.02, 0.2], all.slice(1))) expect(v).toBeNaN();
+    for (const v of run(() => [0.02, 0.02, 0.2], all.slice(3))) expect(v).toBeNaN();
+  });
+
+  it("reads high[1]/low[1] from its own window, which advances per call (sar-rules.json gskip: bar 5 skipped)", () => {
+    const bars = high.map((_, i) => i).filter((i) => i !== 5);
+    expectSeries(run(() => [0.1, 0.1, 0.3], bars), [
+      NaN, 105, 105, 93, 93, 93.5, 99.05, 112, 111.5, 108.6, 104.52, 95, 95.5, 98.2, 100.36, 102.088, 110, 103, 111,
+    ]);
   });
 
   it("keeps independent state across two call sites", () => {
     const stateA: Parameters<typeof sar>[0] = {};
     const stateB: Parameters<typeof sar>[0] = {};
-    sar(stateA, 102, 99, 101, 0.02, 0.02, 0.2);
-    sar(stateA, 103, 100, 102, 0.02, 0.02, 0.2);
-    const vB = sar(stateB, 6, 3, 5, 0.02, 0.02, 0.2); // stateB's own warmup still fresh
-    expect(vB).toBeNaN();
-    expect(stateA.barIndex).not.toBe(stateB.barIndex);
+    sar(stateA, 105, 95, 0.02, 0.02, 0.2, 0);
+    sar(stateA, 104, 96, 0.02, 0.02, 0.2, 1);
+    expect(sar(stateB, 104, 96, 0.02, 0.02, 0.2, 1)).toBeNaN(); // stateB has no previous call
+    expect(sar(stateA, 96, 93, 0.02, 0.02, 0.2, 2)).toBe(105);
   });
 
-  it("matches a from-scratch literal port of sar.py's _sar_incremental across NaN gaps, degenerate accel params, and a 5,000-sample fuzz", () => {
+  it("matches a literal port of the oracle's lib/ta.py sar across na prices, skipped calls, degenerate arguments and a 5,000-bar fuzz", () => {
     function mulberry32(seed: number) {
       return function () {
         seed |= 0;
@@ -7146,128 +7140,102 @@ describe("ta.sar", () => {
         return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
       };
     }
-    // literal port of pine2py sar.py's _sar_incremental(), independently re-derived (snake_case,
-    // pine2py field/line order) rather than reused from the implementation under test.
-    function bruteRun(highs: number[], lows: number[], closes: number[], start: number, inc: number, max_af: number) {
-      const s: Record<string, number | boolean> = {};
-      const out: number[] = [];
-      for (let i = 0; i < closes.length; i++) {
-        const high = highs[i]!;
-        const low = lows[i]!;
-        const close = closes[i]!;
-        if (Number.isNaN(high) || Number.isNaN(low) || Number.isNaN(close)) {
-          out.push(NaN);
-          continue;
-        }
-        const bar_idx = (s.bar_index as number) ?? 0;
-        let result = (s.result as number) ?? NaN;
-        let max_min = (s.max_min as number) ?? NaN;
-        let acceleration = (s.acceleration as number) ?? NaN;
-        let is_below = (s.is_below as boolean) ?? false;
-        const prev_high = (s.prev_high as number) ?? NaN;
-        const prev_low = (s.prev_low as number) ?? NaN;
-        const prev_high2 = (s.prev_high2 as number) ?? NaN;
-        const prev_low2 = (s.prev_low2 as number) ?? NaN;
-        const prev_close = (s.prev_close as number) ?? NaN;
-        let is_first_trend_bar = false;
-        if (bar_idx === 1) {
-          if (close > prev_close) {
-            is_below = true;
-            max_min = high;
-            result = prev_low;
+    // Python's builtins.max/min over (first, *rest): a later item replaces the kept one only when it
+    // compares greater (less); na compares false both ways.
+    const pyMaxOf = (xs: number[]) => xs.reduce((m, x) => (x > m ? x : m));
+    const pyMinOf = (xs: number[]) => xs.reduce((m, x) => (x < m ? x : m));
+    // Literal port of the oracle's lib/ta.py sar, line for line: `bar_index` is the global index,
+    // `high[k]`/`low[k]` read the function's own window (one entry per call), the Persistent
+    // variables start at pos_long = True, sar/ep = na and af = start on the first call to reach them.
+    function oracleRun(highs: number[], lows: number[], calls: number[], start: number, inc: number, max: number) {
+      const hw: number[] = [];
+      const lw: number[] = [];
+      let persist: { pos_long: boolean; af: number; sar_val: number; ep: number } | null = null;
+      return calls.map((bar_index) => {
+        hw.unshift(highs[bar_index]!);
+        lw.unshift(lows[bar_index]!);
+        const high = (k: number) => hw[k] ?? NaN;
+        const low = (k: number) => lw[k] ?? NaN;
+        if (bar_index === 0) return NaN;
+        persist ??= { pos_long: true, af: start, sar_val: NaN, ep: NaN };
+        const p = persist;
+        if (bar_index === 1) {
+          if (high(1) > high(0)) {
+            p.pos_long = false;
+            p.sar_val = high(1);
+            p.ep = low(0);
           } else {
-            is_below = false;
-            max_min = low;
-            result = prev_high;
+            p.pos_long = true;
+            p.sar_val = low(1);
+            p.ep = high(0);
           }
-          is_first_trend_bar = true;
-          acceleration = start;
+          return p.sar_val;
         }
-        if (bar_idx >= 1) {
-          result = result + acceleration * (max_min - result);
-          if (is_below) {
-            if (result > low) {
-              is_first_trend_bar = true;
-              is_below = false;
-              result = Math.max(high, max_min);
-              max_min = low;
-              acceleration = start;
-            }
+        let next_sar = p.sar_val + p.af * (p.ep - p.sar_val);
+        if (p.pos_long) {
+          if (low(0) < next_sar) {
+            p.pos_long = false;
+            p.af = start;
+            next_sar = p.ep;
+            next_sar = pyMaxOf([next_sar, high(0), high(1), high(2) === high(2) ? high(2) : high(1)]);
+            p.ep = low(0);
           } else {
-            if (result < high) {
-              is_first_trend_bar = true;
-              is_below = true;
-              result = Math.min(low, max_min);
-              max_min = high;
-              acceleration = start;
+            next_sar = pyMinOf([next_sar, low(1), low(2) === low(2) ? low(2) : low(1)]);
+            if (high(0) > p.ep) {
+              p.ep = high(0);
+              p.af = pyMinOf([p.af + inc, max]);
             }
           }
-          if (!is_first_trend_bar) {
-            if (is_below) {
-              if (high > max_min) {
-                max_min = high;
-                acceleration = Math.min(acceleration + inc, max_af);
-              }
-            } else {
-              if (low < max_min) {
-                max_min = low;
-                acceleration = Math.min(acceleration + inc, max_af);
-              }
+        } else {
+          if (high(0) > next_sar) {
+            p.pos_long = true;
+            p.af = start;
+            next_sar = p.ep;
+            next_sar = pyMinOf([next_sar, low(0), low(1), low(2) === low(2) ? low(2) : low(1)]);
+            p.ep = high(0);
+          } else {
+            next_sar = pyMaxOf([next_sar, high(1), high(2) === high(2) ? high(2) : high(1)]);
+            if (low(0) < p.ep) {
+              p.ep = low(0);
+              p.af = pyMinOf([p.af + inc, max]);
             }
           }
-          if (is_below) {
-            if (!Number.isNaN(prev_low)) result = Math.min(result, prev_low);
-            if (bar_idx > 1 && !Number.isNaN(prev_low2)) result = Math.min(result, prev_low2);
-          } else {
-            if (!Number.isNaN(prev_high)) result = Math.max(result, prev_high);
-            if (bar_idx > 1 && !Number.isNaN(prev_high2)) result = Math.max(result, prev_high2);
-          }
         }
-        s.bar_index = bar_idx + 1;
-        s.result = result;
-        s.max_min = max_min;
-        s.acceleration = acceleration;
-        s.is_below = is_below;
-        s.prev_high2 = prev_high;
-        s.prev_low2 = prev_low;
-        s.prev_high = high;
-        s.prev_low = low;
-        s.prev_close = close;
-        out.push(bar_idx < 1 ? NaN : result);
-      }
-      return out;
+        p.sar_val = next_sar;
+        return p.sar_val;
+      });
     }
     for (const [start, inc, maxAf, seed] of [
       [0.02, 0.02, 0.2, 7001],
       [0.01, 0.01, 0.1, 7002],
       [0.1, 0.1, 0.5, 7003],
       [0.05, 0.05, 0.05, 7004], // maxAf === start: acceleration is capped immediately
+      [0.3, 0.1, 0.2, 7005], // start above maxAf: neither is clamped
+      [0, -0.01, 0.2, 7006], // zero start, negative increment
+      [0.02, 0.02, NaN, 7007], // na maxAf: Python's min keeps af + inc
     ] as const) {
       const rng = mulberry32(seed);
       const n = 5000;
-      const closes: number[] = [];
       const highs: number[] = [];
       const lows: number[] = [];
       let base = 100;
       for (let i = 0; i < n; i++) {
-        if (rng() < 0.02) {
-          closes.push(NaN);
-          highs.push(rng() < 0.5 ? NaN : base + 1);
-          lows.push(rng() < 0.5 ? NaN : base - 1);
-          continue;
-        }
         base += (rng() - 0.5) * 8;
         const c = base + (rng() - 0.5) * 3;
-        closes.push(c);
-        highs.push(Math.max(c, base) + rng() * 4);
-        lows.push(Math.min(c, base) - rng() * 4);
+        highs.push(rng() < 0.01 ? NaN : Math.max(c, base) + rng() * 4);
+        lows.push(rng() < 0.01 ? NaN : Math.min(c, base) - rng() * 4);
       }
-      const expected = bruteRun(highs, lows, closes, start, inc, maxAf);
-      const state: Parameters<typeof sar>[0] = {};
-      for (let i = 0; i < n; i++) {
-        const v = sar(state, highs[i]!, lows[i]!, closes[i]!, start, inc, maxAf);
-        if (Number.isNaN(expected[i]!)) expect(v).toBeNaN();
-        else expect(v).toBeCloseTo(expected[i]!, 9);
+      // Every bar, and a call site that skips a bar now and then (its window advances per call).
+      const every = highs.map((_, i) => i);
+      const gated = every.filter((i) => i < 2 || rng() >= 0.05);
+      for (const calls of [every, gated]) {
+        const expected = oracleRun(highs, lows, calls, start, inc, maxAf);
+        const state: Parameters<typeof sar>[0] = {};
+        calls.forEach((i, k) => {
+          const v = sar(state, highs[i]!, lows[i]!, start, inc, maxAf, i);
+          if (Number.isNaN(expected[k]!)) expect(v).toBeNaN();
+          else expect(v).toBe(expected[k]!);
+        });
       }
     }
   });

@@ -828,13 +828,10 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
     rtPath: "rt.ta.supertrend",
     returnArity: 2,
   },
-  // ta.sar(start, inc, maxAf) — Parabolic SAR. pine2py wavealgo/ta/sar.py 소스 대조 결과 다른
-  // ta.*와 달리 이미 구현된 TA를 재사용하지 않는 자체 9-필드 상태 머신(runtime/ta.ts sar() 주석
-  // 참조) — 단일 반환(returnArity 없음). start/inc/maxAf 셋 다 매 호출 그 값 자체로만 쓰이고
-  // 고정폭 버퍼/초기화 구간을 결정하지 않아(rising/falling과 동일 이유) lengthArgIndex: null —
-  // series여도 결과가 정확. Pine 문법에 high/low/close 인자가 없어 codegen이 $.high.get(0)/
-  // $.low.get(0)/$.close.get(0)을 앞에 unshift한다(atr/supertrend와 동일 패턴이나 prevClose는
-  // sar 자신이 state로 추적하므로 $.close.get(1) 주입 불필요).
+  // ta.sar(start, inc, maxAf) — Parabolic SAR, its own state machine (runtime/ta.ts sar). start/inc/
+  // maxAf are read as they are on each call and size no buffer, so a series argument is exact
+  // (lengthArgIndex: null). Pine passes no price arguments: codegen injects the bar's high and low
+  // ahead of the user arguments and bar_index after them.
   sar: { dispatch: "ta", displayName: "ta.sar", argCount: 3, lengthArgIndex: null, conditionalForbidden: true, rtPath: "rt.ta.sar" },
   // ta.dmi(diLength, adxSmoothing) — Directional Movement Index (returnArity: 3, [plusDi, minusDi,
   // adx]). diLength fixes the three rt.ta.rma windows over ta.tr/+DM/-DM and adxSmoothing the ADX

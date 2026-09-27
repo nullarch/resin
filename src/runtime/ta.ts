@@ -3452,144 +3452,139 @@ export function supertrend(
 }
 
 export interface SarState {
-  barIndex?: number;
-  result?: number;
-  maxMin?: number;
-  acceleration?: number;
-  isBelow?: boolean;
-  prevHigh?: number;
-  prevLow?: number;
-  prevHigh2?: number;
-  prevLow2?: number;
-  prevClose?: number;
+  // The call site's own window of high/low, one and two calls back.
+  high1?: number;
+  high2?: number;
+  low1?: number;
+  low2?: number;
+  // The recurrence, seeded by the first call made after bar 0.
+  seeded?: boolean;
+  posLong?: boolean;
+  af?: number;
+  sar?: number;
+  ep?: number;
 }
 
-// ta.sar(start, inc, maxAf) - Parabolic SAR (Wilder). pine2py wavealgo/ta/sar.py's
-// _sar_incremental() is a self-contained 9-field state machine (bar_index/result/max_min/
-// acceleration/is_below/prev_high·low·close/prev_high2·low2) - unlike every other ta.* ported so
-// far, it doesn't reuse any other already-built TA (no atr/ema/wma call inside), so this is a
-// literal line-by-line port rather than a composition (hma/stoch/tsi/kc principle doesn't apply
-// here). Any NaN among high/low/close returns NaN *without touching state at all* (obv's sixth
-// NaN pattern, C55, applied here too - state.get_ta_state() itself doesn't mutate).
+// Python's builtins.max/min: the first argument is kept unless a later one compares greater (less),
+// so an na first argument stays na and an na later one is skipped (every comparison with na is
+// false). ta.sar's clips are written that way in the oracle, and Math.max/min would differ on both.
+function pyMax(a: number, b: number, c = NaN, d = NaN): number {
+  let m = a;
+  if (b > m) m = b;
+  if (c > m) m = c;
+  if (d > m) m = d;
+  return m;
+}
+
+function pyMin(a: number, b: number, c = NaN, d = NaN): number {
+  let m = a;
+  if (b < m) m = b;
+  if (c < m) m = c;
+  if (d < m) m = d;
+  return m;
+}
+
+// ta.sar(start, inc, maxAf) - Parabolic SAR (Wilder). The manual gives no formula
+// (ref_v6_ta_math.txt "ta.sar": "Parabolic SAR (parabolic stop and reverse) is a method devised by
+// J. Welles Wilder, Jr., to find potential reversals in the market price direction of traded
+// goods."), so the rule is the PyneCore oracle's, certified against TradingView (pynecore lib/ta.py
+// sar; tier 1 ta_261_sar, ta_366_conditional_sar):
+//   - bar_index 0 is na;
+//   - bar_index 1 starts the trend: short from high[1] with the bar's low as the extreme point when
+//     high[1] > high, otherwise long from low[1] with the bar's high as the extreme point; that
+//     start is the bar's value;
+//   - later bars project sar + af * (ep - sar); a long reverses when low < the projection (strict:
+//     "a bar whose ... low equals the long stop does NOT reverse", measured there), restarting at
+//     max(ep, high, high[1], high[2]) with af = start and ep = low; otherwise the projection is
+//     clipped to min(low[1], low[2]) and a new high raises ep and af by inc up to maxAf. A short
+//     mirrors it. high[2]/low[2] fall back to high[1]/low[1] when na.
+// bar_index is the global one, and high[1]/high[2] come from the call site's own window, which
+// advances per call (oracle: "a ta.sar() inside an `if` is na on TradingView for the whole run,
+// even when only every 100th bar is skipped ... The first gated call has no history yet, so
+// high[1] is na and the recurrence below carries that na forward for good"; tier 1
+// ta_366_conditional_sar). A call first made after bar 1 never starts a trend and stays na too.
+// af is seeded with start by the first call made after bar 0 (the oracle's lazy Persistent
+// initializer). None of start/inc/maxAf is validated: "TradingView validates NONE of the three
+// arguments -- it runs the recurrence with whatever it is given" (oracle, measured).
 //
-// bar_idx counts *successful* (non-NaN) calls only, starting at 0. The very first successful call
-// only seeds prevHigh/prevLow/prevClose and returns NaN (result/maxMin/acceleration/isBelow stay
-// at their untouched defaults) - a 2-bar delay before the first real value, unlike obv's "seed on
-// first valid bar" (MEMORY.md). The *second* successful call (barIndex read as 1) both initializes
-// the trend (isBelow/maxMin/result from close vs prevClose) *and* immediately re-runs the same
-// "compute result, check reversal, clamp against prior extremes" block that every later bar runs -
-// pine2py does not skip this recompute for the init bar, so a volatile first pair of bars can
-// re-flip isBelow within the same call (confirmed possible via scratch/probe_sar.mjs case 2b - not
-// unreachable dead code). This looks unusual but is pine2py's literal algorithm; this session had
-// no WebSearch grant to cross-check TV's Script Reference/real chart values as the PROGRESS
-// next_hint asked, so per that next_hint's own fallback ("포트 그대로 이식할 것 확신 없으면") this
-// is a byte-for-byte port, not a divergence - scratch/probe_sar.mjs cross-checks a literalPort
-// (snake_case, matching sar.py line order exactly) against this candidate across sample10, forced
-// re-reversal on bar 1, mid-stream/leading NaN gaps, start/inc/maxAf degenerate values (0, and
-// maxAf==start), and 5,000-sample fuzz across 4 (start,inc,maxAf) tuples - all PASS. Penetration
-// clamp against prevHigh2/prevLow2 (the bar *before* the previous one) only applies once
-// barIndex > 1, i.e. never on the bar that performs the trend init.
-//
-// Pine syntax takes only (start, inc, maxAf) - high/low/close are the implicit bar series
-// (analyzer.ts TA_REGISTRY.sar comment), codegen injects $.high.get(0)/$.low.get(0)/$.close.get(0)
-// ahead of the three user args. Unlike ta.atr/ta.supertrend, no $.close.get(1) injection is needed
-// - sar tracks prevClose itself in state (it isn't calling another TA that needs it as a parameter).
+// Pine syntax takes only (start, inc, maxAf); codegen injects the bar's high and low ahead of them
+// and bar_index after (analyzer TA_REGISTRY.sar).
 export function sar(
   state: SarState,
   high: number,
   low: number,
-  close: number,
   start: number,
   inc: number,
   maxAf: number,
+  barIdx: number,
 ): number {
-  if (Number.isNaN(high) || Number.isNaN(low) || Number.isNaN(close)) return NaN;
+  const high1 = state.high1 ?? NaN;
+  const high2 = state.high2 ?? NaN;
+  const low1 = state.low1 ?? NaN;
+  const low2 = state.low2 ?? NaN;
+  state.high2 = high1;
+  state.high1 = high;
+  state.low2 = low1;
+  state.low1 = low;
 
-  const barIndex = state.barIndex ?? 0;
-  let result = state.result ?? NaN;
-  let maxMin = state.maxMin ?? NaN;
-  let acceleration = state.acceleration ?? NaN;
-  let isBelow = state.isBelow ?? false;
+  if (barIdx === 0) return NaN;
 
-  const prevHigh = state.prevHigh ?? NaN;
-  const prevLow = state.prevLow ?? NaN;
-  const prevHigh2 = state.prevHigh2 ?? NaN;
-  const prevLow2 = state.prevLow2 ?? NaN;
-  const prevClose = state.prevClose ?? NaN;
-
-  let isFirstTrendBar = false;
-
-  if (barIndex === 1) {
-    if (close > prevClose) {
-      isBelow = true;
-      maxMin = high;
-      result = prevLow;
-    } else {
-      isBelow = false;
-      maxMin = low;
-      result = prevHigh;
-    }
-    isFirstTrendBar = true;
-    acceleration = start;
+  if (state.seeded !== true) {
+    state.seeded = true;
+    state.posLong = true;
+    state.af = start;
+    state.sar = NaN;
+    state.ep = NaN;
   }
 
-  if (barIndex >= 1) {
-    result = result + acceleration * (maxMin - result);
-
-    if (isBelow) {
-      if (result > low) {
-        isFirstTrendBar = true;
-        isBelow = false;
-        result = Math.max(high, maxMin);
-        maxMin = low;
-        acceleration = start;
-      }
+  if (barIdx === 1) {
+    if (high1 > high) {
+      state.posLong = false;
+      state.sar = high1;
+      state.ep = low;
     } else {
-      if (result < high) {
-        isFirstTrendBar = true;
-        isBelow = true;
-        result = Math.min(low, maxMin);
-        maxMin = high;
-        acceleration = start;
-      }
+      state.posLong = true;
+      state.sar = low1;
+      state.ep = high;
     }
-
-    if (!isFirstTrendBar) {
-      if (isBelow) {
-        if (high > maxMin) {
-          maxMin = high;
-          acceleration = Math.min(acceleration + inc, maxAf);
-        }
-      } else {
-        if (low < maxMin) {
-          maxMin = low;
-          acceleration = Math.min(acceleration + inc, maxAf);
-        }
-      }
-    }
-
-    if (isBelow) {
-      if (!Number.isNaN(prevLow)) result = Math.min(result, prevLow);
-      if (barIndex > 1 && !Number.isNaN(prevLow2)) result = Math.min(result, prevLow2);
-    } else {
-      if (!Number.isNaN(prevHigh)) result = Math.max(result, prevHigh);
-      if (barIndex > 1 && !Number.isNaN(prevHigh2)) result = Math.max(result, prevHigh2);
-    }
+    return state.sar;
   }
 
-  state.barIndex = barIndex + 1;
-  state.result = result;
-  state.maxMin = maxMin;
-  state.acceleration = acceleration;
-  state.isBelow = isBelow;
-  state.prevHigh2 = prevHigh;
-  state.prevLow2 = prevLow;
-  state.prevHigh = high;
-  state.prevLow = low;
-  state.prevClose = close;
-
-  if (barIndex < 1) return NaN;
-  return result;
+  const prev = state.sar!;
+  let ep = state.ep!;
+  let af = state.af!;
+  let next = prev + af * (ep - prev);
+  if (state.posLong) {
+    if (low < next) {
+      state.posLong = false;
+      af = start;
+      next = pyMax(ep, high, high1, high2 === high2 ? high2 : high1);
+      ep = low;
+    } else {
+      next = pyMin(next, low1, low2 === low2 ? low2 : low1);
+      if (high > ep) {
+        ep = high;
+        af = pyMin(af + inc, maxAf);
+      }
+    }
+  } else {
+    if (high > next) {
+      state.posLong = true;
+      af = start;
+      next = pyMin(ep, low, low1, low2 === low2 ? low2 : low1);
+      ep = high;
+    } else {
+      next = pyMax(next, high1, high2 === high2 ? high2 : high1);
+      if (low < ep) {
+        ep = low;
+        af = pyMin(af + inc, maxAf);
+      }
+    }
+  }
+  state.sar = next;
+  state.ep = ep;
+  state.af = af;
+  return next;
 }
 
 export interface DmiState {

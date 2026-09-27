@@ -4245,10 +4245,11 @@ function genCallExpr(
       );
     }
     if (stateCall.fn === "sar") {
-      // ta.sar(start, inc, maxAf) — Pine 문법에 high/low/close 인자가 없고 내장 bar series를
-      // 암묵 사용한다(analyzer.ts TA_REGISTRY.sar 주석 참조, atr과 동일 패턴이나 prevClose 주입은
-      // 불필요 — sar 자신이 state로 prevClose를 추적).
-      args.unshift(genBarRef("high", 0, secCtx), genBarRef("low", 0, secCtx), genBarRef("close", 0, secCtx));
+      // ta.sar(start, inc, maxAf) reads the bar's high and low (its own per-call window keeps the
+      // previous ones) and the global bar_index, which starts the trend on bar 1 (runtime/ta.ts sar):
+      // runtime signature (state, high, low, start, inc, maxAf, barIdx).
+      args.unshift(genBarRef("high", 0, secCtx), genBarRef("low", 0, secCtx));
+      args.push(secCtx === null ? "$.idx" : secCtx.loopVar);
     }
     if (stateCall.fn === "dmi") {
       // ta.dmi(diLength, adxSmoothing) — Pine 문법에 high/low/close 인자가 없고 내장 bar series를
