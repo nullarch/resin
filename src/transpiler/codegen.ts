@@ -355,6 +355,14 @@ let tupleDiscardCounter = 0;
 // 참조, 같은 함수 스코프 안에 이 폼이 여러 번 나와도 이름이 겹치지 않게 함).
 let secLtfTempCounter = 0;
 
+// The statement number of each strategy.close()/close_all() call in the source, from 1, reset per
+// generateCode like the counters above. TradingView gives each such statement an order of its own:
+// two of them on one bar both fill, and one executed twice on a bar modifies its order (the
+// runtime's PendingClose). A call in a function body is one statement whichever call of the function
+// runs it (the oracle's `_close_call_site`: "the caller's own call site is deliberately NOT part of
+// it"), so the number is the call node's, and the code emits it as `$.strategy.site(n).close(...)`.
+const closeSites = new Map<Expr, number>();
+
 // VarDecl/Assignment 값 위치의 제어문-식(analyzer가 이 4종 외의 위치를 전부 에러로 막았으므로
 // 여기 도달하면 항상 이 중 하나 — TupleExpr와 동일한 "analyzer가 좁혀둔 안전한 캐스팅" 패턴).
 type ControlFlowExpr = IfStmt | ForStmt | WhileStmt | SwitchStmt;
@@ -376,6 +384,7 @@ export function generateCode(program: AnalyzedProgram): string {
   cfrTempCounter = 0;
   tupleDiscardCounter = 0;
   secLtfTempCounter = 0;
+  closeSites.clear();
   // UDF는 pine2py _HOISTABLE_TYPES와 동일하게 소스상 위치와 무관하게 항상 프리앰블(1회 실행
   // 영역)에 생성한다 — 2-layer 구조에서는 이것이 단순한 가독성 배치가 아니라 실제 시맨틱이다:
   // 프리앰블은 ctx당 딱 한 번 실행되므로 UDF 함수 객체가 매 바 재생성되지 않는다.
@@ -4811,6 +4820,14 @@ function genCallExpr(
           // 스냅샷 소스 — time() 빌트인(위 "time" 분기)이 쓰는 것과 동일한 Context 필드.
           args.push("$.close.get(0)", "$.idx", "$.barTimeMs");
         }
+      }
+      if (builtinName === "strategy.close" || builtinName === "strategy.close_all") {
+        let site = closeSites.get(expr);
+        if (site === undefined) {
+          site = closeSites.size + 1;
+          closeSites.set(expr, site);
+        }
+        return `$.strategy.site(${site}).${builtinName.slice("strategy.".length)}(${args.join(", ")})`;
       }
       return `$.${builtinName}(${args.join(", ")})`;
     }

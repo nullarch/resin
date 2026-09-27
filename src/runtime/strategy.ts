@@ -70,6 +70,24 @@ interface EntryBinding {
   size: number;
 }
 
+// The market order of a strategy.close() or strategy.close_all() call, waiting for the next fill
+// moment. Each statement places its own: two statements on one bar both fill, in placement order,
+// and a statement executed twice on one bar (a loop, a function called twice) modifies its order,
+// which keeps its place. The oracle measured this on TradingView (tier 2, `_close_call_site`: "two
+// statements placed on one bar both fill, whether they sit side by side, live in one function
+// body, or in two different functions. But ONE statement executed twice on a bar ... only MODIFIES
+// its pending order — the last call wins"); a close for another id is another order even from the
+// same statement (its key holds the exit id). `site` numbers the statement (codegen; 0 when the
+// caller names none), `id` is the entry id, null for close_all, whose `qty` is Infinity: it closes
+// what is left. `seq` is its orderSeq (see positionAfterPlacedMarketOrders).
+interface PendingClose {
+  site: number;
+  id: string | null;
+  qty: number;
+  comment: string;
+  seq: number;
+}
+
 // One exit order of a strategy.exit() call. A call places one per filled entry it covers — each
 // entry of its from_entry id, or every entry of the position without one — and one for a still
 // pending entry order it covers, which is handed to the entry the order produces when it fills
@@ -504,19 +522,13 @@ export class StrategyState {
   private entryScratch: PendingEntry[];
   // Reused by closeAt to collect one closing order's closed trades before they are booked.
   private closedScratch: ClosedTradeRecord[];
-  // Counts order placements (entry orders and the close slot); orders placed on one bar are walked
+  // Counts order placements (entry orders and close orders); orders placed on one bar are walked
   // in this order (positionAfterPlacedMarketOrders).
   orderSeq: number;
-  closeSeq: number; // orderSeq of the pending close/close_all order
-  closePending: boolean;
-  closeOrderId: string;
-  closeQty: number; // strategy.close(qty=) 부분 청산 수량(C168) — Infinity=전량(기본)
-  closeOrderComment: string; // strategy.close(comment=)/close_all(comment=, C173) 공유 슬롯(closeQty와 동일 공유 관례)
-  // strategy.close_all() 플래그(C168) — closePending 슬롯을 재사용하되 체결 시 id 매칭을 생략.
-  // close_all은 항상 전량이므로 이 플래그가 서면 closeQty도 Infinity로 고정되고, 같은 바의 후속
-  // close(qty=) 부분 주문은 전량 청산의 부분집합이라 무시된다(TV라면 두 주문이 각각 나가지만 둘 다
-  // 다음 바 open 체결이라 순효과는 전량 청산으로 동일 — TV 실측 미검증 가설, DIVERGENCES #71).
-  closeAllPending: boolean;
+  // The unfilled strategy.close()/close_all() orders, in placement order.
+  pendingCloses: PendingClose[];
+  // The statement the next close()/close_all() call comes from (site; see PendingClose).
+  private nextSite: number;
   // The strategy.exit() orders (see ExitLeg), in placement order. A consumed leg stays here, out of
   // the book, until its entry closes.
   exitLegs: ExitLeg[];
@@ -701,12 +713,8 @@ export class StrategyState {
     this.closedTradeRecords = [];
     this.pendingEntries = [];
     this.orderSeq = 0;
-    this.closeSeq = 0;
-    this.closePending = false;
-    this.closeOrderId = "";
-    this.closeQty = Infinity;
-    this.closeOrderComment = "";
-    this.closeAllPending = false;
+    this.pendingCloses = [];
+    this.nextSite = 0;
     this.exitLegs = [];
     this.exitSeq = 0;
     this.freshLegs = [];
@@ -796,7 +804,7 @@ export class StrategyState {
   }
 
   // The signed position the market orders already placed on this bar will leave, walked in
-  // placement order: the close slot shrinks it (close_all flattens it), a market entry adds to it or,
+  // placement order: a close order shrinks it (close_all flattens it), a market entry adds to it or,
   // opposite, reverses it to its own size. Resting limit/stop orders do not count. This is what the
   // pyramiding gate of a new strategy.entry() call reads — the oracle's `_size_flippable_by_entry`,
   // measured on TradingView: "a close hands its slot over (a close_all ahead of a same-id re-entry is
@@ -805,23 +813,33 @@ export class StrategyState {
   // pending while the script body runs was placed on this bar (processFills consumes them).
   private positionAfterPlacedMarketOrders(): number {
     let size = this.posSize;
-    let closeWalked = !this.closePending;
+    const closes = this.pendingCloses;
+    let c = 0;
     for (const e of this.pendingEntries) {
       if (StrategyState.isPriceBased(e)) continue;
-      if (!closeWalked && this.closeSeq < e.seq) {
-        size = this.sizeAfterPendingClose(size);
-        closeWalked = true;
-      }
+      for (; c < closes.length && closes[c]!.seq < e.seq; c++) size = StrategyState.sizeAfterClose(size, closes[c]!);
       const q = e.direction === "long" ? e.qty : -e.qty;
       size = size * q >= 0 ? size + q : q;
     }
-    return closeWalked ? size : this.sizeAfterPendingClose(size);
+    for (; c < closes.length; c++) size = StrategyState.sizeAfterClose(size, closes[c]!);
+    return size;
   }
 
-  private sizeAfterPendingClose(size: number): number {
-    if (this.closeAllPending) return 0;
-    const rest = Math.abs(size) - this.closeQty;
+  // A close order only ever shrinks the position; an over-close lands flat.
+  private static sizeAfterClose(size: number, c: PendingClose): number {
+    const rest = Math.abs(size) - c.qty;
     return rest > 0 ? Math.sign(size) * rest : 0;
+  }
+
+  // Whether a strategy.close()/close_all() order is unfilled.
+  get closePending(): boolean {
+    return this.pendingCloses.length > 0;
+  }
+
+  // Whether an unfilled strategy.close_all() order is among them.
+  get closeAllPending(): boolean {
+    for (const c of this.pendingCloses) if (c.id === null) return true;
+    return false;
   }
 
   // Open quantity bound to an entry id — what strategy.close(id) closes by default.
@@ -2270,9 +2288,9 @@ export class StrategyState {
   // the same script execution as the order placement command." A market entry is only ever pending
   // during the execution that placed it (processFills fills it at the next open), so any one found
   // here qualifies. Repros: resin-harness state/repros/mixed-seed-199.json, mixed-seed-333.json
-  // (the oracle cancels the same-bar market entry). Not covered yet: the market strategy.order()
-  // and strategy.close() orders keep the older rule below (only price-based orders are cancelled;
-  // close의 마켓 청산 주문은 cancel 대상이 아님, DIVERGENCES #69).
+  // (the oracle cancels the same-bar market entry). The same holds for the market orders of
+  // strategy.order() and strategy.close(), which are pending only during the execution that placed
+  // them too.
   // when=(C708) — entry/order/close/close_all/exit(C372/C293/C378/C380)과 동일한 게이트를 마저
   // 이식(hand-verified, DIVERGENCES 신규 — pine2py engine.py cancel(id, when=True)는 when을
   // named parameter로 받으나 본문에서 전혀 참조하지 않는 latent 미적용, literal port 대상 아님).
@@ -2282,29 +2300,34 @@ export class StrategyState {
     const e = this.pendingEntry(id);
     if (e !== undefined) this.removePendingEntry(e);
     // Exit orders are cancelled by their own id, every leg of it (a consumed one too, as in the
-    // oracle's `_remove_order_by_id`: "cancel matches an exit by its exit_id only"). An exit is
-    // always price-based, so there is no market-order exception.
+    // oracle's `_remove_order_by_id`: "cancel matches an exit by its exit_id only"). A
+    // strategy.close()/close_all() order is an exit order whose id is the one TradingView gives it,
+    // "Close entry(s) order <entry id>" or "Close position order" (pendingCloseExitId): cancel("L")
+    // leaves the close of "L" alone.
     for (let i = 0; i < this.exitLegs.length; ) {
       if (this.exitLegs[i]!.id === id) this.exitLegs.splice(i, 1);
       else i++;
     }
-    // order 주문(C169)도 entry와 동일 규칙: 가격 기반만 취소 가능(마켓은 다음 바 open 무조건 체결).
-    if (this.orderPending && this.orderOrderId === id && this.orderIsPriceBased()) {
-      this.orderPending = false;
+    for (let i = 0; i < this.pendingCloses.length; ) {
+      if (StrategyState.pendingCloseExitId(this.pendingCloses[i]!) === id) this.pendingCloses.splice(i, 1);
+      else i++;
     }
+    if (this.orderPending && this.orderOrderId === id) this.orderPending = false;
   }
 
-  // strategy.cancel_all() — 모든 미체결 주문 취소: every entry order (market ones included, see
-  // cancel), the exit legs, and a price-based strategy.order() (its market order is not covered yet).
+  // strategy.cancel_all() — every unfilled order: the entry orders, the strategy.order() order and
+  // the close orders, market ones included (see cancel; strategies.txt: strategy.cancel_all() "cancels
+  // all unfilled orders, regardless of ID"; the oracle's `_cancel_all_orders` drops the market orders
+  // too), and the exit legs. Repros: resin-harness state/repros/mixed-seed-249.json,
+  // mixed-seed-942.json (strategy.close("L") then strategy.cancel_all() on one bar: nothing closes).
   // `when` is v5's gate (mig6.txt: "An order is created only if the when condition is true, which is
   // its default value. This parameter affects ... strategy.cancel_all()"); na counts as false.
   cancel_all(when: boolean = true): void {
     if (!when) return;
     this.pendingEntries.length = 0;
     this.exitLegs.length = 0;
-    if (this.orderPending && this.orderIsPriceBased()) {
-      this.orderPending = false;
-    }
+    this.pendingCloses.length = 0;
+    this.orderPending = false;
   }
 
   // limit/stop 중 하나라도 지정된 주문인가(둘 다 NaN이면 마켓). NaN 판별은 자기 비교(x !== x)가
@@ -2313,15 +2336,11 @@ export class StrategyState {
     return !Number.isNaN(e.limit) || !Number.isNaN(e.stop);
   }
 
-  private orderIsPriceBased(): boolean {
-    return !Number.isNaN(this.orderLimit) || !Number.isNaN(this.orderStop);
-  }
-
   // strategy.close(id, qty=) — 마켓 청산 주문 큐잉. 호출 시점에 포지션이 없거나 entry id가 다르면
   // 무시(pine2py close()의 콜타임 가드와 동일 — 이 판정은 체결 시점 축과 무관한 순수 시맨틱이라
   // 이식). qty=(C168)는 부분 청산 수량 — 생략은 전량, na/0 이하는 호출 무시(exit의 qty 가드와
-  // 동일한 entry 관례 미러). 같은 바에 close_all이 이미 걸려 있으면 부분 close는 전량 청산의
-  // 부분집합이라 무시된다(closeAllPending 필드 주석 참조). when=(C293)은 pine2py
+  // 동일한 entry 관례 미러). The order is queued beside the other close orders of the bar (see
+  // PendingClose), a same-bar close_all included. when=(C293)은 pine2py
   // close(id="", comment="", when=True, **kwargs)의 게이트 파라미터 literal port — 생략(JS 기본
   // 파라미터가 "생략"과 "명시적 undefined"를 동일 취급)은 항상 true로 떨어져 기존 호출 무변화.
   // qty_percent=(C373, hand-verified) — exit()의 qty_percent와 동일 메커니즘(qty 우선, 생략 시에만
@@ -2329,10 +2348,7 @@ export class StrategyState {
   // immediately=(C379, hand-verified — pine2py는 close()가 **kwargs로 흡수해 오라클 불가, TV 공식
   // 시맨틱은 "다음 바 open" 큐잉을 건너뛰고 이 바에서 즉시 체결) — currentClose/currentBarIndex는
   // codegen이 $.close.get(0)/$.idx를 암묵 주입한다(트레이드 접근자 OPEN_TRADE_CLOSE_PRICE_METHODS의
-  // unshift와 동일 원리). id 매칭/when 게이트는 즉시·큐잉 두 경로가 공유(분기는 그 이후에만 갈림) —
-  // closeAllPending 가드는 "다음 바에 이미 전량 청산이 걸려 있으면 부분 큐잉을 skip"하는 pending-vs-
-  // pending 축이라 즉시 체결(지금 당장 발생)에는 적용하지 않는다(즉시 체결로 posSize가 0이 되면
-  // 나중에 pending 소비 시점의 기존 posSize!==0 가드가 자연히 no-op 처리).
+  // unshift와 동일 원리). id 매칭/when 게이트는 즉시·큐잉 두 경로가 공유(분기는 그 이후에만 갈림).
   // The id of the exit order strategy.close(id) creates. strategies.txt: the command's id
   // "specifies the entry ID of an open trade. It does not represent the ID of the resulting exit
   // order." TradingView names that order "Close entry(s) order <id>" (the oracle's exit_id).
@@ -2340,11 +2356,21 @@ export class StrategyState {
     return `Close entry(s) order ${entryId}`;
   }
 
+  // The id of the exit order strategy.close_all() creates (the oracle's exit_id; resin-harness
+  // suites/strategy/probes/C03.json, C56.json).
+  private static readonly CLOSE_ALL_EXIT_ID = "Close position order";
+
+  private static pendingCloseExitId(c: PendingClose): string {
+    return c.id === null ? StrategyState.CLOSE_ALL_EXIT_ID : StrategyState.closeExitId(c.id);
+  }
+
   close(
     id: string | null | undefined, qty?: number, comment?: string, when: boolean = true,
     qtyPercent?: number, immediately?: boolean, currentClose?: number, currentBarIndex?: number,
     currentBarTimeMs?: number,
   ): void {
+    const site = this.nextSite;
+    this.nextSite = 0;
     if (!when) return;
     if (this.posSize === 0) return;
     if (id === null || id === undefined) return;
@@ -2375,29 +2401,47 @@ export class StrategyState {
       this.closeAt(fill, q, cmt, currentBarIndex ?? NaN, StrategyState.closeExitId(id), currentBarTimeMs ?? NaN, id);
       return;
     }
-    if (this.closeAllPending) return;
-    this.closePending = true;
-    this.closeSeq = ++this.orderSeq;
-    this.closeOrderId = id;
-    this.closeQty = q;
-    this.closeOrderComment = cmt;
+    this.queueClose(site, id, q, cmt);
+  }
+
+  // Sets the statement the next close()/close_all() call comes from (codegen:
+  // `$.strategy.site(n).close(...)`; see PendingClose).
+  site(n: number): this {
+    this.nextSite = n;
+    return this;
+  }
+
+  // Places the market order of a close()/close_all() call from statement `site`, or modifies the one
+  // that statement already placed for this id on this bar (every pending close order was placed on
+  // this bar: processFills consumes them).
+  private queueClose(site: number, id: string | null, qty: number, comment: string): void {
+    for (const c of this.pendingCloses) {
+      if (c.site === site && c.id === id) {
+        c.qty = qty;
+        c.comment = comment;
+        return;
+      }
+    }
+    this.pendingCloses.push({ site, id, qty, comment, seq: ++this.orderSeq });
   }
 
   // strategy.close_all() — id 무관 전량 마켓 청산 주문 큐잉(C168). pine2py close_all()의 콜타임
   // flat 가드는 literal port하되, 체결은 콜타임 즉시 _close_position(당일 close — #66 버그 축)이
-  // 아니라 close와 동일하게 다음 바 open이다(TV 규칙). closePending 슬롯을 재사용하고 체결 시
-  // id 매칭만 생략한다(closeAllPending 플래그) — 먼저 걸린 close(id, qty=) 부분 주문이 있어도
-  // 전량으로 덮어쓴다(전량이 부분의 상위집합). when=(C378)은 pine2py
+  // 아니라 close와 동일하게 다음 바 open이다(TV 규칙). It is a close order of its own beside the
+  // bar's other ones (see PendingClose): a same-bar partial close(id, qty=) fills too, and the
+  // close_all then closes what is left (the oracle: "Stamp the call site so a close_all stacked
+  // behind a same-bar partial close fills too"). when=(C378)은 pine2py
   // close_all(comment: str="", when: bool=True)의 게이트 파라미터 literal port — entry/order
   // (C372)/close(C293)와 동일하게 함수 최상단에서 flat 검증보다 먼저 판정한다(when=false면 posSize
   // 상태와 무관하게 무조건 no-op). immediately=(C379) — close()와 동일 원리(pine2py close_all()은
-  // **kwargs 자체가 없어 구조적 크래시, hand-verified). id 개념이 없어 exitId는 close()의 "id 매칭"
-  // 대응물이 없는 빈 문자열로 기록한다(기존 pending 경로도 close_all 전용 id를 추적하지 않음 —
-  // closeOrderId는 close()만 채우는 필드, 동일 관례 유지).
+  // **kwargs 자체가 없어 구조적 크래시, hand-verified). The order has no entry id; TradingView
+  // names it "Close position order" (CLOSE_ALL_EXIT_ID), on both paths.
   close_all(
     comment?: string, when: boolean = true, immediately?: boolean,
     currentClose?: number, currentBarIndex?: number, currentBarTimeMs?: number,
   ): void {
+    const site = this.nextSite;
+    this.nextSite = 0;
     if (!when) return;
     if (this.posSize === 0) return;
     const cmt = comment ?? "";
@@ -2405,14 +2449,10 @@ export class StrategyState {
       if (this.recalc) return; // as in close()
       const fill = this.slipped(currentClose ?? NaN, this.posSize > 0 ? -1 : 1); // as in close()
       this.beginOrder();
-      this.closeAt(fill, Infinity, cmt, currentBarIndex ?? NaN, "", currentBarTimeMs ?? NaN);
+      this.closeAt(fill, Infinity, cmt, currentBarIndex ?? NaN, StrategyState.CLOSE_ALL_EXIT_ID, currentBarTimeMs ?? NaN);
       return;
     }
-    this.closePending = true;
-    this.closeSeq = ++this.orderSeq;
-    this.closeAllPending = true;
-    this.closeQty = Infinity;
-    this.closeOrderComment = cmt;
+    this.queueClose(site, null, Infinity, cmt);
   }
 
   // Context.advance()가 매 바 barFn 실행 **전에** 호출한다 — 마켓 주문은 이번 바 open으로 체결
@@ -2704,7 +2744,7 @@ export class StrategyState {
     const marketPrice = cursor >= 0 ? this.barPath[cursor]! : openPrice;
     this.walkNode = this.openNode();
     const closedBefore = this.closedTrades;
-    if (this.closePending) this.fillPendingClose(marketPrice, barIndex, barTimeMs);
+    if (this.pendingCloses.length > 0) this.fillPendingCloses(marketPrice, barIndex, barTimeMs);
     // The exit legs bound to entries filled on earlier bars are judged over the path from the open;
     // the legs an entry fill of this bar binds are judged after that fill.
     this.queueExitLegs(false, 0);
@@ -2825,7 +2865,7 @@ export class StrategyState {
   processFillsAtClose(closePrice: number, barIndex: number = NaN, barTimeMs: number = NaN): void {
     if (!this.processOrdersOnClose) return;
     this.fillMoment++;
-    if (this.closePending) this.fillPendingClose(closePrice, barIndex, barTimeMs);
+    if (this.pendingCloses.length > 0) this.fillPendingCloses(closePrice, barIndex, barTimeMs);
     if (this.pendingEntries.length > 0) this.fillPendingEntriesAtClose(closePrice, barIndex, barTimeMs);
     if (this.orderPending && this.orderPlacedThisBar) {
       const orderFill = this.directionalFillPrice(
@@ -2837,19 +2877,22 @@ export class StrategyState {
     this.fillExitLegsAtClose(closePrice, barIndex, barTimeMs);
   }
 
-  // Fills the pending strategy.close()/close_all() market order at `fillPrice`, slipped against the
-  // position (closing a long sells).
-  private fillPendingClose(fillPrice: number, barIndex: number, barTimeMs: number): void {
-    this.closePending = false;
-    const ignoreId = this.closeAllPending; // close_all(C168) — id 매칭 생략(전량 청산)
-    this.closeAllPending = false;
-    if (this.posSize !== 0 && (ignoreId || this.hasBound(this.closeOrderId))) {
-      // close_all has no entry id: its exit id is "" as on its immediately= path.
+  // Fills the pending strategy.close()/close_all() market orders at `fillPrice`, in placement order,
+  // each slipped against the position (closing a long sells). Each fills the quantity it was placed
+  // for, FIFO (closeAt), while a position is left: an earlier close of the bar may have consumed the
+  // trades of its id, and it then closes the next oldest ones (the oracle fills a close order against
+  // whatever position is open, as a close only ever shrinks it). Repros: resin-harness
+  // state/repros/mixed-seed-40.json, mixed-seed-164.json (strategy.close("B") and strategy.close("P")
+  // on one bar: both fill).
+  private fillPendingCloses(fillPrice: number, barIndex: number, barTimeMs: number): void {
+    const closes = this.pendingCloses;
+    this.pendingCloses = [];
+    for (const c of closes) {
+      if (this.posSize === 0) break;
       this.beginOrder();
       this.closeAt(
-        this.slipped(fillPrice, this.posSize > 0 ? -1 : 1), this.closeQty, this.closeOrderComment, barIndex,
-        ignoreId ? "" : StrategyState.closeExitId(this.closeOrderId), barTimeMs,
-        ignoreId ? null : this.closeOrderId,
+        this.slipped(fillPrice, this.posSize > 0 ? -1 : 1), c.qty, c.comment, barIndex,
+        StrategyState.pendingCloseExitId(c), barTimeMs, c.id,
       );
     }
   }

@@ -1054,7 +1054,18 @@ describe("strategy.* codegen emission", () => {
 
   it("emits $.strategy.close", () => {
     const code = transpileCode('strategy("s")\nstrategy.close("L")');
-    expect(code).toContain('$.strategy.close("L");');
+    expect(code).toContain('$.strategy.site(1).close("L");');
+  });
+
+  // Each close statement has an order of its own (StrategyState PendingClose); a statement in a
+  // function body is one statement whichever call runs it.
+  it("numbers each strategy.close()/close_all() statement", () => {
+    const code = transpileCode(
+      'strategy("s")\nf() =>\n    strategy.close("L")\nf()\nf()\nstrategy.close("L")\nstrategy.close_all()',
+    );
+    expect(code.match(/\$\.strategy\.site\(1\)\.close\("L"\)/g)).toHaveLength(1);
+    expect(code).toContain('$.strategy.site(2).close("L");');
+    expect(code).toContain("$.strategy.site(3).close_all();");
   });
 
   // C423: id=/direction= kwargs route to runtime slots 0/1 (KWARG_SLOTS — strategy.close의
@@ -2460,24 +2471,84 @@ describe("StrategyState close_all + qty 부분 청산 (C168 여섯째 슬라이�
     expect(st.entryId).toBe("B");
   });
 
-  it("close_all dominates an earlier same-bar partial close (전량으로 승격)", () => {
+  // Each close()/close_all() call is an order of its own: the partial close fills, then the
+  // close_all closes the rest, two closed trades (the oracle, resin-harness
+  // suites/strategy/probes/C56.json bar 8: "a close_all stacked behind a same-bar partial close fills
+  // too").
+  it("close_all after a same-bar partial close fills too, closing the rest", () => {
     const st = new StrategyState();
     st.entry("A", "long", 4);
     st.processFills(10);
     st.close("A", 1);
-    st.close_all(); // 부분 주문을 전량으로 덮어씀
+    st.close_all();
     st.processFills(20);
     expect(st.posSize).toBe(0);
     expect(st.realizedPnl).toBe(40); // (20-10)*4
-    expect(st.closedTrades).toBe(1);
+    expect(st.closedTrades).toBe(2);
+    expect(st.closedTradeRecords.map((t) => [t.size, t.exitId])).toEqual([
+      [1, "Close entry(s) order A"],
+      [3, "Close position order"],
+    ]);
   });
 
-  it("partial close after a same-bar close_all is ignored (부분은 전량의 부분집합)", () => {
+  // resin-harness suites/strategy/probes/C56.json bar 3 and state/repros/mixed-seed-40.json: two
+  // statements closing on one bar both fill; one statement run twice on a bar modifies its order.
+  it("stacks the closes of two statements, modifies the close of one statement run twice", () => {
+    const st = new StrategyState();
+    st.entry("A", "long", 4);
+    st.processFills(10);
+    st.site(1).close("A", 1);
+    st.site(2).close("A", 1);
+    expect(st.pendingCloses).toHaveLength(2);
+    st.processFills(20);
+    expect(st.posSize).toBe(2);
+    st.site(1).close("A", 1);
+    st.site(1).close("A", 2);
+    expect(st.pendingCloses).toHaveLength(1);
+    st.processFills(20);
+    expect(st.posSize).toBe(0);
+  });
+
+  // A later close for an id whose trades an earlier same-bar close consumed (FIFO) still closes the
+  // quantity it was placed for (state/repros/mixed-seed-40.json: close("B") takes P's trade, then
+  // close("P") takes B's).
+  it("a stacked close fills against the trades left after the earlier ones", () => {
+    const st = new StrategyState();
+    st.configure(1, 2);
+    st.entry("P", "long", 1);
+    st.processFills(10);
+    st.entry("B", "long", 1);
+    st.processFills(11);
+    st.site(1).close("B");
+    st.site(2).close("P");
+    st.processFills(20);
+    expect(st.posSize).toBe(0);
+    expect(st.closedTradeRecords.map((t) => [t.entryId, t.exitId])).toEqual([
+      ["P", "Close entry(s) order B"],
+      ["B", "Close entry(s) order P"],
+    ]);
+  });
+
+  // strategies.txt: strategy.cancel_all() "cancels all unfilled orders, regardless of ID", market
+  // orders included when placed on the same execution (state/repros/mixed-seed-249.json).
+  it("cancel_all cancels the close orders placed before it", () => {
+    const st = new StrategyState();
+    st.entry("A", "long", 2);
+    st.processFills(10);
+    st.close("A");
+    st.close_all();
+    st.cancel_all();
+    expect(st.closePending).toBe(false);
+    st.processFills(20);
+    expect(st.posSize).toBe(2);
+  });
+
+  it("partial close after a same-bar close_all finds the position flat", () => {
     const st = new StrategyState();
     st.entry("A", "long", 4);
     st.processFills(10);
     st.close_all();
-    st.close("A", 1); // closeAllPending 가드 — 무시
+    st.close("A", 1); // queued behind the close_all, which leaves nothing to close
     st.processFills(20);
     expect(st.posSize).toBe(0);
     expect(st.realizedPnl).toBe(40);
@@ -2870,7 +2941,7 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
 
   it("discards alert_message= on strategy.close_all codegen (C374, comment= 슬롯만 유지)", () => {
     const code = transpileCode('strategy("s")\nstrategy.close_all("bye", alert_message="hi")');
-    expect(code).toContain('$.strategy.close_all("bye");');
+    expect(code).toContain('$.strategy.site(1).close_all("bye");');
     expect(code).not.toContain('"hi"');
   });
 
@@ -2957,38 +3028,38 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
 describe("strategy.close_all / qty= codegen emission (C168)", () => {
   it("emits $.strategy.close_all()", () => {
     const code = transpileCode('strategy("s")\nstrategy.close_all()');
-    expect(code).toContain("$.strategy.close_all();");
+    expect(code).toContain("$.strategy.site(1).close_all();");
   });
 
   it("lowers comment= on strategy.close_all to its sole slot (C173 실소비)", () => {
     const code = transpileCode('strategy("s")\nstrategy.close_all(comment="bye!")');
-    expect(code).toContain('$.strategy.close_all("bye!");');
+    expect(code).toContain('$.strategy.site(1).close_all("bye!");');
   });
 
   it("emits a positional comment on strategy.close_all identically to comment= (C250)", () => {
     const code = transpileCode('strategy("s")\nstrategy.close_all("bye!")');
-    expect(code).toContain('$.strategy.close_all("bye!");');
+    expect(code).toContain('$.strategy.site(1).close_all("bye!");');
   });
 
   it("lowers when= on strategy.close_all to the 2nd slot (C378)", () => {
     const code = transpileCode('strategy("s")\nstrategy.close_all(when=close > open)');
-    expect(code).toContain("$.strategy.close_all(undefined, rt.pineGt($.close.get(0), $.open.get(0)));");
+    expect(code).toContain("$.strategy.site(1).close_all(undefined, rt.pineGt($.close.get(0), $.open.get(0)));");
   });
 
   it("keeps the existing comment=+when= combination correctly slotted (C378)", () => {
     const code = transpileCode('strategy("s")\nstrategy.close_all("bye!", when=true)');
-    expect(code).toContain('$.strategy.close_all("bye!", true);');
+    expect(code).toContain('$.strategy.site(1).close_all("bye!", true);');
   });
 
   it("emits positional (comment, when) identically to comment=+when= (C467, no reslotting needed)", () => {
     const code = transpileCode('strategy("s")\nstrategy.close_all("bye!", true)');
-    expect(code).toContain('$.strategy.close_all("bye!", true);');
+    expect(code).toContain('$.strategy.site(1).close_all("bye!", true);');
   });
 
   it("lowers immediately= on strategy.close_all to the 3rd slot + implicit close/idx/barTimeMs (C379/C418)", () => {
     const code = transpileCode('strategy("s")\nstrategy.close_all(immediately=true)');
     expect(code).toContain(
-      "$.strategy.close_all(undefined, undefined, true, $.close.get(0), $.idx, $.barTimeMs);",
+      "$.strategy.site(1).close_all(undefined, undefined, true, $.close.get(0), $.idx, $.barTimeMs);",
     );
   });
 
@@ -2999,35 +3070,35 @@ describe("strategy.close_all / qty= codegen emission (C168)", () => {
 
   it("lowers close qty= to the 2nd slot", () => {
     const code = transpileCode('strategy("s")\nstrategy.close("L", qty=2)');
-    expect(code).toContain('$.strategy.close("L", 2);');
+    expect(code).toContain('$.strategy.site(1).close("L", 2);');
   });
 
   it("lowers comment= on strategy.close to the 3rd slot (C173 실소비)", () => {
     const code = transpileCode('strategy("s")\nstrategy.close("L", comment="bye!")');
-    expect(code).toContain('$.strategy.close("L", undefined, "bye!");');
+    expect(code).toContain('$.strategy.site(1).close("L", undefined, "bye!");');
   });
 
   it("lowers id= kwarg on strategy.close identically to a positional id (C293)", () => {
     const code = transpileCode('strategy("s")\nstrategy.close(id="L")');
-    expect(code).toContain('$.strategy.close("L");');
+    expect(code).toContain('$.strategy.site(1).close("L");');
   });
 
   // C345: 2번째 위치 인자(comment)는 런타임 close(id, qty, comment, when) 시그니처의 qty 슬롯을
   // 건너뛰어 comment 슬롯(3번째)으로 재배치돼야 한다 — comment=(kwarg) 출력과 동일해야 함.
   it("lowers a 2nd positional arg on strategy.close to the comment slot, skipping qty (C345)", () => {
     const code = transpileCode('strategy("s")\nstrategy.close("L", "bye")');
-    expect(code).toContain('$.strategy.close("L", undefined, "bye");');
+    expect(code).toContain('$.strategy.site(1).close("L", undefined, "bye");');
   });
 
   it("lowers when= on strategy.close to the 4th slot (C293)", () => {
     const code = transpileCode('strategy("s")\nstrategy.close(id="L", when=close > open)');
-    expect(code).toContain('$.strategy.close("L", undefined, undefined, rt.pineGt($.close.get(0), $.open.get(0)));');
+    expect(code).toContain('$.strategy.site(1).close("L", undefined, undefined, rt.pineGt($.close.get(0), $.open.get(0)));');
   });
 
   it("lowers immediately= on strategy.close to the 6th slot + implicit close/idx/barTimeMs (C379/C418)", () => {
     const code = transpileCode('strategy("s")\nstrategy.close("L", immediately=true)');
     expect(code).toContain(
-      '$.strategy.close("L", undefined, undefined, undefined, undefined, true, $.close.get(0), $.idx, $.barTimeMs);',
+      '$.strategy.site(1).close("L", undefined, undefined, undefined, undefined, true, $.close.get(0), $.idx, $.barTimeMs);',
     );
   });
 
@@ -3319,15 +3390,19 @@ describe("StrategyState.order (C169, hand-verified)", () => {
     expect(st.posAvgPrice).toBe(12);
   });
 
-  it("cancel cancels a price-based order but not a market order", () => {
+  // strategies.txt: the cancellation commands "can cancel orders of any type, including market
+  // orders", when called on the execution that placed them (resin-harness
+  // suites/strategy/probes/C56.json bar 15).
+  it("cancel cancels a price-based order and a same-execution market order", () => {
     const st = new StrategyState();
     st.order("O", "long", 1, 5);
     st.cancel("O");
     expect(st.orderPending).toBe(false);
     st.order("M", "long", 1);
-    st.cancel("M"); // 마켓은 취소 불가
+    st.cancel("M");
+    expect(st.orderPending).toBe(false);
     st.processFills(10);
-    expect(st.posSize).toBe(1);
+    expect(st.posSize).toBe(0);
   });
 
   it("cancel_all cancels a pending price-based order", () => {
@@ -7714,7 +7789,7 @@ describe("strategy.exit/close qty_percent= codegen emission (hand-verified, C373
 
   it("lowers qty_percent= to the 5th slot on strategy.close (past when)", () => {
     const code = transpileCode('strategy("s")\nstrategy.close("L", qty_percent=50)');
-    expect(code).toContain('$.strategy.close("L", undefined, undefined, undefined, 50);');
+    expect(code).toContain('$.strategy.site(1).close("L", undefined, undefined, undefined, 50);');
   });
 });
 
