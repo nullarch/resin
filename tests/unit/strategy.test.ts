@@ -63,14 +63,25 @@ describe("StrategyState (runtime, hand-verified)", () => {
     expect(st.posSize).toBe(2);
   });
 
-  it("entry ignores na(NaN)/zero/negative qty (no order)", () => {
+  it("entry ignores zero/negative qty (no order)", () => {
     const st = new StrategyState();
-    st.entry("A", "long", NaN);
     st.entry("B", "long", 0);
     st.entry("C", "long", -3);
     st.processFills(10);
     expect(st.posSize).toBe(0);
     expect(st.entryId).toBeNull();
+  });
+
+  // strategies.txt ("Position sizing"): "To use the strategy's default order size, we must remove
+  // the qty arguments from the strategy.entry() calls or set their values to na." Probe:
+  // resin-harness suites/strategy/probes/C38.json (qty = na under default_qty_value=3 opens 3).
+  it("entry with an na(NaN) qty uses the default order size, like an omitted qty", () => {
+    const st = new StrategyState();
+    st.configure(3, 1);
+    st.entry("A", "long", NaN);
+    st.processFills(10);
+    expect(st.posSize).toBe(3);
+    expect(st.entryId).toBe("A");
   });
 
   it("entry ignores na(null) id (no order)", () => {
@@ -3108,9 +3119,18 @@ describe("StrategyState.order (C169, hand-verified)", () => {
     expect(st.posSize).toBe(4);
   });
 
-  it("order ignores na(NaN)/zero/negative qty and na(null) id", () => {
+  // An na qty is the default order size (strategies.txt "Position sizing"; see the entry test and
+  // resin-harness suites/strategy/probes/C38.json), for strategy.order() as for strategy.entry().
+  it("order with an na(NaN) qty uses the default order size", () => {
     const st = new StrategyState();
+    st.configure(4, 1);
     st.order("A", "long", NaN);
+    st.processFills(10);
+    expect(st.posSize).toBe(4);
+  });
+
+  it("order ignores zero/negative qty and na(null) id", () => {
+    const st = new StrategyState();
     st.order("B", "long", 0);
     st.order("C", "long", -3);
     st.order(null, "long", 1);

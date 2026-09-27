@@ -1826,8 +1826,7 @@ export class StrategyState {
       );
     }
     const oca = StrategyState.ocaType("strategy.entry", ocaType);
-    // na 안전성: id가 na(null)이거나 qty가 na(NaN) 또는 0 이하면 주문을 내지 않는다(LIMITATIONS.md).
-    // `!(qty > 0)`은 NaN에서도 안전한 긍정형 가드(MEMORY.md C91 — NaN 비교는 항상 false).
+    // An na id places nothing; so does a zero or negative qty (`!(qty > 0)` below).
     if (id === null || id === undefined) return;
     // The order's levels are put on the symbol's tick grid when it is placed, on the side the market
     // has to travel further to reach: a buy limit and a sell stop round down, a sell limit and a buy
@@ -1840,12 +1839,16 @@ export class StrategyState {
     const sign = direction === "long" ? 1 : -1;
     if (limit !== undefined && !Number.isNaN(limit)) limit = this.snapToTick(limit, sign < 0);
     if (stop !== undefined && !Number.isNaN(stop)) stop = this.snapToTick(stop, sign > 0);
-    // An explicit qty is a number of contracts whatever default_qty_type says; an omitted one is
-    // resolved now, on the placement bar (see defaultOrderQty).
+    // An explicit qty is a number of contracts whatever default_qty_type says; an omitted or na one
+    // is resolved now, on the placement bar (see defaultOrderQty). An na qty is the default order
+    // size, not a dropped order: strategies.txt ("Position sizing"): "To use the strategy's default
+    // order size, we must remove the qty arguments from the strategy.entry() calls or set their
+    // values to na." The oracle's entry()/order() likewise size an na qty by default
+    // (`deferred_default = not (qty == qty)`). Probe: resin-harness suites/strategy/probes/C38.json.
     const existing = this.pendingEntry(id);
     const reissued = existing !== undefined && existing.placedThisBar;
     let qtyAuto = false;
-    if (qty === undefined) {
+    if (qty === undefined || Number.isNaN(qty)) {
       const reverses = !reissued && this.posSize !== 0 && this.posSize > 0 !== sign > 0;
       const sized = this.defaultOrderQty(sign, limit ?? NaN, stop ?? NaN, reverses);
       if (sized === null) return;
@@ -1999,7 +2002,7 @@ export class StrategyState {
   // 실버그**(engine.py L353 `direction != order.direction` → 새 Position — next_hint의 "가중평균에
   // 반대 qty 혼입" 서술과 달리 실제로는 전체 교체지만, 어느 쪽이든 TV 넷팅과 다른 비경제 동작이라
   // 미추종. TV order는 순수 방향 주문이라 상쇄가 정합이라는 가설 — TV 실측 미검증, DIVERGENCES #72).
-  // id na/qty na·0 이하 가드, defaultQty 해석, limit/stop na 정규화, 같은 id 수정/다른 id 첫 주문
+  // id na/qty 0 이하 가드, defaultQty 해석(qty 생략·na), limit/stop na 정규화, 같은 id 수정/다른 id 첫 주문
   // 유지, direction 런타임 이중 방어, when=(C372, entry와 동일 관례 — 게이트가 direction 검증보다
   // 먼저) 전부 entry와 동일 관례.
   order(
@@ -2015,10 +2018,10 @@ export class StrategyState {
     const oca = StrategyState.ocaType("strategy.order", ocaType);
     const ocaGroup = StrategyState.ocaName(ocaName);
     if (id === null || id === undefined) return;
-    // Sized as in entry(), except that a zero-lot order is always dropped: strategy.order() has no
-    // reversal leg to keep.
+    // Sized as in entry() (an omitted or na qty is the default order size), except that a zero-lot
+    // order is always dropped: strategy.order() has no reversal leg to keep.
     let qtyAuto = false;
-    if (qty === undefined) {
+    if (qty === undefined || Number.isNaN(qty)) {
       const sized = this.defaultOrderQty(direction === "long" ? 1 : -1, limit ?? NaN, stop ?? NaN, false);
       if (sized === null) return;
       qty = sized.qty;
