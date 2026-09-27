@@ -1420,9 +1420,11 @@ export class StrategyState {
   // variable"). A number with no listed trade behind it (not closed yet, negative, or older than
   // strategy.closedtrades.first_index) is not an error: the amounts (profit, profit_percent, size,
   // commission, max_drawdown/max_runup and their percents) read 0, the prices, bar indexes and times
-  // na, the ids and comments an empty string. Tier 1 resin-harness suites/strategy/tv/trade_percents
-  // plots closedtrades.profit_percent/max_drawdown/max_drawdown_percent/max_runup/max_runup_percent
-  // of trades 0 and 1 as 0.0 on the 11 bars before any trade closed; the oracle (tier 2) returns the
+  // na, the ids and comments na (a string na, not an empty string: resin-harness
+  // suites/strategy/probes/C62.json, `na(strategy.closedtrades.entry_id(9))` is true). Tier 1
+  // resin-harness suites/strategy/tv/trade_percents plots
+  // closedtrades.profit_percent/max_drawdown/max_drawdown_percent/max_runup/max_runup_percent of
+  // trades 0 and 1 as 0.0 on the 11 bars before any trade closed; the oracle (tier 2) returns the
   // same 0/na per accessor, and reads an na trade number as trade 0 and a fractional one truncated.
   private closedTradeAt(index: number): ClosedTradeRecord | undefined {
     const i = Number.isNaN(index) ? 0 : Math.trunc(index);
@@ -1430,12 +1432,12 @@ export class StrategyState {
     return this.closedTradeRecords[i];
   }
 
-  closedTradeEntryComment(index: number): string {
-    return this.closedTradeAt(index)?.entryComment ?? "";
+  closedTradeEntryComment(index: number): string | null {
+    return this.closedTradeAt(index)?.entryComment ?? null;
   }
 
-  closedTradeExitComment(index: number): string {
-    return this.closedTradeAt(index)?.exitComment ?? "";
+  closedTradeExitComment(index: number): string | null {
+    return this.closedTradeAt(index)?.exitComment ?? null;
   }
 
   closedTradeEntryPrice(index: number): number {
@@ -1454,14 +1456,14 @@ export class StrategyState {
     return this.closedTradeAt(index)?.exitBarIndex ?? NaN;
   }
 
-  closedTradeEntryId(index: number): string {
-    return this.closedTradeAt(index)?.entryId ?? "";
+  closedTradeEntryId(index: number): string | null {
+    return this.closedTradeAt(index)?.entryId ?? null;
   }
 
   // A margin call's exit has no id: na (null).
   closedTradeExitId(index: number): string | null {
     const t = this.closedTradeAt(index);
-    return t === undefined ? "" : t.exitId;
+    return t === undefined ? null : t.exitId;
   }
 
   closedTradeProfit(index: number): number {
@@ -1509,56 +1511,56 @@ export class StrategyState {
     return this.closedTradeAt(index)?.maxDrawdownPercent ?? 0;
   }
 
-  // strategy.opentrades.<method>(index) — index 0 is the oldest open trade, strategy.opentrades - 1
-  // the most recent (faq.txt: "To find the entry price for the most recent open trade, and
-  // remembering that the trade indexes start at zero, use float entryPrice =
-  // strategy.opentrades.entry_price(strategy.opentrades - 1)"). An index outside the open trades
-  // throws rather than returning a made-up value. While flat every accessor returns na: the
-  // `strategy.opentrades > 0 and strategy.opentrades.entry_bar_index(0) >= n` idiom evaluates both
-  // operands on every bar (C578).
-  private assertOpenTrade(method: string, index: number): void {
-    if (this.posSize !== 0 && !(index >= 0 && index < this.openTrades.length)) {
-      throw new Error(
-        `strategy.opentrades.${method}: index ${index} is out of range — valid range 0..${this.openTrades.length - 1} (opentrades=${this.openTrades.length})`,
-      );
-    }
+  // strategy.opentrades.<method>(trade_num) — trade 0 is the oldest open trade, strategy.opentrades
+  // - 1 the most recent (strategies.txt: "The index of the first open/closed trade is 0, and the last
+  // trade's index is one less than the value of the strategy.opentrades/strategy.closedtrades
+  // variable"; faq.txt: "use float entryPrice = strategy.opentrades.entry_price(strategy.opentrades
+  // - 1)"). A number with no open trade behind it is not an error, as for closedTradeAt: at or past
+  // strategy.opentrades (every number while flat) the amounts (size, profit, profit_percent,
+  // commission, max_drawdown/max_runup and their percents) read 0, the entry price, bar index and
+  // time na, the id and comment na; an na or negative number reads na everywhere but size, which
+  // stays 0. A fraction truncates. This is the oracle's opentrades.py (tier 2), per accessor;
+  // resin-harness suites/strategy/probes/C62.json pins it, and real-world f2b3ec02cd0d.pine
+  // (pyramiding=1, `strategy.opentrades.entry_price(1)` on every bar) runs on TradingView.
+  private openTradeNumbered(index: number): OpenTrade | undefined {
+    const i = Math.trunc(index);
+    return i >= 0 ? this.openTrades[i] : undefined;
   }
 
-  // The open trade at a validated index, or undefined while flat.
-  private openTradeAtIndex(method: string, index: number): OpenTrade | undefined {
-    this.assertOpenTrade(method, index);
-    return this.posSize === 0 ? undefined : this.openTrades[index];
+  // An amount of a trade number with no open trade behind it: 0, or na for an na or negative number.
+  private missingOpenTradeAmount(index: number): number {
+    return Math.trunc(index) >= 0 ? 0 : NaN;
   }
 
   openTradeEntryPrice(index: number): number {
-    return this.openTradeAtIndex("entry_price", index)?.entryPrice ?? NaN;
+    return this.openTradeNumbered(index)?.entryPrice ?? NaN;
   }
 
   openTradeEntryBarIndex(index: number): number {
-    return this.openTradeAtIndex("entry_bar_index", index)?.entryBarIndex ?? NaN;
+    return this.openTradeNumbered(index)?.entryBarIndex ?? NaN;
   }
 
   openTradeEntryTime(index: number): number {
-    return this.openTradeAtIndex("entry_time", index)?.entryTime ?? NaN;
+    return this.openTradeNumbered(index)?.entryTime ?? NaN;
   }
 
-  openTradeEntryId(index: number): string {
-    return this.openTradeAtIndex("entry_id", index)?.entryId ?? "";
+  openTradeEntryId(index: number): string | null {
+    return this.openTradeNumbered(index)?.entryId ?? null;
   }
 
   // strategy.opentrades.entry_comment(index): the comment= of the order that opened the trade (a
   // pyramiding add keeps its own), as closedTradeEntryComment reads it once the trade closes.
-  openTradeEntryComment(index: number): string {
-    return this.openTradeAtIndex("entry_comment", index)?.entryComment ?? "";
+  openTradeEntryComment(index: number): string | null {
+    return this.openTradeNumbered(index)?.entryComment ?? null;
   }
 
   openTradeSize(index: number): number {
-    return this.openTradeAtIndex("size", index)?.size ?? NaN;
+    return this.openTradeNumbered(index)?.size ?? 0;
   }
 
   // strategy.opentrades.commission(index): the entry fee the open part of the trade carries.
   openTradeCommission(index: number): number {
-    return this.openTradeAtIndex("commission", index)?.commission ?? NaN;
+    return this.openTradeNumbered(index)?.commission ?? this.missingOpenTradeAmount(index);
   }
 
   // Unrealized profit of one open trade at the current close (codegen injects `$.close.get(0)`,
@@ -1567,8 +1569,8 @@ export class StrategyState {
   // profit (tier 2), and what TradingView plots (tier 1 resin-harness
   // suites/strategy/tv/opentrades_profit_percent, one run per commission mode).
   openTradeProfit(closePrice: number, index: number): number {
-    const t = this.openTradeAtIndex("profit", index);
-    return t === undefined ? NaN : this.openTradeNetProfit(t, closePrice);
+    const t = this.openTradeNumbered(index);
+    return t === undefined ? this.missingOpenTradeAmount(index) : this.openTradeNetProfit(t, closePrice);
   }
 
   private openTradeNetProfit(t: OpenTrade, closePrice: number): number {
@@ -1583,26 +1585,26 @@ export class StrategyState {
 
   // The open profit over the trade's entry cost, its value plus its entry fee, as closedtrades.
   openTradeProfitPercent(closePrice: number, index: number): number {
-    const t = this.openTradeAtIndex("profit_percent", index);
-    if (t === undefined) return NaN;
+    const t = this.openTradeNumbered(index);
+    if (t === undefined) return this.missingOpenTradeAmount(index);
     const entryCost = Math.abs(t.size) * t.entryPrice * this.pointvalue + t.commission;
     return entryCost === 0 ? 0 : (this.openTradeNetProfit(t, closePrice) / entryCost) * 100;
   }
 
   openTradeMaxRunup(index: number): number {
-    return this.openTradeAtIndex("max_runup", index)?.maxRunup ?? NaN;
+    return this.openTradeNumbered(index)?.maxRunup ?? this.missingOpenTradeAmount(index);
   }
 
   openTradeMaxDrawdown(index: number): number {
-    return this.openTradeAtIndex("max_drawdown", index)?.maxDrawdown ?? NaN;
+    return this.openTradeNumbered(index)?.maxDrawdown ?? this.missingOpenTradeAmount(index);
   }
 
   openTradeMaxRunupPercent(index: number): number {
-    return this.openTradeAtIndex("max_runup_percent", index)?.maxRunupPercent ?? NaN;
+    return this.openTradeNumbered(index)?.maxRunupPercent ?? this.missingOpenTradeAmount(index);
   }
 
   openTradeMaxDrawdownPercent(index: number): number {
-    return this.openTradeAtIndex("max_drawdown_percent", index)?.maxDrawdownPercent ?? NaN;
+    return this.openTradeNumbered(index)?.maxDrawdownPercent ?? this.missingOpenTradeAmount(index);
   }
 
   // The money a default-sized order spends, fixed when the order is placed: percent_of_equity is

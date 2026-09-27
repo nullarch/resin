@@ -5849,21 +5849,22 @@ describe("StrategyState 트레이드 comment 실소비 (C173 열한째 슬라이
 
   // A closed-trade number with no trade behind it is not an error: TradingView plots 0 for the
   // amounts of a trade not closed yet (tier 1 resin-harness suites/strategy/tv/trade_percents), and
-  // the oracle returns na for its text.
-  it("reads an empty comment for a closed-trade number with no trade behind it", () => {
+  // the oracle returns na for its text (a string na, null: resin-harness
+  // suites/strategy/probes/C62.json, `na(strategy.closedtrades.entry_id(9))` is true).
+  it("reads an na comment for a closed-trade number with no trade behind it", () => {
     const st = new StrategyState();
     st.entry("L", "long", 1, undefined, undefined, "open1");
     st.processFills(10);
     st.close("L", undefined, "shut1");
     st.processFills(11); // closedTrades=1, 유효 index=0
-    expect(st.closedTradeEntryComment(1)).toBe("");
-    expect(st.closedTradeExitComment(-1)).toBe("");
+    expect(st.closedTradeEntryComment(1)).toBeNull();
+    expect(st.closedTradeExitComment(-1)).toBeNull();
   });
 
-  it("returns empty string before any trade has closed (closedTrades=0 경계)", () => {
+  it("returns na before any trade has closed (closedTrades=0 경계)", () => {
     const st = new StrategyState();
-    expect(st.closedTradeEntryComment(-1)).toBe("");
-    expect(st.closedTradeExitComment(-1)).toBe("");
+    expect(st.closedTradeEntryComment(-1)).toBeNull();
+    expect(st.closedTradeExitComment(-1)).toBeNull();
   });
 });
 
@@ -5913,9 +5914,10 @@ describe("strategy.closedtrades.entry_comment/exit_comment codegen emission (C17
 
 describe("strategy.* E2E 열한째 슬라이스 (hand-verified: entry/close comment= 실소비 + closedtrades.entry_comment/exit_comment)", () => {
   // 손 계산 시나리오(마켓 entry/close, 다음 바 open 체결):
-  //   bar0(n=1): entry("L", comment="open1") 큐잉. closedtrades=0 -> ec/xc = ""/""
-  //   bar1(n=2): open 12 체결(롱 1@12). closedtrades=0 -> ec/xc = ""/""
-  //   bar2(n=3): close("L", comment="shut1") 큐잉. closedtrades=0 -> ec/xc = ""/""
+  //   bar0(n=1): entry("L", comment="open1") 큐잉. closedtrades=0 -> ec/xc = na/na
+  //   bar1(n=2): open 12 체결(롱 1@12). closedtrades=0 -> ec/xc = na/na
+  //   bar2(n=3): close("L", comment="shut1") 큐잉. closedtrades=0 -> ec/xc = na/na
+  //   (trade -1 names no closed trade: the oracle reads na, resin-harness suites/strategy/probes/C62.json)
   //   bar3(n=4): open 15 청산 체결 -> closedtrades=1, ec="open1"/xc="shut1"
   //   bar4(n=5): flat 유지 -> ec/xc 그대로("open1"/"shut1")
   const data: OHLCVData = {
@@ -5939,14 +5941,14 @@ describe("strategy.* E2E 열한째 슬라이스 (hand-verified: entry/close comm
     "__obs_xc := strategy.closedtrades.exit_comment(strategy.closedtrades - 1)",
   ].join("\n");
 
-  it("tracks entry_comment per bar (트레이드 청산 전에는 빈 문자열)", () => {
+  it("tracks entry_comment per bar (트레이드 청산 전에는 na)", () => {
     const result = runPipeline(src, data);
-    expect(result.bars.map((b) => b["var:__obs_ec"])).toEqual(["", "", "", "open1", "open1"]);
+    expect(result.bars.map((b) => b["var:__obs_ec"])).toEqual([null, null, null, "open1", "open1"]);
   });
 
   it("tracks exit_comment per bar (close(comment=)가 청산 시점에 반영)", () => {
     const result = runPipeline(src, data);
-    expect(result.bars.map((b) => b["var:__obs_xc"])).toEqual(["", "", "", "shut1", "shut1"]);
+    expect(result.bars.map((b) => b["var:__obs_xc"])).toEqual([null, null, null, "shut1", "shut1"]);
   });
 });
 
@@ -5974,7 +5976,7 @@ describe("strategy.* E2E (hand-verified: strategy.close 2번째 위치 인자(co
 
   it("tracks exit_comment per bar (close(id, comment) 위치 인자 폼이 청산 시점에 반영)", () => {
     const result = runPipeline(src, data);
-    expect(result.bars.map((b) => b["var:__obs_xc"])).toEqual(["", "", "", "shut1", "shut1"]);
+    expect(result.bars.map((b) => b["var:__obs_xc"])).toEqual([null, null, null, "shut1", "shut1"]);
   });
 });
 
@@ -6065,10 +6067,11 @@ describe("StrategyState 트레이드 접근자 확장 (C308, hand-verified — e
     expect(st.closedTradeProfit(-1)).toBe(0);
   });
 
-  it("returns na-ish defaults before any trade has closed (closedTrades=0 경계, entry_comment와 동일 관례)", () => {
+  it("returns na before any trade has closed (closedTrades=0 경계, entry_comment와 동일 관례; resin-harness suites/strategy/probes/C62.json)", () => {
     const st = new StrategyState();
     expect(Number.isNaN(st.closedTradeEntryPrice(-1))).toBe(true);
-    expect(st.closedTradeEntryId(-1)).toBe("");
+    expect(st.closedTradeEntryId(-1)).toBeNull();
+    expect(st.closedTradeExitId(0)).toBeNull();
   });
 });
 
@@ -6116,9 +6119,9 @@ describe("StrategyState.opentrades 접근자 (C308 — one open trade per entry 
 
   // strategy.opentrades.entry_comment(index): each open trade keeps its own entry order's comment,
   // oldest first (oracle: resin-harness suites/strategy/probes/C53.json).
-  it("entry_comment reads each open trade's entry comment, and an empty string while flat", () => {
+  it("entry_comment reads each open trade's entry comment, and na while flat or past the last open trade", () => {
     const st = new StrategyState();
-    expect(st.openTradeEntryComment(0)).toBe("");
+    expect(st.openTradeEntryComment(0)).toBeNull();
     st.configure(1, 2); // pyramiding=2
     st.entry("L", "long", 1, undefined, undefined, "first");
     st.processFills(10, undefined, undefined, 0);
@@ -6126,22 +6129,36 @@ describe("StrategyState.opentrades 접근자 (C308 — one open trade per entry 
     st.processFills(20, undefined, undefined, 1);
     expect(st.openTradeEntryComment(0)).toBe("first");
     expect(st.openTradeEntryComment(1)).toBe("second");
-    expect(() => st.openTradeEntryComment(2)).toThrow(/entry_comment: index 2 is out of range/);
+    expect(st.openTradeEntryComment(2)).toBeNull();
   });
 
-  it("throws for any open-trade index other than 0", () => {
+  // A number past the last open trade is not an error: the entry price, bar index, time, id and
+  // comment read na, the amounts 0; a negative or na number reads na everywhere but size (0). Oracle
+  // (tier 2) opentrades.py per accessor, pinned by resin-harness suites/strategy/probes/C62.json;
+  // real-world f2b3ec02cd0d.pine reads strategy.opentrades.entry_price(1) under pyramiding=1.
+  it("reads na/0 for an open-trade number with no open trade behind it, while in a position", () => {
     const st = new StrategyState();
     st.entry("L1", "long", 1);
     st.processFills(10, undefined, undefined, 0);
-    expect(() => st.openTradeEntryPrice(1)).toThrow(/index 1 is out of range/);
+    expect(Number.isNaN(st.openTradeEntryPrice(1))).toBe(true);
+    expect(Number.isNaN(st.openTradeEntryBarIndex(1))).toBe(true);
+    expect(Number.isNaN(st.openTradeEntryTime(1))).toBe(true);
+    expect(st.openTradeEntryId(1)).toBeNull();
+    expect(st.openTradeSize(1)).toBe(0);
+    expect(st.openTradeCommission(1)).toBe(0);
+    expect(st.openTradeSize(-1)).toBe(0);
+    expect(st.openTradeSize(NaN)).toBe(0);
+    expect(Number.isNaN(st.openTradeCommission(-1))).toBe(true);
+    expect(Number.isNaN(st.openTradeEntryPrice(NaN))).toBe(true);
+    expect(st.openTradeEntryPrice(0.7)).toBe(10); // a fraction truncates
   });
 
-  it("entry_bar_index/entry_id/size/commission all return na (not a throw) when flat (C578)", () => {
+  it("entry_bar_index/entry_id read na, size/commission 0, when flat (C578; C62)", () => {
     const st = new StrategyState();
     expect(Number.isNaN(st.openTradeEntryBarIndex(0))).toBe(true);
-    expect(st.openTradeEntryId(0)).toBe("");
-    expect(Number.isNaN(st.openTradeSize(0))).toBe(true);
-    expect(Number.isNaN(st.openTradeCommission(0))).toBe(true);
+    expect(st.openTradeEntryId(0)).toBeNull();
+    expect(st.openTradeSize(0)).toBe(0);
+    expect(st.openTradeCommission(0)).toBe(0);
   });
 
   it("hand-verified E2E: `strategy.opentrades > 0 and strategy.opentrades.entry_bar_index(0) >= n` no longer crashes on bar 0 while flat (C578, wild 091dac8696a1.pine/0dd0fffbcfe8.pine pattern — TV eager `and` evaluates the right operand even while flat)", () => {
@@ -6164,6 +6181,34 @@ describe("StrategyState.opentrades 접근자 (C308 — one open trade per entry 
     const result = runPipeline(src, data);
     const flags = result.bars.map((b) => b["var:__obs_flag"]);
     expect(flags).toEqual([0, 0, 0, 0, 0]); // 크래시 없이 전 바 flat -> false
+  });
+
+  // Real-world f2b3ec02cd0d.pine (v5, pyramiding=1) reads strategy.opentrades.entry_price(1) on every
+  // bar: trade 1 never exists, so it reads na, flat or in a position, and size(1) reads 0 (oracle,
+  // resin-harness suites/strategy/probes/C62.json).
+  it("E2E: an open-trade number past the last open trade reads na/0 instead of stopping the script", () => {
+    const data: OHLCVData = {
+      open: [10, 12, 13, 15, 17],
+      high: [12, 13, 15, 17, 18],
+      low: [9, 10, 12, 14, 15],
+      close: [11, 11, 14, 16, 16],
+      volume: [100, 100, 100, 100, 100],
+    };
+    const src = [
+      'strategy("s", pyramiding=1)',
+      "if bar_index == 0",
+      '    strategy.entry("L", strategy.long, 1)',
+      "var float __obs_ep1 = na",
+      "__obs_ep1 := strategy.opentrades.entry_price(1)",
+      "var float __obs_sz1 = na",
+      "__obs_sz1 := strategy.opentrades.size(1)",
+      "var float __obs_ep0 = na",
+      "__obs_ep0 := strategy.opentrades.entry_price(0)",
+    ].join("\n");
+    const result = runPipeline(src, data);
+    expect(result.bars.map((b) => b["var:__obs_ep1"])).toEqual([NaN, NaN, NaN, NaN, NaN]);
+    expect(result.bars.map((b) => b["var:__obs_sz1"])).toEqual([0, 0, 0, 0, 0]);
+    expect(result.bars.map((b) => b["var:__obs_ep0"])).toEqual([NaN, 12, 12, 12, 12]);
   });
 });
 
@@ -6293,16 +6338,21 @@ describe("StrategyState.closedtrades/opentrades.max_drawdown/max_runup/profit_pe
     expect(st.openTradeMaxDrawdown(0)).toBe(5);
   });
 
-  it("returns na for opentrades.profit/profit_percent/max_drawdown/max_runup when flat (C578), still throws at a wrong index while a trade is open", () => {
+  // resin-harness suites/strategy/probes/C62.json (oracle): the amounts of an open-trade number with
+  // no open trade behind it read 0, flat or not; a negative number reads na.
+  it("reads 0 for opentrades.profit/profit_percent/max_drawdown/max_runup when flat (C578) or past the last open trade", () => {
     const st = new StrategyState();
-    expect(Number.isNaN(st.openTradeProfit(10, 0))).toBe(true);
-    expect(Number.isNaN(st.openTradeProfitPercent(10, 0))).toBe(true);
-    expect(Number.isNaN(st.openTradeMaxDrawdown(0))).toBe(true);
-    expect(Number.isNaN(st.openTradeMaxRunup(0))).toBe(true);
+    expect(st.openTradeProfit(10, 0)).toBe(0);
+    expect(st.openTradeProfitPercent(10, 0)).toBe(0);
+    expect(st.openTradeMaxDrawdown(0)).toBe(0);
+    expect(st.openTradeMaxRunup(0)).toBe(0);
     st.entry("L", "long", 1);
     st.processFills(10, undefined, undefined, 0);
-    expect(() => st.openTradeProfit(10, 1)).toThrow(/index 1 is out of range/);
-    expect(() => st.openTradeMaxRunup(1)).toThrow(/index 1 is out of range/);
+    expect(st.openTradeProfit(10, 1)).toBe(0);
+    expect(st.openTradeMaxRunup(1)).toBe(0);
+    expect(st.openTradeMaxDrawdownPercent(1)).toBe(0);
+    expect(Number.isNaN(st.openTradeProfit(10, -1))).toBe(true);
+    expect(Number.isNaN(st.openTradeMaxRunupPercent(-1))).toBe(true);
   });
 
   // Tier 1 resin-harness suites/strategy/tv/trade_percents plots 0.0 for these on the bars before
@@ -8084,8 +8134,8 @@ describe("strategy.exit comment_loss=/comment_profit= codegen emission (hand-ver
 
 describe("strategy.* E2E comment_loss=/comment_profit= (hand-verified, C375: 전체 파이프라인 stop 트리거 선택)", () => {
   // 손 계산 시나리오 (limit=20/stop=10 브래킷, comment="base"/comment_loss="SL"/comment_profit="TP"):
-  //   bar0: O=10 C=11 양봉&flat -> entry("L") 큐잉. closedTrades=0 -> xc=""
-  //   bar1: O=12 -> 롱 1@12 체결(avg=12). exit 등록(limit=20/stop=10). closedTrades=0 -> xc=""
+  //   bar0: O=10 C=11 양봉&flat -> entry("L") 큐잉. closedTrades=0 -> xc=na (C62)
+  //   bar1: O=12 -> 롱 1@12 체결(avg=12). exit 등록(limit=20/stop=10). closedTrades=0 -> xc=na
   //   bar2: O=11 H=11.5 L=9 -> low 9<=10(stop) -> 10 체결(loss 축) -> exit_comment="SL"
   //   bar3: flat 유지 -> xc 그대로("SL")
   const data: OHLCVData = {
@@ -8107,7 +8157,7 @@ describe("strategy.* E2E comment_loss=/comment_profit= (hand-verified, C375: 전
 
   it("stop-triggered exit picks comment_loss over the base comment through the full pipeline", () => {
     const result = runPipeline(src, data);
-    expect(result.bars.map((b) => b["var:__obs_xc"])).toEqual(["", "", "SL", "SL"]);
+    expect(result.bars.map((b) => b["var:__obs_xc"])).toEqual([null, null, "SL", "SL"]);
   });
 });
 
@@ -8277,8 +8327,8 @@ describe("strategy.exit comment_trailing= codegen emission (hand-verified, C673)
 
 describe("strategy.* E2E comment_trailing= (hand-verified, C673: 전체 파이프라인 순수 트레일링 체결 선택)", () => {
   // 손 계산 시나리오(trail_points=1 단독, comment="base"/comment_trailing="TR"):
-  //   bar0: O=10 C=11 양봉&flat -> entry("L") 큐잉. closedTrades=0 -> xc=""
-  //   bar1: O=12 -> 롱 1@12 체결(avg=12). exit 등록(trail_points=1). closedTrades=0 -> xc=""
+  //   bar0: O=10 C=11 양봉&flat -> entry("L") 큐잉. closedTrades=0 -> xc=na (C62)
+  //   bar1: O=12 -> 롱 1@12 체결(avg=12). exit 등록(trail_points=1). closedTrades=0 -> xc=na
   //   bar2: O=13 H=15 L=14 -> high 15 활성화(avg12+1=13<=15) -> 라인=15-1=14, low 14<=14 -> 14 체결
   //         (exitFillKind=null, 순수 트레일링) -> exit_comment="TR"
   //   bar3: flat 유지 -> xc 그대로("TR")
@@ -8301,7 +8351,7 @@ describe("strategy.* E2E comment_trailing= (hand-verified, C673: 전체 파이�
 
   it("pure trailing exit picks comment_trailing over the base comment through the full pipeline", () => {
     const result = runPipeline(src, data);
-    expect(result.bars.map((b) => b["var:__obs_xc"])).toEqual(["", "", "TR", "TR"]);
+    expect(result.bars.map((b) => b["var:__obs_xc"])).toEqual([null, null, "TR", "TR"]);
   });
 });
 
