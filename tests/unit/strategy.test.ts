@@ -9025,9 +9025,18 @@ describe("strategy(process_orders_on_close=true) E2E", () => {
     expect(result.bars.map((b) => b["var:__net"])).toEqual([0, 0, 0, 5, 5]);
   });
 
-  it("rejects a process_orders_on_close that is not a true/false literal", () => {
-    const errs = transpileErrors('strategy("s", process_orders_on_close=1)');
-    expect(errs.some((e) => e.includes("'process_orders_on_close' argument must be a true/false literal"))).toBe(true);
+  // Before v6 a number is cast to bool where a bool is required, 0 to false and any other value to
+  // true; v6 dropped the cast (mig6.txt "Explicit “bool” casting"). Harness probe
+  // suites/strategy/probes/C61.json (v5, process_orders_on_close=1) equals the oracle.
+  it("casts a number to bool before v6, and rejects it, or anything else not constant, from v6", () => {
+    const decl = (v: string, arg: string) => transpileCode(`//@version=${v}\nstrategy("s", process_orders_on_close=${arg})`);
+    expect(decl("5", "1")).toBe(decl("5", "true"));
+    expect(decl("5", "0.0")).toBe(decl("5", "false"));
+    expect(transpileCode('ON = 2\nstrategy("s", process_orders_on_close=ON)')).toContain("$.strategy.configure(1, 1, 1000000, false, false, true);");
+    for (const src of [`${V6}strategy("s", process_orders_on_close=1)`, 'strategy("s", process_orders_on_close=close > open)']) {
+      const errs = transpileErrors(src);
+      expect(errs.some((e) => e.includes("'process_orders_on_close' argument must be a true/false constant"))).toBe(true);
+    }
   });
 });
 
@@ -9070,6 +9079,11 @@ describe("strategy(calc_on_order_fills=true) E2E", () => {
     expect(transpileCode('strategy("s", calc_on_order_fills=false)')).not.toContain("calcOnOrderFills");
     const errs = transpileErrors('strategy("s", calc_on_order_fills=close > open)');
     expect(errs.some((e) => e.includes("'calc_on_order_fills' argument must be a true/false constant"))).toBe(true);
+    // Before v6 a number, or a constant naming one, is cast to bool (mig6.txt; probe C61's
+    // `OFF = 0.0` ... calc_on_order_fills=OFF); from v6 it is an error.
+    expect(transpileCode('//@version=5\nstrategy("s", calc_on_order_fills=1)')).toContain("calcOnOrderFills = true");
+    expect(transpileCode('//@version=5\nOFF = 0.0\nstrategy("s", calc_on_order_fills=OFF)')).not.toContain("calcOnOrderFills");
+    expect(transpileErrors(`${V6}strategy("s", calc_on_order_fills=1)`).length).toBeGreaterThan(0);
   });
 
   // Probe C25: the entry fills at bar 1's open 100; the re-execution there places the bracket
@@ -9269,9 +9283,15 @@ describe("strategy(use_bar_magnifier=true) E2E (fills judged on the magnifier fe
     expect(run(r, two, { magnifier: outside }).bars.map((b) => b["var:__net"])).toEqual([0, 0]);
   });
 
-  it("rejects a use_bar_magnifier that is not a true/false literal", () => {
-    const errs = transpileErrors('strategy("s", use_bar_magnifier=1)');
-    expect(errs.some((e) => e.includes("'use_bar_magnifier' argument must be a true/false literal"))).toBe(true);
+  // A const bool like process_orders_on_close: a number is cast before v6 only (mig6.txt).
+  it("casts a number to bool before v6, and rejects it, or anything else not constant, from v6", () => {
+    const decl = (v: string, arg: string) => transpileCode(`//@version=${v}\nstrategy("s", use_bar_magnifier=${arg})`);
+    expect(decl("5", "1")).toBe(decl("5", "true"));
+    expect(decl("5", "0")).toBe(decl("5", "false"));
+    for (const src of [`${V6}strategy("s", use_bar_magnifier=1)`, 'strategy("s", use_bar_magnifier=close > open)']) {
+      const errs = transpileErrors(src);
+      expect(errs.some((e) => e.includes("'use_bar_magnifier' argument must be a true/false constant"))).toBe(true);
+    }
   });
 
   it("lists the magnifier among the context options it takes", () => {

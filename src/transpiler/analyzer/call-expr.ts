@@ -674,10 +674,7 @@ function resolveDirectiveConstNumber(
     }
     case "Identifier": {
       if (visiting.has(value.name)) return undefined;
-      const persistent = prog.topVarSliceCandidates.get(value.name);
-      const def =
-        prog.uniqueTopEqVars.get(value.name)?.value ??
-        (persistent !== undefined && persistent.writeLines.length === 0 ? persistent.value : undefined);
+      const def = directiveConstDef(value.name, prog);
       if (def === undefined) return undefined;
       visiting.add(value.name);
       const result = resolveDirectiveConstNumber(def, prog, scope, visiting);
@@ -687,6 +684,46 @@ function resolveDirectiveConstNumber(
     default:
       return undefined;
   }
+}
+
+// The value a top-level variable is bound to once and for all, for a declaration argument naming
+// it (see resolveDirectiveConstNumber): a top-level '=' never reassigned, or a top-level var/varip
+// no ':=' writes.
+function directiveConstDef(name: string, prog: AnalyzedProgram): Expr | undefined {
+  const persistent = prog.topVarSliceCandidates.get(name);
+  return (
+    prog.uniqueTopEqVars.get(name)?.value ??
+    (persistent !== undefined && persistent.writeLines.length === 0 ? persistent.value : undefined)
+  );
+}
+
+// The value of a declaration's "const bool" argument (overlay; strategy()'s process_orders_on_close,
+// use_bar_magnifier and calc_on_order_fills): a literal, or a variable naming a constant (the
+// binding rule of resolveDirectiveConstNumber). Before v6 a const int/float argument is cast to
+// bool, as anywhere a bool is required — mig6.txt: "In Pine v5, values of “int” and “float” types
+// can be implicitly cast to “bool” when an expression or function requires a boolean value. In such
+// cases, na, 0, or 0.0 are considered false, and any other value is considered true." (real-world
+// v5 `strategy('Trust Signals', overlay=1)`; twin probe C61). v6 dropped the cast ("In v6, scripts
+// must explicitly cast a numeric value to “bool”"), so there a number stays an error.
+function resolveDirectiveConstBool(
+  value: Expr,
+  prog: AnalyzedProgram,
+  scope: LexScope,
+  visiting: Set<string> = new Set(),
+): boolean | undefined {
+  if (value.kind === "BoolLiteral") return value.value;
+  if (value.kind === "Identifier" && !visiting.has(value.name)) {
+    const def = directiveConstDef(value.name, prog);
+    if (def !== undefined) {
+      visiting.add(value.name);
+      const result = resolveDirectiveConstBool(def, prog, scope, visiting);
+      visiting.delete(value.name);
+      return result;
+    }
+  }
+  if ((prog.script.version ?? 1) >= 6) return undefined;
+  const n = resolveDirectiveConstNumber(value, prog, scope);
+  return n === undefined ? undefined : n !== 0;
 }
 
 // request.security의 gaps=/lookahead= kwarg 값을 컴파일타임 boolean으로 확정(C177) — true/false
@@ -5300,18 +5337,18 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         }
       }
       prog.directives.add(expr);
-      // overlay (viz S0) — C164 default_qty_value 선례를 그대로 따르는 지시어 메타데이터 추출.
-      // library()에는 overlay 파라미터가 없으므로 제외. 값이 BoolLiteral이 아니면 조용히 false로
-      // 두는 대신 하드 에러 — 조용히 틀린 pane 배정은 조용한 오답이다(qty 선례와 동일 근거).
-      // TV 문법상 overlay는 const bool이라 리터럴 외의 표현식은 애초에 유효 Pine이 아니다.
+      // overlay (viz S0), a "const bool" (resolveDirectiveConstBool; library() has no overlay).
+      // Anything that is not a compile-time bool is a hard error rather than a silent false: a
+      // silently wrong pane is a silently wrong result.
       if (callee.name !== "library") {
         const overlayExpr = directiveArgExpr(expr, paramNames, "overlay");
         if (overlayExpr !== undefined) {
-          if (overlayExpr.kind === "BoolLiteral") {
-            prog.overlay = overlayExpr.value;
+          const overlay = resolveDirectiveConstBool(overlayExpr, prog, scope);
+          if (overlay !== undefined) {
+            prog.overlay = overlay;
           } else {
             prog.errors.push(
-              `'${callee.name}' overlay argument must be a true/false literal (L${expr.line}:${expr.col})`,
+              `'${callee.name}' overlay argument must be a true/false constant (L${expr.line}:${expr.col})`,
             );
           }
         }
@@ -5420,15 +5457,17 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           }
         }
         // process_orders_on_close moves every fill of an order placed on a bar's close to that
-        // same close (StrategyState.processFillsAtClose). It is a const bool in Pine; anything else
-        // is a hard error, since dropping it would silently shift every fill to the next open.
+        // same close (StrategyState.processFillsAtClose). It is a const bool in Pine
+        // (resolveDirectiveConstBool); anything else is a hard error, since dropping it would
+        // silently shift every fill to the next open.
         const poc = directiveArgExpr(expr, STRATEGY_PARAM_NAMES, "process_orders_on_close");
         if (poc !== undefined) {
-          if (poc.kind === "BoolLiteral") {
-            prog.strategyProcessOrdersOnClose = poc.value;
+          const value = resolveDirectiveConstBool(poc, prog, scope);
+          if (value !== undefined) {
+            prog.strategyProcessOrdersOnClose = value;
           } else {
             prog.errors.push(
-              `'strategy()' 'process_orders_on_close' argument must be a true/false literal (L${expr.line}:${expr.col})`,
+              `'strategy()' 'process_orders_on_close' argument must be a true/false constant (L${expr.line}:${expr.col})`,
             );
           }
         }
@@ -5438,20 +5477,22 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         // judge the fills on the chart bars.
         const mag = directiveArgExpr(expr, STRATEGY_PARAM_NAMES, "use_bar_magnifier");
         if (mag !== undefined) {
-          if (mag.kind === "BoolLiteral") {
-            prog.strategyUseBarMagnifier = mag.value;
+          const value = resolveDirectiveConstBool(mag, prog, scope);
+          if (value !== undefined) {
+            prog.strategyUseBarMagnifier = value;
           } else {
             prog.errors.push(
-              `'strategy()' 'use_bar_magnifier' argument must be a true/false literal (L${expr.line}:${expr.col})`,
+              `'strategy()' 'use_bar_magnifier' argument must be a true/false constant (L${expr.line}:${expr.col})`,
             );
           }
         }
         // calc_on_order_fills=true runs the body again on a bar after its order fills
-        // (Context.recalcOnOrderFills). A const bool: a literal, or a top-level constant naming one;
+        // (Context.recalcOnOrderFills). A const bool: a literal, a top-level constant naming one, a
+        // ternary on a constant condition, or before v6 a number (resolveDirectiveConstBool);
         // anything else is a hard error, since dropping it would silently change the fills.
         const coof = directiveArgExpr(expr, STRATEGY_PARAM_NAMES, "calc_on_order_fills");
         if (coof !== undefined) {
-          const value = resolveSecurityBooleanKwarg(coof, prog);
+          const value = resolveSecurityBooleanKwarg(coof, prog) ?? resolveDirectiveConstBool(coof, prog, scope);
           if (value !== undefined) {
             prog.strategyCalcOnOrderFills = value;
           } else {

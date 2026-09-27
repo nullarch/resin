@@ -46,10 +46,23 @@ describe("viz S0: overlay extraction", () => {
     expect(ok('//@version=5\nindicator("t", overlay=false)\nplot(close)').viz.overlay).toBe(false);
   });
 
-  it("rejects a non-literal overlay instead of silently defaulting", () => {
-    const r = transpile('//@version=5\nb = true\nindicator("t", overlay=b)\nplot(close)');
-    expect(r.ok).toBe(false);
-    expect((r as TranspileErr).errors.join(" ")).toContain("overlay");
+  // overlay is a "const bool": a variable holding a constant is one (language_type-system.txt
+  // "const": "All literal values and the results of expressions that use only values qualified as
+  // “const” automatically inherit the “const” qualifier", its example passing constants to
+  // indicator()), and before v6 a number is cast to bool, 0 to false (mig6.txt "Explicit “bool”
+  // casting"; real-world v5 `strategy('Trust Signals', overlay=1)`, harness probe C61).
+  it("reads a constant, and a number before v6", () => {
+    expect(ok('//@version=5\nb = true\nindicator("t", overlay=b)\nplot(close)').viz.overlay).toBe(true);
+    expect(ok('//@version=5\nstrategy("t", overlay=1)\nplot(close)').viz.overlay).toBe(true);
+    expect(ok('//@version=5\nindicator("t", overlay=0)\nplot(close)').viz.overlay).toBe(false);
+  });
+
+  it("rejects an overlay that is no compile-time bool, and a number from v6, instead of silently defaulting", () => {
+    for (const src of ['//@version=5\nindicator("t", overlay=close > open)', '//@version=6\nindicator("t", overlay=1)']) {
+      const r = transpile(`${src}\nplot(close)`);
+      expect(r.ok).toBe(false);
+      expect((r as TranspileErr).errors.join(" ")).toContain("overlay argument must be a true/false constant");
+    }
   });
 });
 
