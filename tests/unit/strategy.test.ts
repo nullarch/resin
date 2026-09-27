@@ -506,6 +506,17 @@ describe("StrategyState limit/stop 주문 + 이월 + cancel (C166 넷째 슬라�
     expect(st2.posSize).toBe(0);
   });
 
+  // v5 when= gate (mig6.txt: "An order is created only if the when condition is true ... This
+  // parameter affects ... strategy.cancel_all()"). resin-harness suites/strategy/probes/C54.json.
+  it("cancel_all(when) cancels only when the gate is true", () => {
+    const st = new StrategyState();
+    st.entry("L", "long", 1, 100);
+    st.cancel_all(false);
+    expect(st.entryPending).toBe(true);
+    st.cancel_all(true);
+    expect(st.entryPending).toBe(false);
+  });
+
   it("cancel does not touch a queued strategy.close market order", () => {
     const st = new StrategyState();
     st.entry("L", "long", 1);
@@ -899,6 +910,19 @@ describe("strategy.* analyzer validation", () => {
   it("still rejects kwargs on strategy.cancel_all (blanket 거부 — id 파라미터가 TV에 없음, C382)", () => {
     const errors = transpileErrors('strategy("s")\nstrategy.cancel_all(id="L")');
     expect(errors.some((e) => e.includes("keyword argument"))).toBe(true);
+  });
+
+  // v5 `when` gate on cancel_all (mig6.txt: "This parameter affects ... strategy.cancel() and
+  // strategy.cancel_all()"; real-world btcjon/pine `strategy.cancel_all(when=...)`,
+  // resin-harness suites/strategy/probes/C54.json).
+  it("accepts strategy.cancel_all(when=) and lowers it to slot 0", () => {
+    const code = transpileCode('strategy("s")\nstrategy.cancel_all(when=close > open)');
+    expect(code).toMatch(/\$\.strategy\.cancel_all\(rt\.pineGt\(\$\.close\.get\(0\), \$\.open\.get\(0\)\)\);/);
+  });
+
+  it("rejects duplicate when= kwarg on strategy.cancel_all", () => {
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.cancel_all(when=true, when=false)');
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'when'"))).toBe(true);
   });
 
   it("accepts strategy.entry qty=/comment= kwargs (C164)", () => {

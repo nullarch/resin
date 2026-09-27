@@ -4743,7 +4743,8 @@ function genCallExpr(
         builtinName === "strategy.exit" ||
         builtinName === "strategy.close" ||
         builtinName === "strategy.close_all" ||
-        builtinName === "strategy.cancel"
+        builtinName === "strategy.cancel" ||
+        builtinName === "strategy.cancel_all"
       ) {
         // order(C169)는 entry와 시그니처가 동일해 같은 슬롯 표를 공유한다(StrategyState.order(id,
         // direction, qty, limit, stop, comment)).
@@ -4762,7 +4763,9 @@ function genCallExpr(
                 ? { id: 0, qty: 1, comment: 2, when: 3, qty_percent: 4, immediately: 5 } // id=(C293, 위치 슬롯 0을 kwarg로도 채움)
                 : builtinName === "strategy.close_all"
                   ? { comment: 0, when: 1, immediately: 2 } // comment(위치 0) + when=(C378) + immediately=(C379)
-                  : { id: 0, when: 1 }; // strategy.cancel(C382, when=은 C708 — id 뒤 새 슬롯, 기존 id 전용 출력 무변화)
+                  : builtinName === "strategy.cancel"
+                    ? { id: 0, when: 1 } // strategy.cancel(C382, when=은 C708 — id 뒤 새 슬롯, 기존 id 전용 출력 무변화)
+                    : { when: 0 }; // strategy.cancel_all(when=), the v5 gate (StrategyState.cancel_all)
         for (const kw of expr.kwargs) {
           const slot = KWARG_SLOTS[kw.name];
           if (slot === undefined) continue; // 방어적 fallback(현재 전 kwargs가 슬롯을 가짐)

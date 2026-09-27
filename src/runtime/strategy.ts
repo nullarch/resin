@@ -2296,7 +2296,10 @@ export class StrategyState {
 
   // strategy.cancel_all() — 모든 미체결 주문 취소: every entry order (market ones included, see
   // cancel), the exit legs, and a price-based strategy.order() (its market order is not covered yet).
-  cancel_all(): void {
+  // `when` is v5's gate (mig6.txt: "An order is created only if the when condition is true, which is
+  // its default value. This parameter affects ... strategy.cancel_all()"); na counts as false.
+  cancel_all(when: boolean = true): void {
+    if (!when) return;
     this.pendingEntries.length = 0;
     this.exitLegs.length = 0;
     if (this.orderPending && this.orderIsPriceBased()) {

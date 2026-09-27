@@ -4943,13 +4943,15 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     Object.prototype.hasOwnProperty.call(ARRAY_KWARG_PARAM_NAMES, callee.attr);
   // `strategy.cancel(id=)`(C382, wild 실측 1건 f8629b966f24.pine `strategy.cancel(id='exit'+...)`
   // — TV 시그니처의 유일한 인자 id가 위치 인자와 100% 동등한 키워드 폼, strategy.close의 id=
-  // (C293)와 동일 패턴). blanket 거부 예외에 추가 — cancel_all은 TV에 id 파라미터 자체가 없고
-  // wild 실사용도 0건이라 이번 슬라이스 제외 유지(아래 method==="cancel" 분기만 적용).
+  // (C293)와 동일 패턴). blanket 거부 예외에 추가. strategy.cancel_all has no id, but v5 gives it
+  // the `when` gate like every other order command (mig6.txt: "The when parameter for order
+  // creation functions was deprecated in v5 and is removed in v6. ... This parameter affects ...
+  // strategy.cancel(), and strategy.cancel_all()."); the cancel_all branch below accepts only when=.
   const isStrategyCancelCall =
     callee.kind === "DotAccess" &&
     callee.obj.kind === "Identifier" &&
     callee.obj.name === "strategy" &&
-    callee.attr === "cancel";
+    (callee.attr === "cancel" || callee.attr === "cancel_all");
   // `ticker.new/modify/renko(...)`의 kwargs(C385, TICKER_KWARG_PARAM_NAMES 참조) — blanket 거부
   // 예외에 추가. 이름/중복/위치·키워드 충돌 검증은 아래 namespace==="ticker" 전용 분기가 수행한다.
   const isTickerKwargCall =
@@ -5066,7 +5068,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     !isUdtMethodKwargCall
   ) {
     prog.errors.push(
-      `keyword arguments ('${expr.kwargs[0]!.name}=...') are only supported in 'TypeName.new(...)' UDT constructor calls, user-defined function calls, 'obj.method(...)' UDT method calls, 'input.*'/bare 'input(...)' calls, 'plot(...)' calls, 'indicator(...)'/'strategy(...)'/'study(...)' calls, 'strategy.entry/order/exit/close/close_all/cancel(...)' calls, 'request.security(...)'/'request.security_lower_tf(...)'/'request.financial(...)'/'request.earnings(...)'/'request.dividends(...)'/'request.splits(...)' calls, hline/bgcolor/barcolor/plotshape/plotchar/plotarrow/plotcandle/plotbar/alert/alertcondition/max_bars_back/fill calls, 'array.*(id=...)' calls (size/get/set/push/pop/... — see analyzer/collections.ts ARRAY_KWARG_PARAM_NAMES), 'ticker.new/modify/renko(...)' calls, 'ta.sma/ema/rsi/highest/lowest/crossover/crossunder/change/cum/alma/pivotlow/atr/pivothigh(...)' calls, 'str.tostring(...)' calls, 'math.abs/round/sign(...)' calls, 'nz(...)' calls, 'fixnan(...)' calls, 'timeframe.in_seconds(...)' calls, 'timestamp(...)' calls, 'runtime.error/warning(...)' calls, 'time(...)'/'time_close(...)' calls, 'color.from_gradient(...)' calls, or label/line/box/table/polyline/linefill calls (L${expr.line}:${expr.col})`,
+      `keyword arguments ('${expr.kwargs[0]!.name}=...') are only supported in 'TypeName.new(...)' UDT constructor calls, user-defined function calls, 'obj.method(...)' UDT method calls, 'input.*'/bare 'input(...)' calls, 'plot(...)' calls, 'indicator(...)'/'strategy(...)'/'study(...)' calls, 'strategy.entry/order/exit/close/close_all/cancel/cancel_all(...)' calls, 'request.security(...)'/'request.security_lower_tf(...)'/'request.financial(...)'/'request.earnings(...)'/'request.dividends(...)'/'request.splits(...)' calls, hline/bgcolor/barcolor/plotshape/plotchar/plotarrow/plotcandle/plotbar/alert/alertcondition/max_bars_back/fill calls, 'array.*(id=...)' calls (size/get/set/push/pop/... — see analyzer/collections.ts ARRAY_KWARG_PARAM_NAMES), 'ticker.new/modify/renko(...)' calls, 'ta.sma/ema/rsi/highest/lowest/crossover/crossunder/change/cum/alma/pivotlow/atr/pivothigh(...)' calls, 'str.tostring(...)' calls, 'math.abs/round/sign(...)' calls, 'nz(...)' calls, 'fixnan(...)' calls, 'timeframe.in_seconds(...)' calls, 'timestamp(...)' calls, 'runtime.error/warning(...)' calls, 'time(...)'/'time_close(...)' calls, 'color.from_gradient(...)' calls, or label/line/box/table/polyline/linefill calls (L${expr.line}:${expr.col})`,
     );
   }
   // strategy() 지시어의 kwargs 값(default_qty_type=strategy.percent_of_equity 등)이 strategy.*
@@ -7107,6 +7109,21 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         prog.errors.push(
           `'strategy.cancel_all' call argument count mismatch: requires 0, got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
+      }
+      // when= (v5): the call cancels only when the condition is true, its default (mig6.txt: "An
+      // order is created only if the when condition is true, which is its default value. This
+      // parameter affects ... strategy.cancel_all()"). Keyword only, as for strategy.cancel. The
+      // value itself was analyzed by the generic kwargs pass above.
+      const seenCancelAllKwargs = new Set<string>();
+      for (const kw of expr.kwargs) {
+        if (kw.name !== "when") {
+          prog.errors.push(
+            `'strategy.cancel_all' only supports keyword argument 'when=': '${kw.name}=' (L${kw.line}:${kw.col})`,
+          );
+        } else if (seenCancelAllKwargs.has(kw.name)) {
+          prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
+        }
+        seenCancelAllKwargs.add(kw.name);
       }
       prog.builtinCalls.set(expr, "strategy.cancel_all");
     }
