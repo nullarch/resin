@@ -146,7 +146,8 @@ interface PendingEntry {
   placedThisBar: boolean;
   // Scratch for processFills: this bar's fill price, and where the bar's path reaches it (pathLeg
   // 0 = at the open, 1 = the leg to the extreme nearer the open, 2 = the leg to the other extreme;
-  // pathDist = distance from the open along that leg).
+  // pathDist = distance from where that leg starts, the open or the nearer extreme, the measure the
+  // exit legs use too, see fillOnPath).
   fillPrice: number;
   pathLeg: number;
   pathDist: number;
@@ -2466,7 +2467,7 @@ export class StrategyState {
       orderFill = this.directionalFillPrice(this.orderDirection, this.orderLimit, this.orderStop, openPrice, high, low);
       if (!Number.isNaN(orderFill)) orderSeg = orderFill === openPrice ? 0 : orderFill > openPrice === this.pathUpFirst ? 1 : 2;
     }
-    if (orderSeg === 0) this.fillOrderOnPath(orderFill, 0, barIndex, barTimeMs);
+    if (orderSeg === 0) this.fillOrderOnPath(orderFill, 0, 0, barIndex, barTimeMs);
     // The margin call at the open, after the open's fills: only on the chart bar's open (a later
     // sub-bar's open is inside the bar; the oracle judges it in its at-open phase alone).
     if (chartOpen) this.marginCall(openPrice, this.posSize < 0, barIndex, barTimeMs, true, false, false);
@@ -2477,22 +2478,39 @@ export class StrategyState {
     // they are processed here rather than inside the level-indexed walk — but only up to the second
     // extreme"; repro resin-harness state/repros/mixed-seed-45.json).
     this.runExitLegs(2, barIndex, barTimeMs, true);
-    // An entry or strategy.order() level reached on a segment fills there, nearer the segment's start
-    // first; an exit leg of an earlier bar's entry fills on the segment its walk reached (walkLeg).
-    // A margin call deferred at the first extreme stops the level fills for the rest of the path; the
-    // trailing lines still fill (see marginCall).
+    // On a segment every level fills where the path reaches it, nearer the segment's start first,
+    // whatever order rests there: an entry, the strategy.order() slot, or an exit leg (bound on an
+    // earlier bar, or by a fill earlier on this path; walkLeg). So a reversing stop entry the path
+    // reaches before the old position's stop-loss closes that position at its own level, and the
+    // stop-loss, its trade gone, fills nothing (strategies.txt, "Broker emulator": "If the opening
+    // price of a bar is closer to the high than it is to the low, the emulator assumes that the
+    // market price moved in this order: open → high → low → close"; probe resin-harness
+    // suites/strategy/probes/C23b.json). The oracle walks one book of entries and exits level by
+    // level from the open (`_walk_leg`). Legs and orders at one level: the legs first. A margin call
+    // deferred at the first extreme stops the level fills for the rest of the path; the trailing
+    // lines still fill (see marginCall).
     let deferred = false;
     for (let s = 1; s <= 2; s++) {
       this.fillMoment++; // segment s
-      this.runExitLegs(s, barIndex, barTimeMs, deferred);
-      if (deferred) continue;
-      for (; i < due.length && due[i]!.pathLeg === s; i++) {
-        if (!this.pendingEntries.includes(due[i]!)) continue; // cancelled by an OCA sibling's fill
-        this.fillPendingEntry(due[i]!, due[i]!.fillPrice, barIndex, barTimeMs);
-        this.queueExitLegs(true, s);
-        this.runExitLegs(s, barIndex, barTimeMs, false);
+      if (deferred) {
+        this.runExitLegs(s, barIndex, barTimeMs, true);
+        continue;
       }
-      if (orderSeg === s) this.fillOrderOnPath(orderFill, s, barIndex, barTimeMs);
+      let orderAt = orderSeg === s ? Math.abs(orderFill - this.barPath[s - 1]!) : NaN;
+      for (; i < due.length && due[i]!.pathLeg === s; i++) {
+        const e = due[i]!;
+        if (orderAt < e.pathDist) {
+          this.fillOrderOnPath(orderFill, s, orderAt, barIndex, barTimeMs);
+          orderAt = NaN;
+        }
+        this.runExitLegs(s, barIndex, barTimeMs, false, e.pathDist);
+        if (!this.pendingEntries.includes(e)) continue; // cancelled by an OCA sibling's fill
+        this.fillPendingEntry(e, e.fillPrice, barIndex, barTimeMs);
+        this.queueExitLegs(true, s);
+        this.runExitLegs(s, barIndex, barTimeMs, false, e.pathDist);
+      }
+      if (!Number.isNaN(orderAt)) this.fillOrderOnPath(orderFill, s, orderAt, barIndex, barTimeMs);
+      this.runExitLegs(s, barIndex, barTimeMs, false);
       deferred = this.marginCheckpoint(s, barIndex, barTimeMs);
     }
     this.runExitLegs(3, barIndex, barTimeMs, deferred);
@@ -2500,12 +2518,13 @@ export class StrategyState {
     due.length = 0;
   }
 
-  // Fills the strategy.order() slot at `orderFill`, reached on path segment `seg`, and queues the legs
-  // its fill binds.
-  private fillOrderOnPath(orderFill: number, seg: number, barIndex: number, barTimeMs: number): void {
+  // Fills the strategy.order() slot at `orderFill`, reached on path segment `seg` `dist` from its
+  // start, after the exit legs the path reaches first, and queues the legs its fill binds.
+  private fillOrderOnPath(orderFill: number, seg: number, dist: number, barIndex: number, barTimeMs: number): void {
+    this.runExitLegs(seg, barIndex, barTimeMs, false, dist);
     this.fillPendingOrder(orderFill, barIndex, barTimeMs);
     this.queueExitLegs(true, seg);
-    this.runExitLegs(seg, barIndex, barTimeMs, false);
+    this.runExitLegs(seg, barIndex, barTimeMs, false, dist);
   }
 
   // strategy(process_orders_on_close=true): the extra fill attempt at the bar's close, after the
@@ -2575,7 +2594,7 @@ export class StrategyState {
       if (Number.isNaN(price)) continue; // its level is not reached on this bar: the order rests
       e.fillPrice = price;
       e.pathLeg = price === openPrice ? 0 : price > openPrice === this.pathUpFirst ? 1 : 2;
-      e.pathDist = Math.abs(price - openPrice);
+      e.pathDist = e.pathLeg === 0 ? 0 : Math.abs(price - this.barPath[e.pathLeg - 1]!);
       due.push(e);
     }
     if (due.length > 1) due.sort((a, b) => a.pathLeg - b.pathLeg || a.pathDist - b.pathDist || a.seq - b.seq);
@@ -2759,18 +2778,24 @@ export class StrategyState {
     if (onlyFresh) this.freshLegs.length = 0;
   }
 
-  // Fills the queued exit legs the path reaches by segment `upTo` (only the trailing lines when
-  // `trailingOnly`, see marginCall), in the order it reaches them: segment, then nearer the segment's
-  // start, then placement order. Each fill meets the position the previous one left, so a leg whose
-  // entry an earlier fill spent is gone by its turn.
-  private runExitLegs(upTo: number, barIndex: number, barTimeMs: number, trailingOnly: boolean): void {
+  // Fills the queued exit legs the path reaches by segment `upTo`, on that segment no further than
+  // `upToDist` from its start (only the trailing lines when `trailingOnly`, see marginCall), in the
+  // order it reaches them: segment, then nearer the segment's start, then placement order. Each fill
+  // meets the position the previous one left, so a leg whose entry an earlier fill spent is gone by
+  // its turn.
+  private runExitLegs(
+    upTo: number, barIndex: number, barTimeMs: number, trailingOnly: boolean, upToDist: number = Infinity,
+  ): void {
     const queue = this.legQueue;
     if (queue.length === 0) return;
     const due = this.legScratch;
     due.length = 0;
     for (let i = 0; i < queue.length; ) {
       const l = queue[i]!;
-      if (l.pathLeg <= upTo && (!trailingOnly || l.fillKind === null)) {
+      if (
+        (l.pathLeg < upTo || (l.pathLeg === upTo && l.pathDist <= upToDist)) &&
+        (!trailingOnly || l.fillKind === null)
+      ) {
         due.push(l);
         queue.splice(i, 1);
       } else {
@@ -3131,7 +3156,6 @@ export class StrategyState {
       if (x <= line) hit = line;
     }
     let s = seg;
-    let from = x;
     if (Number.isNaN(hit)) {
       for (s = seg === 0 ? 1 : seg; s <= 3; s++) {
         const nxt = dir * this.barPath[s]!;
@@ -3157,14 +3181,16 @@ export class StrategyState {
           }
         }
         if (!Number.isNaN(hit)) break;
-        from = x = nxt;
+        x = nxt;
       }
     }
     if (hasTrail) l.trailPrice = dir * line;
     if (Number.isNaN(hit)) return NaN;
     l.fillKind = kind;
     l.pathLeg = s;
-    l.pathDist = Math.abs(hit - from);
+    // Measured from the segment's start, not from where this walk entered it (a leg bound mid-bar
+    // enters at its entry's fill), so the legs and the entry orders of one segment compare.
+    l.pathDist = s === 0 ? 0 : Math.abs(dir * hit - this.barPath[s - 1]!);
     return dir * hit;
   }
 

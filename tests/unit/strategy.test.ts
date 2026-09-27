@@ -1829,6 +1829,37 @@ describe("StrategyState exit 브래킷 청산 (C167 다섯째 슬라이스, hand
     expect(st.closedTradeRecords[0]!.exitPrice).toBe(100.5);
   });
 
+  // On one segment of the path the levels fill in the order it reaches them, entry orders and exit
+  // legs alike (strategies.txt, "Broker emulator"). Oracle and TradingView-probe agreed: resin-harness
+  // suites/strategy/probes/C23b.json (a reversing stop entry at 97 reached before the long's
+  // stop-loss at 95 on the way down: the reversal closes the long at 97, the stop-loss fills nothing).
+  it("a reversing stop entry reached before the old position's stop-loss on one segment closes it first", () => {
+    const st = new StrategyState();
+    st.entry("L", "long", 1);
+    st.processFills(100); // long 1 @ 100
+    st.exit("x", "L", NaN, 95);
+    st.entry("S", "short", 1, undefined, 97); // sell stop 97
+    st.processFills(100, 100.5, 94, 1, NaN, 95); // open → high → low: 97 comes before 95
+    expect(st.posSize).toBe(-1);
+    expect(st.closedTradeRecords).toHaveLength(1);
+    expect(st.closedTradeRecords[0]!.exitPrice).toBe(97);
+    expect(st.closedTradeRecords[0]!.exitId).toBe("S");
+  });
+
+  // Oracle-checked: resin-harness state/repros/fresh-leg-entry-order.json.
+  it("a bracket bound by an intrabar entry fill takes its place among the entry levels still ahead", () => {
+    const st = new StrategyState();
+    st.entry("L", "long", 1, undefined, 101); // buy stop 101
+    st.exit("x", "L", NaN, 99);
+    st.entry("S", "short", 1, undefined, 99.5); // sell stop 99.5, placed flat
+    // open → high → low → close: L fills at 101 on the way up; on the way down 99.5 comes before
+    // L's stop-loss 99, so S closes L there and the stop-loss fills nothing.
+    st.processFills(100, 102, 97, 0, NaN, 98);
+    expect(st.closedTradeRecords).toHaveLength(1);
+    expect(st.closedTradeRecords[0]!.exitPrice).toBe(99.5);
+    expect(st.closedTradeRecords[0]!.exitId).toBe("S");
+  });
+
   it("short exit TP: low <= limit → limit 체결, 갭 다운은 open 체결", () => {
     const st = new StrategyState();
     st.entry("S", "short", 1);
