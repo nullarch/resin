@@ -4008,6 +4008,7 @@ const STRATEGY_TRADE_ACCESSOR_RT_METHODS: Readonly<Record<string, string>> = {
   "strategy.closedtrades.commission": "closedTradeCommission",
   "strategy.opentrades.entry_time": "openTradeEntryTime",
   "strategy.opentrades.commission": "openTradeCommission",
+  "strategy.opentrades.entry_comment": "openTradeEntryComment",
   "strategy.risk.allow_entry_in": "setAllowEntryIn",
   // strategy.risk.max_position_size(value)(C324) — analyzer가 위치 인자 정확히 1개만(kwargs 0개)
   // 검증해(call-expr.ts 해당 분기 참조) allow_entry_in과 동일하게 "kwargs 없음, 위치 인자 그대로

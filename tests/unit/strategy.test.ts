@@ -5602,6 +5602,15 @@ describe("strategy.closedtrades.entry_comment/exit_comment codegen emission (C17
     expect(code).toContain("$.strategy.closedTradeEntryComment(0)");
     expect(code).toContain("$.strategy.closedTradeExitComment(0)");
   });
+
+  // strategies.txt lists "strategy.opentrades.entry_comment() / strategy.closedtrades.entry_comment()";
+  // resin-harness realworld 3c04fa20fc51.pine loops over the open trades comparing it.
+  it("emits $.strategy.openTradeEntryComment for strategy.opentrades.entry_comment in a loop", () => {
+    const code = transpileCode(
+      'strategy("s")\nhas = false\nfor i = 0 to strategy.opentrades - 1\n    if strategy.opentrades.entry_comment(i) == "grid-7"\n        has := true',
+    );
+    expect(code).toContain("$.strategy.openTradeEntryComment(i)");
+  });
 });
 
 describe("strategy.* E2E 열한째 슬라이스 (hand-verified: entry/close comment= 실소비 + closedtrades.entry_comment/exit_comment)", () => {
@@ -5805,6 +5814,21 @@ describe("StrategyState.opentrades 접근자 (C308 — one open trade per entry 
     expect(st.openTradeEntryBarIndex(1)).toBe(1);
     expect(st.openTradeEntryId(1)).toBe("B");
     expect(st.posAvgPrice).toBe(15); // (10*1+20*1)/2
+  });
+
+  // strategy.opentrades.entry_comment(index): each open trade keeps its own entry order's comment,
+  // oldest first (oracle: resin-harness suites/strategy/probes/C53.json).
+  it("entry_comment reads each open trade's entry comment, and an empty string while flat", () => {
+    const st = new StrategyState();
+    expect(st.openTradeEntryComment(0)).toBe("");
+    st.configure(1, 2); // pyramiding=2
+    st.entry("L", "long", 1, undefined, undefined, "first");
+    st.processFills(10, undefined, undefined, 0);
+    st.entry("L", "long", 1, undefined, undefined, "second");
+    st.processFills(20, undefined, undefined, 1);
+    expect(st.openTradeEntryComment(0)).toBe("first");
+    expect(st.openTradeEntryComment(1)).toBe("second");
+    expect(() => st.openTradeEntryComment(2)).toThrow(/entry_comment: index 2 is out of range/);
   });
 
   it("throws for any open-trade index other than 0", () => {

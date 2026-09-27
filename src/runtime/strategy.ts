@@ -1491,6 +1491,12 @@ export class StrategyState {
     return this.openTradeAtIndex("entry_id", index)?.entryId ?? "";
   }
 
+  // strategy.opentrades.entry_comment(index): the comment= of the order that opened the trade (a
+  // pyramiding add keeps its own), as closedTradeEntryComment reads it once the trade closes.
+  openTradeEntryComment(index: number): string {
+    return this.openTradeAtIndex("entry_comment", index)?.entryComment ?? "";
+  }
+
   openTradeSize(index: number): number {
     return this.openTradeAtIndex("size", index)?.size ?? NaN;
   }

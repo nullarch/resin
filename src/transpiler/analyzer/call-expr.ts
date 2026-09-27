@@ -2389,6 +2389,9 @@ const STRATEGY_TRADE_ACCESSOR_METHODS: Readonly<Record<string, ReadonlySet<strin
     // 함수 자체가 없음, wild grep 0건으로 sanity 확인).
     "entry_time",
     "commission",
+    // strategies.txt lists "strategy.opentrades.entry_comment() / strategy.closedtrades.entry_comment()"
+    // among the accessors both sub-namespaces share: the comment of the open trade's entry order.
+    "entry_comment",
   ]),
 };
 
