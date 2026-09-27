@@ -21,8 +21,9 @@ function analyzeSource(source: string, options?: AnalyzeOptions) {
   return analyze(parse(source), options);
 }
 
-// Tests of a keyword argument named twice declare v6: before v6 the first value wins and the
-// repeat is dropped (mig6.txt "Cannot repeat parameters"; harness probe suites/lang/probes/L39.json),
+// Tests of a parameter specified twice (a keyword named twice, or a keyword naming a parameter
+// already given positionally) declare v6: before v6 the first value wins and the repeat is dropped
+// (mig6.txt "Cannot repeat parameters"; harness probes suites/lang/probes/L39.json and L56.json),
 // from v6 on it is a compilation error.
 const V6 = "//@version=6\n";
 
@@ -258,7 +259,7 @@ describe("Analyzer", () => {
   });
 
   it("errors on ta.atr call with too many arguments even when kwargs are used", () => {
-    const prog = analyzeSource("x = ta.atr(14, length=9)");
+    const prog = analyzeSource(V6 + "x = ta.atr(14, length=9)");
     expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -282,7 +283,7 @@ describe("Analyzer", () => {
   });
 
   it("errors on ta.stoch call with too many arguments even when kwargs are used", () => {
-    const prog = analyzeSource("x = ta.stoch(close, high, low, 14, length=9)");
+    const prog = analyzeSource(V6 + "x = ta.stoch(close, high, low, 14, length=9)");
     expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -325,7 +326,7 @@ describe("Analyzer", () => {
   });
 
   it("errors when a ta.sma argument is given both positionally and by keyword", () => {
-    const prog = analyzeSource("x = ta.sma(close, 3, source=open)");
+    const prog = analyzeSource(V6 + "x = ta.sma(close, 3, source=open)");
     expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -606,7 +607,7 @@ describe("Analyzer", () => {
   });
 
   it("still rejects mixing a positional source with a keyword source for ta.vwap (duplicate, C471)", () => {
-    const prog = analyzeSource("x = ta.vwap(close, source=open)");
+    const prog = analyzeSource(V6 + "x = ta.vwap(close, source=open)");
     expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -1073,7 +1074,7 @@ describe("Analyzer", () => {
   });
 
   it("rejects number given both positionally and as a keyword on math.round (C404)", () => {
-    const prog = analyzeSource("x = math.round(close, number=open)");
+    const prog = analyzeSource(V6 + "x = math.round(close, number=open)");
     expect(prog.errors.some((e) => e.includes("'number' specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -1119,7 +1120,7 @@ describe("Analyzer", () => {
   });
 
   it("rejects number given both positionally and as a keyword on math.floor (C474)", () => {
-    const prog = analyzeSource("x = math.floor(close, number=open)");
+    const prog = analyzeSource(V6 + "x = math.floor(close, number=open)");
     expect(prog.errors.some((e) => e.includes("'number' specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -1367,7 +1368,7 @@ describe("Analyzer", () => {
   });
 
   it("rejects source given both positionally and as a keyword on nz (C405)", () => {
-    const prog = analyzeSource("x = nz(close, source=open)");
+    const prog = analyzeSource(V6 + "x = nz(close, source=open)");
     expect(prog.errors.some((e) => e.includes("'source' specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -3106,7 +3107,7 @@ describe("Analyzer", () => {
   });
 
   it("rejects value given both positionally and as a keyword on str.tostring", () => {
-    const prog = analyzeSource("x = str.tostring(close, value=open)");
+    const prog = analyzeSource(V6 + "x = str.tostring(close, value=open)");
     expect(prog.errors.some((e) => e.includes("argument 'value' given as both positional and keyword argument"))).toBe(true);
   });
 
@@ -3426,7 +3427,7 @@ describe("Analyzer", () => {
   });
 
   it("rejects time given both positionally and as a keyword on str.format_time", () => {
-    const prog = analyzeSource('x = str.format_time(1705276800000.0, time=1705329045000.0)');
+    const prog = analyzeSource(V6 + 'x = str.format_time(1705276800000.0, time=1705329045000.0)');
     expect(prog.errors.some((e) => e.includes("argument 'time' given as both positional and keyword argument"))).toBe(true);
   });
 
@@ -3555,7 +3556,7 @@ describe("Analyzer", () => {
   });
 
   it("rejects transp specified both positionally and as a keyword argument", () => {
-    const prog = analyzeSource("x = color.new(color.red, 50, transp=10)");
+    const prog = analyzeSource(V6 + "x = color.new(color.red, 50, transp=10)");
     expect(prog.errors.some((e) => e.includes("argument 'transp' specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -3570,7 +3571,7 @@ describe("Analyzer", () => {
   });
 
   it("rejects color specified both positionally and as a keyword argument", () => {
-    const prog = analyzeSource("x = color.new(color.red, color=color.blue)");
+    const prog = analyzeSource(V6 + "x = color.new(color.red, color=color.blue)");
     expect(prog.errors.some((e) => e.includes("argument 'color' specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -3649,7 +3650,7 @@ describe("Analyzer", () => {
   });
 
   it("errors when color.from_gradient's top_value is duplicated as positional and keyword", () => {
-    const prog = analyzeSource("x = color.from_gradient(50, 0, 100, color.red, color.blue, top_value=90)");
+    const prog = analyzeSource(V6 + "x = color.from_gradient(50, 0, 100, color.red, color.blue, top_value=90)");
     expect(prog.errors.some((e) => e.includes("argument 'top_value' specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -4017,7 +4018,7 @@ describe("Analyzer", () => {
   });
 
   it("rejects array.get with index given both positionally and as a keyword (C382)", () => {
-    const prog = analyzeSource(["var a = array.new_float(1)", "x = array.get(a, 0, index=1)"].join("\n"));
+    const prog = analyzeSource(V6 + ["var a = array.new_float(1)", "x = array.get(a, 0, index=1)"].join("\n"));
     expect(prog.errors.some((e) => e.includes("argument 'index' given as both positional and keyword argument"))).toBe(true);
   });
 
@@ -4072,7 +4073,7 @@ describe("Analyzer", () => {
   });
 
   it("rejects array.new_float with size given both positionally and as a keyword (C383)", () => {
-    const prog = analyzeSource("var a = array.new_float(2, size=3)");
+    const prog = analyzeSource(V6 + "var a = array.new_float(2, size=3)");
     expect(prog.errors.some((e) => e.includes("argument 'size' given as both positional and keyword argument"))).toBe(true);
   });
 
@@ -6386,7 +6387,7 @@ describe("Analyzer", () => {
   });
 
   it("rejects timeframe given both positionally and as a keyword on timeframe.in_seconds (C405)", () => {
-    const prog = analyzeSource('x = timeframe.in_seconds("D", timeframe="W")');
+    const prog = analyzeSource(V6 + 'x = timeframe.in_seconds("D", timeframe="W")');
     expect(prog.errors.some((e) => e.includes("'timeframe' specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -6495,7 +6496,7 @@ describe("Analyzer", () => {
   });
 
   it("rejects a positional/keyword conflict for ticker.new (C385, prefix given both positionally and as a kwarg)", () => {
-    const prog = analyzeSource('x = ticker.new("BINANCE", "BTCUSDT", prefix = "OTHER")');
+    const prog = analyzeSource(V6 + 'x = ticker.new("BINANCE", "BTCUSDT", prefix = "OTHER")');
     expect(prog.errors.some((e) => e.includes("'prefix'") && e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -6848,7 +6849,7 @@ describe("Analyzer", () => {
   });
 
   it("errors when request.security_lower_tf's 'expression=' kwarg duplicates the 3rd positional argument (C381)", () => {
-    const prog = analyzeSource('a = request.security_lower_tf(syminfo.tickerid, "1", close, expression = open)');
+    const prog = analyzeSource(V6 + 'a = request.security_lower_tf(syminfo.tickerid, "1", close, expression = open)');
     expect(
       prog.errors.some((e) => e.includes("argument 'expression' specified both positionally and as a keyword")),
     ).toBe(true);
@@ -12873,7 +12874,7 @@ describe("Analyzer", () => {
   });
 
   it("rejects time given both positionally and by keyword (duplicate)", () => {
-    const prog = analyzeSource('x = hour(time, time = time_close)');
+    const prog = analyzeSource(V6 + 'x = hour(time, time = time_close)');
     expect(prog.errors.length).toBeGreaterThan(0);
     expect(prog.errors[0]).toContain("specified both positionally and as a keyword");
   });
@@ -14833,7 +14834,7 @@ describe("Analyzer UDF call keyword arguments (C396)", () => {
   });
 
   it("errors when the same parameter is given both positionally and by keyword", () => {
-    const prog = analyzeSource(["f(a, b) =>", "    a + b", "x = f(1.0, a = 2.0)"].join("\n"));
+    const prog = analyzeSource(V6 + ["f(a, b) =>", "    a + b", "x = f(1.0, a = 2.0)"].join("\n"));
     expect(prog.errors.some((e) => e.includes("argument 'a' specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -14911,7 +14912,7 @@ describe("Analyzer UDT method call keyword arguments (C408)", () => {
   });
 
   it("errors when the same parameter is given both positionally and by keyword", () => {
-    const prog = analyzeSource([...TYPE_DECL, ...METHOD_DECL, "var p = Bar.new()", "p.bump(1.0, dx = 2.0, dy = 3.0)"].join("\n"));
+    const prog = analyzeSource(V6 + [...TYPE_DECL, ...METHOD_DECL, "var p = Bar.new()", "p.bump(1.0, dx = 2.0, dy = 3.0)"].join("\n"));
     expect(prog.errors.some((e) => e.includes("argument 'dx' specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -15991,7 +15992,7 @@ describe("Analyzer UDT constructor keyword arguments (C129)", () => {
   });
 
   it("errors when a field is specified both positionally and by keyword", () => {
-    const prog = analyzeSource(
+    const prog = analyzeSource(V6 + 
       ["type Bar", "    float x = 1.0", "    float y = 2.0", "var p = Bar.new(1.0, x=2.0)"].join("\n"),
     );
     expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
@@ -17826,7 +17827,7 @@ describe("Analyzer input.* (first slice: int/float/bool/string, C131)", () => {
   });
 
   it("rejects a keyword argument naming a slot already filled positionally", () => {
-    const prog = analyzeSource('x = input.int(14, "Length", defval=99)');
+    const prog = analyzeSource(V6 + 'x = input.int(14, "Length", defval=99)');
     expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -17841,7 +17842,7 @@ describe("Analyzer input.* (first slice: int/float/bool/string, C131)", () => {
   });
 
   it("still rejects a duplicate 'defval=' keyword argument with a different value (C762 exception — defval is the only actually-consumed slot)", () => {
-    const prog = analyzeSource('x = input.float(2, title="T", defval=3)');
+    const prog = analyzeSource(V6 + 'x = input.float(2, title="T", defval=3)');
     expect(prog.errors.some((e) => e.includes("'defval' specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -17977,7 +17978,7 @@ describe("Analyzer input.* (third slice: remaining (defval, title)-only 8 method
   });
 
   it("rejects a keyword argument naming a slot already filled positionally on bare 'input()'", () => {
-    const prog = analyzeSource('x = input(42, "Any Input", defval=99)');
+    const prog = analyzeSource(V6 + 'x = input(42, "Any Input", defval=99)');
     expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -18033,7 +18034,7 @@ describe("Analyzer input.enum (C134 — parser fix unblocks the last input.* met
   });
 
   it("rejects a keyword argument naming a slot already filled positionally", () => {
-    const prog = analyzeSource('x = input.enum("A", "Choice", array.from("A"), options=array.from("B"))');
+    const prog = analyzeSource(V6 + 'x = input.enum("A", "Choice", array.from("A"), options=array.from("B"))');
     expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 });
@@ -18413,7 +18414,7 @@ describe("Analyzer plot() collection channel (PlotCollector, C135)", () => {
   });
 
   it("rejects a positional title combined with a 'title=' keyword argument (positional/keyword conflict)", () => {
-    const prog = analyzeSource('plot(close, "Positional", title="Keyword")');
+    const prog = analyzeSource(V6 + 'plot(close, "Positional", title="Keyword")');
     expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -18427,6 +18428,22 @@ describe("Analyzer plot() collection channel (PlotCollector, C135)", () => {
   it("accepts a positional color combined with an identical 'color=' keyword argument (C654)", () => {
     const prog = analyzeSource('plot(close, "Title", color.yellow, color=color.yellow)');
     expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(false);
+  });
+
+  // Before v6 a parameter given positionally and again by keyword keeps the first value, the
+  // positional one, and the repeat leaves the call (mig6.txt "Cannot repeat parameters"; harness
+  // probe suites/lang/probes/L56.json).
+  it("keeps a v5 positional title over a different 'title=' keyword and drops the keyword", () => {
+    const prog = analyzeSource('//@version=5\nplot(close, "Positional", title="Keyword", series=open)');
+    expect(prog.errors).toEqual([]);
+    expect(prog.plotTitles).toEqual(["Positional"]);
+    const call = (prog.script.body[0] as ExprStmt).expr as CallExpr;
+    expect(call.kwargs).toEqual([]);
+    // color= beside a positional color fills no third slot of color.new(color, transp).
+    expect(analyzeSource("//@version=5\nc = color.new(color.red, 50, color=color.blue)").errors).toEqual([]);
+    expect(analyzeSource(V6 + "c = color.new(color.red, 50, color=color.blue)").errors).toEqual([
+      "argument 'color' specified both positionally and as a keyword (L2:30)",
+    ]);
   });
 
   it("still analyzes nested expressions inside the series argument (surfaces unrelated errors)", () => {
@@ -18453,7 +18470,7 @@ describe("Analyzer plot() collection channel (PlotCollector, C135)", () => {
   });
 
   it("rejects a positional series combined with a 'series=' keyword argument (positional/keyword conflict)", () => {
-    const prog = analyzeSource("plot(close, series=open)");
+    const prog = analyzeSource(V6 + "plot(close, series=open)");
     expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -18504,7 +18521,7 @@ describe("Analyzer indicator()/strategy() directive keyword arguments (C160, LIM
   });
 
   it("rejects a positional title combined with a 'title=' keyword argument on indicator()", () => {
-    const prog = analyzeSource('indicator("Positional", title="Keyword")');
+    const prog = analyzeSource(V6 + 'indicator("Positional", title="Keyword")');
     expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -18547,7 +18564,7 @@ describe("Analyzer indicator()/strategy() directive keyword arguments (C160, LIM
   });
 
   it("rejects a positional title combined with a 'title=' keyword argument on strategy()", () => {
-    const prog = analyzeSource('strategy("Positional", title="Keyword")');
+    const prog = analyzeSource(V6 + 'strategy("Positional", title="Keyword")');
     expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -18639,7 +18656,7 @@ describe("Analyzer study() directive (C399, TV v4 legacy alias for indicator(), 
   });
 
   it("rejects a positional title combined with a 'title=' keyword argument on study()", () => {
-    const prog = analyzeSource('study("Positional", title="Keyword")');
+    const prog = analyzeSource(V6 + 'study("Positional", title="Keyword")');
     expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -18850,7 +18867,7 @@ describe("Analyzer request.security symbol=/timeframe=/expression= kwargs (C409,
   });
 
   it("rejects a lead name given both positionally and as a keyword", () => {
-    const prog = analyzeSource('x = request.security("", "D", close, symbol="X")');
+    const prog = analyzeSource(V6 + 'x = request.security("", "D", close, symbol="X")');
     expect(prog.errors.some((e) => e.includes("argument 'symbol' specified both positionally and as a keyword"))).toBe(true);
   });
 

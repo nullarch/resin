@@ -5,7 +5,8 @@
 // 기존 에러를 유지한다. 실측 데이터 재확인(C654): TV accept 8건 전부 위치값==키워드값(리터럴/
 // DotAccess 상수 동일 텍스트), TV reject 중 이 축 자체가 원인인 2건(656fc2756ab9/ff62b5038ab0)은
 // 둘 다 값이 다름 — 이 가설과 정합.
-import type { Expr } from "../ast";
+import type { CallExpr, CallKwarg, Expr } from "../ast";
+import type { AnalyzedProgram } from "../analyzer";
 
 export function exprsSyntacticallyEqual(a: Expr, b: Expr): boolean {
   if (a.kind !== b.kind) return false;
@@ -52,4 +53,23 @@ export function exprsSyntacticallyEqual(a: Expr, b: Expr): boolean {
 // posArg가 없거나(순수 키워드-키워드 중복) 구문상 다르면 기존 에러 유지, 같으면 무해 중복으로 수용.
 export function isHarmlessArgDup(posArg: Expr | undefined, kwValue: Expr): boolean {
   return posArg !== undefined && exprsSyntacticallyEqual(posArg, kwValue);
+}
+
+// Whether `call` may give keyword `kw` for a parameter it already gives positionally (`posArg`).
+// Before v6 it may, whatever the two values: the parameter is specified twice, and the first value,
+// the positional one (positional arguments come before keyword ones), is the one used
+// (docs/manual/mig6.txt "Cannot repeat parameters": "In v5, you can specify the same parameter in a
+// function more than once. However, doing so raises a compiler warning, and only the first value will
+// be used."). The keyword is recorded and dropped from its call when analysis ends (analyze()), so no
+// later reader can take it for the parameter's value; the parser drops a repeated keyword the same
+// way (parser.ts dropRepeatedKwargs). From v6 on ("In v6, you can specify a parameter only once") only
+// the identical repeat above is let through, as before.
+export function acceptsRepeatedArg(prog: AnalyzedProgram, call: CallExpr, posArg: Expr | undefined, kw: CallKwarg): boolean {
+  if (posArg !== undefined && (prog.script.version ?? 1) < 6) {
+    let repeated = prog.repeatedKwargs.get(call);
+    if (repeated === undefined) prog.repeatedKwargs.set(call, (repeated = new Set()));
+    repeated.add(kw);
+    return true;
+  }
+  return isHarmlessArgDup(posArg, kw.value);
 }

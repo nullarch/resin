@@ -45,7 +45,7 @@ import {
 } from "../analyzer";
 import { literalOffsetValue } from "./index-access";
 import { isUdtConstructorCall } from "./constructors";
-import { isHarmlessArgDup } from "./arg-dup";
+import { acceptsRepeatedArg } from "./arg-dup";
 import {
   allowsDynamicRequests,
   planSecurityScript,
@@ -2275,7 +2275,7 @@ function resolveSecurityLeadArgs(
     const idx = SECURITY_LEAD_PARAM_NAMES.indexOf(kw.name as (typeof SECURITY_LEAD_PARAM_NAMES)[number]);
     if (idx === -1) continue; // gaps/lookahead/ignore_invalid_symbol/currency — 아래 별도 루프가 처리
     if (idx < expr.args.length) {
-      if (!isHarmlessArgDup(expr.args[idx], kw.value)) {
+      if (!acceptsRepeatedArg(prog, expr, expr.args[idx], kw)) {
         prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
         ok = false;
       }
@@ -4874,7 +4874,7 @@ function analyzeInputCall(expr: CallExpr, method: string, errorLabel: string, pr
         // "이름 무조건 허용"의 유일한 예외.
         if (seenKwargNames.has(kw.name)) {
           prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
-        } else if (idx < expr.args.length && !isHarmlessArgDup(expr.args[idx], kw.value)) {
+        } else if (idx < expr.args.length && !acceptsRepeatedArg(prog, expr, expr.args[idx], kw)) {
           prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
         }
       }
@@ -4918,7 +4918,7 @@ function analyzeStrategyRiskThresholdCall(expr: CallExpr, displayName: string, p
         prog.errors.push(`'${displayName}' only supports keyword arguments 'value='/'type=': '${kw.name}=' (L${kw.line}:${kw.col})`);
       } else if (seen.has(kw.name)) {
         const posArg = kw.name === "value" ? expr.args[0] : expr.args[1];
-        if (!isHarmlessArgDup(posArg, kw.value)) {
+        if (!acceptsRepeatedArg(prog, expr, posArg, kw)) {
           prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
         }
       } else {
@@ -5330,7 +5330,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             prog.errors.push(`unknown argument name for '${callee.name}': '${kw.name}' (L${kw.line}:${kw.col})`);
           } else if (seenKwargNames.has(kw.name)) {
             prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
-          } else if (idx < expr.args.length && !isHarmlessArgDup(expr.args[idx], kw.value)) {
+          } else if (idx < expr.args.length && !acceptsRepeatedArg(prog, expr, expr.args[idx], kw)) {
             prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
           }
           seenKwargNames.add(kw.name);
@@ -5649,7 +5649,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             prog.errors.push(`unknown argument name for 'nz': '${kw.name}' (L${kw.line}:${kw.col})`);
           } else if (seen.has(kw.name)) {
             const posArg = idx < expr.args.length ? expr.args[idx] : undefined;
-            if (!isHarmlessArgDup(posArg, kw.value)) {
+            if (!acceptsRepeatedArg(prog, expr, posArg, kw)) {
               prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
             }
           } else {
@@ -5783,7 +5783,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           if (idx === -1) {
             prog.errors.push(`unknown argument name for 'timestamp': '${kw.name}' (L${kw.line}:${kw.col})`);
           } else if (idx < expr.args.length) {
-            if (!isHarmlessArgDup(expr.args[idx], kw.value)) {
+            if (!acceptsRepeatedArg(prog, expr, expr.args[idx], kw)) {
               prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
             }
           } else if (seen.has(kw.name)) {
@@ -6137,7 +6137,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           if (kw.name === "series") {
             if (seenKwargNames.has(kw.name)) {
               prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
-            } else if (expr.args.length >= 1) {
+            } else if (expr.args.length >= 1 && !acceptsRepeatedArg(prog, expr, expr.args[0], kw)) {
               prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
             }
             seenKwargNames.add(kw.name);
@@ -6148,7 +6148,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             prog.errors.push(`unknown argument name for 'plot': '${kw.name}' (L${kw.line}:${kw.col})`);
           } else if (seenKwargNames.has(kw.name)) {
             prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
-          } else if (idx < expr.args.length && !isHarmlessArgDup(expr.args[idx], kw.value)) {
+          } else if (idx < expr.args.length && !acceptsRepeatedArg(prog, expr, expr.args[idx], kw)) {
             prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
           }
           seenKwargNames.add(kw.name);
@@ -6262,7 +6262,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           prog.errors.push(`'${callee.name}' only supports keyword arguments 'time='/'timezone=': '${kw.name}=' (L${kw.line}:${kw.col})`);
         } else if (seenTimeFuncParams.has(kw.name)) {
           const posArg = kw.name === "time" ? expr.args[0] : expr.args[1];
-          if (!isHarmlessArgDup(posArg, kw.value)) {
+          if (!acceptsRepeatedArg(prog, expr, posArg, kw)) {
             prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
           }
         } else {
@@ -6306,7 +6306,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             prog.errors.push(`'${callee.name}' only supports keyword arguments 'timeframe='/'session='/'timezone='/'bars_back=': '${kw.name}=' (L${kw.line}:${kw.col})`);
           } else if (seen.has(kw.name)) {
             const posArg = idx < expr.args.length ? expr.args[idx] : undefined;
-            if (!isHarmlessArgDup(posArg, kw.value)) {
+            if (!acceptsRepeatedArg(prog, expr, posArg, kw)) {
               prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
             }
           } else {
@@ -6406,7 +6406,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           prog.errors.push(`unknown argument name for 'math.${method}': '${kw.name}' (L${kw.line}:${kw.col})`);
         } else if (seen.has(kw.name)) {
           const posArg = idx < expr.args.length ? expr.args[idx] : undefined;
-          if (!isHarmlessArgDup(posArg, kw.value)) {
+          if (!acceptsRepeatedArg(prog, expr, posArg, kw)) {
             prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
           }
         } else {
@@ -6489,7 +6489,9 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // 인자 이름 그대로라(pine2py는 python 예약어 충돌로 color_val 개명 — 이 kwarg는 pine2py가
       // 크래시하는 구조적 오라클 불가 축, hand-verified) 값 kwarg(discard 아님, colorArg 슬롯에
       // 실제로 꽂힘). 'color=' 사용 시 필수 인자 개수 체크는 kwarg로 채워진 슬롯을 포함해야 한다.
-      const hasColorKwarg = expr.kwargs.some((kw) => kw.name === "color");
+      // A color= beside a positional color repeats that parameter and fills no new slot (accepted
+      // before v6, rejected from v6 on, below: acceptsRepeatedArg).
+      const hasColorKwarg = expr.kwargs.some((kw) => kw.name === "color") && expr.args.length === 0;
       const effectiveArgCount = expr.args.length + (hasColorKwarg ? 1 : 0);
       if (effectiveArgCount < 1 || effectiveArgCount > 2) {
         prog.errors.push(
@@ -6501,7 +6503,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       for (const kw of expr.kwargs) {
         if (kw.name === "transp") {
           if (expr.args.length >= 2) {
-            if (!isHarmlessArgDup(expr.args[1], kw.value)) {
+            if (!acceptsRepeatedArg(prog, expr, expr.args[1], kw)) {
               prog.errors.push(`argument 'transp' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
             }
           } else if (transpFromKwarg) {
@@ -6511,7 +6513,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           }
         } else if (kw.name === "color") {
           if (expr.args.length >= 1) {
-            if (!isHarmlessArgDup(expr.args[0], kw.value)) {
+            if (!acceptsRepeatedArg(prog, expr, expr.args[0], kw)) {
               prog.errors.push(`argument 'color' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
             }
           } else if (colorFromKwarg) {
@@ -6546,7 +6548,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             prog.errors.push(`unknown argument name for 'color.from_gradient': '${kw.name}' (L${kw.line}:${kw.col})`);
           } else if (seen.has(kw.name)) {
             const posArg = idx < expr.args.length ? expr.args[idx] : undefined;
-            if (!isHarmlessArgDup(posArg, kw.value)) {
+            if (!acceptsRepeatedArg(prog, expr, posArg, kw)) {
               prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
             }
           } else {
@@ -6602,7 +6604,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           prog.errors.push(`unknown argument name for 'timeframe.in_seconds': '${kw.name}' (L${kw.line}:${kw.col})`);
         } else if (seen.has(kw.name)) {
           const posArg = idx < expr.args.length ? expr.args[idx] : undefined;
-          if (!isHarmlessArgDup(posArg, kw.value)) {
+          if (!acceptsRepeatedArg(prog, expr, posArg, kw)) {
             prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
           }
         } else {
@@ -6705,7 +6707,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           prog.errors.push(`unknown argument name for 'ticker.${method}': '${kw.name}' (L${kw.line}:${kw.col})`);
         } else if (seen.has(kw.name)) {
           const posArg = idx < expr.args.length ? expr.args[idx] : undefined;
-          if (!isHarmlessArgDup(posArg, kw.value)) {
+          if (!acceptsRepeatedArg(prog, expr, posArg, kw)) {
             prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
           }
         } else {
@@ -6928,7 +6930,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           );
         } else if (seenLowerTfKwargs.has(kw.name)) {
           prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
-        } else if (idx < expr.args.length && !isHarmlessArgDup(expr.args[idx], kw.value)) {
+        } else if (idx < expr.args.length && !acceptsRepeatedArg(prog, expr, expr.args[idx], kw)) {
           prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
         }
         seenLowerTfKwargs.add(kw.name);
@@ -7005,12 +7007,12 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         prog.errors.push(
           `'strategy.${method}' call argument count mismatch: requires 0~3 (id, direction[, qty] — id/direction may also be specified as keyword arguments), got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
-      } else if (expr.args.length >= 1 && idKwarg !== undefined && !isHarmlessArgDup(expr.args[0], idKwarg.value)) {
+      } else if (expr.args.length >= 1 && idKwarg !== undefined && !acceptsRepeatedArg(prog, expr, expr.args[0], idKwarg)) {
         prog.errors.push(`argument 'id' specified both positionally and as a keyword (L${idKwarg.line}:${idKwarg.col})`);
       } else if (
         expr.args.length >= 2 &&
         directionKwarg !== undefined &&
-        !isHarmlessArgDup(expr.args[1], directionKwarg.value)
+        !acceptsRepeatedArg(prog, expr, expr.args[1], directionKwarg)
       ) {
         prog.errors.push(
           `argument 'direction' specified both positionally and as a keyword (L${directionKwarg.line}:${directionKwarg.col})`,
@@ -7054,7 +7056,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           );
         } else if (seenEntryKwargs.has(kw.name)) {
           prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
-        } else if (kw.name === "qty" && expr.args.length >= 3 && !isHarmlessArgDup(expr.args[2], kw.value)) {
+        } else if (kw.name === "qty" && expr.args.length >= 3 && !acceptsRepeatedArg(prog, expr, expr.args[2], kw)) {
           prog.errors.push(`argument 'qty' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
         }
         seenEntryKwargs.add(kw.name);
@@ -7121,7 +7123,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         prog.errors.push(
           `'strategy.exit' call argument count mismatch: requires 0~3 (id[, from_entry[, qty]] — id may also be specified as a keyword argument), got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
-      } else if (expr.args.length >= 1 && idKwarg !== undefined && !isHarmlessArgDup(expr.args[0], idKwarg.value)) {
+      } else if (expr.args.length >= 1 && idKwarg !== undefined && !acceptsRepeatedArg(prog, expr, expr.args[0], idKwarg)) {
         prog.errors.push(`argument 'id' specified both positionally and as a keyword (L${idKwarg.line}:${idKwarg.col})`);
       }
       const seenExitKwargs = new Set<string>();
@@ -7155,9 +7157,9 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           );
         } else if (seenExitKwargs.has(kw.name)) {
           prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
-        } else if (kw.name === "from_entry" && expr.args.length >= 2 && !isHarmlessArgDup(expr.args[1], kw.value)) {
+        } else if (kw.name === "from_entry" && expr.args.length >= 2 && !acceptsRepeatedArg(prog, expr, expr.args[1], kw)) {
           prog.errors.push(`argument 'from_entry' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
-        } else if (kw.name === "qty" && expr.args.length >= 3 && !isHarmlessArgDup(expr.args[2], kw.value)) {
+        } else if (kw.name === "qty" && expr.args.length >= 3 && !acceptsRepeatedArg(prog, expr, expr.args[2], kw)) {
           prog.errors.push(`argument 'qty' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
         }
         seenExitKwargs.add(kw.name);
@@ -7181,14 +7183,14 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         prog.errors.push(
           `'strategy.close' call argument count mismatch: requires 1~2 (entry id[, comment]), got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
-      } else if (expr.args.length >= 1 && idKwarg !== undefined && !isHarmlessArgDup(expr.args[0], idKwarg.value)) {
+      } else if (expr.args.length >= 1 && idKwarg !== undefined && !acceptsRepeatedArg(prog, expr, expr.args[0], idKwarg)) {
         prog.errors.push(
           `argument 'id' specified both positionally and as a keyword (L${idKwarg.line}:${idKwarg.col})`,
         );
       } else if (
         expr.args.length === 2 &&
         commentKwarg !== undefined &&
-        !isHarmlessArgDup(expr.args[1], commentKwarg.value)
+        !acceptsRepeatedArg(prog, expr, expr.args[1], commentKwarg)
       ) {
         prog.errors.push(
           `argument 'comment' specified both positionally and as a keyword (L${commentKwarg.line}:${commentKwarg.col})`,
@@ -7291,7 +7293,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         prog.errors.push(
           `'strategy.cancel' call argument count mismatch: requires 1 (order id), got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
-      } else if (expr.args.length === 1 && idKwarg !== undefined && !isHarmlessArgDup(expr.args[0], idKwarg.value)) {
+      } else if (expr.args.length === 1 && idKwarg !== undefined && !acceptsRepeatedArg(prog, expr, expr.args[0], idKwarg)) {
         prog.errors.push(`argument 'id' specified both positionally and as a keyword (L${idKwarg.line}:${idKwarg.col})`);
       }
       const seenCancelKwargs = new Set<string>();
@@ -7832,7 +7834,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           );
         } else if (seenKwargNames.has(kw.name)) {
           prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
-        } else if (expr.args.length >= 1 && !isHarmlessArgDup(expr.args[0], kw.value)) {
+        } else if (expr.args.length >= 1 && !acceptsRepeatedArg(prog, expr, expr.args[0], kw)) {
           prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
         }
         seenKwargNames.add(kw.name);
@@ -7868,7 +7870,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           prog.errors.push(`unknown field for '${namespace}': '${kw.name}' (L${kw.line}:${kw.col})`);
         } else if (seenKwargNames.has(kw.name)) {
           prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
-        } else if (idx < expr.args.length && !isHarmlessArgDup(expr.args[idx], kw.value)) {
+        } else if (idx < expr.args.length && !acceptsRepeatedArg(prog, expr, expr.args[idx], kw)) {
           prog.errors.push(
             `field '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`,
           );
@@ -9282,7 +9284,7 @@ function dispatchUdtMethodCall(
         prog.errors.push(`unknown parameter name for '${typeName}.${method}': '${kw.name}' (L${kw.line}:${kw.col})`);
       } else if (seenKwargNames.has(kw.name)) {
         prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
-      } else if (idx < expr.args.length && !isHarmlessArgDup(expr.args[idx], kw.value)) {
+      } else if (idx < expr.args.length && !acceptsRepeatedArg(prog, expr, expr.args[idx], kw)) {
         prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
       }
       seenKwargNames.add(kw.name);
@@ -9376,7 +9378,7 @@ function analyzeUserFuncCall(expr: CallExpr, func: FuncInfo, prog: AnalyzedProgr
         prog.errors.push(`unknown parameter name for '${func.name}': '${kw.name}' (L${kw.line}:${kw.col})`);
       } else if (seenKwargNames.has(kw.name)) {
         prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);
-      } else if (idx < expr.args.length && !isHarmlessArgDup(expr.args[idx], kw.value)) {
+      } else if (idx < expr.args.length && !acceptsRepeatedArg(prog, expr, expr.args[idx], kw)) {
         prog.errors.push(`argument '${kw.name}' specified both positionally and as a keyword (L${kw.line}:${kw.col})`);
       }
       seenKwargNames.add(kw.name);

@@ -6,7 +6,7 @@
 import type { CallExpr } from "../ast";
 import type { AnalyzedProgram, LexScope } from "../analyzer";
 import { ORDER_CONSTANTS, isStaticIntExpr, analyzeExpr } from "../analyzer";
-import { isHarmlessArgDup } from "./arg-dup";
+import { acceptsRepeatedArg } from "./arg-dup";
 
 // map.*(C89) 인자 개수 검증 전용 데이터 주도 테이블 — ROADMAP "컬렉션 네임스페이스 레지스트리화"
 // 항목의 첫 번째 슬라이스(array/matrix/str은 동일 패턴으로 후속 사이클에서 처리 예정, 네임스페이스당
@@ -307,7 +307,7 @@ export function analyzeStrCall(expr: CallExpr, method: string, prog: AnalyzedPro
         prog.errors.push(`unknown argument name for 'str.${method}': '${kw.name}' (L${kw.line}:${kw.col})`);
       } else if (seen.has(kw.name)) {
         const posArg = idx < expr.args.length ? expr.args[idx] : undefined;
-        if (!isHarmlessArgDup(posArg, kw.value)) {
+        if (!acceptsRepeatedArg(prog, expr, posArg, kw)) {
           prog.errors.push(`argument '${kw.name}' given as both positional and keyword argument (L${kw.line}:${kw.col})`);
         }
       } else {
@@ -457,7 +457,7 @@ export function analyzeArrayCall(
         prog.errors.push(`unknown argument name for 'array.${method}': '${kw.name}' (L${kw.line}:${kw.col})`);
       } else if (seen.has(kw.name)) {
         const posArg = idx < expr.args.length ? expr.args[idx] : undefined;
-        if (!isHarmlessArgDup(posArg, kw.value)) {
+        if (!acceptsRepeatedArg(prog, expr, posArg, kw)) {
           prog.errors.push(`argument '${kw.name}' given as both positional and keyword argument (L${kw.line}:${kw.col})`);
         }
       } else {

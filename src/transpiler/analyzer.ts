@@ -19,6 +19,7 @@ import type {
   Assignment,
   BinOp,
   CallExpr,
+  CallKwarg,
   DotAccess,
   Expr,
   ForInStmt,
@@ -2583,6 +2584,10 @@ export interface AnalyzedProgram {
   // C453: 위 큐 처리 결과 (3) — 콜사이트 CallExpr -> 그 콜사이트의 서수(0-based, funcAllCallSites
   // 순서). codegen이 __slotBase/__taBase/__histBase 뒤에 리터럴로 전달한다.
   funcSecIdxArgs: Map<CallExpr, number>;
+  // Keyword arguments that repeat a parameter their call gives positionally, accepted before v6 with
+  // the positional value used (analyzer/arg-dup.ts acceptsRepeatedArg); analyze() drops them from
+  // their calls at its end.
+  repeatedKwargs: Map<CallExpr, Set<CallKwarg>>;
   funcCallSlots: Map<CallExpr, number>; // UDF 콜사이트 -> $.fnVars 안의 슬롯 베이스(call-site별 독립)
   fnVarSlotCount: number; // $.fnVars 배열 전체 크기(모든 UDF의 모든 콜사이트 슬롯 총합)
   // C255: forward-reference 콜사이트(callee FuncInfo.bodyAnalyzed===false 시점에 분석된 콜) —
@@ -3984,6 +3989,7 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
     securityFuncScriptRecords: new Map(),
     securityFuncScriptSites: [],
     funcSecIdxArgs: new Map(),
+    repeatedKwargs: new Map(),
     funcCallSlots: new Map(),
     fnVarSlotCount: 0,
     pendingFuncCallSlots: [],
@@ -4185,6 +4191,11 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
   // 뒤에 오면 그 읽기가 조용히 통과하던 순서의존 버그 방지용)는 C714로 불필요해졌다 —
   // index-access.ts가 이제 이름이 아니라 대입문 노드로 슬롯을 키잉해(resolveAmbiguousNestedEqLocalDeclStmt)
   // 매 읽기를 그 자리에서 무모호하게 해석하므로 처리 순서 자체가 결과에 영향을 주지 않는다.
+  // A v5 parameter given positionally and again by keyword keeps its first value, the positional
+  // one: the repeated keyword leaves its call, so codegen never sees it (arg-dup.ts acceptsRepeatedArg).
+  for (const [call, repeated] of prog.repeatedKwargs) {
+    call.kwargs = call.kwargs.filter((kw) => !repeated.has(kw));
+  }
   return prog;
 }
 

@@ -23,8 +23,9 @@ function transpileErrors(source: string): string[] {
   return r.ok ? [] : r.errors;
 }
 
-// Tests of a keyword argument named twice declare v6: before v6 the first value wins and the
-// repeat is dropped (mig6.txt "Cannot repeat parameters"; harness probe suites/lang/probes/L39.json),
+// Tests of a parameter specified twice (a keyword named twice, or a keyword naming a parameter
+// already given positionally) declare v6: before v6 the first value wins and the repeat is dropped
+// (mig6.txt "Cannot repeat parameters"; harness probes suites/lang/probes/L39.json and L56.json),
 // from v6 on it is a compilation error.
 const V6 = "//@version=6\n";
 
@@ -770,12 +771,12 @@ describe("strategy.* analyzer validation", () => {
 
   it("rejects strategy.entry id=/direction= duplicated with positional args (C423)", () => {
     expect(
-      transpileErrors('strategy("s")\nstrategy.entry("L", strategy.long, id="L2")').some((e) =>
+      transpileErrors(V6 + 'strategy("s")\nstrategy.entry("L", strategy.long, id="L2")').some((e) =>
         e.includes("argument 'id' specified both positionally and as a keyword"),
       ),
     ).toBe(true);
     expect(
-      transpileErrors('strategy("s")\nstrategy.entry("L", strategy.long, direction=strategy.short)').some((e) =>
+      transpileErrors(V6 + 'strategy("s")\nstrategy.entry("L", strategy.long, direction=strategy.short)').some((e) =>
         e.includes("argument 'direction' specified both positionally and as a keyword"),
       ),
     ).toBe(true);
@@ -872,7 +873,7 @@ describe("strategy.* analyzer validation", () => {
   });
 
   it("rejects strategy.cancel with id given both positionally and as a keyword", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.cancel("L", id="M")');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.cancel("L", id="M")');
     expect(errors.some((e) => e.includes("'id' specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -932,7 +933,7 @@ describe("strategy.* analyzer validation", () => {
   });
 
   it("rejects qty specified both positionally and as a kwarg", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.entry("L", strategy.long, 2, qty=3)');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.entry("L", strategy.long, 2, qty=3)');
     expect(errors.some((e) => e.includes("'qty' specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -2095,12 +2096,12 @@ describe("strategy.exit analyzer validation (C167)", () => {
   });
 
   it("rejects strategy.exit id= duplicated with a positional id (C424)", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.exit("X", id="Y", limit=15)');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.exit("X", id="Y", limit=15)');
     expect(errors.some((e) => e.includes("'id' specified both positionally and as a keyword"))).toBe(true);
   });
 
   it("rejects strategy.exit qty= duplicated with a positional qty (C424)", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.exit("X", "L", 1, qty=2, profit=10)');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.exit("X", "L", 1, qty=2, profit=10)');
     expect(errors.some((e) => e.includes("'qty' specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -2218,7 +2219,7 @@ describe("strategy.exit analyzer validation (C167)", () => {
   });
 
   it("rejects from_entry specified both positionally and as a kwarg", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.exit("X", "L", from_entry="M", stop=9)');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.exit("X", "L", from_entry="M", stop=9)');
     expect(errors.some((e) => e.includes("'from_entry' specified both positionally and as a keyword"))).toBe(true);
   });
 });
@@ -3146,7 +3147,7 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
   });
 
   it("rejects strategy.close with id given both positionally and as a keyword", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.close("L", id="M")');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.close("L", id="M")');
     expect(errors.some((e) => e.includes("'id' specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -3162,7 +3163,7 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
 
   // C345: comment도 id(C293)와 동일하게 위치 2번째 슬롯 또는 'comment=' 키워드 중 하나로만 지정 가능.
   it("rejects strategy.close with comment given both positionally and as a keyword", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.close("L", "bye", comment="also bye")');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.close("L", "bye", comment="also bye")');
     expect(errors.some((e) => e.includes("'comment' specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -7502,7 +7503,7 @@ describe("strategy.risk.max_intraday_loss/max_drawdown analyzer validation (C322
 
   it("rejects duplicate specification of value (positional + keyword at once)", () => {
     for (const m of METHODS) {
-      const errors = transpileErrors(`strategy("s")\nstrategy.risk.${m}(10, strategy.cash, value = 20)`);
+      const errors = transpileErrors(V6 + `strategy("s")\nstrategy.risk.${m}(10, strategy.cash, value = 20)`);
       expect(errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
     }
   });

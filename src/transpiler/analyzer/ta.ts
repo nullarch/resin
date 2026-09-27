@@ -9,7 +9,7 @@
 import type { CallExpr, Expr } from "../ast";
 import type { AnalyzedProgram, LexScope, ScopePushKind } from "../analyzer";
 import { inferQualifier, readsLoopVaryingName } from "../analyzer";
-import { isHarmlessArgDup } from "./arg-dup";
+import { acceptsRepeatedArg } from "./arg-dup";
 
 // stateful 콜(ta.*/fixnan) 거부 판정: 스코프 체인을 루트까지 걸어 cond-body(if 분기 본문/switch
 // case 본문 — C64/C65부터 per-call 전진 허용), lazy-expr(삼항/and·or lazy 위치 — C66부터 codegen
@@ -879,7 +879,9 @@ export function resolveTaKwargPositions(expr: CallExpr, entry: TaRegistryEntry):
   const resolved: (Expr | undefined)[] = [...expr.args];
   for (const kw of expr.kwargs) {
     const idx = paramNames.indexOf(kw.name);
-    if (idx >= 0) resolved[idx] = kw.value;
+    // A parameter already given positionally keeps that first value: a v5 repeat by keyword is
+    // accepted and ignored (arg-dup.ts acceptsRepeatedArg, mig6.txt "Cannot repeat parameters").
+    if (idx >= 0 && resolved[idx] === undefined) resolved[idx] = kw.value;
   }
   return resolved;
 }
@@ -916,7 +918,7 @@ export function analyzeStatefulCall(
         if (idx === -1) {
           prog.errors.push(`argument name not found in '${entry.displayName}': '${kw.name}=' (L${kw.line}:${kw.col})`);
         } else if (idx < expr.args.length) {
-          if (!isHarmlessArgDup(expr.args[idx], kw.value)) {
+          if (!acceptsRepeatedArg(prog, expr, expr.args[idx], kw)) {
             prog.errors.push(
               `argument '${kw.name}' specified both positionally and as a keyword argument (L${kw.line}:${kw.col})`,
             );

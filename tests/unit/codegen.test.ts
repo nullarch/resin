@@ -9,8 +9,9 @@ import { rt } from "../../src/runtime/rt";
 import type { Assignment, CallExpr } from "../../src/transpiler/ast";
 import { runPipeline } from "../helpers/pipeline";
 
-// Tests of a keyword argument named twice declare v6: before v6 the first value wins and the
-// repeat is dropped (mig6.txt "Cannot repeat parameters"; harness probe suites/lang/probes/L39.json),
+// Tests of a parameter specified twice (a keyword named twice, or a keyword naming a parameter
+// already given positionally) declare v6: before v6 the first value wins and the repeat is dropped
+// (mig6.txt "Cannot repeat parameters"; harness probes suites/lang/probes/L39.json and L56.json),
 // from v6 on it is a compilation error.
 const V6 = "//@version=6\n";
 
@@ -21106,7 +21107,7 @@ describe("CodeGen timestamp(...) kwargs (C406, next_hint(C405) 1순위)", () => 
   });
 
   it("rejects year given both positionally and as a keyword (positional-tz form)", () => {
-    const prog = analyze(parse("x = timestamp(syminfo.timezone, 2024, year=2025, month=1, day=1)"));
+    const prog = analyze(parse(V6 + "x = timestamp(syminfo.timezone, 2024, year=2025, month=1, day=1)"));
     expect(prog.errors.some((e) => e.includes("'year' specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -21532,7 +21533,7 @@ describe("CodeGen time()/time_close() keyword-argument form (C475)", () => {
   });
 
   it("rejects timeframe specified both positionally and by keyword", () => {
-    const prog = analyze(parse('x = time("D", timeframe="60")'));
+    const prog = analyze(parse(V6 + 'x = time("D", timeframe="60")'));
     expect(prog.errors.some((e) => e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -26530,7 +26531,7 @@ describe("CodeGen log.*/runtime.* (C231)", () => {
   });
 
   it("errors when runtime.error/warning 'message' is given both positionally and as a kwarg", () => {
-    const prog = analyze(parse('runtime.error("a", message="b")'));
+    const prog = analyze(parse(V6 + 'runtime.error("a", message="b")'));
     expect(prog.errors.some((e) => e.includes("argument 'message' specified both positionally and as a keyword"))).toBe(
       true,
     );
@@ -29882,5 +29883,41 @@ describe("CodeGen history index '[]' on a request.security(...) call registered 
     for (let p = 0; p < 2; p++) {
       expect(Array.from(wrappedPlots[p]!.values)).toEqual(Array.from(directPlots[p]!.values));
     }
+  });
+});
+
+// Before v6 a parameter given positionally and again by keyword keeps the first value, the
+// positional one (mig6.txt "Cannot repeat parameters": "In v5, you can specify the same parameter in a
+// function more than once. However, doing so raises a compiler warning, and only the first value will
+// be used."; harness probe suites/lang/probes/L56.json; real-world 9bc5e90a5538
+// `input.int(14, title="ATR Length", defval=10, ...)`). From v6 on it is a compilation error.
+describe("CodeGen v5 parameter given positionally and again by keyword (L56)", () => {
+  const n = 6;
+  const close = Array.from({ length: n }, (_, i) => 10 + i);
+  const data: OHLCVData = { open: close, high: close, low: close, close, volume: new Array(n).fill(1) };
+  const observe = (lines: string[]) =>
+    runPipeline(["//@version=5", ...lines, "var float __obs = na", "__obs := x"].join("\n"), data).bars.map(
+      (b) => b["var:__obs"] as number,
+    );
+
+  it("uses the positional input.int defval", () => {
+    expect(observe(['x = input.int(14, "Len", defval=10)'])).toEqual(new Array(n).fill(14));
+  });
+
+  it("uses the positional ta.sma length", () => {
+    const obs = observe(["x = ta.sma(close, 2, length=4)"]);
+    expect(Number.isNaN(obs[0]!)).toBe(true);
+    expect(obs.slice(1)).toEqual(close.slice(1).map((c) => c - 0.5));
+  });
+
+  it("uses the positional argument of a user-defined function and of a UDT constructor", () => {
+    expect(observe(["f(a, b) => a * 10 + b", "x = f(1, 2, a=5)"])).toEqual(new Array(n).fill(12));
+    expect(observe(["type P", "    float a = 0", "p = P.new(3, a=7)", "x = p.a"])).toEqual(new Array(n).fill(3));
+  });
+
+  it("rejects the repeat in v6", () => {
+    expect(() => runPipeline(V6 + 'x = input.int(14, "Len", defval=10)\nplot(x)', data)).toThrow(
+      /argument 'defval' specified both positionally and as a keyword/,
+    );
   });
 });
