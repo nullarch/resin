@@ -2534,6 +2534,98 @@ describe("StrategyState close_all + qty 부분 청산 (C168 여섯째 슬라이�
     ]);
   });
 
+  // The market orders of one bar fill at the next open in the order the script placed them, entries,
+  // closes and strategy.order() alike (the oracle's market book; resin-harness
+  // state/repros/mixed-seed-478.json, market-orders-placement-order.json).
+  it("a close placed after a reversing entry fills nothing: the reversal closes the position", () => {
+    const st = new StrategyState();
+    st.setCommission("cash_per_order", 2.5);
+    st.entry("S", "short", 1);
+    st.processFills(99.4);
+    st.entry("Q", "long", 4);
+    st.close("S");
+    st.processFills(100.34);
+    expect(st.posSize).toBe(4);
+    expect(st.pendingCloses).toHaveLength(0);
+    expect(st.closedTradeRecords.map((t) => [t.entryId, t.exitId])).toEqual([["S", "Q"]]);
+    // -0.94, the entry's fee 2.5 and 1/5 of the reversal's 2.5 (one order of 5 contracts).
+    expect(st.closedTradeRecords[0]!.profit).toBeCloseTo(-3.94, 9);
+  });
+
+  it("a close placed before a reversing entry fills first, the entry opening from flat", () => {
+    const st = new StrategyState();
+    st.setCommission("cash_per_order", 2.5);
+    st.entry("S", "short", 1);
+    st.processFills(99.4);
+    st.close("S");
+    st.entry("Q", "long", 4);
+    st.processFills(100.34);
+    expect(st.posSize).toBe(4);
+    expect(st.closedTradeRecords.map((t) => [t.entryId, t.exitId])).toEqual([["S", "Close entry(s) order S"]]);
+    expect(st.closedTradeRecords[0]!.profit).toBeCloseTo(-5.94, 9);
+  });
+
+  it("a close_all placed after a reversing entry fills nothing (market-orders-placement-order.json bar 9)", () => {
+    const st = new StrategyState();
+    st.entry("L", "long", 1);
+    st.processFills(100);
+    st.entry("S", "short", 1);
+    st.close_all();
+    st.processFills(101);
+    expect(st.posSize).toBe(-1);
+    expect(st.closedTradeRecords.map((t) => [t.entryId, t.exitId])).toEqual([["L", "S"]]);
+  });
+
+  it("a market strategy.order() placed before an entry fills before it", () => {
+    const st = new StrategyState();
+    st.configure(1, 3);
+    st.entry("L", "long", 1);
+    st.processFills(100);
+    st.order("O", "short", 3);
+    st.entry("L3", "long", 1);
+    st.processFills(101);
+    // O nets the long away and opens 2 short; L3 then reverses that short to 1 long. The short
+    // opened and closed at one instant is booked long side first (closeAt).
+    expect(st.posSize).toBe(1);
+    expect(st.closedTradeRecords.map((t) => [t.entryId, t.exitId, t.size])).toEqual([
+      ["L", "O", 1],
+      ["L3", "O", 2],
+    ]);
+    // Placed the other way round, L3 adds to the long first and O then nets through both.
+    const other = new StrategyState();
+    other.configure(1, 3);
+    other.entry("L", "long", 1);
+    other.processFills(100);
+    other.entry("L3", "long", 1);
+    other.order("O", "short", 3);
+    other.processFills(101);
+    expect(other.posSize).toBe(-1);
+  });
+
+  it("an order resting from an earlier bar that a call turns into a market order fills where that call stands", () => {
+    const st = new StrategyState();
+    st.entry("A", "long", 2);
+    st.processFills(100);
+    st.entry("R", "short", 1, 200); // rests: the price never reaches it
+    st.processFills(101, 102, 100, 1);
+    st.close("A");
+    st.entry("R", "short", 1); // now a market order, placed after the close
+    st.processFills(102, 103, 101, 2);
+    expect(st.posSize).toBe(-1);
+    expect(st.closedTradeRecords.map((t) => [t.entryId, t.exitId])).toEqual([["A", "Close entry(s) order A"]]);
+    // The strategy.order() slot likewise.
+    const ord = new StrategyState();
+    ord.entry("B", "long", 2);
+    ord.processFills(100);
+    ord.order("P", "short", 1, 200);
+    ord.processFills(101, 102, 100, 1);
+    ord.close("B");
+    ord.order("P", "short", 3);
+    ord.processFills(102, 103, 101, 2);
+    expect(ord.posSize).toBe(-3);
+    expect(ord.closedTradeRecords.map((t) => [t.entryId, t.exitId])).toEqual([["B", "Close entry(s) order B"]]);
+  });
+
   // strategies.txt: strategy.cancel_all() "cancels all unfilled orders, regardless of ID", market
   // orders included when placed on the same execution (state/repros/mixed-seed-249.json).
   it("cancel_all cancels the close orders placed before it", () => {
@@ -8745,6 +8837,19 @@ describe("StrategyState process_orders_on_close (fills at the signal bar's close
     expect(st.closedTradeRecords[0]!.exitPrice).toBe(105);
   });
 
+  it("the close pass fills the bar's market orders in placement order (market-orders-placement-order-close.json)", () => {
+    const st = onClose();
+    st.processFills(99, 101, 98, 0);
+    st.entry("L", "long", 2);
+    st.processFillsAtClose(100, 0);
+    st.processFills(104, 106, 103, 1);
+    st.entry("S", "short", 3);
+    st.close("L"); // placed after the reversal: nothing left to close
+    st.processFillsAtClose(105, 1);
+    expect(st.posSize).toBe(-3);
+    expect(st.closedTradeRecords.map((t) => [t.entryId, t.exitId])).toEqual([["L", "S"]]);
+  });
+
   it("without the setting the close pass does nothing", () => {
     const st = new StrategyState();
     st.processFills(99, 101, 98, 0);
@@ -10238,6 +10343,15 @@ describe("StrategyState entry margin: orders the account cannot margin", () => {
       ["Close entry(s) order A", "", 50],
       [null, "Margin call", -8],
     ]);
+    // strategy.close() after the entry: the rejected reversal takes it along, the long stays
+    // (margin-reversal-close-after.json).
+    const after = setup();
+    after.entry("S", "short", 100);
+    after.close("A");
+    after.processFills(10.5, 10.6, 10.4, 2, NaN, 10.5);
+    expect(after.posSize).toBe(50);
+    expect(after.closedTradeRecords).toEqual([]);
+    expect(after.pendingCloses).toHaveLength(0);
   });
 
   it("cancels a resting limit entry once its own size costs more than the equity at a close", () => {

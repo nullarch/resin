@@ -79,12 +79,15 @@ interface EntryBinding {
 // its pending order — the last call wins"); a close for another id is another order even from the
 // same statement (its key holds the exit id). `site` numbers the statement (codegen; 0 when the
 // caller names none), `id` is the entry id, null for close_all, whose `qty` is Infinity: it closes
-// what is left. `seq` is its orderSeq (see positionAfterPlacedMarketOrders).
+// what is left. `side` is the order's direction, fixed when it is placed: -1 (a sell) against a
+// long, 1 against a short (see fillPendingClose). `seq` is its orderSeq (see
+// positionAfterPlacedMarketOrders, fillMarketOrders).
 interface PendingClose {
   site: number;
   id: string | null;
   qty: number;
   comment: string;
+  side: number;
   seq: number;
 }
 
@@ -522,14 +525,18 @@ export class StrategyState {
   // 마켓 주문은 다음 바 open에서 반드시 소진(체결 또는 취소)되지만, limit/stop 주문(C166 넷째
   // 슬라이스)은 가격 조건 미충족 시 **바를 넘어 이월**된다(pine2py _pending_orders 존속과 동형 —
   // 취소 수단은 cancel/cancel_all, 같은 id 재호출은 주문 수정).
-  // The unfilled strategy.entry() orders, in placement order (a modification keeps its place).
+  // The unfilled strategy.entry() orders, in placement order (a modification keeps its place, unless
+  // it turns an order resting from an earlier bar into a market order; see entry()).
   pendingEntries: PendingEntry[];
   // Reused by processFills/processFillsAtClose to order one bar's entry fills without allocating.
   private entryScratch: PendingEntry[];
+  // Reused by fillMarketOrders for the market entry orders of one fill moment.
+  private marketScratch: PendingEntry[];
   // Reused by closeAt to collect one closing order's closed trades before they are booked.
   private closedScratch: ClosedTradeRecord[];
-  // Counts order placements (entry orders and close orders); orders placed on one bar are walked
-  // in this order (positionAfterPlacedMarketOrders).
+  // Counts order placements (entry, close and strategy.order() orders); orders placed on one bar
+  // are walked in this order (positionAfterPlacedMarketOrders) and their market orders fill in it
+  // (fillMarketOrders).
   orderSeq: number;
   // The unfilled strategy.close()/close_all() orders, in placement order.
   pendingCloses: PendingClose[];
@@ -577,6 +584,8 @@ export class StrategyState {
   // bar — only those orders are "created on a bar's close" and get the close pass. processFills
   // clears it at every bar's open. (Entry orders and exit legs carry their own flag.)
   orderPlacedThisBar: boolean;
+  // The slot's orderSeq, as PendingEntry.seq (see fillMarketOrders).
+  orderSlotSeq: number;
 
   // strategy.risk.allow_entry_in(value)(C309) — "all"|"long"|"short" 방향 제한. entry()의
   // 체결 시점(processFills)에서만 소비 — 콜타임이 아니라 체결 시점에 검사해야 그 사이 방향이
@@ -747,6 +756,7 @@ export class StrategyState {
     this.orderOcaName = "";
     this.orderOcaType = "none";
     this.orderPlacedThisBar = false;
+    this.orderSlotSeq = 0;
     this.allowedDirection = "all";
     this.maxIntradayFilledOrders = NaN;
     this.intradayFilledCount = 0;
@@ -764,6 +774,7 @@ export class StrategyState {
     this.consLossDayStartRealizedPnl = NaN;
     this.consLossLimitReached = false;
     this.entryScratch = [];
+    this.marketScratch = [];
     this.closedScratch = [];
   }
 
@@ -2017,6 +2028,15 @@ export class StrategyState {
     // two stop entries resting together, and TradingView reverses at whichever the price reaches.
     const ocaGroup = StrategyState.ocaName(ocaName);
     if (existing !== undefined) {
+      // An order resting from an earlier bar that this call turns into a market order is a market
+      // order placed here: it takes its place among this bar's market orders where the call stands
+      // (fillMarketOrders). The oracle keys its market book by id and queues an order that was not
+      // in it at the back (`_add_order`: "the market book fills in insertion order").
+      if (!existing.placedThisBar && !priceBased) {
+        existing.seq = ++this.orderSeq;
+        this.removePendingEntry(existing);
+        this.pendingEntries.push(existing);
+      }
       existing.direction = direction;
       existing.qty = qty;
       existing.qtyAuto = qtyAuto;
@@ -2163,6 +2183,11 @@ export class StrategyState {
     const cmt = comment ?? "";
     if (this.orderPending) {
       if (this.orderOrderId === id) {
+        // A resting order turned into a market order joins this bar's market orders where the call
+        // stands, as a re-issued entry does (see entry()).
+        if (!this.orderPlacedThisBar && Number.isNaN(limit ?? NaN) && Number.isNaN(stop ?? NaN)) {
+          this.orderSlotSeq = ++this.orderSeq;
+        }
         this.orderQty = qty;
         this.orderQtyAuto = qtyAuto;
         this.orderDirection = direction;
@@ -2177,6 +2202,7 @@ export class StrategyState {
     }
     this.orderPlacedThisBar = true;
     this.orderPending = true;
+    this.orderSlotSeq = ++this.orderSeq;
     this.orderOrderId = id;
     this.orderDirection = direction;
     this.orderQty = qty;
@@ -2443,14 +2469,16 @@ export class StrategyState {
   // that statement already placed for this id on this bar (every pending close order was placed on
   // this bar: processFills consumes them).
   private queueClose(site: number, id: string | null, qty: number, comment: string): void {
+    const side = this.posSize > 0 ? -1 : 1;
     for (const c of this.pendingCloses) {
       if (c.site === site && c.id === id) {
         c.qty = qty;
         c.comment = comment;
+        c.side = side;
         return;
       }
     }
-    this.pendingCloses.push({ site, id, qty, comment, seq: ++this.orderSeq });
+    this.pendingCloses.push({ site, id, qty, comment, side, seq: ++this.orderSeq });
   }
 
   // strategy.close_all() — id 무관 전량 마켓 청산 주문 큐잉(C168). pine2py close_all()의 콜타임
@@ -2714,9 +2742,8 @@ export class StrategyState {
   //   because another entry filled at this open, is filled likewise (a pyramid stack);
   // - an entry reversing a position a market entry opened at this same open is margined on both legs
   //   at once, the closing one not freed first ("Verified with a live TradingView probe").
-  // Not covered: the oracle walks this bar's market orders in placement order, so a strategy.close()
-  // placed after a reversing entry is cancelled with it; resin fills the close first.
-  // Repros: resin-harness state/repros/mixed-seed-50.json (a pyramid add at 100% percent_of_equity
+  // A rejected reversing entry takes the closes of the old position placed after it along
+  // (dropReversedCloses). Repros: resin-harness state/repros/mixed-seed-50.json (a pyramid add at 100% percent_of_equity
   // never fills), qtyType-seed-81.json (an entry sized at the close, the open above it),
   // margin-reversal-rejected.json (a reversal rejected whole, the long kept) and
   // margin-reversal-leg.json (the same short after a strategy.close() fills, then trimmed).
@@ -2771,20 +2798,18 @@ export class StrategyState {
     const cursor = this.coofCursor;
     const marketPrice = cursor >= 0 ? this.barPath[cursor]! : openPrice;
     this.walkNode = this.openNode();
-    const closedBefore = this.closedTrades;
-    if (this.pendingCloses.length > 0) this.fillPendingCloses(marketPrice, barIndex, barTimeMs);
     // The exit legs bound to entries filled on earlier bars are judged over the path from the open;
     // the legs an entry fill of this bar binds are judged after that fill.
     this.queueExitLegs(false, 0);
     // The market orders, and the orders whose level the open is already past, fill at the open, all
-    // before any intrabar price. The legs their fills bind are judged once they are all done (a
-    // second market entry meets the position the first one opened, not the exit's close; repro
-    // resin-harness state/repros/mixed-seed-475.json).
-    // At the chart bar's open each entry is margined before it fills (entryMarginRejected); the
-    // close above is what `closeFilled` records.
+    // before any intrabar price: the market orders first, in the order the script placed them
+    // (fillMarketOrders), then the entry orders the open has crossed. The legs their fills bind are
+    // judged once they are all done (a second market entry meets the position the first one opened,
+    // not the exit's close; repro resin-harness state/repros/mixed-seed-475.json).
+    // At the chart bar's open each entry is margined before it fills (entryMarginRejected).
     const gate = chartOpen ? this.openGate : null;
-    if (gate !== null) gate.closeFilled = this.closedTrades > closedBefore;
     const due = this.dueEntries(openPrice, high, low);
+    this.fillMarketOrders(marketPrice, barIndex, barTimeMs, gate);
     let i = 0;
     for (; i < due.length && due[i]!.pathLeg === 0; i++) {
       if (this.pendingEntries.includes(due[i]!)) this.fillPendingEntry(due[i]!, due[i]!.fillPrice, barIndex, barTimeMs, gate);
@@ -2801,11 +2826,10 @@ export class StrategyState {
     this.runExitLegs(0, barIndex, barTimeMs, false);
     this.queueExitLegs(true, 0);
     this.runExitLegs(0, barIndex, barTimeMs, false);
-    // order 넷팅 주문(C169)은 같은 경로 지점의 entry 다음에 판정한다 — 청산 계열 먼저 원칙(기존 순서
-    // 불변) + 같은 지점에서 entry와 order가 둘 다 체결되면 entry가 만든 포지션에 대해 order가
-    // 넷팅한다(고정 슬롯 모델의 결정론적 순서 — pine2py는 _pending_orders 삽입 순서, TV 실측 미검증
-    // 가설 DIVERGENCES #72). 가격 판정은 entry와 동일한 directionalFillPrice(마켓=open,
-    // limit/stop=조건 충족 시 체결·미충족 시 이월, 갭 오픈 or-better #69 (a) 축).
+    // A market strategy.order() has filled among the market orders above (fillMarketOrders). One
+    // whose level the open is already past fills after the entry orders the open crossed (resin's
+    // single slot; not verified against the oracle's book order). 가격 판정은 entry와 동일한
+    // directionalFillPrice(limit/stop=조건 충족 시 체결·미충족 시 이월, 갭 오픈 or-better #69 (a) 축).
     let orderFill = NaN;
     let orderSeg = -1;
     if (this.orderPending) {
@@ -2893,7 +2917,7 @@ export class StrategyState {
   processFillsAtClose(closePrice: number, barIndex: number = NaN, barTimeMs: number = NaN): void {
     if (!this.processOrdersOnClose) return;
     this.fillMoment++;
-    if (this.pendingCloses.length > 0) this.fillPendingCloses(closePrice, barIndex, barTimeMs);
+    this.fillMarketOrders(closePrice, barIndex, barTimeMs, "close");
     if (this.pendingEntries.length > 0) this.fillPendingEntriesAtClose(closePrice, barIndex, barTimeMs);
     if (this.orderPending && this.orderPlacedThisBar) {
       const orderFill = this.directionalFillPrice(
@@ -2905,23 +2929,100 @@ export class StrategyState {
     this.fillExitLegsAtClose(closePrice, barIndex, barTimeMs);
   }
 
-  // Fills the pending strategy.close()/close_all() market orders at `fillPrice`, in placement order,
-  // each slipped against the position (closing a long sells). Each fills the quantity it was placed
-  // for, FIFO (closeAt), while a position is left: an earlier close of the bar may have consumed the
-  // trades of its id, and it then closes the next oldest ones (the oracle fills a close order against
-  // whatever position is open, as a close only ever shrinks it). Repros: resin-harness
-  // state/repros/mixed-seed-40.json, mixed-seed-164.json (strategy.close("B") and strategy.close("P")
-  // on one bar: both fill).
-  private fillPendingCloses(fillPrice: number, barIndex: number, barTimeMs: number): void {
-    const closes = this.pendingCloses;
-    this.pendingCloses = [];
-    for (const c of closes) {
-      if (this.posSize === 0) break;
-      this.beginOrder();
-      this.closeAt(
-        this.slipped(fillPrice, this.posSize > 0 ? -1 : 1), c.qty, c.comment, barIndex,
-        StrategyState.pendingCloseExitId(c), barTimeMs, c.id,
-      );
+  // Fills the market orders waiting for this fill moment at `price` — the strategy.entry() and
+  // strategy.order() orders without a level, and the strategy.close()/close_all() orders — one after
+  // the other in the order the script placed them (orderSeq), each meeting the position the one
+  // before left. `price` is the chart bar's open (or a calc_on_order_fills pass's node; `gate` the
+  // open's margin gate, null on a sub-bar), or the close on the process_orders_on_close pass (`gate`
+  // "close": only the orders placed on this bar take part). So a strategy.close() placed after an
+  // entry that reverses the position finds it reversed and fills nothing (fillPendingClose), and one
+  // placed before the entry closes its trades first, the entry then meeting what is left. The oracle
+  // walks one market book in insertion order at the open and on the close pass (tier 2,
+  // `_process_at_bar_open`, `process_orders_at_close`; `_add_order`: "the market book fills in
+  // insertion order"), the order it measured TradingView reading the position a new order meets
+  // (`_size_flippable_by_entry`: "with strategy.close(qty_percent=100) called before the entry the
+  // flip is zero ..., with the same close called after it the flip is the full position ... the two
+  // probes differ only in script order"). The orders the open has crossed fill after these
+  // (fillOnPath). Repros: resin-harness state/repros/mixed-seed-478.json (a close placed after a
+  // reversing entry: one commission, the entry's), mixed-seed-474.json (the reversal closes both
+  // entries, the close of one of them fills nothing).
+  private fillMarketOrders(
+    price: number, barIndex: number, barTimeMs: number, gate: OpenMarginGate | "close" | null,
+  ): void {
+    const atClose = gate === "close";
+    const entries = this.marketScratch;
+    entries.length = 0;
+    for (const e of this.pendingEntries) {
+      if (!StrategyState.isPriceBased(e) && (!atClose || e.placedThisBar)) entries.push(e);
+    }
+    const closes = this.pendingCloses.length > 0 ? this.pendingCloses.slice() : null;
+    const nCloses = closes === null ? 0 : closes.length;
+    let slot = this.orderPending && Number.isNaN(this.orderLimit) && Number.isNaN(this.orderStop) &&
+      (!atClose || this.orderPlacedThisBar);
+    // pendingEntries and pendingCloses both run in placement order.
+    let c = 0;
+    let k = 0;
+    for (;;) {
+      const cs = c < nCloses ? closes![c]!.seq : Infinity;
+      const es = k < entries.length ? entries[k]!.seq : Infinity;
+      const os = slot ? this.orderSlotSeq : Infinity;
+      if (cs < es && cs < os) {
+        const close = closes![c++]!;
+        const at = this.pendingCloses.indexOf(close);
+        if (at < 0) continue; // dropped with a rejected reversal (fillPendingEntry)
+        this.pendingCloses.splice(at, 1);
+        this.fillPendingClose(close, price, barIndex, barTimeMs, gate);
+      } else if (es < os) {
+        const e = entries[k++]!;
+        // An OCA sibling's fill may have cancelled it.
+        if (this.pendingEntries.includes(e)) this.fillPendingEntry(e, price, barIndex, barTimeMs, gate);
+      } else if (slot) {
+        slot = false;
+        this.fillPendingOrder(price, barIndex, barTimeMs);
+      } else {
+        break;
+      }
+    }
+    entries.length = 0;
+  }
+
+  // Fills the close order `c` at `fillPrice`, slipped against the position (closing a long sells):
+  // the quantity it was placed for, FIFO (closeAt). An earlier close of the bar may have consumed the
+  // trades of its id; it then closes the next oldest ones (the oracle fills a close order against
+  // whatever position is open, as a close only ever shrinks it; repros resin-harness
+  // state/repros/mixed-seed-40.json, mixed-seed-164.json: strategy.close("B") and strategy.close("P")
+  // on one bar both fill). A position that is gone, or that an entry placed before the close has
+  // reversed, is left alone: the order would add to it (the oracle's `_fill_order` books nothing for
+  // a close order on the position's own side). At the chart bar's open a close arms the margin gate's
+  // reversal-leg exception for the entries after it, as the oracle's `reversal_close_filled` (set
+  // for every close its bar-open loop reaches while the bar started with a position).
+  private fillPendingClose(
+    c: PendingClose, fillPrice: number, barIndex: number, barTimeMs: number,
+    gate: OpenMarginGate | "close" | null,
+  ): void {
+    if (gate !== null && gate !== "close" && gate.startSize !== 0) gate.closeFilled = true;
+    if (this.posSize === 0 || Math.sign(this.posSize) === c.side) return;
+    this.beginOrder();
+    this.closeAt(
+      this.slipped(fillPrice, c.side), c.qty, c.comment, barIndex,
+      StrategyState.pendingCloseExitId(c), barTimeMs, c.id,
+    );
+  }
+
+  // A reversing entry is itself the order that closes the position it meets. When the open's margin
+  // gate rejects it, the closes of that position still waiting behind it are dropped with it: the
+  // oracle's `_cancel_same_bar_reversal_closes` ("If that entry is rejected at its fill, TV does not
+  // then fill a same-bar strategy.close for the old position as a fallback"), for close_all and for
+  // a close of an id the position holds.
+  private dropReversedCloses(sign: number): void {
+    for (let i = 0; i < this.pendingCloses.length; ) {
+      const c = this.pendingCloses[i]!;
+      const id = c.id;
+      if (c.side === sign && (id === null || this.openTrades.some((t) => t.entryId === id))) {
+        this.pendingCloses.splice(i, 1);
+      } else {
+        i++;
+      }
     }
   }
 
@@ -2963,13 +3064,12 @@ export class StrategyState {
     return due;
   }
 
-  // The close pass (processFillsAtClose) for the entry orders placed on this bar: the market ones
-  // first, then the price-based ones the close has reached, each group in placement order, as the
+  // The close pass (processFillsAtClose) for the price-based entry orders placed on this bar that the
+  // close has reached, in placement order, after the market orders (fillMarketOrders), as the
   // oracle's close pass collects its candidates.
   private fillPendingEntriesAtClose(closePrice: number, barIndex: number, barTimeMs: number): void {
     const due = this.entryScratch;
     due.length = 0;
-    for (const e of this.pendingEntries) if (e.placedThisBar && !StrategyState.isPriceBased(e)) due.push(e);
     for (const e of this.pendingEntries) if (e.placedThisBar && StrategyState.isPriceBased(e)) due.push(e);
     for (const e of due) {
       if (!this.pendingEntries.includes(e)) continue; // cancelled by an OCA sibling's fill
@@ -3031,7 +3131,10 @@ export class StrategyState {
     const held = this.posSize !== 0 && this.posSize > 0 !== sign > 0 ? Math.abs(this.posSize) : 0;
     const flip = Number.isNaN(e.flip) ? held : e.flip;
     if (!(qty + flip > 0)) return;
-    if (gate !== null && this.entryMarginRejected(gate, sign, sign * (qty + flip), fillPrice)) return;
+    if (gate !== null && this.entryMarginRejected(gate, sign, sign * (qty + flip), fillPrice)) {
+      if (gate !== "close" && held > 0) this.dropReversedCloses(sign);
+      return;
+    }
     const fillsBefore = this.fillCount;
     const closesAll = held > 0 && (flip === held || qty + flip >= held);
     const closeQty = held === 0 ? 0 : closesAll ? held : toUnits(qty + flip, this.lotsPerContract);
