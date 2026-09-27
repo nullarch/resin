@@ -13,7 +13,7 @@ import { in_seconds, from_seconds } from "../../src/runtime/timeframe";
 import { chartPointNew, chartPointFromIndex, chartPointFromTime, chartPointCopy, chartPointNow } from "../../src/runtime/drawing";
 import { logInfo, logWarning, logError, runtimeWarning, runtimeError } from "../../src/runtime/log";
 import { year, month, dayofmonth, dayofweek, hour, minute, second, weekofyear, tradingDayStart } from "../../src/runtime/datetime";
-import { ticker as syminfoTicker } from "../../src/runtime/syminfo";
+import { prefix as syminfoPrefix, ticker as syminfoTicker } from "../../src/runtime/syminfo";
 
 describe("Series", () => {
   it("get(0) returns the current bar after advance()", () => {
@@ -13009,6 +13009,31 @@ describe("syminfo.ticker(symbol)", () => {
 
   it("propagates na (null) straight through, matching the GOAL.md string-na=null convention", () => {
     expect(syminfoTicker(null)).toBe(null);
+  });
+});
+
+// syminfo.prefix(symbol): rn.txt "returns the exchange prefix of the symbol passed to it, e.g.
+// “NASDAQ” for “NASDAQ:AAPL”" (harness probe L52, repro state/repros/syminfo-prefix-fn.json).
+describe("syminfo.prefix(symbol)", () => {
+  it("returns the exchange part before the first colon", () => {
+    expect(syminfoPrefix("NASDAQ:AAPL")).toBe("NASDAQ");
+    expect(syminfoPrefix("CME_MINI:ES1!")).toBe("CME_MINI");
+    expect(syminfoPrefix("CME:ES1!:USD")).toBe("CME");
+  });
+
+  it("pairs with syminfo.ticker(symbol): prefix + ':' + ticker gives the symbol back", () => {
+    for (const s of ["NASDAQ:AAPL", "BINANCE:BTCUSDT", "CME:ES1!:USD"]) {
+      expect(`${syminfoPrefix(s)}:${syminfoTicker(s)}`).toBe(s);
+    }
+  });
+
+  it("returns an empty string when the symbol names no exchange (no colon)", () => {
+    expect(syminfoPrefix("AAPL")).toBe("");
+    expect(syminfoPrefix("")).toBe("");
+  });
+
+  it("propagates na (null)", () => {
+    expect(syminfoPrefix(null)).toBe(null);
   });
 });
 

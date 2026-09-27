@@ -27170,6 +27170,50 @@ describe("CodeGen syminfo.ticker(symbol) (C430)", () => {
   });
 });
 
+// syminfo.prefix(symbol), the call form of syminfo.prefix and syminfo.ticker(symbol)'s sibling:
+// rn.txt "returns the exchange prefix of the symbol passed to it, e.g. “NASDAQ” for
+// “NASDAQ:AAPL”" (harness probe L52, repro state/repros/syminfo-prefix-fn.json).
+describe("CodeGen syminfo.prefix(symbol)", () => {
+  it("emits syminfo.prefix(symbol) as an rt.syminfo.prefix nested call", () => {
+    const code = codegenSource('a = syminfo.prefix("NASDAQ:AAPL")');
+    expect(code).toBe('var a = rt.syminfo.prefix("NASDAQ:AAPL");');
+  });
+
+  it("E2E: the prefix of an input.symbol, and the symbol rebuilt from prefix and ticker (the corpus pattern `\" :INS: \" + syminfo.prefix(syminfo.ticker)` transpiles too)", () => {
+    const source = [
+      'sym = input.symbol("NASDAQ:AAPL", "Symbol")',
+      'a = syminfo.prefix(sym) == "NASDAQ" ? 1.0 : 0.0',
+      "b = ticker.new(syminfo.prefix(sym), syminfo.ticker(sym)) == sym ? 1.0 : 0.0",
+      'msg = " :INS: " + syminfo.prefix(syminfo.ticker)',
+      'plot(a, "A")',
+      'plot(b, "B")',
+      'plot(str.length(msg), "M")',
+    ].join("\n");
+    const result = transpile(source);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const close = [1, 2, 3];
+    const data: OHLCVData = { open: close, high: close, low: close, close, volume: close };
+    const { plots } = run(
+      result.code,
+      result.varSlots,
+      result.taSlotCount,
+      data,
+      result.fnVarSlotCount,
+      result.historySlotCount,
+      result.taScratchSize,
+      {},
+      result.plotTitles,
+    );
+    expect(plots).toEqual([
+      { title: "A", values: [1, 1, 1] },
+      { title: "B", values: [1, 1, 1] },
+      { title: "M", values: [7, 7, 7] },
+    ]);
+  });
+});
+
 // ── request.dividends/request.splits(신규, C239 next_hint 1순위 — corpus 실측 2건).
 // pine2py wavealgo/__init__.py L122-128 request_splits/request_dividends(ticker=None, field=None,
 // gaps=False, lookahead=False, **kwargs)가 인자 전부 무시하고 항상 0.0을 반환하는 순수 스텁이라

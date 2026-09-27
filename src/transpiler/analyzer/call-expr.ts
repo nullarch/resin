@@ -6626,6 +6626,18 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     // (TA_REGISTRY.timeframe_change, runtime/calendar.ts).
     analyzeStatefulCall(expr, "timeframe_change", TA_REGISTRY.timeframe_change!, prog, scope);
     prog.usesCalendar = true;
+  } else if (namespace === "syminfo" && method === "prefix") {
+    // syminfo.prefix(symbol): the call form of syminfo.prefix, a sibling of syminfo.ticker(symbol)
+    // below. rn.txt (May 2022) "New functions were added: syminfo.prefix() - returns the exchange
+    // prefix of the symbol passed to it, e.g. “NASDAQ” for “NASDAQ:AAPL”. syminfo.ticker() -
+    // returns the ticker of the symbol passed to it without the exchange prefix". One argument,
+    // like its sibling.
+    if (expr.args.length !== 1) {
+      prog.errors.push(
+        `'syminfo.prefix' call argument count mismatch: requires 1, got ${expr.args.length} (L${expr.line}:${expr.col})`,
+      );
+    }
+    prog.builtinCalls.set(expr, "syminfo.prefix");
   } else if (namespace === "syminfo" && method === "ticker") {
     // syminfo.ticker(symbol)(신규, C430 — next_hint(C429): wild 2건 6c0c2a7c04ab.pine/
     // a22502c376a6.pine, 둘 다 `ticker1 = syminfo.ticker(sym1)` 형태). bare `syminfo.ticker`

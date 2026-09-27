@@ -307,6 +307,7 @@ export const rt = {
   // "syminfo.ticker"라 codegen의 범용 `rt.${name}(...)` 방출이 자동으로 이 중첩 경로를 낸다.
   syminfo: {
     ticker: syminfoFns.ticker,
+    prefix: syminfoFns.prefix,
   },
   // ticker.*(8종, C235 — ROADMAP P3 next_hint 1순위) — array/map/matrix/input/timeframe과 동일한
   // 중첩 네임스페이스 원칙(builtinCalls 값이 "ticker.new"처럼 점 경로라 codegen의 범용

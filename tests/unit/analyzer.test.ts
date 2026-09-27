@@ -6236,6 +6236,27 @@ describe("Analyzer", () => {
     );
   });
 
+  it("supports syminfo.prefix(symbol) called as a function (rn.txt: returns the exchange prefix of the symbol passed to it; harness probe L52)", () => {
+    const prog = analyzeSource('x = syminfo.prefix("NASDAQ:AAPL")');
+    expect(prog.errors).toEqual([]);
+    const stmt = prog.script.body[0] as Assignment;
+    expect(prog.builtinCalls.get(stmt.value as CallExpr)).toBe("syminfo.prefix");
+  });
+
+  it("errors when syminfo.prefix() is called with other than one argument", () => {
+    for (const src of ["x = syminfo.prefix()", 'x = syminfo.prefix("A", "B")']) {
+      const prog = analyzeSource(src);
+      expect(prog.errors.some((e) => e.includes("'syminfo.prefix' call argument count mismatch") && e.includes("requires 1"))).toBe(
+        true,
+      );
+    }
+  });
+
+  it("keeps the bare syminfo.prefix property apart from the call form", () => {
+    const prog = analyzeSource('x = syminfo.prefix + ":" + syminfo.prefix(syminfo.tickerid)');
+    expect(prog.errors).toEqual([]);
+  });
+
   it("allows syminfo.ticker(sym) inside a conditional if-body (stateless call, no HoistingPass constraint)", () => {
     const prog = analyzeSource('if close > open\n    x = syminfo.ticker("NASDAQ:AAPL")');
     expect(prog.errors).toEqual([]);

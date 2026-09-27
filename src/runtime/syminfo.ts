@@ -28,3 +28,15 @@ export function ticker(symbol: string | null): string | null {
   const idx = symbol.indexOf(":");
   return idx === -1 ? symbol : symbol.slice(idx + 1);
 }
+
+// syminfo.prefix(symbol) — the call form of syminfo.prefix, ticker()'s counterpart: rn.txt
+// "syminfo.prefix() - returns the exchange prefix of the symbol passed to it, e.g. “NASDAQ” for
+// “NASDAQ:AAPL”". From an "EXCHANGE:TICKER" string, the part before the colon, so that
+// ticker.new(prefix(s), ticker(s)) gives s back. With no colon the string names no exchange and
+// the result is "" (inferred, like ticker()'s no-colon case: the manual only describes a
+// prefixed symbol). A null (na) string propagates.
+export function prefix(symbol: string | null): string | null {
+  if (symbol === null) return null;
+  const idx = symbol.indexOf(":");
+  return idx === -1 ? "" : symbol.slice(0, idx);
+}
