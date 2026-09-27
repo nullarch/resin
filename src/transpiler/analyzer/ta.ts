@@ -532,10 +532,9 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // series length stays rejected while the oracle's machine for it is disputed (its running weighted
   // sum assumes the length never changes, where the manual's pine_cog recomputes each bar).
   cog: { dispatch: "ta", displayName: "ta.cog", argCount: 2, lengthArgIndex: 1, conditionalForbidden: true, rtPath: "rt.ta.cog" },
-  // ta.correlation(source1, source2, length) — 피어슨 상관계수. pine2py wavealgo/ta/correlation.py
-  // 소스 대조 결과 sum_x/sum_y/sum_xy/sum_x2/sum_y2 다섯 러닝 합계로만 구성됨(runtime/ta.ts
-  // correlation() 주석 참조) — vwma(C29, 두 신호 병렬 버퍼)와 stdev(C36, sumSq 항등식)를 합친 형태로
-  // codegen 특수 분기 없이 구현. length가 x/yBuffer 고정폭 순환 버퍼 크기를 결정하므로 sma와 동일하게
+  // ta.correlation(source1, source2, length) — five math.sum windows (both sources, their product
+  // and their squares; runtime/ta.ts correlation(), the oracle's lib/ta.py correlation), with no
+  // codegen special case. length가 합계 창의 고정폭 순환 버퍼 크기를 결정하므로 sma와 동일하게
   // lengthArgIndex: 2(0-based 세 번째 인자, series 하드 에러). source1/source2는 버퍼 크기와 무관해
   // series 허용(linreg의 offset과 동일한 이유로 lengthArgIndex 대상 아님). A series length takes
   // runtime/ta.ts correlationVarLen.

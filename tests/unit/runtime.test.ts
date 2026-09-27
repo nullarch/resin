@@ -4584,16 +4584,11 @@ describe("ta.cog", () => {
   });
 });
 
-// ta.correlation(source1, source2, length) — Pearson correlation coefficient. pine2py wavealgo/ta/
-// correlation.py: five running sums (Σx,Σy,Σxy,Σx²,Σy²) over a fixed window, numerator=n*Σxy-Σx*Σy,
-// denom_x=n*Σx²-(Σx)², denom_y=n*Σy²-(Σy)², result=numerator/sqrt(denom_x*denom_y). This is ta.vwma's
-// "two signals, parallel buffers" shape (C29) combined with ta.variance/ta.stdev's sum-of-squares
-// identity (C36) — no positional weighting involved. denom_x<=0 or denom_y<=0 (not just ==0) guards
-// both an exactly-flat window and floating-point cancellation pushing a near-zero denominator slightly
-// negative, ported byte-for-byte from pine2py (same class of pitfall as ta.variance's clamp, C36).
-// scratch/probe_correlation.mjs cross-checked this against a literal brute-force port of
-// correlation.py (sample10 + perfectly-(anti)correlated + exact/near-constant windows + embedded-NaN
-// gaps in each signal independently + length=1 degenerate + 5,000-sample fuzz per length).
+// ta.correlation(source1, source2, length) — five math.sum windows (Σx, Σy, Σxy, Σx², Σy²), each
+// skipping its own na bars; cov = Σxy/n - mx*my is 0 within Pine's tolerance, else cov / sqrt(vx*vy)
+// with each variance clamped at 0 (oracle lib/ta.py correlation; tier 1 ta_244_correlation_exact, see
+// runtime/ta.ts correlation()). With no na and a varying window this is the textbook coefficient, which
+// the sample10 and brute-force cases below still check.
 describe("ta.correlation", () => {
   it("returns NaN while the window is still filling (length=3)", () => {
     const state = {};
@@ -4641,50 +4636,43 @@ describe("ta.correlation", () => {
     expect(correlation(stateB, 5, 9, 2)).toBeNaN(); // stateB's own window still filling
   });
 
-  it("returns NaN when source1's window contains a NaN (poison window)", () => {
+  it("each sum skips its own na bars, so an na source misaligns the windows (tier 1 ta_244_correlation_exact k6)", () => {
+    // TradingView logs ta.correlation(g, b, 4) with g = bar_index % 3 == 0 ? na : 100 + bar_index % 4
+    // and b = bar_index at exactly -36.51483716701107 (bar 8) and -110.27480824437345 (bar 9): the x
+    // sums cover the last 4 non-na bars of g, the y sums the last 4 bars, so the value leaves [-1, 1].
     const state = {};
-    correlation(state, 10, 1, 3);
-    correlation(state, NaN, 2, 3);
-    expect(correlation(state, 20, 3, 3)).toBeNaN(); // window still has the NaN at get(2)
-    expect(correlation(state, 30, 4, 3)).toBeNaN(); // x window=[NaN,20,30]
+    const out: number[] = [];
+    for (let i = 0; i < 10; i++) out.push(correlation(state, i % 3 === 0 ? NaN : 100 + (i % 4), i, 4));
+    expect(out.slice(0, 5).every((r) => Number.isNaN(r))).toBe(true); // g has 4 non-na values from bar 5
+    expect(out[8]).toBe(-36.51483716701107);
+    expect(out[9]).toBe(-110.27480824437345);
   });
 
-  it("returns NaN when source2's window contains a NaN (poison window)", () => {
-    const state = {};
-    correlation(state, 1, 10, 3);
-    correlation(state, 2, NaN, 3);
-    expect(correlation(state, 3, 20, 3)).toBeNaN(); // window still has the NaN at get(2)
-    expect(correlation(state, 4, 30, 3)).toBeNaN(); // y window=[NaN,20,30]
-  });
-
-  it("returns NaN when source1 is constant within the window (denom_x<=0)", () => {
-    const state = {};
-    correlation(state, 5, 1, 3);
-    correlation(state, 5, 2, 3);
-    expect(correlation(state, 5, 3, 3)).toBeNaN();
-  });
-
-  it("returns NaN when source2 is constant within the window (denom_y<=0)", () => {
-    const state = {};
-    correlation(state, 1, 5, 3);
-    correlation(state, 2, 5, 3);
-    expect(correlation(state, 3, 5, 3)).toBeNaN();
-  });
-
-  it("length=1 degenerate case: denom is always exactly 0 -> always NaN", () => {
-    const state = {};
-    expect(correlation(state, 5, 9, 1)).toBeNaN();
-    expect(correlation(state, -3, 2, 1)).toBeNaN();
-  });
-
-  it("keeps returning NaN until the NaN spike is fully evicted from a longer window (length=4)", () => {
+  it("an na bar neither enters nor evicts: the next bar is a value, not a poisoned window (length=4)", () => {
     const state = {};
     correlation(state, 1, 10, 4);
     correlation(state, 2, 20, 4);
     correlation(state, 3, 30, 4);
-    expect(correlation(state, NaN, 40, 4)).toBeNaN(); // x buffer now [1,2,3,NaN]
-    expect(correlation(state, 4, 41, 4)).toBeNaN(); // NaN slot not due for eviction yet
-    expect(correlation(state, 5, 42, 4)).toBeNaN();
+    expect(correlation(state, NaN, 40, 4)).toBeNaN(); // Σx holds 3 non-na values: still warming up
+    // Σx over 1,2,3,4 but Σy over 20,30,40,41 and Σxy over 10,40,90,164.
+    expect(correlation(state, 4, 41, 4)).toBeCloseTo(-0.6163437528425998, 12);
+  });
+
+  it("is 0 when either source is constant: the covariance is within tolerance of zero (tier 1 ta_244 k2)", () => {
+    const a = {};
+    correlation(a, 5, 1, 3);
+    correlation(a, 5, 2, 3);
+    expect(correlation(a, 5, 3, 3)).toBe(0);
+    const b = {};
+    correlation(b, 1, 5, 3);
+    correlation(b, 2, 5, 3);
+    expect(correlation(b, 3, 5, 3)).toBe(0);
+  });
+
+  it("length=1 is 0 from the first bar: the covariance cancels exactly (tier 1 ta_244 k3)", () => {
+    const state = {};
+    expect(correlation(state, 5, 9, 1)).toBe(0);
+    expect(correlation(state, -3, 2, 1)).toBe(0);
   });
 
   it("matches a from-scratch brute-force cross-check (literal pine2py correlation.py port) with independent x/y sequences (length=4)", () => {

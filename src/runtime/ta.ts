@@ -2285,105 +2285,57 @@ export function fixnan(state: FixnanState, value: number): number {
 }
 
 export interface CorrelationState {
-  xBuffer?: number[];
-  yBuffer?: number[];
-  writeIdx?: number;
-  sumX?: number;
-  sumY?: number;
-  sumXY?: number;
-  sumX2?: number;
-  sumY2?: number;
+  sx?: SmaState; // math.sum(source1, length)
+  sy?: SmaState; // math.sum(source2, length)
+  sxy?: SmaState; // math.sum(source1 * source2, length)
+  sx2?: SmaState; // math.sum(source1 * source1, length)
+  sy2?: SmaState; // math.sum(source2 * source2, length)
 }
 
-// ta.correlation(source1, source2, length) - Pearson correlation coefficient over a fixed window.
-// pine2py wavealgo/ta/correlation.py recomputes five running sums (Σx, Σy, Σxy, Σx², Σy²) from a
-// fresh list window every bar (O(length)): numerator = n*Σxy - Σx*Σy, denom_x = n*Σx² - (Σx)²,
-// denom_y = n*Σy² - (Σy)², result = numerator/sqrt(denom_x*denom_y). This is ta.vwma's "two signals,
-// parallel running sums" shape (C29) combined with ta.variance/ta.stdev's "sum of squares alongside
-// sum" identity (C36) — two ta.sma-style circular buffers (one per signal) plus a cross-product
-// running sum (Σxy) added alongside each signal's own sum-of-squares, all maintained O(1) incremental
-// instead of pine2py's O(length) recompute (GOAL.md "바당 히스토리 재계산 금지"). Window NaN detection
-// mirrors ta.stdev's recompute-on-pollution: any NaN in either signal poisons both denominators, so a
-// single hasNaN scan covers both x and y in lockstep. denom_x<=0 or denom_y<=0 guards against both the
-// exact-zero case (a perfectly flat window, mathematically undefined correlation) and floating-point
-// cancellation pushing a near-zero denominator slightly negative (Cauchy-Schwarz guarantees denom>=0
-// in exact arithmetic, same class of artifact as ta.stdev's variance clamp, C36) — pine2py's own guard
-// is `<=0`, not `==0`, so this is ported byte-for-byte rather than narrowed. Verified against a literal
-// port of correlation.py via scratch/probe_correlation.mjs (sample10 + perfectly-correlated/
-// anti-correlated + exact-zero-variance + near-constant cancellation risk + embedded-NaN gaps in each
-// signal independently + length=1 degenerate + 5,000-sample fuzz per length) before implementing.
+// ta.correlation(source1, source2, length): the oracle's measured law (pynecore lib/ta.py
+// correlation, "Measured law (probes m557 ...)"), the same as correlationVarLen on a fixed length.
+// Five naSkipSum windows of `length` run every bar: both sources, their product and their squares.
+// cov = sxy / length - mx * my is 0 when within Pine's tolerance of zero (so a constant source and
+// length 1 are 0); otherwise cov / sqrt(vx * vy), each variance clamped at 0, na when that product
+// is 0. Each sum skips its own na bars, so with an na in one source the windows cover different
+// bars and the quotient leaves [-1, 1]: tier 1 ta_244_correlation_exact logs
+// ta.correlation(g, b, 4) = -110.27480824437345 on bar 9 for `g = bar_index % 3 == 0 ? na : a`,
+// and 0 for a constant source and for length 1 (TV "0/0/0/0/1/0"). The manual's remark ("`na`
+// values in the `source` series are ignored", ref_v6_ta_math.txt "ta.variance", the family's
+// wording) is per sum. resin used to keep pine2py's window: na while any na sat in either source
+// and a plain rolling sum (resin-harness state/repros/ta.stats-seed-1.json, bar 23:
+// ta.correlation(low, s2, 22) is 11.4696 on the oracle, na in resin).
 export function correlation(
   state: CorrelationState,
   x: number,
   y: number,
   length: number
 ): number {
-  length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조)
-  if (state.xBuffer === undefined) {
-    state.xBuffer = new Array(length).fill(NaN);
-    state.yBuffer = new Array(length).fill(NaN);
-    state.writeIdx = 0;
-    state.sumX = NaN;
-    state.sumY = NaN;
-    state.sumXY = NaN;
-    state.sumX2 = NaN;
-    state.sumY2 = NaN;
+  const len = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조)
+  if (state.sx === undefined) {
+    state.sx = {};
+    state.sy = {};
+    state.sxy = {};
+    state.sx2 = {};
+    state.sy2 = {};
   }
-  const xBuffer = state.xBuffer;
-  const yBuffer = state.yBuffer!;
-  const writeIdx = state.writeIdx!;
-  const oldX = xBuffer[writeIdx]!;
-  const oldY = yBuffer[writeIdx]!;
-  xBuffer[writeIdx] = x;
-  yBuffer[writeIdx] = y;
-  state.writeIdx = (writeIdx + 1) % length;
-
-  if (
-    Number.isNaN(x) ||
-    Number.isNaN(y) ||
-    Number.isNaN(oldX) ||
-    Number.isNaN(oldY) ||
-    Number.isNaN(state.sumX!)
-  ) {
-    let sx = 0;
-    let sy = 0;
-    let sxy = 0;
-    let sx2 = 0;
-    let sy2 = 0;
-    let hasNaN = false;
-    for (let i = 0; i < length; i++) {
-      const vx = xBuffer[i]!;
-      const vy = yBuffer[i]!;
-      if (Number.isNaN(vx) || Number.isNaN(vy)) {
-        hasNaN = true;
-        break;
-      }
-      sx += vx;
-      sy += vy;
-      sxy += vx * vy;
-      sx2 += vx * vx;
-      sy2 += vy * vy;
-    }
-    state.sumX = hasNaN ? NaN : sx;
-    state.sumY = hasNaN ? NaN : sy;
-    state.sumXY = hasNaN ? NaN : sxy;
-    state.sumX2 = hasNaN ? NaN : sx2;
-    state.sumY2 = hasNaN ? NaN : sy2;
-  } else {
-    state.sumX = state.sumX! - oldX + x;
-    state.sumY = state.sumY! - oldY + y;
-    state.sumXY = state.sumXY! - oldX * oldY + x * y;
-    state.sumX2 = state.sumX2! - oldX * oldX + x * x;
-    state.sumY2 = state.sumY2! - oldY * oldY + y * y;
+  const sx = naSkipSum(state.sx, x, len);
+  const sy = naSkipSum(state.sy!, y, len);
+  const sxy = naSkipSum(state.sxy!, x * y, len);
+  const sx2 = naSkipSum(state.sx2!, x * x, len);
+  const sy2 = naSkipSum(state.sy2!, y * y, len);
+  if (!(len >= 1) || Number.isNaN(sx) || Number.isNaN(sy) || Number.isNaN(sxy) || Number.isNaN(sx2) || Number.isNaN(sy2)) {
+    return NaN;
   }
-
-  if (Number.isNaN(state.sumX!)) return NaN;
-  const n = length;
-  const numerator = n * state.sumXY! - state.sumX! * state.sumY!;
-  const denomX = n * state.sumX2! - state.sumX! * state.sumX!;
-  const denomY = n * state.sumY2! - state.sumY! * state.sumY!;
-  if (denomX <= 0 || denomY <= 0) return NaN;
-  return numerator / Math.sqrt(denomX * denomY);
+  const mx = sx / len;
+  const my = sy / len;
+  const cov = sxy / len - mx * my;
+  if (cov >= -PINE_EPS && cov <= PINE_EPS) return 0;
+  const vx = sx2 / len - mx * mx;
+  const vy = sy2 / len - my * my;
+  const product = (vx > 0 ? vx : 0) * (vy > 0 ? vy : 0);
+  if (product === 0) return NaN;
+  return cov / Math.sqrt(product);
 }
 
 export interface MedianState {
