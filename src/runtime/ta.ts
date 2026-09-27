@@ -3662,37 +3662,60 @@ export function sum(state: SumState, value: number, length: number): number {
 }
 
 export interface RandomState {
-  state?: number; // xorshift32 32bit 상태 (0이면 무효 — mixSeed가 0을 1로 승격해 항상 보장)
+  // java.util.Random's 48-bit state as two 24-bit halves, so every step is exact in a double.
+  // Unset until the call site's first execution seeds it.
+  hi?: number;
+  lo?: number;
 }
 
-// xorshift32 — Marsaglia 표준 3-shift 변형. 32bit 부호 없는 산술 유지를 위해 매 단계 `>>> 0`.
-function xorshift32(x: number): number {
-  x ^= x << 13;
-  x ^= x >>> 17;
-  x ^= x << 5;
-  return x >>> 0;
+const RANDOM_MULT_HI = 0x5de; // 0x5DEECE66D, java.util.Random's multiplier, split at bit 24
+const RANDOM_MULT_LO = 0xece66d;
+const TWO_24 = 16777216;
+
+// java.util.Random(seed): the initial scramble (seed ^ 0x5DEECE66D) mod 2^48. The seed is an
+// "int" argument, so a fractional one is truncated; BigInt keeps a negative or large seed's
+// two's-complement low 48 bits exact.
+function randomSeed(state: RandomState, seed: number): void {
+  const s = (BigInt(Math.trunc(seed)) ^ 0x5deece66dn) & 0xffffffffffffn;
+  state.hi = Number(s >> 24n);
+  state.lo = Number(s & 0xffffffn);
 }
 
-// SplitMix32 스타일 믹싱 — 임의 float seed(음수/소수/큰 값 포함)를 잘 분산된 32bit 상태로 접는다.
-// xorshift는 low-order 상관관계에 약해 seed를 그대로 초기 상태로 쓰면 안 됨(표준 관행).
-function mixSeed(seed: number): number {
-  let h = (Math.trunc(seed) | 0) ^ 0x9e3779b9;
+// java.util.Random.next(bits): state = (0x5DEECE66D * state + 0xB) mod 2^48, then its top `bits`
+// bits. Each partial product stays below 2^49, exact in a double.
+function randomNext(state: RandomState, bits: number): number {
+  const lo = state.lo!;
+  const hi = state.hi!;
+  const p = RANDOM_MULT_LO * lo + 0xb;
+  const nextLo = p % TWO_24;
+  const nextHi = (RANDOM_MULT_HI * lo + RANDOM_MULT_LO * hi + Math.floor(p / TWO_24)) % TWO_24;
+  state.hi = nextHi;
+  state.lo = nextLo;
+  return Math.floor((nextHi * TWO_24 + nextLo) / 2 ** (48 - bits));
+}
+
+// The seed of a call site given none: TradingView uses the clock, resin the call-site slot, spread
+// by a SplitMix32-style mix, because java.util.Random seeded with neighbouring integers starts
+// with nearly equal draws (new Random(0) and new Random(1) both begin at 0.7309...).
+function mixSite(site: number): number {
+  let h = (Math.trunc(site) | 0) ^ 0x9e3779b9;
   h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
   h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
-  h ^= h >>> 16;
-  h = h >>> 0;
-  return h === 0 ? 1 : h; // xorshift는 0 상태에서 영원히 0만 냄 — 0 도달 시 1로 승격
+  return (h ^ (h >>> 16)) >>> 0;
 }
 
-// math.random(min=0, max=1, seed) — analyzer.ts TA_REGISTRY.random 주석 참조: pine2py는 Python
-// 표준 random(전역 Mersenne Twister)에 위임해 bit-parity 오라클 이식이 구조적으로 불가능한 첫
-// TA류 함수(alma의 sigma=0처럼 경계 하나가 아니라 값 도메인 전체) — pine2js는 콜사이트별 독립
-// xorshift32를 자체 채택했다(값 자체는 오라클/hand-verified 비교 대상 아님, LIMITATIONS.md).
-// seed가 na가 아니면 매 호출 그 값으로 상태를 재시드해 "같은 seed → 같은 값" 재현성을 보장하고,
-// seed가 한 번도 안 주어졌으면 site(콜사이트 slot, codegen이 숨은 4번째 인자로 주입)로 1회만
-// 시드해 콜사이트마다 다른 결정론적 시퀀스를 이어간다(진짜 엔트로피 없음 — GOAL.md 백테스트
-// 재현성과 일관). min/max가 na면 별도 가드 없이 `min + unit*(max-min)` 산술 자체가 na를 자연
-// 전파한다(GOAL.md 산술 연산자 na 전파, CONFIRMED — VERIFIED_SEMANTICS.md).
+// math.random(min=0, max=1, seed). Each call site owns one generator, seeded on its first
+// execution and advanced by one draw on every execution after that, so a seed gives a repeatable
+// sequence, not one repeated value (ref_v6_ta_math.txt "math.random": "Using the same value for
+// the optional seed argument will produce a repeatable sequence"; the seed "allows successive
+// calls to the function to produce a repeatable set of values"). The generator is Java's
+// java.util.Random and the draw is its nextDouble(): tier 1 math_003_random, TradingView's Pine
+// Logs of two math.random(0, 1, 42) call sites on bars 0-9, logs 0.727563680032868,
+// 0.683223471759845, 0.30871945533266, ... for both sites (new Random(42).nextDouble() in turn),
+// the oracle's core/random.py PineRandom. A seed passed on later executions is not read again
+// (the oracle's lazily created Persistent generator). Without a seed TradingView starts from the
+// clock; resin seeds from the call-site slot `site` instead (mixSite), so a run is reproducible.
+// na min/max propagate through the arithmetic, and the draw is still taken.
 export function random(
   state: RandomState,
   min: number = 0,
@@ -3700,13 +3723,8 @@ export function random(
   seed: number = NaN,
   site: number = 0,
 ): number {
-  if (!Number.isNaN(seed)) {
-    state.state = mixSeed(seed);
-  } else if (state.state === undefined) {
-    state.state = mixSeed(site);
-  }
-  state.state = xorshift32(state.state!);
-  const unit = state.state / 4294967296; // [0, 1)
+  if (state.hi === undefined) randomSeed(state, Number.isFinite(seed) ? seed : mixSite(site));
+  const unit = (randomNext(state, 26) * 134217728 + randomNext(state, 27)) / 9007199254740992; // 2^27, 2^53
   return min + unit * (max - min);
 }
 

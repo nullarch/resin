@@ -7553,11 +7553,13 @@ describe("ta.sum (math.sum runtime, TA_REGISTRY.sum dispatch:'math')", () => {
 });
 
 // ── ta.random (math.random runtime, TA_REGISTRY.random dispatch:'math', C120) ──────────────
-// pine2py math.random delegates to Python's global Mersenne Twister — bit-parity oracle
-// verification is structurally impossible (analyzer.ts TA_REGISTRY.random / runtime/ta.ts
-// random() 주석 참조). These tests hand-verify the pine2js-original xorshift32 design instead:
-// range containment, seed reproducibility, and call-site independence — NOT specific "correct"
-// values (there is no oracle-defined correct value for this function).
+// Each call site owns a java.util.Random, seeded on its first execution and drawn with
+// nextDouble() on every execution (runtime/ta.ts random()). The seeded values are TradingView's:
+// resin-harness tier 1 math_003_random logs 0.727563680032868, 0.683223471759845,
+// 0.30871945533266, ... for math.random(0, 1, 42) on bars 0, 1, 2, ... (these tests asserted
+// pine2py-era xorshift32 values and a re-seed on every call before). The unseeded values are
+// resin's own (TradingView starts those from the clock); only their range and reproducibility
+// are asserted.
 describe("ta.random (math.random runtime, TA_REGISTRY.random dispatch:'math', C120)", () => {
   it("defaults to the [0, 1) range when min/max/seed are all omitted", () => {
     const state: Parameters<typeof random>[0] = {};
@@ -7577,27 +7579,29 @@ describe("ta.random (math.random runtime, TA_REGISTRY.random dispatch:'math', C1
     }
   });
 
-  it("a given seed reseeds the call-site state and reproduces the exact same draw every time (single-shot determinism)", () => {
-    const stateA: Parameters<typeof random>[0] = {};
-    const stateB: Parameters<typeof random>[0] = {};
-    const a1 = random(stateA, 0, 1, 99, 0);
-    const a2 = random(stateA, 0, 1, 99, 0); // re-seeding with the same seed reproduces the value
-    const b1 = random(stateB, 0, 1, 99, 0); // a fresh independent state with the same seed also matches
-    expect(a1).toBe(a2);
-    expect(a1).toBe(b1);
-    expect(a1).toBeCloseTo(0.220791295170784, 12);
+  it("a seed gives TradingView's sequence: one draw per execution, not one repeated value (tier 1 math_003_random)", () => {
+    const state: Parameters<typeof random>[0] = {};
+    const seq = [0, 1, 2, 3, 4].map(() => random(state, 0, 1, 42, 0));
+    expect(seq).toEqual([0.7275636800328681, 0.6832234717598454, 0.30871945533265976, 0.27707849007413665, 0.6655489517945736]);
+    // Two call sites with the same seed each run the whole sequence (the scenario's two log lines per bar agree).
+    const other: Parameters<typeof random>[0] = {};
+    expect(random(other, 0, 1, 42, 1)).toBe(0.7275636800328681);
   });
 
-  it("omitting seed (NaN) after an explicit seed continues the xorshift stream instead of re-seeding", () => {
+  it("scales the draw to [min, max) and truncates a fractional seed (the seed is an int argument)", () => {
+    const state: Parameters<typeof random>[0] = {};
+    expect(random(state, 10, 20, 42.9, 0)).toBeCloseTo(17.275636800328681, 12);
+    expect(random(state, 10, 20, 42.9, 0)).toBeCloseTo(16.832234717598454, 12);
+  });
+
+  it("seeds once: a later seed, or none, continues the call site's sequence instead of re-seeding", () => {
     const state: Parameters<typeof random>[0] = {};
     const a = random(state, 0, 1, 99, 0);
     const b = random(state, 0, 1, NaN, 0);
-    const c = random(state, 0, 1, undefined, 0);
-    expect(a).toBeCloseTo(0.220791295170784, 12);
-    expect(b).toBeCloseTo(0.5541597432456911, 12);
-    expect(c).toBeCloseTo(0.24066934804432094, 12);
-    expect(b).not.toBe(a);
-    expect(c).not.toBe(b);
+    const c = random(state, 0, 1, 7, 0);
+    expect(a).toBe(0.7224575488195071); // new java.util.Random(99).nextDouble()
+    expect(b).toBe(0.34725406334296527);
+    expect(c).toBe(0.8156724779547452);
   });
 
   it("different call-site slots (site) with no seed ever given produce different deterministic sequences", () => {
@@ -7605,9 +7609,8 @@ describe("ta.random (math.random runtime, TA_REGISTRY.random dispatch:'math', C1
     const stateSite1: Parameters<typeof random>[0] = {};
     const v0 = random(stateSite0, 0, 1, NaN, 0);
     const v1 = random(stateSite1, 0, 1, NaN, 1);
-    expect(v0).toBeCloseTo(0.1967024791520089, 12);
-    expect(v1).toBeCloseTo(0.9361879071220756, 12);
-    expect(v0).not.toBe(v1);
+    expect(v0).toBe(0.5390743394917665);
+    expect(v1).toBe(0.6446133774605667);
   });
 
   it("the same call-site (site) with no seed ever given reproduces the same sequence across independent states (full engine-run reproducibility)", () => {
@@ -7641,7 +7644,7 @@ describe("ta.random (math.random runtime, TA_REGISTRY.random dispatch:'math', C1
     random(stateA, 0, 1, 42, 0);
     random(stateA, 0, 1, undefined, 0);
     const fresh = random(stateB, 0, 1, 42, 0);
-    expect(fresh).toBeCloseTo(0.8455176914576441, 12); // unaffected by stateA's extra advance
+    expect(fresh).toBe(0.7275636800328681); // unaffected by stateA's extra advance
   });
 });
 

@@ -891,7 +891,7 @@ describe("CodeGen", () => {
     expect(code).toBe("var x = rt.ta.random($.taSlots[0], 0, 100, 42, 0);");
   });
 
-  it("transpile() end-to-end: math.random(min, max, seed) reproduces the exact same value every bar when seed is a fixed literal (re-seeds every call)", () => {
+  it("transpile() end-to-end: math.random(min, max, seed) with a fixed literal seed draws the seed's sequence, one value per bar (seeded once)", () => {
     const source = ["var float __obs_r = na", "__obs_r := math.random(10, 20, 42)"].join("\n");
     const result = transpile(source);
     expect(result.ok).toBe(true);
@@ -906,8 +906,10 @@ describe("CodeGen", () => {
       expect(v).toBeGreaterThanOrEqual(10);
       expect(v).toBeLessThan(20);
     }
-    // a fixed literal seed re-seeds the call-site state on every bar -> identical draw every time.
-    expect(new Set(values).size).toBe(1);
+    // The seed starts the call site's java.util.Random once; each bar takes the next draw
+    // (resin-harness tier 1 math_003_random: TradingView logs 0.727563680032868, 0.683223471759845,
+    // ... for math.random(0, 1, 42); this test asserted one repeated value before).
+    expect(values).toEqual([17.27563680032868, 16.832234717598453, 13.087194553326597, 12.770784900741367]);
   });
 
   it("transpile() end-to-end: math.random() (no seed) stays within the default [0,1) range and varies bar to bar", () => {

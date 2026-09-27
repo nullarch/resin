@@ -22,8 +22,8 @@ export interface SyntheticOHLCV extends OHLCVData {
 export const SYNTHETIC_BAR_MS = 3_600_000; // 1시간 봉
 export const SYNTHETIC_START_MS = Date.UTC(2020, 0, 1); // 고정 기점 (결정론 — 현재 시각 사용 금지)
 
-// mulberry32 — 32bit 상태 하나짜리 결정론 PRNG(공개 도메인 알고리즘). rt의 math.random용
-// xorshift32(C120)와 별개로 헬퍼 자체 완결로 둔다(런타임 상태와 얽히지 않게, 의존성 0).
+// mulberry32 — a deterministic PRNG with one 32-bit state (public-domain algorithm), kept
+// separate from the runtime's math.random generator so the helper shares no runtime state.
 export function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
   return () => {

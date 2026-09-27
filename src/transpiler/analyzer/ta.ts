@@ -857,21 +857,12 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // "math.sum"): pine2py's na-as-0 and warm-up partial sums are not followed.
   // C551: seriesLengthOk true (runtime/ta.ts sumVarLen).
   sum: { dispatch: "math", displayName: "math.sum", argCount: 2, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.sum" },
-  // math.random(min=0.0, max=1.0, seed) — C120, math.* 잔여 마지막 항목. pine2py wavealgo/math/
-  // __init__.py L102-106: `random(min_val=0.0, max_val=1.0, seed=None)`가 Python 표준 random
-  // 모듈(전역 Mersenne Twister)의 seed()+uniform()에 위임한다 — seed를 줘도 CPython MT19937
-  // 알고리즘 자체를 JS로 재이식해야 bit-parity가 가능해(방대·저가치, C119 next_hint 조사)
-  // **오라클 크로스체크가 이 함수 전체(정상 경로 포함)에 구조적으로 불가능한 첫 사례**(alma의
-  // sigma=0처럼 일부 경계만 갈리는 게 아니라 전체 값 도메인이 대상). pine2js는 콜사이트별 독립
-  // 상태(rt.taSlots)에 자체 xorshift32 PRNG(SplitMix32 믹싱으로 시드)를 신설(runtime/ta.ts
-  // random() 주석 참조) — TV 실제 PRNG 알고리즘도 비공개·비결정 문서화라 "정답"이 없으므로 값
-  // 자체는 오라클/hand-verified 비교 대상에서 제외하고 범위/seed 재현성만 검증한다(LIMITATIONS.md/
-  // DIVERGENCES.md 등재). TV 문법상 min/max/seed 셋 다 선택 인자(기본 0.0/1.0/na) — 첫 선택 인자
-  // stateful 콜이라 minArgCount:0 신설(TaRegistryEntry 주석 참조). length 인자가 없어
-  // lengthArgIndex: null. codegen이 누락 인자를 "undefined" 리터럴로 패딩하고 콜사이트 slot을
-  // 숨은 4번째 인자(site)로 항상 추가 주입한다(genCallExpr `stateCall.fn === "random"` 분기) —
-  // site는 seed가 한 번도 안 주어졌을 때의 기본 시퀀스를 콜사이트마다 다르게 만드는 용도일 뿐 TV
-  // 시맨틱과 무관한 pine2js 내부 구현 디테일.
+  // math.random(min=0.0, max=1.0, seed): each call site owns a java.util.Random seeded on its
+  // first execution and drawn once per execution (runtime/ta.ts random(); tier 1 math_003_random).
+  // All three arguments are optional (defaults 0.0/1.0/na), hence minArgCount:0; there is no
+  // length (lengthArgIndex: null). codegen pads the missing arguments with "undefined" and always
+  // appends the call-site slot as a hidden argument (`site`), which seeds a call site that never
+  // got a seed: TradingView starts those from the clock, resin from the slot so runs reproduce.
   random: { dispatch: "math", displayName: "math.random", argCount: 3, minArgCount: 0, lengthArgIndex: null, conditionalForbidden: true, rtPath: "rt.ta.random" },
   // timeframe.change(timeframe) — true on the first bar of a new `timeframe` period (ref_v6_lang.txt).
   // Each call site remembers the period (or the replayed intraday bar) it last saw, so it is
