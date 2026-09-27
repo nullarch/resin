@@ -6666,7 +6666,7 @@ function analyzeVarDecl(stmt: VarDecl, prog: AnalyzedProgram, scope: LexScope): 
         // 완전히 나란한 구조): top-level var/'=' 로컬/매개변수 셋 다 있던 이 축이 func-local var에만
         // 없던 3-way 비대칭(FuncInfo.localVarArrayElemDrawingKinds 주석 참조).
         const funcLocalElemDrawingKind =
-          (stmt.typeHint !== null ? arrayDrawingElemType(stmt.typeHint) : null) ?? arrayDrawingConstructorElemKind(stmt.value, prog);
+          (stmt.typeHint !== null ? arrayDrawingElemType(stmt.typeHint) : null) ?? arrayDrawingConstructorElemKind(stmt.value, prog, scope);
         if (funcLocalElemDrawingKind !== null) func.localVarArrayElemDrawingKinds.set(stmt.name, funcLocalElemDrawingKind);
       } else if (
         isMapConstructorCall(stmt.value, prog, scope) ||
@@ -6833,7 +6833,7 @@ function analyzeVarDecl(stmt: VarDecl, prog: AnalyzedProgram, scope: LexScope): 
     // array<drawing> 원소 kind 추적(C352, 바로 위 arrayElemUdtType과 동일 원칙): typeHint가
     // "array<box>"류로 명시됐거나(드묾), 초기값이 array.new_box() 등 typed 생성자 콜이면(wild
     // 실측의 지배적 형태) 기록한다.
-    const elemDrawingKind = arrayDrawingConstructorElemKind(stmt.value, prog) ?? (stmt.typeHint !== null ? arrayDrawingElemType(stmt.typeHint) : null);
+    const elemDrawingKind = arrayDrawingConstructorElemKind(stmt.value, prog, scope) ?? (stmt.typeHint !== null ? arrayDrawingElemType(stmt.typeHint) : null);
     if (elemDrawingKind !== null) prog.arrayElemDrawingKind.set(stmt.name, elemDrawingKind);
     // map<K, UDT/drawing> 값 타입 추적(C684, 바로 위 arrayElemUdtType/arrayElemDrawingKind와 동일
     // 원칙의 map 버전): 명시 typeHint "map<K,V>" 또는 초기값 map.new<K,V>() 생성자 콜이 보존한 V.
@@ -7074,7 +7074,7 @@ function analyzeAssignment(stmt: Assignment, prog: AnalyzedProgram, scope: LexSc
       // swingOrderBlocksBoxes` 관용구는 typeHint 경로로, `boxes = array.new_box()`류는 생성자 경로로
       // 잡힌다(C619 실사용).
       const arrayElemDrawingKind =
-        (stmt.typeHint !== null ? arrayDrawingElemType(stmt.typeHint) : null) ?? arrayDrawingConstructorElemKind(stmt.value, prog);
+        (stmt.typeHint !== null ? arrayDrawingElemType(stmt.typeHint) : null) ?? arrayDrawingConstructorElemKind(stmt.value, prog, scope);
       if (arrayElemDrawingKind !== null) scope.arrayElemDrawingKindHints.set(stmt.name, arrayElemDrawingKind);
     } else if (isMapConstructorCall(stmt.value, prog, scope) || aliasedContainerKind === "map") {
       scope.containerKindHints.set(stmt.name, "map");
@@ -7658,9 +7658,11 @@ export function resolveArrayElemUdtType(target: Expr, prog: AnalyzedProgram, sco
     if (paramHint !== null) return arrayUdtElemType(paramHint, prog);
     return scope.func?.paramArrayElemUdtTypes.get(target.name) ?? null;
   }
-  if (target.kind === "CallExpr" && target.callee.kind === "Identifier") {
-    const funcInfo = prog.funcs.get(target.callee.name);
-    if (funcInfo !== undefined && funcInfo.returnArrayElemUdtType !== null) return funcInfo.returnArrayElemUdtType;
+  // A bare UDF call returning array<UDT> (FuncInfo.returnArrayElemUdtType), or an array constructor
+  // used in place (`for z in array.from(a, b)`), as in resolveArrayElemDrawingKind.
+  if (target.kind === "CallExpr") {
+    const made = arrayUdtConstructorElemType(target, prog, scope);
+    if (made !== null) return made;
   }
   const fieldType = resolveUdtFieldTypeHint(target, prog, scope);
   if (fieldType === undefined) return null;
@@ -7698,9 +7700,11 @@ export function resolveArrayElemDrawingKind(target: Expr, prog: AnalyzedProgram,
   }
   // bare UDF 콜 RHS(C683, resolveArrayElemUdtType의 CallExpr 분기(C458)와 완전히 나란함) — target
   // 자신이 array<drawing>을 반환하는 함수 콜이면 FuncInfo.returnArrayElemDrawingKind를 그대로 인정.
-  if (target.kind === "CallExpr" && target.callee.kind === "Identifier") {
-    const funcInfo = prog.funcs.get(target.callee.name);
-    if (funcInfo !== undefined && funcInfo.returnArrayElemDrawingKind !== null) return funcInfo.returnArrayElemDrawingKind;
+  // An array constructor used in place (`for ln in array.from(a, b)`, `array.from(a, b).get(0)`)
+  // gives its element kind the same way it gives it to a variable it initializes.
+  if (target.kind === "CallExpr") {
+    const made = arrayDrawingConstructorElemKind(target, prog, scope);
+    if (made !== null) return made;
   }
   const fieldType = resolveUdtFieldTypeHint(target, prog, scope);
   if (fieldType === undefined) return null;
@@ -7898,6 +7902,19 @@ export function resolveDrawingExprKind(target: Expr, prog: AnalyzedProgram, scop
   }
   const fieldType = resolveUdtFieldTypeHint(target, prog, scope);
   return fieldType !== undefined && DRAWING_ALL_NAMESPACES.has(fieldType) ? (fieldType as DrawingKind) : null;
+}
+
+// The drawing kind of any value expression, as an '=' local takes it (analyzeAssignment): a handle
+// made on the spot (box.new, a box(na) cast), an element taken out of a collection of drawings
+// (`id.boxes.pop()`), or a name or field known to hold one. array.from's element kind reads it.
+export function resolveDrawingValueKind(value: Expr, prog: AnalyzedProgram, scope: LexScope): DrawingKind | null {
+  return isDrawingConstructorCall(value) ?? resolveArrayGetElemDrawingKind(value, prog, scope) ?? resolveDrawingExprKind(value, prog, scope);
+}
+
+// The UDT version of resolveDrawingValueKind: an object constructed on the spot (`Zone.new(...)`), an
+// element taken out of a collection of objects, or a name or field known to hold one.
+export function resolveUdtValueType(value: Expr, prog: AnalyzedProgram, scope: LexScope): string | null {
+  return isUdtConstructorCall(value, prog, scope) ?? resolveArrayGetElemUdtType(value, prog, scope) ?? resolveUdtObjectType(value, prog, scope) ?? null;
 }
 
 // resolveLocalDrawingKind와 동일한 체인 탐색을 enumKindHints에 적용(method-call 스타일 enum

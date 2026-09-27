@@ -10,8 +10,10 @@ import type { AnalyzedProgram, LexScope } from "../analyzer";
 import {
   resolveArrayElemUdtType,
   resolveContainerExprKind,
+  resolveDrawingValueKind,
   resolveMatrixExprKind,
   resolveUdtObjectType,
+  resolveUdtValueType,
   resolveUserMethodCallInfo,
   CHART_POINT_FIELD_TYPE,
 } from "../analyzer";
@@ -433,6 +435,21 @@ const ARRAY_DRAWING_CONSTRUCTOR_KIND: Readonly<Record<string, DrawingKind>> = {
   new_table: "table",
   new_linefill: "linefill",
 };
+// array.from "takes a variable number of arguments with one of the types: int, float, bool, string,
+// label, line, color, box, table and returns an array of the corresponding type" (rn.txt), so the
+// array's element type is its arguments' type. An argument whose type the analyzer does not know here
+// (an `na`, a value it does not follow) says nothing; two arguments of different known types say
+// nothing either (the call is not one TradingView accepts).
+function arrayFromElemType<T>(args: readonly Expr[], typeOf: (arg: Expr) => T | null): T | null {
+  let found: T | null = null;
+  for (const arg of args) {
+    const t = typeOf(arg);
+    if (t === null) continue;
+    if (found !== null && found !== t) return null;
+    found = t;
+  }
+  return found;
+}
 // array.new<box>() 등 제네릭 폼(C357, wild 452파일 실측 -- next_hint가 예고한 arrayUdtConstructorElemType
 // 대칭 배선). parser.ts가 attr을 T와 무관하게 "new_generic" 하나로 뭉개므로(C230) 위 5종 전용 attr
 // 리터럴 분기로는 이 폼을 못 잡는다 -- 보존해둔 DotAccess.genericElemType(C355)이 DRAWING_ALL_NAMESPACES
@@ -442,7 +459,7 @@ const ARRAY_DRAWING_CONSTRUCTOR_KIND: Readonly<Record<string, DrawingKind>> = {
 // value가 `helper()`류 bare UDF 콜(Identifier callee)이면 FuncInfo.returnArrayElemDrawingKind를
 // 그대로 인정한다 -- wild `fvgDn = fvg(-3)`(fvg()의 마지막 문장이 array<box> 로컬을 그대로 반환)
 // 뒤 `fvgDn.get(i).get_top()`류. prog 생략 호출부(scope 없는 순수 정적 스캔)는 기존 동작 그대로.
-export function arrayDrawingConstructorElemKind(value: Expr, prog?: AnalyzedProgram): DrawingKind | null {
+export function arrayDrawingConstructorElemKind(value: Expr, prog?: AnalyzedProgram, scope?: LexScope): DrawingKind | null {
   if (value.kind !== "CallExpr") return null;
   if (value.callee.kind === "Identifier") {
     return prog?.funcs.get(value.callee.name)?.returnArrayElemDrawingKind ?? null;
@@ -451,6 +468,9 @@ export function arrayDrawingConstructorElemKind(value: Expr, prog?: AnalyzedProg
     return null;
   }
   if (value.callee.obj.name !== "array") return null;
+  if (value.callee.attr === "from") {
+    return prog !== undefined && scope !== undefined ? arrayFromElemType(value.args, (arg) => resolveDrawingValueKind(arg, prog, scope)) : null;
+  }
   const literalKind = ARRAY_DRAWING_CONSTRUCTOR_KIND[value.callee.attr];
   if (literalKind !== undefined) return literalKind;
   if (value.callee.attr === "new_generic" && value.callee.genericElemType !== undefined) {
@@ -494,6 +514,9 @@ export function arrayUdtConstructorElemType(value: Expr, prog: AnalyzedProgram, 
     if (callee.attr === "copy" && scope !== undefined) {
       const container = value.args[0];
       return container !== undefined ? resolveArrayElemUdtType(container, prog, scope) : null;
+    }
+    if (callee.attr === "from" && scope !== undefined) {
+      return arrayFromElemType(value.args, (arg) => resolveUdtValueType(arg, prog, scope));
     }
     return null;
   }

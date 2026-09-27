@@ -24224,6 +24224,78 @@ describe("CodeGen array.new<box/line/label/table/linefill>() top-level var witho
   });
 });
 
+// array.from "returns an array of the corresponding type" (rn.txt): its elements have its arguments'
+// type, drawings and UDT objects included. Oracle-checked by resin-harness
+// state/repros/array-from-drawings.json and its twin probe (realworld a647fbf25064:
+// `arr = array.from(_id.uFVG.pop(), _id.mFVG.pop(), _id.tFVG.pop())` then `for bx in arr` / `bx.delete()`).
+describe("array.from(...) elements take their arguments' type", () => {
+  it("tags a for-in item over array.from of boxes popped from a UDT's box[] fields, in a method", () => {
+    const prog = analyze(
+      parse(
+        [
+          "type FVG",
+          "    box[] u",
+          "    box[] m",
+          "method clear(FVG id) =>",
+          "    arr = array.from(id.u.pop(), id.m.pop())",
+          "    for bx in arr",
+          "        bx.delete()",
+          "    0",
+        ].join("\n"),
+      ),
+    );
+    expect(prog.errors).toEqual([]);
+    expect([...prog.builtinCalls.values()]).toContain("box.delete");
+  });
+
+  it("tags the item of a for-in over the array.from call itself, and an element read by get()", () => {
+    const code = codegenSource(
+      [
+        "var line l1 = line.new(0, 1.0, 1, 2.0)",
+        "var line l2 = line.new(0, 3.0, 1, 4.0)",
+        "s = 0.0",
+        "for ln in array.from(l1, l2)",
+        "    s += ln.get_y1()",
+        "pair = array.from(l2, l1)",
+        "t = pair.get(0).get_y2()",
+      ].join("\n"),
+    );
+    expect(code).toContain("rt.line.get_y1(ln)");
+    expect(code).toContain("rt.line.get_y2(");
+  });
+
+  it("types the elements of array.from of UDT objects (for-in item fields, get() fields)", () => {
+    const prog = analyze(
+      parse(
+        [
+          "type Zone",
+          "    float top = 0.0",
+          "zs = array.from(Zone.new(high), Zone.new(close))",
+          "w = 0.0",
+          "for z in zs",
+          "    w += z.top",
+          "t = zs.get(1).top",
+        ].join("\n"),
+      ),
+    );
+    expect(prog.errors).toEqual([]);
+  });
+
+  it("gives no element type to array.from of a box and a line (no method sugar on its items)", () => {
+    const prog = analyze(
+      parse(
+        [
+          "var box b = box.new(0, 2.0, 1, 1.0)",
+          "var line l = line.new(0, 1.0, 1, 2.0)",
+          "for x in array.from(b, l)",
+          "    x.delete()",
+        ].join("\n"),
+      ),
+    );
+    expect(prog.errors.some((e) => e.includes("unsupported call"))).toBe(true);
+  });
+});
+
 // ── array<label/line/box/table/linefill>에서 원소 하나를 뽑는 콜(array.get/pop/shift/first/last/
 // remove, C341 ARRAY_ELEM_RETURNING_METHODS 재사용)을 받는 '=' 로컬의 drawing method-call sugar
 // (C353, ROADMAP P4 next_hint(C352) 1순위 — wild "지원하지 않는 호출" 클러스터
