@@ -408,6 +408,35 @@ export class Context {
     );
   }
 
+  // A request whose timeframe its call binds where it stands (the generated preamble registers a
+  // binder under the call's first slot): the call's first execution hands it the timeframe
+  // argument's value, and the binder builds the call's caches, prepasses and requested-context runs
+  // on it. The context is fixed at the first execution (mig6.txt "Dynamic requests": "the context
+  // of a data request (ticker ID and timeframe) must be known on the first script execution and
+  // remain unchanged across all subsequent executions"). A timeframe that changes later, which only
+  // dynamic requests allow, is refused: TradingView then requests the new context ("it's possible
+  // for a single request.*() instance to fetch data from different contexts in different
+  // executions"), while the reference keeps the first one (pynecore core/security.py
+  // _resolve_context), and resin takes neither side.
+  securityBinders: (((tf: string) => void) | undefined)[] = [];
+  private securityBoundTfs = new Map<number, string>();
+
+  bindSecurity(slot: number, tf: string): void {
+    if (this.securityBoundTfs.has(slot)) {
+      const bound = this.securityBoundTfs.get(slot)!;
+      if (tf !== bound) {
+        throw new Error(
+          `request.security: the timeframe of a request changed from ${JSON.stringify(bound)} to ${JSON.stringify(tf)} on bar ${this.idx}; resin binds a request to the timeframe of its first execution and does not follow a changing one`,
+        );
+      }
+      return;
+    }
+    const bind = this.securityBinders[slot];
+    if (bind === undefined) return;
+    this.securityBoundTfs.set(slot, tf);
+    bind(tf);
+  }
+
   // request.security whose expression the script itself computes in the requested context
   // (transpiler/analyzer/security-script.ts; concepts_other-timeframes-and-data.txt "Declared
   // variables": "the function call duplicates all preceding code that determines the assigned value

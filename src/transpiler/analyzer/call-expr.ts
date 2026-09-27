@@ -1909,6 +1909,28 @@ function resolveSecurityRuntimeTfNumber(
   return null;
 }
 
+// A request.security timeframe argument whose type is evidently not a string, which Pine rejects
+// (ref_v6_lang.txt request.security: "ARG timeframe [series string]"): a number or bool literal, a
+// timeframe.* property other than the string ones (those fold at compile time before this is asked:
+// timeframe.multiplier is a number, timeframe.isdaily a bool), arithmetic other than `+`, a
+// comparison or logical operator, a unary operator, or a ternary with such a branch.
+function evidentlyNotString(expr: Expr): boolean {
+  switch (expr.kind) {
+    case "NumberLiteral":
+    case "BoolLiteral":
+    case "UnaryOp":
+      return true;
+    case "DotAccess":
+      return expr.obj.kind === "Identifier" && expr.obj.name === "timeframe" && !TIMEFRAME_STRING_PROPS.has(expr.attr);
+    case "BinOp":
+      return expr.op !== "+" || evidentlyNotString(expr.left) || evidentlyNotString(expr.right);
+    case "TernaryOp":
+      return evidentlyNotString(expr.trueExpr) || evidentlyNotString(expr.falseExpr);
+    default:
+      return false;
+  }
+}
+
 // 배치31 (b)-2, C600: tf 자리 하나(직접 tfArg든 tf-param 콜사이트 실인자든)를 런타임 1회 확정
 // 트리로 해석하는 공용 이단 판정 — (1) C597 직접 input.*(...) 콜(any-attr, 방출-슬롯 리터럴 게이트),
 // (2) 아니면 C598 정의식 재귀 치환 트리. 기존 main-flow 인라인 로직을 바이트 동등하게 추출한 것
@@ -8174,6 +8196,14 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // 수행한다). 수용 시 실패한 폴딩 시도의 신규 freeze 가드를 롤백한다(C598 — 이 콜사이트는
       // "컴파일타임 고정 캐시" 전제가 없어 가드가 스퓨리어스 throw만 만든다).
       const tfAvailable = tfLiteral !== undefined || tfSiteLiterals !== null;
+      // A timeframe that folds neither at compile time nor before the bar loop is bound where the call
+      // stands, the first time it executes, to the value it has there (mig6.txt "Dynamic requests":
+      // "the context of a data request (ticker ID and timeframe) must be known on the first script
+      // execution and remain unchanged across all subsequent executions"; the oracle resolves a
+      // context once, on its first signal: pynecore core/security.py _resolve_context). Only for a
+      // call outside functions, whose slots are its own (AnalyzedProgram.securityDeferredTfs).
+      const tfDeferrable =
+        !tfAvailable && tfRuntimeExpr === null && tfSiteMixed === null && scope.func === null && !evidentlyNotString(tfArg);
       // An expression none of the forms above takes is evaluated by running the script itself in the
       // requested context: the code before the call that the expression depends on, on the requested
       // bars (analyzer/security-script.ts; concepts_other-timeframes-and-data.txt "Declared
@@ -8184,8 +8214,8 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // passthrough: the call evaluated on the chart's bars and the timeframe dropped. The requested
       // context runs it instead whenever it can (resin-harness state/repros/security-script-udf.json,
       // `z = g(close)` with `var` state in g: the oracle sums the requested bars' closes); the
-      // passthrough stays only where it cannot (a timeframe resolved at neither compile time nor
-      // once at run time, or a slice this path refuses).
+      // passthrough stays only where it cannot (a timeframe resolved at neither compile time, nor
+      // once before the bar loop, nor on the call's first execution, or a slice this path refuses).
       let scriptPlan: SecurityScriptPlan | null = null;
       let scriptPlanRefusal: string | null = null;
       if (
@@ -8198,7 +8228,8 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         secParamMultiSite === null &&
         secParamAllBareUdf === null &&
         secParamMultiSiteGeneric === null &&
-        (scalarBareUdfInner === undefined || (scope.func === null && (tfLiteral !== undefined || tfRuntimeExpr !== null)))
+        (scalarBareUdfInner === undefined ||
+          (scope.func === null && (tfLiteral !== undefined || tfRuntimeExpr !== null || tfDeferrable)))
       ) {
         if (scope.func !== null) {
           scriptPlanRefusal = funcScriptPlanRefusal ?? "the call is in a function";
@@ -8232,8 +8263,15 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           (isBareSeries || tupleFields !== null || exprMatch !== null || scriptPlan !== null || funcScriptPlan !== null)) ||
         tfSiteMixedConsumable;
       const tfDiscarded = bareUdfInner !== undefined || bareTaInner !== undefined || scalarBareUdfInner !== undefined;
+      // The forms whose slots the call binds on its first execution (tfDeferrable above): a bare
+      // series, a tuple, an expression the prepass takes, and one the requested context runs.
+      const tfDeferred =
+        tfDeferrable &&
+        !tfViaRuntime &&
+        !tfDiscarded &&
+        (isBareSeries || tupleFields !== null || exprMatch !== null || scriptPlan !== null);
       if (!tfAvailable) {
-        if (tfViaRuntime || tfDiscarded) {
+        if (tfViaRuntime || tfDiscarded || tfDeferred) {
           // C600: 혼합 배열이 슬롯 생성 폼에 소비되면 폴딩 성공 사이트의 freeze 가드는 정당
           // 소비라 유지한다(실패 시도분은 리졸버가 사이트 단위로 이미 롤백). 그 외(순수 런타임
           // tfRuntimeExpr/tf discard — AllBareUdf passthrough 포함: 슬롯을 안 만들어 freeze 전제
@@ -8389,9 +8427,19 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           prog.securityRuntimeTfSlots.set(siteSlot, v);
         }
       };
+      // One slot on the call's timeframe: the compile-time literal, else a placeholder the preamble
+      // rebuilds (securityRuntimeTfSlots) or the call binds on its first execution (deferredSlots).
+      const deferredSlots: number[] = [];
+      const pushCallTf = (): number => {
+        const slot = prog.securityTfs.length;
+        prog.securityTfs.push(tfLiteral ?? prog.chartTf);
+        if (tfLiteral === undefined && tfRuntimeExpr !== null) prog.securityRuntimeTfSlots.set(slot, tfRuntimeExpr);
+        else if (tfLiteral === undefined && tfDeferred) deferredSlots.push(slot);
+        return slot;
+      };
       const slotsBefore = prog.securityTfs.length;
       try {
-      if (kwargsOk && (tfAvailable || tfViaRuntime || tfDiscarded)) {
+      if (kwargsOk && (tfAvailable || tfViaRuntime || tfDiscarded || tfDeferred)) {
         if (seriesArg.kind === "Identifier" && BAR_SERIES_NAMES.has(seriesArg.name)) {
           const slot = prog.securityTfs.length;
           if (tfSiteValues !== null) {
@@ -8406,20 +8454,11 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
               lookahead,
               multiSite: true,
             });
-          } else if (tfRuntimeExpr !== null) {
-            // 배치31 (a, C597): securityTfs[slot]은 Context 생성자가 무해하게 즉시 빌드할
-            // 자리표시일 뿐(prog.chartTf) — codegen 프리앰블이 바 루프 시작 전 tfRuntimeExpr를
-            // 정확히 1회 evaluate해 $.rebuildSecurityCache(slot, tf)로 실제 값을 덮어쓴다.
-            prog.securityTfs.push(prog.chartTf);
-            prog.securityRuntimeTfSlots.set(slot, tfRuntimeExpr);
-            prog.securityCallSlots.set(expr, {
-              slot,
-              field: seriesArg.name as "open" | "high" | "low" | "close" | "volume",
-              gaps,
-              lookahead,
-            });
           } else {
-            prog.securityTfs.push(tfLiteral!);
+            // 배치31 (a, C597): a runtime timeframe's securityTfs[slot] is a placeholder
+            // (prog.chartTf) the Context constructor builds harmlessly, rebuilt with the real value
+            // before the bar loop (securityRuntimeTfSlots) or on the call's first execution.
+            pushCallTf();
             prog.securityCallSlots.set(expr, {
               slot,
               field: seriesArg.name as "open" | "high" | "low" | "close" | "volume",
@@ -8430,10 +8469,11 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           // C409: symbol/timeframe이 키워드로 왔으면 expr.args가 비어(또는 짧아) 함수 끝의 공용
           // 부작용 재귀(`for (const arg of expr.args) analyzeExpr(...)`)가 이 값들을 못 본다 —
           // 위 tuple/exprMatch 분기의 명시적 analyzeExpr(symbolArg/tfArg) 호출과 동일하게 여기서도
-          // 직접 분석(선언-전-사용 검출). 위치 인자로 왔을 때는 아래 공용 재귀와 중복 분석되지만
-          // bare Identifier/리터럴 재분석은 무해(C366 원칙과 동일).
-          analyzeExpr(symbolArg, prog, scope, false);
-          analyzeExpr(tfArg, prog, scope, false);
+          // 직접 분석(선언-전-사용 검출). A positional one is left to that shared pass: a timeframe
+          // the call binds on its first execution may hold calls with state, which a second
+          // analysis would register twice.
+          if (!expr.args.includes(symbolArg)) analyzeExpr(symbolArg, prog, scope, false);
+          if (!expr.args.includes(tfArg)) analyzeExpr(tfArg, prog, scope, false);
         } else if (tupleFields !== null) {
           // C306(all-bare) + C349b(mixed ta.* 원소): bare 원소는 개별 taSlots 배정이 필요 없어
           // 같은 symbol/tf/gaps/lookahead를 공유하는 slot 하나(HTF 캐시 하나)로 N개 필드를 전부
@@ -8501,9 +8541,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           // rebuildSecurityCache가 바 루프/프리패스 시작 전에 실제 값으로 덮어쓴다. 튜플은 bare
           // 공유 슬롯 + expr 원소별 슬롯 전부가 같은 tf 트리를 각자 재평가하는데, 리프가 전부
           // 리터럴/input 콜(순수 읽기)이라 다중 평가가 안전하다).
-          const slot = prog.securityTfs.length;
-          prog.securityTfs.push(tfLiteral ?? prog.chartTf);
-          if (tfRuntimeExpr !== null && tfLiteral === undefined) prog.securityRuntimeTfSlots.set(slot, tfRuntimeExpr);
+          const slot = pushCallTf();
           const resolvedFields: (
             | { kind: "bare"; field: "open" | "high" | "low" | "close" | "volume" }
             | { kind: "expr"; slot: number }
@@ -8519,9 +8557,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
               // taCloneRegScope(C533) — UDF 본문이면 top-level 스코프로 강제해 전역 슬롯 배정
               // (프리패스는 top-level 방출, 고정 tf라 전 콜사이트 공유 캐시가 순수 읽기로 정확).
               for (const tc of f.built.taCalls) analyzeStatefulCall(tc.taCall, tc.fn, tc.entry, prog, taCloneRegScope);
-              const exprSlot = prog.securityTfs.length;
-              prog.securityTfs.push(tfLiteral ?? prog.chartTf);
-              if (tfRuntimeExpr !== null && tfLiteral === undefined) prog.securityRuntimeTfSlots.set(exprSlot, tfRuntimeExpr);
+              const exprSlot = pushCallTf();
               prog.securityExprCallSlots.set(f.el, {
                 slot: exprSlot,
                 gaps,
@@ -8588,9 +8624,9 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             // series C597 분기와 동일 메커니즘). codegen 프리앰블이 rebuildSecurityCache를
             // generateSecurityExprPreamble(__secExprN 프리패스)보다 먼저 방출하므로(codegen.ts
             // 주석 참조) 프리패스는 항상 최종 캐시 위에서 돈다 — ta 클론 슬롯은 고정 tf와 동일하게
-            // ctx당 1회 프리패스 실행이라 incremental 상태 오염 축이 없다.
-            prog.securityTfs.push(tfLiteral ?? prog.chartTf);
-            if (tfRuntimeExpr !== null && tfLiteral === undefined) prog.securityRuntimeTfSlots.set(slot, tfRuntimeExpr);
+            // ctx당 1회 프리패스 실행이라 incremental 상태 오염 축이 없다. A timeframe bound on the
+            // call's first execution runs the prepass then, once, on the bound cache (codegen).
+            pushCallTf();
             prog.securityExprCallSlots.set(expr, {
               slot,
               gaps,
@@ -8728,9 +8764,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           analyzeExpr(tfArg, prog, scope, false);
           // An expression its own analysis rejects gets no slot (no half-registered request).
           if (prog.errors.length > errorsBefore) return;
-          const slot = prog.securityTfs.length;
-          prog.securityTfs.push(tfLiteral ?? prog.chartTf);
-          if (tfRuntimeExpr !== null && tfLiteral === undefined) prog.securityRuntimeTfSlots.set(slot, tfRuntimeExpr);
+          const slot = pushCallTf();
           prog.securityExprCallSlots.set(expr, {
             slot,
             gaps,
@@ -8778,6 +8812,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       }
       } finally {
         noteSecuritySymbol(prog, slotsBefore, symbol);
+        if (deferredSlots.length > 0) prog.securityDeferredTfs.set(expr, { slots: deferredSlots, tf: tfArg });
       }
       }
     }

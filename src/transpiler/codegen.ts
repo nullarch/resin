@@ -216,6 +216,16 @@ function childSafeSecurityRead(code: string, funcCtx: FuncGenContext | null): st
   return funcCtx?.secScriptChild ? `($.secCapture >= 0 ? NaN : ${code})` : code;
 }
 
+// A request whose timeframe the call binds where it stands (AnalyzedProgram.securityDeferredTfs):
+// the read evaluates the timeframe argument, as every execution of the call does, and binds the
+// request's slots to its value before reading them. Only the first execution binds; a later one
+// with another value is refused (Context.bindSecurity).
+function deferredSecurityRead(call: CallExpr, code: string, program: AnalyzedProgram, funcCtx: FuncGenContext | null): string {
+  const deferred = program.securityDeferredTfs.get(call);
+  if (deferred === undefined) return code;
+  return `($.bindSecurity(${deferred.slots[0]}, ${genExpr(deferred.tf, program, funcCtx)}), ${code})`;
+}
+
 // request.security 셋째 슬라이스 서브슬라이스 3b(ROADMAP [hard->분할], C181) — securityExprCallSlots
 // (3a, C180)에 등록된 표현식을 HTF 프리패스 함수(genSecurityExprPreamble) 본문 안에서 codegen할
 // 때만 채워지는 컨텍스트. FuncGenContext(UDF 매개변수 바인딩)와 유사한 "새 바인딩 종류"이지만
@@ -520,11 +530,28 @@ export function generateCode(program: AnalyzedProgram): string {
   for (const [slot, tfExpr] of program.securityRuntimeTfSlots) {
     securityPreamble.push(`$.rebuildSecurityCache(${slot}, ${genExpr(tfExpr, program, null)});`);
   }
-  for (const line of generateSecurityExprPreamble(program)) securityPreamble.push(line);
+  // A request whose timeframe the call binds on its first execution (securityDeferredTfs) gets its
+  // cache, prepass and requested-context run then, from its binder, instead of here.
+  const deferredSlots = new Set<number>();
+  for (const d of program.securityDeferredTfs.values()) for (const s of d.slots) deferredSlots.add(s);
+  for (const line of generateSecurityExprPreamble(program, deferredSlots)) securityPreamble.push(line);
+  const scriptRunLine = (run: SecurityScriptRun): string =>
+    `$.securityExprCache[${run.slot}] = $.runSecurityScript(${run.slot}, ${JSON.stringify(run.runs)}, ${others.length});`;
   for (const run of scriptRuns) {
-    securityPreamble.push(
-      `$.securityExprCache[${run.slot}] = $.runSecurityScript(${run.slot}, ${JSON.stringify(run.runs)}, ${others.length});`,
-    );
+    if (!deferredSlots.has(run.slot)) securityPreamble.push(scriptRunLine(run));
+  }
+  const prepassSlots = securityPrepassSlots(program);
+  for (const { slots } of program.securityDeferredTfs.values()) {
+    // An empty or na timeframe is the chart's (ref_v6_lang.txt request.security: "Use an empty
+    // string or timeframe.period to request data from the chart's timeframe").
+    const body = [`if (tf === "" || tf === null || tf === undefined) tf = ${JSON.stringify(program.chartTf)};`];
+    for (const s of slots) body.push(`$.rebuildSecurityCache(${s}, tf);`);
+    for (const s of slots) {
+      const run = scriptRuns.find((r) => r.slot === s);
+      if (run !== undefined) body.push(scriptRunLine(run));
+      else if (prepassSlots.has(s)) body.push(`$.securityExprCache[${s}] = __secExpr${s}();`);
+    }
+    securityPreamble.push(`$.securityBinders[${slots[0]}] = (tf) => {`, ...body, "};");
   }
   if (scriptRuns.length > 0 && securityPreamble.length > 0) {
     lines.push("if ($.secCapture < 0) {", ...securityPreamble, "}");
@@ -634,7 +661,9 @@ export function generateCode(program: AnalyzedProgram): string {
 // 몫 — genCallExpr 맨 끝 안전장치 throw가 그대로 걸린다, PROGRESS.md C180/C181 참조) — 이 콜이
 // 소스 어딘가에 등장하는 한 generateCode() 전체가 여전히 던지므로, 이 프리패스 생성 자체를
 // 독립적으로(전체 스크립트 codegen 없이) 검증하려면 별도 진입점이 필요하다.
-export function generateSecurityExprPreamble(program: AnalyzedProgram): string[] {
+// A slot of `deferred` (a request whose call binds its timeframe on its first execution,
+// AnalyzedProgram.securityDeferredTfs) gets its prepass function only: its binder runs it.
+export function generateSecurityExprPreamble(program: AnalyzedProgram, deferred: ReadonlySet<number> = new Set()): string[] {
   const lines: string[] = [];
   // C453: udf-param 다중 콜사이트 프리패스(securityParamExprPrepasses — 노드 키가 없는 배열이라
   // 맵과 별도, 값 구조는 동일)도 같은 방출 로직을 그대로 탄다. 순회 순서는 슬롯 번호와 무관하게
@@ -704,10 +733,19 @@ export function generateSecurityExprPreamble(program: AnalyzedProgram): string[]
       `}`,
       `return out;`,
       `}`,
-      `$.securityExprCache[${info.slot}] = ${fnName}();`,
     );
+    if (!deferred.has(info.slot)) lines.push(`$.securityExprCache[${info.slot}] = ${fnName}();`);
   }
   return lines;
+}
+
+// The slots generateSecurityExprPreamble gives a prepass function (`__secExpr<slot>`).
+function securityPrepassSlots(program: AnalyzedProgram): Set<number> {
+  const out = new Set<number>();
+  for (const info of [...program.securityNestedPrepasses, ...program.securityExprCallSlots.values(), ...program.securityParamExprPrepasses]) {
+    if ((info as { script?: unknown }).script === undefined) out.add(info.slot);
+  }
+  return out;
 }
 
 // The request.security calls whose expression the script itself computes in the requested context
@@ -3502,14 +3540,24 @@ function genIndexAccess(
       // multiSite(C529)는 genCallExpr의 동명 분기와 동일하게 `slot + __secIdx`(콜사이트별 tf 블록).
       const secSlotRef = securityCall.multiSite ? `${securityCall.slot} + __secIdx` : `${securityCall.slot}`;
       return childSafeSecurityRead(
-        `rt.security.getHist($.securityCache[${secSlotRef}], $.idx, "${securityCall.field}", ${securityCall.gaps}, ${securityCall.lookahead}, ${offsetCode})`,
+        deferredSecurityRead(
+          expr.obj,
+          `rt.security.getHist($.securityCache[${secSlotRef}], $.idx, "${securityCall.field}", ${securityCall.gaps}, ${securityCall.lookahead}, ${offsetCode})`,
+          program,
+          funcCtx,
+        ),
         funcCtx,
       );
     }
     const securityExprCall = program.securityExprCallSlots.get(expr.obj);
     if (securityExprCall !== undefined) {
       return childSafeSecurityRead(
-        `rt.security.getFromArrayHist($.securityExprCache[${securityExprCall.slot}], $.securityCache[${securityExprCall.slot}], $.idx, ${securityExprCall.gaps}, ${securityExprCall.lookahead}, ${offsetCode})`,
+        deferredSecurityRead(
+          expr.obj,
+          `rt.security.getFromArrayHist($.securityExprCache[${securityExprCall.slot}], $.securityCache[${securityExprCall.slot}], $.idx, ${securityExprCall.gaps}, ${securityExprCall.lookahead}, ${offsetCode})`,
+          program,
+          funcCtx,
+        ),
         funcCtx,
       );
     }
@@ -4394,7 +4442,12 @@ function genCallExpr(
     // 항목은 UDF 본문 안 노드에만 등록되므로 항상 스코프에 존재)를 더해 콜사이트별 슬롯을 읽는다.
     const secSlotRef = securityCall.multiSite ? `${securityCall.slot} + __secIdx` : `${securityCall.slot}`;
     return childSafeSecurityRead(
-      `rt.security.get($.securityCache[${secSlotRef}], $.idx, "${securityCall.field}", ${securityCall.gaps}, ${securityCall.lookahead})`,
+      deferredSecurityRead(
+        expr,
+        `rt.security.get($.securityCache[${secSlotRef}], $.idx, "${securityCall.field}", ${securityCall.gaps}, ${securityCall.lookahead})`,
+        program,
+        funcCtx,
+      ),
       funcCtx,
     );
   }
@@ -4415,7 +4468,12 @@ function genCallExpr(
     // $.securityCache[slot]의 barMap과 함께 getFromArray로 lookup — get()의 field 분기 대신
     // 배열 자체를 인덱싱한다는 점만 다르고 gaps/lookahead 처리(analyze-time 확정 리터럴)는 동일.
     return childSafeSecurityRead(
-      `rt.security.getFromArray($.securityExprCache[${securityExprCall.slot}], $.securityCache[${securityExprCall.slot}], $.idx, ${securityExprCall.gaps}, ${securityExprCall.lookahead})`,
+      deferredSecurityRead(
+        expr,
+        `rt.security.getFromArray($.securityExprCache[${securityExprCall.slot}], $.securityCache[${securityExprCall.slot}], $.idx, ${securityExprCall.gaps}, ${securityExprCall.lookahead})`,
+        program,
+        funcCtx,
+      ),
       funcCtx,
     );
   }
@@ -4466,7 +4524,7 @@ function genCallExpr(
       }
       return `$.taScratch[${i}] = ${childSafeSecurityRead(readExpr, funcCtx)}`;
     });
-    return `(${writes.join(", ")})`;
+    return deferredSecurityRead(expr, `(${writes.join(", ")})`, program, funcCtx);
   }
   const securityScalarBareUdf = program.securityScalarBareUdfCallSlots.get(expr);
   if (securityScalarBareUdf !== undefined) {

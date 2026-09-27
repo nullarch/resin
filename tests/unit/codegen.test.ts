@@ -13353,11 +13353,20 @@ describe("CodeGen request.security tf 배치31 (b)-1 런타임 tf 확장 (C599, 
     expectSame(dyn, lit);
   });
 
-  it("hand-verified E2E: scalar bare-UDF passthrough with a fully dynamic tf equals the direct UDF call (tf 완전 discard의 실행 증거)", () => {
-    const F = ["g(x) =>", "    x * 2 + 1", 'tfv = "60"', 'tfv := close > open ? "240" : "60"'];
+  // Was pine2py's passthrough (the timeframe dropped, equal to the direct call g(close)). The UDF now
+  // runs in the requested context, bound on the call's first execution to the value tfv has there;
+  // the oracle agrees on the rule, resin-harness suites/lang/probes/L35.json u1/u2. A timeframe that
+  // then changes is refused (Context.bindSecurity; resin-harness state/disputes.md D10).
+  it("hand-verified E2E: a scalar bare-UDF call with a tf known only at run time equals the literal run of the value the tf has on the call's first execution; a tf that changes later is refused", () => {
+    const F = ["g(x) =>", "    x * 2 + 1", 'tfv = "60"', 'tfv := bar_index >= 0 ? "240" : "60"'];
     const dyn = runVars([...F, "var float x = na", 'x := request.security("", tfv, g(close))'].join("\n"), {}, ["x"]);
-    const direct = runVars([...F, "var float x = na", "x := g(close)"].join("\n"), {}, ["x"]);
-    expectSame(dyn, direct);
+    const lit = runVars([...F, "var float x = na", 'x := request.security("", "240", g(close))'].join("\n"), {}, ["x"]);
+    expectSame(dyn, lit);
+    // Bar 0 closes up ("240"), bar 1 down ("60").
+    const G = ["g(x) =>", "    x * 2 + 1", 'tfv = "60"', 'tfv := close > open ? "240" : "60"'];
+    expect(() => runVars([...G, "var float x = na", 'x := request.security("", tfv, g(close))'].join("\n"), {}, ["x"])).toThrow(
+      /timeframe of a request changed from "240" to "60" on bar 1/,
+    );
   });
 });
 

@@ -31,6 +31,17 @@ function expectScriptContext(prog: ReturnType<typeof analyzeSource>): void {
   expect([...prog.securityExprCallSlots.values()].some((v) => v.script !== undefined)).toBe(true);
 }
 
+// A request.security call outside functions whose timeframe folds neither at compile time nor before
+// the bar loop is no longer refused: the call binds the request to the value the argument has on its
+// first execution (AnalyzedProgram.securityDeferredTfs; mig6.txt "Dynamic requests": "the context of
+// a data request (ticker ID and timeframe) must be known on the first script execution and remain
+// unchanged across all subsequent executions"). The oracle agrees value for value: resin-harness
+// suites/lang/probes/L35.json.
+function expectTfBoundOnFirstExecution(prog: ReturnType<typeof analyzeSource>): void {
+  expect(prog.errors.filter((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toEqual([]);
+  expect(prog.securityDeferredTfs.size).toBeGreaterThan(0);
+}
+
 // A request.security call in a user-defined function, the same way: one request per call of the
 // function, evaluated with that call's arguments (analyzer/security-script.ts
 // planSecurityScriptInFunction; concepts_other-timeframes-and-data.txt "In local scopes": "the Pine
@@ -23083,13 +23094,13 @@ describe("Analyzer request.security SCALAR (non-tuple) bare UDF call expression 
     expect(prog.errors).toEqual([]);
   });
 
-  it("accepts a non-literal (even bar-series dynamic) timeframe argument — C599 전환(배치31 (b)-1): passthrough는 tf가 계산에서 완전히 discard(C436 오라클 근거)라 리터럴 요구 자체가 과잉이었다 (거부를 수용으로 전환, 런타임 슬롯 0개)", () => {
+  it("accepts a non-literal (even bar-series dynamic) timeframe argument: the UDF runs in the requested context, bound on the call's first execution (was pine2py's passthrough, which dropped the timeframe; resin-harness suites/lang/probes/L35.json u1/u2)", () => {
     const prog = analyzeSource(
       SRC_MYFUNC + 'ma = request.security(syminfo.tickerid, close > open ? "D" : "60", myFunc(close))',
     );
-    expect(prog.errors).toEqual([]);
+    expectScriptContext(prog);
     expect(prog.securityRuntimeTfSlots.size).toBe(0);
-    expect(prog.securityTfs.length).toBe(0);
+    expectTfBoundOnFirstExecution(prog);
   });
 
   it("registers a normal call-graph edge / funcCallSlots for the inner UDF, same as any other call to it (usable from another UDF's body too, and nested inside a larger expression like not(...))", () => {
@@ -24131,22 +24142,23 @@ describe("Analyzer request.security tf 상수 전파 (C366 — wild 1위 클러�
     expect(prog.securityTfs).toEqual(["60"]);
   });
 
-  it("still rejects when the variable is ':='-reassigned anywhere — even AFTER the call site (prescan은 소스 순서 무관)", () => {
+  it("no longer rejects when the variable is ':='-reassigned anywhere — even AFTER the call site (prescan은 소스 순서 무관) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const before = analyzeSource('tf = "60"\ntf := "240"\nx = request.security("", tf, close)');
-    expect(before.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(before);
 
+    // The call reads tf before the bar's `:=`: it binds "60".
     const after = analyzeSource('tf = "60"\nx = request.security("", tf, close)\ntf := "240"');
-    expect(after.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(after);
   });
 
-  it("still rejects a conditional ':=' reassignment inside an if block", () => {
+  it("no longer rejects a conditional ':=' reassignment inside an if block — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(['tf = "60"', "if close > open", '    tf := "240"', 'x = request.security("", tf, close)'].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects a ternary/dynamic value (진짜 동적 tf는 범위 밖)", () => {
+  it("no longer rejects a ternary/dynamic value (진짜 동적 tf는 범위 밖) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource('tf = close > open ? "60" : "240"\nx = request.security("", tf, close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
   // C526: 이전엔 "전역 유일" 판정이 바인딩 총 개수로만 걸려, 무관한 다른 함수의 동명 매개변수가
@@ -24167,11 +24179,11 @@ describe("Analyzer request.security tf 상수 전파 (C366 — wild 1위 클러�
     expect(prog.securityTfs).toEqual(["240"]);
   });
 
-  it("still rejects when a for-loop variable shares the name (바인딩 카운트 2)", () => {
+  it("no longer rejects when a for-loop variable shares the name (바인딩 카운트 2) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       ['tf = "60"', "s = 0.0", "for tf = 1 to 3", "    s := s + tf", 'x = request.security("", tf, close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
   // C526: MethodDecl 매개변수도 FuncDecl과 동일한 shadowFuncs 자격(paramOfFunc)으로 등재된다 —
@@ -24183,11 +24195,11 @@ describe("Analyzer request.security tf 상수 전파 (C366 — wild 1위 클러�
     expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(false);
   });
 
-  it("still rejects two '=' bindings of the same name (top-level + 중첩 블록 재선언)", () => {
+  it("no longer rejects two '=' bindings of the same name (top-level + 중첩 블록 재선언) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       ['tf = "60"', "if close > open", '    tf = "240"', '    z = tf', 'x = request.security("", tf, close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
   it("accepts input.timeframe with an Identifier defval that is itself a resolvable top-level string const (C667 — was rejected before, base is itself a const)", () => {
@@ -24196,11 +24208,11 @@ describe("Analyzer request.security tf 상수 전파 (C366 — wild 1위 클러�
     expect(prog.securityTfs).toEqual(["60"]);
   });
 
-  it("still rejects input.timeframe with a genuinely non-const defval identifier (런타임에 갈리는 값은 여전히 폴딩 불가)", () => {
+  it("no longer rejects input.timeframe with a genuinely non-const defval identifier (런타임에 갈리는 값은 여전히 폴딩 불가) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       ['base = close > open ? "60" : "240"', "tf = input.timeframe(base)", 'x = request.security("", tf, close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
   it("rejects use-before-declaration of the tf variable on all three expression paths (early-return 경로도 tfArg를 부작용 분석)", () => {
@@ -24368,7 +24380,7 @@ describe("Analyzer request.security tf 함수-로컬 숫자/불리언 변수 (C6
     expect(prog.securityTfs).toEqual(["60", "D"]);
   });
 
-  it("still rejects when the func-local numeric var used in the tf ternary condition is ':=' reassigned anywhere in the function", () => {
+  it("no longer rejects when the func-local numeric var used in the tf ternary condition is ':=' reassigned anywhere in the function — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       [
         "f() =>",
@@ -24379,7 +24391,7 @@ describe("Analyzer request.security tf 함수-로컬 숫자/불리언 변수 (C6
         'x = request.security("", f(), close)',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
   it("still rejects when the func-local numeric var used in the tf ternary condition is declared only inside a nested block (funcTop 자격 위반 — request.security 콜 자체를 그 블록 안에 둬 바깥 if 조건의 폴딩 가능 여부와 무관하게 검증)", () => {
@@ -24647,18 +24659,18 @@ describe("Analyzer request.security tf: top-level 변수 vs 무관한 함수의 
     expect(prog.securityTfs).toEqual(["12M", "3M"]);
   });
 
-  it("still rejects when the TOP-LEVEL binding itself (not a function-local one) is ':='-reassigned outside any function (진짜 동적 top-level 변수는 여전히 거부)", () => {
+  it("no longer rejects when the TOP-LEVEL binding itself (not a function-local one) is ':='-reassigned outside any function (진짜 동적 top-level 변수는 여전히 거부) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(['resolution = "60"', 'resolution := "240"', 'x = request.security("", resolution, close)'].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects when the top-level name has a second '=' binding inside a top-level (non-function) nested block — scope boundary genuinely unclear, conservative reject preserved", () => {
+  it("no longer rejects when the top-level name has a second '=' binding inside a top-level (non-function) nested block — scope boundary genuinely unclear, conservative reject preserved — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       ['resolution = "60"', "if close > open", '    resolution = "240"', '    z = resolution', 'x = request.security("", resolution, close)'].join(
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
   it("still rejects when a for-loop variable inside a DIFFERENT function shares the top-level name (for-loop/tuple/param axes remain symmetric — funcOwner extends the SAME shadowFuncs safety net)", () => {
@@ -24751,13 +24763,13 @@ describe("Analyzer request.security tf: input.string/timeframe(defval=Identifier
     expect(prog.securityTfs).toEqual(["Auto"]);
   });
 
-  it("does NOT fold when the defval identifier isn't a resolvable top-level constant (conservative reject preserved)", () => {
+  it("does NOT fold when the defval identifier isn't a resolvable top-level constant (conservative reject preserved) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       ['AUTO = close > open ? "60" : "240"', 'tf = input.string(defval=AUTO)', 'x = request.security("", tf, close)'].join(
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
   it("full wild idiom: get_pivot_resolution() accumulator tail whose branches compare against input.string(defval=AUTO)-sourced options", () => {
@@ -24814,9 +24826,9 @@ describe("Analyzer request.security tf 배치31 런타임 tf (C597, direct input
     expect(prog.errors).toEqual([]);
   });
 
-  it("rejects a non-literal defval inside the direct input.*(...) call (C598 버그 수정 전환: C597 초판은 이 폼을 수용했지만 프리앰블 rebuildSecurityCache가 per-bar '=' 로컬 'n'을 참조해 실행 시 ReferenceError — securityRuntimeTfInputCallSafe 게이트가 방출-슬롯 비리터럴을 거부, scratch 실행 재현으로 확정)", () => {
+  it("no longer rejects a non-literal defval inside the direct input.*(...) call (C598 버그 수정 전환: C597 초판은 이 폼을 수용했지만 프리앰블 rebuildSecurityCache가 per-bar '=' 로컬 'n'을 참조해 실행 시 ReferenceError — securityRuntimeTfInputCallSafe 게이트가 방출-슬롯 비리터럴을 거부, scratch 실행 재현으로 확정) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource('n = "60"\nx = request.security("", input.timeframe(n), close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
   it("now accepts an indirect (variable-routed) input.timeframe(...) tf whose defval identifier is itself a const (C667 widened C366 const-propagation to chain through input defval Identifiers)", () => {
@@ -24931,44 +24943,44 @@ describe("Analyzer request.security tf 배치31 (a)-2 런타임 tf (C598, 변수
     expect(prog.securityTfConstGuards.size).toBe(0);
   });
 
-  it("still rejects a stateful-call cond routed through a variable (ta.* 콜 정의 — bool 문법 밖)", () => {
+  it("no longer rejects a stateful-call cond routed through a variable (ta.* 콜 정의 — bool 문법 밖) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       ['cond = ta.rising(close, 2)', 'tf = cond ? "60" : "D"', 'x = request.security("", tf, close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects numeric </> comparisons in the cond (==/!= 문자열 비교만 문법 안 — bar series 조건 경계 유지)", () => {
+  it("no longer rejects numeric </> comparisons in the cond (==/!= 문자열 비교만 문법 안 — bar series 조건 경계 유지) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       ['tf = input.int(5, "N") > 3 ? "60" : "D"', 'x = request.security("", tf, close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects a '+' concatenation tf (concatBinOps가 노드-키 Map이라 합성 노드는 숫자 덧셈으로 오방출 — 의도적 문법 밖)", () => {
+  it("no longer rejects a '+' concatenation tf (concatBinOps가 노드-키 Map이라 합성 노드는 숫자 덧셈으로 오방출 — 의도적 문법 밖) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(['p = "6"', 'tf = p + "0"', 'x = request.security("", tf, close)'].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects a ':='-reassigned ternary variable (재대입 0회 전제 — uniqueTopEqVars 부적격)", () => {
+  it("no longer rejects a ':='-reassigned ternary variable (재대입 0회 전제 — uniqueTopEqVars 부적격) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       ['u = input.bool(true, "U")', 'tf = u ? input.timeframe("60", "A") : "D"', 'tf := "W"', 'x = request.security("", tf, close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects a nested input.* leaf with a non-literal emitted arg (title 위치 '=' 로컬 — 프리앰블 ReferenceError 방지 게이트, C597 직접-콜 버그와 동일 클래스)", () => {
+  it("no longer rejects a nested input.* leaf with a non-literal emitted arg (title 위치 '=' 로컬 — 프리앰블 ReferenceError 방지 게이트, C597 직접-콜 버그와 동일 클래스) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       ['t = "Res"', 'u = input.bool(true, "U")', 'tf = u ? input.timeframe("60", t) : "D"', 'x = request.security("", tf, close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects a nested no-defval input call (rt.input.*($.inputs, undefined, ...) 방출로 undefined tf가 새는 것 방지 — C435 거부 의도 유지)", () => {
+  it("no longer rejects a nested no-defval input call (rt.input.*($.inputs, undefined, ...) 방출로 undefined tf가 새는 것 방지 — C435 거부 의도 유지) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       ['u = input.bool(true, "U")', 'tf = u ? input.timeframe(title="R") : "D"', 'x = request.security("", tf, close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
   it("accepts a variable-routed ternary tf with a ta.* expression series argument — C599 전환(배치31 (b)-1): isBareSeries 게이트 해제, C598 치환 트리를 exprMatch 콜사이트가 그대로 소비한다", () => {
@@ -25057,33 +25069,33 @@ describe("Analyzer request.security tf str.tostring 조합자 + 삼항 폴딩 �
     expect(prog.errors).toEqual([]);
   });
 
-  it("still rejects str.tostring of an input.float leaf (isInt 미보장 — pyFloatStr 소수 표기가 tf 문자열을 오염)", () => {
+  it("no longer rejects str.tostring of an input.float leaf (isInt 미보장 — pyFloatStr 소수 표기가 tf 문자열을 오염) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource('x = request.security("", str.tostring(input.float(1.5, "F")), close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects str.tostring of a bar-series value (동적 tf 경계 유지)", () => {
+  it("no longer rejects str.tostring of a bar-series value (동적 tf 경계 유지) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource('x = request.security("", str.tostring(close), close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects a decimal format ('#.##' — SECURITY_TOSTRING_FMT_RE 밖, 소수 출력은 tf로 무의미)", () => {
+  it("no longer rejects a decimal format ('#.##' — SECURITY_TOSTRING_FMT_RE 밖, 소수 출력은 tf로 무의미) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource('x = request.security("", str.tostring(input.int(60, "T"), "#.##"), close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects a '/' in the numeric subtree (rt.idiv/pineDiv 노드-키 판별과 어긋날 수 있어 문법 밖)", () => {
+  it("no longer rejects a '/' in the numeric subtree (rt.idiv/pineDiv 노드-키 판별과 어긋날 수 있어 문법 밖) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       ['mins = input.int(120, "M")', "tfStr = str.tostring(mins / 2)", 'x = request.security("", tfStr, close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects a bar-series ternary cond even with tostring branches (폴딩도 런타임 bool 문법도 불가 — 동적 tf 경계)", () => {
+  it("no longer rejects a bar-series ternary cond even with tostring branches (폴딩도 런타임 bool 문법도 불가 — 동적 tf 경계) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       ['t = close > open ? str.tostring(input.int(5, "N")) : "60"', 'x = request.security("", t, close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 });
 
@@ -25134,18 +25146,18 @@ describe("Analyzer request.security tf 배치31 (b)-1 런타임 tf 확장 (C599,
     expect(prog.securityRuntimeTfSlots.size).toBe(1);
   });
 
-  it("accepts a scalar bare-UDF passthrough with a ':='-reassigned (완전 동적) tf 변수 — tf discard라 해석 자체가 불필요", () => {
+  it("accepts a scalar bare-UDF call with a ':='-reassigned (완전 동적) tf 변수: the UDF runs in the requested context, bound on the call's first execution (was pine2py's passthrough, which dropped the timeframe; resin-harness suites/lang/probes/L35.json u1)", () => {
     const prog = analyzeSource(
       ["g(x) =>", "    x * 2", 'tfv = "60"', 'tfv := close > open ? "240" : "60"', 'y = request.security("", tfv, g(close))'].join("\n"),
     );
-    expect(prog.errors).toEqual([]);
+    expectScriptContext(prog);
     expect(prog.securityRuntimeTfSlots.size).toBe(0);
-    expect(prog.securityTfs.length).toBe(0);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects a genuinely dynamic (bar-series ternary) tf on an expression call site (C598 문법 밖 — 경계 유지)", () => {
+  it("no longer rejects a genuinely dynamic (bar-series ternary) tf on an expression call site (C598 문법 밖 — 경계 유지) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource('x = request.security("", close > open ? "240" : "60", ta.sma(close, 5))');
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
   // A request per call of g, each call's slot built once on the runtime timeframe (resin-harness
@@ -25158,11 +25170,11 @@ describe("Analyzer request.security tf 배치31 (b)-1 런타임 tf 확장 (C599,
     expect(prog.securityRuntimeTfSlots.size).toBe(2);
   });
 
-  it("still rejects a ':='-reassigned tf variable on an expression (non-passthrough) call site (재대입 0회 전제 유지)", () => {
+  it("no longer rejects a ':='-reassigned tf variable on an expression (non-passthrough) call site (재대입 0회 전제 유지) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       ['tfv = "60"', 'tfv := "240"', 'x = request.security("", tfv, ta.sma(close, 5))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 });
 
@@ -27057,19 +27069,19 @@ describe("Analyzer request.security tf ternary 조건 폴딩 (C510, wild empty-s
     expect(prog.securityTfs).toEqual(["60"]);
   });
 
-  it("still rejects when the comparison operand is a genuinely runtime value (bar series), even directly in the tf argument", () => {
+  it("no longer rejects when the comparison operand is a genuinely runtime value (bar series), even directly in the tf argument — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource('x = request.security("", close > open ? "60" : "240", close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects a bare boolean flag the resolver cannot fold (var 선언 bool — C513이 input.bool 폴딩을 열어 소스를 var 폼으로 전환, 거부 의도는 보존)", () => {
+  it("no longer rejects a bare boolean flag the resolver cannot fold (var 선언 bool — C513이 input.bool 폴딩을 열어 소스를 var 폼으로 전환, 거부 의도는 보존) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource('var useAlt = true\nalt = input.timeframe("60")\nx = request.security("", useAlt ? alt : timeframe.period, close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects when one comparison operand doesn't resolve to a compile-time string constant", () => {
+  it("no longer rejects when one comparison operand doesn't resolve to a compile-time string constant — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource('tf = input.timeframe("")\ny = "reassigned"\ny := "other"\nx = request.security("", tf == y ? timeframe.period : tf, close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 });
 
@@ -27104,25 +27116,25 @@ describe("Analyzer request.security tf ternary 조건: bare bool 변수 재귀 �
     expect(prog.securityTfs).toEqual(["D"]);
   });
 
-  it("still rejects when the bool variable's own definition is a genuinely runtime value (C513이 input.bool 상수 폼 폴딩을 열어 소스를 런타임 bool로 전환, 거부 의도는 보존)", () => {
+  it("no longer rejects when the bool variable's own definition is a genuinely runtime value (C513이 input.bool 상수 폼 폴딩을 열어 소스를 런타임 bool로 전환, 거부 의도는 보존) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       'useAlt = barstate.isconfirmed\nalt = input.timeframe("60")\nx = request.security("", useAlt ? alt : timeframe.period, close)',
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects when the bool variable's comparison operand isn't a compile-time string constant", () => {
+  it("no longer rejects when the bool variable's comparison operand isn't a compile-time string constant — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       'tf = input.string("Chart", "Res")\ny = "reassigned"\ny := "other"\nuseAlt = tf != y\nx = request.security("", useAlt ? tf : timeframe.period, close)',
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects a forward-referenced bool variable (used-before-declared order guard)", () => {
+  it("no longer rejects a forward-referenced bool variable (used-before-declared order guard) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       'x = request.security("", useAlt ? tf : timeframe.period, close)\ntf = input.string("Chart", "Res")\nuseAlt = tf != "Chart"',
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 });
 
@@ -27215,33 +27227,33 @@ describe("Analyzer request.security tf ternary 조건: 산술 임계값 체인 �
     expect(prog.securityTfs).toEqual(["120"]);
   });
 
-  it("folds division only when the quotient is exact (int/float semantics agree)", () => {
+  it("folds division only when the quotient is exact (int/float semantics agree) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const exact = analyzeSource('x = request.security("", timeframe.in_seconds() / 60 >= 1440 ? "D" : "60", close)');
     expect(exact.errors).toEqual([]);
     expect(exact.securityTfs).toEqual(["D"]);
 
     // 86400/7은 몫이 정수가 아니라 Pine int 절삭과 JS float가 갈릴 수 있어 보수적으로 미폴딩
     const inexact = analyzeSource('x = request.security("", timeframe.in_seconds() / 7 > 3 ? "60" : "D", close)');
-    expect(inexact.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(inexact);
   });
 
-  it("still rejects a threshold comparison over a genuinely runtime value (bar series)", () => {
+  it("no longer rejects a threshold comparison over a genuinely runtime value (bar series) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource('x = request.security("", close > 10 ? "60" : "240", close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects when a numeric operand comes from input.int (런타임 오버라이드 가능 값은 미폴딩)", () => {
+  it("no longer rejects when a numeric operand comes from input.int (런타임 오버라이드 가능 값은 미폴딩) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       'n = input.int(3600)\nx = request.security("", timeframe.in_seconds() > n ? "60" : "D", close)',
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects a reassigned (:=) numeric variable in the condition", () => {
+  it("no longer rejects a reassigned (:=) numeric variable in the condition — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       's = 7200\ns := 60\nx = request.security("", s > 3600 ? "60" : "D", close)',
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
   it("still rejects a forward-referenced tf variable through the uniqueTopEqVars value recursion", () => {
@@ -27310,11 +27322,11 @@ describe("Analyzer request.security tf ternary 조건: timeframe.is*/bare input/
     expect(prog.securityTfConstGuards.size).toBe(0);
   });
 
-  it("still rejects a bare input with a non-bool defval used as the condition (보수 유지)", () => {
+  it("no longer rejects a bare input with a non-bool defval used as the condition (보수 유지) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       'useX = input("yes")\nx = request.security("", useX ? "60" : "D", close)',
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
   it("folds boolean equality `mode == true` via the C537 bool fallback", () => {
@@ -27333,14 +27345,14 @@ describe("Analyzer request.security tf ternary 조건: timeframe.is*/bare input/
     expect(prog.securityTfs).toEqual(["240"]);
   });
 
-  it("still rejects a runtime boolean equality ((close > 0) == true)", () => {
+  it("no longer rejects a runtime boolean equality ((close > 0) == true) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource('x = request.security("", (close > 0) == true ? "60" : "D", close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects a non-boolean timeframe string prop in the condition position", () => {
+  it("no longer rejects a non-boolean timeframe string prop in the condition position — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource('x = request.security("", timeframe.period ? "60" : "D", close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 });
 
@@ -27407,7 +27419,7 @@ describe("Analyzer request.security tf ternary 조건: 단일식 UDF 콜 평가 
     expect(prog.securityTfs).toEqual(["60"]);
   });
 
-  it("still rejects when a runtime value flows in as a call ARGUMENT (지배값 단락은 본문 한정 — 인자는 전원 상수)", () => {
+  it("no longer rejects when a runtime value flows in as a call ARGUMENT (지배값 단락은 본문 한정 — 인자는 전원 상수) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       [
         'en = input.bool(false, "")',
@@ -27415,7 +27427,7 @@ describe("Analyzer request.security tf ternary 조건: 단일식 UDF 콜 평가 
         'x = request.security("", gate(en, close) ? "60" : "D", close)',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes(TF_ERR))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
   it("folds a string-returning UDF call directly in the tf argument position", () => {
@@ -27436,13 +27448,13 @@ describe("Analyzer request.security tf ternary 조건: 단일식 UDF 콜 평가 
     expect(prog.securityTfs).toEqual(["240"]);
   });
 
-  it("rejects when str.tonumber's argument doesn't parse to a number (NaN은 임계값 비교에 흘리지 않음)", () => {
+  it("no longer rejects when str.tonumber's argument doesn't parse to a number (NaN은 임계값 비교에 흘리지 않음) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       ['res = "Chart"', "bigger(r) => str.tonumber(r) > 60", 'x = request.security("", bigger(res) ? "60" : res, close)'].join(
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes(TF_ERR))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
   it("lets a UDF parameter shadow a same-named top-level constant inside the body (env 우선 조회)", () => {
@@ -27470,11 +27482,11 @@ describe("Analyzer request.security tf ternary 조건: 단일식 UDF 콜 평가 
     expect(prog.securityTfs).toEqual(["15"]);
   });
 
-  it("still rejects when a call argument is a genuinely runtime value (bar series)", () => {
+  it("no longer rejects when a call argument is a genuinely runtime value (bar series) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       ["gate(v) => v > 0", 'x = request.security("", gate(close) ? "60" : "D", close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes(TF_ERR))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
   // C625: 이전엔 "단일식 본문만 폴딩 대상"이라 거부했으나, tmp=e 후 bare tmp 참조는 정확히
@@ -27497,7 +27509,7 @@ describe("Analyzer request.security tf ternary 조건: 단일식 UDF 콜 평가 
     expect(prog.securityTfs).toEqual(["60"]);
   });
 
-  it("still rejects a callsite that uses kwargs (위치 인자 전용 — 보수 원칙)", () => {
+  it("no longer rejects a callsite that uses kwargs (위치 인자 전용 — 보수 원칙) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       [
         "gate(e) => e",
@@ -27505,18 +27517,18 @@ describe("Analyzer request.security tf ternary 조건: 단일식 UDF 콜 평가 
         'x = request.security("", gate(e = en) ? "60" : "D", close)',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes(TF_ERR))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("terminates on a self-recursive UDF via the fn: visiting guard (폴딩 포기, 에러 유지)", () => {
+  it("terminates on a self-recursive UDF via the fn: visiting guard (폴딩 포기 — the call would bind the timeframe on its first execution, resin-harness suites/lang/probes/L35.json; the recursion itself is rejected)", () => {
     const prog = analyzeSource(
       ["rec(e) => rec(e)", 'x = request.security("", rec(true) ? "60" : "D", close)'].join("\n"),
     );
-    expect(prog.errors.length > 0).toBe(true);
-    expect(prog.securityTfs).toEqual([]);
+    expect(prog.errors.some((e) => e.includes("recursive cycle"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects a bare input.bool flag that is := reassigned (uniqueTopEqVars 비대상 재확인)", () => {
+  it("no longer rejects a bare input.bool flag that is := reassigned (uniqueTopEqVars 비대상 재확인) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       [
         "flag = true",
@@ -27524,7 +27536,7 @@ describe("Analyzer request.security tf ternary 조건: 단일식 UDF 콜 평가 
         'x = request.security("", flag ? "60" : "D", close)',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes(TF_ERR))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
   it("folds a directly-consumed bare input.bool const variable as the whole condition (C511 잔여 폼 — 가드 동반)", () => {
@@ -27578,19 +27590,19 @@ describe("Analyzer request.security tf: str.tostring(숫자상수) 폴딩 (C538)
     expect(prog.securityTfs).toEqual(["30"]);
   });
 
-  it("still rejects str.tostring of a non-integer compile-time constant (int/float 미구분 보수 원칙, C200)", () => {
+  it("no longer rejects str.tostring of a non-integer compile-time constant (int/float 미구분 보수 원칙, C200) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource('x = request.security("", str.tostring(1.5), close)');
-    expect(prog.errors.some((e) => e.includes(TF_ERR))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects str.tostring with a format argument (단순 String(n)과 출력이 달라질 수 있어 범위 밖)", () => {
+  it("no longer rejects str.tostring with a format argument (단순 String(n)과 출력이 달라질 수 있어 범위 밖) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource('x = request.security("", str.tostring(60, "#.##"), close)');
-    expect(prog.errors.some((e) => e.includes(TF_ERR))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects str.tostring of a genuinely runtime value (bar series)", () => {
+  it("no longer rejects str.tostring of a genuinely runtime value (bar series) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource('x = request.security("", str.tostring(close), close)');
-    expect(prog.errors.some((e) => e.includes(TF_ERR))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
   it("accepts str.tostring of an input.int() value via the RUNTIME slot only (C730 전환 — 원 의도 보존: NumericConst 컴파일타임 폴딩은 여전히 input 미처리라 securityTfs에 리터럴이 안 실리고, 수용은 securityRuntimeTfSlots 경유)", () => {
@@ -27677,9 +27689,9 @@ describe("Analyzer request.security tf ternary 조건: na(NaLiteral) 분기 폴�
     expect(prog.securityTfConstGuards.size).toBe(0);
   });
 
-  it("still rejects when the ternary condition itself cannot be folded, even if the false branch is na (보수 원칙 무회귀)", () => {
+  it("no longer rejects when the ternary condition itself cannot be folded, even if the false branch is na (보수 원칙 무회귀) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource('x = request.security("", close > 0 ? "60" : na, close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
   it("propagates the na fold through the tuple-literal expression path", () => {
@@ -27706,18 +27718,18 @@ describe("Analyzer request.security tf: fresh typed VarDecl 바인딩의 uniqueT
     expect(prog.securityTfs).toEqual(["60"]);
   });
 
-  it("still rejects when the typed VarDecl is persistent (var) — once-only init excluded from uniqueTopEqVars", () => {
+  it("no longer rejects when the typed VarDecl is persistent (var) — once-only init excluded from uniqueTopEqVars — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       ['pick() =>\n    "60"', 'var string tf = pick()', 'x = request.security("", tf, close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes(TF_ERR))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects when the fresh typed VarDecl is later reassigned (':=' disqualifies uniqueTopEqVars regardless of eq widening)", () => {
+  it("no longer rejects when the fresh typed VarDecl is later reassigned (':=' disqualifies uniqueTopEqVars regardless of eq widening) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       ['pick() =>\n    "60"', 'string tf = pick()', 'tf := "240"', 'x = request.security("", tf, close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes(TF_ERR))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
   it("still resolves a fresh typed VarDecl through the existing constStringVars path when the value is already a supported literal shape (no regression)", () => {
@@ -27837,7 +27849,7 @@ describe("Analyzer request.security tf switch-as-expression 값 폴딩 (C515)", 
     expect(prog.securityTfs).toEqual(["D"]);
   });
 
-  it("still rejects when the no-match/no-default arm cannot be confirmed because an earlier case value is unresolved", () => {
+  it("no longer rejects when the no-match/no-default arm cannot be confirmed because an earlier case value is unresolved — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       [
         'tf = "9Z"',
@@ -27847,7 +27859,7 @@ describe("Analyzer request.security tf switch-as-expression 값 폴딩 (C515)", 
         'x = request.security("", pick(), close)',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes(TF_ERR))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
   it("folds a subject-less (if-elif style) switch when the matching case condition is a compile-time boolean (C606 — C515's 'no wild evidence' premise reversed by wild getHTF() auto-HTF idiom)", () => {
@@ -27896,7 +27908,7 @@ describe("Analyzer request.security tf switch-as-expression 값 폴딩 (C515)", 
     expect(prog.securityTfs).toEqual(["D"]);
   });
 
-  it("still rejects a subject-less switch when an earlier case condition cannot be resolved at compile time (order-conservative)", () => {
+  it("no longer rejects a subject-less switch when an earlier case condition cannot be resolved at compile time (order-conservative) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       [
         "pick() =>",
@@ -27906,10 +27918,10 @@ describe("Analyzer request.security tf switch-as-expression 값 폴딩 (C515)", 
         'x = request.security("", pick(), close)',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes(TF_ERR))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects when an earlier, unmatched case value cannot be resolved (order-conservative — 뒤 case 매치를 신뢰하지 않음)", () => {
+  it("no longer rejects when an earlier, unmatched case value cannot be resolved (order-conservative — 뒤 case 매치를 신뢰하지 않음) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       [
         'tf = "60"',
@@ -27921,10 +27933,10 @@ describe("Analyzer request.security tf switch-as-expression 값 폴딩 (C515)", 
         'x = request.security("", pick(), close)',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes(TF_ERR))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects a multi-statement case body (only the last ExprStmt counts, and its value is not top-level resolvable)", () => {
+  it("no longer rejects a multi-statement case body (only the last ExprStmt counts, and its value is not top-level resolvable) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       [
         'tf = "1H"',
@@ -27937,7 +27949,7 @@ describe("Analyzer request.security tf switch-as-expression 값 폴딩 (C515)", 
         'x = request.security("", pick(), close)',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes(TF_ERR))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 });
 
@@ -28049,21 +28061,21 @@ describe("Analyzer request.security tf IfStmt-as-expression 값 폴딩 (C607)", 
     expect(prog.securityTfs).toEqual(["60"]);
   });
 
-  it("still rejects when the if-body UDF has no else branch and the condition folds false (non-exhaustive — no value on the false path)", () => {
+  it("no longer rejects when the if-body UDF has no else branch and the condition folds false (non-exhaustive — no value on the false path) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       ['pick() =>', "    if timeframe.isweekly", '        "W"', 'x = request.security("", pick(), close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes(TF_ERR))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects when the if condition cannot be resolved at compile time (bar series comparison)", () => {
+  it("no longer rejects when the if condition cannot be resolved at compile time (bar series comparison) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       ['pick() =>', "    if close > 0", '        "60"', "    else", '        "D"', 'x = request.security("", pick(), close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes(TF_ERR))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects when an earlier elif condition is unresolved even though the first condition is already false (order-conservative)", () => {
+  it("no longer rejects when an earlier elif condition is unresolved even though the first condition is already false (order-conservative) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       [
         "pick() =>",
@@ -28076,7 +28088,7 @@ describe("Analyzer request.security tf IfStmt-as-expression 값 폴딩 (C607)", 
         'x = request.security("", pick(), close)',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes(TF_ERR))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
   // C608: 이전엔 "값 없는 문장(Assignment)으로 끝나는 분기"를 무조건 거부했으나, DIVERGENCES.md
@@ -28245,7 +28257,7 @@ describe("Analyzer request.security tf UDF 마지막 문장 Assignment -> 대입
     expect(prog.securityTfs).toEqual(["60"]);
   });
 
-  it("still rejects when the matched branch's Assignment reassigns to a genuinely unresolvable runtime value (bar series)", () => {
+  it("no longer rejects when the matched branch's Assignment reassigns to a genuinely unresolvable runtime value (bar series) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       [
         "pick() =>",
@@ -28257,7 +28269,7 @@ describe("Analyzer request.security tf UDF 마지막 문장 Assignment -> 대입
         'y = request.security("", pick(), close)',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes(TF_ERR))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
   it("folds a SwitchStmt-as-last-statement UDF body preceded by unrelated statements (body-length relaxation applies to switch too)", () => {
@@ -28354,16 +28366,16 @@ describe("Analyzer request.security tf UDF 누산기 변수 값 폴딩 (C625)", 
     expect(prog.securityTfs).toEqual(["D2"]);
   });
 
-  it("still rejects when an If that DOES touch the accumulator has an unresolvable condition, even though it isn't the tail statement", () => {
+  it("no longer rejects when an If that DOES touch the accumulator has an unresolvable condition, even though it isn't the tail statement — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       ["pick() =>", '    x = "A"', "    if close > 0", '        x := "60"', "    else", '        x := "D"', "    x", 'y = request.security("", pick(), close)'].join(
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes(TF_ERR))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects when an unconditional ':=' reassignment can't be resolved, even if a later branch would otherwise fold fine", () => {
+  it("no longer rejects when an unconditional ':=' reassignment can't be resolved, even if a later branch would otherwise fold fine — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       [
         "pick() =>",
@@ -28375,7 +28387,7 @@ describe("Analyzer request.security tf UDF 누산기 변수 값 폴딩 (C625)", 
         'y = request.security("", pick(), close)',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes(TF_ERR))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
   it("threads the value through multiple independent (non-elif-chained) If statements in source order", () => {
@@ -28843,18 +28855,18 @@ describe("Analyzer request.security tf defval= 키워드 폼 + 빈 tf 정규화 
     expect(prog.securityTfs).toEqual(["60"]);
   });
 
-  it("still rejects a defval= kwarg Identifier that isn't const-foldable (런타임에 갈리는 값은 여전히 폴딩 불가)", () => {
+  it("no longer rejects a defval= kwarg Identifier that isn't const-foldable (런타임에 갈리는 값은 여전히 폴딩 불가) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource(
       ['base = close > open ? "60" : "240"', 'tf = input.timeframe(defval=base, title="Res")', 'x = request.security("", tf, close)'].join(
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects an input call with no defval at all (title=만 있는 콜은 폴딩 불가)", () => {
+  it("no longer rejects an input call with no defval at all (title=만 있는 콜은 폴딩 불가) — now bound on the call's first execution (resin-harness suites/lang/probes/L35.json)", () => {
     const prog = analyzeSource('tf = input.timeframe(title="Res")\nx = request.security("", tf, close)');
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundOnFirstExecution(prog);
   });
 
   it("prefers the positional defval when both positional and unrelated kwargs are present (기존 위치 폼 무회귀)", () => {

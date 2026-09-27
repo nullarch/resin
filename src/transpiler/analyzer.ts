@@ -2928,6 +2928,13 @@ export interface AnalyzedProgram {
   // (runtime/context.ts 참조) — 읽기 측(securityCallSlots 소비 codegen)은 슬롯 인덱스로
   // $.securityCache[slot]을 그대로 읽으므로 리터럴 슬롯과 코드 경로가 완전히 동일해 무변경이다.
   securityRuntimeTfSlots: Map<number, Expr>;
+  // A request.security call outside functions whose timeframe folds neither at compile time nor
+  // before the bar loop (securityRuntimeTfSlots): the call's slots (placeholders, prog.chartTf) and
+  // its timeframe argument. The call binds them where it stands, on its first execution, with the
+  // value the argument has there (codegen deferredSecurityRead; mig6.txt "Dynamic requests": "the
+  // context of a data request (ticker ID and timeframe) must be known on the first script execution
+  // and remain unchanged across all subsequent executions").
+  securityDeferredTfs: Map<CallExpr, { slots: number[]; tf: Expr }>;
   // request.security 셋째 슬라이스 서브슬라이스 3a(C180) — expression 인자가 BAR_SERIES_NAMES
   // bare 식별자가 아니라 "확장 좁은 표현식"(C367: ta.* 콜 0~N개 + bare/파생 시리즈 + 정수 리터럴
   // 히스토리 + 전역 유일 '=' 변수 치환, call-expr.ts buildSecurityExpr)으로 판정된 콜사이트.
@@ -3973,6 +3980,7 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
     securityTfs: [],
     securitySymbols: [],
     securityRuntimeTfSlots: new Map(),
+    securityDeferredTfs: new Map(),
     securityExprCallSlots: new Map(),
     securityNestedReads: new Map(),
     securityNestedPrepasses: [],
