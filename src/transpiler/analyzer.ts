@@ -95,7 +95,7 @@ import {
   prepassEnumDecl,
   prepassTypeDecl,
 } from "./analyzer/udt-decls";
-import { resolveArityDisjointOverloads } from "./analyzer/func-overloads";
+import { resolveFuncOverloads } from "./analyzer/func-overloads";
 import {
   analyzeCallExpr,
   detectRecursiveFuncCalls,
@@ -3894,8 +3894,9 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
   resolveSymbolIdentity(options?.syminfo, syminfoErrors, syminfoStrings);
   // C686: arity-disjoint 함수 오버로드를 AST 사전 개명으로 해소 — 다른 모든 prepass(아래
   // prescanConstVars 포함, 전부 이름 기반)보다 반드시 먼저 실행해야 전 파이프라인이 처음부터
-  // 서로 다른 이름의 독립 함수만 본다(func-overloads.ts 주석 참조).
-  resolveArityDisjointOverloads(script);
+  // 서로 다른 이름의 독립 함수만 본다(func-overloads.ts 주석 참조). Same-arity overloads are
+  // told apart by their argument types there; a call whose overload cannot be decided is an error.
+  const overloadErrors = resolveFuncOverloads(script);
   // C130: 단일 패스(analyzeStmt 루프)가 시작되기 전, top-level TypeDecl 이름만 먼저 전부 훑는
   // 사전 스캔(pine2py엔 대응 없음 — pine2py는 필드 타입 검증 자체가 없어 이식 대상이 아니라 이번
   // 슬라이스가 직접 설계한 pine2js 전용 안전장치, python 직접 실행으로 pine2py가 forward-ref/
@@ -4077,7 +4078,7 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
     constVarShadowFuncs: constVarsPrescan.shadowFuncs,
     funcLocalUniqueEqVars: constVarsPrescan.funcLocalUniqueEq,
     securityTfConstGuards: new Map(),
-    errors: syminfoErrors,
+    errors: [...syminfoErrors, ...overloadErrors],
   };
 
   const globalScope: LexScope = {
@@ -6488,6 +6489,12 @@ function inferReturnStmtUdtType(stmt: Stmt, prog: AnalyzedProgram, scope: LexSco
   if (stmt.kind === "ExprStmt") {
     const expr = stmt.expr;
     if (expr.kind === "Identifier") return resolveUdtObjectType(expr, prog, scope) ?? null;
+    // A field read whose field is declared with a user-defined type returns such an object, as the
+    // same read assigned to a variable does (`f(Value v) => g(v)._level`, then `f(x).high`;
+    // language_user-defined-functions.txt: "Each call returns the result of evaluating the final
+    // statement or separate expression defined in the function's body"). The body is analyzed by
+    // now, so the read's type is in udtFieldAccessTypes (the DotAccess case of analyzeExpr).
+    if (expr.kind === "DotAccess") return resolveUdtObjectType(expr, prog, scope) ?? null;
     return isUdtConstructorCall(expr, prog, scope);
   }
   // Assignment-tail(C705, C704와 나란한 확장 — next_hint(C704)): var 없는 '=' 신규 로컬 선언이

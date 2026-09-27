@@ -51,7 +51,7 @@ describe("Analyzer arity-disjoint UDF overloads (C686)", () => {
     expect(prog.funcs.get("f$ov$2")?.paramNames).toEqual(["a", "b"]);
   });
 
-  it("still rejects two same-name FuncDecls with identical arity (needs type dispatch — out of scope)", () => {
+  it("still rejects two same-name FuncDecls with identical arity and no type keywords (nothing tells the calls apart)", () => {
     const prog = analyzeSource("f(x) => x + 1\nf(y) => y + 2");
     expect(prog.errors.some((e) => e.includes("name conflicts with an existing declaration") && e.includes("f"))).toBe(true);
   });
@@ -181,5 +181,102 @@ describe("E2E arity-disjoint UDF overloads (C686, hand-verified)", () => {
     const bars = runBars(source, [1, 2]);
     expect(bars.map((b) => b["var:__obs_p0"])).toEqual([0, 0]);
     expect(bars.map((b) => b["var:__obs_p3"])).toEqual([1.5, 2.5]);
+  });
+});
+
+// Same-arity overloads told apart by a required parameter's type (language_user-defined-functions.txt
+// "Function overloading"; harness twin probe suites/lang/probes/L55.json, realworld 7edbfb3b97d6).
+describe("Same-arity UDF overloads dispatched by argument type", () => {
+  const typed = [
+    "type Lvl",
+    "    float lo = 0.0",
+    "    float hi = 0.0",
+    "tag(string x) => str.length(x) * 100.0",
+    "tag(bool x) => x ? 1.0 : -1.0",
+    "tag(float x) => x * 2",
+    "tag(Lvl x) => x.hi - x.lo",
+  ];
+
+  it("renames every overload after the first and sends each call to the overload of its argument's type", () => {
+    const prog = analyzeSource([...typed, 'a = tag("abc")', "b = tag(close > open)", "c = tag(close)", "d = tag(Lvl.new(1.0, 3.0))"].join("\n"));
+    expect(prog.errors).toEqual([]);
+    expect(["tag", "tag$ov$2", "tag$ov$3", "tag$ov$4"].every((n) => prog.funcs.has(n))).toBe(true);
+  });
+
+  it("hand-verified E2E: literals, comparisons, series, UDT constructors, typed locals and function results", () => {
+    const source = [
+      ...typed,
+      "mk(float a, float b) => Lvl.new(a, b)",
+      "var float __obs_s = na",
+      "var float __obs_b = na",
+      "var float __obs_f = na",
+      "var float __obs_l = na",
+      "var float __obs_i = na",
+      'string s = "ab"',
+      "__obs_s := tag(s)",
+      "__obs_b := tag(close > 1)",
+      "__obs_f := tag(close)",
+      "__obs_l := tag(mk(close, close * 3))",
+      // An int argument goes to the float overload: the one automatic cast.
+      "__obs_i := tag(bar_index)",
+    ].join("\n");
+    const bars = runBars(source, [1, 2]);
+    expect(bars.map((b) => b["var:__obs_s"])).toEqual([200, 200]);
+    expect(bars.map((b) => b["var:__obs_b"])).toEqual([-1, 1]);
+    expect(bars.map((b) => b["var:__obs_f"])).toEqual([2, 4]);
+    expect(bars.map((b) => b["var:__obs_l"])).toEqual([2, 4]);
+    expect(bars.map((b) => b["var:__obs_i"])).toEqual([0, 2]);
+  });
+
+  // The manual calls f(int)/f(float) a valid set (the types differ) but does not spell out an int
+  // argument's choice; the exact overload is the reading under which the set is usable at all.
+  it("an exact int overload wins over the int-to-float cast", () => {
+    const source = ["f(float x) => 1.0", "f(int x) => 2.0", "var float __obs_x = na", "var float __obs_y = na", "__obs_x := f(bar_index)", "__obs_y := f(close)"].join("\n");
+    const bars = runBars(source, [1]);
+    expect(bars[0]!["var:__obs_x"]).toBe(2);
+    expect(bars[0]!["var:__obs_y"]).toBe(1);
+  });
+
+  it("an overload's body sees only the overloads declared before it", () => {
+    const source = [
+      "put(string n, float v) => v + str.length(n)",
+      "put(string n, bool v) => v ? 100.0 : 200.0",
+      'put(float v) => put("abc", v) + put("x", v > 1)',
+      "var float __obs_x = na",
+      "__obs_x := put(close)",
+    ].join("\n");
+    const bars = runBars(source, [1, 2]);
+    expect(bars.map((b) => b["var:__obs_x"])).toEqual([204, 105]);
+  });
+
+  it("a call whose argument type is not known is an error, not a guess", () => {
+    const prog = analyzeSource([...typed, "g(y) => tag(y)", "z = g(close)"].join("\n"));
+    expect(prog.errors.some((e) => e.includes("cannot determine which 'tag' overload"))).toBe(true);
+  });
+
+  it("two overloads whose required types are the same stay a name conflict, parameter names or qualifiers aside", () => {
+    const names = analyzeSource("f(float a) => a\nf(float b) => b * 2");
+    expect(names.errors.some((e) => e.includes("name conflicts with an existing declaration"))).toBe(true);
+    const defaults = analyzeSource("f(float a) => a\nf(float a, float k = 1.0) => a * k");
+    expect(defaults.errors.some((e) => e.includes("name conflicts with an existing declaration"))).toBe(true);
+  });
+
+  it("hand-verified E2E: a returned field-read object takes field reads, and a parameter does not hide a same-name function", () => {
+    const source = [
+      "type Lvl",
+      "    float hi = 0.0",
+      "type Holder",
+      "    Lvl lvl",
+      "wrap(Holder h) => h.lvl",
+      "twice(float x) => x * 2",
+      "useTwice(float twice) => twice(twice) + 1",
+      "var float __obs_hi = na",
+      "var float __obs_t = na",
+      "__obs_hi := wrap(Holder.new(Lvl.new(close * 10))).hi",
+      "__obs_t := useTwice(close)",
+    ].join("\n");
+    const bars = runBars(source, [1, 2]);
+    expect(bars.map((b) => b["var:__obs_hi"])).toEqual([10, 20]);
+    expect(bars.map((b) => b["var:__obs_t"])).toEqual([3, 5]);
   });
 });

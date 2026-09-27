@@ -119,9 +119,14 @@ function safeLocalName(name: string): string {
 // 이 함수 자신의 JS 바인딩만 분리한다 — genTypeDecl의 팩토리는 항상 비-mangled `function
 // <typeName>(...)`을 방출하므로(udtConstructorCalls 콜사이트가 program.udtTypes 키를 그대로 JS
 // 식별자로 쓴다) type 쪽은 그대로 두고 UDF만 "$fn" 접미사로 물러나야 충돌하지 않는다.
+// A parameter or a loop variable is a raw JS binding too, and would hide the function inside the
+// body that declares it (`get(string context) => context(...)` calls the string), so any name some
+// local also binds (program.locals: parameters, '=' locals, loop variables, tuple targets) moves
+// the function aside the same way.
 function funcCodegenName(name: string, program: AnalyzedProgram): string {
   const safe = safeLocalName(name);
-  const needsMangle = program.funcs.get(name)?.shadowedByTopLevelLocal || program.udtTypes.has(name);
+  const needsMangle =
+    program.funcs.get(name)?.shadowedByTopLevelLocal || program.udtTypes.has(name) || program.locals.has(name);
   return needsMangle ? `${safe}$fn` : safe;
 }
 
