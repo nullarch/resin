@@ -327,6 +327,10 @@ export class StrategyState {
   // strategy(use_bar_magnifier=true): fills are judged on the lower-timeframe bars inside each chart
   // bar when the run supplies them (processFills' `sub`), else on the chart bar as usual.
   useBarMagnifier: boolean;
+  // A v6 script (codegen sets it): a strategy.exit() leg given both levels of a pair (limit= and
+  // profit=, stop= and loss=, trail_price= and trail_points=) uses the one the market reaches first;
+  // before v6 the absolute level alone (see exitLimitLevel).
+  exitPairsFirstReached: boolean;
   // strategy(slippage=N): ticks every market or stop fill is moved against the order (see slipped).
   slippage: number;
   // strategy(commission_type=, commission_value=): the fee every filled order pays (see
@@ -598,6 +602,7 @@ export class StrategyState {
     this.barClose = NaN;
     this.processOrdersOnClose = false;
     this.useBarMagnifier = false;
+    this.exitPairsFirstReached = false;
     this.slippage = 0;
     this.commissionType = "percent";
     this.commissionValue = 0;
@@ -3134,9 +3139,7 @@ export class StrategyState {
     const lim = dir * this.exitLimitLevel(l, isLong, base);
     const stp = dir * this.exitStopLevel(l, isLong, base);
     const offset = hasTrail ? l.trailOffset * this.mintick : NaN;
-    const act = !hasTrail
-      ? NaN
-      : dir * (Number.isNaN(l.trailPriceArg) ? this.snapToTick(base + dir * l.trailPoints * this.mintick, isLong) : l.trailPriceArg);
+    const act = hasTrail ? dir * this.exitTrailActivation(l, isLong, base) : NaN;
     let line = dir * l.trailPrice;
     let x = dir * first;
     let hit = NaN;
@@ -3199,6 +3202,14 @@ export class StrategyState {
 
   // A leg's take-profit level: limit=, else `profit` ticks from `base` (the bound
   // entry's fill price) in the position's favour. NaN when it has neither.
+  // With both, a v6 script uses the one the market reaches first, the nearer to the entry: a long's
+  // lower take-profit, a short's higher (mig6.txt, "strategy.exit() evaluates parameter pairs": "In
+  // Pine v5, a strategy.exit() call containing arguments for both the relative and absolute
+  // parameters ... always prioritizes the absolute parameter and ignores the relative one" ... "In
+  // Pine v6, ... it evaluates both specified levels and uses the one that the market price is
+  // expected to trigger first"; oracle `_resolve_tick_exit`, measured on TradingView). Repro:
+  // resin-harness probe C44 (limit=110, profit=100 ticks = 101: the take-profit fills at 101). An na
+  // level of the pair leaves the other one, in every version.
   // An absolute limit=/stop= is put on the tick grid like an entry's levels, on the side the market
   // has to travel further to reach: a long's take-profit rounds up and its stop-loss down, a
   // short's the other way (a level within 1e-4 tick of a grid point is on it; snapToTick). The
@@ -3208,20 +3219,37 @@ export class StrategyState {
   // slippage, i.e. at 1.14457 + 0.0002; trade 2, a long's 1.14213 * 0.99 = 1.1307087, at
   // 1.1307 - 0.0002 = 1.1305. The unsnapped level filled at 1.1447623 and 1.1305087.
   private exitLimitLevel(l: ExitLeg, isLong: boolean, base: number): number {
-    if (!Number.isNaN(l.limit)) return this.snapToTick(l.limit, isLong);
-    if (Number.isNaN(l.profitPoints)) return NaN;
-    return isLong
+    const abs = Number.isNaN(l.limit) ? NaN : this.snapToTick(l.limit, isLong);
+    if (Number.isNaN(l.profitPoints) || (!Number.isNaN(abs) && !this.exitPairsFirstReached)) return abs;
+    const rel = isLong
       ? this.snapToTick(base + l.profitPoints * this.mintick, true)
       : this.snapToTick(base - l.profitPoints * this.mintick, false);
+    if (Number.isNaN(abs)) return rel;
+    return isLong ? Math.min(abs, rel) : Math.max(abs, rel);
   }
 
   // A leg's stop-loss level: stop=, else `loss` ticks from `base` against the position.
-  // NaN when it has neither.
+  // NaN when it has neither. With both, a v6 script uses the nearer one, a long's higher stop-loss
+  // and a short's lower (see exitLimitLevel).
   private exitStopLevel(l: ExitLeg, isLong: boolean, base: number): number {
-    if (!Number.isNaN(l.stop)) return this.snapToTick(l.stop, !isLong);
-    if (Number.isNaN(l.lossPoints)) return NaN;
-    return isLong
+    const abs = Number.isNaN(l.stop) ? NaN : this.snapToTick(l.stop, !isLong);
+    if (Number.isNaN(l.lossPoints) || (!Number.isNaN(abs) && !this.exitPairsFirstReached)) return abs;
+    const rel = isLong
       ? this.snapToTick(base - l.lossPoints * this.mintick, false)
       : this.snapToTick(base + l.lossPoints * this.mintick, true);
+    if (Number.isNaN(abs)) return rel;
+    return isLong ? Math.max(abs, rel) : Math.min(abs, rel);
+  }
+
+  // A leg's trailing stop activation level: trail_price=, else `trail_points` ticks from `base` in
+  // the position's favour. NaN when it has neither. With both, a v6 script arms the trail at the
+  // nearer one, a long's lower and a short's higher (see exitLimitLevel; mig6.txt names the trailing
+  // stop activation level among the three pairs).
+  private exitTrailActivation(l: ExitLeg, isLong: boolean, base: number): number {
+    const abs = l.trailPriceArg;
+    if (Number.isNaN(l.trailPoints) || (!Number.isNaN(abs) && !this.exitPairsFirstReached)) return abs;
+    const rel = this.snapToTick(base + (isLong ? 1 : -1) * l.trailPoints * this.mintick, isLong);
+    if (Number.isNaN(abs)) return rel;
+    return isLong ? Math.min(abs, rel) : Math.max(abs, rel);
   }
 }

@@ -424,6 +424,12 @@ export function generateCode(program: AnalyzedProgram): string {
   if (program.isStrategy && program.strategyUseBarMagnifier) {
     lines.push("$.strategy.useBarMagnifier = true;");
   }
+  // From v6 on, strategy.exit() weighs both levels of an absolute/relative pair and uses the one the
+  // market reaches first; before v6 the absolute level wins (mig6.txt, "strategy.exit() evaluates
+  // parameter pairs"; StrategyState.exitLimitLevel).
+  if (program.isStrategy && (program.script.version ?? 1) >= 6) {
+    lines.push("$.strategy.exitPairsFirstReached = true;");
+  }
   // strategy(margin_long=, margin_short=), or the version's default (strategyMargins): handed to the
   // strategy engine once per run, only when a margin is set, so a v5 script without them is unchanged.
   if (program.isStrategy) {

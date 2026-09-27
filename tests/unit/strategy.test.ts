@@ -4203,11 +4203,13 @@ describe("strategy.exit profit=/loss= analyzer validation (hand-verified, DIVERG
 
   // C723(배치37 지시 (1)): exitFillPrice()가 이미 limit/stop을 profit/loss보다 우선하는 NaN-폴백
   // 순서라(runtime/strategy.ts L1630-1638) 동시 지정도 상충이 아니라 단순 우선순위 — 하드 에러 제거.
-  it("accepts profit= combined with limit= (limit이 우선, C723)", () => {
+  // Which level of a pair is used is version-dependent (v5 the absolute one, v6 the one reached
+  // first): see "strategy.exit absolute/relative level pairs" below.
+  it("accepts profit= combined with limit= (C723)", () => {
     expect(transpileErrors('strategy("s")\nstrategy.exit("X", limit=15, profit=2)')).toEqual([]);
   });
 
-  it("accepts loss= combined with stop= (stop이 우선, C723)", () => {
+  it("accepts loss= combined with stop= (C723)", () => {
     expect(transpileErrors('strategy("s")\nstrategy.exit("X", stop=9, loss=2)')).toEqual([]);
   });
 
@@ -4275,6 +4277,60 @@ describe("strategy.* E2E profit=/loss= (hand-verified: 익절/손절 포인트 �
   it("realizes the profit-target exit at the computed price (avg+2=14)", () => {
     const result = runPipeline(src, data);
     expect(result.bars.map((b) => b["var:__obs_np"])).toEqual([0, 0, 2, 2, 2]);
+  });
+});
+
+describe("strategy.exit absolute/relative level pairs: v6 uses the level reached first, v5 the absolute one", () => {
+  // mig6.txt, "strategy.exit() evaluates parameter pairs": "In Pine v5, a strategy.exit() call
+  // containing arguments for both the relative and absolute parameters ... always prioritizes the
+  // absolute parameter and ignores the relative one" ... "In Pine v6, ... it evaluates both specified
+  // levels and uses the one that the market price is expected to trigger first." Tier 2 (oracle
+  // `_resolve_tick_exit`, measured on TradingView): resin-harness probe C44 (limit=110, profit=100
+  // ticks: the take-profit fills at 101 on bar 2), twins state/repros/exit-pairs-v6.json and
+  // exit-pairs-trail-v6.json (every pair, both sides).
+  const data: OHLCVData = {
+    open: [100, 100, 100.2, 101],
+    high: [101, 100.5, 101.5, 102],
+    low: [99, 99.8, 100, 100],
+    close: [100, 100.2, 101.2, 101],
+    volume: [100, 100, 100, 100],
+  };
+  const src = (version: number, exit: string) =>
+    [
+      `//@version=${version}`,
+      'strategy("s")',
+      "if bar_index == 0",
+      '    strategy.entry("L", strategy.long, qty=1)',
+      "if strategy.position_size > 0",
+      `    ${exit}`,
+      "var float __obs_np = na",
+      "__obs_np := strategy.netprofit",
+    ].join("\n");
+  const netProfit = (version: number, exit: string) =>
+    runPipeline(src(version, exit), data).bars.map((b) => b["var:__obs_np"]);
+
+  it("v6: a take-profit pair fills at the nearer level (profit=100 ticks = 101 before limit=110)", () => {
+    expect(netProfit(6, 'strategy.exit("x", "L", limit=110, profit=100)')).toEqual([0, 0, 1, 1]);
+  });
+
+  it("v5: the absolute limit= alone (110 is never reached)", () => {
+    expect(netProfit(5, 'strategy.exit("x", "L", limit=110, profit=100)')).toEqual([0, 0, 0, 0]);
+  });
+
+  it("v6: a stop-loss pair fills at the nearer level (loss=10 ticks = 99.9 before stop=95)", () => {
+    const d = { ...data, low: [99, 99.8, 99.85, 100], high: [101, 100.5, 100.3, 102] };
+    const r = runPipeline(src(6, 'strategy.exit("x", "L", stop=95, loss=10)'), d);
+    expect(r.bars.map((b) => b["var:__obs_np"])[2]).toBeCloseTo(-0.1, 9);
+  });
+
+  it("v6: an na absolute level leaves the relative one", () => {
+    expect(netProfit(6, 'strategy.exit("x", "L", limit=na, profit=100)')).toEqual([0, 0, 1, 1]);
+  });
+
+  it("codegen marks v6 strategies only", () => {
+    expect(transpileCode('//@version=6\nstrategy("s")')).toContain("$.strategy.exitPairsFirstReached = true;");
+    expect(transpileCode('//@version=5\nstrategy("s")')).not.toContain("exitPairsFirstReached");
+    expect(transpileCode('//@version=6\nindicator("i")\nplot(close)')).not.toContain("exitPairsFirstReached");
   });
 });
 
