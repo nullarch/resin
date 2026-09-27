@@ -1728,14 +1728,27 @@ describe("ta.mode", () => {
     expect(mode(state, 3, 1)).toBe(3);
   });
 
-  // Unlike ta.median (any NaN in the window poisons the whole result), ta.mode's individual NaN
-  // entries are simply excluded from the frequency count — only an all-NaN window returns NaN.
-  it("skips (does not poison on) individual NaN entries in the window", () => {
+  // The window is the last `length` NON-na values: an na bar joins nothing, the warm-up lasts until
+  // `length` non-na values exist, and an na bar after it answers from the values held (tier 1
+  // ta_051_mode_typed_na, ta_372_rolling_na_rank_order; resin-harness
+  // state/repros/ta.stats-seed-1.json). The old expectations here (window [1,1,NaN] -> 1 on the
+  // na bar) counted the last `length` bars, pine2py's rule.
+  it("counts the last length non-na values, na until that many exist", () => {
     const state = {};
     mode(state, 1, 3); // NaN
     mode(state, 1, 3); // NaN
-    expect(mode(state, NaN, 3)).toBeCloseTo(1, 9); // window [1,1,NaN] -> vals=[1,1] -> mode=1
-    expect(mode(state, 2, 3)).toBeCloseTo(1, 9); // window [1,NaN,2] -> vals=[1,2] tie -> min=1
+    expect(mode(state, NaN, 3)).toBeNaN(); // two non-na values: still warming up
+    expect(mode(state, 2, 3)).toBeCloseTo(1, 9); // [1,1,2] -> 1
+    expect(mode(state, NaN, 3)).toBeCloseTo(1, 9); // an na bar answers from [1,1,2]
+    expect(mode(state, 2, 3)).toBeCloseTo(2, 9); // [1,2,2] -> 2
+    expect(mode(state, 3, 3)).toBeCloseTo(2, 9); // [2,2,3] -> 2
+  });
+
+  it("answers the last non-na value on an na bar for length=1", () => {
+    const state = {};
+    expect(mode(state, NaN, 1)).toBeNaN();
+    expect(mode(state, 5, 1)).toBe(5);
+    expect(mode(state, NaN, 1)).toBe(5);
   });
 
   it("returns NaN only when every value in the window is NaN", () => {

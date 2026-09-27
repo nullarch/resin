@@ -1960,24 +1960,7 @@ export function modeVarLen(state: NaSkipVarLenState, value: number, length: numb
   const count = recordNonNa(state, value, barCount, barIdx);
   const len = Math.trunc(length);
   if (!(len >= 1) || len > count) return NaN;
-  const values = Array.from(state.buffer!.subarray(count - len, count)).sort((a, b) => a - b);
-  let mode = values[0]!;
-  let current = values[0]!;
-  let maxFreq = 1;
-  let freq = 1;
-  for (let i = 1; i < len; i++) {
-    if (values[i] === current) {
-      freq++;
-      if (freq > maxFreq) {
-        maxFreq = freq;
-        mode = current;
-      }
-    } else {
-      current = values[i]!;
-      freq = 1;
-    }
-  }
-  return mode;
+  return modeOf(state.buffer!, count - len, len);
 }
 
 export interface CorrelationVarLenState {
@@ -2356,25 +2339,49 @@ export function median(state: MedianState, value: number, length: number): numbe
 }
 
 export interface ModeState {
-  buffer?: number[];
+  buffer?: number[]; // ring of the last `length` non-na values
   writeIdx?: number;
-  count?: number;
+  count?: number; // non-na values stored so far, capped at the length
 }
 
-// ta.mode(source, length) - 최근 length바(현재 포함) 중 최빈값(동률이면 최솟값).
-// pine2py wavealgo/ta/mode.py는 median과 게이트/NaN 처리가 둘 다 다르다:
-// (1) 워밍업 게이트가 median의 "버퍼에 NaN-프라임 슬롯이 남아있는가"(source.get 결과 자체로 판정)가
-//     아니라 context.get_ta_state로 관리하는 순수 호출 횟수 카운터(`count`) - length바 미만 호출이면
-//     그 바의 값이 NaN이든 아니든 무조건 NaN. 순환 버퍼의 NaN-프라임만으로는 이 게이트를 재현할 수
-//     없다(예: length=3, 2번째 호출까지 값이 전부 유효해도 median 방식이면 버퍼에 미기록 슬롯이 없어
-//     워밍업 종료로 오판) - 그래서 median과 달리 buffer와 별개인 count 필드가 필요하다.
-// (2) 창 안의 개별 NaN은 median처럼 "하나라도 있으면 전체 NaN"이 아니라 집계에서 제외(스킵)하고,
-//     유효값이 하나도 없을 때만 NaN을 반환한다(mode.py `vals` 리스트가 NaN을 건너뛰며 채워짐).
-// 정렬이 아닌 빈도 집계라 O(1)/bar 유지가 median보다도 더 불가능(원소 하나가 빠지고 들어올 때마다
-// 전체 빈도 분포가 흔들릴 수 있음) - median(C115)에 이은 GOAL.md incremental O(1)/bar 네 번째 명시적
-// 예외. 매 바 O(length) 집계는 이 리포 실사용 length 범위에서 무시할 수준(median과 동일 트레이드오프).
-// 동률 tie-break는 `min(candidates)`(pine2py mode.py Counter 기반) - array.mode(Python
-// statistics.mode, 최초 등장값 tie-break)와 알고리즘이 다르므로 재사용하지 않는다.
+// The mode of `n` window values from `from`: the most frequent one, the smallest on a tie
+// (ref_v6_ta_math.txt ta.mode: "If there are several values with the same frequency, it returns
+// the smallest value"). The window holds no na. Sorting a copy is O(n log n) per bar; a frequency
+// distribution shifts with every value entering and leaving, so no O(1) update exists.
+function modeOf(values: ArrayLike<number>, from: number, n: number): number {
+  const sorted = Array.prototype.slice.call(values, from, from + n) as number[];
+  sorted.sort((a, b) => a - b);
+  let mode = sorted[0]!;
+  let current = sorted[0]!;
+  let maxFreq = 1;
+  let freq = 1;
+  for (let i = 1; i < n; i++) {
+    if (sorted[i] === current) {
+      freq++;
+      if (freq > maxFreq) {
+        maxFreq = freq;
+        mode = current;
+      }
+    } else {
+      current = sorted[i]!;
+      freq = 1;
+    }
+  }
+  return mode;
+}
+
+// ta.mode(source, length): the mode of the last `length` NON-na values of the source, na until
+// that many have arrived (ref_v6_ta_math.txt ta.mode: "`na` values in the `source` series are
+// ignored; the function calculates on the `length` quantity of non-`na` values"). An na bar stores
+// nothing and answers from the window as it stands (pynecore lib/ta.py mode: "an na bar neither
+// enters the window nor blanks the answer — the machine keeps answering from the non-na values it
+// already holds — and the warm-up lasts until ``length`` NON-NA values exist"). Unlike ta.median,
+// length 1 is no special case there: its na bar answers the last non-na value. Tier 1:
+// ta_051_mode_typed_na (`bar_index % 2 == 0 ? na : 1`, length 4: na through bar 6, 1 from bar 7)
+// and ta_372_rolling_na_rank_order (`bar_index < 3 ? na : float(bar_index)`, length 5: na on bars
+// 4-6). pine2py counted the last `length` BARS and skipped the na among them (resin-harness
+// state/repros/ta.stats-seed-1.json: ta.mode(s0, 17) on bar 139, seven na bars into a gap, is
+// 100.76 on the oracle, the mode of bars 116-132, and was 100.87, the mode of bars 123-132).
 export function mode(state: ModeState, value: number, length: number): number {
   length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조)
   // An na length is na on every bar, as for the percentile machines and ta.median (tier 1
@@ -2386,27 +2393,13 @@ export function mode(state: ModeState, value: number, length: number): number {
     state.writeIdx = 0;
     state.count = 0;
   }
-  const buffer = state.buffer;
-  const writeIdx = state.writeIdx!;
-  buffer[writeIdx] = value;
-  state.writeIdx = (writeIdx + 1) % length;
-  state.count = state.count! + 1;
-  if (state.count < length) return NaN;
-
-  const counts = new Map<number, number>();
-  for (let i = 0; i < length; i++) {
-    const v = buffer[i]!;
-    if (Number.isNaN(v)) continue;
-    counts.set(v, (counts.get(v) ?? 0) + 1);
+  if (!Number.isNaN(value)) {
+    const writeIdx = state.writeIdx!;
+    state.buffer[writeIdx] = value;
+    state.writeIdx = (writeIdx + 1) % length;
+    if (state.count! < length) state.count = state.count! + 1;
   }
-  if (counts.size === 0) return NaN;
-  let maxFreq = 0;
-  for (const c of counts.values()) if (c > maxFreq) maxFreq = c;
-  let result = Infinity;
-  for (const [v, c] of counts) {
-    if (c === maxFreq && v < result) result = v;
-  }
-  return result;
+  return state.count! < length ? NaN : modeOf(state.buffer, 0, length);
 }
 
 export interface PercentileState {

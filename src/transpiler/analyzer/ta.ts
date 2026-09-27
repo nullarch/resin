@@ -555,10 +555,10 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // (runtime/ta.ts median() 주석 참조 — 정렬 자체가 incremental 구조를 허용하지 않아 매 바
   // O(length log length) 재정렬, 두-힙 O(log n) 대안은 정확성 버그 표면 대비 이득이 작다고 판단).
   median: { dispatch: "ta", displayName: "ta.median", argCount: 2, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.median" },
-  // ta.mode(source, length) — median과 동일한 표준 시그니처지만 워밍업 게이트(순수 호출 횟수
-  // 카운터, median의 "버퍼 NaN-프라임 잔존" 판정과 다름)와 NaN 처리(개별 NaN 스킵, median의
-  // "하나라도 있으면 전체 NaN"과 다름)가 갈린다 — runtime/ta.ts mode() 주석 참조. median(C115)에
-  // 이은 GOAL.md O(1)/bar 네 번째 명시적 예외. A series length takes runtime/ta.ts modeVarLen.
+  // ta.mode(source, length) — the same standard signature as median, and the same window: the
+  // last `length` non-na values, na until that many exist (runtime/ta.ts mode()). Sorting the
+  // window each bar makes it an explicit O(1)/bar exception like median. A series length takes
+  // runtime/ta.ts modeVarLen.
   mode: { dispatch: "ta", displayName: "ta.mode", argCount: 2, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.mode" },
   // ta.percentrank(source, length) — the current value ranked among the `length` previous ones.
   // One machine for a literal and a series length (runtime/ta.ts percentrank): it reads the call
