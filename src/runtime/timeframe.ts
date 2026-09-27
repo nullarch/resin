@@ -18,6 +18,44 @@ export function in_seconds(timeframe?: string, chartTf = "D"): number {
   return timeframeSeconds(modifier, multiplier);
 }
 
+// timeframe.period, timeframe.multiplier and the timeframe.is* flags of the timeframe `tf`. The
+// script's own timeframe is the chart's, which the analyzer folds at compile time through this
+// function (analyzer.ts timeframeStringPropValue and its siblings); within a request's expression
+// it is the requested one (Context.secTf, codegen): ref_v6_lang.txt timeframe.period: "The
+// variable's value represents the timeframe of a requested dataset when used in the `expression`
+// argument of a `request.*()` function call. Otherwise, its value represents the script's main
+// timeframe". timeframe.main_period "does not change when used in the `expression` argument", so
+// it is always the chart's and never asked here. A flag follows the timeframe's unit whatever its
+// multiplier ("2D" is daily), and isintraday holds for seconds, minutes and ticks, as the oracle
+// reads them (pynecore lib/timeframe.py isdaily: `modifier == 'D'`, isintraday: `modifier == ''
+// or modifier == 'S' or modifier == 'T'`). The period is the timeframe string as given.
+export function variable(tf: string, attr: string): string | number | boolean | undefined {
+  if (attr === "period") return tf;
+  const [modifier, multiplier] = parseTimeframe(tf);
+  switch (attr) {
+    case "multiplier":
+      return multiplier;
+    case "isseconds":
+      return modifier === "S";
+    case "isminutes":
+      return modifier === "";
+    case "isticks":
+      return modifier === "T";
+    case "isintraday":
+      return modifier === "" || modifier === "S" || modifier === "T";
+    case "isdaily":
+      return modifier === "D";
+    case "isweekly":
+      return modifier === "W";
+    case "ismonthly":
+      return modifier === "M";
+    case "isdwm":
+      return modifier === "D" || modifier === "W" || modifier === "M";
+    default:
+      return undefined;
+  }
+}
+
 // timeframe.change lives in calendar.ts: it reads the symbol's exchange calendar.
 
 // timeframe.from_seconds — pine2py wavealgo/__init__.py timeframe_from_seconds, literal port.

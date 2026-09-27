@@ -51,6 +51,67 @@ describe("request.security evaluated in the requested context", () => {
     expect(acc!.some((v) => Number.isFinite(v))).toBe(true);
   });
 
+  // ref_v6_lang.txt timeframe.period: "The variable's value represents the timeframe of a requested
+  // dataset when used in the `expression` argument of a `request.*()` function call. Otherwise, its
+  // value represents the script's main timeframe"; timeframe.main_period "does not change when used
+  // in the `expression` argument". Values against the oracle: resin-harness suites/lang/probes/L41.json.
+  it("timeframe.* in the slice is the requested timeframe's; timeframe.main_period and the chart's own reads stay the chart's", () => {
+    const result = transpile(
+      [
+        "var float d = 0.0",
+        "d := timeframe.isdaily ? d + close : d",
+        "var float m = 0.0",
+        'm := timeframe.main_period == "480" ? m + 1 : m',
+        'a = request.security(syminfo.tickerid, "D", d)',
+        'c = request.security(syminfo.tickerid, "D", ta.cum(close))',
+        'k = request.security(syminfo.tickerid, "D", m)',
+        'n = request.security(syminfo.tickerid, "D", ta.cum(1))',
+        'x = request.security(syminfo.tickerid, "D", timeframe.multiplier)',
+        "plot(a)",
+        "plot(c)",
+        "plot(d)",
+        "plot(k)",
+        "plot(n)",
+        "plot(x)",
+        "plot(timeframe.multiplier)",
+      ].join("\n"),
+      { chartTf: "480" },
+    );
+    if (!result.ok) throw new Error(result.errors.join("\n"));
+    expect(result.code).toContain("runSecurityScript");
+    const [a, c, d, k, n, x, chartM] = run(result, DATA).plots.map((p) => Array.from(p.values));
+    expect(a).toEqual(c);
+    expect(a!.some((v) => Number.isFinite(v))).toBe(true);
+    expect(d!.every((v) => v === 0)).toBe(true);
+    expect(k).toEqual(n);
+    expect(k!.some((v) => Number.isFinite(v))).toBe(true);
+    expect(x!.filter((v) => Number.isFinite(v)).every((v) => v === 1)).toBe(true);
+    expect(chartM!.every((v) => v === 480)).toBe(true);
+  });
+
+  it("the prepass reads the timeframe.* flags of the requested timeframe too", () => {
+    const result = transpile(
+      ['w = request.security(syminfo.tickerid, "D", timeframe.isdaily ? close : -close)', 'c = request.security(syminfo.tickerid, "D", close)', "plot(w)", "plot(c)"].join("\n"),
+      { chartTf: "480" },
+    );
+    if (!result.ok) throw new Error(result.errors.join("\n"));
+    expect(result.code).not.toContain("runSecurityScript");
+    const [w, c] = run(result, DATA).plots.map((p) => Array.from(p.values));
+    expect(w).toEqual(c);
+    expect(w!.some((v) => Number.isFinite(v))).toBe(true);
+  });
+
+  it("an empty timeframe known only when the script runs is the chart's there (input.timeframe(\"\"))", () => {
+    const result = transpile(
+      ['tf = input.timeframe("", "TF")', "w = request.security(syminfo.tickerid, tf, timeframe.isdaily ? close : -close)", "plot(w)"].join("\n"),
+      { chartTf: "480" },
+    );
+    if (!result.ok) throw new Error(result.errors.join("\n"));
+    const [w] = run(result, DATA).plots.map((p) => Array.from(p.values));
+    expect(w!.filter((v) => Number.isFinite(v)).every((v) => v < 0)).toBe(true);
+    expect(w!.some((v) => Number.isFinite(v))).toBe(true);
+  });
+
   it("the chart's own state is untouched by the requested context's run", () => {
     const [chartAcc] = plotsOf(
       ["var float acc = 0.0", "acc := acc + 1", 'a = request.security(syminfo.tickerid, "D", acc)', "plot(acc)"].join("\n"),
@@ -237,13 +298,13 @@ describe("request.security in the requested context: what is refused", () => {
     expect(errors.some((e) => e.includes("bound on its first execution"))).toBe(true);
   });
 
-  it("timeframe.* in the slice (the requested context's timeframe is not implemented)", () => {
-    const errors = errorsOf([SUM_UDF, "t = timeframe.isdaily ? close : 0.0", 'r = request.security(syminfo.tickerid, "D", f(t) + 0)'].join("\n"));
-    expect(errors.some((e) => e.includes("it reads timeframe.*"))).toBe(true);
+  it("a timeframe.*() call in the slice (timeframe.change reads the chart's timeframe)", () => {
+    const errors = errorsOf([SUM_UDF, 't = timeframe.change("W") ? close : 0.0', 'r = request.security(syminfo.tickerid, "D", f(t) + 0)'].join("\n"));
+    expect(errors.some((e) => e.includes("it calls timeframe.*()"))).toBe(true);
   });
 
   it("a bare scalar UDF call it cannot plan keeps C436's chart-bar passthrough (the status quo; not the requested context's value)", () => {
-    const result = transpile(["f(x) => timeframe.isdaily ? x : 0.0", 'r = request.security(syminfo.tickerid, "D", f(close))'].join("\n"));
+    const result = transpile(['f(x) => timeframe.change("W") ? x : 0.0', 'r = request.security(syminfo.tickerid, "D", f(close))'].join("\n"));
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.code).not.toContain("runSecurityScript");
   });

@@ -42,6 +42,9 @@ export interface SecurityCache {
   // it reads with lookahead off and with lookahead on, -1 before there is one.
   confirmed?: Int32Array;
   opened?: Int32Array;
+  // The requested timeframe the rows are bars of (build, buildFromFeed): the timeframe.* variables
+  // of the expression evaluated on them (runtime/timeframe.ts variable).
+  timeframe?: string;
 }
 
 // bar_index는 배열이 아니라 resolveHtfIndex가 이미 계산한 htfIdx 그 자체를 field로 반환한다(HTF
@@ -268,9 +271,11 @@ export function build(
   time: ArrayLike<number> | undefined,
   tf: string,
 ): SecurityCache {
-  return time !== undefined
+  const cache = time !== undefined
     ? buildByTime(open, high, low, close, volume, time, tf)
     : buildByCount(open, high, low, close, volume, tf);
+  cache.timeframe = tf;
+  return cache;
 }
 
 // A request.security call on another symbol reads that symbol's own bars (ref_v6_lang.txt
@@ -344,6 +349,7 @@ export function buildFromFeed(
     timeClose,
     confirmed,
     opened,
+    timeframe: tf,
   };
 }
 

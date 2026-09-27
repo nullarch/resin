@@ -149,6 +149,11 @@ export class Context {
   secCapture = -1;
   secSkip: Uint8Array | null = null;
   secOut: Float64Array | null = null;
+  // In such a child, the requested timeframe, which the timeframe.* variables describe there
+  // (ref_v6_lang.txt timeframe.period: "The variable's value represents the timeframe of a requested
+  // dataset when used in the `expression` argument of a `request.*()` function call"); undefined in
+  // the chart's context, whose timeframe codegen folds at compile time.
+  secTf: string | undefined = undefined;
   // Set by engine.compile(): instantiates the compiled module on another context, a child.
   instantiate: ((ctx: Context) => () => void) | undefined = undefined;
   // The $.vars and $.fnVars slots declared with varip, which a discarded run of the body does not
@@ -486,6 +491,9 @@ export class Context {
     for (const i of runs) skip[i] = 0;
     child.secCapture = slot;
     child.secSkip = skip;
+    // An empty timeframe is the chart's (ref_v6_lang.txt request.security: "Use an empty string or
+    // timeframe.period to request data from the chart's timeframe").
+    child.secTf = cache.timeframe || undefined;
     const out = new Float64Array(cache.close.length).fill(NaN);
     child.secOut = out;
     const bar = this.instantiate(child);

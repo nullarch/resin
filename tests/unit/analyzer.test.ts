@@ -19762,11 +19762,11 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     expect(prog.errors.some((e) => e.includes("with dynamic requests, may run in the requested context's symbol or timeframe"))).toBe(true);
   });
 
-  it("still rejects a tree containing timeframe.period alongside the chained ref (C742 — HTF 컨텍스트 의미 보존)", () => {
+  it("evaluates a tree containing timeframe.period alongside the chained ref by running the script in the requested context, where timeframe.period is the requested timeframe (resin-harness suites/lang/probes/L41.json)", () => {
     const prog = analyzeSource(
       [C742_UDF, 'bbwp = request.security(syminfo.ticker, "D", f())', "m = request.security(syminfo.ticker, \"D\", timeframe.period == 'D' ? ta.sma(bbwp, 3) : bbwp)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   it("evaluates a non-inlinable UDF call nested in ta.* by running the script in the requested context", () => {
@@ -20542,14 +20542,14 @@ describe("Analyzer request.security expression timeframe.* boolean constant leav
     expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
-  it("still rejects timeframe.multiplier (TIMEFRAME_NUMBER_PROPS, a separate map) as the expression", () => {
+  it("evaluates timeframe.multiplier (TIMEFRAME_NUMBER_PROPS, outside the prepass grammar) by running the script in the requested context (resin-harness suites/lang/probes/L41.json m4)", () => {
     const prog = analyzeSource('x = request.security("", "D", timeframe.multiplier)');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
-  it("still rejects an undeclared timeframe.* attribute name", () => {
+  it("still rejects an undeclared timeframe.* attribute name, by the ordinary analysis now that the requested context takes the timeframe.* variables", () => {
     const prog = analyzeSource('x = request.security("", "D", timeframe.notARealProp)');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'timeframe.notARealProp'"))).toBe(true);
   });
 });
 
@@ -20913,23 +20913,26 @@ describe("Analyzer request.security expression time()/time_close() session-call 
     expectScriptContext(prog);
   });
 
-  it("rejects an na literal in the session position (na→'D' tf 폴딩의 오적용 방지 — 보수 거부)", () => {
+  // The prepass grammar still does not fold these three; the requested context, where
+  // timeframe.period is the requested timeframe (resin-harness suites/lang/probes/L41.json), runs
+  // them instead.
+  it("evaluates an na literal in the session position by running the script in the requested context", () => {
     const prog = analyzeSource('x = request.security("", "D", time(timeframe.period, na))');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
-  it("rejects a ':='-reassigned session variable (컴파일타임 상수 아님 — uniqueTopEqVars 밖)", () => {
+  it("evaluates a ':='-reassigned session variable by running the script in the requested context", () => {
     const prog = analyzeSource(
       ['s = "0000-1200"', 's := "1200-1300"', 'x = request.security("", "D", time(timeframe.period, s))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
-  it("rejects '+' concat when one side is an na literal (NaLiteral 피연산자 보수 거부)", () => {
+  it("evaluates '+' concat with an na literal side by running the script in the requested context", () => {
     const prog = analyzeSource(
       ['s = "0930-" + na', 'x = request.security("", "D", time(timeframe.period, s))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 });
 
@@ -21021,7 +21024,7 @@ describe("Analyzer request.security time-call leaf paramEnv substitution folding
 // 선택 분기 하나만 프루닝 빌드한다. wild d44d2be59428: `size = timeframe.period=="1"?
 // ta.sma(volume,4999)*ta.sma(close,4999):timeframe.period=="5"?...:na` 후
 // request.security("BTCUSDT","1"/"5",size). 비정규형 outerTf("1D"류)/main_period/비리터럴 비교
-// 상대는 폴딩 거부(undefined) → 기존 하드 에러 그대로. ──
+// 상대는 폴딩 거부(undefined) → the requested context runs them (resin-harness L41). ──
 describe("Analyzer request.security expression timeframe.period equality fold (C736, 배치37 (3))", () => {
   it("accepts the wild d44d2be59428 shape — nested tf.period ternary var-subst at both '1'/'5' callsites", () => {
     const prog = analyzeSource(
@@ -21072,21 +21075,26 @@ describe("Analyzer request.security expression timeframe.period equality fold (C
     expect(prog.errors).toEqual([]);
   });
 
-  it("rejects a non-canonical outer tf ('1D' — TV period 표기 'D'와 raw 등식이 어긋날 수 있어 폴딩 거부)", () => {
+  // The fold still declines these three; the requested context runs them instead, with
+  // timeframe.period the requested timeframe as written and timeframe.main_period the chart's
+  // (ref_v6_lang.txt timeframe.main_period: "this variable's value does not change when used in the
+  // `expression` argument of a `request.*()` function call"; resin-harness
+  // suites/lang/probes/L41.json p4/mp4).
+  it("evaluates a non-canonical outer tf ('1D') by running the script in the requested context", () => {
     const prog = analyzeSource('x = request.security("", "1D", timeframe.period == "D" ? close : open)');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
-  it("rejects timeframe.main_period in the condition (security 컨텍스트 무관 차트 tf 고정 가능성 — period 전용)", () => {
+  it("evaluates timeframe.main_period in the condition by running the script in the requested context", () => {
     const prog = analyzeSource('x = request.security("", "60", timeframe.main_period == "60" ? close : open)');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
-  it("rejects a non-literal comparison side (변수 경유 폼 — C283 큐레이션, StringLiteral 직접 폼만)", () => {
+  it("evaluates a non-literal comparison side by running the script in the requested context", () => {
     const prog = analyzeSource(
       ['p = "60"', 'x = request.security("", "60", timeframe.period == p ? close : open)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 });
 

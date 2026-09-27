@@ -20,9 +20,14 @@
 //
 // A slice may read another request.security call (a nested request through a variable): the child
 // reads it as the chart computed it, paired with the requested bars (Context.runSecurityScript).
+// The timeframe.* variables there describe the requested timeframe (ref_v6_lang.txt
+// timeframe.period: "The variable's value represents the timeframe of a requested dataset when used
+// in the `expression` argument of a `request.*()` function call"; Context.secTf), and
+// timeframe.main_period the chart's.
 // What the child cannot reproduce is refused instead of approximated: a nested request the child
-// could not read that way (nestedRequestRefusal), the strategy's state, `timeframe.*` (folded to
-// the chart's timeframe at compile time), or `syminfo.*` of another symbol.
+// could not read that way (nestedRequestRefusal), the strategy's state, a `timeframe.*()` call
+// (timeframe.change and the default of timeframe.in_seconds read the chart's timeframe), or
+// `syminfo.*` of another symbol.
 
 import type { CallExpr, Expr, FuncDecl, MethodDecl, Stmt } from "../ast";
 import { EARNINGS_CONSTANTS, SYMINFO_STRING_PROPS, type AnalyzedProgram } from "../analyzer";
@@ -129,7 +134,7 @@ interface Effects {
   // The request.*() calls it makes, and whether each is written in a function's body.
   requestCalls: { call: CallExpr; inFunction: boolean }[];
   strategy: boolean;
-  timeframe: boolean;
+  timeframe: boolean; // a timeframe.*() call
   syminfo: boolean;
   globalWrite: boolean; // a function it calls assigns a global variable
 }
@@ -791,9 +796,9 @@ class SliceAnalysis {
         return;
       case "DotAccess": {
         if (e.obj.kind === "Identifier" && !this.isUser(e.obj.name)) {
+          // The timeframe.* variables are the requested timeframe's in the child (Context.secTf).
           const ns = e.obj.name;
           if (ns === "strategy" && !STRATEGY_CONSTANTS.has(e.attr)) eff.strategy = true;
-          else if (ns === "timeframe") eff.timeframe = true;
           else if (ns === "syminfo") eff.syminfo = true;
           return;
         }
@@ -1032,7 +1037,7 @@ function sliceBefore(
   if (nested !== null) return { ok: false, reason: nested };
   if (all.some((e) => e.strategy)) return { ok: false, reason: "it reads the strategy's state" };
   if (all.some((e) => e.globalWrite)) return { ok: false, reason: "a function it calls assigns a global variable" };
-  if (all.some((e) => e.timeframe)) return { ok: false, reason: "it reads timeframe.* (the requested context's timeframe is not implemented)" };
+  if (all.some((e) => e.timeframe)) return { ok: false, reason: "it calls timeframe.*() (not implemented in the requested context)" };
   if (foreignSymbol && all.some((e) => e.syminfo)) return { ok: false, reason: "it reads syminfo.* of another symbol (not implemented)" };
   return { ok: true, slice: new Set([...slice].map((i) => body[i]!)) };
 }
@@ -1089,7 +1094,7 @@ export function planSecurityScriptInFunction(
   }
   const depEff = [exprEff, ...[...dep].map((i) => fEffects[i]!)];
   if (depEff.some((e) => e.request)) return { ok: false, reason: "it depends on another request.*() call (a nested request through a variable is not implemented)" };
-  if (depEff.some((e) => e.timeframe)) return { ok: false, reason: "it reads timeframe.* (the requested context's timeframe is not implemented)" };
+  if (depEff.some((e) => e.timeframe)) return { ok: false, reason: "it calls timeframe.*() (not implemented in the requested context)" };
   const sites = prog.funcAllCallSites.get(funcName) ?? [];
   if (depEff.some((e) => e.syminfo) && sites.some((_, k) => foreignSymbol(k))) {
     return { ok: false, reason: "it reads syminfo.* of another symbol (not implemented)" };

@@ -125,6 +125,7 @@ import {
 export { resolveUdtObjectType } from "./analyzer/index-access";
 import { MINCONTRACT, MINMOVE, MINTICK, POINTVALUE, PRICESCALE } from "../runtime/syminfo";
 import { FIXED_OFFSET_TZ_RE, getIanaZoneFormatter } from "../runtime/datetime";
+import { variable as timeframeVariable } from "../runtime/timeframe";
 
 // enum 타입명 -> 멤버 이름 목록(선언 순서) + 멤버별 title(C136, 표시 전용 메타데이터). 값 자체는
 // codegen 표현이 필요 없다 — 멤버 접근(Direction.long)이 analyzer에서 바로 "EnumName.MemberName"
@@ -825,66 +826,19 @@ export const TIMEFRAME_BOOLEAN_PROPS: ReadonlyMap<string, boolean> = new Map([
   ["isticks", false],
 ]);
 
-// pine2py wavealgo/builtins/timeframe.py Timeframe 클래스(multiplier/isseconds/isminutes/
-// isintraday/isdaily/isweekly/ismonthly/isdwm property, python 소스 literal port)의 순수 함수화 —
-// period 문자열 하나로 파생값을 계산한다. chartTf 기본값("D")에서는 위 정적 맵과 완전히 동일한
-// 값을 낸다(회귀 없음), 다른 period(예: corpus_scan --data 유도값 "60")를 넘기면 그 값에 맞게
-// 재계산된다.
+// The values of the timeframe.* variables for the chart timeframe `chartTf`, by the one rule the
+// runtime applies to a requested timeframe as well (runtime/timeframe.ts variable). resin builds no
+// tick chart, so isticks is false for every chart it runs.
 export const DEFAULT_CHART_TF = "D";
-
-function timeframeMultiplierOf(period: string): number {
-  const m = /^\d+/.exec(period);
-  return m ? Number(m[0]) : 1;
-}
-function timeframeIsSecondsOf(period: string): boolean {
-  return period.endsWith("S");
-}
-function timeframeIsMinutesOf(period: string): boolean {
-  return /^\d+$/.test(period);
-}
-function timeframeIsIntradayOf(period: string): boolean {
-  return timeframeIsMinutesOf(period) || timeframeIsSecondsOf(period);
-}
-function timeframeIsDailyOf(period: string): boolean {
-  return period === "D" || period === "1D";
-}
-function timeframeIsWeeklyOf(period: string): boolean {
-  return period === "W" || period === "1W";
-}
-function timeframeIsMonthlyOf(period: string): boolean {
-  return period === "M" || period === "1M";
-}
-function timeframeIsDwmOf(period: string): boolean {
-  return timeframeIsDailyOf(period) || timeframeIsWeeklyOf(period) || timeframeIsMonthlyOf(period);
-}
 
 export function timeframeStringPropValue(attr: string, chartTf: string): string | undefined {
   return attr === "period" || attr === "main_period" ? chartTf : undefined;
 }
 export function timeframeNumberPropValue(attr: string, chartTf: string): number | undefined {
-  return attr === "multiplier" ? timeframeMultiplierOf(chartTf) : undefined;
+  return attr === "multiplier" ? (timeframeVariable(chartTf, attr) as number) : undefined;
 }
 export function timeframeBooleanPropValue(attr: string, chartTf: string): boolean | undefined {
-  switch (attr) {
-    case "isseconds":
-      return timeframeIsSecondsOf(chartTf);
-    case "isminutes":
-      return timeframeIsMinutesOf(chartTf);
-    case "isintraday":
-      return timeframeIsIntradayOf(chartTf);
-    case "isdaily":
-      return timeframeIsDailyOf(chartTf);
-    case "isweekly":
-      return timeframeIsWeeklyOf(chartTf);
-    case "ismonthly":
-      return timeframeIsMonthlyOf(chartTf);
-    case "isdwm":
-      return timeframeIsDwmOf(chartTf);
-    case "isticks":
-      return false;
-    default:
-      return undefined;
-  }
+  return TIMEFRAME_BOOLEAN_PROPS.has(attr) ? (timeframeVariable(chartTf, attr) as boolean) : undefined;
 }
 
 // strategy.* 런타임 속성(C163 첫 슬라이스, C165에서 계좌 속성 추가) — barstate.*와 동일한

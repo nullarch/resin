@@ -14384,26 +14384,29 @@ describe("CodeGen request.security expression 확장 좁은 문법 (C367)", () =
   // C517: timeframe.isseconds/isminutes/isintraday/isdaily/isweekly/ismonthly/isdwm
   // (TIMEFRAME_BOOLEAN_PROPS) — same curation principle as SYMINFO_NUMBER_PROPS/EARNINGS_NUMBER_PROPS
   // just above (position-independent compile-time constants, whole map accepted at once, already
-  // hand-verified on the main path analyzer.ts TIMEFRAME_BOOLEAN_PROPS/L5046). The engine assumes a
-  // fixed chart tf="D" (TIMEFRAME_STRING_PROPS.period="D" folding, C435), so isdaily/isdwm fold to
-  // true and the rest to false. wild 2424f19312e9.pine `[intraday, daily, weekly, monthly] =
+  // hand-verified on the main path analyzer.ts TIMEFRAME_BOOLEAN_PROPS/L5046). Within the request's
+  // expression the flags describe the requested timeframe, the prepass cache's (ref_v6_lang.txt
+  // timeframe.period: "The variable's value represents the timeframe of a requested dataset when
+  // used in the `expression` argument of a `request.*()` function call"; resin-harness
+  // suites/lang/probes/L41.json f4/fD, equal to the oracle), not the chart's the prepass once folded.
+  // wild 2424f19312e9.pine `[intraday, daily, weekly, monthly] =
   // request.security(sym, tf, [timeframe.isintraday, timeframe.isdaily, timeframe.isweekly,
   // timeframe.ismonthly])` — next_hint(C516) traced this back from probe_c367's misleading
   // "node:TupleExpr" cluster label (a diagnostic-script artifact, see analyzer.test.ts C517 comment).
   // TIMEFRAME_STRING_PROPS(period/main_period) remains rejected — same Float64Array-string reason as
   // SYMINFO_STRING_PROPS.
-  it("emits timeframe.isintraday inside the prepass as the literal false constant (C517)", () => {
+  it("emits timeframe.isintraday inside the prepass as a read of the requested timeframe (C517; L41)", () => {
     const program = analyzeSecuritySource('x = request.security("", "D", timeframe.isintraday)');
     expect(program.errors).toEqual([]);
     const lines = generateSecurityExprPreamble(program).join("\n");
-    expect(lines).toContain("out[h] = false;");
+    expect(lines).toContain('out[h] = rt.timeframe.variable(cache.timeframe || "D", "isintraday");');
   });
 
   it("emits another TIMEFRAME_BOOLEAN_PROPS entry (isdaily) the same way, proving the whole map is accepted, not just one curated name", () => {
     const program = analyzeSecuritySource('x = request.security("", "D", timeframe.isdaily)');
     expect(program.errors).toEqual([]);
     const lines = generateSecurityExprPreamble(program).join("\n");
-    expect(lines).toContain("out[h] = true;");
+    expect(lines).toContain('out[h] = rt.timeframe.variable(cache.timeframe || "D", "isdaily");');
   });
 
   it("still rejects timeframe.period (TIMEFRAME_STRING_PROPS) as the expression (Float64Array prepass cache can't carry a string)", () => {
@@ -14411,9 +14414,10 @@ describe("CodeGen request.security expression 확장 좁은 문법 (C367)", () =
     expect(program.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
-  it("still rejects timeframe.multiplier (TIMEFRAME_NUMBER_PROPS, a separate map) as the expression", () => {
+  it("evaluates timeframe.multiplier (outside the prepass grammar) by running the script in the requested context, where it is the requested timeframe's (resin-harness suites/lang/probes/L41.json m4)", () => {
     const program = analyzeSecuritySource('x = request.security("", "D", timeframe.multiplier)');
-    expect(program.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(program.errors).toEqual([]);
+    expect([...program.securityExprCallSlots.values()].some((info) => info.script !== undefined)).toBe(true);
   });
 
   it("hand-verified E2E: timeframe.isdaily as the whole expression is 1 on every confirmed HTF row (same lookahead=off 1-row lag as the other leaf tests above)", () => {

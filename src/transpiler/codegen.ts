@@ -44,7 +44,7 @@ import {
   TIME_FUNC_NAMES,
   TIME_VAR_NAMES,
   TIMEFRAME_IN_SECONDS_KWARG_PARAM_NAMES,
-  timeframeBooleanPropValue,
+  TIMEFRAME_BOOLEAN_PROPS,
 } from "./analyzer";
 import { DRAWING_ALL_NAMESPACES } from "./analyzer/constructors";
 import { DEFAULT_INITIAL_CAPITAL } from "../runtime/strategy";
@@ -772,6 +772,17 @@ interface SecurityScriptRun {
   runs: number[];
   expression: Expr;
   call: boolean;
+}
+
+// Whether a request's child context runs the program's code (securityScriptRuns has any run).
+const runsInRequestedContextMemo = new WeakMap<AnalyzedProgram, boolean>();
+function runsInRequestedContext(program: AnalyzedProgram): boolean {
+  let runs = runsInRequestedContextMemo.get(program);
+  if (runs === undefined) {
+    runs = program.securityFuncScriptSites.length > 0 || [...program.securityExprCallSlots.values()].some((info) => info.script !== undefined);
+    runsInRequestedContextMemo.set(program, runs);
+  }
+  return runs;
 }
 
 function securityScriptRuns(program: AnalyzedProgram, others: readonly Stmt[]): SecurityScriptRun[] {
@@ -3305,10 +3316,27 @@ function genExpr(
       // C517: timeframe.isintraday/isdaily/isweekly/ismonthly/isseconds/isminutes/isdwm — syminfo/
       // earnings 바로 위 분기와 동일 이유(이 서브트리는 일반 analyzeExpr 미경유라 builtinBooleanConstants가
       // 비어있음, call-expr.ts buildSecurityExprNode DotAccess case 주석 참조). period/main_period는
-      // 문자열이라(Float64Array 캐시 제약) 여전히 배제. 값은 program.chartTf 기준(배치30 (1) C591).
-      if (secCtx !== null && expr.obj.kind === "Identifier" && expr.obj.name === "timeframe") {
-        const boolConst = timeframeBooleanPropValue(expr.attr, program.chartTf);
-        if (boolConst !== undefined) return String(boolConst);
+      // 문자열이라(Float64Array 캐시 제약) 여전히 배제. The prepass evaluates a request's expression
+      // on the requested bars, where the flags describe the requested timeframe, its cache's
+      // (ref_v6_lang.txt timeframe.period: "The variable's value represents the timeframe of a
+      // requested dataset when used in the `expression` argument of a `request.*()` function call";
+      // runtime/timeframe.ts variable), not the chart's. An empty timeframe (a runtime value such as
+      // input.timeframe("")) is the chart's (ref_v6_lang.txt request.security: "Use an empty string
+      // or timeframe.period to request data from the chart's timeframe").
+      if (secCtx !== null && expr.obj.kind === "Identifier" && expr.obj.name === "timeframe" && TIMEFRAME_BOOLEAN_PROPS.has(expr.attr)) {
+        return `rt.timeframe.variable(${secCtx.cacheVar}.timeframe || ${JSON.stringify(program.chartTf)}, ${JSON.stringify(expr.attr)})`;
+      }
+      // timeframe.period/multiplier/is* in code a request's child context runs
+      // (Context.runSecurityScript): the requested timeframe there (Context.secTf), the chart's
+      // folded value otherwise. timeframe.main_period stays the chart's everywhere (ref_v6_lang.txt:
+      // "this variable's value does not change when used in the `expression` argument of a
+      // `request.*()` function call").
+      if (secCtx === null && expr.obj.kind === "Identifier" && expr.obj.name === "timeframe" && expr.attr !== "main_period" && runsInRequestedContext(program)) {
+        const folded = program.builtinStringConstants.get(expr) ?? program.builtinConstants.get(expr) ?? program.builtinBooleanConstants.get(expr);
+        if (folded !== undefined) {
+          const chartValue = typeof folded === "string" ? JSON.stringify(folded) : String(folded);
+          return `($.secTf === undefined ? ${chartValue} : rt.timeframe.variable($.secTf, ${JSON.stringify(expr.attr)}))`;
+        }
       }
       // C604: dayofweek.sunday~saturday — syminfo/earnings/timeframe 바로 위 분기와 동일 이유
       // (이 서브트리는 일반 analyzeExpr 미경유라 builtinConstants가 비어있음, analyzer.ts

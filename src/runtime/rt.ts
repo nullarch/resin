@@ -9,7 +9,7 @@ import { histGet, secHistGet, refHistGet } from "./series";
 import { length, contains, startswith, endswith, pos, lower, upper, trim, replace_all, replace, substring, repeat, tostring, tonumber, split, match, format, format_number, format_time } from "./str";
 import { rgb, colorNew, from_gradient, colorR, colorG, colorB, colorT, vizColor, vizFlag, vizNum } from "./color";
 import * as inputFns from "./input";
-import { in_seconds, from_seconds } from "./timeframe";
+import { in_seconds, from_seconds, variable as timeframeVariable } from "./timeframe";
 import { ExchangeCalendar, change as timeframeChange, type CalendarSpec } from "./calendar";
 import * as tickerFns from "./ticker";
 import * as securityFns from "./security";
@@ -295,6 +295,8 @@ export const rt = {
   timeframe: {
     in_seconds,
     from_seconds,
+    // timeframe.period/multiplier/is* in a request's requested context (codegen genExpr DotAccess).
+    variable: timeframeVariable,
     // timeframe.change(state, timeframe, barTimeMs, barIndex, calendar): a stateful call site; the
     // calendar is built once per run from the program's symbol calendar (codegen preamble).
     change: timeframeChange,
