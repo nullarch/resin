@@ -35,6 +35,28 @@ export interface SecurityScriptPlan {
 
 export type SecurityScriptPlanResult = { ok: true; plan: SecurityScriptPlan } | { ok: false; reason: string };
 
+// A request in a user-defined function: every call of the function is a request of its own
+// (concepts_other-timeframes-and-data.txt "In local scopes": "the Pine Script compiler extracts
+// such calls into the global scope during translation"), evaluated with that call's arguments.
+export interface SecurityFuncScriptSite {
+  // The call of the function. Its child evaluates it where its top-level statement begins, and the
+  // function records the request's expression when this call's instance reaches it.
+  call: CallExpr;
+  stmt: Stmt;
+  // The top-level statements before it that the child runs.
+  slice: ReadonlySet<Stmt>;
+}
+
+export interface SecurityFuncScriptPlan {
+  // The statement of the function's body the request is in: the child records the expression where
+  // it begins.
+  stmt: Stmt;
+  // One per call of the function, in prog.funcAllCallSites order (the calls' __secIdx ordinals).
+  sites: SecurityFuncScriptSite[];
+}
+
+export type SecurityFuncScriptPlanResult = { ok: true; plan: SecurityFuncScriptPlan } | { ok: false; reason: string };
+
 // strategy.* calls that place or cancel orders: they read no strategy state into the script.
 const STRATEGY_ORDER_CALLS = new Set(["entry", "order", "exit", "close", "close_all", "cancel", "cancel_all"]);
 // strategy.* names that are constants, not state.
@@ -558,10 +580,29 @@ class SliceAnalysis {
     return out;
   }
 
+  isFunction(name: string): boolean {
+    return this.funcs.has(name);
+  }
+
+  // Whether `e` is a call of a function that returns a tuple (a user-defined one whose body the
+  // analysis has seen end in one, or a multi-value ta.* function).
+  returnsTuple(e: Expr): boolean {
+    if (e.kind !== "CallExpr") return false;
+    const callee = e.callee;
+    if (callee.kind === "Identifier") {
+      const info = this.funcs.has(callee.name) ? this.prog.funcs.get(callee.name) : undefined;
+      return info !== undefined && info.bodyAnalyzed && info.tupleArity !== null;
+    }
+    if (callee.obj.kind !== "Identifier" || callee.obj.name !== "ta" || this.isUser("ta")) return false;
+    const entry = TA_REGISTRY[callee.attr];
+    const arity = entry !== undefined ? taCallReturnArity(entry, e.args.length + e.kwargs.length) : undefined;
+    return arity !== undefined && arity > 1;
+  }
+
   // What calling a user-defined function does to the caller's names: the globals its body reads
   // and the global objects it may change (a function cannot assign a global variable, so it defines
   // none). Its parameters and locals are its own and left out.
-  private effectsOfFunction(name: string): Effects {
+  effectsOfFunction(name: string): Effects {
     const memo = this.funcEffects.get(name);
     if (memo !== undefined) return memo;
     const eff = newEffects();
@@ -720,10 +761,6 @@ export function planSecurityScript(prog: AnalyzedProgram, call: CallExpr, expres
   if (at < 0) return { ok: false, reason: "the call is not in a top-level statement" };
   const stmt = body[at]!;
   if (stmt.kind === "FuncDecl" || stmt.kind === "MethodDecl") return { ok: false, reason: "the call is in a function" };
-  // A call in a local block (an if/switch/loop body at the top level) is hoisted as TradingView
-  // hoists it: its expression is recorded where the top-level statement begins, which holds as long
-  // as nothing in that statement changes what the expression reads (checked below).
-  const inBlock = inBody(stmt, call);
   if (stmt.kind === "TupleDestructure" && stmt.value === call) return { ok: false, reason: "requesting a tuple value is not implemented" };
 
   const a = new SliceAnalysis(prog);
@@ -734,20 +771,45 @@ export function planSecurityScript(prog: AnalyzedProgram, call: CallExpr, expres
   }
   const exprEff = newEffects();
   a.walkExpr(expression, exprEff);
-  // `x = request.security(..., x)`: the name is not declared yet where the expression reads it.
-  const declared =
-    stmt.kind === "VarDecl" || (stmt.kind === "Assignment" && stmt.operator === "=")
-      ? [stmt.name]
-      : stmt.kind === "TupleDestructure"
-        ? stmt.names
-        : [];
-  const selfRead = declared.find((n) => exprEff.reads.has(n));
+  const selfRead = declaredNames(stmt).find((n) => exprEff.reads.has(n));
   if (selfRead !== undefined) return { ok: false, reason: `the expression reads '${selfRead}', which its own statement declares` };
   const effects = body.map((s) => {
     const eff = newEffects();
     a.walkStmt(s, eff);
     return eff;
   });
+  const sliced = sliceBefore(a, body, effects, at, call, exprEff, foreignSymbol);
+  if (!sliced.ok) return sliced;
+  return { ok: true, plan: { stmt, slice: sliced.slice } };
+}
+
+// The names a top-level statement declares (`x = request.security(..., x)`: the name is not declared
+// yet where the expression reads it).
+function declaredNames(stmt: Stmt): string[] {
+  return stmt.kind === "VarDecl" || (stmt.kind === "Assignment" && stmt.operator === "=")
+    ? [stmt.name]
+    : stmt.kind === "TupleDestructure"
+      ? stmt.names
+      : [];
+}
+
+// The top-level statements before `body[at]` that a child must run so that `target`, evaluated where
+// `body[at]` begins, reads what it reads on the chart; `targetEff` is what evaluating it reads and
+// depends on. Or why the child cannot evaluate it.
+function sliceBefore(
+  a: SliceAnalysis,
+  body: readonly Stmt[],
+  effects: readonly Effects[],
+  at: number,
+  target: Expr,
+  targetEff: Effects,
+  foreignSymbol: boolean,
+): { ok: true; slice: Set<Stmt> } | { ok: false; reason: string } {
+  const exprEff = targetEff;
+  // A call in a local block (an if/switch/loop body at the top level) is hoisted as TradingView
+  // hoists it: evaluated where the top-level statement begins, which holds as long as nothing in
+  // that statement changes what it reads (checked below).
+  const inBlock = inBody(body[at]!, target);
 
   // Names that may come to share one object, as one class (over the whole script: an object the
   // expression reads may be reached through a name bound anywhere).
@@ -821,5 +883,148 @@ export function planSecurityScript(prog: AnalyzedProgram, call: CallExpr, expres
   if (all.some((e) => e.globalWrite)) return { ok: false, reason: "a function it calls assigns a global variable" };
   if (all.some((e) => e.timeframe)) return { ok: false, reason: "it reads timeframe.* (the requested context's timeframe is not implemented)" };
   if (foreignSymbol && all.some((e) => e.syminfo)) return { ok: false, reason: "it reads syminfo.* of another symbol (not implemented)" };
-  return { ok: true, plan: { stmt, slice: new Set([...slice].map((i) => body[i]!)) } };
+  return { ok: true, slice: new Set([...slice].map((i) => body[i]!)) };
+}
+
+// A request.security call in the body of the user-defined function `funcName`, with an expression the
+// prepass grammar does not take. Each call of the function is a request of its own, evaluated with
+// that call's arguments: the child of call k evaluates the call where its top-level statement begins
+// (after the statements before it that the call needs), and the function records the expression
+// where the request's statement of its body begins, when __secIdx is k. The function's code before
+// that statement runs in the child as it runs on the chart, with the call's own instance state.
+// `foreignSymbol(k)`: whether call k requests another symbol than the chart's.
+export function planSecurityScriptInFunction(
+  prog: AnalyzedProgram,
+  call: CallExpr,
+  expression: Expr,
+  funcName: string,
+  foreignSymbol: (ordinal: number) => boolean,
+): SecurityFuncScriptPlanResult {
+  const body = prog.script.body;
+  const decl = body.find((s): s is FuncDecl => s.kind === "FuncDecl" && s.name === funcName && contains(s, call));
+  if (decl === undefined) return { ok: false, reason: "the call is in a method" };
+  const fat = decl.body.findIndex((s) => contains(s, call));
+  const fstmt = decl.body[fat]!;
+
+  const a = new SliceAnalysis(prog);
+  const kind = a.valueKind(expression);
+  if (kind !== "number" && kind !== "unknown") {
+    return { ok: false, reason: `requesting a ${kind === "object" ? "tuple or object" : kind} value is not implemented` };
+  }
+
+  // What the expression depends on in the function: the statements of its body before the request's
+  // that can change what it reads. The requested context computes them itself; a value another
+  // request returned is not there.
+  const exprEff = newEffects();
+  a.walkExpr(expression, exprEff);
+  const fEffects = decl.body.map((s) => {
+    const eff = newEffects();
+    a.walkStmt(s, eff);
+    return eff;
+  });
+  const needed = new Set(exprEff.reads);
+  const dep = new Set<number>();
+  for (let changed = true; changed; ) {
+    changed = false;
+    fEffects.forEach((eff, i) => {
+      if (i >= fat || dep.has(i)) return;
+      const affects = [...eff.defs, ...eff.muts].some((n) => needed.has(n));
+      if (!affects) return;
+      dep.add(i);
+      for (const n of eff.reads) needed.add(n);
+      for (const n of eff.muts) needed.add(n);
+      changed = true;
+    });
+  }
+  const depEff = [exprEff, ...[...dep].map((i) => fEffects[i]!)];
+  if (depEff.some((e) => e.request)) return { ok: false, reason: "it depends on another request.*() call (a nested request through a variable is not implemented)" };
+  if (depEff.some((e) => e.timeframe)) return { ok: false, reason: "it reads timeframe.* (the requested context's timeframe is not implemented)" };
+  const sites = prog.funcAllCallSites.get(funcName) ?? [];
+  if (depEff.some((e) => e.syminfo) && sites.some((_, k) => foreignSymbol(k))) {
+    return { ok: false, reason: "it reads syminfo.* of another symbol (not implemented)" };
+  }
+  if (inBody(fstmt, call)) {
+    const eff = fEffects[fat]!;
+    const touched = [...eff.defs, ...eff.muts].find((n) => needed.has(n));
+    if (touched !== undefined) {
+      return { ok: false, reason: `the call is in a local block whose statement also changes '${touched}', which the expression reads` };
+    }
+  }
+  // The function's code from the request's statement on that changes what the expression reads on a
+  // later call (a `var` local, or one read with history): disputed as at the top level (D9).
+  const persistentLocals = new Set<string>();
+  const notePersistent = (node: Stmt | Expr): void => {
+    if (node.kind === "VarDecl" && node.persistent) persistentLocals.add(node.name);
+    for (const c of children(node)) notePersistent(c);
+  };
+  for (const s of decl.body) notePersistent(s);
+  for (let i = fat; i < decl.body.length; i++) {
+    const eff = fEffects[i]!;
+    const changed = [...eff.defs, ...eff.muts].find((n) => needed.has(n) && (persistentLocals.has(n) || a.carriesOver(n)));
+    if (changed !== undefined) {
+      return {
+        ok: false,
+        reason: `the function changes '${changed}', which the expression reads, after the call (L${decl.body[i]!.line}; disputed: whether the requested context runs that code)`,
+      };
+    }
+  }
+
+  // The child evaluates the whole call, so all of the function's code runs there, not only what the
+  // expression needs: none of it may need what a child does not have. Its other requests read
+  // nothing in the child (codegen), which holds for request.security calls written in its body.
+  const whole = newEffects();
+  for (const eff of fEffects) mergeInto(whole, eff);
+  if (whole.strategy) return { ok: false, reason: "the function reads the strategy's state" };
+  if (whole.globalWrite) return { ok: false, reason: "a function it calls assigns a global variable" };
+  let otherRequest: string | null = null;
+  const scanCalls = (node: Stmt | Expr): void => {
+    if (node.kind === "CallExpr") {
+      const callee = node.callee;
+      if (callee.kind === "Identifier") {
+        if (a.isFunction(callee.name) && a.effectsOfFunction(callee.name).request) otherRequest ??= `the function it calls, '${callee.name}', makes a request`;
+      } else if (callee.obj.kind === "Identifier" && callee.obj.name === "request" && callee.attr !== "security") {
+        otherRequest ??= `the function calls request.${callee.attr}()`;
+      }
+    }
+    for (const c of children(node)) scanCalls(c);
+  };
+  for (const s of decl.body) scanCalls(s);
+  if (otherRequest !== null) return { ok: false, reason: `${otherRequest} (not implemented in a requested context)` };
+
+  // Each call: the statements before it that it needs, its arguments and the globals the function
+  // reads (a parameter's default is evaluated at the top level too).
+  if (sites.length === 0) return { ok: false, reason: "the function is never called" };
+  const funcEff = a.effectsOfFunction(funcName);
+  const effects = body.map((s) => {
+    const eff = newEffects();
+    a.walkStmt(s, eff);
+    return eff;
+  });
+  const planned: SecurityFuncScriptSite[] = [];
+  for (let k = 0; k < sites.length; k++) {
+    const site = sites[k]!;
+    if (site.inFuncName !== null) return { ok: false, reason: "the function is called from another function" };
+    const at = body.findIndex((s) => contains(s, site.call));
+    if (at < 0) return { ok: false, reason: "the function's call is not in a top-level statement" };
+    const siteEff = newEffects();
+    let tupleArg = false;
+    decl.params.forEach((p, pi) => {
+      const arg = site.call.args[pi] ?? site.call.kwargs.find((kw) => kw.name === p.name)?.value ?? p.default;
+      if (!arg) return;
+      a.walkExpr(arg, siteEff);
+      // A tuple is no argument (language_type-system.txt: a call of a function returning one "must
+      // use a tuple declaration"), and the child could not record it.
+      tupleArg ||= a.returnsTuple(arg);
+    });
+    if (tupleArg) return { ok: false, reason: "a call of the function passes a tuple" };
+    const selfRead = declaredNames(body[at]!).find((n) => siteEff.reads.has(n));
+    if (selfRead !== undefined) return { ok: false, reason: `the function's call reads '${selfRead}', which its own statement declares` };
+    for (const n of funcEff.reads) siteEff.reads.add(n);
+    for (const n of funcEff.muts) siteEff.muts.add(n);
+    for (const g of funcEff.groups) siteEff.groups.push(g);
+    const sliced = sliceBefore(a, body, effects, at, site.call, siteEff, foreignSymbol(k));
+    if (!sliced.ok) return sliced;
+    planned.push({ call: site.call, stmt: body[at]!, slice: sliced.slice });
+  }
+  return { ok: true, plan: { stmt: fstmt, sites: planned } };
 }

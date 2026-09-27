@@ -16163,52 +16163,61 @@ describe("CodeGen request.security() SCALAR bare UDF call wrapped in a history i
 // ScalarBareUdfSrc(analyzer만 변경)가 매개변수 -> funcSingleCallSiteArgs 실인자 체인을 한 단계 더
 // 따라갈 뿐 codegen.ts는 변경 0줄 — genCallExpr은 여전히 등록된 원본 IndexAccess/Identifier를 그대로
 // genExpr한다(C562와 동일 메커니즘).
+// C564 emitted pine2py's passthrough (the argument on the chart's bars, the timeframe dropped). The
+// oracle evaluates the argument in the requested context (resin-harness suites/lang/probes/L34.json
+// `pf(g(close))`), which the call now does: its child evaluates `get_sec("D", myFunc(close))` and
+// get_sec records exp[1], its own parameter's history there.
 describe("CodeGen request.security expression via the enclosing UDF's own parameter, resolved through that UDF's single top-level call site (C564)", () => {
   const SRC_MYFUNC = "myFunc(x) =>\n    x + 1\n";
 
-  it("exact-string: byte-identical to writing exp[1] directly in get_sec's body (the request.security wrapper is fully discarded, get_sec itself stays a real function)", () => {
-    const withSecurity = codegenSource(
+  it("exact-string: the call's child evaluates the call; get_sec records exp[1] for it and reads the request otherwise", () => {
+    const code = codegenSource(
       SRC_MYFUNC +
         "get_sec(tf, exp) =>\n    request.security(syminfo.tickerid, tf, exp[1])\n" +
         'result = get_sec("D", myFunc(close))',
     );
-    const plain = codegenSource(SRC_MYFUNC + 'get_sec(tf, exp) =>\n    exp[1]\nresult = get_sec("D", myFunc(close))');
-    expect(withSecurity).toBe(plain);
-    expect(withSecurity).not.toContain("rt.security");
+    expect(code).toContain("if ($.secCapture === 0 + __secIdx) {\n$.secOut[$.idx] = rt.security.scriptValue($.histSlots[__histBase + 0].get(1));\n}");
+    expect(code).toContain(
+      "return ($.secCapture >= 0 ? NaN : rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false));",
+    );
+    expect(code).toContain("$.securityExprCache[0] = $.runSecurityScript(0, [], 1);");
+    expect(code).toContain("if ($.secCapture === 0) {\nget_sec(0, 0, 0, \"D\", myFunc(0, $.close.get(0)));\n}");
   });
 
-  it("hand-verified E2E: get_sec's own parameter tracks its own per-call-site history across bars (myFunc(close) re-evaluated every bar, exp[1] reads the previous bar's value) — no real HTF aggregation happens (pine2py oracle behavior: request.security._resolve_expression passes non-Series values through as-is)", () => {
+  it("E2E: exp[1] is the previous requested (daily) bar's value, equal to the prepass form of the same expression", () => {
     const source = [
       SRC_MYFUNC,
       "get_sec(tf, exp) =>\n    request.security(syminfo.tickerid, tf, exp[1])",
       'result = get_sec("D", myFunc(close))',
       "plot(result)",
     ].join("\n");
+    const prepassSource = ['result = request.security(syminfo.tickerid, "D", close[1] + 1)', "plot(result)"].join("\n");
+    // 8-hour bars from 2024-01-01 00:00 UTC: three per day.
     const data: OHLCVData = {
-      open: [100, 102, 101, 105, 108],
-      high: [103, 105, 102, 108, 110],
-      low: [99, 100, 100, 103, 106],
-      close: [102, 101, 103, 106, 107],
-      volume: [1000, 1100, 1050, 1200, 1150],
-      time: [1704067200000, 1704096000000, 1704124800000, 1704153600000, 1704182400000],
+      open: [100, 102, 101, 105, 108, 106, 110, 113, 111, 115],
+      high: [103, 105, 102, 108, 110, 108, 112, 115, 113, 117],
+      low: [99, 100, 100, 103, 106, 104, 108, 111, 109, 113],
+      close: [102, 101, 103, 106, 107, 109, 111, 112, 114, 116],
+      volume: [1000, 1100, 1050, 1200, 1150, 1300, 1250, 1400, 1350, 1500],
+      time: [
+        1704067200000, 1704096000000, 1704124800000,
+        1704153600000, 1704182400000, 1704211200000,
+        1704240000000, 1704268800000, 1704297600000,
+        1704326400000,
+      ],
     };
-    const result = transpile(source);
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    const { plots } = run(
-      result.code,
-      result.varSlots,
-      result.taSlotCount,
-      data,
-      result.fnVarSlotCount,
-      result.historySlotCount,
-      result.taScratchSize,
-      {},
-      result.plotTitles,
-      result.securityTfs,
-    );
-    // myFunc(x)=x+1 매 바 그 자리에서 직접 호출 -> [close+1]의 1바 전 값 = NaN(워밍업), close[i-1]+1(i>=1)
-    expect(Array.from(plots[0]!.values)).toEqual([NaN, 103, 102, 104, 107]);
+    const plotsOf = (src: string) => {
+      const result = transpile(src);
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("unreachable");
+      return run(
+        result.code, result.varSlots, result.taSlotCount, data, result.fnVarSlotCount, result.historySlotCount,
+        result.taScratchSize, {}, result.plotTitles, result.securityTfs,
+      ).plots;
+    };
+    const got = Array.from(plotsOf(source)[0]!.values);
+    expect(got).toEqual(Array.from(plotsOf(prepassSource)[0]!.values));
+    expect(got.some((v) => Number.isFinite(v))).toBe(true);
   });
 });
 
@@ -16386,41 +16395,42 @@ describe("CodeGen request.security expression via UDF parameter single-call-site
 // 독립 HTF 프리패스 슬롯(연속 블록 base + 서수)을 배정하고, 함수 시그니처에 __secIdx(서수)를
 // 추가해 body가 `$.securityExprCache[base + __secIdx]`로 자기 콜사이트의 슬롯을 읽는다
 // (analyzer.test.ts C453 블록 주석 참조 — GOAL.md slotBase 패턴의 security 확장). ──
+// Since resin-harness suites/lang/probes/L34.json each call is a request evaluated in the requested
+// context: slot base + k is filled by call k's child, which evaluates the call where its statement
+// begins; the function records `val` there when __secIdx is k, and reads the slot otherwise. The
+// hand-verified E2E below holds unchanged.
 describe("CodeGen request.security expression via UDF parameter multi-call-site slotization (C453)", () => {
   it("emits __secIdx in the function signature, ordinal literals at each call site, and a base+__secIdx cache read in the body", () => {
     const code = codegenSource(
       'f_sec(val) =>\n    request.security("", "D", val)\na = f_sec(close)\nb = f_sec(open)',
     );
     expect(code).toContain("function f_sec(__slotBase, __secIdx, val) {");
+    expect(code).toContain("if ($.secCapture === 0 + __secIdx) {\n$.secOut[$.idx] = rt.security.scriptValue(val);\n}");
     expect(code).toContain(
-      "return rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false);",
+      "return ($.secCapture >= 0 ? NaN : rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false));",
     );
     expect(code).toContain("var a = f_sec(0, 0, $.close.get(0));");
     expect(code).toContain("var b = f_sec(0, 1, $.open.get(0));");
   });
 
-  it("emits one HTF prepass function per call site with that call site's substituted expression", () => {
+  it("runs one child per call, each evaluating its own call where the call's statement begins", () => {
     const code = codegenSource(
       'f_sec(val) =>\n    request.security("", "D", val)\na = f_sec(close)\nb = f_sec(open)',
     );
-    expect(code).toContain("function __secExpr0()");
-    expect(code).toContain("function __secExpr1()");
-    // 슬롯 0 프리패스는 close를, 슬롯 1 프리패스는 open을 재계산한다(콜사이트 순서 그대로).
-    const p0 = /function __secExpr0\(\) \{[\s\S]*?\n\}/.exec(code)![0];
-    const p1 = /function __secExpr1\(\) \{[\s\S]*?\n\}/.exec(code)![0];
-    expect(p0).toContain("out[h] = close;");
-    expect(p1).toContain("out[h] = open;");
+    expect(code).not.toContain("function __secExpr");
+    expect(code).toContain("$.securityExprCache[0] = $.runSecurityScript(0, [], 2);");
+    expect(code).toContain("$.securityExprCache[1] = $.runSecurityScript(1, [], 2);");
+    expect(code).toContain("if ($.secCapture === 0) {\nf_sec(0, 0, $.close.get(0));\n}");
+    expect(code).toContain("if ($.secCapture === 1) {\nf_sec(0, 1, $.open.get(0));\n}");
   });
 
-  it("registers ta.* clones from substituted arguments as GLOBAL ta slots — the prepass never references the function-relative __taBase", () => {
+  it("evaluates ta.* arguments in the call's child with the call's own (global) ta slots, no prepass clones", () => {
     const code = codegenSource(
       'f_sec(val) =>\n    request.security("", "D", val)\na = f_sec(ta.sma(close, 3))\nb = f_sec(ta.ema(close, 5))',
     );
-    const prepasses = code.match(/function __secExpr\d\(\) \{[\s\S]*?\n\}/g)!;
-    expect(prepasses.length).toBe(2);
-    for (const p of prepasses) expect(p).not.toContain("__taBase");
-    expect(prepasses[0]).toContain("rt.ta.sma($.taSlots[");
-    expect(prepasses[1]).toContain("rt.ta.ema($.taSlots[");
+    expect(code).not.toContain("function __secExpr");
+    expect(code).toContain("if ($.secCapture === 0) {\nf_sec(0, 0, rt.ta.sma($.taSlots[0]");
+    expect(code).toContain("if ($.secCapture === 1) {\nf_sec(0, 1, rt.ta.ema($.taSlots[1]");
   });
 
   it("hand-verified E2E: each call site's value equals calling request.security directly with that argument inlined at top level (bare series AND a ta.*-containing argument)", () => {
@@ -16847,20 +16857,25 @@ describe("CodeGen request.security bare-series read-site offset (C739)", () => {
     expect(sv).toEqual(dv);
   });
 
-  it("C739 hand-verified E2E: a per-bar varying offset interleaves the bare and literal-offset forms", () => {
+  // C739 evaluated the offset at the chart's bar (the chart's bar_index % 2), interleaving the bare
+  // and the [1] forms by chart bar. The requested context computes `off` on its own bars (resin-harness
+  // suites/lang/probes/L34.json `vo = gn(offv)`, the oracle: `bar_index % 2` of the requested bars),
+  // which is the top-level request of the same variable.
+  it("E2E: a per-bar varying offset variable is computed in the requested context, as in the top-level request of it", () => {
     const varyingForm = [
       'g(n) => request.security(syminfo.tickerid, "D", close[n])',
       "off = bar_index % 2",
       "a = g(off)",
       "plot(a)",
     ].join("\n");
+    const topLevelForm = ["off = bar_index % 2", 'a = request.security(syminfo.tickerid, "D", close[off])', "plot(a)"].join("\n");
     const sv = Array.from(runPlots(varyingForm)[0]!.values);
+    expect(sv).toEqual(Array.from(runPlots(topLevelForm)[0]!.values));
+    // It is neither of the constant forms throughout.
     const bare = Array.from(runPlots(bareClose)[0]!.values);
     const lit1 = Array.from(runPlots(directClose1)[0]!.values);
-    const expected = bare.map((v, i) => (i % 2 === 0 ? v : lit1[i]!));
-    expect(sv).toEqual(expected);
-    // sanity: 두 소스가 실제로 섞인다(양쪽 유한값 구간이 서로 다른 값을 가진다).
-    expect(sv.some((v, i) => Number.isFinite(v) && Number.isFinite(lit1[i]!) && v !== lit1[i])).toBe(true);
+    expect(sv.some((v, i) => Number.isFinite(v) && v !== bare[i])).toBe(true);
+    expect(sv.some((v, i) => Number.isFinite(v) && v !== lit1[i])).toBe(true);
   });
 
   it("C739 hand-verified E2E: parameter arithmetic (2 * a + b - 1) routes to the equivalent literal forms", () => {
@@ -16889,7 +16904,7 @@ describe("CodeGen request.security bare-series read-site offset (C739)", () => {
     expect(yv.every((v) => Number.isNaN(v))).toBe(true);
   });
 
-  it("C739 emission: the read site emits rt.security.getFieldHtfOffset with the original parameter expression", () => {
+  it("emission: the call's child runs `off`'s declaration and evaluates the call; g records close[n] there", () => {
     const result = transpile(
       [
         'g(n) => request.security(syminfo.tickerid, "D", close[n])',
@@ -16900,9 +16915,23 @@ describe("CodeGen request.security bare-series read-site offset (C739)", () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");
-    expect(result.code).toContain('rt.security.getFieldHtfOffset($.securityCache[0], $.idx, "close", false, false, n)');
-    // 프리패스/치환 경로가 아니라는 구조 증거 — 이 콜에는 __secExpr 프리패스 함수가 없다.
+    expect(result.code).toContain("$.secOut[$.idx] = rt.security.scriptValue($.close.get(n));");
+    expect(result.code).toContain("$.securityExprCache[0] = $.runSecurityScript(0, [0], 3);");
+    expect(result.code).not.toContain("getFieldHtfOffset");
     expect(result.code).not.toContain("__secExpr");
+  });
+
+  // The read-site offset form stays where the requested context cannot run the call: a call in a loop
+  // whose argument is the loop's variable (TradingView's own rule: "a request.*() call's evaluated
+  // expression cannot depend on the values of those variables", concepts_other-timeframes-and-data.txt
+  // "In local scopes").
+  it("C739 emission: a call whose argument is a loop variable keeps rt.security.getFieldHtfOffset", () => {
+    const result = transpile(
+      ['g(n) => request.security(syminfo.tickerid, "D", close[n])', "s = 0.0", "for i = 0 to 2", "    s := s + g(i)", "plot(s)"].join("\n"),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
+    expect(result.code).toContain('rt.security.getFieldHtfOffset($.securityCache[0], $.idx, "close", false, false, n)');
   });
 });
 
@@ -17707,29 +17736,30 @@ describe("CodeGen request.security expression timeframe.period equality fold E2E
 // 실인자를 원본 index로 다시 감싼 합성 IndexAccess를 만들어 기존 IndexAccess 프리패스 코드젠
 // 경로(리터럴 오프셋 직접 인덱싱 / 동적·삼항 오프셋 rt.secHistGet)를 그대로 태운다(codegen 신규
 // 경로 0줄, analyzer.test.ts C534 블록 참조). ──
+// Since resin-harness suites/lang/probes/L34.json (`fs`, the LucF `_src[...]` helper) each call's child
+// records the parameter's own history in the function (its per-call history buffer); the E2E below
+// holds unchanged.
 describe("CodeGen request.security expression via UDF parameter multi-call-site slotization, IndexAccess-wrapped param (C534)", () => {
-  it("emits a per-call-site prepass with the SAME fixed literal offset applied to that site's own substituted argument", () => {
+  it("records the parameter's history with the fixed literal offset in the function, for the call whose child runs", () => {
     const code = codegenSource(
       'f_sec(val) =>\n    request.security("", "D", val[1])\na = f_sec(close)\nb = f_sec(open)',
     );
-    expect(code).toContain("function f_sec(__slotBase, __secIdx, val) {");
+    expect(code).toContain("function f_sec(__slotBase, __histBase, __secIdx, val) {");
+    expect(code).toContain("if ($.secCapture === 0 + __secIdx) {\n$.secOut[$.idx] = rt.security.scriptValue($.histSlots[__histBase + 0].get(1));\n}");
     expect(code).toContain(
-      "return rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false);",
+      "return ($.secCapture >= 0 ? NaN : rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false));",
     );
-    const p0 = /function __secExpr0\(\) \{[\s\S]*?\n\}/.exec(code)![0];
-    const p1 = /function __secExpr1\(\) \{[\s\S]*?\n\}/.exec(code)![0];
-    expect(p0).toContain("out[h] = (h >= 1 ? cache.close[h - 1] : NaN);");
-    expect(p1).toContain("out[h] = (h >= 1 ? cache.open[h - 1] : NaN);");
+    expect(code).toContain("if ($.secCapture === 1) {\nf_sec(0, 1, 1, $.open.get(0));\n}");
   });
 
-  it("emits a per-call-site prepass with a ternary (barstate.isrealtime) offset via rt.secHistGet, applied to that site's own substituted argument", () => {
+  it("records the parameter's history with a ternary (barstate.isrealtime) offset in the function", () => {
     const code = codegenSource(
       'f_sec(val) =>\n    request.security("", "D", val[barstate.isrealtime ? 1 : 0])\na = f_sec(close)\nb = f_sec(open)',
     );
-    const p0 = /function __secExpr0\(\) \{[\s\S]*?\n\}/.exec(code)![0];
-    const p1 = /function __secExpr1\(\) \{[\s\S]*?\n\}/.exec(code)![0];
-    expect(p0).toContain("out[h] = rt.secHistGet(cache.close, h, (false ? 1 : 0));");
-    expect(p1).toContain("out[h] = rt.secHistGet(cache.open, h, (false ? 1 : 0));");
+    expect(code).toContain(
+      "$.secOut[$.idx] = rt.security.scriptValue(rt.histGet(val, $.histSlots[__histBase + 0], ((false) ? 1 : 0)));",
+    );
+    expect(code).not.toContain("function __secExpr");
   });
 
   it("hand-verified E2E: each call site's wrapped value equals calling request.security directly with that argument's history offset inlined at top level (fixed literal offset AND ternary offset)", () => {
@@ -17801,15 +17831,17 @@ describe("CodeGen request.security expression via UDF parameter multi-call-site 
 // processPendingSecurityParamExprs가 paramSubstRoot(seriesArg 원본)를 buildSecurityExprNode의
 // paramEnv 메커니즘으로 콜사이트별 재귀 빌드한다. 슬롯/__secIdx 배선은 C453과 완전히 동일(공유 tail
 // 코드, analyzer.test.ts C542 블록 참조) — codegen 신규 경로 0줄, 여기서는 실행 등가성만 검증한다. ──
+// Since resin-harness suites/lang/probes/L34.json each call's child evaluates ta.rsi(src, len) in the
+// function, with the function's own per-call ta state; the E2Es below hold unchanged.
 describe("CodeGen request.security expression via UDF parameter(s) nested inside a ta.* subtree, multi-call-site (C542)", () => {
-  it("emits one HTF prepass per call site and a base+__secIdx cache read in the body, same shape as bare C453", () => {
+  it("records the ta.* expression with the function's own per-call ta slot, and a base+__secIdx cache read in the body", () => {
     const code = codegenSource(
       'f_sec(src, len) =>\n    request.security("", "D", ta.rsi(src, len))\na = f_sec(close, 14)\nb = f_sec(open, 21)',
     );
-    expect(code).toContain("function __secExpr0()");
-    expect(code).toContain("function __secExpr1()");
+    expect(code).not.toContain("function __secExpr");
+    expect(code).toContain("$.secOut[$.idx] = rt.security.scriptValue(rt.ta.rsi($.taSlots[__taBase + 0], src, len));");
     expect(code).toContain(
-      "return rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false);",
+      "return ($.secCapture >= 0 ? NaN : rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false));",
     );
   });
 
@@ -17914,33 +17946,33 @@ describe("CodeGen request.security expression via UDF parameter(s) nested inside
 // 균일 붕괴(값 = 매개변수 자신, analyzer.test.ts C563 블록 참조). HTF 슬롯/프리패스/__secIdx가
 // 전혀 없어 request.security 래퍼를 지운 plain 매개변수 읽기와 바이트 동일해야 한다(codegen 신규
 // 경로 0줄 — securityScalarBareUdfCallSlots 채널의 기존 genExpr 위임을 그대로 재사용). ──
+// C563 emitted pine2py's passthrough (the argument on the chart's bars, the timeframe dropped). The
+// oracle evaluates the argument in the requested context (resin-harness suites/lang/probes/L34.json
+// `pf(g(close))`: g's var state sums the requested bars' closes), which each call now does: its child
+// evaluates the call, f_mtf records val (or val[1]) there, and the chart reads the call's slot.
 describe("CodeGen request.security expression via UDF parameter whose call sites ALL pass bare UDF calls (C563 — uniform passthrough collapse)", () => {
   const SRC_MYFUNC = "myFunc(x) =>\n    x + 1\n";
 
-  it("emits byte-identical code to the wrapper-free form (body reads the param directly — request.security fully discarded)", () => {
-    const withSecurity = codegenSource(
+  it("records the parameter in the function for the call whose child runs, and reads the call's slot otherwise", () => {
+    const code = codegenSource(
       SRC_MYFUNC + 'f_mtf(val) =>\n    request.security(syminfo.tickerid, "60", val)\na = f_mtf(myFunc(close))\nb = f_mtf(myFunc(open))',
     );
-    const plain = codegenSource(
-      SRC_MYFUNC + "f_mtf(val) =>\n    val\na = f_mtf(myFunc(close))\nb = f_mtf(myFunc(open))",
+    expect(code).toContain("if ($.secCapture === 0 + __secIdx) {\n$.secOut[$.idx] = rt.security.scriptValue(val);\n}");
+    expect(code).toContain(
+      "return ($.secCapture >= 0 ? NaN : rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false));",
     );
-    expect(withSecurity).toBe(plain);
-    expect(withSecurity).not.toContain("rt.security");
-    expect(withSecurity).not.toContain("__secIdx");
+    expect(code).toContain("$.securityExprCache[1] = $.runSecurityScript(1, [], 2);");
   });
 
-  it("emits byte-identical code for the IndexAccess-wrapped form vs a plain param-history read (`val[1]` — per-call-site param history mechanism engaged, no security machinery)", () => {
-    const withSecurity = codegenSource(
+  it("records the parameter's history for the IndexAccess-wrapped form (`val[1]`) and reads with lookahead", () => {
+    const code = codegenSource(
       SRC_MYFUNC + 'f_mtf(val) =>\n    request.security(syminfo.tickerid, "60", val[1], lookahead=barmerge.lookahead_on)\na = f_mtf(myFunc(close))\nb = f_mtf(myFunc(open))',
     );
-    const plain = codegenSource(
-      SRC_MYFUNC + "f_mtf(val) =>\n    val[1]\na = f_mtf(myFunc(close))\nb = f_mtf(myFunc(open))",
-    );
-    expect(withSecurity).toBe(plain);
-    expect(withSecurity).not.toContain("rt.security");
+    expect(code).toContain("$.secOut[$.idx] = rt.security.scriptValue($.histSlots[__histBase + 0].get(1));");
+    expect(code).toContain("rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, true)");
   });
 
-  it("hand-verified E2E: the passthrough value tracks each call site's own UDF-call argument bar by bar (per-site independence — pine2py oracle passthrough, no HTF aggregation)", () => {
+  it("E2E: each call's value equals the top-level request of its argument, which runs in the requested context", () => {
     const wrapped = [
       "myMa(len) =>\n    ta.sma(close, len)",
       'f_mtf(val) =>\n    request.security(syminfo.tickerid, "60", val)',
@@ -17949,7 +17981,13 @@ describe("CodeGen request.security expression via UDF parameter whose call sites
       "plot(a)",
       "plot(b)",
     ].join("\n");
-    const direct = ["myMa(len) =>\n    ta.sma(close, len)", "a = myMa(2)", "b = myMa(3)", "plot(a)", "plot(b)"].join("\n");
+    const direct = [
+      "myMa(len) =>\n    ta.sma(close, len)",
+      'a = request.security(syminfo.tickerid, "60", myMa(2))',
+      'b = request.security(syminfo.tickerid, "60", myMa(3))',
+      "plot(a)",
+      "plot(b)",
+    ].join("\n");
     const data: OHLCVData = {
       open: [100, 102, 101, 105, 108, 104],
       high: [103, 105, 102, 108, 110, 107],
@@ -17979,6 +18017,7 @@ describe("CodeGen request.security expression via UDF parameter whose call sites
     const directPlots = runOne(direct);
     for (let p = 0; p < 2; p++) {
       expect(Array.from(wrappedPlots[p]!.values)).toEqual(Array.from(directPlots[p]!.values));
+      expect(Array.from(wrappedPlots[p]!.values).some((v) => Number.isFinite(v))).toBe(true);
     }
   });
 });
@@ -29349,11 +29388,13 @@ describe("CodeGen history index '[]' on a request.security(...) call registered 
 // genIndexAccess 자체는 무변경(analyzer가 outer IndexAccess를 pending 큐 멤버십으로 미리 허용해두면
 // codegen 시점엔 이미 승격이 끝나 있어 기존 securityParamExprCalls.get() 경로를 그대로 탄다). ──
 describe("CodeGen history index '[]' on a request.security(...) call registered via securityParamExprPending (C703)", () => {
+  // The calls now run in the requested context (resin-harness suites/lang/probes/L34.json `fs`, a
+  // history offset on the whole call): the offset reads the call's slot, na in a child.
   it("emits base+__secIdx getFromArrayHist for a literal offset wrapping the whole call (distinct-tf AND distinct-expression per call site)", () => {
     const code = codegenSource('getS(tf, exp) =>\n    request.security("", tf, exp)[1]\nx = getS("60", close)\ny = getS("240", open)');
     expect(code).toContain("function getS(__slotBase, __secIdx, tf, exp) {");
     expect(code).toContain(
-      "return rt.security.getFromArrayHist($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false, 1);",
+      "return ($.secCapture >= 0 ? NaN : rt.security.getFromArrayHist($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false, 1));",
     );
   });
 

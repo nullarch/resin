@@ -43,7 +43,12 @@ import {
 import { literalOffsetValue } from "./index-access";
 import { isUdtConstructorCall } from "./constructors";
 import { isHarmlessArgDup } from "./arg-dup";
-import { planSecurityScript, type SecurityScriptPlan } from "./security-script";
+import {
+  planSecurityScript,
+  planSecurityScriptInFunction,
+  type SecurityFuncScriptPlan,
+  type SecurityScriptPlan,
+} from "./security-script";
 // C512: request.security tf 삼항 조건의 산술 임계값 폴딩이 timeframe.in_seconds(상수 tf)를
 // 컴파일타임에 계산할 때 런타임과 정확히 같은 값을 내도록 런타임 순수 함수를 직접 import한다
 // (transpiler→runtime 첫 값 import — in_seconds는 상태/Context 의존이 전혀 없는 순수 함수라
@@ -2031,6 +2036,29 @@ function registerSecurityNestedReads(nested: readonly SecurityNestedRead[], prog
       nested: n.build.nested.map((m) => m.node),
     });
   }
+}
+
+// The symbol each call of the enclosing function requests when the symbol argument is one of its
+// parameters, in prog.funcAllCallSites order: what that call passes, folded as resolveSecuritySymbol
+// folds a symbol (null: the chart's own symbol, or one known only at run time). null when the
+// argument is not a parameter.
+function resolveSecuritySiteSymbols(symbolArg: Expr, prog: AnalyzedProgram, scope: LexScope): (string | null)[] | null {
+  if (symbolArg.kind !== "Identifier" || scope.func === null) return null;
+  const paramIdx = scope.func.paramNames.indexOf(symbolArg.name);
+  const sites = prog.funcAllCallSites.get(scope.func.name);
+  if (paramIdx < 0 || sites === undefined) return null;
+  const guardKeysBefore = new Set(prog.securityTfConstGuards.keys());
+  const out = sites.map((s) => {
+    const argExpr = s.call.args[paramIdx] ?? s.call.kwargs.find((kw) => kw.name === symbolArg.name)?.value;
+    if (argExpr === undefined) return null;
+    if (isSyminfoTickerid(argExpr)) return prog.syminfoStrings.get("tickerid") || null;
+    const lit = resolveSecurityTfLiteral(argExpr, prog, undefined, undefined, s.inFuncName);
+    return lit === undefined || lit === "" ? null : lit;
+  });
+  for (const k of prog.securityTfConstGuards.keys()) {
+    if (!guardKeysBefore.has(k)) prog.securityTfConstGuards.delete(k);
+  }
+  return out;
 }
 
 function isSyminfoTickerid(e: Expr): boolean {
@@ -7849,6 +7877,43 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         isBareSeries || isTupleArg || bareUdfInner !== undefined || bareTaInner !== undefined || scalarBareUdfInner !== undefined
           ? null
           : buildSecurityExpr(seriesArg, prog, expr.line, scope.func?.name ?? null, symbolArg, tfArg, tfLiteral !== undefined ? { symbol, tf: tfLiteral } : null);
+      // A call in a user-defined function whose expression the prepass grammar does not take is
+      // evaluated by running the script in the requested context, one request per call of the
+      // function (analyzer/security-script.ts planSecurityScriptInFunction;
+      // concepts_other-timeframes-and-data.txt "In local scopes": "the Pine Script compiler extracts
+      // such calls into the global scope during translation"). It is tried before the deferred
+      // parameter forms below (C453/C534/C542/C563/C731/C739) and the scalar user-defined-function
+      // passthrough (C436/C562): those are pine2py's, and where they do not fail they compute the same
+      // request, except C563's and C436's passthrough, which gave the chart's values where the
+      // requested context evaluates the argument (resin-harness suites/lang/probes/L34.json,
+      // `pf(g(close))` with `var` state in g: the requested bars' closes summed).
+      let funcScriptPlan: SecurityFuncScriptPlan | null = null;
+      let funcScriptPlanRefusal: string | null = null;
+      let funcSiteSymbols: (string | null)[] | null = null;
+      if (
+        scope.func !== null &&
+        exprMatch === null &&
+        !isBareSeries &&
+        !isTupleArg &&
+        bareUdfInner === undefined &&
+        bareTaInner === undefined &&
+        (tfLiteral !== undefined || tfSiteLiterals !== null || tfSiteMixed !== null || tfRuntimeExpr !== null)
+      ) {
+        const chartTicker = prog.syminfoStrings.get("tickerid") || null;
+        const siteSymbols = resolveSecuritySiteSymbols(symbolArg, prog, scope);
+        const siteSymbol = (k: number): string | null => (siteSymbols !== null ? siteSymbols[k] ?? null : symbol);
+        const planned = planSecurityScriptInFunction(prog, expr, seriesArg, scope.func.name, (k) => {
+          const s = siteSymbol(k);
+          return s !== null && s !== chartTicker;
+        });
+        if (planned.ok) {
+          funcScriptPlan = planned.plan;
+          funcSiteSymbols = planned.plan.sites.map((_, k) => siteSymbol(k));
+          scalarBareUdfInner = undefined;
+        } else {
+          funcScriptPlanRefusal = planned.reason;
+        }
+      }
       // C453: expression 인자가 bare UDF 매개변수이고 그 함수의 콜사이트가 2개 이상(전원 top-level,
       // 각 콜사이트가 이 매개변수 위치에 실인자를 실제로 전달)이면 — 지금 즉시 빌드하지 않고 메인
       // 루프 종료 후로 미룬다(processPendingSecurityParamExprs — 함수 뒤에 오는 콜사이트의 인자가
@@ -7884,6 +7949,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // null이라 여기서 확정하면 오판한다(C436 forward-ref 제외 원칙과 동일 이유의 지연판).
       let secParamAllBareUdf: { paramIdx: number; paramName: string } | null = null;
       if (
+        funcScriptPlan === null &&
         exprMatch === null &&
         !isBareSeries &&
         !isTupleArg &&
@@ -7929,7 +7995,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // secParamMultiSite가 이미 성립했으면(단일 매개변수 bare/IndexAccess 형태) 그 경로가 출력
       // 바이트를 그대로 보존해야 하므로 이 일반화 경로는 건너뛴다.
       let secParamMultiSiteGeneric: Expr | null = null;
-      if (exprMatch === null && secParamMultiSite === null && secParamAllBareUdf === null && !isBareSeries && !isTupleArg && bareUdfInner === undefined && bareTaInner === undefined && scalarBareUdfInner === undefined && scope.func !== null) {
+      if (funcScriptPlan === null && exprMatch === null && secParamMultiSite === null && secParamAllBareUdf === null && !isBareSeries && !isTupleArg && bareUdfInner === undefined && bareTaInner === undefined && scalarBareUdfInner === undefined && scope.func !== null) {
         const referenced = new Set<string>();
         collectSecurityExprIdentNames(seriesArg, referenced);
         const referencedParamIdxs = scope.func.paramNames
@@ -7993,6 +8059,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // (scalarBareUdfInner)에 그대로 태워 analyzeExpr/codegen genExpr 인라인 방출을 전부 재사용한다
       // (신규 codegen 0줄). DIVERGENCES #227.
       if (
+        funcScriptPlan === null &&
         exprMatch === null &&
         !isBareSeries &&
         !isTupleArg &&
@@ -8108,6 +8175,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       let scriptPlan: SecurityScriptPlan | null = null;
       let scriptPlanRefusal: string | null = null;
       if (
+        funcScriptPlan === null &&
         !isBareSeries &&
         !isTupleArg &&
         bareUdfInner === undefined &&
@@ -8119,7 +8187,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         (scalarBareUdfInner === undefined || (scope.func === null && (tfLiteral !== undefined || tfRuntimeExpr !== null)))
       ) {
         if (scope.func !== null) {
-          scriptPlanRefusal = "the call is in a function";
+          scriptPlanRefusal = funcScriptPlanRefusal ?? "the call is in a function";
         } else {
           const chartTicker = prog.syminfoStrings.get("tickerid") || null;
           const planned = planSecurityScript(prog, expr, seriesArg, symbol !== null && symbol !== chartTicker);
@@ -8143,9 +8211,11 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           exprMatch !== null ||
           secParamMultiSite !== null ||
           secParamMultiSiteGeneric !== null ||
-          secParamAllBareUdf !== null);
+          secParamAllBareUdf !== null ||
+          funcScriptPlan !== null);
       const tfViaRuntime =
-        (tfRuntimeExpr !== null && (isBareSeries || tupleFields !== null || exprMatch !== null || scriptPlan !== null)) ||
+        (tfRuntimeExpr !== null &&
+          (isBareSeries || tupleFields !== null || exprMatch !== null || scriptPlan !== null || funcScriptPlan !== null)) ||
         tfSiteMixedConsumable;
       const tfDiscarded = bareUdfInner !== undefined || bareTaInner !== undefined || scalarBareUdfInner !== undefined;
       if (!tfAvailable) {
@@ -8160,7 +8230,8 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
               tupleFields !== null ||
               exprMatch !== null ||
               secParamMultiSite !== null ||
-              secParamMultiSiteGeneric !== null);
+              secParamMultiSiteGeneric !== null ||
+              funcScriptPlan !== null);
           if (!tfSiteMixedKeepsGuards) {
             for (const k of prog.securityTfConstGuards.keys()) {
               if (!guardKeysBeforeTfFold.has(k)) prog.securityTfConstGuards.delete(k);
@@ -8185,7 +8256,8 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         secParamMultiSite === null &&
         secParamAllBareUdf === null &&
         secParamMultiSiteGeneric === null &&
-        scriptPlan === null
+        scriptPlan === null &&
+        funcScriptPlan === null
       ) {
         pushSecurityExprUnsupportedError(prog, expr, scriptPlanRefusal);
       }
@@ -8575,6 +8647,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             gaps,
             lookahead,
             symbol,
+            scriptRefusal: funcScriptPlanRefusal,
           });
           analyzeExpr(seriesArg, prog, scope, false);
           analyzeExpr(symbolArg, prog, scope, false);
@@ -8602,6 +8675,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             gaps,
             lookahead,
             symbol,
+            scriptRefusal: funcScriptPlanRefusal,
           });
           analyzeExpr(symbolArg, prog, scope, false);
           analyzeExpr(tfArg, prog, scope, false);
@@ -8622,6 +8696,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             gaps,
             lookahead,
             symbol,
+            scriptRefusal: funcScriptPlanRefusal,
           });
           analyzeExpr(symbolArg, prog, scope, false);
           analyzeExpr(tfArg, prog, scope, false);
@@ -8651,6 +8726,39 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             varSlice: null,
             script: scriptPlan,
           });
+          return;
+        } else if (funcScriptPlan !== null) {
+          // A request per call of the function (analyzer/security-script.ts
+          // planSecurityScriptInFunction): slot base + k is call k's, on that call's timeframe and
+          // symbol, filled by its child. The expression is ordinary code of the function there,
+          // evaluated where the request's statement of the body begins whatever block the call sits
+          // in: it is analyzed in the function body's own scope, unconditional.
+          let bodyScope = scope;
+          while (bodyScope.parent !== null && bodyScope.parent.func === scope.func) bodyScope = bodyScope.parent;
+          const errorsBefore = prog.errors.length;
+          analyzeExpr(seriesArg, prog, bodyScope, false);
+          analyzeExpr(symbolArg, prog, scope, false);
+          analyzeExpr(tfArg, prog, scope, false);
+          // An expression its own analysis rejects gets no slot (no half-registered request).
+          if (prog.errors.length > errorsBefore) return;
+          const base = prog.securityTfs.length;
+          funcScriptPlan.sites.forEach((site, k) => {
+            const slot = base + k;
+            if (tfSiteValues !== null) {
+              pushSiteTf(tfSiteValues[k]!);
+            } else {
+              prog.securityTfs.push(tfLiteral ?? prog.chartTf);
+              if (tfRuntimeExpr !== null && tfLiteral === undefined) prog.securityRuntimeTfSlots.set(slot, tfRuntimeExpr);
+            }
+            prog.securitySymbols[slot] = funcSiteSymbols![k] ?? null;
+            prog.securityFuncScriptSites.push({ slot, call: site.call, stmt: site.stmt, slice: site.slice });
+          });
+          prog.securityFuncScriptCalls.set(expr, { base, gaps, lookahead });
+          const records = prog.securityFuncScriptRecords.get(funcScriptPlan.stmt) ?? [];
+          records.push({ base, expression: seriesArg });
+          prog.securityFuncScriptRecords.set(funcScriptPlan.stmt, records);
+          registerSecurityTfSiteOrdinals(prog, scope.func!);
+          scope.func!.secScriptChild = true;
           return;
         }
       }
@@ -9098,7 +9206,7 @@ export function processPendingSecurityParamExprs(prog: AnalyzedProgram, rootScop
           return calleeInfo !== undefined && calleeInfo.bodyAnalyzed && calleeInfo.tupleArity === null;
         });
       if (!ok) {
-        pushSecurityExprUnsupportedError(prog, pending.expr);
+        pushSecurityExprUnsupportedError(prog, pending.expr, pending.scriptRefusal ?? null);
         continue;
       }
       prog.securityScalarBareUdfCallSlots.set(pending.expr, pending.passthroughSeriesArg);
@@ -9215,7 +9323,7 @@ export function processPendingSecurityParamExprs(prog: AnalyzedProgram, rootScop
         noteSecuritySymbol(prog, slot, pending.symbol);
         continue;
       }
-      pushSecurityExprUnsupportedError(prog, pending.expr);
+      pushSecurityExprUnsupportedError(prog, pending.expr, pending.scriptRefusal ?? null);
       continue;
     }
     const base = prog.securityTfs.length;

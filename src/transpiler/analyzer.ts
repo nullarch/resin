@@ -1330,6 +1330,10 @@ export interface FuncInfo {
   // slotBase 패턴이지만 값이 "베이스 인덱스"가 아니라 "서수"인 이유: 슬롯 블록이 body 콜 단위로
   // 연속 배정되므로(base_k + 서수) 함수당 서수 하나로 body의 모든 해당 콜을 커버할 수 있다.
   hasSecParamCalls: boolean;
+  // A request.security call in this body is evaluated by running the script in the requested
+  // context (prog.securityFuncScriptCalls), so a child context runs this function: every request in
+  // its body reads nothing there (codegen), the child having no request data of its own.
+  secScriptChild: boolean;
   // UDF/method calls written in this body -> their callee. language_user-defined-functions.txt
   // "Scope of a function call": "Every call written in the source code establishes a separate local
   // scope ... The parameters, variables, and expressions created for each function call are unique
@@ -2472,6 +2476,9 @@ export interface AnalyzedProgram {
     lookahead: boolean;
     // The call's compile-time symbol (securitySymbols), given to the slots the queue assigns.
     symbol: string | null;
+    // Why the requested context cannot run the script for the call (planSecurityScriptInFunction),
+    // reported with the error when the queue cannot take it either.
+    scriptRefusal?: string | null;
   }>;
   // C453: 위 큐 처리 결과 (1) — 콜사이트별 프리패스 스펙 목록(securityExprCallSlots의 값과 동형,
   // 단 key가 없는 배열: body의 request.security 노드 하나가 콜사이트 수만큼 슬롯을 가져 노드 키
@@ -2490,6 +2497,15 @@ export interface AnalyzedProgram {
   // C453: 위 큐 처리 결과 (2) — body의 request.security CallExpr -> 연속 슬롯 블록의 시작(base).
   // codegen이 `$.securityExprCache[base + __secIdx]`로 방출한다(서수 __secIdx는 함수 파라미터).
   securityParamExprCalls: Map<CallExpr, { base: number; gaps: boolean; lookahead: boolean }>;
+  // A request.security call in a user-defined function whose expression the script itself computes
+  // in the requested context (analyzer/security-script.ts planSecurityScriptInFunction): one slot per
+  // call of the function, base + __secIdx, filled by that call's child (Context.runSecurityScript).
+  // `expression` is recorded where `stmt`, the request's statement of the function body, begins
+  // (securityFuncScriptRecords); each call's child evaluates the call where its top-level statement
+  // begins (securityFuncScriptSites).
+  securityFuncScriptCalls: Map<CallExpr, { base: number; gaps: boolean; lookahead: boolean }>;
+  securityFuncScriptRecords: Map<Stmt, { base: number; expression: Expr }[]>;
+  securityFuncScriptSites: { slot: number; call: CallExpr; stmt: Stmt; slice: ReadonlySet<Stmt> }[];
   // C453: 위 큐 처리 결과 (3) — 콜사이트 CallExpr -> 그 콜사이트의 서수(0-based, funcAllCallSites
   // 순서). codegen이 __slotBase/__taBase/__histBase 뒤에 리터럴로 전달한다.
   funcSecIdxArgs: Map<CallExpr, number>;
@@ -3864,6 +3880,9 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
     securityParamExprPending: [],
     securityParamExprPrepasses: [],
     securityParamExprCalls: new Map(),
+    securityFuncScriptCalls: new Map(),
+    securityFuncScriptRecords: new Map(),
+    securityFuncScriptSites: [],
     funcSecIdxArgs: new Map(),
     funcCallSlots: new Map(),
     fnVarSlotCount: 0,
@@ -4760,6 +4779,7 @@ function registerFuncSignature(stmt: FuncDecl, prog: AnalyzedProgram): void {
     localAmbiguousNestedRefReadSlots: new Map(),
     shadowedByTopLevelLocal: false,
     hasSecParamCalls: false,
+    secScriptChild: false,
     nestedCalls: new Map(),
     varSlotCount: 0,
     slotLayout: "open",
@@ -6033,6 +6053,7 @@ function analyzeMethodDecl(stmt: MethodDecl, prog: AnalyzedProgram, scope: LexSc
     localAmbiguousNestedRefReadSlots: new Map(),
     shadowedByTopLevelLocal: false,
     hasSecParamCalls: false,
+    secScriptChild: false,
     nestedCalls: new Map(),
     varSlotCount: 0,
     slotLayout: "open",

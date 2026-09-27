@@ -725,6 +725,7 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
       prog.securityCallSlots.has(expr.obj) ||
       prog.securityExprCallSlots.has(expr.obj) ||
       prog.securityParamExprCalls.has(expr.obj) ||
+      prog.securityFuncScriptCalls.has(expr.obj) ||
       prog.securityParamExprPending.some((p) => p.expr === expr.obj)
     ) {
       if (offset === 0) {

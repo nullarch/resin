@@ -31,6 +31,18 @@ function expectScriptContext(prog: ReturnType<typeof analyzeSource>): void {
   expect([...prog.securityExprCallSlots.values()].some((v) => v.script !== undefined)).toBe(true);
 }
 
+// A request.security call in a user-defined function, the same way: one request per call of the
+// function, evaluated with that call's arguments (analyzer/security-script.ts
+// planSecurityScriptInFunction; concepts_other-timeframes-and-data.txt "In local scopes": "the Pine
+// Script compiler extracts such calls into the global scope during translation"). Its values are
+// checked against the oracle by resin-harness suites/lang/probes/L34.json. `calls`: how many such
+// requests the script holds; `slots`: how many slots they take (one per call of their function).
+function expectFuncScriptContext(prog: ReturnType<typeof analyzeSource>, calls = 1, slots?: number): void {
+  expect(prog.errors).toEqual([]);
+  expect(prog.securityFuncScriptCalls.size).toBe(calls);
+  if (slots !== undefined) expect(prog.securityFuncScriptSites.length).toBe(slots);
+}
+
 describe("Analyzer", () => {
   it("assigns var slots in declaration order", () => {
     const prog = analyzeSource("var float acc = 0.0\nvar float __obs_sma3 = na");
@@ -19423,11 +19435,12 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
   // 우회 형태(매개변수가 ta.* 콜 인자 안에 중첩된 다중 콜사이트)를 지원하도록 확장해 이제 y/z 콜사이트의
   // 실인자(open/high)로 정확히 치환된다 — 거부가 아니라 "올바른 스코프로 수용"이 맞는 동작이다
   // (C526 가드 자체는 여전히 유효: paramEnv가 먼저 매칭돼 top-level v=close로는 절대 안 샌다).
-  it("accepts when the security call is inside the shadowing function's own body — the parameter (not the unrelated top-level var) is substituted per call site (C542)", () => {
+  // The request now runs in the requested context once per call of f, with that call's argument
+  // bound to f's own v (resin-harness suites/lang/probes/L34.json).
+  it("accepts when the security call is inside the shadowing function's own body — each call's argument is f's parameter there, not the unrelated top-level var", () => {
     const prog = analyzeSource('v = close\nf(v) =>\n    request.security("", "D", ta.sma(v, 3))\ny = f(open)\nz = f(high)');
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityParamExprCalls.size).toBe(1);
-    expect(prog.securityParamExprPrepasses.length).toBe(2);
+    expectFuncScriptContext(prog, 1, 2);
+    expect(prog.securityFuncScriptSites.map((s) => s.slice.size)).toEqual([0, 0]);
   });
 
   it("accepts a no-write var declaration via the C738 var slice (once-only init은 프리패스 h===0 게이트로 재현 — 거부→수용 회전)", () => {
@@ -19744,7 +19757,11 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     for (const info of prog.securityFieldOffsetCalls.values()) expect(info.field).toBe("close");
   });
 
-  it("accepts a single top-level callsite whose actual is a ':='-reassigned var (C739, wild 84d597064e48 form — 인라인 치환 불가 축)", () => {
+  // wild 84d597064e48's form. C739 read the offset at the chart's bar (the chart's idx); the
+  // requested context computes idx itself, on its own bars, as it computes any variable the
+  // expression depends on (resin-harness suites/lang/probes/L34.json `vo = gn(offv)`: the oracle
+  // offsets by the requested bars' `bar_index % 2`).
+  it("runs a single top-level call whose argument is a ':='-reassigned var in the requested context: the var's code runs there", () => {
     const prog = analyzeSource(
       [
         "f(b) =>",
@@ -19757,9 +19774,9 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
         "[hh, ll] = f(idx)",
       ].join("\n"),
     );
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityFieldOffsetCalls.size).toBe(2);
-    expect(new Set([...prog.securityFieldOffsetCalls.values()].map((i) => i.field))).toEqual(new Set(["high", "low"]));
+    expectFuncScriptContext(prog, 2, 2);
+    expect(prog.securityFieldOffsetCalls.size).toBe(0);
+    for (const site of prog.securityFuncScriptSites) expect(site.slice.size).toBe(2);
   });
 
   it("accepts unary minus in the offset parameter arithmetic (C739)", () => {
@@ -19791,11 +19808,13 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     expect(prog.securityFieldOffsetCalls.size).toBe(1);
   });
 
-  it("still rejects a ta.* call inside the offset (읽기-지점 폴백 형태 밖 — C739 큐레이션)", () => {
+  // C739 only read a parameter offset at the chart's bar; the requested context evaluates the whole
+  // expression, a ta.* call in the offset included (resin-harness suites/lang/probes/L34.json).
+  it("runs a ta.* call inside the offset in the requested context", () => {
     const prog = analyzeSource(
-      ["g(n) =>", '    request.security(syminfo.tickerid, "D", close[n + ta.sma(close, 3)])', "x = g(1)"].join("\n"),
+      ["g(n) =>", '    request.security(syminfo.tickerid, "D", close[n + (ta.sma(close, 3) > close ? 1 : 0)])', "x = g(1)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectFuncScriptContext(prog, 1, 1);
   });
 
   it("still rejects division in the offset when actuals are loop variables (wild 근거 없음 — C739 큐레이션)", () => {
@@ -19805,11 +19824,13 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
-  it("still rejects a func-local (non-parameter) identifier in the offset across multiple callsites (C739 게이트 밖)", () => {
+  // The function's code before the request runs in the requested context too (resin-harness
+  // suites/lang/probes/L34.json `trend`: a local computed before the request).
+  it("runs a func-local (non-parameter) identifier in the offset in the requested context, per call", () => {
     const prog = analyzeSource(
       ["g(n) =>", "    k = n + 1", '    request.security(syminfo.tickerid, "D", close[k])', "a = g(1)", "b = g(2)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectFuncScriptContext(prog, 1, 2);
   });
 
   it("evaluates a top-level ':='-reassigned variable offset by running the script in the requested context", () => {
@@ -19817,7 +19838,9 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     expectScriptContext(prog);
   });
 
-  it("still rejects the offset form when tf is a per-site parameter array (uniform 리터럴 tf 전용 — C739)", () => {
+  // Each call is a request of its own, on its own timeframe (resin-harness
+  // suites/lang/probes/L34.json).
+  it("runs the offset form with a per-call timeframe parameter in the requested context, one slot per call on its timeframe", () => {
     const prog = analyzeSource(
       [
         "var k = 1",
@@ -19829,7 +19852,9 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
         'b = g(k, "240")',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectFuncScriptContext(prog, 1, 2);
+    const base = prog.securityFuncScriptCalls.values().next().value!.base;
+    expect(prog.securityTfs.slice(base, base + 2)).toEqual(["60", "240"]);
   });
 
   it("rejects an input.string definition (not a scalar const, no identity-passthrough exception)", () => {
@@ -21274,15 +21299,18 @@ describe("Analyzer request.security expression via UDF parameter single-call-sit
   // 이미 다중 문장 UDF도 아무 제약 없이 허용해왔음(scalarBareUdfFunc 판정은 bodyAnalyzed/tupleArity만
   // 확인, 문장 개수 무관) — 매개변수 단일 콜사이트 치환을 거치기만 했을 뿐인 동일한 값이 다르게
   // 취급될 근거가 없다. C564가 그 체인을 추가해 이제 두 폼이 동일하게 통과한다.
-  it("accepts when the sole call site's argument, reached through the single-call-site parameter substitution, is a multi-statement bare UDF call (C564 — same passthrough principle as the direct form, previously a false-reject gap)", () => {
+  // C564 took it as pine2py's passthrough; the requested context evaluates the argument (resin-harness
+  // suites/lang/probes/L34.json `pf(g(close))`).
+  it("runs the sole call whose argument is a multi-statement UDF call in the requested context", () => {
     const prog = analyzeSource(
       "helper(x) =>\n    y = x + 1\n    y\nf_sec(sym, val) =>\n    request.security(sym, \"D\", val)\nx = f_sec(\"\", helper(close))",
     );
-    expect(prog.errors).toEqual([]);
+    expectFuncScriptContext(prog, 1, 1);
     expect(prog.securityExprCallSlots.size).toBe(0);
     const fSecDecl = prog.script.body[1] as FuncDecl;
     const outer = (fSecDecl.body[0] as ExprStmt).expr as CallExpr;
-    expect(prog.securityScalarBareUdfCallSlots.has(outer)).toBe(true);
+    expect(prog.securityFuncScriptCalls.has(outer)).toBe(true);
+    expect(prog.securityScalarBareUdfCallSlots.has(outer)).toBe(false);
   });
 
   it("works with a forward-referenced call site (the call appears in source BEFORE the FuncDecl — supported since C255 hoists top-level FuncDecl signatures)", () => {
@@ -21298,9 +21326,10 @@ describe("Analyzer request.security expression via UDF parameter single-call-sit
     const accepted = analyzeSource('f_sec(val) =>\n    request.security("", "D", val)\ny = close\nx = f_sec(y)');
     expect(accepted.errors).toEqual([]);
     // y is declared AFTER the call site — must still be rejected (declared-after-use), confirming the
-    // check isn't simply skipped/always-true once the call-site line is used.
+    // check isn't simply skipped/always-true once the call-site line is used (the call's own analysis
+    // rejects it now that the requested context evaluates the call).
     const rejected = analyzeSource('f_sec(val) =>\n    request.security("", "D", val)\nx = f_sec(y)\ny = close');
-    expect(rejected.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(rejected.errors.some((e) => e.includes("unknown identifier: 'y'"))).toBe(true);
   });
 });
 
@@ -21325,7 +21354,9 @@ describe("Analyzer request.security expression via UDF parameter unanimous multi
     expect(prog.errors).toEqual([]);
   });
 
-  it("still rejects when call sites disagree on that parameter's actual argument (not unanimous — a genuine per-call-site branch)", () => {
+  // A genuine per-call branch is what the requested context evaluates per call (resin-harness
+  // suites/lang/probes/L34.json): each call's child runs `val = which == ...` with its own `which`.
+  it("runs calls that disagree on that parameter's argument in the requested context, one request per call", () => {
     const prog = analyzeSource(
       [
         'f_sec(sym, tf, which) =>\n    val = which == "close" ? close : open\n    request.security(sym, tf, val)',
@@ -21333,7 +21364,9 @@ describe("Analyzer request.security expression via UDF parameter unanimous multi
         'b = f_sec("B", "D", "open")',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes(EXPR_ERR))).toBe(true);
+    expectFuncScriptContext(prog, 1, 2);
+    const base = prog.securityFuncScriptCalls.values().next().value!.base;
+    expect(prog.securitySymbols.slice(base, base + 2)).toEqual(["A", "B"]);
   });
 
   it("still rejects when one of the 2+ call sites is inside another function's body (not all top-level — same conservative scope restriction as C452)", () => {
@@ -21367,14 +21400,16 @@ describe("Analyzer request.security expression via UDF parameter unanimous multi
 // 오는 콜사이트 인자의 top-level 이름이 본문 분석 시점엔 미등록일 수 있기 때문. 치환 인자 안
 // ta.* 클론은 top-level 스코프로 등록(전역 taSlots 슬롯)돼 프리패스에 함수-상대 __taBase 참조가
 // 남지 않는다(C367 exprHasTaInUdf가 막아온 문제가 이 경로엔 구조적으로 없음). ──
+// Since resin-harness suites/lang/probes/L34.json these calls run in the requested context, one request
+// per call of the function with that call's argument (analyzer/security-script.ts
+// planSecurityScriptInFunction), ahead of the per-call-site prepasses: the call sites' ordinals
+// (__secIdx) and the contiguous slot block stay.
 describe("Analyzer request.security expression via UDF parameter multi-call-site slotization (C453)", () => {
   it("accepts two top-level call sites with bare-series arguments (wild 30a49af03fff.pine shape)", () => {
     const prog = analyzeSource(
       'f_sec(sym, val) =>\n    request.security(sym, "D", val)\na = f_sec("", close)\nb = f_sec("", open)',
     );
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityParamExprCalls.size).toBe(1);
-    expect(prog.securityParamExprPrepasses.length).toBe(2);
+    expectFuncScriptContext(prog, 1, 2);
     expect(prog.securityTfs).toEqual(["D", "D"]);
   });
 
@@ -21382,22 +21417,23 @@ describe("Analyzer request.security expression via UDF parameter multi-call-site
     const prog = analyzeSource(
       'f_sec(val) =>\n    request.security("", "D", val)\na = f_sec(close)\nb = f_sec(open)\nc = f_sec(hl2)',
     );
-    expect(prog.errors).toEqual([]);
+    expectFuncScriptContext(prog, 1, 3);
     expect(Array.from(prog.funcSecIdxArgs.values()).sort()).toEqual([0, 1, 2]);
-    const call = Array.from(prog.securityParamExprCalls.values())[0]!;
+    const call = Array.from(prog.securityFuncScriptCalls.values())[0]!;
     expect(call.base).toBe(0);
-    expect(prog.securityParamExprPrepasses.map((p) => p.slot)).toEqual([0, 1, 2]);
+    expect(prog.securityFuncScriptSites.map((s) => s.slot)).toEqual([0, 1, 2]);
     const info = prog.funcs.get("f_sec")!;
     expect(info.hasSecParamCalls).toBe(true);
+    expect(info.secScriptChild).toBe(true);
   });
 
-  it("accepts ta.*-containing substituted arguments — clones registered as GLOBAL ta slots (not function-relative), so the UDF-body ta hard error does not apply to this path (wild ecb58035a6d5.pine shape)", () => {
+  it("accepts ta.*-containing arguments: the call's own ta calls run in the child, no clones", () => {
     const prog = analyzeSource(
       'f_sec(val) =>\n    request.security("", "D", val)\na = f_sec(ta.sma(close, 3))\nb = f_sec(ta.ema(close, 5))',
     );
-    expect(prog.errors).toEqual([]);
-    // 콜사이트 자신의 원본 ta 콜 2개 + 프리패스 클론 2개 = 전역 슬롯 4 (함수-상대 슬롯 0).
-    expect(prog.taSlotCount).toBe(4);
+    expectFuncScriptContext(prog, 1, 2);
+    // The call sites' own two ta calls, global (the child evaluates each call where its statement begins).
+    expect(prog.taSlotCount).toBe(2);
     expect(prog.funcs.get("f_sec")!.localTaSlotCount).toBe(0);
     for (const [, sc] of prog.stateCallSlots) expect(sc.inUdf).not.toBe(true);
   });
@@ -21406,59 +21442,54 @@ describe("Analyzer request.security expression via UDF parameter multi-call-site
     const prog = analyzeSource(
       'f_sec(val) =>\n    request.security("", "D", val)\nx = f_sec(close)\nif close > open\n    x := f_sec(open)',
     );
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityParamExprCalls.size).toBe(1);
-    expect(prog.securityParamExprPrepasses.length).toBe(2);
+    expectFuncScriptContext(prog, 1, 2);
   });
 
   it("accepts a keyword-argument call site (f_sec(val = open) — C396 UDF named args resolve to the same param position)", () => {
     const prog = analyzeSource(
       'f_sec(val) =>\n    request.security("", "D", val)\na = f_sec(close)\nb = f_sec(val = open)',
     );
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityParamExprPrepasses.length).toBe(2);
+    expectFuncScriptContext(prog, 1, 2);
   });
 
   it("registers TWO param security calls in the same body as separate contiguous blocks sharing one __secIdx ordinal space", () => {
     const prog = analyzeSource(
       'f_sec(val) =>\n    h = request.security("", "D", val)\n    l = request.security("", "240", val)\n    h + l\na = f_sec(close)\nb = f_sec(open)',
     );
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityParamExprCalls.size).toBe(2);
+    expectFuncScriptContext(prog, 2, 4);
     expect(prog.securityTfs).toEqual(["D", "D", "240", "240"]);
-    const bases = Array.from(prog.securityParamExprCalls.values()).map((c) => c.base).sort();
+    const bases = Array.from(prog.securityFuncScriptCalls.values()).map((c) => c.base).sort();
     expect(bases).toEqual([0, 2]);
     expect(Array.from(prog.funcSecIdxArgs.values()).sort()).toEqual([0, 1]);
   });
 
-  it("rejects when ANY call site's argument fails the narrow grammar (선행 var 선언 UDF 본문 — all-or-nothing, partial support would route unsupported call sites without __secIdx; C732 이후 다문장 '=' 본문 필러 대체)", () => {
+  // The prepass grammar could not take helper's var state; the requested context runs it (resin-harness
+  // suites/lang/probes/L34.json `pf(g(close))`: g's var state summed over the requested bars).
+  it("accepts a call whose argument calls a function with var state (the prepass grammar's all-or-nothing reject no longer applies)", () => {
     const prog = analyzeSource(
       'helper(x) =>\n    var y = 0.0\n    y := x + 1\n    y\nf_sec(val) =>\n    request.security("", "D", val)\na = f_sec(close)\nb = f_sec(helper(close))',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
-    expect(prog.securityParamExprCalls.size).toBe(0);
-    expect(prog.funcSecIdxArgs.size).toBe(0);
+    expectFuncScriptContext(prog, 1, 2);
   });
 
-  it("rejects when a call site omits the argument (param default would need its own substitution — conservative reject, same as C452)", () => {
+  it("accepts a call that omits the argument: the parameter's default is evaluated in the requested context", () => {
     const prog = analyzeSource(
       'f_sec(val = close) =>\n    request.security("", "D", val)\na = f_sec(close)\nb = f_sec()',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
-    expect(prog.securityParamExprCalls.size).toBe(0);
+    expectFuncScriptContext(prog, 1, 2);
   });
 
-  it("uses each CALL SITE's own line for declared-before-use on identifiers inside substituted arguments (deferred processing sees the complete top-level name table)", () => {
+  it("uses each CALL SITE's own line for declared-before-use on identifiers inside the arguments", () => {
     // y(line 3)는 FuncDecl(line 1)보다 뒤, 두 콜사이트(line 4/5)보다 앞 — 콜사이트 line 기준이라 수용.
     const accepted = analyzeSource(
       'f_sec(val) =>\n    request.security("", "D", val)\ny = close\na = f_sec(y)\nb = f_sec(open)',
     );
     expect(accepted.errors).toEqual([]);
-    // y가 자신을 참조하는 콜사이트보다 뒤에 선언되면 여전히 거부(선언-후-사용).
+    // y가 자신을 참조하는 콜사이트보다 뒤에 선언되면 여전히 거부(선언-후-사용) — the call's own analysis.
     const rejected = analyzeSource(
       'f_sec(val) =>\n    request.security("", "D", val)\na = f_sec(y)\nb = f_sec(open)\ny = close',
     );
-    expect(rejected.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(rejected.errors.some((e) => e.includes("unknown identifier: 'y'"))).toBe(true);
   });
 
   it("keeps the single-call-site form on the C452 inline path (securityExprCallSlots), not the C453 multi-site path — path separation regression guard", () => {
@@ -21473,8 +21504,7 @@ describe("Analyzer request.security expression via UDF parameter multi-call-site
     const prog = analyzeSource(
       'a = f_sec(close)\nb = f_sec(open)\nf_sec(val) =>\n    request.security("", "D", val)',
     );
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityParamExprPrepasses.length).toBe(2);
+    expectFuncScriptContext(prog, 1, 2);
   });
 });
 
@@ -21484,14 +21514,15 @@ describe("Analyzer request.security expression via UDF parameter multi-call-site
 // scratch/c534_probe4.mjs). obj만 매개변수 치환 대상으로 보고 index는 원본 그대로 재사용 —
 // processPendingSecurityParamExprs가 콜사이트별 실인자를 그 index로 다시 감싼 합성 IndexAccess를
 // 만들어 기존 IndexAccess case(bare-series 단축/히스토리 버퍼/오프셋 재귀)를 그대로 태운다. ──
+// Since resin-harness suites/lang/probes/L34.json (`fs`, the LucF `_src[...]` helper) these calls run in
+// the requested context, one request per call: `val[1]` is the parameter's own history there, per
+// call instance (the function's parameter history buffer), not a per-site prepass.
 describe("Analyzer request.security expression via UDF parameter multi-call-site slotization, IndexAccess-wrapped param (C534)", () => {
   it("accepts a fixed literal offset wrapped around the parameter across two call sites (wild f_safeSecurity(_res,_src)=>...,_src[1] shape)", () => {
     const prog = analyzeSource(
       'f_sec(val) =>\n    request.security("", "D", val[1])\na = f_sec(close)\nb = f_sec(open)',
     );
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityParamExprCalls.size).toBe(1);
-    expect(prog.securityParamExprPrepasses.length).toBe(2);
+    expectFuncScriptContext(prog, 1, 2);
     expect(prog.securityTfs).toEqual(["D", "D"]);
   });
 
@@ -21499,24 +21530,18 @@ describe("Analyzer request.security expression via UDF parameter multi-call-site
     const prog = analyzeSource(
       'f_sec(val) =>\n    request.security("", "D", val[barstate.isrealtime ? 1 : 0])\na = f_sec(close)\nb = f_sec(open)',
     );
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityParamExprCalls.size).toBe(1);
-    expect(prog.securityParamExprPrepasses.length).toBe(2);
+    expectFuncScriptContext(prog, 1, 2);
   });
 
-  it("registers per-site history-buffer reads when the substituted argument is NOT a bare series (ta.* call substituted through the wrap — C370 hist-on-expr still applies inside the synthetic wrapper)", () => {
-    const prog = analyzeSource(
-      'f_sec(val) =>\n    request.security("", "D", val[1])\na = f_sec(ta.sma(close, 5))\nb = f_sec(ta.ema(close, 5))',
-    );
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityParamExprPrepasses.map((p) => p.histReads.length)).toEqual([1, 1]);
-  });
-
-  it("does NOT register a history-buffer read when the substituted argument is a bare series (obj shortcut — same direct-cache-read path as a plain close[1])", () => {
-    const prog = analyzeSource(
-      'f_sec(val) =>\n    request.security("", "D", val[1])\na = f_sec(close)\nb = f_sec(open)',
-    );
-    expect(prog.securityParamExprPrepasses.map((p) => p.histReads.length)).toEqual([0, 0]);
+  it("reads the parameter's history in the function, per call instance, whatever the argument (a ta.* call or a bare series)", () => {
+    for (const args of [["ta.sma(close, 5)", "ta.ema(close, 5)"], ["close", "open"]]) {
+      const prog = analyzeSource(
+        `f_sec(val) =>\n    request.security("", "D", val[1])\na = f_sec(${args[0]})\nb = f_sec(${args[1]})`,
+      );
+      expectFuncScriptContext(prog, 1, 2);
+      expect(prog.funcs.get("f_sec")!.localHistKinds.get("val")).toBe("param");
+      expect(prog.securityParamExprPrepasses.length).toBe(0);
+    }
   });
 
   it("accepts MIXED top-level and in-func call sites for the wrapped form since C731 (구 거부 테스트 교체 — index 서브트리(리터럴 1)는 스코프 민감 식별자가 없어 안전, 아래 C731 index 식별자 거부 테스트가 원 의도를 보존)", () => {
@@ -21558,12 +21583,11 @@ describe("Analyzer request.security expression via UDF parameter multi-call-site
     expect(prog.securityParamExprPrepasses.length).toBe(2);
   });
 
-  it("rejects when a call site omits the argument for the wrapped form too (param default substitution unsupported, same conservative reject as bare C453)", () => {
+  it("accepts a call that omits the argument for the wrapped form too: the default is evaluated in the requested context", () => {
     const prog = analyzeSource(
       'f_sec(val = close) =>\n    request.security("", "D", val[1])\na = f_sec(close)\nb = f_sec()',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
-    expect(prog.securityParamExprCalls.size).toBe(0);
+    expectFuncScriptContext(prog, 1, 2);
   });
 
   it("keeps the SINGLE-call-site wrapped form on the existing C452 inline path (securityExprCallSlots), not this multi-site path — path separation regression guard (single call site already worked before C534 via the existing C452 substitution recursing through IndexAccess)", () => {
@@ -21595,14 +21619,15 @@ describe("Analyzer request.security expression via UDF parameter multi-call-site
 // 둘 다 매개변수) — secParamMultiSite(C453/C534)는 paramCandidate가 통째로 Identifier/IndexAccess(
 // Identifier)일 때만 성립해 이 형태는 못 잡았다. seriesArg 원본 전체를 buildSecurityExprNode의
 // paramEnv 치환 메커니즘(C516 UDF 인라인이 이미 쓰던 것)에 먹여 콜사이트별로 재귀 빌드한다. ──
+// Since resin-harness suites/lang/probes/L34.json these calls run in the requested context, one request
+// per call of the function with that call's arguments: the expression's ta.* calls are the function's
+// own (function-relative slots, one state per call instance), evaluated in each call's child.
 describe("Analyzer request.security expression via UDF parameter(s) nested inside a ta.*/BinOp subtree, multi-call-site (C542)", () => {
   it("accepts a ta.* call whose TWO arguments are both parameters (wild getRsi(src,length,tf)=>request.security(...,ta.rsi(src,length)) shape)", () => {
     const prog = analyzeSource(
       'f_sec(src, len) =>\n    request.security("", "D", ta.rsi(src, len))\na = f_sec(close, 14)\nb = f_sec(open, 21)',
     );
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityParamExprCalls.size).toBe(1);
-    expect(prog.securityParamExprPrepasses.length).toBe(2);
+    expectFuncScriptContext(prog, 1, 2);
     expect(prog.securityTfs).toEqual(["D", "D"]);
   });
 
@@ -21610,17 +21635,14 @@ describe("Analyzer request.security expression via UDF parameter(s) nested insid
     const prog = analyzeSource(
       'f_sec(len) =>\n    request.security("", "D", ta.highest(high, len))\na = f_sec(10)\nb = f_sec(20)',
     );
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityParamExprCalls.size).toBe(1);
-    expect(prog.securityParamExprPrepasses.length).toBe(2);
+    expectFuncScriptContext(prog, 1, 2);
   });
 
   it("accepts the parameter nested inside a BinOp around a ta.* call (e.g. ta.sma(src, len) * 2)", () => {
     const prog = analyzeSource(
       'f_sec(src, len) =>\n    request.security("", "D", ta.sma(src, len) * 2)\na = f_sec(close, 5)\nb = f_sec(open, 9)',
     );
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityParamExprCalls.size).toBe(1);
+    expectFuncScriptContext(prog, 1, 2);
   });
 
   it("regression: a top-level '=' variable sharing the SAME NAME as the UDF parameter must not be shadowed by a stale visiting-key collision (wild num_candles = 10; f_sec(tf, num_candles) => ...num_candles... shape — bug found while implementing C542)", () => {
@@ -21632,13 +21654,15 @@ describe("Analyzer request.security expression via UDF parameter(s) nested insid
     expect(prog.securityParamExprPrepasses.length).toBe(2);
   });
 
-  it("registers ta.* clones from the substituted parameter as GLOBAL ta slots, same as bare C453 (no function-relative __taBase leaks into the prepass)", () => {
+  it("registers the expression's ta.* call as the function's own (function-relative, one state per call instance), not as global clones", () => {
     const prog = analyzeSource(
       'f_sec(src, len) =>\n    request.security("", "D", ta.rsi(src, len))\na = f_sec(close, 14)\nb = f_sec(open, 21)',
     );
-    expect(prog.errors).toEqual([]);
+    expectFuncScriptContext(prog, 1, 2);
+    // One function-relative slot, and a block of it per call of f_sec in the global pool.
+    expect(prog.funcs.get("f_sec")!.localTaSlotCount).toBe(1);
     expect(prog.taSlotCount).toBe(2);
-    expect(prog.funcs.get("f_sec")!.localTaSlotCount).toBe(0);
+    for (const [, sc] of prog.stateCallSlots) expect(sc.inUdf).toBe(true);
   });
 
   it("accepts MIXED top-level and in-func call sites on the generic path since C731 (구 거부 테스트 교체 — paramEnv 엔트리가 site.inFuncName을 동봉해 실인자 치환이 그 함수 스코프로 걷고, root 자신의 비-매개변수 식별자는 기존과 동일하게 funcName=null)", () => {
@@ -21652,20 +21676,18 @@ describe("Analyzer request.security expression via UDF parameter(s) nested insid
     expect(prog.taSlotCount).toBe(2);
   });
 
-  it("rejects when a call site omits an argument the substituted subtree references (conservative reject, same as bare C453)", () => {
+  it("accepts a call that omits an argument the expression reads: the parameter's default is evaluated in the requested context", () => {
     const prog = analyzeSource(
       'f_sec(src, len = 14) =>\n    request.security("", "D", ta.rsi(src, len))\na = f_sec(close, 14)\nb = f_sec(open)',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
-    expect(prog.securityParamExprCalls.size).toBe(0);
+    expectFuncScriptContext(prog, 1, 2);
   });
 
-  it("accepts a value-position ternary wrapping a ta.* call with a parameter argument on this generic multi-site path (C601 배치31 (c) 전환 — C600까지 거부; 조건 ta 콜은 JS ?:에서도 무조건 평가라 인라인 그대로)", () => {
+  it("accepts a value-position ternary wrapping a ta.* call with a parameter argument", () => {
     const prog = analyzeSource(
       'f_sec(src, len) =>\n    request.security("", "D", ta.rsi(src, len) > 50 ? 1 : 0)\na = f_sec(close, 14)\nb = f_sec(open, 21)',
     );
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityParamExprCalls.size).toBe(1);
+    expectFuncScriptContext(prog, 1, 2);
   });
 
   it("keeps the SINGLE-call-site form on the existing C452 inline path (securityExprCallSlots), not this generic multi-site path — path separation regression guard", () => {
@@ -21675,14 +21697,9 @@ describe("Analyzer request.security expression via UDF parameter(s) nested insid
     expect(prog.securityParamExprCalls.size).toBe(0);
   });
 
-  it("keeps the bare-Identifier form (C453) on its own path, not this generic path, when paramCandidate IS a bare Identifier — path separation regression guard for the paramSubstRoot gate", () => {
+  it("takes the bare-Identifier form the same way (one request per call)", () => {
     const prog = analyzeSource('f_sec(val) =>\n    request.security("", "D", val)\na = f_sec(close)\nb = f_sec(open)');
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityParamExprCalls.size).toBe(1);
-    // C542 경로였다면 paramSubstRoot 기반이라도 최종 프리패스 개수/tf는 동일해야 하지만, 이 값이
-    // 정확히 bare Identifier 케이스임을 별도로 보장하는 codegen 바이트 비교는 codegen.test.ts C453
-    // 스위트가 이미 커버 — 여기서는 회귀 없이 여전히 수용됨만 확인.
-    expect(prog.securityParamExprPrepasses.length).toBe(2);
+    expectFuncScriptContext(prog, 1, 2);
   });
 
   // C542가 이 시프트를 위해 고친 visiting 키 분리(pVisitKey/vVisitKey)는 새 paramSubstRoot 경로뿐
@@ -21759,28 +21776,31 @@ describe("Analyzer request.security expression via a dead UDF (NO call sites any
 // 콜사이트별 값을 이미 일반 UDF 인자 전달로 들고 있다). 슬롯/프리패스/__secIdx가 전혀 필요 없어
 // in-func 콜사이트도 안전(wild 11fb54366610.pine 14사이트 전원 in-func / 224ef848661d.pine /
 // c1268152cdb7.pine indexWrap 8사이트). ──
+// C563 was pine2py's passthrough: the argument evaluated on the chart's bars and the timeframe
+// dropped. The oracle evaluates it in the requested context (resin-harness
+// suites/lang/probes/L34.json `pf(g(close))`: g's var state sums the requested bars' closes), which
+// these calls now do, one request per call; the passthrough stays only where that is refused (a call
+// in another function, below).
 describe("Analyzer request.security expression via UDF parameter whose call sites ALL pass bare UDF calls (C563 — uniform passthrough collapse)", () => {
   const SRC_MYFUNC = "myFunc(x) =>\n    x + 1\n";
 
-  it("accepts two top-level call sites with direct bare UDF call arguments (wild 224ef848661d.pine f_mtf shape) — registers the C436 passthrough channel pointing at the ORIGINAL param Identifier", () => {
+  it("runs two top-level calls with direct UDF call arguments (wild 224ef848661d.pine f_mtf shape) in the requested context, not the passthrough", () => {
     const prog = analyzeSource(
       SRC_MYFUNC + 'f_mtf(val) =>\n    request.security(syminfo.tickerid, "60", val)\na = f_mtf(myFunc(close))\nb = f_mtf(myFunc(open))',
     );
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityScalarBareUdfCallSlots.size).toBe(1);
-    const registered = Array.from(prog.securityScalarBareUdfCallSlots.values())[0]!;
-    expect(registered).toEqual({ kind: "Identifier", name: "val", line: expect.any(Number), col: expect.any(Number) });
+    expectFuncScriptContext(prog, 1, 2);
+    expect(prog.securityScalarBareUdfCallSlots.size).toBe(0);
   });
 
-  it("does NOT register any HTF/multi-site machinery — no securityTfs/prepasses/securityParamExprCalls/funcSecIdxArgs, hasSecParamCalls stays false", () => {
+  it("gives each call its slot on the requested timeframe and its ordinal", () => {
     const prog = analyzeSource(
       SRC_MYFUNC + 'f_mtf(val) =>\n    request.security(syminfo.tickerid, "60", val)\na = f_mtf(myFunc(close))\nb = f_mtf(myFunc(open))',
     );
-    expect(prog.securityTfs).toEqual([]);
+    expect(prog.securityTfs).toEqual(["60", "60"]);
     expect(prog.securityParamExprCalls.size).toBe(0);
     expect(prog.securityParamExprPrepasses.length).toBe(0);
-    expect(prog.funcSecIdxArgs.size).toBe(0);
-    expect(prog.funcs.get("f_mtf")!.hasSecParamCalls).toBe(false);
+    expect(Array.from(prog.funcSecIdxArgs.values()).sort()).toEqual([0, 1]);
+    expect(prog.funcs.get("f_mtf")!.hasSecParamCalls).toBe(true);
   });
 
   it("accepts call sites nested inside ANOTHER function body (wild 11fb54366610.pine requestSecurity shape — the C453 all-top-level requirement does not apply: no slots/__secIdx are needed at all)", () => {
@@ -21793,51 +21813,48 @@ describe("Analyzer request.security expression via UDF parameter whose call site
     expect(prog.securityParamExprCalls.size).toBe(0);
   });
 
-  it("accepts the IndexAccess-wrapped param form `param[1]` (wild c1268152cdb7.pine noRepaintSecurity shape) — the registered passthrough value is the ORIGINAL IndexAccess node (param history read)", () => {
+  it("runs the IndexAccess-wrapped param form `param[1]` (wild c1268152cdb7.pine noRepaintSecurity shape) in the requested context: the parameter's history there", () => {
     const prog = analyzeSource(
       SRC_MYFUNC +
         'nrs(expression) =>\n    request.security(syminfo.tickerid, "60", expression[1], lookahead=barmerge.lookahead_on)\ns1 = nrs(myFunc(close))\ns2 = nrs(myFunc(open))',
     );
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityScalarBareUdfCallSlots.size).toBe(1);
-    const registered = Array.from(prog.securityScalarBareUdfCallSlots.values())[0]!;
-    expect(registered.kind).toBe("IndexAccess");
+    expectFuncScriptContext(prog, 1, 2);
+    expect(prog.securityFuncScriptCalls.values().next().value!.lookahead).toBe(true);
   });
 
-  it("accepts arguments reached via unique top-level '=' var substitution at top-level call sites (wild c1268152cdb7.pine currentMA = calcMA(...) shape)", () => {
+  it("runs arguments that are top-level variables (wild c1268152cdb7.pine currentMA = calcMA(...) shape): each call's child runs the variable's declaration", () => {
     const prog = analyzeSource(
       SRC_MYFUNC +
         'currentMA = myFunc(close)\nnrs(expression) =>\n    request.security(syminfo.tickerid, "60", expression[1])\ns1 = nrs(currentMA)\ns2 = nrs(currentMA)',
     );
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityScalarBareUdfCallSlots.size).toBe(1);
+    expectFuncScriptContext(prog, 1, 2);
+    for (const site of prog.securityFuncScriptSites) expect(site.slice.size).toBe(1);
   });
 
-  it("accepts a multi-statement UDF callee (C436's wider-than-C516 range carries over — no single-expression-body requirement)", () => {
+  it("runs a multi-statement UDF callee in the requested context", () => {
     const prog = analyzeSource(
       "helper(x) =>\n    y = x + 1\n    y\n" +
         'f_sec(val) =>\n    request.security(syminfo.tickerid, "D", val)\na = f_sec(helper(close))\nb = f_sec(helper(open))',
     );
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityScalarBareUdfCallSlots.size).toBe(1);
+    expectFuncScriptContext(prog, 1, 2);
   });
 
-  it("accepts a callee UDF declared AFTER the wrapper FuncDecl (deferred pending confirmation sees bodyAnalyzed/tupleArity complete — the C436 forward-ref limitation does not apply to this deferred path)", () => {
+  it("runs a callee UDF declared AFTER the wrapper FuncDecl in the requested context", () => {
     const prog = analyzeSource(
       'f_sec(val) =>\n    request.security(syminfo.tickerid, "D", val)\n' +
         SRC_MYFUNC +
         "a = f_sec(myFunc(close))\nb = f_sec(myFunc(open))",
     );
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityScalarBareUdfCallSlots.size).toBe(1);
+    expectFuncScriptContext(prog, 1, 2);
   });
 
-  it("rejects when ANY call site passes a rejected argument (mixed 선행 var 선언 UDF call + now-valid ternary — the strict per-site HTF build rejects the UDF-call site; 삼항 사이트는 C601부터, 다문장 '=' 본문은 C732부터 유효라 var 본문으로 무효 축 유지)", () => {
+  // The per-site prepass grammar rejected g's var state; the requested context runs it (L34 `pf(g(close))`).
+  it("runs calls mixing a var-state UDF argument and a ternary argument in the requested context", () => {
     const prog = analyzeSource(
       "g(x) =>\n    var t = 0.0\n    t := x + 1\n    t\n" +
         'f_sec(val) =>\n    request.security(syminfo.tickerid, "D", val)\na = f_sec(g(close))\nb = f_sec(bar_index > 10 ? close : open)',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectFuncScriptContext(prog, 1, 2);
     expect(prog.securityScalarBareUdfCallSlots.size).toBe(0);
   });
 
@@ -21866,10 +21883,9 @@ describe("Analyzer request.security expression via UDF parameter whose call site
     expect(prog.securityParamExprPrepasses.length).toBe(2);
   });
 
-  it("keeps bare-series multi-site arguments on the C453 HTF path (securityParamExprCalls), untouched by this collapse — path separation regression guard", () => {
+  it("takes bare-series arguments the same way, never the passthrough", () => {
     const prog = analyzeSource('f_sec(val) =>\n    request.security("", "D", val)\na = f_sec(close)\nb = f_sec(open)');
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityParamExprCalls.size).toBe(1);
+    expectFuncScriptContext(prog, 1, 2);
     expect(prog.securityScalarBareUdfCallSlots.size).toBe(0);
   });
 });
@@ -23304,46 +23320,44 @@ describe("Analyzer request.security SCALAR bare UDF call wrapped in a history in
 // uniqueTopEqVars 체인과 나란히 매개변수 단일 콜사이트 체인을 추가). wild 실측
 // scratch/c562_terminal_probe.mjs/c563a2_*.mjs 참조 — LIMITATIONS C564에 실제 wild net-gain 0
 // 판정(2차 블로커) 상세.
+// C564 was pine2py's passthrough (the argument on the chart's bars, the timeframe dropped); the
+// oracle evaluates it in the requested context (resin-harness suites/lang/probes/L34.json
+// `pf(g(close))`), which the call now does: one request, its child evaluating the call.
 describe("Analyzer request.security expression via the ENCLOSING UDF's own parameter, resolved through that UDF's single top-level call site (C564, C452 자매 축)", () => {
   const SRC_MYFUNC = "myFunc(x) =>\n    x + 1\n";
 
-  it("resolves exp[1] to a bare UDF call passed as the argument at the single top-level call site", () => {
+  it("runs exp[1] with a UDF call argument at the single top-level call site in the requested context", () => {
     const prog = analyzeSource(
       SRC_MYFUNC +
         "get_sec(tf, exp) =>\n    request.security(syminfo.tickerid, tf, exp[1])\n" +
         'result = get_sec("D", myFunc(close))',
     );
-    expect(prog.errors).toEqual([]);
+    expectFuncScriptContext(prog, 1, 1);
     const funcDecl = prog.script.body[1] as FuncDecl;
     const outer = (funcDecl.body[0] as ExprStmt).expr as CallExpr;
-    const inner = prog.securityScalarBareUdfCallSlots.get(outer) as IndexAccess;
-    expect(inner).toBeDefined();
-    expect(inner.kind).toBe("IndexAccess");
-    // obj는 매개변수 Identifier 그대로(원본 유지 — 치환 결과는 판정에만 쓰이고 등록 값은 바꾸지 않는다)
-    expect(inner.obj).toEqual({ kind: "Identifier", name: "exp", line: expect.any(Number), col: expect.any(Number) });
+    expect(prog.securityFuncScriptCalls.has(outer)).toBe(true);
+    expect(prog.securityScalarBareUdfCallSlots.has(outer)).toBe(false);
   });
 
-  it("chains through a top-level '=' var one more hop (exp -> single-callsite param -> top-level var -> bare UDF call)", () => {
+  it("runs a top-level '=' var argument (exp -> single-callsite param -> top-level var -> UDF call) in the requested context: the child runs the var's declaration", () => {
     const prog = analyzeSource(
       SRC_MYFUNC +
         "get_sec(tf, exp) =>\n    request.security(syminfo.tickerid, tf, exp)\n" +
         "data = myFunc(close)\n" +
         'result = get_sec("D", data)',
     );
-    expect(prog.errors).toEqual([]);
-    const funcDecl = prog.script.body[1] as FuncDecl;
-    const outer = (funcDecl.body[0] as ExprStmt).expr as CallExpr;
-    expect(prog.securityScalarBareUdfCallSlots.has(outer)).toBe(true);
+    expectFuncScriptContext(prog, 1, 1);
+    expect(prog.securityFuncScriptSites[0]!.slice.size).toBe(1);
   });
 
-  it("does NOT register any HTF slot machinery for the resolved call — no securityTfs/securityExprCallSlots/securityCallSlots entries", () => {
+  it("gives the call one slot on the requested timeframe", () => {
     const prog = analyzeSource(
       SRC_MYFUNC +
         "get_sec(tf, exp) =>\n    request.security(syminfo.tickerid, tf, exp)\n" +
         'result = get_sec("D", myFunc(close))',
     );
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityTfs).toEqual([]);
+    expectFuncScriptContext(prog, 1, 1);
+    expect(prog.securityTfs).toEqual(["D"]);
     expect(prog.securityExprCallSlots.size).toBe(0);
     expect(prog.securityCallSlots.size).toBe(0);
   });
@@ -23361,17 +23375,18 @@ describe("Analyzer request.security expression via the ENCLOSING UDF's own param
     expect(prog.securityParamExprPrepasses.length).toBe(1);
   });
 
-  it("regression guard: the enclosing UDF's parameter name coincides with a top-level '=' var name (C526/C542 shadow-key collision class) — still resolves via the param branch without a false shadow-break", () => {
+  it("regression guard: the enclosing UDF's parameter name coincides with a top-level '=' var name (C526/C542 shadow-key collision class) — the parameter is the function's own, the top-level var the call's argument", () => {
     const prog = analyzeSource(
       SRC_MYFUNC +
         "data = myFunc(close)\n" +
         "get_sec(tf, data) =>\n    request.security(syminfo.tickerid, tf, data)\n" +
         'result = get_sec("D", data)',
     );
-    expect(prog.errors).toEqual([]);
+    expectFuncScriptContext(prog, 1, 1);
     const funcDecl = prog.script.body[2] as FuncDecl;
     const outer = (funcDecl.body[0] as ExprStmt).expr as CallExpr;
-    expect(prog.securityScalarBareUdfCallSlots.has(outer)).toBe(true);
+    expect(prog.securityFuncScriptCalls.has(outer)).toBe(true);
+    expect(prog.securityFuncScriptSites[0]!.slice.size).toBe(1);
   });
 
   it("rejects a tuple-returning UDF reached through the param single-call-site chain (falls back to the generic buildSecurityExpr rejection)", () => {
@@ -24434,22 +24449,24 @@ describe("Analyzer request.security expression 함수-로컬 단일대입 변수
     expect(prog.securityExprCallSlots.size).toBe(2);
   });
 
-  it("still rejects when the func-local var is ':=' reassigned anywhere in the function (재대입 0회 전제 위반)", () => {
+  // The prepass substitution needs a single '=' binding; the requested context runs the function's
+  // code before the request whatever it is (resin-harness suites/lang/probes/L34.json `trend`).
+  it("runs a func-local var ':=' reassigned before the request in the requested context", () => {
     const prog = analyzeSource(
       ["f() =>", "    val = close", "    if high > low", "        val := open", '    request.security("", "D", val)', "y = f()"].join(
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectFuncScriptContext(prog, 1, 1);
   });
 
-  it("still rejects when the same name has two '=' bindings inside the same function (함수 안 유일성 위반)", () => {
+  it("runs a request reading a func-local var that a nested block redeclares (the block's own variable) in the requested context", () => {
     const prog = analyzeSource(
       ["f() =>", "    val = close", "    if high > low", "        val = open", '    request.security("", "D", val)', "y = f()"].join(
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectFuncScriptContext(prog, 1, 1);
   });
 
   it("still rejects a func-local var declared only inside a nested block (not at the function's own top level — funcTop 자격 위반)", () => {
@@ -24459,11 +24476,11 @@ describe("Analyzer request.security expression 함수-로컬 단일대입 변수
     expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
-  it("still rejects use-before-declaration of the func-local var (선언-후-사용 위반, 함수판)", () => {
+  it("still rejects use-before-declaration of the func-local var (선언-후-사용 위반, 함수판) — the expression's own analysis", () => {
     const prog = analyzeSource(
       ["f() =>", '    request.security("", "D", val)', "    val = close", "y = f()"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier: 'val'"))).toBe(true);
   });
 
   it("does not let a func-local var name shadow an unrelated top-level uniqueTopEqVars binding of the same name (structurally exclusive namespaces)", () => {
@@ -25131,11 +25148,14 @@ describe("Analyzer request.security tf 배치31 (b)-1 런타임 tf 확장 (C599,
     expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
   });
 
-  it("still rejects a runtime-only tf when the expression is a UDF-parameter multi-site pending form (콜사이트별 슬롯 블록은 다음 슬라이스)", () => {
+  // A request per call of g, each call's slot built once on the runtime timeframe (resin-harness
+  // suites/lang/probes/L34.json runs these calls in the requested context).
+  it("accepts a runtime-only tf when the expression is a UDF parameter with several calls: every call's slot is rebuilt on it", () => {
     const prog = analyzeSource(
       [...RT_TF, 'g(src) => request.security("", tf, src)', "a = g(close)", "b = g(open)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectFuncScriptContext(prog, 1, 2);
+    expect(prog.securityRuntimeTfSlots.size).toBe(2);
   });
 
   it("still rejects a ':='-reassigned tf variable on an expression (non-passthrough) call site (재대입 0회 전제 유지)", () => {
@@ -25257,7 +25277,9 @@ describe("Analyzer request.security tf 배치31 (b)-2 (C600, tf-param 콜사이�
     expect(prog.securityParamExprPrepasses.length).toBe(2);
   });
 
-  it("flows the mixed array through the pending secParamMultiSite path (expression도 매개변수 — 서수 1:1 슬롯 배정)", () => {
+  // The calls now run in the requested context (resin-harness suites/lang/probes/L34.json), one slot
+  // per call in the same ordinals.
+  it("flows the mixed array through the per-call slots of a request evaluated in its context (expression도 매개변수 — 서수 1:1 슬롯 배정)", () => {
     const prog = analyzeSource(
       [
         'src1 = close + 0.0',
@@ -25268,10 +25290,9 @@ describe("Analyzer request.security tf 배치31 (b)-2 (C600, tf-param 콜사이�
         'b = getS(input.timeframe("60", "Res"), src2)',
       ].join("\n"),
     );
-    expect(prog.errors).toEqual([]);
+    expectFuncScriptContext(prog, 1, 2);
     expect(prog.securityTfs).toEqual(["D", prog.chartTf]);
     expect(Array.from(prog.securityRuntimeTfSlots.keys())).toEqual([1]);
-    expect(prog.securityParamExprCalls.size).toBe(1);
   });
 
   it("flows the mixed array through the pending secParamMultiSiteGeneric path (ta.sma(src, n)류 서브트리 매개변수 참조)", () => {
@@ -25401,18 +25422,18 @@ describe("Analyzer request.security tf via UDF parameter call-site folding (C529
     expect(prog.securityExprCallSlots.size).toBe(0);
   });
 
-  it("composes with C453: BOTH tf and expression are params — pending queue carries per-site tf literals matched to the same ordinals", () => {
+  // Both now run in the requested context, one request per call on that call's timeframe (resin-harness
+  // suites/lang/probes/L34.json); the second was pine2py's passthrough, which dropped the timeframe.
+  it("composes with C453: BOTH tf and expression are params — per-call slots on the per-call timeframes, in the same ordinals", () => {
     const prog = analyzeSource(
       'getS(tf, e) =>\n    request.security("", tf, e)\nx = getS("60", close)\ny = getS("240", open)',
     );
-    expect(prog.errors).toEqual([]);
+    expectFuncScriptContext(prog, 1, 2);
     expect(prog.securityTfs).toEqual(["60", "240"]);
-    expect(prog.securityParamExprCalls.size).toBe(1);
-    expect(prog.securityParamExprPrepasses.length).toBe(2);
     expect(Array.from(prog.funcSecIdxArgs.values()).sort()).toEqual([0, 1]);
   });
 
-  it("accepts the tf-discard passthrough paths regardless of distinctness (scalar bare UDF call expression — tf is discarded, no HTF slots at all)", () => {
+  it("runs a UDF call expression per call on its own timeframe instead of dropping the timeframe", () => {
     const prog = analyzeSource(
       [
         "calc(src) => src * 2",
@@ -25422,9 +25443,9 @@ describe("Analyzer request.security tf via UDF parameter call-site folding (C529
         'y = getS("240")',
       ].join("\n"),
     );
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityTfs).toEqual([]);
-    expect(prog.securityScalarBareUdfCallSlots.size).toBe(1);
+    expectFuncScriptContext(prog, 1, 2);
+    expect(prog.securityTfs).toEqual(["60", "240"]);
+    expect(prog.securityScalarBareUdfCallSlots.size).toBe(0);
   });
 
   // C539 교체: 원래 "in-func 콜사이트가 하나라도 있으면 거부"를 정답으로 인코딩하던 거부 테스트 —
@@ -26178,13 +26199,15 @@ describe("Analyzer tuple-UDF tail-call return propagation (C611)", () => {
     expect(prog.errors.some((e) => e.includes("'expression' argument"))).toBe(true);
   });
 
-  it("keeps a scalar inner callee on the scalar C436 path — wrapper stays non-tuple", () => {
+  // A scalar inner callee runs in the requested context (resin-harness suites/lang/probes/L34.json),
+  // no longer on C436's passthrough.
+  it("keeps a scalar inner callee scalar — wrapper stays non-tuple, the request runs in the requested context", () => {
     const prog = analyzeSource(
       'inner() => close + 1.0\nwrap() => request.security(syminfo.tickerid, "60", inner())\nx = wrap()\nplot(x)',
     );
-    expect(prog.errors).toEqual([]);
+    expectFuncScriptContext(prog, 1, 1);
     expect(prog.funcs.get("wrap")!.tupleArity).toBe(null);
-    expect(prog.securityScalarBareUdfCallSlots.size).toBe(1);
+    expect(prog.securityScalarBareUdfCallSlots.size).toBe(0);
   });
 
   it("still rejects when the security bare-UDF call is NOT the last statement (게이트 원위치 유지)", () => {
@@ -26953,15 +26976,14 @@ describe("Analyzer request.security ta-in-UDF expression (C533)", () => {
     expect(prog.taSlotCount).toBe(1);
   });
 
-  // C542: 2+ 콜사이트(전원 top-level)면 이제 secParamMultiSiteGeneric(paramSubstRoot)가 콜사이트별로
-  // 독립 슬롯을 배정해 지원한다 — C452 단일 콜사이트 치환의 다중 콜사이트 형제 경로.
-  it("accepts a UDF parameter reference inside the ta.* expression across 2+ call sites via the C542 generic multi-site path", () => {
+  // 2+ calls: one request per call, evaluated in the requested context with that call's argument
+  // (resin-harness suites/lang/probes/L34.json), the ta.sma call the function's own per call instance.
+  it("accepts a UDF parameter reference inside the ta.* expression across 2+ call sites, one request per call", () => {
     const prog = analyzeSource(
       'f(src) =>\n    request.security(syminfo.tickerid, "D", ta.sma(src, 3))\nx = f(hl2)\ny = f(close)\nplot(x)\nplot(y)',
     );
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityParamExprCalls.size).toBe(1);
-    expect(prog.securityParamExprPrepasses.length).toBe(2);
+    expectFuncScriptContext(prog, 1, 2);
+    expect(prog.funcs.get("f")!.localTaSlotCount).toBe(1);
   });
 
   it("still enforces the length-series hard error through the root-scope clone registration (C548 전환: sma는 seriesLengthOk 허용이라 프로브를 ta.ema로 교체)", () => {
@@ -29567,20 +29589,21 @@ describe("Analyzer history index '[]' on a request.security(...) call registered
   // securityParamExprPending 큐로 미루고 processPendingSecurityParamExprs(메인 루프 종료 후)가
   // securityParamExprCalls로 승격한다 — outer IndexAccess 판정이 그 즉시 등록만 알고 pending 큐를
   // 몰라 정상 케이스를 "그 외 함수 호출(UDF 등)은 미지원"으로 오분류하던 DEFERRED 변형. ──
-  it("accepts a literal offset on the whole security call when both tf and the expression argument differ per call site (secParamMultiSite pending queue)", () => {
+  // These calls now run in the requested context (resin-harness suites/lang/probes/L34.json `fs`, whose
+  // request carries a history offset on the whole call): the offset reads the per-call slot.
+  it("accepts a literal offset on the whole security call when both tf and the expression argument differ per call site", () => {
     const prog = analyzeSource(
       'f_sec(tf, exp) =>\n    request.security("", tf, exp)[1]\na = f_sec("60", close)\nb = f_sec("240", open)',
     );
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityParamExprCalls.size).toBe(1);
+    expectFuncScriptContext(prog, 1, 2);
+    expect(prog.historyOffsets.size).toBeGreaterThan(0);
   });
 
-  it("accepts a literal offset when the expression argument is a generic subtree referencing multiple params that differ per call site (secParamMultiSiteGeneric pending queue)", () => {
+  it("accepts a literal offset when the expression argument is a generic subtree referencing multiple params that differ per call site", () => {
     const prog = analyzeSource(
       'f_sec(tf, src, len) =>\n    request.security("", tf, ta.rsi(src, len))[1]\na = f_sec("60", close, 14)\nb = f_sec("240", open, 21)',
     );
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityParamExprCalls.size).toBe(1);
+    expectFuncScriptContext(prog, 1, 2);
   });
 
   it("registers a dynamic history offset (not a hard error) when the expression argument differs per call site and the offset is a runtime expression", () => {

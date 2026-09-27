@@ -209,6 +209,121 @@ describe("request.security in the requested context: what is refused", () => {
   });
 });
 
+// A request in a user-defined function (analyzer/security-script.ts planSecurityScriptInFunction):
+// concepts_other-timeframes-and-data.txt "In local scopes": "the Pine Script compiler extracts such
+// calls into the global scope during translation". Every call of the function is a request of its
+// own: its child evaluates the call where the call's statement begins, and the function records the
+// expression for it. Checked against the oracle by resin-harness suites/lang/probes/L34.json.
+describe("request.security in a user-defined function, evaluated in the requested context", () => {
+  const SUM_UDF = "g(x) =>\n    var float s = 0.0\n    s := s + x\n    s";
+
+  it("each call is its own request of its argument: equal to the top-level request of that argument", () => {
+    const [a, b, ta, tb] = plotsOf(
+      [
+        SUM_UDF,
+        'f(v) => request.security(syminfo.tickerid, "D", v)',
+        "a = f(g(close))",
+        "b = f(g(open))",
+        'ta = request.security(syminfo.tickerid, "D", g(close))',
+        'tb = request.security(syminfo.tickerid, "D", g(open))',
+        "plot(a)",
+        "plot(b)",
+        "plot(ta)",
+        "plot(tb)",
+      ].join("\n"),
+    );
+    expect(a).toEqual(ta);
+    expect(b).toEqual(tb);
+    expect(a).not.toEqual(b);
+    expect(a!.some((v) => Number.isFinite(v))).toBe(true);
+  });
+
+  it("the function's code before the request runs there with the call's own state (a var accumulator)", () => {
+    const [got, want] = plotsOf(
+      [
+        "f(x) =>\n    var float s = 0.0\n    s := s + x\n    request.security(syminfo.tickerid, \"D\", s)",
+        "var float acc = 0.0",
+        "acc := acc + (close - open)",
+        "a = f(close - open)",
+        'w = request.security(syminfo.tickerid, "D", acc)',
+        "plot(a)",
+        "plot(w)",
+      ].join("\n"),
+    );
+    expect(got).toEqual(want);
+    expect(got!.some((v) => Number.isFinite(v))).toBe(true);
+  });
+
+  it("a sibling request in the function reads nothing in the child, and both read their own requests on the chart", () => {
+    const source = [
+      SUM_UDF,
+      "trend() =>",
+      '    fast = request.security(syminfo.tickerid, "D", ta.ema(close, 2))',
+      "    e = g(close - open)",
+      '    d = request.security(syminfo.tickerid, "D", e)',
+      "    [fast, d]",
+      "[a, b] = trend()",
+      'ta = request.security(syminfo.tickerid, "D", ta.ema(close, 2))',
+      'tb = request.security(syminfo.tickerid, "D", g(close - open))',
+      "plot(a)",
+      "plot(b)",
+      "plot(ta)",
+      "plot(tb)",
+    ].join("\n");
+    const result = transpile(source);
+    if (!result.ok) throw new Error(result.errors.join("\n"));
+    expect(result.code).toContain("fast = ($.secCapture >= 0 ? NaN : rt.security.getFromArray($.securityExprCache[0]");
+    const [a, b, ta, tb] = plotsOf(source);
+    expect(a).toEqual(ta);
+    expect(b).toEqual(tb);
+    expect(b!.some((v) => Number.isFinite(v))).toBe(true);
+  });
+
+  it("the function's own state on the chart is untouched by the children's runs", () => {
+    const [chartSum] = plotsOf(
+      ["f(x) =>\n    var float s = 0.0\n    s := s + x\n    r = request.security(syminfo.tickerid, \"D\", s)\n    s", "plot(f(1.0))"].join("\n"),
+    );
+    expect(chartSum).toEqual(Array.from(DATA.close, (_, i) => i + 1));
+  });
+});
+
+// The expressions below are no bare function call, which C436's chart-bar passthrough would take
+// instead (the status quo where the requested context is refused).
+describe("request.security in a user-defined function: what the requested context refuses", () => {
+  const SUM_UDF = "g(x) =>\n    var float s = 0.0\n    s := s + x\n    s";
+
+  it("a call of the function from another function", () => {
+    const errors = errorsOf([SUM_UDF, 'f(v) => request.security(syminfo.tickerid, "D", v)', "w() => f(g(close))", "x = w()"].join("\n"));
+    expect(errors.some((e) => e.includes("the function is called from another function"))).toBe(true);
+  });
+
+  it("a variable the function changes after the request, which its next call sees (disputed, resin-harness D9)", () => {
+    const errors = errorsOf(
+      ["f(x) =>\n    var float s = 0.0\n    r = request.security(syminfo.tickerid, \"D\", s)\n    s := s + x\n    r", "a = f(close)"].join("\n"),
+    );
+    expect(errors.some((e) => e.includes("the function changes 's', which the expression reads, after the call"))).toBe(true);
+  });
+
+  it("the strategy's state anywhere in the function (the child runs all of it)", () => {
+    const errors = errorsOf(
+      [
+        'strategy("s")',
+        SUM_UDF,
+        "f(v) =>\n    p = strategy.position_size\n    request.security(syminfo.tickerid, \"D\", g(v) * 2) + p * 0",
+        "a = f(close)",
+      ].join("\n"),
+    );
+    expect(errors.some((e) => e.includes("the function reads the strategy's state"))).toBe(true);
+  });
+
+  it("an argument that depends on another request (a nested request)", () => {
+    const errors = errorsOf(
+      [SUM_UDF, 'a = request.security(syminfo.tickerid, "W", close)', 'f(v) => request.security(syminfo.tickerid, "D", g(v) * 2)', "x = f(a)"].join("\n"),
+    );
+    expect(errors.some((e) => e.includes("it depends on another request.*() call"))).toBe(true);
+  });
+});
+
 describe("rt.security.scriptValue", () => {
   it("numbers as they are, bools as 1/0, na as NaN, anything else stops the run", () => {
     expect(rt.security.scriptValue(1.5)).toBe(1.5);

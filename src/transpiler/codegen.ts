@@ -204,6 +204,16 @@ interface FuncGenContext {
   // 1회 record를 방출한다(genParamHistRecords의 "param" kind와 동일 타이밍).
   localFieldHistSlots: Map<string, number>;
   localFieldRefHistSlots: Map<string, number>;
+  // A request's child context runs this function (FuncInfo.secScriptChild): every request in its
+  // body reads nothing there (childSafeSecurityRead).
+  secScriptChild?: boolean;
+}
+
+// A request read in a function a request's child context runs (FuncInfo.secScriptChild): the child
+// has no request data (Context.runSecurityScript), and what the function returns there is not what
+// the child records, so the read is na in the child.
+function childSafeSecurityRead(code: string, funcCtx: FuncGenContext | null): string {
+  return funcCtx?.secScriptChild ? `($.secCapture >= 0 ? NaN : ${code})` : code;
 }
 
 // request.security 셋째 슬라이스 서브슬라이스 3b(ROADMAP [hard->분할], C181) — securityExprCallSlots
@@ -522,7 +532,9 @@ export function generateCode(program: AnalyzedProgram): string {
       const pre: string[] = [];
       hoistLazyStatefulCalls(run.expression, program, null, pre);
       const value = genExpr(run.expression, program, null);
-      lines.push(`if ($.secCapture === ${run.slot}) {`, ...pre, `$.secOut[$.idx] = rt.security.scriptValue(${value});`, "}");
+      // The call of a function whose request this is: the function records the expression.
+      const record = run.call ? `${value};` : `$.secOut[$.idx] = rt.security.scriptValue(${value});`;
+      lines.push(`if ($.secCapture === ${run.slot}) {`, ...pre, record, "}");
     }
     const line = genStmt(stmt, program, /* nested */ false, /* funcCtx */ null, promoted);
     if (!line) return;
@@ -694,21 +706,30 @@ export function generateSecurityExprPreamble(program: AnalyzedProgram): string[]
 // (analyzer/security-script.ts): per call, its slot, the index in `others` (the per-bar statements)
 // of the statement it is in, where its child records the expression, and the indices of the
 // statements before it that the child runs.
+// A request in a user-defined function has one run per call of the function
+// (securityFuncScriptSites): its child evaluates the call, and the function records the expression
+// (`call`: true).
 interface SecurityScriptRun {
   slot: number;
   at: number;
   runs: number[];
   expression: Expr;
+  call: boolean;
 }
 
 function securityScriptRuns(program: AnalyzedProgram, others: readonly Stmt[]): SecurityScriptRun[] {
   const out: SecurityScriptRun[] = [];
+  const runsOf = (slice: ReadonlySet<Stmt>): number[] => [...slice].map((s) => others.indexOf(s)).filter((i) => i >= 0).sort((a, b) => a - b);
   for (const info of program.securityExprCallSlots.values()) {
     if (info.script === undefined) continue;
     const at = others.indexOf(info.script.stmt);
     if (at < 0) throw new Error("internal: a request.security call evaluated in its context is not in a per-bar statement");
-    const runs = [...info.script.slice].map((s) => others.indexOf(s)).filter((i) => i >= 0);
-    out.push({ slot: info.slot, at, runs: runs.sort((a, b) => a - b), expression: info.bodyExpr });
+    out.push({ slot: info.slot, at, runs: runsOf(info.script.slice), expression: info.bodyExpr, call: false });
+  }
+  for (const site of program.securityFuncScriptSites) {
+    const at = others.indexOf(site.stmt);
+    if (at < 0) throw new Error("internal: the call of a function whose request is evaluated in its context is not in a per-bar statement");
+    out.push({ slot: site.slot, at, runs: runsOf(site.slice), expression: site.call, call: true });
   }
   return out;
 }
@@ -943,6 +964,7 @@ function genFuncDecl(stmt: FuncDecl, program: AnalyzedProgram): string {
     localCondCallRefHistSlots: func.localCondCallRefHistSlots,
     localFieldHistSlots: func.localFieldHistSlots,
     localFieldRefHistSlots: func.localFieldRefHistSlots,
+    secScriptChild: func.secScriptChild,
   };
   // 기본값 표현식은 함수 자신의 로컬 슬롯이 아니라 선언 시점(top-level) 스코프에서 codegen한다
   // (analyzeFuncDecl이 p.default를 top-level scope로 analyze한 것과 대응 — funcCtx=null).
@@ -1060,6 +1082,7 @@ function genMethodDecl(stmt: MethodDecl, program: AnalyzedProgram): string {
     localCondCallRefHistSlots: func.localCondCallRefHistSlots,
     localFieldHistSlots: func.localFieldHistSlots,
     localFieldRefHistSlots: func.localFieldRefHistSlots,
+    secScriptChild: func.secScriptChild,
   };
   const paramsCode = stmt.params.map((p) => genFuncParam(p, program)).join(", ");
   // __taBase/__histBase 조건부 추가는 genFuncDecl과 동일(C162/C364 — method 본문도 같은 메커니즘).
@@ -1160,10 +1183,12 @@ function genFuncBody(body: Stmt[], program: AnalyzedProgram, funcCtx: FuncGenCon
   const redeclared = findRedeclaredAssignments(body, paramNames);
   const lines: string[] = [];
   for (const stmt of body.slice(0, -1)) {
+    pushSecurityFuncRecords(stmt, program, funcCtx, lines);
     const line = genStmt(stmt, program, /* nested */ true, funcCtx, null, redeclared);
     if (line) lines.push(line);
   }
   const last = body[body.length - 1]!;
+  pushSecurityFuncRecords(last, program, funcCtx, lines);
   // C530: security-튜플 반환(마지막 문장이 request.security(sym, tf, [e1, e2, ...]) — analyzer
   // analyzeFuncDecl의 동명 분기가 securityTupleCallSlots를 등록해뒀다). genExpr가 방출하는
   // comma-식($.taScratch[0..N-1] 순차 대입)을 문장으로 1회 실행한 뒤 스크래치를 배열 리터럴로
@@ -1233,6 +1258,18 @@ function genFuncBody(body: Stmt[], program: AnalyzedProgram, funcCtx: FuncGenCon
     lines.push(...genImplicitReturn(last, program, funcCtx, redeclared));
   }
   return lines.join("\n");
+}
+
+// The requests in a function evaluated in their context whose statement of the body is `stmt`
+// (analyzer securityFuncScriptRecords): the child of the function's call k records the expression
+// where the statement begins, when this call is call k (__secIdx), on every requested bar.
+function pushSecurityFuncRecords(stmt: Stmt, program: AnalyzedProgram, funcCtx: FuncGenContext, lines: string[]): void {
+  for (const rec of program.securityFuncScriptRecords.get(stmt) ?? []) {
+    const pre: string[] = [];
+    hoistLazyStatefulCalls(rec.expression, program, funcCtx, pre);
+    const value = genExpr(rec.expression, program, funcCtx);
+    lines.push(`if ($.secCapture === ${rec.base} + __secIdx) {`, ...pre, `$.secOut[$.idx] = rt.security.scriptValue(${value});`, "}");
+  }
 }
 
 function genImplicitReturn(
@@ -1721,7 +1758,7 @@ function walkForLazyHoist(
     case "CallExpr": {
       // A request.security expression computed by the script in the requested context runs there,
       // not here: the chart reads its result (generateCode hoists it into the child's record).
-      if (program.securityExprCallSlots.get(expr)?.script !== undefined) return;
+      if (program.securityExprCallSlots.get(expr)?.script !== undefined || program.securityFuncScriptCalls.has(expr)) return;
       for (const a of expr.args) walkForLazyHoist(a, inLazy, program, funcCtx, out);
       // In v6 the lazy position is a short-circuited `and`/`or` operand (a `?:` branch is not
       // walked at all): the call runs only when that operand is evaluated, so it stays inline in
@@ -3456,11 +3493,25 @@ function genIndexAccess(
     if (securityCall !== undefined) {
       // multiSite(C529)는 genCallExpr의 동명 분기와 동일하게 `slot + __secIdx`(콜사이트별 tf 블록).
       const secSlotRef = securityCall.multiSite ? `${securityCall.slot} + __secIdx` : `${securityCall.slot}`;
-      return `rt.security.getHist($.securityCache[${secSlotRef}], $.idx, "${securityCall.field}", ${securityCall.gaps}, ${securityCall.lookahead}, ${offsetCode})`;
+      return childSafeSecurityRead(
+        `rt.security.getHist($.securityCache[${secSlotRef}], $.idx, "${securityCall.field}", ${securityCall.gaps}, ${securityCall.lookahead}, ${offsetCode})`,
+        funcCtx,
+      );
     }
     const securityExprCall = program.securityExprCallSlots.get(expr.obj);
     if (securityExprCall !== undefined) {
-      return `rt.security.getFromArrayHist($.securityExprCache[${securityExprCall.slot}], $.securityCache[${securityExprCall.slot}], $.idx, ${securityExprCall.gaps}, ${securityExprCall.lookahead}, ${offsetCode})`;
+      return childSafeSecurityRead(
+        `rt.security.getFromArrayHist($.securityExprCache[${securityExprCall.slot}], $.securityCache[${securityExprCall.slot}], $.idx, ${securityExprCall.gaps}, ${securityExprCall.lookahead}, ${offsetCode})`,
+        funcCtx,
+      );
+    }
+    const securityFuncScriptCall = program.securityFuncScriptCalls.get(expr.obj);
+    if (securityFuncScriptCall !== undefined) {
+      const slotRef = `${securityFuncScriptCall.base} + __secIdx`;
+      return childSafeSecurityRead(
+        `rt.security.getFromArrayHist($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityFuncScriptCall.gaps}, ${securityFuncScriptCall.lookahead}, ${offsetCode})`,
+        funcCtx,
+      );
     }
     // C699: securityParamExprCalls(C453/C534 — UDF 매개변수 다중 콜사이트, __secIdx 서수) 슬롯 —
     // 위 securityExprCall과 동일한 getFromArrayHist 읽기지만 슬롯이 `base + __secIdx`(genCallExpr의
@@ -3468,7 +3519,10 @@ function genIndexAccess(
     const securityParamCall = program.securityParamExprCalls.get(expr.obj);
     if (securityParamCall !== undefined) {
       const slotRef = `${securityParamCall.base} + __secIdx`;
-      return `rt.security.getFromArrayHist($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityParamCall.gaps}, ${securityParamCall.lookahead}, ${offsetCode})`;
+      return childSafeSecurityRead(
+        `rt.security.getFromArrayHist($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityParamCall.gaps}, ${securityParamCall.lookahead}, ${offsetCode})`,
+        funcCtx,
+      );
     }
     // UDF 본문 안 CallExpr 히스토리(C483) — funcCtx.localCallHistSlots(콜사이트-상대 슬롯)를
     // program.taCallHistorySlots(top-level 전역 슬롯)보다 먼저 조회한다(analyzer의 함수-내부 우선
@@ -4330,7 +4384,20 @@ function genCallExpr(
     // multiSite(C529): slot은 콜사이트별 tf 블록의 시작 — __secIdx(C453 서수, 이 맵의 multiSite
     // 항목은 UDF 본문 안 노드에만 등록되므로 항상 스코프에 존재)를 더해 콜사이트별 슬롯을 읽는다.
     const secSlotRef = securityCall.multiSite ? `${securityCall.slot} + __secIdx` : `${securityCall.slot}`;
-    return `rt.security.get($.securityCache[${secSlotRef}], $.idx, "${securityCall.field}", ${securityCall.gaps}, ${securityCall.lookahead})`;
+    return childSafeSecurityRead(
+      `rt.security.get($.securityCache[${secSlotRef}], $.idx, "${securityCall.field}", ${securityCall.gaps}, ${securityCall.lookahead})`,
+      funcCtx,
+    );
+  }
+  const securityFuncScriptCall = program.securityFuncScriptCalls.get(expr);
+  if (securityFuncScriptCall !== undefined) {
+    // A request in a function evaluated in its context: call k's child filled slot base + k
+    // (analyzer securityFuncScriptCalls), read like a prepass's.
+    const slotRef = `${securityFuncScriptCall.base} + __secIdx`;
+    return childSafeSecurityRead(
+      `rt.security.getFromArray($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityFuncScriptCall.gaps}, ${securityFuncScriptCall.lookahead})`,
+      funcCtx,
+    );
   }
   const securityExprCall = program.securityExprCallSlots.get(expr);
   if (securityExprCall !== undefined) {
@@ -4338,7 +4405,10 @@ function genCallExpr(
     // 심어둔 $.securityExprCache[slot](HTF-네이티브 시퀀스 위에서 재실행된 결과 Float64Array)를
     // $.securityCache[slot]의 barMap과 함께 getFromArray로 lookup — get()의 field 분기 대신
     // 배열 자체를 인덱싱한다는 점만 다르고 gaps/lookahead 처리(analyze-time 확정 리터럴)는 동일.
-    return `rt.security.getFromArray($.securityExprCache[${securityExprCall.slot}], $.securityCache[${securityExprCall.slot}], $.idx, ${securityExprCall.gaps}, ${securityExprCall.lookahead})`;
+    return childSafeSecurityRead(
+      `rt.security.getFromArray($.securityExprCache[${securityExprCall.slot}], $.securityCache[${securityExprCall.slot}], $.idx, ${securityExprCall.gaps}, ${securityExprCall.lookahead})`,
+      funcCtx,
+    );
   }
   const securityFieldOffsetCall = program.securityFieldOffsetCalls.get(expr);
   if (securityFieldOffsetCall !== undefined) {
@@ -4346,7 +4416,10 @@ function genCallExpr(
     // 지점의 스코프(UDF 본문 funcCtx — 매개변수가 JS 함수 인자로 실존)에서 그대로 genExpr한다 —
     // 프리패스/치환이 전혀 없는 순수 읽기라 rt.security.get(bare 분기)과 동일한 무상태 O(1) 조회.
     const offsetCode = genExpr(securityFieldOffsetCall.offsetExpr, program, funcCtx, secCtx);
-    return `rt.security.getFieldHtfOffset($.securityCache[${securityFieldOffsetCall.slot}], $.idx, "${securityFieldOffsetCall.field}", ${securityFieldOffsetCall.gaps}, ${securityFieldOffsetCall.lookahead}, ${offsetCode})`;
+    return childSafeSecurityRead(
+      `rt.security.getFieldHtfOffset($.securityCache[${securityFieldOffsetCall.slot}], $.idx, "${securityFieldOffsetCall.field}", ${securityFieldOffsetCall.gaps}, ${securityFieldOffsetCall.lookahead}, ${offsetCode})`,
+      funcCtx,
+    );
   }
   const securityParamCall = program.securityParamExprCalls.get(expr);
   if (securityParamCall !== undefined) {
@@ -4355,7 +4428,10 @@ function genCallExpr(
     // genBaseParams/funcSecIdxArgs 주석 참조). 이 맵은 UDF 본문 안 노드에만 등록되므로 __secIdx는
     // 항상 스코프에 존재한다.
     const slotRef = `${securityParamCall.base} + __secIdx`;
-    return `rt.security.getFromArray($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityParamCall.gaps}, ${securityParamCall.lookahead})`;
+    return childSafeSecurityRead(
+      `rt.security.getFromArray($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityParamCall.gaps}, ${securityParamCall.lookahead})`,
+      funcCtx,
+    );
   }
   const securityTupleCall = program.securityTupleCallSlots.get(expr);
   if (securityTupleCall !== undefined) {
@@ -4379,7 +4455,7 @@ function genCallExpr(
         const fieldSlotRef = securityTupleCall.multiSite ? `${field.slot} + __secIdx` : `${field.slot}`;
         readExpr = `rt.security.getFromArray($.securityExprCache[${fieldSlotRef}], $.securityCache[${fieldSlotRef}], $.idx, ${securityTupleCall.gaps}, ${securityTupleCall.lookahead})`;
       }
-      return `$.taScratch[${i}] = ${readExpr}`;
+      return `$.taScratch[${i}] = ${childSafeSecurityRead(readExpr, funcCtx)}`;
     });
     return `(${writes.join(", ")})`;
   }
