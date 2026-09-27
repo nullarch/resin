@@ -316,19 +316,33 @@ export function clamp(value: number, lo: number, hi: number): number {
   return Math.min(Math.max(value, lo), hi);
 }
 
-// math.avg — 가변 인자 평균, na(NaN)는 스킵하고 유효값만으로 평균(pine2py wavealgo.math.avg의
-// `vals = [v for v in args if not isnan(v)]; sum(vals)/len(vals)`와 동치) — 유효값이 하나도 없으면
-// (전부 na) NaN. max/min(na 있으면 즉시 na로 전파)과 정반대 방향의 na 처리라는 게 핵심 차이.
+// math.avg — the manual only says "Calculates average of all given series" (ref_v6_ta_math.txt),
+// but TradingView runs two different sums, and its last bit shows (tier 1
+// tv/math_005_avg_exact, TradingView Pine Logs; the oracle's lib/math.py avg): up to two terms
+// are added plainly, from three on they go through a Kahan compensated sum whose pending
+// correction is flushed back into the total before the division. A plain sum is one ulp off
+// there once the terms differ in magnitude (68.33080369485288 = avg(60.48816185259965,
+// 66.50424923195895, 78.0)), and so is bare Kahan without the flush (b3/a4/a5 of the scenario).
+// na arguments are still skipped and the rest averaged (pine2py's policy; na only when every
+// argument is na).
 export function avg(...values: number[]): number {
-  let total = 0;
   let count = 0;
-  for (const v of values) {
-    if (v === v) {
-      total += v;
-      count++;
-    }
+  for (const v of values) if (v === v) count++;
+  if (count === 0) return NaN;
+  let total = 0;
+  if (count <= 2) {
+    for (const v of values) if (v === v) total += v;
+    return total / count;
   }
-  return count === 0 ? NaN : total / count;
+  let compensation = 0;
+  for (const v of values) {
+    if (v !== v) continue;
+    const y = v - compensation;
+    const t = total + y;
+    compensation = t - total - y;
+    total = t;
+  }
+  return (total - compensation) / count;
 }
 
 // math.floor/math.ceil — Math.floor/Math.ceil이 NaN을 그대로 통과시키므로(pine2py

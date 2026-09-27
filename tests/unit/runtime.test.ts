@@ -7924,6 +7924,16 @@ describe("numeric helpers", () => {
     expect(avg(NaN, NaN, NaN)).toBeNaN();
   });
 
+  // TradingView's own values (harness tv/math_005_avg_exact, Pine Logs): two terms are added
+  // plainly; from three on a Kahan sum with the pending correction flushed before the division.
+  it("avg() adds two terms plainly and three or more with a flushed Kahan sum (TradingView's last bit)", () => {
+    expect(avg(0.99521, 1.00504)).toBe(1.000125);
+    expect(avg(60.48816185259965, 66.50424923195895, 78.0)).toBe(68.33080369485288);
+    expect(avg(22363.666666666668, 1.067091, 67091000.5)).toBe(22371121.74458589);
+    expect(avg(22364.333333333332, 1.067093, 67093000.5, -9584.714285714286)).toBe(16776445.296535155);
+    expect(avg(31676000000.5, -31675999999.5, 4525.142857142857, 3.156864602077217e-05, 0.00031676, -4525.142857141856)).toBe(0.16672472160780671);
+  });
+
   // ── floor()/ceil() — math.floor/math.ceil (JS Math.floor/ceil already NaN-transparent) ──
 
   it("floor() rounds down toward -Infinity for positive and negative values", () => {
