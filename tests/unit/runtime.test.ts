@@ -1550,32 +1550,34 @@ describe("ta.cci", () => {
     expect(cci(state, 10, 2)).toBeNaN();
   });
 
-  // pine2py cci.py rebuilds its window from source history every bar until the first fully
-  // clean (no-NaN) window is found (last_idx<0 branch) — a NaN embedded in the warmup period
-  // delays initialization rather than being poison-primed like ta.sma's fixed buffer (verified
-  // against a direct pine2py cci() run, scratch/verify_cci_fuzz.mjs).
-  it("retries window initialization across an embedded NaN in the warmup period (length=3)", () => {
+  // The mean is ta.sma, which skips na, but the deviation reads the last `length` bars, so an na
+  // anywhere in them makes the cci na (oracle lib/ta.py cci/dev; ref_v6_ta_math.txt ta.dev's own
+  // Pine reads `source[i]` for i = 0 to length - 1).
+  it("is na while an na bar is among the last `length` bars, in the warmup too (length=3)", () => {
     const state = {};
-    expect(cci(state, 1, 3)).toBeNaN(); // data_len 1 < 3
-    expect(cci(state, 2, 3)).toBeNaN(); // data_len 2 < 3
-    expect(cci(state, NaN, 3)).toBeNaN(); // window [1,2,NaN] has NaN -> not persisted
-    expect(cci(state, 4, 3)).toBeNaN(); // window [2,NaN,4] has NaN -> not persisted
-    expect(cci(state, 5, 3)).toBeNaN(); // window [NaN,4,5] has NaN -> not persisted
-    // window [4,5,9] finally clean -> sma=6, meanDev=(2+1+3)/3=2, cci=(9-6)/(0.015*2)=100
+    expect(cci(state, 1, 3)).toBeNaN();
+    expect(cci(state, 2, 3)).toBeNaN();
+    expect(cci(state, NaN, 3)).toBeNaN(); // sma still warming up (2 non-na values)
+    expect(cci(state, 4, 3)).toBeNaN(); // sma of 1,2,4, but bars [2,na,4]
+    expect(cci(state, 5, 3)).toBeNaN(); // bars [na,4,5]
+    // bars [4,5,9] -> sma=6, meanDev=(3+1+2)/3=2, cci=(9-6)/(0.015*2)=100
     expect(cci(state, 9, 3)).toBeCloseTo(100, 9);
   });
 
-  // Once initialized, a NaN current value freezes the window entirely (pine2py: `if isnan(current):
-  // return nan` before window.pop/append) rather than poisoning it like ta.sma/ta.vwma/ta.swma's
-  // push-and-poison buffers — the next valid bar resumes from the same (unmodified) window.
-  it("skips (does not poison) the window across a NaN gap once initialized", () => {
+  // An na bar is not frozen out of the window (pine2py's `if isnan(current): return nan` before its
+  // window update): it stays among the last `length` bars and the cci is na until it leaves
+  // (resin-harness state/repros/ta.osc-seed-6.json: after 28 na bars ta.cci(s, 21) is na on the
+  // oracle, 443.96 with the frozen window).
+  it("is na until an na bar has left the window once initialized", () => {
     const state = {};
     cci(state, 7, 3);
     cci(state, 8, 3);
-    expect(cci(state, 9, 3)).toBeCloseTo(100, 9); // window [7,8,9] locked in
-    expect(cci(state, NaN, 3)).toBeNaN(); // skip, window untouched
-    // window [8,9,11] (oldest 7 evicted, 11 appended) -> sma=9.3333, meanDev=1.1111, cci=100
-    expect(cci(state, 11, 3)).toBeCloseTo(100, 9);
+    expect(cci(state, 9, 3)).toBeCloseTo(100, 9); // bars [7,8,9]
+    expect(cci(state, NaN, 3)).toBeNaN(); // bars [8,9,na]
+    expect(cci(state, 11, 3)).toBeNaN(); // bars [9,na,11]
+    expect(cci(state, 12, 3)).toBeNaN(); // bars [na,11,12]
+    // bars [11,12,13] -> sma=12, meanDev=2/3, cci=(13-12)/(0.015*2/3)=100
+    expect(cci(state, 13, 3)).toBeCloseTo(100, 9);
   });
 
   it("keeps independent state across two call sites", () => {
@@ -1892,11 +1894,8 @@ describe("ta.dev", () => {
     expect(dev(state, 3, 1)).toBe(0);
   });
 
-  // pine2py dev.py accepts context/state_key kwargs but never calls context.get_ta_state — unlike
-  // ta.cci (which freezes the window on NaN post-init), dev() re-reads the live Series directly on
-  // every call, so it has no persisted "poison" concept beyond the buffer's own contents: the
-  // window keeps rolling forward every bar regardless of NaN (raw-passthrough, sma/change style),
-  // and the poison only clears once the NaN slot itself is overwritten by a later push.
+  // The deviation reads the last `length` bars (ref_v6_ta_math.txt ta.dev's own Pine, `source[i]`
+  // for i = 0 to length - 1; oracle lib/ta.py dev), so an na bar makes it na until it leaves them.
   it("poisons the result while a NaN is inside the window, and the window keeps rolling forward (NaN is not frozen in place)", () => {
     const state = {};
     dev(state, 5, 2); // NaN (window empty), buffer [5, NaN]

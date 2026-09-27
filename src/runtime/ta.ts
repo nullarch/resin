@@ -809,71 +809,23 @@ export function cmo(state: CmoState, value: number, length: number): number {
   return (100 * (state.sumGains! - state.sumLosses!)) / (state.sumGains! + state.sumLosses!);
 }
 
-export interface CciState {
-  buffer?: number[];
-  writeIdx?: number;
-  initialized?: boolean;
-}
-
-// ta.cci - Commodity Channel Index: CCI = (source - SMA(source,length)) / (0.015 * MeanDeviation),
-// MeanDeviation = average(|v - SMA|) over the window. **두 번째 명시적 GOAL.md "TA는 전부
-// incremental O(1)/bar" 예외** (첫 번째는 alma, C113) - pine2py wavealgo/ta/cci.py의 `_calc_cci`는
-// 매 호출 sum(window)와 mean_dev를 처음부터 재계산한다. alma와 달리 이건 캐시 가능한 정적 부분조차
-// 없다: sum은 sma처럼 러닝 합계(`sum - old + new`)로 O(1) 유지할 수 있어 보이지만, 실측(node
-// fuzz)으로 그 running-sum이 반복 갱신을 거치며 미세한 부동소수점 오차를 누적해 `meanDev===0`이어야
-// 하는 정확한 tie(window의 모든 값이 동일)에서 `meanDev`가 정확히 0이 아닌 아주 작은 epsilon으로
-// 새는 실제 정확성 버그를 만든다는 걸 확인(stdev/variance C36의 캔슬레이션과 같은 급, 이번엔
-// 반대 방향 - 합계를 매번 그 자리에서 새로 더하면 없는 오차). pine2py 자신도 sum을 매 호출
-// `sum(window)`로 그 자리에서 재계산하므로(러닝 합계 최적화 자체가 없음), sum도 O(length)로 매
-// 바 다시 더해 이 오차를 원천 차단한다 - 즉 sma/wma류와 달리 sum조차 캐시하지 않는 완전한 매 바
-// 재계산. 착수 전 300건 python(pine2py cci() 직접 호출) vs node 크로스 퍼즈로 0 mismatch 확인
-// (scratch/verify_cci_fuzz.mjs, tie 유도 위해 상수 5.0 값을 섞은 케이스 포함).
-//
-// 상태 모양은 두 국면으로 나뉜다(pine2py last_idx<0 분기 vs 인크리멘탈 분기의 리터럴 포트):
-// **국면 1(초기화 전)**: pine2py가 `data_len>=length`가 되는 매 바마다 source 히스토리에서 최근
-// length개를 통째로 다시 읽어(get(length-1)..get(0)) NaN이 하나라도 있으면 버리고(상태 미저장)
-// 다음 바 다시 시도한다 - 이건 "매 바 원값 1개를 순환 버퍼에 push하고 NaN이 하나라도 남아있으면
-// 실패"와 정확히 동치(순환 버퍼는 항상 '최근 length개 원값'의 집합과 일치하므로). sma의 NaN-프라임
-// 순환 버퍼와 같은 메커니즘을 "아직 초기화 안 됨" 판정에 재사용. **국면 2(초기화 후)**: pine2py의
-// `if isnan(current): return nan`이 window.pop/append 자체를 건너뛴다 - sma류의 "NaN도 push해
-// 오염시키는" 패턴이 아니라 cmo(C31)류의 "조건 불충족 시 버퍼를 아예 건드리지 않고 그 바만 NaN"
-// skip-freeze 패턴(윈도우가 그대로 얼어붙고, 다음 정상 바부터 그 얼어붙은 윈도우 기준으로 재개).
-export function cci(state: CciState, value: number, length: number): number {
+// ta.cci(source, length) (lib/ta.py cci): mean = ta.sma(source, length), mdev = ta.dev(source,
+// length) around that mean (0 for length 1), (source - mean) / (0.015 * mdev) — the same rule as
+// cciVarLen, on a fixed length. The mean is ta.sma's machine, not a plain sum of the window: on a
+// flat window the machine can keep one ulp of dust, which the deviation then divides by itself
+// (resin-harness state/repros/ta.osc-seed-50.json, ta.cci(hl2, 3) on bar 114: 66.67 on the oracle,
+// 0/0 with a plain sum). The deviation reads the last `length` bars as ta.dev does, so an na bar
+// makes it na until it leaves the window (state/repros/ta.osc-seed-6.json: after 28 na bars,
+// ta.cci(s, 21) is na on the next bar, where a window frozen across the gap gave 443.96). A zero
+// deviation divides to a non-finite value, na on a plot, not 0 (see "Division by zero" at ta.iii).
+export function cci(state: DevState, value: number, length: number): number {
   length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조)
-  if (state.buffer === undefined) {
-    state.buffer = new Array(length).fill(NaN);
-    state.writeIdx = 0;
-    state.initialized = false;
-  }
-  const buffer = state.buffer;
-  const writeIdx = state.writeIdx!;
-
-  if (!state.initialized) {
-    buffer[writeIdx] = value;
-    state.writeIdx = (writeIdx + 1) % length;
-    for (const v of buffer) {
-      if (Number.isNaN(v)) return NaN;
-    }
-    state.initialized = true;
-    return cciFromBuffer(buffer, length, value);
-  }
-
-  if (Number.isNaN(value)) return NaN;
-  buffer[writeIdx] = value;
-  state.writeIdx = (writeIdx + 1) % length;
-  return cciFromBuffer(buffer, length, value);
-}
-
-function cciFromBuffer(buffer: number[], length: number, current: number): number {
-  let sum = 0;
-  for (const v of buffer) sum += v;
-  const smaVal = sum / length;
-  let meanDevSum = 0;
-  for (const v of buffer) meanDevSum += Math.abs(v - smaVal);
-  const meanDev = meanDevSum / length;
-  // A zero deviation divides to a non-finite value, na on a plot, not 0 (see "Division by zero" at
-  // ta.iii; oracle lib/ta.py cci divides unguarded, as cciVarLen does).
-  return (current - smaVal) / (0.015 * meanDev);
+  if (!(length >= 1)) return NaN;
+  const mean = sma((state.mean ??= {}), value, length);
+  recordLastBars(state, value, length);
+  const mdev = length === 1 ? 0 : Number.isNaN(mean) ? NaN : lastBarsMeanAbsDev(state, length, mean);
+  if (Number.isNaN(mdev)) return NaN;
+  return (value - mean) / (0.015 * mdev);
 }
 
 export interface ChangeState {
@@ -2751,43 +2703,51 @@ export function vwmaVarLen(
 }
 
 export interface DevState {
-  buffer?: number[];
+  mean?: SmaState; // ta.sma(source, length)
+  buffer?: number[]; // ring of the last `length` bars' raw values, na included
   writeIdx?: number;
 }
 
-// ta.dev(source, length) - Mean Absolute Deviation: MAD = average(|v - mean|) over the window,
-// mean = average(v) over the same window (a plain arithmetic mean, not ta.sma's O(1) state).
-// pine2py wavealgo/ta/dev.py accepts context/state_key kwargs but never calls
-// context.get_ta_state — unlike every other TA in this file (including cci, which at least uses
-// context for its phase1/phase2 distinction), dev() is a pure function that re-reads
-// source.get(0..length-1) directly from the Series on every single call, with zero persisted
-// state across calls (confirmed by grep: no state usage in dev.py body at all). This means dev
-// has no cci-style "skip-freeze on NaN" phase — the window is always exactly the literal last
-// `length` bars, so it collapses to a plain raw-passthrough circular buffer (sma/change/median
-// style: always push, NaN poisons that read but the buffer keeps rolling forward regardless).
-// GOAL.md O(1)/bar 원칙의 여섯 번째 명시적 예외(alma/cci/median/mode/percentrank에 이음) — MAD는
-// mean 자체가 매 바 바뀌므로 sum처럼 러닝 합계로 캐시할 수 없다(cci C114와 동일 이유로 sum도 함께
-// O(length) 재계산해 러닝 합계 캔슬레이션 함정을 원천 차단).
-export function dev(state: DevState, value: number, length: number): number {
-  length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조)
+// Stores this bar's raw value, na included, in the ring of the last `length` bars. The ring starts
+// full of na: a bar before the first one reads na, as `source[i]` does.
+function recordLastBars(state: DevState, value: number, length: number): void {
   if (state.buffer === undefined) {
     state.buffer = new Array(length).fill(NaN);
     state.writeIdx = 0;
   }
-  const buffer = state.buffer;
-  const writeIdx = state.writeIdx!;
-  buffer[writeIdx] = value;
-  state.writeIdx = (writeIdx + 1) % length;
+  const at = state.writeIdx!;
+  state.buffer[at] = value;
+  state.writeIdx = at + 1 === length ? 0 : at + 1;
+}
 
+// The mean absolute deviation of the last `length` bars around `mean`, summed newest first (lib/ta.py
+// dev: "TradingView computes the plain newest-first loop ``sum(abs(source[i] - sma)) / length``").
+// An na bar in the window is na.
+function lastBarsMeanAbsDev(state: DevState, length: number, mean: number): number {
+  const buffer = state.buffer!;
+  let i = state.writeIdx!;
   let sum = 0;
-  for (const v of buffer) {
-    if (Number.isNaN(v)) return NaN;
-    sum += v;
+  for (let k = 0; k < length; k++) {
+    i = i === 0 ? length - 1 : i - 1;
+    sum += Math.abs(buffer[i]! - mean);
   }
-  const mean = sum / length;
-  let madSum = 0;
-  for (const v of buffer) madSum += Math.abs(v - mean);
-  return madSum / length;
+  return sum / length;
+}
+
+// ta.dev(source, length): the manual's own Pine for it, which the oracle runs (ref_v6_ta_math.txt
+// ta.dev, "the same on pine": `mean = ta.sma(source, length)`, then `sum := sum + math.abs(source[i]
+// - mean)` for i = 0 to length - 1, `sum/length`; lib/ta.py dev). So the mean is ta.sma's
+// na-skipping compensated machine, not a plain average of the window, and the deviation reads the
+// last `length` bars, an na one making it na. Length 1 is 0 without running the sma, as in the
+// oracle (and devVarLen).
+export function dev(state: DevState, value: number, length: number): number {
+  length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조)
+  if (length === 1) return 0;
+  if (!(length >= 1)) return NaN;
+  recordLastBars(state, value, length);
+  const mean = sma((state.mean ??= {}), value, length);
+  if (Number.isNaN(mean)) return NaN;
+  return lastBarsMeanAbsDev(state, length, mean);
 }
 
 export interface RciState {
