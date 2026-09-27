@@ -6407,101 +6407,108 @@ describe("ta.vwap (multi-arg overloads, C362)", () => {
   });
 });
 
-// ta.pivothigh/ta.pivotlow(source, left, right) — candidate=source.get(right)(right바 지연)가 창
-// [0..left+right](길이 left+right+1)의 최댓값/최솟값이면 그 값을, 아니면 NaN을 반환. Ties are
-// asymmetric: an equal value on the left does not break the pivot, an equal value on the right
-// (a newer bar) does — harness state/repros/tv-ta_369_pivot_zero_strength.json (tier 1, bar 208:
-// ta.pivothigh(high, 0, 5) is na because bar 205 equals bar 203's 98500). The old pine2py rule
-// (every tie allowed) was wrong. 새 자료구조 없이 length=left+right+1짜리 rt.ta.highest/rt.ta.lowest
-// (C42 ExtremeState)를 그대로 호출하는 합성.
+// ta.pivothigh/ta.pivotlow(source, left, right): ta.highest/ta.lowest(source, left + right + 1) on
+// the extremes' bar-addressed ring, a pivot when the window's extreme sits `right` bars back
+// (runtime/ta.ts pivot; pynecore lib/ta.py pivothigh/pivotlow). Ties are asymmetric: an equal value
+// on the left does not break the pivot, an equal value on the right (a newer bar) does — harness
+// state/repros/tv-ta_369_pivot_zero_strength.json (tier 1, bar 208: ta.pivothigh(high, 0, 5) is na
+// because bar 205 equals bar 203's 98500). An na source is na on its bar and does not run the ring,
+// so it neither poisons the next bars nor enters the window — harness
+// state/repros/ta.extremes-seed-13.json (ta.pivotlow(s0, 5, 4), s0 na on every 4th bar, reports
+// bar 26's 100.48 at bar 30). The old pine2py rules (every tie allowed; na poisoning the window)
+// were wrong. Each helper feeds one call site bar by bar (the bar index is the call count).
+const pivotSite = (fn: typeof pivothigh) => {
+  const state = {};
+  let bi = 0;
+  return (v: number, left: number, right: number) => fn(state, v, left, right, bi++);
+};
+
 describe("ta.pivothigh", () => {
   it("returns NaN while the window hasn't filled yet (left=1, right=1, total=3 bars)", () => {
-    const state = {};
-    expect(pivothigh(state, 101, 1, 1)).toBeNaN();
-    expect(pivothigh(state, 102, 1, 1)).toBeNaN();
+    const ph = pivotSite(pivothigh);
+    expect(ph(101, 1, 1)).toBeNaN();
+    expect(ph(102, 1, 1)).toBeNaN();
   });
 
   it("matches a hand-computed pivot once the window fills (left=1, right=1): [1,9,2] -> candidate=9 is the max of the full window", () => {
-    const state = {};
-    pivothigh(state, 1, 1, 1); // NaN (warmup)
-    pivothigh(state, 9, 1, 1); // NaN (warmup)
-    expect(pivothigh(state, 2, 1, 1)).toBe(9); // window [1,9,2], candidate=source.get(1)=9, max of window
+    const ph = pivotSite(pivothigh);
+    ph(1, 1, 1); // NaN (warmup)
+    ph(9, 1, 1); // NaN (warmup)
+    expect(ph(2, 1, 1)).toBe(9); // window [1,9,2], the max sits 1 bar back
   });
 
-  it("rejects a candidate that isn't the strict max: [1,9,2,3] at left=1,right=1 -> candidate=2 is not >= 9,3", () => {
-    const state = {};
-    pivothigh(state, 1, 1, 1);
-    pivothigh(state, 9, 1, 1);
-    pivothigh(state, 2, 1, 1); // window [1,9,2], candidate=9 -> pivot
-    expect(pivothigh(state, 3, 1, 1)).toBeNaN(); // window [9,2,3], candidate=2, but 9>2 on the left -> NaN
+  it("rejects a candidate that isn't the max: [1,9,2,3] at left=1,right=1 -> candidate=2 is below the 9 on its left", () => {
+    const ph = pivotSite(pivothigh);
+    ph(1, 1, 1);
+    ph(9, 1, 1);
+    ph(2, 1, 1); // window [1,9,2], candidate=9 -> pivot
+    expect(ph(3, 1, 1)).toBeNaN(); // window [9,2,3], candidate=2, but 9>2 on the left -> NaN
   });
 
   it("allows a tie on the left, rejects a tie on the right (tier 1 tv-ta_369_pivot_zero_strength)", () => {
-    const left = {};
-    pivothigh(left, 3, 1, 1);
-    pivothigh(left, 3, 1, 1);
-    expect(pivothigh(left, 2, 1, 1)).toBe(3); // window [3,3,2]: the older 3 on the left is a tie, allowed
-    const right = {};
-    pivothigh(right, 1, 1, 1);
-    pivothigh(right, 3, 1, 1);
-    expect(pivothigh(right, 3, 1, 1)).toBeNaN(); // window [1,3,3]: candidate 3 ties the newer 3 -> NaN
-    expect(pivothigh(right, 2, 1, 1)).toBe(3); // window [3,3,2]: the newer 3 is the pivot
+    const left = pivotSite(pivothigh);
+    left(3, 1, 1);
+    left(3, 1, 1);
+    expect(left(2, 1, 1)).toBe(3); // window [3,3,2]: the older 3 on the left is a tie, allowed
+    const right = pivotSite(pivothigh);
+    right(1, 1, 1);
+    right(3, 1, 1);
+    expect(right(3, 1, 1)).toBeNaN(); // window [1,3,3]: candidate 3 ties the newer 3 -> NaN
+    expect(right(2, 1, 1)).toBe(3); // window [3,3,2]: the newer 3 is the pivot
   });
 
-  it("poisons the result if any bar in the window (including the candidate itself) is NaN", () => {
-    const state = {};
-    pivothigh(state, 1, 1, 1);
-    pivothigh(state, NaN, 1, 1); // candidate bar itself NaN
-    expect(pivothigh(state, 2, 1, 1)).toBeNaN();
+  it("an na source is na on its bar and neither poisons the window nor enters it (repro ta.extremes-seed-13)", () => {
+    const ph = pivotSite(pivothigh);
+    ph(1, 1, 1);
+    expect(ph(NaN, 1, 1)).toBeNaN(); // the na bar itself; the ring does not run
+    expect(ph(2, 1, 1)).toBeNaN(); // window [1,(na),2]: the max 2 is the current bar, not 1 back
+    expect(ph(0, 1, 1)).toBe(2); // window [(na),2,0]: 2 is 1 bar back -> pivot (pine2py: NaN, poisoned)
   });
 
   it("supports left=0 (no left-side check, only the right-side window matters)", () => {
-    const state = {};
-    // total=right+1=3; window=[current-2,current-1,current], candidate=source.get(right)=oldest bar.
-    expect(pivothigh(state, 5, 0, 2)).toBeNaN();
-    expect(pivothigh(state, 1, 0, 2)).toBeNaN();
-    expect(pivothigh(state, 2, 0, 2)).toBe(5); // window [5,1,2], candidate=5 (oldest), max -> pivot
+    const ph = pivotSite(pivothigh);
+    expect(ph(5, 0, 2)).toBeNaN();
+    expect(ph(1, 0, 2)).toBeNaN();
+    expect(ph(2, 0, 2)).toBe(5); // window [5,1,2], candidate=5 (oldest), max -> pivot
   });
 
   it("supports right=0 (no delay: candidate is the current bar, only the left-side window matters)", () => {
-    const state = {};
-    expect(pivothigh(state, 1, 2, 0)).toBeNaN();
-    expect(pivothigh(state, 2, 2, 0)).toBeNaN();
-    expect(pivothigh(state, 9, 2, 0)).toBe(9); // window [1,2,9], candidate=9 (current bar, no delay)
+    const ph = pivotSite(pivothigh);
+    expect(ph(1, 2, 0)).toBeNaN();
+    expect(ph(2, 2, 0)).toBeNaN();
+    expect(ph(9, 2, 0)).toBe(9); // window [1,2,9], candidate=9 (current bar, no delay)
+  });
+
+  it("a negative or na strength is na (TradingView rejects a negative strength, RE10001)", () => {
+    expect(pivothigh({}, 10, -1, 1, 0)).toBeNaN();
+    expect(pivothigh({}, 10, 1, NaN, 0)).toBeNaN();
   });
 
   it("keeps independent state across two call sites", () => {
-    const stateA = {};
-    const stateB = {};
-    pivothigh(stateA, 1, 1, 1);
-    pivothigh(stateA, 9, 1, 1);
-    expect(pivothigh(stateA, 2, 1, 1)).toBe(9);
-    expect(pivothigh(stateB, 100, 1, 1)).toBeNaN();
+    const a = pivotSite(pivothigh);
+    const b = pivotSite(pivothigh);
+    a(1, 1, 1);
+    a(9, 1, 1);
+    expect(a(2, 1, 1)).toBe(9);
+    expect(b(100, 1, 1)).toBeNaN();
   });
 
-  it("matches the pine2py oracle golden sample10.json trace (close, left=1, right=1)", () => {
-    const state = {};
+  it("matches the sample10.json trace (close, left=1, right=1)", () => {
+    const ph = pivotSite(pivothigh);
     const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
-    const results = closes.map((c) => pivothigh(state, c, 1, 1));
+    const results = closes.map((c) => ph(c, 1, 1));
     const expected = [NaN, NaN, NaN, 103, NaN, NaN, NaN, 106, NaN, NaN];
     results.forEach((r, i) => (Number.isNaN(expected[i]!) ? expect(r).toBeNaN() : expect(r).toBe(expected[i])));
   });
 
-  it("matches a from-scratch brute force (left ties allowed, right ties rejected) across ties, NaN gaps, and varying left/right", () => {
+  it("matches a from-scratch brute force (left ties allowed, right ties rejected) across ties and varying left/right", () => {
     const bruteForce = (history: number[], i: number, left: number, right: number): number => {
       const total = left + right + 1;
       if (i + 1 < total) return NaN;
       const get = (idx: number) => history[i - idx]!;
       const candidate = get(right);
-      if (Number.isNaN(candidate)) return NaN;
-      for (let k = 1; k <= left; k++) {
-        const val = get(right + k);
-        if (Number.isNaN(val) || val > candidate) return NaN;
-      }
-      for (let k = 0; k < right; k++) {
-        const val = get(k);
-        if (Number.isNaN(val) || val >= candidate) return NaN;
-      }
+      for (let k = 1; k <= left; k++) if (get(right + k) > candidate) return NaN;
+      for (let k = 0; k < right; k++) if (get(k) >= candidate) return NaN;
       return candidate;
     };
     let seed = 13579;
@@ -6513,10 +6520,10 @@ describe("ta.pivothigh", () => {
       [4, 0],
     ]) {
       const raw: number[] = [];
-      for (let i = 0; i < 500; i++) raw.push(rnd() < 0.05 ? NaN : Math.floor(rnd() * 5));
-      const state = {};
+      for (let i = 0; i < 500; i++) raw.push(Math.floor(rnd() * 5));
+      const ph = pivotSite(pivothigh);
       raw.forEach((v, i) => {
-        const actual = pivothigh(state, v, left!, right!);
+        const actual = ph(v, left!, right!);
         const expected = bruteForce(raw, i, left!, right!);
         if (Number.isNaN(expected)) expect(actual).toBeNaN();
         else expect(actual).toBe(expected);
@@ -6527,69 +6534,63 @@ describe("ta.pivothigh", () => {
 
 describe("ta.pivotlow", () => {
   it("returns NaN while the window hasn't filled yet (left=1, right=1, total=3 bars)", () => {
-    const state = {};
-    expect(pivotlow(state, 101, 1, 1)).toBeNaN();
-    expect(pivotlow(state, 102, 1, 1)).toBeNaN();
+    const pl = pivotSite(pivotlow);
+    expect(pl(101, 1, 1)).toBeNaN();
+    expect(pl(102, 1, 1)).toBeNaN();
   });
 
   it("matches a hand-computed pivot once the window fills (left=1, right=1): [9,1,8] -> candidate=1 is the min of the full window", () => {
-    const state = {};
-    pivotlow(state, 9, 1, 1);
-    pivotlow(state, 1, 1, 1);
-    expect(pivotlow(state, 8, 1, 1)).toBe(1); // window [9,1,8], candidate=source.get(1)=1, min of window
+    const pl = pivotSite(pivotlow);
+    pl(9, 1, 1);
+    pl(1, 1, 1);
+    expect(pl(8, 1, 1)).toBe(1); // window [9,1,8], the min sits 1 bar back
   });
 
   it("allows a tie on the left, rejects a tie on the right (tier 1 tv-ta_369_pivot_zero_strength)", () => {
-    const left = {};
-    pivotlow(left, 3, 1, 1);
-    pivotlow(left, 3, 1, 1);
-    expect(pivotlow(left, 4, 1, 1)).toBe(3); // window [3,3,4]: the older 3 on the left is a tie, allowed
-    const right = {};
-    pivotlow(right, 5, 1, 1);
-    pivotlow(right, 3, 1, 1);
-    expect(pivotlow(right, 3, 1, 1)).toBeNaN(); // window [5,3,3]: candidate 3 ties the newer 3 -> NaN
-    expect(pivotlow(right, 4, 1, 1)).toBe(3); // window [3,3,4]: the newer 3 is the pivot
+    const left = pivotSite(pivotlow);
+    left(3, 1, 1);
+    left(3, 1, 1);
+    expect(left(4, 1, 1)).toBe(3); // window [3,3,4]: the older 3 on the left is a tie, allowed
+    const right = pivotSite(pivotlow);
+    right(5, 1, 1);
+    right(3, 1, 1);
+    expect(right(3, 1, 1)).toBeNaN(); // window [5,3,3]: candidate 3 ties the newer 3 -> NaN
+    expect(right(4, 1, 1)).toBe(3); // window [3,3,4]: the newer 3 is the pivot
   });
 
-  it("poisons the result if any bar in the window is NaN", () => {
-    const state = {};
-    pivotlow(state, 9, 1, 1);
-    pivotlow(state, NaN, 1, 1);
-    expect(pivotlow(state, 8, 1, 1)).toBeNaN();
+  it("an na source is na on its bar and neither poisons the window nor enters it (repro ta.extremes-seed-13)", () => {
+    const pl = pivotSite(pivotlow);
+    pl(9, 1, 1);
+    expect(pl(NaN, 1, 1)).toBeNaN();
+    expect(pl(8, 1, 1)).toBeNaN(); // window [9,(na),8]: the min 8 is the current bar
+    expect(pl(10, 1, 1)).toBe(8); // window [(na),8,10]: 8 is 1 bar back -> pivot
   });
 
   it("keeps independent state across two call sites", () => {
-    const stateA = {};
-    const stateB = {};
-    pivotlow(stateA, 9, 1, 1);
-    pivotlow(stateA, 1, 1, 1);
-    expect(pivotlow(stateA, 8, 1, 1)).toBe(1);
-    expect(pivotlow(stateB, -100, 1, 1)).toBeNaN();
+    const a = pivotSite(pivotlow);
+    const b = pivotSite(pivotlow);
+    a(9, 1, 1);
+    a(1, 1, 1);
+    expect(a(8, 1, 1)).toBe(1);
+    expect(b(-100, 1, 1)).toBeNaN();
   });
 
-  it("matches the pine2py oracle golden sample10.json trace (close, left=1, right=1)", () => {
-    const state = {};
+  it("matches the sample10.json trace (close, left=1, right=1)", () => {
+    const pl = pivotSite(pivotlow);
     const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
-    const results = closes.map((c) => pivotlow(state, c, 1, 1));
+    const results = closes.map((c) => pl(c, 1, 1));
     const expected = [NaN, NaN, NaN, NaN, 102, NaN, NaN, NaN, 105, NaN];
     results.forEach((r, i) => (Number.isNaN(expected[i]!) ? expect(r).toBeNaN() : expect(r).toBe(expected[i])));
   });
 
-  it("matches a from-scratch brute force (left ties allowed, right ties rejected) across ties, NaN gaps, and varying left/right", () => {
+  it("matches a from-scratch brute force (left ties allowed, right ties rejected) across ties and varying left/right", () => {
     const bruteForce = (history: number[], i: number, left: number, right: number): number => {
       const total = left + right + 1;
       if (i + 1 < total) return NaN;
       const get = (idx: number) => history[i - idx]!;
       const candidate = get(right);
-      if (Number.isNaN(candidate)) return NaN;
-      for (let k = 1; k <= left; k++) {
-        const val = get(right + k);
-        if (Number.isNaN(val) || val < candidate) return NaN;
-      }
-      for (let k = 0; k < right; k++) {
-        const val = get(k);
-        if (Number.isNaN(val) || val <= candidate) return NaN;
-      }
+      for (let k = 1; k <= left; k++) if (get(right + k) < candidate) return NaN;
+      for (let k = 0; k < right; k++) if (get(k) <= candidate) return NaN;
       return candidate;
     };
     let seed = 97531;
@@ -6601,10 +6602,10 @@ describe("ta.pivotlow", () => {
       [3, 0],
     ]) {
       const raw: number[] = [];
-      for (let i = 0; i < 500; i++) raw.push(rnd() < 0.05 ? NaN : Math.floor(rnd() * 5));
-      const state = {};
+      for (let i = 0; i < 500; i++) raw.push(Math.floor(rnd() * 5));
+      const pl = pivotSite(pivotlow);
       raw.forEach((v, i) => {
-        const actual = pivotlow(state, v, left!, right!);
+        const actual = pl(v, left!, right!);
         const expected = bruteForce(raw, i, left!, right!);
         if (Number.isNaN(expected)) expect(actual).toBeNaN();
         else expect(actual).toBe(expected);
@@ -6613,141 +6614,63 @@ describe("ta.pivotlow", () => {
   });
 });
 
-// ta.pivothigh/ta.pivotlow series(가변) left/right (배치25 (4) 계속, next_hint(C551) —
-// pivothighVarLen/pivotlowVarLen). 버퍼 메커니즘은 highestVarLen과 완전 동형(콜사이트별 barCount
-// 크기 버퍼 + barIdx 같은-바 덮어쓰기). pine2py pivot.py도 상태 없이 매 호출 현재 left/right로
-// source.get(0..left+right)를 재구축하는 무상태 재스캔이라(median/linreg/stdev #181/#182와 동일
-// 축) 가변 length 오라클이 성립한다(oracle/cases/ta_pivot_varlen.pine 골든이 정상 구간을 이미
-// 대조) — 여기서는 오라클이 못 미치는 크래시 경계(left/right가 NaN)와 pine2py Series.get()
-// out-of-range(음수 인덱스/len 초과 전부 NaN)를 그대로 재현하는 음수 left/right 경계를
-// hand-verified로 커버한다.
-describe("ta.pivothigh variable(series) left/right (pivothighVarLen)", () => {
-  it("matches a from-scratch literal port of pivot.py across ties, NaN gaps, and left/right that vary independently every bar (out-of-range index = NaN, mirroring pine2py Series.get())", () => {
-    const bruteForce = (history: number[], i: number, left: number, right: number): number => {
-      // idx>i(현재 바보다 미래)도 idx<0과 동일하게 NaN — right가 음수면 candidate가 i보다 뒤를
-      // 가리킬 수 있는데, 이 스트리밍 엔진은 그 미래 바를 아직 push 안 했다(history 배열 자체는 정적
-      // 300개를 미리 만들어뒀지만 실제로는 매 바 순차 push다) — `idx>=history.length`로 잘못 짰다가
-      // 첫 실행에서 실제 mismatch로 드러남(scratch/debug_pivot_varlen.mjs로 원인 격리).
-      const get = (idx: number) => (idx < 0 || idx > i ? NaN : history[idx]!);
-      const candidate = get(i - right);
-      if (Number.isNaN(candidate)) return NaN;
-      for (let k = 1; k <= left; k++) {
-        const val = get(i - right - k);
-        if (Number.isNaN(val) || val > candidate) return NaN;
-      }
-      // A tie on the right (a newer bar) breaks the pivot (tier 1 tv-ta_369_pivot_zero_strength).
-      for (let k = 0; k < right; k++) {
-        const val = get(i - k);
-        if (Number.isNaN(val) || val >= candidate) return NaN;
-      }
-      return candidate;
-    };
+// ta.pivothigh/ta.pivotlow with a series left/right (pivothighVarLen/pivotlowVarLen): the same
+// machine as the literal strengths, reading both on every call. Here the edges: constant strengths
+// reproduce the literal form, same-bar executions rewrite one slot, fractional strengths truncate,
+// an na or negative strength is na.
+describe("ta.pivothigh/ta.pivotlow variable(series) left/right (pivothighVarLen/pivotlowVarLen)", () => {
+  it("matches the literal-strength machine for constant strengths, na bars included", () => {
     let seed = 24681;
     const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
     const raw: number[] = [];
     for (let i = 0; i < 300; i++) raw.push(rnd() < 0.05 ? NaN : Math.floor(rnd() * 5));
-    const state = {};
+    const hi = pivotSite(pivothigh);
+    const lo = pivotSite(pivotlow);
+    const hiVar = {};
+    const loVar = {};
     raw.forEach((v, i) => {
-      const left = (i % 5) - 1; // -1..3 순환(음수 포함)
-      const right = ((i + 2) % 4) - 1; // -1..2 순환(음수 포함, 서로 다른 위상)
-      const actual = pivothighVarLen(state, v, left, right, raw.length, i);
-      const expected = bruteForce(raw, i, left, right);
-      if (Number.isNaN(expected)) expect(actual).toBeNaN();
-      else expect(actual).toBe(expected);
+      const h = hi(v, 3, 2);
+      const l = lo(v, 3, 2);
+      const hv = pivothighVarLen(hiVar, v, 3, 2, raw.length, i);
+      const lv = pivotlowVarLen(loVar, v, 3, 2, raw.length, i);
+      if (Number.isNaN(h)) expect(hv).toBeNaN();
+      else expect(hv).toBe(h);
+      if (Number.isNaN(l)) expect(lv).toBeNaN();
+      else expect(lv).toBe(l);
     });
   });
 
-  it("left=NaN or right=NaN → NaN (pine2py range(nan)/list-index TypeError crash → hand-verified na, python 직접 실행 확인, TV 미검증 가설)", () => {
+  it("left=NaN, right=NaN or a negative strength → NaN", () => {
     expect(pivothighVarLen({}, 10, NaN, 1, 10, 0)).toBeNaN();
     expect(pivothighVarLen({}, 10, 1, NaN, 10, 0)).toBeNaN();
-  });
-
-  it("same-bar repeated calls overwrite the current slot instead of advancing (context.param() parity)", () => {
-    const state = {};
-    pivothighVarLen(state, 1, 0, 0, 10, 0);
-    pivothighVarLen(state, 9, 0, 0, 10, 1);
-    pivothighVarLen(state, 100, 0, 0, 10, 1); // barIdx(1)는 직전 호출과 동일 → buffer[1]을 덮어쓰기(push 아님)
-    expect(pivothighVarLen(state, 2, 1, 1, 10, 2)).toBe(100); // candidate=buffer[1]=100(덮어써진 값), 9였다면 다른 결과
-  });
-
-  it("fractional left/right truncate toward zero (Math.trunc, array-index rule)", () => {
-    const state = {};
-    pivothighVarLen(state, 5, 0, 0, 10, 0);
-    pivothighVarLen(state, 1, 0, 0, 10, 1);
-    // trunc(1.9)=1(왼쪽 1바만 검사) / trunc(0.9)=0(오른쪽 지연 없음, candidate=현재 바)
-    expect(pivothighVarLen(state, 9, 1.9, 0.9, 10, 2)).toBe(9);
-  });
-});
-
-describe("ta.pivotlow variable(series) left/right (pivotlowVarLen)", () => {
-  it("matches a from-scratch literal port of pivot.py across ties, NaN gaps, and left/right that vary independently every bar (out-of-range index = NaN, mirroring pine2py Series.get())", () => {
-    const bruteForce = (history: number[], i: number, left: number, right: number): number => {
-      // idx>i(현재 바보다 미래)도 idx<0과 동일하게 NaN — right가 음수면 candidate가 i보다 뒤를
-      // 가리킬 수 있는데, 이 스트리밍 엔진은 그 미래 바를 아직 push 안 했다(history 배열 자체는 정적
-      // 300개를 미리 만들어뒀지만 실제로는 매 바 순차 push다) — `idx>=history.length`로 잘못 짰다가
-      // 첫 실행에서 실제 mismatch로 드러남(scratch/debug_pivot_varlen.mjs로 원인 격리).
-      const get = (idx: number) => (idx < 0 || idx > i ? NaN : history[idx]!);
-      const candidate = get(i - right);
-      if (Number.isNaN(candidate)) return NaN;
-      for (let k = 1; k <= left; k++) {
-        const val = get(i - right - k);
-        if (Number.isNaN(val) || val < candidate) return NaN;
-      }
-      // A tie on the right (a newer bar) breaks the pivot (tier 1 tv-ta_369_pivot_zero_strength).
-      for (let k = 0; k < right; k++) {
-        const val = get(i - k);
-        if (Number.isNaN(val) || val <= candidate) return NaN;
-      }
-      return candidate;
-    };
-    let seed = 13579;
-    const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
-    const raw: number[] = [];
-    for (let i = 0; i < 300; i++) raw.push(rnd() < 0.05 ? NaN : Math.floor(rnd() * 5));
-    const state = {};
-    raw.forEach((v, i) => {
-      const left = (i % 4) - 1; // -1..2 순환(음수 포함)
-      const right = ((i + 1) % 5) - 1; // -1..3 순환(음수 포함, 서로 다른 위상)
-      const actual = pivotlowVarLen(state, v, left, right, raw.length, i);
-      const expected = bruteForce(raw, i, left, right);
-      if (Number.isNaN(expected)) expect(actual).toBeNaN();
-      else expect(actual).toBe(expected);
-    });
-  });
-
-  it("left=NaN or right=NaN → NaN (pine2py range(nan)/list-index TypeError crash → hand-verified na, python 직접 실행 확인, TV 미검증 가설)", () => {
     expect(pivotlowVarLen({}, 10, NaN, 1, 10, 0)).toBeNaN();
     expect(pivotlowVarLen({}, 10, 1, NaN, 10, 0)).toBeNaN();
+    expect(pivotlowVarLen({}, 10, -1, 1, 10, 0)).toBeNaN();
   });
 
-  it("same-bar repeated calls overwrite the current slot instead of advancing (context.param() parity)", () => {
-    const state = {};
-    pivotlowVarLen(state, 9, 0, 0, 10, 0);
-    pivotlowVarLen(state, 1, 0, 0, 10, 1);
-    pivotlowVarLen(state, -100, 0, 0, 10, 1); // barIdx(1)는 직전 호출과 동일 → buffer[1]을 덮어쓰기(push 아님)
-    expect(pivotlowVarLen(state, 2, 1, 1, 10, 2)).toBe(-100); // candidate=buffer[1]=-100(덮어써진 값)
+  it("same-bar repeated calls rewrite the bar's slot instead of advancing (the ring is addressed by bar_index)", () => {
+    const hi = {};
+    pivothighVarLen(hi, 1, 0, 0, 10, 0);
+    pivothighVarLen(hi, 9, 0, 0, 10, 1);
+    pivothighVarLen(hi, 100, 0, 0, 10, 1); // bar 1 again: its slot now holds 100
+    expect(pivothighVarLen(hi, 2, 1, 1, 10, 2)).toBe(100); // window [_,100,2]: 100 is 1 bar back
+    const lo = {};
+    pivotlowVarLen(lo, 9, 0, 0, 10, 0);
+    pivotlowVarLen(lo, 1, 0, 0, 10, 1);
+    pivotlowVarLen(lo, -100, 0, 0, 10, 1);
+    expect(pivotlowVarLen(lo, 2, 1, 1, 10, 2)).toBe(-100);
   });
 
-  it("fractional left/right truncate toward zero (Math.trunc, array-index rule)", () => {
-    const state = {};
-    pivotlowVarLen(state, 5, 0, 0, 10, 0);
-    pivotlowVarLen(state, 9, 0, 0, 10, 1);
-    // trunc(1.9)=1(왼쪽 1바만 검사) / trunc(0.9)=0(오른쪽 지연 없음, candidate=현재 바)
-    expect(pivotlowVarLen(state, 1, 1.9, 0.9, 10, 2)).toBe(1);
-  });
-
-  it("negative left with right=1 matches the pine2py-verified boundary case (python 직접 실행 대조, hi=NaN/lo=107 across sample10 close with left=-1/right=1 on every bar)", () => {
-    const vals = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
-    const stateHi = {};
-    const stateLo = {};
-    let hi = NaN;
-    let lo = NaN;
-    vals.forEach((v, i) => {
-      hi = pivothighVarLen(stateHi, v, -1, 1, vals.length, i);
-      lo = pivotlowVarLen(stateLo, v, -1, 1, vals.length, i);
-    });
-    expect(hi).toBeNaN();
-    expect(lo).toBe(107);
+  it("fractional left/right truncate toward zero", () => {
+    const hi = {};
+    pivothighVarLen(hi, 5, 0, 0, 10, 0);
+    pivothighVarLen(hi, 1, 0, 0, 10, 1);
+    // trunc(1.9)=1 (one bar on the left) / trunc(0.9)=0 (no delay, the candidate is the current bar)
+    expect(pivothighVarLen(hi, 9, 1.9, 0.9, 10, 2)).toBe(9);
+    const lo = {};
+    pivotlowVarLen(lo, 5, 0, 0, 10, 0);
+    pivotlowVarLen(lo, 9, 0, 0, 10, 1);
+    expect(pivotlowVarLen(lo, 1, 1.9, 0.9, 10, 2)).toBe(1);
   });
 });
 

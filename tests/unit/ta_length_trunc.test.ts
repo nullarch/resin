@@ -131,10 +131,10 @@ describe("ta.pivothigh/pivotlow left/right truncation (C569)", () => {
     const src = [1, 2, 5, 3, 2, 1, 4, 6, 2, 1, 3];
 
     const fracState = {};
-    const fracResults = src.map((v) => pivothigh(fracState, v, 2.5, 1.5));
+    const fracResults = src.map((v, i) => pivothigh(fracState, v, 2.5, 1.5, i));
 
     const intState = {};
-    const intResults = src.map((v) => pivothigh(intState, v, 2, 1));
+    const intResults = src.map((v, i) => pivothigh(intState, v, 2, 1, i));
 
     expect(fracResults).toEqual(intResults);
   });
@@ -143,10 +143,10 @@ describe("ta.pivothigh/pivotlow left/right truncation (C569)", () => {
     const src = [5, 4, 1, 3, 4, 5, 2, 0, 4, 5, 3];
 
     const fracState = {};
-    const fracResults = src.map((v) => pivotlow(fracState, v, 2.5, 1.5));
+    const fracResults = src.map((v, i) => pivotlow(fracState, v, 2.5, 1.5, i));
 
     const intState = {};
-    const intResults = src.map((v) => pivotlow(intState, v, 2, 1));
+    const intResults = src.map((v, i) => pivotlow(intState, v, 2, 1, i));
 
     expect(fracResults).toEqual(intResults);
   });

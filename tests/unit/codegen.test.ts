@@ -4023,28 +4023,28 @@ describe("CodeGen", () => {
     );
   });
 
-  it("emits ta.pivothigh call through $.taSlots[slot] (no codegen special-casing — 3 args pass through in order)", () => {
+  it("emits ta.pivothigh call through $.taSlots[slot] (3 args in order, then bar_index for the extremes ring)", () => {
     const code = codegenSource("x = ta.pivothigh(close, 1, 1)");
-    expect(code).toBe("var x = rt.ta.pivothigh($.taSlots[0], $.close.get(0), 1, 1);");
+    expect(code).toBe("var x = rt.ta.pivothigh($.taSlots[0], $.close.get(0), 1, 1, $.idx);");
   });
 
-  it("emits ta.pivotlow call through $.taSlots[slot] (no codegen special-casing — 3 args pass through in order)", () => {
+  it("emits ta.pivotlow call through $.taSlots[slot] (3 args in order, then bar_index for the extremes ring)", () => {
     const code = codegenSource("x = ta.pivotlow(close, 1, 1)");
-    expect(code).toBe("var x = rt.ta.pivotlow($.taSlots[0], $.close.get(0), 1, 1);");
+    expect(code).toBe("var x = rt.ta.pivotlow($.taSlots[0], $.close.get(0), 1, 1, $.idx);");
   });
 
   it("emits ta.pivothigh(leftbars, rightbars)/ta.pivotlow(leftbars, rightbars) 2-argument implicit-source form with an unshifted $.high/$.low.get(0) (C509)", () => {
     const codeHi = codegenSource("x = ta.pivothigh(2, 2)");
-    expect(codeHi).toBe("var x = rt.ta.pivothigh($.taSlots[0], $.high.get(0), 2, 2);");
+    expect(codeHi).toBe("var x = rt.ta.pivothigh($.taSlots[0], $.high.get(0), 2, 2, $.idx);");
     const codeLo = codegenSource("x = ta.pivotlow(2, 2)");
-    expect(codeLo).toBe("var x = rt.ta.pivotlow($.taSlots[0], $.low.get(0), 2, 2);");
+    expect(codeLo).toBe("var x = rt.ta.pivotlow($.taSlots[0], $.low.get(0), 2, 2, $.idx);");
   });
 
   it("3-argument ta.pivothigh/ta.pivotlow explicit-source form is untouched by the C509 implicit-source unshift (regression guard)", () => {
     const codeHi = codegenSource("x = ta.pivothigh(open, 2, 2)");
-    expect(codeHi).toBe("var x = rt.ta.pivothigh($.taSlots[0], $.open.get(0), 2, 2);");
+    expect(codeHi).toBe("var x = rt.ta.pivothigh($.taSlots[0], $.open.get(0), 2, 2, $.idx);");
     const codeLo = codegenSource("x = ta.pivotlow(open, 2, 2)");
-    expect(codeLo).toBe("var x = rt.ta.pivotlow($.taSlots[0], $.open.get(0), 2, 2);");
+    expect(codeLo).toBe("var x = rt.ta.pivotlow($.taSlots[0], $.open.get(0), 2, 2, $.idx);");
   });
 
   it("emits ta.pivothigh(leftbars, rightbars)/ta.pivotlow(leftbars, rightbars) identically to the explicit high/low source form (C509 codegen equivalence, hand-verified — pine2py pivot.py has no runtime sniffing for this oracle-unreachable overload)", () => {
@@ -4136,8 +4136,8 @@ describe("CodeGen", () => {
         "var x21 = rt.ta.wvad($.taSlots[45], $.open.get(0), $.high.get(0), $.low.get(0), $.close.get(0), $.volume.get(0));",
         "var x22 = rt.ta.iii($.taSlots[46], $.high.get(0), $.low.get(0), $.close.get(0), $.volume.get(0));",
         "var x23 = rt.ta.vwap($.taSlots[47], $.close.get(0), $.volume.get(0), $calendar.isSessionFirstBar($.timeOfBar($.idx)));",
-        "var x24 = rt.ta.pivothigh($.taSlots[48], $.close.get(0), 1, 1);",
-        "var x25 = rt.ta.pivotlow($.taSlots[49], $.close.get(0), 1, 1);",
+        "var x24 = rt.ta.pivothigh($.taSlots[48], $.close.get(0), 1, 1, $.idx);",
+        "var x25 = rt.ta.pivotlow($.taSlots[49], $.close.get(0), 1, 1, $.idx);",
         "rt.ta.supertrend($.taSlots[50], $.high.get(0), $.low.get(0), $.close.get(0), $.close.get(1), 2.0, 10, $.taScratch);",
         "var x26v = $.taScratch[0], x26d = $.taScratch[1];",
         "var x27 = rt.ta.sar($.taSlots[51], $.high.get(0), $.low.get(0), $.close.get(0), 0.02, 0.02, 0.2);",

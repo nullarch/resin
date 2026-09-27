@@ -1193,10 +1193,9 @@ export interface ExtremeState {
 // GOAL.md "bar loop 안 할당 제로"를 지킨다 - 고전적 sliding-window-maximum 증명(창 크기 length 안에서
 // deque가 담을 수 있는 원소 수는 항상 length 이하)이 capacity=length로도 오버플로가 없음을 보장한다.
 //
-// ta.highest and ta.range no longer run here (see highest() and range(), the oracle's ring). This
-// deque keeps the pine2py poison window for the machines still composed on it: ta.stoch, ta.wpr and
-// ta.pivothigh/pivotlow, whose na rules are their own. Of several equal extremes the deque head holds
-// the newest (every element <= the new value is popped): ta.pivothigh reads that.
+// ta.highest, ta.range and the pivots no longer run here (see highest(), range() and pivot(), the
+// oracle's ring). This deque keeps the pine2py poison window for the machines still composed on it:
+// the literal-length ta.stoch and ta.wpr, whose na rules are their own.
 function dequeHighest(state: ExtremeState, value: number, length: number): number {
   length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조) — pivothigh는 이 함수를 경유해 함께 해결됨
   if (state.buffer === undefined) {
@@ -2021,8 +2020,10 @@ function floorMod(a: number, n: number): number {
 // length re-reads the whole window"); a later equal value moves the index back; an na source resets
 // the extreme and the rescan's reach ("A na input RESETS the machine"); na while bar_index <
 // length - 1. `low` selects ta.lowest. The ring is per-call: several executions on one bar rewrite
-// one slot and keep the extreme an earlier one found (the oracle's `per_call`).
-function extremeRing(state: ExtremeRingState, value: number, len: number, bi: number, low: boolean): number {
+// one slot and keep the extreme an earlier one found (the oracle's `per_call`). `checkEq` is the
+// oracle's `_check_eq`, the pivots' variant: of equal extremes the index names the NEWEST (a new
+// equal value takes the index, the rescan does not move it back to an older equal one).
+function extremeRing(state: ExtremeRingState, value: number, len: number, bi: number, low: boolean, checkEq = false): number {
   if (state.capacity === undefined) {
     state.capacity = 0;
     state.window = [];
@@ -2059,7 +2060,7 @@ function extremeRing(state: ExtremeRingState, value: number, len: number, bi: nu
   }
   let extreme = state.extreme!;
   let extremeIndex = state.extremeIndex!;
-  if (Number.isNaN(extreme) || (low ? value < extreme : value > extreme)) {
+  if (Number.isNaN(extreme) || (low ? value < extreme : value > extreme) || (checkEq && value === extreme)) {
     extreme = value;
     extremeIndex = 0;
   }
@@ -2074,7 +2075,7 @@ function extremeRing(state: ExtremeRingState, value: number, len: number, bi: nu
       if (low ? s < extreme : s > extreme) {
         extreme = s;
         extremeIndex = i;
-      } else if (s === extreme) {
+      } else if (!checkEq && s === extreme) {
         extremeIndex = i;
       }
     }
@@ -2235,105 +2236,15 @@ export function correlationVarLen(
   return cov / Math.sqrt(product);
 }
 
-// pivothighVarLen/pivotlowVarLen 전용 - idx가 [0, writeIdx] 밖(음수 = 아직 안 쌓인 과거, writeIdx
-// 초과 = 아직 안 온 미래)이면 NaN. pine2py Series.get()의 out-of-range 판정(series.py L49-51,
-// `real_index<0 or real_index>=len(data)`이면 NaN)과 완전 동형이라, 이 하나로 pine2py의
-// "data_len < total" 사전 게이트를 대체한다(아래 pivothighVarLen 주석 참조).
-function pivotBufGet(buffer: Float64Array, writeIdx: number, idx: number): number {
-  if (idx < 0 || idx > writeIdx) return NaN;
-  return buffer[idx]!;
+// ta.pivothigh/ta.pivotlow with a series leftbars/rightbars (the v6 reference types both "series
+// int/float"): the same machine as the literal form below, which reads both on every call (the
+// oracle has one function; its ring grows with the window).
+export function pivothighVarLen(state: PivotState, value: number, left: number, right: number, _barCount: number, barIdx: number): number {
+  return pivothigh(state, value, left, right, barIdx);
 }
 
-// ta.pivothigh/ta.pivotlow(source, left, right) - left/right가 series(바마다 값이 바뀌는) 변형
-// (배치25 (4) 계속, next_hint(C551) 1순위). pine2py wavealgo/ta/pivot.py의 pivothigh()/pivotlow()도
-// highest.py와 동일하게 상태 없이 매 호출 source.get(0..left+right)를 재구축하는 무상태 재스캔
-// (ensure_series -> context.param(), get_ta_state 미사용 - python 직접 실행 확인 2026-08-01)이라
-// #178과 같은 축으로 가변 length 골든 오라클이 성립한다(oracle/cases/ta_pivot_varlen.pine). 버퍼/
-// writeIdx/barIdx 덮어쓰기 메커니즘은 highestVarLen과 완전 동형(ExtremeVarLenState 재사용) - 단
-// length 하나가 아니라 left/right 두 값이 창의 좌/우 폭을 각각 결정하므로, 고정 length 버전(위
-// pivothigh())처럼 rt.ta.highest/lowest를 재호출하는 합성이 아니라 pine2py 원본처럼
-// candidate=buffer[writeIdx-right]를 직접 인덱싱해 왼쪽(더 오래된 값)/오른쪽(더 최근 값) 두 구간을
-// 따로 스캔한다. Ties are asymmetric, as in the fixed-length pivothigh() below: an equal value on the
-// left does not break the pivot, an equal value on the right (a newer bar) does. left<=0/right<=0은 Python range(1,left+1)/range(right)가 빈 루프가 되는 것과
-// 동일하게 JS for 루프 조건이 자연히 스킵한다(별도 분기 불필요) - negative left/right/0/과대
-// length 6개 조합을 python 직접 실행으로 대조해 pivotBufGet의 범위 판정 하나로 전부 재현됨을 확인
-// (음수 right가 candidate를 미래 바로 밀어 out-of-range NaN을 내는 경로까지 포함). left 또는
-// right가 NaN이면 pine2py가 range(nan)류에서 TypeError로 크래시해(python 직접 실행 확인) 오라클
-// 불가 - #178과 동일하게 na 전파로 외삽한다(hand-verified, TV 미검증 가설).
-export function pivothighVarLen(
-  state: ExtremeVarLenState,
-  value: number,
-  left: number,
-  right: number,
-  barCount: number,
-  barIdx: number,
-): number {
-  if (state.buffer === undefined) {
-    state.buffer = new Float64Array(barCount).fill(NaN);
-    state.writeIdx = -1;
-    state.lastBarIdx = -1;
-  }
-  if (barIdx !== state.lastBarIdx) {
-    state.writeIdx = state.writeIdx! + 1;
-    state.lastBarIdx = barIdx;
-  }
-  const writeIdx = state.writeIdx!;
-  state.buffer[writeIdx] = value;
-
-  const l = Math.trunc(left);
-  const r = Math.trunc(right);
-  if (Number.isNaN(l) || Number.isNaN(r)) return NaN;
-  const candIdx = writeIdx - r;
-  const candidate = pivotBufGet(state.buffer, writeIdx, candIdx);
-  if (Number.isNaN(candidate)) return NaN;
-  for (let i = 1; i <= l; i++) {
-    const v = pivotBufGet(state.buffer, writeIdx, candIdx - i);
-    if (Number.isNaN(v) || v > candidate) return NaN;
-  }
-  for (let i = 0; i < r; i++) {
-    const v = pivotBufGet(state.buffer, writeIdx, writeIdx - i);
-    if (Number.isNaN(v) || v >= candidate) return NaN;
-  }
-  return candidate;
-}
-
-// ta.pivotlow series-length 변형 - pivothighVarLen과 대칭(최솟값 쪽 조건 `<`). 상세는
-// pivothighVarLen 주석 참조.
-export function pivotlowVarLen(
-  state: ExtremeVarLenState,
-  value: number,
-  left: number,
-  right: number,
-  barCount: number,
-  barIdx: number,
-): number {
-  if (state.buffer === undefined) {
-    state.buffer = new Float64Array(barCount).fill(NaN);
-    state.writeIdx = -1;
-    state.lastBarIdx = -1;
-  }
-  if (barIdx !== state.lastBarIdx) {
-    state.writeIdx = state.writeIdx! + 1;
-    state.lastBarIdx = barIdx;
-  }
-  const writeIdx = state.writeIdx!;
-  state.buffer[writeIdx] = value;
-
-  const l = Math.trunc(left);
-  const r = Math.trunc(right);
-  if (Number.isNaN(l) || Number.isNaN(r)) return NaN;
-  const candIdx = writeIdx - r;
-  const candidate = pivotBufGet(state.buffer, writeIdx, candIdx);
-  if (Number.isNaN(candidate)) return NaN;
-  for (let i = 1; i <= l; i++) {
-    const v = pivotBufGet(state.buffer, writeIdx, candIdx - i);
-    if (Number.isNaN(v) || v < candidate) return NaN;
-  }
-  for (let i = 0; i < r; i++) {
-    const v = pivotBufGet(state.buffer, writeIdx, writeIdx - i);
-    if (Number.isNaN(v) || v <= candidate) return NaN;
-  }
-  return candidate;
+export function pivotlowVarLen(state: PivotState, value: number, left: number, right: number, _barCount: number, barIdx: number): number {
+  return pivotlow(state, value, left, right, barIdx);
 }
 
 export interface RangeState {
@@ -3572,55 +3483,44 @@ export function vwap(
 }
 
 export interface PivotState {
-  extreme?: ExtremeState;
+  ring?: ExtremeRingState;
 }
 
-// ta.pivothigh/ta.pivotlow(source, left, right) - candidate=source.get(right)(right바 지연)가 창
-// [0..left+right] 전체(길이 left+right+1)의 최댓값/최솟값이면 그 값을, 아니면 NaN을 반환한다
-// (highest류와 동일한 poison window로 창 안 NaN/데이터 부족도 즉시 NaN).
-//
-// 새 자료구조 없이 length=left+right+1짜리 rt.ta.highest/rt.ta.lowest(C42 ExtremeState)를 그대로
-// 호출하는 합성(hma/stoch류 "이미 구현된 TA 재사용" 원칙) — 창 [0..left+right]가 정확히
-// highest(source, left+right+1)의 창과 일치한다. windowMax가 non-NaN이면(nanCount===0) 그 창 전체가
-// 실측값이므로 candidate도 항상 non-NaN — 별도 NaN 체크 불필요.
-//
-// Ties are asymmetric. The bar `right` back is a pivot only when it holds the NEWEST occurrence of
-// the window's extreme: an equal value on the left (older bars) does not break it, an equal value
-// on the right (newer bars) does. Tier 1 ta_369_pivot_zero_strength (BINANCE:BTCUSDT 30m) bar 208:
-// ta.pivothigh(high, 0, 5) is na although bar 203's high 98500 is the window's maximum, because bar
-// 205 reaches 98500 again; at bar 210 the same call reports bar 205's 98500 with the equal bar 203
-// on its left. The oracle agrees (PyneCore lib/ta.py pivothigh: `highest(source, pivotrange,
-// _check_eq=True)` keeps the newest index among equal values, pivot when it is `-rightbars`). The
-// manual (ref_v6_ta_math.txt ta.pivothigh) says only "returns price of the pivot high point".
-// highest()'s monotonic deque pops every older value <= the new one, so its head is already the
-// newest occurrence of the maximum: the pivot is that head's seq being `right` bars old.
-export function pivothigh(state: PivotState, source: number, left: number, right: number): number {
-  // C569: left/right int 복원(상세는 sma() 주석 참조) — highest()도 length를 자체 trunc하므로
-  // 이 함수 자신의 스코프에서도 먼저 truncate해 length 파생값 전체를 일관되게 정수로 고정한다.
-  left = Math.trunc(left);
-  right = Math.trunc(right);
-  if (state.extreme === undefined) {
-    state.extreme = {};
-  }
-  const length = left + right + 1;
-  const windowMax = dequeHighest(state.extreme, source, length);
-  if (Number.isNaN(windowMax)) return NaN;
-  const ext = state.extreme;
-  return ext.dequeSeq![ext.dequeHead!] === ext.seq! - right ? windowMax : NaN;
+// ta.pivothigh/ta.pivotlow(source, leftbars, rightbars), a literal or a series strength: the
+// oracle's composition (pynecore lib/ta.py pivothigh/pivotlow), ta.highest/ta.lowest(source,
+// leftbars + rightbars + 1) on the extremes' bar-addressed ring (extremeRing), a pivot when the
+// window's extreme sits `rightbars` bars back:
+//   - an na source is na on its bar WITHOUT running the ring (`if not (source == source): return
+//     na_float` precedes the `highest` call). The na bar neither resets the window nor is written
+//     to it, so its slot serves what was written a whole ring earlier, as for a gated ta.highest.
+//     pine2py's poison window (na for the next `leftbars + rightbars + 1` bars after one na source)
+//     missed every pivot there (repro state/repros/ta.extremes-seed-13.json: ta.pivotlow(s0, 5, 4)
+//     with s0 na on every 4th bar reports bar 26's 100.48 at bar 30);
+//   - ties are asymmetric: the bar `rightbars` back is a pivot only when it holds the NEWEST
+//     occurrence of the window's extreme (`_check_eq=True`): an equal value on the left (older
+//     bars) does not break it, one on the right (newer bars) does. Tier 1
+//     ta_369_pivot_zero_strength (BINANCE:BTCUSDT 30m) bar 208: ta.pivothigh(high, 0, 5) is na
+//     although bar 203's high 98500 is the window's maximum, because bar 205 reaches 98500 again;
+//     at bar 210 the same call reports bar 205's 98500 with the equal bar 203 on its left;
+//   - na while bar_index < leftbars + rightbars (the ring's warm-up).
+// A zero strength is legal on that side ("TradingView rejects only a NEGATIVE strength (RE10001,
+// "must be >= 0")", measured there). The manual (ref_v6_ta_math.txt ta.pivothigh) says only
+// "returns price of the pivot high point. It returns 'NaN', if there was no pivot high point".
+function pivot(state: PivotState, source: number, left: number, right: number, barIdx: number, low: boolean): number {
+  const l = Math.trunc(left);
+  const r = Math.trunc(right);
+  if (!(l >= 0 && r >= 0) || Number.isNaN(source)) return NaN;
+  if (state.ring === undefined) state.ring = {};
+  const extreme = extremeRing(state.ring, source, l + r + 1, barIdx, low, true);
+  return !Number.isNaN(extreme) && state.ring.extremeIndex === r ? extreme : NaN;
 }
 
-// ta.pivotlow - pivothigh() mirrored: lowest()'s deque head is the newest occurrence of the minimum.
-export function pivotlow(state: PivotState, source: number, left: number, right: number): number {
-  left = Math.trunc(left); // C569: left/right int 복원(상세는 pivothigh() 주석 참조)
-  right = Math.trunc(right);
-  if (state.extreme === undefined) {
-    state.extreme = {};
-  }
-  const length = left + right + 1;
-  const windowMin = dequeLowest(state.extreme, source, length);
-  if (Number.isNaN(windowMin)) return NaN;
-  const ext = state.extreme;
-  return ext.dequeSeq![ext.dequeHead!] === ext.seq! - right ? windowMin : NaN;
+export function pivothigh(state: PivotState, source: number, left: number, right: number, barIdx: number): number {
+  return pivot(state, source, left, right, barIdx, false);
+}
+
+export function pivotlow(state: PivotState, source: number, left: number, right: number, barIdx: number): number {
+  return pivot(state, source, left, right, barIdx, true);
 }
 
 export interface SupertrendState {

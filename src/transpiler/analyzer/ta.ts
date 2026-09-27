@@ -762,13 +762,10 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
     returnArityByArgCount: { 3: 3 },
     kwargParamNames: ["source"],
   },
-  // ta.pivothigh(source, left, right) / ta.pivotlow(source, left, right) — source.get(right)(right바
-  // 지연 후보)가 창 [0..left+right] 전체에서 최댓값/최솟값이면 그 값을, 아니면 NaN을 반환(동률은
-  // 성립 허용, 엄격 부등호만 거부). 새 상태 없이 length=left+right+1짜리 rt.ta.highest/rt.ta.lowest
-  // (C42 ExtremeState)를 그대로 호출하는 합성(hma/stoch류 "이미 구현된 TA 재사용" 원칙) —
-  // runtime/ta.ts pivothigh()/pivotlow() 주석 참조. left/right 둘 다 ExtremeState 버퍼 크기(창 전체
-  // 폭)와 candidate 오프셋을 결정하므로 tsi(C49)와 동일하게 lengthArgIndex를 배열 [1, 2]로 등록해
-  // 둘 다 series면 하드 에러.
+  // ta.pivothigh(source, left, right) / ta.pivotlow(source, left, right) — the extremes' ring over
+  // left + right + 1 bars, a pivot when the window's extreme (the newest of equal ones) sits `right`
+  // bars back; an na source is na without running the ring (runtime/ta.ts pivot, the oracle's
+  // composition). left/right both size the window, so lengthArgIndex is [1, 2].
   // kwargParamNames: ["source","leftbars","rightbars"](C402, next_hint(C401) 1순위 — wild
   // ed93509e928c.pine의 ta.sma kwarg를 해소하며 같은 파일에서 캐스케이드로 재노출, C249). pivotlow
   // (C400)와 완전히 동일한 구조로 대칭 추가 — pine2py pivot.py의 pivothigh(source, left=5, right=5,
