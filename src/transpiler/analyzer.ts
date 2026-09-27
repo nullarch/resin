@@ -82,6 +82,7 @@ import {
   resolveMethodReceiverTypeName,
   resolveParamUdtTypeHint,
   resolveScalarMethodInfo,
+  stripParamQualifierPrefix,
   CHART_POINT_FIELD_TYPE,
   CHART_POINT_FIELDS,
 } from "./analyzer/udt-types";
@@ -1525,6 +1526,63 @@ function collectReassignedNames(body: readonly Stmt[], out: Set<string>): Set<st
         return;
       case "ForStmt":
       case "ForInStmt":
+      case "WhileStmt":
+        for (const s of stmt.body) visitStmt(s);
+        return;
+      case "SwitchStmt":
+        for (const c of stmt.cases) for (const s of c.body) visitStmt(s);
+        return;
+      default:
+        return;
+    }
+  };
+  for (const stmt of body) visitStmt(stmt);
+  return out;
+}
+
+// The names a function body declares, at any depth: `=` and var declarations, tuple declarations,
+// and loop headers (nested blocks and control-flow expressions included).
+function collectDeclaredNames(body: readonly Stmt[], out: Set<string>): Set<string> {
+  const visitExpr = (expr: Expr): void => {
+    switch (expr.kind) {
+      case "IfStmt":
+      case "ForStmt":
+      case "WhileStmt":
+      case "SwitchStmt":
+        visitStmt(expr);
+        return;
+      default:
+        return;
+    }
+  };
+  const visitStmt = (stmt: Stmt): void => {
+    switch (stmt.kind) {
+      case "Assignment":
+        if (stmt.operator === "=") out.add(stmt.name);
+        visitExpr(stmt.value);
+        return;
+      case "VarDecl":
+        out.add(stmt.name);
+        visitExpr(stmt.value);
+        return;
+      case "TupleDestructure":
+        for (const n of stmt.names) out.add(n);
+        visitExpr(stmt.value);
+        return;
+      case "IfStmt":
+        for (const s of stmt.thenBody) visitStmt(s);
+        for (const clause of stmt.elifClauses) for (const s of clause.body) visitStmt(s);
+        if (stmt.elseBody) for (const s of stmt.elseBody) visitStmt(s);
+        return;
+      case "ForStmt":
+        out.add(stmt.varName);
+        for (const s of stmt.body) visitStmt(s);
+        return;
+      case "ForInStmt":
+        out.add(stmt.varName);
+        if (stmt.indexName !== null) out.add(stmt.indexName);
+        for (const s of stmt.body) visitStmt(s);
+        return;
       case "WhileStmt":
         for (const s of stmt.body) visitStmt(s);
         return;
@@ -5073,13 +5131,8 @@ function prepassInferParamUdtTypesFromCallSites(script: Script, prog: AnalyzedPr
     }
   };
   scanDecls(script.body);
-  if (
-    topLevelUdtVars.size === 0 &&
-    arrayElemTypeByName.size === 0 &&
-    arrayElemDrawingTypeByName.size === 0 &&
-    topLevelContainerVars.size === 0
-  )
-    return;
+  // (No early return when no top-level name above is known: a parameter declared with a type keyword
+  // and passed on to another function is a known argument too; see forwardEdges below.)
 
   // funcName -> 파라미터 위치별 후보(undefined=미발견, string=단일 후보, null=콜사이트간 불일치)
   const paramCandidates = new Map<string, (string | null | undefined)[]>();
@@ -5110,6 +5163,48 @@ function prepassInferParamUdtTypesFromCallSites(script: Script, prog: AnalyzedPr
     if (objType === undefined) return null;
     const fieldType = prog.udtTypes.get(objType)?.fields.find((f) => f.name === expr.attr)?.typeHint;
     return fieldType !== undefined && DRAWING_ALL_NAMESPACES.has(fieldType) ? (fieldType as DrawingKind) : null;
+  };
+  // One more argument for a parameter slot: undefined = no call seen, a value = every call so far
+  // agrees on it, null = two calls disagree. Returns whether the slot changed.
+  const mergeSlot = <T,>(slots: (T | null | undefined)[], i: number, v: T | null): boolean => {
+    const cur = slots[i];
+    const next = cur === undefined ? v : cur === null || v === null || cur !== v ? null : cur;
+    if (next === cur) return false;
+    slots[i] = next;
+    return true;
+  };
+  // A parameter passed on to another function is an argument of known type too
+  // (language_user-defined-functions.txt "Type keywords": "If a function parameter does not have a
+  // type keyword in its declaration, its type is initially undefined. In each separate call to the
+  // function, the parameter automatically inherits the same type as its specified argument."): in
+  // `f(p) => g(p)`, g's parameter has the type f's parameter has. A parameter declared with a type
+  // keyword has that type, applied at once; one without has the type f's own calls give it, found by
+  // this same scan, so the pass is an edge from f's slot to g's, followed to a fixed point once every
+  // call has been seen (forwardEdges below). A name the body declares again is not followed: which
+  // value the call reads would depend on the block.
+  const forwardEdges: { fromFunc: string; fromIdx: number; toFunc: string; toIdx: number }[] = [];
+  let enclosing: { decl: FuncDecl | MethodDecl; redeclared: ReadonlySet<string> } | null = null;
+  const considerForwardedParam = (toFunc: string, toIdx: number, name: string): void => {
+    if (enclosing === null || enclosing.redeclared.has(name)) return;
+    const { decl } = enclosing;
+    const fromIdx = decl.params.findIndex((p) => p.name === name);
+    if (fromIdx < 0) return;
+    const hint = decl.params[fromIdx]!.typeHint;
+    if (hint === null) {
+      // A method's own untyped parameters get no type from its calls in this scan.
+      if (decl.kind === "FuncDecl") forwardEdges.push({ fromFunc: decl.name, fromIdx, toFunc, toIdx });
+      return;
+    }
+    const base = stripParamQualifierPrefix(hint);
+    const udtType = resolveParamUdtTypeHint(hint, prog);
+    if (udtType !== undefined) mergeSlot(paramCandidates.get(toFunc)!, toIdx, udtType);
+    const elemUdtType = arrayUdtElemType(base, prog);
+    if (elemUdtType !== null) mergeSlot(arrayElemParamCandidates.get(toFunc)!, toIdx, elemUdtType);
+    const elemDrawingKind = arrayDrawingElemType(base);
+    if (elemDrawingKind !== null) mergeSlot(arrayElemDrawingParamCandidates.get(toFunc)!, toIdx, elemDrawingKind);
+    const containerKind = containerKindFromTypeHint(hint);
+    if (containerKind !== null) mergeSlot(containerParamCandidates.get(toFunc)!, toIdx, containerKind);
+    if (DRAWING_ALL_NAMESPACES.has(base)) mergeSlot(drawingParamCandidates.get(toFunc)!, toIdx, base as DrawingKind);
   };
   const considerCall = (funcName: string, args: Expr[], localShadow: ReadonlySet<string>): void => {
     const info = prog.funcs.get(funcName);
@@ -5145,7 +5240,10 @@ function prepassInferParamUdtTypesFromCallSites(script: Script, prog: AnalyzedPr
       if (info.paramTypeHints.get(paramName) !== null) return; // 이미 명시 힌트 있음(UDT든 아니든) — 건드리지 않음
       // C644: 콜사이트가 다른 UDF/method 본문 안(중첩 호출)이면 그 함수 자신의 파라미터 이름이
       // top-level 이름을 로컬 섀도잉할 수 있다 — 이름이 같아도 그 함수 안에서는 다른 값이므로 스킵.
-      if (argExpr.kind === "Identifier" && localShadow.has(argExpr.name)) return;
+      if (argExpr.kind === "Identifier" && localShadow.has(argExpr.name)) {
+        considerForwardedParam(funcName, i, argExpr.name);
+        return;
+      }
       if (argExpr.kind === "DotAccess" && argExpr.obj.kind === "Identifier" && localShadow.has(argExpr.obj.name)) return;
       if (argExpr.kind === "Identifier") {
         const udtType = topLevelUdtVars.get(argExpr.name);
@@ -5299,7 +5397,10 @@ function prepassInferParamUdtTypesFromCallSites(script: Script, prog: AnalyzedPr
           // color_lines(c.line_mid1, ...) 호출) param 타입 역추론이 미치도록 재귀 — 그 함수 자신의
           // 파라미터 이름은 로컬 섀도잉이라 top-level 이름과 동명이어도 조회 대상에서 제외한다
           // (전역 shadow()는 프리패스 전체를 영구 오염시켜 부적합, 이 호출 한정 지역 Set만 확장).
+          // Definitions are global-scope only ("No nested definitions"), so `enclosing` is this one.
+          enclosing = { decl: stmt, redeclared: collectDeclaredNames(stmt.body, new Set()) };
           visitStmts(stmt.body, new Set([...localShadow, ...stmt.params.map((p) => p.name)]));
+          enclosing = null;
           break;
         default:
           break; // TypeDecl/EnumDecl/Break/Continue: 무관
@@ -5307,6 +5408,26 @@ function prepassInferParamUdtTypesFromCallSites(script: Script, prog: AnalyzedPr
     }
   };
   visitStmts(script.body, new Set());
+
+  // Parameters passed on (considerForwardedParam): each edge carries every axis of its source slot to
+  // its target slot until nothing changes. A slot only moves from undefined to a value to null, so
+  // this ends.
+  const forwardedAxes = [
+    paramCandidates,
+    arrayElemParamCandidates,
+    arrayElemDrawingParamCandidates,
+    containerParamCandidates,
+    drawingParamCandidates,
+  ] as Map<string, (string | null | undefined)[]>[];
+  for (let changed = forwardEdges.length > 0; changed; ) {
+    changed = false;
+    for (const e of forwardEdges) {
+      for (const axis of forwardedAxes) {
+        const from = axis.get(e.fromFunc)?.[e.fromIdx];
+        if (from !== undefined && mergeSlot(axis.get(e.toFunc)!, e.toIdx, from)) changed = true;
+      }
+    }
+  }
 
   for (const [funcName, slots] of paramCandidates) {
     const info = prog.funcs.get(funcName)!;

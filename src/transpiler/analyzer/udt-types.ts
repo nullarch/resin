@@ -249,7 +249,7 @@ export function lookupMethodOverload(
 // 이뤄져 `series Pivot this`/`series Settings s`류 한정자 명시 매개변수가 UDT로 전혀 인식되지 않는
 // 실제 버그였다(wild 29b3b91c4388.pine 실측 -- method 8개 전부 첫 매개변수 거부 + 무관 UDF의
 // 한정자 명시 UDT 매개변수 필드 읽기 전부 거부, C486 후속 조사로 발견).
-function stripParamQualifierPrefix(typeHint: string): string {
+export function stripParamQualifierPrefix(typeHint: string): string {
   const trimmed = typeHint.trim();
   const spaceIdx = trimmed.indexOf(" ");
   if (spaceIdx === -1) return trimmed;

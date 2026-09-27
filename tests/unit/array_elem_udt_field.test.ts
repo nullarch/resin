@@ -626,7 +626,12 @@ describe("array<UDT> element field access (C341)", () => {
     expect(result.errors.join(" ")).toMatch(/namespace access supported only as a call expression/);
   });
 
-  it("still rejects field access when the array<UDT> container reaches the callee only transitively through another function's own untyped parameter (C469 documents this as a remaining gap, exact wild 3c1081fa6ee1.pine idiom — the call-site scan never enters FuncDecl bodies, so `outer(topLevelArr) => inner(topLevelArr)` isn't traced)", () => {
+  // This used to assert a gap (C469: the container reaching the callee only through another function's
+  // own untyped parameter was not traced). An untyped parameter "inherits the same type as its specified
+  // argument" in each call (language_user-defined-functions.txt "Type keywords"), the calling function's
+  // parameter included; the oracle agrees on a UDT array passed on this way (resin-harness
+  // state/repros/forwarded-param-type.json, channel t5, and twin probe L54).
+  it("resolves field access when the array<UDT> container reaches the callee through another function's own untyped parameter (exact wild 3c1081fa6ee1.pine idiom, `outer(topLevelArr) => inner(topLevelArr)`)", () => {
     const source = udtSource(
       [
         "var array<OrderBlock> obs = array.new<OrderBlock>()",
@@ -640,9 +645,10 @@ describe("array<UDT> element field access (C341)", () => {
       ].join("\n"),
     );
     const result = transpile(source);
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.errors.join(" ")).toMatch(/namespace access supported only as a call expression/);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const { bars } = run(result.code, result.varSlots, result.taSlotCount, DATA, result.fnVarSlotCount);
+    expect(bars.map((b) => b["var:__obs"])).toEqual([1.0, 1.0, 1.0]);
   });
 
   // C491: 위 테스트들의 UDF 반환 array<UDT>는 전부 array.get()/array.copy() 등 CallExpr 경유로

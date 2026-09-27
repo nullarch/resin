@@ -24296,6 +24296,121 @@ describe("array.from(...) elements take their arguments' type", () => {
   });
 });
 
+// A parameter without a type keyword "inherits the same type as its specified argument" in each call
+// (language_user-defined-functions.txt "Type keywords"), and an argument can be the calling function's
+// own parameter: `f(p) => g(p)` gives g's parameter the type f's has. Oracle-checked by resin-harness
+// state/repros/forwarded-param-type.json and its twin probe L54 (realworld dad04a602d98:
+// `_extend(_x, _len) => for l in _x` reached only as `_extend(_l, set)` inside `_scan(_l, ...)`).
+describe("a parameter passed on to another function gives it its type", () => {
+  const scanDefs = [
+    "sumY(xs) =>",
+    "    s = 0.0",
+    "    for l in xs",
+    "        s += l.get_y1()",
+    "    s",
+    "ext(xs, v) =>",
+    "    for l in xs",
+    "        l.set_y1(v)",
+    "    sumY(xs)",
+    "scan(ls, v) =>",
+    "    r = ext(ls, v)",
+    "    r * 10 + sumY(ls)",
+  ];
+
+  it("types a line[] passed through two functions (for-in over it, line methods on its items)", () => {
+    const prog = analyze(
+      parse([...scanDefs, "var line[] a = array.new_line()", "t = scan(a, close)"].join("\n")),
+    );
+    expect(prog.errors).toEqual([]);
+    expect([...prog.builtinCalls.values()]).toContain("line.set_y1");
+    expect([...prog.builtinCalls.values()]).toContain("line.get_y1");
+  });
+
+  it("runs the forwarded line[] on every bar", () => {
+    const source = [
+      "//@version=5",
+      'indicator("t")',
+      ...scanDefs,
+      "var line[] a = array.new_line()",
+      "if barstate.isfirst",
+      "    a.push(line.new(0, 1.0, 1, 2.0))",
+      "    a.push(line.new(0, 3.0, 1, 4.0))",
+      'plot(scan(a, close), "T")',
+    ].join("\n");
+    const result = transpile(source);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const close = [1, 2, 3, 2, 4, 5];
+    const data: OHLCVData = { open: close, high: close, low: close, close, volume: close };
+    const { plots } = run(
+      result.code,
+      result.varSlots,
+      result.taSlotCount,
+      data,
+      result.fnVarSlotCount,
+      result.historySlotCount,
+      result.taScratchSize,
+      {},
+      result.plotTitles,
+    );
+    // ext sets both lines' y1 to close: ext returns 2 * close, scan 10 * 2 * close + 2 * close.
+    expect(plots).toEqual([{ title: "T", values: close.map((c) => 22 * c) }]);
+  });
+
+  it("passes on the type of a parameter declared with a type keyword (float[], line, a UDT)", () => {
+    const prog = analyze(
+      parse(
+        [
+          "type P",
+          "    float v = 0.0",
+          "wsum(ys) =>",
+          "    s = 0.0",
+          "    for [i, y] in ys",
+          "        s += y * (i + 1)",
+          "    s",
+          "tot(float[] xs) =>",
+          "    wsum(xs)",
+          "ly(l) =>",
+          "    l.get_y2()",
+          "lget(line l) =>",
+          "    ly(l)",
+          "getv(p) =>",
+          "    p.v",
+          "twice(P p) =>",
+          "    getv(p) * 2",
+          "t = tot(array.from(high, low))",
+          "u = lget(line.new(0, 1.0, 1, 2.0))",
+          "w = twice(P.new(close))",
+        ].join("\n"),
+      ),
+    );
+    expect(prog.errors).toEqual([]);
+    expect([...prog.builtinCalls.values()]).toContain("line.get_y2");
+  });
+
+  it("leaves a parameter untyped when a passed-on call and a direct call disagree (array vs map)", () => {
+    const prog = analyze(
+      parse(
+        [
+          "cnt(x) =>",
+          "    n = 0",
+          "    for e in x",
+          "        n += 1",
+          "    n",
+          "via(y) =>",
+          "    cnt(y)",
+          "var float[] arr = array.new_float()",
+          "var map<string, float> mp = map.new<string, float>()",
+          "a = via(arr)",
+          "b = cnt(mp)",
+        ].join("\n"),
+      ),
+    );
+    expect(prog.errors.some((e) => e.includes("for-in loop iterable type cannot be statically determined"))).toBe(true);
+  });
+});
+
 // ── array<label/line/box/table/linefill>에서 원소 하나를 뽑는 콜(array.get/pop/shift/first/last/
 // remove, C341 ARRAY_ELEM_RETURNING_METHODS 재사용)을 받는 '=' 로컬의 drawing method-call sugar
 // (C353, ROADMAP P4 next_hint(C352) 1순위 — wild "지원하지 않는 호출" 클러스터
