@@ -4474,12 +4474,10 @@ describe("ta.lowestbars", () => {
   });
 });
 
-// ta.cog(source, length) — Center of Gravity. pine2py wavealgo/ta/cog.py: num=Σsource.get(i)*(i+1)
-// (i=0=current bar, weight 1..i=length-1=oldest bar, weight length), denom=Σsource.get(i)(=state.sum),
-// result=-num/denom (negative sign). No new state shape: reuses rt.ta.wma's internal running totals
-// (state.sum/state.weightedSum) via the identity num=(length+1)*state.sum-state.weightedSum, same
-// "compose from an already-implemented TA" principle as linreg (C41). scratch/probe_cog.mjs
-// cross-checked this identity against a literal brute-force port of cog.py.
+// ta.cog(source, length) — Center of Gravity: num=Σsource[i]*(i+1) (i=0 the newest value, weight 1;
+// i=length-1 the oldest, weight length), result=-num/Σsource[i], over the last `length` non-na values
+// (ref_v6_ta_math.txt ta.cog: "`na` values in the `source` series are ignored"; harness
+// state/repros/cog-na-window.json).
 describe("ta.cog", () => {
   it("returns NaN while the window is still filling (length=2)", () => {
     const state = {};
@@ -4518,13 +4516,15 @@ describe("ta.cog", () => {
     expect(cog(stateB, 50, 2)).toBeNaN(); // stateB's own window still filling
   });
 
-  it("returns NaN when the window contains a NaN (poison window, same class as ta.highest)", () => {
+  // The oracle (harness state/repros/cog-na-window.json, c3/c5) keeps the last `length` non-na values:
+  // an na bar joins nothing, so the window fills on the third non-na value, not the third bar after it.
+  it("skips an na source: the window is the last length non-na values", () => {
     const state = {};
     cog(state, 10, 3);
-    cog(state, NaN, 3);
-    expect(cog(state, 20, 3)).toBeNaN(); // window still has the NaN at position get(2)
-    expect(cog(state, 30, 3)).toBeNaN(); // window=[NaN,20,30]
-    expect(cog(state, 40, 3)).toBeCloseTo(-1.7777777777777777, 9); // window=[20,30,40], NaN evicted
+    expect(cog(state, NaN, 3)).toBeNaN(); // one non-na value so far
+    expect(cog(state, 20, 3)).toBeNaN(); // two
+    expect(cog(state, 30, 3)).toBeCloseTo(-100 / 60, 9); // window=[10,20,30]: 30*1+20*2+10*3=100
+    expect(cog(state, 40, 3)).toBeCloseTo(-1.7777777777777777, 9); // window=[20,30,40]
   });
 
   it("length=1 degenerate case: result is -1 unless the single value is 0 (denom===0 -> NaN)", () => {
@@ -4540,16 +4540,18 @@ describe("ta.cog", () => {
     expect(cog(state, -3, 2)).toBeNaN(); // window=[3,-3], sum=0
   });
 
-  it("keeps returning NaN until the NaN spike is fully evicted from a longer window (length=4)", () => {
+  // cog-na-window.json g1/g3/g5: past the warm-up an na bar answers the value the window held.
+  it("answers the held value on an na bar once the window is full (length=4)", () => {
     const state = {};
     cog(state, 1, 4);
     cog(state, 2, 4);
     cog(state, 3, 4);
-    expect(cog(state, NaN, 4)).toBeNaN(); // buffer now [1,2,3,NaN]
-    // buffer's circular writeIdx only overwrites slots 0/1 next (values 4/5) — the NaN slot isn't
-    // due for eviction yet, so the whole window stays poisoned for two more calls.
-    expect(cog(state, 4, 4)).toBeNaN();
-    expect(cog(state, 5, 4)).toBeNaN();
+    expect(cog(state, NaN, 4)).toBeNaN(); // still three non-na values
+    expect(cog(state, 4, 4)).toBeCloseTo(-2, 9); // window=[1,2,3,4]: 4+6+6+4=20, sum 10
+    expect(cog(state, 5, 4)).toBeCloseTo(-30 / 14, 9); // window=[2,3,4,5]
+    expect(cog(state, NaN, 4)).toBeCloseTo(-30 / 14, 9); // held
+    expect(cog(state, NaN, 4)).toBeCloseTo(-30 / 14, 9);
+    expect(cog(state, 6, 4)).toBeCloseTo(-40 / 18, 9); // window=[3,4,5,6]: 6+10+12+12=40, sum 18
   });
 
   it("matches a from-scratch brute-force cross-check (literal pine2py cog.py port) across a longer randomized-ish sequence (length=4)", () => {

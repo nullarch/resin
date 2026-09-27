@@ -522,13 +522,10 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // skipped, na volume stores nothing) is in the runtime/ta.ts mfi() comment. A series length takes
   // mfiVarLen.
   mfi: { dispatch: "ta", displayName: "ta.mfi", argCount: 2, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.mfi" },
-  // ta.cog(source, length) — Center of Gravity. pine2py wavealgo/ta/cog.py 소스 대조 결과
-  // num=Σsource.get(i)*(i+1)/denom=Σsource.get(i)에 대해 result=-num/denom(음수 부호), 창 안
-  // 하나라도 NaN이거나 데이터 부족이면 NaN(highest.py와 동일한 poison window 계열). runtime/ta.ts
-  // cog() 주석 참조 — rt.ta.wma의 내부 state.sum/weightedSum을 항등식으로 읽는 linreg(C41)와
-  // 동일한 합성 원칙. length가 내부 WmaState 버퍼 크기를 결정하므로 sma와 동일하게 lengthArgIndex: 1
-  // (series 하드 에러). codegen 특수 분기 불필요(source/length 2개 인자 그대로 순서대로 전달, volume
-  // 등 암묵 주입 없음 — mfi/vwma/wpr과 다른 지점). The reference types the length `series int`; a
+  // ta.cog(source, length) — Center of Gravity, -num / sum over the last `length` non-na values (the
+  // rule is in the runtime/ta.ts cog() comment). The length sizes that window's ring, so it takes
+  // lengthArgIndex: 1 like sma. No codegen special case (source and length passed in order, nothing
+  // injected — unlike mfi/vwma/wpr). The reference types the length `series int`; a
   // series length stays rejected while the oracle's machine for it is disputed (its running weighted
   // sum assumes the length never changes, where the manual's pine_cog recomputes each bar).
   cog: { dispatch: "ta", displayName: "ta.cog", argCount: 2, lengthArgIndex: 1, conditionalForbidden: true, rtPath: "rt.ta.cog" },

@@ -382,62 +382,6 @@ export function wma(state: WmaState, value: number, length: number): number {
   return summ / ((length * (length + 1)) / 2);
 }
 
-export interface CogWindowState {
-  buffer?: number[];
-  writeIdx?: number;
-  sum?: number;
-  weightedSum?: number;
-}
-
-// The running sums ta.cog composes (see cog below): a fixed-width window of the last `length` calls
-// whose plain sum and weighted sum (weight(oldest)=1 ... weight(newest)=length) are updated in O(1)
-//   S_{t+1} = S_t - Sum_t + newValue*length   (S=weighted sum, Sum=plain sum of the window before this bar)
-// Derivation: dropping the oldest element a_1 (weight 1) shifts every remaining element's weight down by
-// 1 and appends newValue at weight=length: S_{t+1} = sum_{i=2..L} a_i*(i-1) + newValue*L
-// = (S_t - a_1) - (Sum_t - a_1) + newValue*L = S_t - Sum_t + newValue*L (a_1 cancels). An na in the
-// window makes both sums na until it leaves. This was ta.wma's machine before wma took the oracle's
-// forward-filled window; cog's own na rule (the oracle's na-compacted window, lib/ta.py cog) is not
-// this one and is left to its own fix.
-function cogWindow(state: CogWindowState, value: number, length: number): number {
-  length = Math.trunc(length);
-  if (state.buffer === undefined) {
-    state.buffer = new Array(length).fill(NaN);
-    state.writeIdx = 0;
-    state.sum = NaN;
-    state.weightedSum = NaN;
-  }
-  const buffer = state.buffer;
-  const writeIdx = state.writeIdx!;
-  const oldVal = buffer[writeIdx]!;
-  buffer[writeIdx] = value;
-  state.writeIdx = (writeIdx + 1) % length;
-
-  if (Number.isNaN(value) || Number.isNaN(oldVal) || Number.isNaN(state.sum!)) {
-    let total = 0;
-    let weightedTotal = 0;
-    let hasNaN = false;
-    const oldestPos = state.writeIdx;
-    for (let i = 0; i < length; i++) {
-      const v = buffer[(oldestPos + i) % length]!;
-      if (Number.isNaN(v)) {
-        hasNaN = true;
-        break;
-      }
-      total += v;
-      weightedTotal += v * (i + 1);
-    }
-    state.sum = hasNaN ? NaN : total;
-    state.weightedSum = hasNaN ? NaN : weightedTotal;
-  } else {
-    const prevSum = state.sum!;
-    state.sum = prevSum - oldVal + value;
-    state.weightedSum = state.weightedSum! - prevSum + value * length;
-  }
-
-  const weightTotal = (length * (length + 1)) / 2;
-  return state.weightedSum! / weightTotal;
-}
-
 export interface AlmaState {
   buffer?: number[];
   writeIdx?: number;
@@ -502,30 +446,54 @@ export function alma(state: AlmaState, value: number, length: number, offsetMult
 }
 
 export interface CogState {
-  inner?: CogWindowState;
+  buffer?: number[];
+  writeIdx?: number;
+  count?: number;
+  sum?: number;
+  weightedSum?: number;
+  value?: number;
 }
 
-// ta.cog - Center of Gravity oscillator: cog = -num/denom over a fixed window, where (pine2py
-// wavealgo/ta/cog.py, get(i) 표기, i=0=현재바(최신)..i=length-1=가장 오래된 바)
-// num=Σ source.get(i)*(i+1) (newest weight=1, oldest weight=length), denom=Σ source.get(i)(=state.sum).
-// This positional weighting is the exact mirror of the weight(oldest)=1..weight(newest)=length
-// convention (get(i) 표기로는 wma_weight(i)=length-i) — rather than deriving a new O(1) recurrence,
-// reuse cogWindow's running totals (state.sum=Σv_i, state.weightedSum=Σv_i*(length-i)) via the identity
-//   weightedSum = Σv_i*(length-i) = length*S - Σ(v_i*i)  =>  Σ(v_i*i) = length*S - weightedSum
-//   num = Σv_i*(i+1) = Σ(v_i*i) + S = (length+1)*S - weightedSum
-// (derivation verified against a brute-force port with scratch/probe_cog.mjs — sample10/tie/
-// zero-sum-denom/embedded-NaN/length=1/5,000-sample fuzz). denom(=S)===0 → NaN (distinct zero-sum
-// guard, same shape as cmo's denom===0 but returns NaN here instead of cmo's 0.0-return case).
+// ta.cog - Center of Gravity: -num / sum over the window, num = Σ source[i] * (i + 1) with i = 0 the
+// newest value (ref_v6_ta_math.txt pine_cog: `num := num + price * (i + 1)`, `-num / sum`).
+// The window is the last `length` NON-na values: "`na` values in the `source` series are ignored"
+// (ref_v6_ta_math.txt ta.cog). An na bar stores nothing and answers the value the window held; the
+// warm-up lasts until `length` non-na values exist (state/repros/cog-na-window.json, oracle lib/ta.py
+// cog "NA values are NOT stored in the buffer, only skipped"). The ring holds those values, so the one
+// leaving is the one `length` non-na values back. Running sums in the oracle's arithmetic:
+// weightedSum = Σ source[i] * i, and each new value shifts every weight up by one, i.e.
+// weightedSum += sum - length * leaving; the result is -weightedSum / sum - 1. A zero sum gives na.
 export function cog(state: CogState, value: number, length: number): number {
-  if (state.inner === undefined) {
-    state.inner = {};
+  length = Math.trunc(length);
+  if (state.buffer === undefined) {
+    state.buffer = new Array(length).fill(NaN);
+    state.writeIdx = 0;
+    state.count = 0;
+    state.sum = 0;
+    state.weightedSum = 0;
+    state.value = NaN;
   }
-  const wmaVal = cogWindow(state.inner, value, length);
-  if (Number.isNaN(wmaVal)) return NaN;
-  const sum = state.inner.sum!;
-  if (sum === 0) return NaN;
-  const num = (length + 1) * sum - state.inner.weightedSum!;
-  return -num / sum;
+  if (Number.isNaN(value)) return state.count! < length ? NaN : state.value!;
+  const buffer = state.buffer;
+  const writeIdx = state.writeIdx!;
+  if (state.count! < length) {
+    state.count! += 1;
+    state.sum! += value;
+    state.weightedSum! += value * (length - state.count!);
+    buffer[writeIdx] = value;
+    state.writeIdx = (writeIdx + 1) % length;
+    if (state.count! < length) return NaN;
+  } else {
+    const leaving = buffer[writeIdx]!;
+    const sum = state.sum!;
+    state.weightedSum = state.weightedSum! + sum - length * leaving;
+    state.sum = sum + value - leaving;
+    buffer[writeIdx] = value;
+    state.writeIdx = (writeIdx + 1) % length;
+  }
+  const sum = state.sum!;
+  state.value = sum === 0 ? NaN : -state.weightedSum! / sum - 1;
+  return state.value;
 }
 
 export interface HmaState {
