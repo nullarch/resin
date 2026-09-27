@@ -113,6 +113,9 @@ export class ParseError extends Error {
 export class Parser {
   private tokens: Token[];
   private pos = 0;
+  // Calls that name one keyword argument more than once; parseScript settles them once the
+  // script's version is known (see dropRepeatedKwargs).
+  private repeatedKwargCalls: CallExpr[] = [];
 
   constructor(tokens: Token[]) {
     this.tokens = tokens;
@@ -196,7 +199,25 @@ export class Parser {
       body.push(...this.parseStatementWithCommas());
       this.skipNewlines();
     }
+    if ((version ?? 1) < 6) this.dropRepeatedKwargs();
     return version === undefined ? { kind: "Script", line: 1, col: 1, body } : { kind: "Script", line: 1, col: 1, body, version };
+  }
+
+  // Before v6 a call may name the same keyword argument more than once and the first value
+  // wins (docs/manual/mig6.txt "Cannot repeat parameters": "In v5, you can specify the same
+  // parameter in a function more than once. However, doing so raises a compiler warning, and
+  // only the first value will be used."). The later repeats are dropped here, for every
+  // callee alike; from v6 on they stay, and the analyzer rejects them ("In v6, you can specify
+  // a parameter only once, and doing otherwise will result in a compilation error.").
+  private dropRepeatedKwargs(): void {
+    for (const call of this.repeatedKwargCalls) {
+      const seen = new Set<string>();
+      call.kwargs = call.kwargs.filter((kw) => {
+        if (seen.has(kw.name)) return false;
+        seen.add(kw.name);
+        return true;
+      });
+    }
   }
 
   // import user/library/version [as alias] — 경로/별칭 전부 버린다(위 parseScript 주석 참조).
@@ -1687,7 +1708,9 @@ export class Parser {
           }
         }
         this.expect("RPAREN", "to close call arguments");
-        node = { kind: "CallExpr", callee: node, args, kwargs, line: parenTok.line, col: parenTok.col } satisfies CallExpr;
+        const call: CallExpr = { kind: "CallExpr", callee: node, args, kwargs, line: parenTok.line, col: parenTok.col };
+        if (kwargs.length > 1 && new Set(kwargs.map((kw) => kw.name)).size < kwargs.length) this.repeatedKwargCalls.push(call);
+        node = call;
         continue;
       }
       // 히스토리 참조: series[n] (예: close[1]). statement 시작의 `[a,b] = expr` 튜플

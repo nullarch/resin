@@ -3521,3 +3521,39 @@ describe("ANNOTATION tokens do not block INDENT-opening constructs (C317)", () =
     expect(stmt.thenBody[0]).toMatchObject({ kind: "VarDecl", name: "dashboard" });
   });
 });
+
+// mig6.txt "Cannot repeat parameters": "In v5, you can specify the same parameter in a function more
+// than once. However, doing so raises a compiler warning, and only the first value will be used."
+// "In v6, you can specify a parameter only once, and doing otherwise will result in a compilation
+// error." Values checked against the oracle by harness probe suites/lang/probes/L39.json.
+describe("A keyword argument named twice in one call", () => {
+  const lastCall = (src: string) => {
+    const body = parse(src).body;
+    return (body[body.length - 1] as ExprStmt).expr as CallExpr;
+  };
+
+  it("keeps the first value before v6 (the manual's example)", () => {
+    const call = lastCall('//@version=5\nplot(close, "Close", color = color.blue, linewidth = 2, color = color.red)');
+    expect(call.kwargs.map((kw) => kw.name)).toEqual(["color", "linewidth"]);
+    expect(call.kwargs[0]!.value).toMatchObject({ kind: "DotAccess", attr: "blue" });
+  });
+
+  it("keeps the first value in a strategy() declaration and in a nested call", () => {
+    const decl = lastCall(
+      "//@version=5\nstrategy(\"s\", default_qty_type=strategy.percent_of_equity, default_qty_type=strategy.cash)",
+    );
+    expect(decl.kwargs).toHaveLength(1);
+    expect(decl.kwargs[0]!.value).toMatchObject({ kind: "DotAccess", attr: "percent_of_equity" });
+    const outer = lastCall("//@version=5\nplot(ta.sma(close, length=2, length=4))");
+    expect((outer.args[0] as CallExpr).kwargs).toHaveLength(1);
+    expect((outer.args[0] as CallExpr).kwargs[0]!.value).toMatchObject({ kind: "NumberLiteral", value: 2 });
+  });
+
+  it("keeps the first value in a script without a version annotation", () => {
+    expect(lastCall("plot(close, color=color.blue, color=color.red)").kwargs).toHaveLength(1);
+  });
+
+  it("keeps every repeat from v6 on, for the analyzer to reject", () => {
+    expect(lastCall("//@version=6\nplot(close, color=color.blue, color=color.red)").kwargs).toHaveLength(2);
+  });
+});

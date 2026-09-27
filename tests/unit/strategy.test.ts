@@ -23,6 +23,11 @@ function transpileErrors(source: string): string[] {
   return r.ok ? [] : r.errors;
 }
 
+// Tests of a keyword argument named twice declare v6: before v6 the first value wins and the
+// repeat is dropped (mig6.txt "Cannot repeat parameters"; harness probe suites/lang/probes/L39.json),
+// from v6 on it is a compilation error.
+const V6 = "//@version=6\n";
+
 function transpileCode(source: string): string {
   const r = transpile(source);
   if (!r.ok) throw new Error(`transpile failed: ${r.errors.join("; ")}`);
@@ -727,7 +732,7 @@ describe("strategy.* analyzer validation", () => {
 
   it("rejects duplicate disable_alert= kwarg on strategy.entry", () => {
     const errors = transpileErrors(
-      'strategy("s")\nstrategy.entry("L", strategy.long, disable_alert=true, disable_alert=false)',
+      V6 + 'strategy("s")\nstrategy.entry("L", strategy.long, disable_alert=true, disable_alert=false)',
     );
     expect(errors.some((e) => e.includes("duplicate keyword argument 'disable_alert'"))).toBe(true);
   });
@@ -785,7 +790,7 @@ describe("strategy.* analyzer validation", () => {
   });
 
   it("rejects duplicate when= kwarg on strategy.entry", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.entry("L", strategy.long, when=true, when=false)');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.entry("L", strategy.long, when=true, when=false)');
     expect(errors.some((e) => e.includes("duplicate keyword argument 'when'"))).toBe(true);
   });
 
@@ -798,13 +803,13 @@ describe("strategy.* analyzer validation", () => {
 
   it("rejects duplicate alert_message= kwarg on strategy.entry", () => {
     const errors = transpileErrors(
-      'strategy("s")\nstrategy.entry("L", strategy.long, alert_message="a", alert_message="b")',
+      V6 + 'strategy("s")\nstrategy.entry("L", strategy.long, alert_message="a", alert_message="b")',
     );
     expect(errors.some((e) => e.includes("duplicate keyword argument 'alert_message'"))).toBe(true);
   });
 
   it("rejects duplicate limit= kwarg", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.entry("L", strategy.long, limit=1, limit=2)');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.entry("L", strategy.long, limit=1, limit=2)');
     expect(errors.some((e) => e.includes("duplicate keyword argument 'limit'"))).toBe(true);
   });
 
@@ -861,7 +866,7 @@ describe("strategy.* analyzer validation", () => {
   });
 
   it("rejects duplicate id= kwarg on strategy.cancel", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.cancel(id="L", id="M")');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.cancel(id="L", id="M")');
     expect(errors.some((e) => e.includes("duplicate keyword argument 'id'"))).toBe(true);
   });
 
@@ -877,7 +882,7 @@ describe("strategy.* analyzer validation", () => {
   });
 
   it("rejects duplicate when= kwarg on strategy.cancel", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.cancel("L", when=true, when=false)');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.cancel("L", when=true, when=false)');
     expect(errors.some((e) => e.includes("duplicate keyword argument 'when'"))).toBe(true);
   });
 
@@ -908,7 +913,7 @@ describe("strategy.* analyzer validation", () => {
   });
 
   it("rejects duplicate qty= kwarg", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.entry("L", strategy.long, qty=2, qty=3)');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.entry("L", strategy.long, qty=2, qty=3)');
     expect(errors.some((e) => e.includes("duplicate keyword argument 'qty'"))).toBe(true);
   });
 
@@ -2073,7 +2078,7 @@ describe("strategy.exit analyzer validation (C167)", () => {
 
   it("rejects duplicate alert_message= kwarg on strategy.exit", () => {
     const errors = transpileErrors(
-      'strategy("s")\nstrategy.exit("X", limit=15, alert_message="a", alert_message="b")',
+      V6 + 'strategy("s")\nstrategy.exit("X", limit=15, alert_message="a", alert_message="b")',
     );
     expect(errors.some((e) => e.includes("duplicate keyword argument 'alert_message'"))).toBe(true);
   });
@@ -2091,17 +2096,17 @@ describe("strategy.exit analyzer validation (C167)", () => {
 
   it("rejects duplicate alert_profit=/alert_loss=/disable_alert= kwargs on strategy.exit", () => {
     expect(
-      transpileErrors('strategy("s")\nstrategy.exit("X", limit=15, alert_profit="a", alert_profit="b")').some((e) =>
+      transpileErrors(V6 + 'strategy("s")\nstrategy.exit("X", limit=15, alert_profit="a", alert_profit="b")').some((e) =>
         e.includes("duplicate keyword argument 'alert_profit'"),
       ),
     ).toBe(true);
     expect(
-      transpileErrors('strategy("s")\nstrategy.exit("X", limit=15, alert_loss="a", alert_loss="b")').some((e) =>
+      transpileErrors(V6 + 'strategy("s")\nstrategy.exit("X", limit=15, alert_loss="a", alert_loss="b")').some((e) =>
         e.includes("duplicate keyword argument 'alert_loss'"),
       ),
     ).toBe(true);
     expect(
-      transpileErrors('strategy("s")\nstrategy.exit("X", limit=15, disable_alert=true, disable_alert=false)').some((e) =>
+      transpileErrors(V6 + 'strategy("s")\nstrategy.exit("X", limit=15, disable_alert=true, disable_alert=false)').some((e) =>
         e.includes("duplicate keyword argument 'disable_alert'"),
       ),
     ).toBe(true);
@@ -2141,7 +2146,7 @@ describe("strategy.exit analyzer validation (C167)", () => {
   });
 
   it("rejects duplicate stop= kwarg on strategy.exit", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.exit("X", stop=9, stop=8)');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.exit("X", stop=9, stop=8)');
     expect(errors.some((e) => e.includes("duplicate keyword argument 'stop'"))).toBe(true);
   });
 
@@ -2770,7 +2775,7 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
 
   it("rejects duplicate disable_alert= kwarg on strategy.close_all", () => {
     const errors = transpileErrors(
-      'strategy("s")\nstrategy.close_all(disable_alert=true, disable_alert=false)',
+      V6 + 'strategy("s")\nstrategy.close_all(disable_alert=true, disable_alert=false)',
     );
     expect(errors.some((e) => e.includes("duplicate keyword argument 'disable_alert'"))).toBe(true);
   });
@@ -2787,7 +2792,7 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
 
   it("rejects duplicate alert_message= kwarg on strategy.close_all", () => {
     const errors = transpileErrors(
-      'strategy("s")\nstrategy.close_all(alert_message="a", alert_message="b")',
+      V6 + 'strategy("s")\nstrategy.close_all(alert_message="a", alert_message="b")',
     );
     expect(errors.some((e) => e.includes("duplicate keyword argument 'alert_message'"))).toBe(true);
   });
@@ -2798,7 +2803,7 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
   });
 
   it("rejects duplicate when= kwarg on strategy.close_all", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.close_all(when=true, when=false)');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.close_all(when=true, when=false)');
     expect(errors.some((e) => e.includes("duplicate keyword argument 'when'"))).toBe(true);
   });
 
@@ -2808,7 +2813,7 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
   });
 
   it("rejects duplicate immediately= kwarg on strategy.close_all", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.close_all(immediately=true, immediately=false)');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.close_all(immediately=true, immediately=false)');
     expect(errors.some((e) => e.includes("duplicate keyword argument 'immediately'"))).toBe(true);
   });
 
@@ -2846,7 +2851,7 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
   });
 
   it("rejects duplicate immediately= kwarg on strategy.close", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.close("L", immediately=true, immediately=false)');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.close("L", immediately=true, immediately=false)');
     expect(errors.some((e) => e.includes("duplicate keyword argument 'immediately'"))).toBe(true);
   });
 
@@ -2855,7 +2860,7 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
   });
 
   it("rejects duplicate alert_message= kwarg on strategy.close", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.close("L", alert_message="a", alert_message="b")');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.close("L", alert_message="a", alert_message="b")');
     expect(errors.some((e) => e.includes("duplicate keyword argument 'alert_message'"))).toBe(true);
   });
 
@@ -2872,12 +2877,12 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
   });
 
   it("rejects duplicate id= kwarg on strategy.close", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.close(id="L", id="M")');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.close(id="L", id="M")');
     expect(errors.some((e) => e.includes("duplicate keyword argument 'id'"))).toBe(true);
   });
 
   it("rejects duplicate qty= kwarg on strategy.close", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.close("L", qty=1, qty=2)');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.close("L", qty=1, qty=2)');
     expect(errors.some((e) => e.includes("duplicate keyword argument 'qty'"))).toBe(true);
   });
 
@@ -2893,7 +2898,7 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
   });
 
   it("rejects duplicate qty= kwarg on strategy.exit", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.exit("X", limit=15, qty=1, qty=2)');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.exit("X", limit=15, qty=1, qty=2)');
     expect(errors.some((e) => e.includes("duplicate keyword argument 'qty'"))).toBe(true);
   });
 });
@@ -3392,12 +3397,12 @@ describe("strategy.order analyzer (C169)", () => {
 
   it("rejects duplicate and positional-keyword conflicting qty", () => {
     expect(
-      transpileErrors('strategy("s")\nstrategy.order("O", strategy.long, limit=1, limit=2)').some((e) =>
+      transpileErrors(V6 + 'strategy("s")\nstrategy.order("O", strategy.long, limit=1, limit=2)').some((e) =>
         e.includes("duplicate keyword argument 'limit'"),
       ),
     ).toBe(true);
     expect(
-      transpileErrors('strategy("s")\nstrategy.order("O", strategy.long, 2, qty=3)').some((e) =>
+      transpileErrors(V6 + 'strategy("s")\nstrategy.order("O", strategy.long, 2, qty=3)').some((e) =>
         e.includes("argument 'qty' specified both positionally and as a keyword"),
       ),
     ).toBe(true);
@@ -3932,7 +3937,7 @@ describe("strategy.exit 트레일링 analyzer validation (C170)", () => {
   });
 
   it("rejects duplicate trail_points= kwarg", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.exit("X", trail_points=2, trail_points=3)');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.exit("X", trail_points=2, trail_points=3)');
     expect(errors.some((e) => e.includes("duplicate keyword argument 'trail_points'"))).toBe(true);
   });
 });
@@ -4214,7 +4219,7 @@ describe("strategy.exit profit=/loss= analyzer validation (hand-verified, DIVERG
   });
 
   it("rejects duplicate profit= kwarg", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.exit("X", profit=2, profit=3)');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.exit("X", profit=2, profit=3)');
     expect(errors.some((e) => e.includes("duplicate keyword argument 'profit'"))).toBe(true);
   });
 });
@@ -7638,12 +7643,12 @@ describe("strategy.exit/close qty_percent= analyzer validation (hand-verified, C
   });
 
   it("rejects duplicate qty_percent= on strategy.exit", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.exit("X", limit=15, qty_percent=50, qty_percent=60)');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.exit("X", limit=15, qty_percent=50, qty_percent=60)');
     expect(errors.some((e) => e.includes("duplicate keyword argument 'qty_percent'"))).toBe(true);
   });
 
   it("rejects duplicate qty_percent= on strategy.close", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.close("L", qty_percent=50, qty_percent=60)');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.close("L", qty_percent=50, qty_percent=60)');
     expect(errors.some((e) => e.includes("duplicate keyword argument 'qty_percent'"))).toBe(true);
   });
 });
@@ -7747,12 +7752,12 @@ describe("strategy.exit comment_loss=/comment_profit= analyzer validation (hand-
   });
 
   it("rejects duplicate comment_loss=", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.exit("X", stop=10, comment_loss="a", comment_loss="b")');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.exit("X", stop=10, comment_loss="a", comment_loss="b")');
     expect(errors.some((e) => e.includes("duplicate keyword argument 'comment_loss'"))).toBe(true);
   });
 
   it("rejects duplicate comment_profit=", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.exit("X", limit=15, comment_profit="a", comment_profit="b")');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.exit("X", limit=15, comment_profit="a", comment_profit="b")');
     expect(errors.some((e) => e.includes("duplicate keyword argument 'comment_profit'"))).toBe(true);
   });
 });
@@ -7875,7 +7880,7 @@ describe("strategy.exit when= analyzer validation (hand-verified, C380)", () => 
   });
 
   it("rejects duplicate when= on strategy.exit", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.exit("X", limit=15, when=true, when=false)');
+    const errors = transpileErrors(V6 + 'strategy("s")\nstrategy.exit("X", limit=15, when=true, when=false)');
     expect(errors.some((e) => e.includes("duplicate keyword argument 'when'"))).toBe(true);
   });
 });
@@ -7951,7 +7956,7 @@ describe("strategy.exit comment_trailing= analyzer validation (hand-verified, C6
 
   it("rejects duplicate comment_trailing=", () => {
     const errors = transpileErrors(
-      'strategy("s")\nstrategy.exit("X", trail_points=1, comment_trailing="a", comment_trailing="b")',
+      V6 + 'strategy("s")\nstrategy.exit("X", trail_points=1, comment_trailing="a", comment_trailing="b")',
     );
     expect(errors.some((e) => e.includes("duplicate keyword argument 'comment_trailing'"))).toBe(true);
   });

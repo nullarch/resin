@@ -9,6 +9,11 @@ import { rt } from "../../src/runtime/rt";
 import type { Assignment, CallExpr } from "../../src/transpiler/ast";
 import { runPipeline } from "../helpers/pipeline";
 
+// Tests of a keyword argument named twice declare v6: before v6 the first value wins and the
+// repeat is dropped (mig6.txt "Cannot repeat parameters"; harness probe suites/lang/probes/L39.json),
+// from v6 on it is a compilation error.
+const V6 = "//@version=6\n";
+
 // generateCode는 C27부터 2-layer 모듈(프리앰블 + `return function () { <per-bar 본문> };`)을
 // 반환한다. 이 파일의 기존 어서션들은 전부 "프리앰블(UDF 선언) + per-bar 본문"의 내용을 검증하므로,
 // 래퍼 2줄(`return function () {` / 닫는 `};`)만 걷어내 기존 flat 형태로 되돌려 어서션을 그대로
@@ -20983,7 +20988,7 @@ describe("CodeGen timestamp(...) kwargs (C406, next_hint(C405) 1순위)", () => 
   });
 
   it("rejects a duplicate keyword argument", () => {
-    const prog = analyze(parse("x = timestamp(year=2024, month=1, day=1, day=2)"));
+    const prog = analyze(parse(V6 + "x = timestamp(year=2024, month=1, day=1, day=2)"));
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'day'"))).toBe(true);
   });
 
@@ -26196,7 +26201,7 @@ describe("CodeGen log.*/runtime.* (C231)", () => {
   });
 
   it("errors on duplicate runtime.error/warning message= kwarg", () => {
-    const prog = analyze(parse('runtime.error(message="a", message="b")'));
+    const prog = analyze(parse(V6 + 'runtime.error(message="a", message="b")'));
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'message'"))).toBe(true);
   });
 

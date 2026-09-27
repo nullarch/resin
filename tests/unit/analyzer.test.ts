@@ -21,6 +21,11 @@ function analyzeSource(source: string, options?: AnalyzeOptions) {
   return analyze(parse(source), options);
 }
 
+// Tests of a keyword argument named twice declare v6: before v6 the first value wins and the
+// repeat is dropped (mig6.txt "Cannot repeat parameters"; harness probe suites/lang/probes/L39.json),
+// from v6 on it is a compilation error.
+const V6 = "//@version=6\n";
+
 // A request.security expression outside the prepass grammar is evaluated by running the script
 // itself in the requested context (analyzer/security-script.ts; concepts_other-timeframes-and-data.txt
 // "Declared variables": "the function call duplicates all preceding code that determines the
@@ -321,7 +326,7 @@ describe("Analyzer", () => {
   });
 
   it("errors on duplicate ta.sma keyword argument", () => {
-    const prog = analyzeSource("x = ta.sma(length=3, length=5)");
+    const prog = analyzeSource(V6 + "x = ta.sma(length=3, length=5)");
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'length'"))).toBe(true);
   });
 
@@ -1064,7 +1069,7 @@ describe("Analyzer", () => {
   });
 
   it("rejects duplicate number= kwarg on math.abs (C404)", () => {
-    const prog = analyzeSource("x = math.abs(number=close, number=open)");
+    const prog = analyzeSource(V6 + "x = math.abs(number=close, number=open)");
     expect(prog.errors.some((e) => e.includes("'number' specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -1110,7 +1115,7 @@ describe("Analyzer", () => {
   });
 
   it("rejects duplicate number= kwarg on math.ceil (C474)", () => {
-    const prog = analyzeSource("x = math.ceil(number=close, number=open)");
+    const prog = analyzeSource(V6 + "x = math.ceil(number=close, number=open)");
     expect(prog.errors.some((e) => e.includes("'number' specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -1358,7 +1363,7 @@ describe("Analyzer", () => {
   });
 
   it("rejects duplicate replacement= kwarg on nz (C405)", () => {
-    const prog = analyzeSource("x = nz(source=close, replacement=0.0, replacement=1.0)");
+    const prog = analyzeSource(V6 + "x = nz(source=close, replacement=0.0, replacement=1.0)");
     expect(prog.errors.some((e) => e.includes("'replacement' specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -3097,7 +3102,7 @@ describe("Analyzer", () => {
   });
 
   it("rejects duplicate value= kwarg on str.tostring", () => {
-    const prog = analyzeSource("x = str.tostring(value=close, value=open)");
+    const prog = analyzeSource(V6 + "x = str.tostring(value=close, value=open)");
     expect(prog.errors.some((e) => e.includes("argument 'value' given as both positional and keyword argument"))).toBe(true);
   });
 
@@ -3551,7 +3556,7 @@ describe("Analyzer", () => {
   });
 
   it("rejects a duplicate transp= keyword argument", () => {
-    const prog = analyzeSource("x = color.new(color.red, transp=10, transp=20)");
+    const prog = analyzeSource(V6 + "x = color.new(color.red, transp=10, transp=20)");
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'transp'"))).toBe(true);
   });
 
@@ -3566,7 +3571,7 @@ describe("Analyzer", () => {
   });
 
   it("rejects a duplicate color= keyword argument", () => {
-    const prog = analyzeSource("x = color.new(color=color.red, color=color.blue)");
+    const prog = analyzeSource(V6 + "x = color.new(color=color.red, color=color.blue)");
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'color'"))).toBe(true);
   });
 
@@ -4008,7 +4013,7 @@ describe("Analyzer", () => {
   });
 
   it("rejects duplicate index= kwarg on array.get (C382)", () => {
-    const prog = analyzeSource(["var a = array.new_float(1)", "x = array.get(id=a, index=0, index=1)"].join("\n"));
+    const prog = analyzeSource(V6 + ["var a = array.new_float(1)", "x = array.get(id=a, index=0, index=1)"].join("\n"));
     expect(prog.errors.some((e) => e.includes("argument 'index' given as both positional and keyword argument"))).toBe(true);
   });
 
@@ -4063,7 +4068,7 @@ describe("Analyzer", () => {
   });
 
   it("rejects duplicate initial_value= kwarg on array.new_float (C383)", () => {
-    const prog = analyzeSource("var a = array.new_float(size=2, initial_value=1.0, initial_value=2.0)");
+    const prog = analyzeSource(V6 + "var a = array.new_float(size=2, initial_value=1.0, initial_value=2.0)");
     expect(prog.errors.some((e) => e.includes("argument 'initial_value' given as both positional and keyword argument"))).toBe(true);
   });
 
@@ -6455,7 +6460,7 @@ describe("Analyzer", () => {
   });
 
   it("rejects duplicate kwarg names for ticker.modify (C385, array.* kwargs와 동일한 merged '위치·키워드 중복' 메시지 — 순수 kwarg-kwarg 중복도 이 메시지로 보고된다)", () => {
-    const prog = analyzeSource('x = ticker.modify(session = "regular", session = "extended")');
+    const prog = analyzeSource(V6 + 'x = ticker.modify(session = "regular", session = "extended")');
     expect(prog.errors.some((e) => e.includes("'session'") && e.includes("specified both positionally and as a keyword"))).toBe(true);
   });
 
@@ -6628,12 +6633,12 @@ describe("Analyzer", () => {
   });
 
   it("rejects duplicate kwarg names for request.dividends (C398)", () => {
-    const prog = analyzeSource("x = request.dividends(gaps = true, gaps = false)");
+    const prog = analyzeSource(V6 + "x = request.dividends(gaps = true, gaps = false)");
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'gaps'"))).toBe(true);
   });
 
   it("rejects duplicate kwarg names for request.splits (C398)", () => {
-    const prog = analyzeSource("x = request.splits(gaps = true, gaps = false)");
+    const prog = analyzeSource(V6 + "x = request.splits(gaps = true, gaps = false)");
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'gaps'"))).toBe(true);
   });
 
@@ -6683,7 +6688,7 @@ describe("Analyzer", () => {
   });
 
   it("rejects duplicate kwarg names for request.financial (C385)", () => {
-    const prog = analyzeSource('x = request.financial(gaps = true, gaps = false)');
+    const prog = analyzeSource(V6 + 'x = request.financial(gaps = true, gaps = false)');
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'gaps'"))).toBe(true);
   });
 
@@ -6731,7 +6736,7 @@ describe("Analyzer", () => {
   });
 
   it("rejects duplicate kwarg names for request.earnings (C397)", () => {
-    const prog = analyzeSource("x = request.earnings(gaps = true, gaps = false)");
+    const prog = analyzeSource(V6 + "x = request.earnings(gaps = true, gaps = false)");
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'gaps'"))).toBe(true);
   });
 
@@ -6828,7 +6833,7 @@ describe("Analyzer", () => {
 
   it("errors when request.security_lower_tf gets a duplicate kwarg name", () => {
     const prog = analyzeSource(
-      'a = request.security_lower_tf(syminfo.tickerid, "1", close, calc_bars_count = 3, calc_bars_count = 5)',
+      V6 + 'a = request.security_lower_tf(syminfo.tickerid, "1", close, calc_bars_count = 3, calc_bars_count = 5)',
     );
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'calc_bars_count'"))).toBe(true);
   });
@@ -14759,7 +14764,7 @@ describe("Analyzer UDF call keyword arguments (C396)", () => {
   });
 
   it("errors on a duplicate keyword name", () => {
-    const prog = analyzeSource(["f(a, b) =>", "    a + b", "x = f(a = 1.0, a = 2.0)"].join("\n"));
+    const prog = analyzeSource(V6 + ["f(a, b) =>", "    a + b", "x = f(a = 1.0, a = 2.0)"].join("\n"));
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'a'"))).toBe(true);
   });
 
@@ -14837,7 +14842,7 @@ describe("Analyzer UDT method call keyword arguments (C408)", () => {
   });
 
   it("errors on a duplicate keyword name", () => {
-    const prog = analyzeSource([...TYPE_DECL, ...METHOD_DECL, "var p = Bar.new()", "p.bump(dx = 1.0, dx = 2.0, dy = 3.0)"].join("\n"));
+    const prog = analyzeSource(V6 + [...TYPE_DECL, ...METHOD_DECL, "var p = Bar.new()", "p.bump(dx = 1.0, dx = 2.0, dy = 3.0)"].join("\n"));
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'dx'"))).toBe(true);
   });
 
@@ -15899,7 +15904,7 @@ describe("Analyzer UDT constructor keyword arguments (C129)", () => {
   });
 
   it("errors on the same field specified twice by keyword", () => {
-    const prog = analyzeSource(["type Bar", "    float x = 1.0", "var p = Bar.new(x=1.0, x=2.0)"].join("\n"));
+    const prog = analyzeSource(V6 + ["type Bar", "    float x = 1.0", "var p = Bar.new(x=1.0, x=2.0)"].join("\n"));
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument"))).toBe(true);
   });
 
@@ -18002,7 +18007,7 @@ describe("Analyzer input.string/input.enum 'options=[...]' bracket-literal kwarg
   });
 
   it("rejects a duplicate 'options=' keyword argument on input.string", () => {
-    const prog = analyzeSource('x = input.string("EMA", options=["EMA"], options=["SMA"])');
+    const prog = analyzeSource(V6 + 'x = input.string("EMA", options=["EMA"], options=["SMA"])');
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'options'"))).toBe(true);
   });
 
@@ -18128,7 +18133,7 @@ describe("Analyzer UI-metadata kwargs (C283: wild corpus top cluster — input.*
   });
 
   it("still rejects a duplicate 'options=' metadata kwarg on input.int (C762 exception — array value, not compared)", () => {
-    const prog = analyzeSource('x = input.int(1, options=array.from(1), options=array.from(2))');
+    const prog = analyzeSource(V6 + 'x = input.int(1, options=array.from(1), options=array.from(2))');
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'options'"))).toBe(true);
   });
 
@@ -18148,9 +18153,9 @@ describe("Analyzer UI-metadata kwargs (C283: wild corpus top cluster — input.*
   });
 
   it("rejects a duplicate transp= on plot and still rejects unknown plot kwarg names", () => {
-    const dup = analyzeSource("plot(close, transp=20, transp=30)");
+    const dup = analyzeSource(V6 + "plot(close, transp=20, transp=30)");
     expect(dup.errors.some((e) => e.includes("duplicate keyword argument 'transp'"))).toBe(true);
-    const bogus = analyzeSource("plot(close, bogus=1)");
+    const bogus = analyzeSource(V6 + "plot(close, bogus=1)");
     expect(bogus.errors.some((e) => e.includes("unknown argument name for 'plot'") && e.includes("bogus"))).toBe(true);
   });
 
@@ -18168,9 +18173,9 @@ describe("Analyzer UI-metadata kwargs (C283: wild corpus top cluster — input.*
   });
 
   it("rejects a duplicate linestyle= on plot and still rejects unknown plot kwarg names", () => {
-    const dup = analyzeSource("plot(close, linestyle=plot.linestyle_dashed, linestyle=plot.linestyle_dotted)");
+    const dup = analyzeSource(V6 + "plot(close, linestyle=plot.linestyle_dashed, linestyle=plot.linestyle_dotted)");
     expect(dup.errors.some((e) => e.includes("duplicate keyword argument 'linestyle'"))).toBe(true);
-    const bogus = analyzeSource("plot(close, bogus=1)");
+    const bogus = analyzeSource(V6 + "plot(close, bogus=1)");
     expect(bogus.errors.some((e) => e.includes("unknown argument name for 'plot'") && e.includes("bogus"))).toBe(true);
   });
 
@@ -18202,7 +18207,7 @@ describe("Analyzer UI-metadata kwargs (C283: wild corpus top cluster — input.*
   });
 
   it("rejects a duplicate dynamic_requests= on indicator()", () => {
-    const prog = analyzeSource('indicator("t", dynamic_requests=true, dynamic_requests=false)');
+    const prog = analyzeSource(V6 + 'indicator("t", dynamic_requests=true, dynamic_requests=false)');
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'dynamic_requests'"))).toBe(true);
   });
 
@@ -18230,7 +18235,7 @@ describe("Analyzer UI-metadata kwargs (C283: wild corpus top cluster — input.*
   });
 
   it("rejects a duplicate linktoseries= on indicator()", () => {
-    const prog = analyzeSource('indicator("t", linktoseries=true, linktoseries=false)');
+    const prog = analyzeSource(V6 + 'indicator("t", linktoseries=true, linktoseries=false)');
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'linktoseries'"))).toBe(true);
   });
 });
@@ -18321,7 +18326,7 @@ describe("Analyzer plot() collection channel (PlotCollector, C135)", () => {
   });
 
   it("rejects a duplicate keyword argument", () => {
-    const prog = analyzeSource('plot(close, color=color.red, color=color.blue)');
+    const prog = analyzeSource(V6 + 'plot(close, color=color.red, color=color.blue)');
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'color'"))).toBe(true);
   });
 
@@ -18361,7 +18366,7 @@ describe("Analyzer plot() collection channel (PlotCollector, C135)", () => {
   });
 
   it("rejects a duplicate 'series=' keyword argument", () => {
-    const prog = analyzeSource("plot(series=close, series=open)");
+    const prog = analyzeSource(V6 + "plot(series=close, series=open)");
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'series'"))).toBe(true);
   });
 
@@ -18412,7 +18417,7 @@ describe("Analyzer indicator()/strategy() directive keyword arguments (C160, LIM
   });
 
   it("rejects a duplicate keyword argument on indicator()", () => {
-    const prog = analyzeSource('indicator("Foo", overlay=true, overlay=false)');
+    const prog = analyzeSource(V6 + 'indicator("Foo", overlay=true, overlay=false)');
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'overlay'"))).toBe(true);
   });
 
@@ -18455,7 +18460,7 @@ describe("Analyzer indicator()/strategy() directive keyword arguments (C160, LIM
   });
 
   it("rejects a duplicate keyword argument on strategy()", () => {
-    const prog = analyzeSource('strategy("Foo", pyramiding=1, pyramiding=2)');
+    const prog = analyzeSource(V6 + 'strategy("Foo", pyramiding=1, pyramiding=2)');
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'pyramiding'"))).toBe(true);
   });
 
@@ -18503,7 +18508,7 @@ describe("Analyzer library() directive (C274, same no-op mechanism as indicator(
   });
 
   it("rejects a duplicate keyword argument on library()", () => {
-    const prog = analyzeSource('library("MathUtils", overlay=true, overlay=false)');
+    const prog = analyzeSource(V6 + 'library("MathUtils", overlay=true, overlay=false)');
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'overlay'"))).toBe(true);
   });
 
@@ -18547,7 +18552,7 @@ describe("Analyzer study() directive (C399, TV v4 legacy alias for indicator(), 
   });
 
   it("rejects a duplicate keyword argument on study()", () => {
-    const prog = analyzeSource('study("Foo", overlay=true, overlay=false)');
+    const prog = analyzeSource(V6 + 'study("Foo", overlay=true, overlay=false)');
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'overlay'"))).toBe(true);
   });
 
@@ -18757,7 +18762,7 @@ describe("Analyzer request.security symbol=/timeframe=/expression= kwargs (C409,
   });
 
   it("rejects duplicate keyword lead names", () => {
-    const prog = analyzeSource('x = request.security(symbol="", symbol="X", timeframe="D", expression=close)');
+    const prog = analyzeSource(V6 + 'x = request.security(symbol="", symbol="X", timeframe="D", expression=close)');
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'symbol'"))).toBe(true);
   });
 
@@ -18959,12 +18964,12 @@ describe("Analyzer request.security gaps=/lookahead= kwargs (C177, second slice)
   });
 
   it("rejects a duplicate calc_bars_count= keyword argument", () => {
-    const prog = analyzeSource('x = request.security("", "D", close, calc_bars_count=10, calc_bars_count=5)');
+    const prog = analyzeSource(V6 + 'x = request.security("", "D", close, calc_bars_count=10, calc_bars_count=5)');
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'calc_bars_count'"))).toBe(true);
   });
 
   it("rejects a duplicate gaps= (or lookahead=) keyword argument", () => {
-    const prog = analyzeSource('x = request.security("", "D", close, gaps=true, gaps=false)');
+    const prog = analyzeSource(V6 + 'x = request.security("", "D", close, gaps=true, gaps=false)');
     expect(prog.errors.some((e) => e.includes("duplicate keyword argument 'gaps'"))).toBe(true);
   });
 
@@ -19108,10 +19113,10 @@ describe("Analyzer request.security ignore_invalid_symbol=/currency= kwargs (C37
   });
 
   it("rejects a duplicate ignore_invalid_symbol= (or currency=) keyword argument", () => {
-    const progIgnore = analyzeSource('x = request.security("", "D", close, ignore_invalid_symbol=true, ignore_invalid_symbol=false)');
+    const progIgnore = analyzeSource(V6 + 'x = request.security("", "D", close, ignore_invalid_symbol=true, ignore_invalid_symbol=false)');
     expect(progIgnore.errors.some((e) => e.includes("duplicate keyword argument 'ignore_invalid_symbol'"))).toBe(true);
 
-    const progCurrency = analyzeSource('x = request.security("", "D", close, currency=currency.USD, currency="USD")');
+    const progCurrency = analyzeSource(V6 + 'x = request.security("", "D", close, currency=currency.USD, currency="USD")');
     expect(progCurrency.errors.some((e) => e.includes("duplicate keyword argument 'currency'"))).toBe(true);
   });
 
