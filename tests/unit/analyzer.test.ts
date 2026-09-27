@@ -22212,6 +22212,42 @@ describe("Analyzer numeric-pure-builtin CallExpr history indexing (C470)", () =>
   });
 });
 
+// strategy.opentrades.<fn>(n)[k] / strategy.closedtrades.<fn>(n)[k]: the value the call returned k bars
+// back (language_operators.txt "The [] operator is used after a variable, expression or function
+// call"; the fpemehd template's `strategy.opentrades.size(strategy.opentrades - 1)[1]`). Checked against
+// the oracle by resin-harness suites/strategy/probes/C58.json.
+describe("Analyzer strategy trade accessor call history indexing", () => {
+  const STRAT = 'strategy("s")\n';
+
+  it.each([
+    "strategy.opentrades.size(strategy.opentrades - 1)",
+    "strategy.opentrades.entry_price(0)",
+    "strategy.opentrades.profit(0)",
+    "strategy.closedtrades.profit(strategy.closedtrades - 1)",
+    "strategy.closedtrades.exit_bar_index(0)",
+  ])("accepts %s[1] at the top level (registers via taCallHistorySlots)", (call) => {
+    const prog = analyzeSource(`${STRAT}x = ${call}[1]`);
+    expect(prog.errors).toEqual([]);
+    expect(prog.taCallHistorySlots.size).toBe(1);
+  });
+
+  it("accepts one inside an if block via the compressed call-count slot", () => {
+    const prog = analyzeSource(
+      [STRAT + "var float x = na", "if close > open", "    x := strategy.closedtrades.profit(0)[1]"].join("\n"),
+    );
+    expect(prog.errors).toEqual([]);
+    expect(prog.condCallHistorySlotCount).toBe(1);
+  });
+
+  it.each(["strategy.opentrades.entry_id(0)", "strategy.closedtrades.exit_comment(0)"])(
+    "still rejects %s[1]: a string does not fit the float history slot",
+    (call) => {
+      const prog = analyzeSource(`${STRAT}x = ${call}[1]`);
+      expect(prog.errors.some((e) => e.includes("stateful TA call (ta.*)/request.security results/pure numeric builtins"))).toBe(true);
+    },
+  );
+});
+
 // ── C712(배치35 hist-index(all) 재조사 최다 서브그룹): na(x)/nz(x[,y]) bare 빌트인 콜 + array.*
 // 순수 집계 메서드(원소 타입과 무관하게 항상 plain number/bool을 반환 — pine2py
 // src/wavealgo/builtins/array.py 반환형 주석 직접 대조: sum/avg/min/max/median/mode/stdev/variance/

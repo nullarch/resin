@@ -28824,6 +28824,37 @@ describe("math.*(...)[N]/time(...)[N] historical indexing codegen + E2E (C470)",
   });
 });
 
+// A strategy trade accessor's [k] reads what the call returned k bars back, recorded where it runs
+// (language_operators.txt "The [] operator is used after a variable, expression or function call";
+// resin-harness suites/strategy/probes/C58.json).
+describe("strategy trade accessor (...)[N] historical indexing E2E", () => {
+  it("hand-verified E2E: strategy.opentrades.size(n)[1] is the previous bar's strategy.opentrades.size(n)", () => {
+    const n = 12;
+    const open = Array.from({ length: n }, (_, i) => 100 + i);
+    const data: OHLCVData = { open, high: open.map((o) => o + 1), low: open.map((o) => o - 1), close: open, volume: new Array(n).fill(1) };
+    const src = [
+      'strategy("s", pyramiding=2)',
+      "if bar_index == 1 or bar_index == 4",
+      '    strategy.entry("L" + str.tostring(bar_index), strategy.long, qty=bar_index)',
+      "if bar_index == 8",
+      '    strategy.close("L1")',
+      "k = math.max(strategy.opentrades - 1, 0)",
+      "var float __obs_s0 = na",
+      "__obs_s0 := strategy.opentrades.size(k)",
+      "var float __obs_s1 = na",
+      "__obs_s1 := strategy.opentrades.size(k)[1]",
+    ].join("\n");
+    const result = runPipeline(src, data);
+    const s0 = result.bars.map((b) => b["var:__obs_s0"] as number);
+    const s1 = result.bars.map((b) => b["var:__obs_s1"] as number);
+    expect(s0.filter((v) => v > 0).length).toBeGreaterThan(0);
+    expect(Number.isNaN(s1[0]!)).toBe(true);
+    for (let i = 1; i < n; i++) {
+      expect(Object.is(s1[i], s0[i - 1])).toBe(true);
+    }
+  });
+});
+
 // C520: 사용자 정의 함수(UDF) 콜 결과의 top-level 히스토리 인덱싱(`f(x)[N]`류) — 위 C470과 완전히
 // 같은 taCallHistorySlots record+get 메커니즘 재사용(codegen 무변경, analyzer.ts
 // FuncInfo.returnIsScalarSafe 화이트리스트만 넓힘).

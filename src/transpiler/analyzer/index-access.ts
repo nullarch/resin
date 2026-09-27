@@ -33,6 +33,7 @@ import {
   isMatrixConstructorCall,
   isUdtConstructorCall,
 } from "./constructors";
+import { STRATEGY_TRADE_ACCESSOR_METHODS } from "./call-expr";
 import { arrayNumericElemTypeHint } from "./udt-types";
 
 export function describeDotAccess(expr: Expr & { kind: "DotAccess" }): string {
@@ -440,6 +441,23 @@ function isUserFuncScalarSafeHistoryCall(callExpr: CallExpr, prog: AnalyzedProgr
   return callee.kind === "Identifier" && (prog.funcs.get(callee.name)?.returnIsScalarSafe ?? false);
 }
 
+// strategy.opentrades.<fn>(n)[k] / strategy.closedtrades.<fn>(n)[k]: the value that call returned k
+// bars back. language_operators.txt: "The [] operator is used after a variable, expression or
+// function call" — the call is recorded where it runs, like any other call here, so what it read of
+// the strategy's trades at that point of that bar is what [k] returns (the fpemehd template's
+// `strategy.opentrades.size(strategy.opentrades - 1)[1]`). Only the accessors returning a number
+// fit the float history slot; the id and comment ones return strings.
+const STRATEGY_TRADE_STRING_ACCESSORS: ReadonlySet<string> = new Set(["entry_id", "exit_id", "entry_comment", "exit_comment"]);
+
+function isStrategyTradeNumericAccessorCall(callExpr: CallExpr): boolean {
+  const callee = callExpr.callee;
+  if (callee.kind !== "DotAccess" || callee.obj.kind !== "DotAccess") return false;
+  const ns = callee.obj;
+  if (ns.obj.kind !== "Identifier" || ns.obj.name !== "strategy") return false;
+  if (ns.attr !== "opentrades" && ns.attr !== "closedtrades") return false;
+  return STRATEGY_TRADE_ACCESSOR_METHODS[ns.attr]!.has(callee.attr) && !STRATEGY_TRADE_STRING_ACCESSORS.has(callee.attr);
+}
+
 // index가 컴파일타임에 알려진 정수 리터럴이면 그 값을, 아니면(런타임 expr) null을 반환한다
 // (genForStmt의 literalStepValue와 동일 원칙 — 부호 있는 리터럴까지 인식).
 export function literalOffsetValue(expr: Expr): number | null {
@@ -796,6 +814,7 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
     if (
       !prog.stateCallSlots.has(expr.obj) &&
       !isNumericPureBuiltinHistoryCall(expr.obj, prog) &&
+      !isStrategyTradeNumericAccessorCall(expr.obj) &&
       !isUserFuncScalarSafeHistoryCall(expr.obj, prog) &&
       !isArrayElemNumericSafeHistoryCall(expr.obj, prog, scope) &&
       // C711(hist-index 잔여, wild `request.security(sym, tf, someUdfCall(...))[N]`류): 이 콜이

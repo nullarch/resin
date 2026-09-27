@@ -2422,7 +2422,7 @@ function matchSecurityExprMathCall(node: CallExpr): string | null {
 // codegen.ts OPEN_TRADE_CLOSE_PRICE_METHODS(opentrades.profit/profit_percent만 `$.close.get(0)`
 // 암묵 주입 — 미실현 손익 계산에 종가가 필요, C308 원래 우려 해소)와 runtime/strategy.ts
 // updateTradeExcursion(max_drawdown/max_runup의 바별 인트라바 추적) 참조.
-const STRATEGY_TRADE_ACCESSOR_METHODS: Readonly<Record<string, ReadonlySet<string>>> = {
+export const STRATEGY_TRADE_ACCESSOR_METHODS: Readonly<Record<string, ReadonlySet<string>>> = {
   closedtrades: new Set([
     "entry_comment",
     "exit_comment",
