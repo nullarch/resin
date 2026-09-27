@@ -226,6 +226,24 @@ export class Lexer {
         isLeadingContinuation = false;
       }
     }
+    // Outside parentheses a wrapped line is indented by a width that is not a multiple of
+    // four; a line at a multiple of four opens a statement (rn.txt "Updated line wrapping":
+    // "if a line-wrapped expression is not enclosed in parentheses, all subsequent lines
+    // still require an indentation that is not a multiple of four spaces", its example's
+    // `*` line at four spaces "causes a compilation error"). No other leading symbol above
+    // can open a statement, so continuing is the only reading that parses; `+` can (unary
+    // plus: the case `+1 => cold` under `switch st.d`, realworld b17655fc60c9), so there
+    // the width decides.
+    if (
+      isLeadingContinuation &&
+      leadingTokenType === "PLUS" &&
+      this.parenDepth === 0 &&
+      this.bracketDepth === 0 &&
+      !this.lineContinuation &&
+      this.measureIndent(line)[0] % 4 === 0
+    ) {
+      isLeadingContinuation = false;
+    }
     let width: number;
     let rawOffset: number;
     if (isLeadingContinuation) {

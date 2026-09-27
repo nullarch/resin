@@ -244,12 +244,39 @@ describe("Lexer - line continuation", () => {
     ]);
   });
 
+  // A wrapped line outside parentheses is indented by a width that is not a multiple of four
+  // (rn.txt "Updated line wrapping"); at four spaces the same `+` line opens a statement.
   it("merges a line starting with '+' into the previous line (leading string/arithmetic concatenation)", () => {
-    const src = 'msg = "a"\n    + "b"';
+    const src = 'msg = "a"\n     + "b"';
     expect(types(src)).toEqual([
       "IDENTIFIER", "ASSIGN", "STRING",
       "PLUS", "STRING", "NEWLINE",
       "EOF",
+    ]);
+  });
+
+  // rn.txt "Updated line wrapping": "if a line-wrapped expression is not enclosed in
+  // parentheses, all subsequent lines still require an indentation that is not a multiple of
+  // four spaces". A `+` line at four spaces is a block line: the case `+1 => cold` under
+  // `color cst = switch st.d` (realworld b17655fc60c9; harness probe suites/lang/probes/L40.json).
+  it("does NOT merge a line starting with '+' at a multiple of four spaces (a switch case `+1 =>`)", () => {
+    const src = "c = switch d\n    +1 => a\n    -1 => b";
+    expect(types(src)).toEqual([
+      "IDENTIFIER", "ASSIGN", "SWITCH", "IDENTIFIER", "NEWLINE",
+      "INDENT", "PLUS", "NUMBER", "FAT_ARROW", "IDENTIFIER", "NEWLINE",
+      "MINUS", "NUMBER", "FAT_ARROW", "IDENTIFIER", "NEWLINE",
+      "DEDENT", "EOF",
+    ]);
+  });
+
+  it("does NOT merge a '+' case line at eight spaces after another case (a switch in a function)", () => {
+    const src = "f(x) =>\n    switch x\n        -1 => a\n        +1 => b";
+    expect(types(src)).toEqual([
+      "IDENTIFIER", "LPAREN", "IDENTIFIER", "RPAREN", "FAT_ARROW", "NEWLINE",
+      "INDENT", "SWITCH", "IDENTIFIER", "NEWLINE",
+      "INDENT", "MINUS", "NUMBER", "FAT_ARROW", "IDENTIFIER", "NEWLINE",
+      "PLUS", "NUMBER", "FAT_ARROW", "IDENTIFIER", "NEWLINE",
+      "DEDENT", "DEDENT", "EOF",
     ]);
   });
 
@@ -378,8 +405,10 @@ describe("Lexer - line continuation", () => {
     ]);
   });
 
+  // The `+ 2` line is indented by six spaces: a wrapped line must not sit at a multiple of
+  // four (rn.txt "Updated line wrapping"; at four it would be the block's next statement).
   it("leading-symbol-continuation only drops the previous NEWLINE, not an open block's indent stack", () => {
-    const src = "if true\n    x = 1\n    + 2";
+    const src = "if true\n    x = 1\n      + 2";
     expect(types(src)).toEqual([
       "IF", "BOOL", "NEWLINE",
       "INDENT", "IDENTIFIER", "ASSIGN", "NUMBER",
