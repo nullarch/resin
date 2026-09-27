@@ -221,11 +221,13 @@ function childSafeSecurityRead(code: string, funcCtx: FuncGenContext | null, slo
 // A request whose timeframe the call binds where it stands (AnalyzedProgram.securityDeferredTfs):
 // the read evaluates the timeframe argument, as every execution of the call does, and binds the
 // request's slots to its value before reading them. Only the first execution binds; a later one
-// with another value is refused (Context.bindSecurity).
+// with another value is refused (Context.bindSecurity). In a function, the request is the call of
+// the function's (its ordinal __secIdx), and so are the slots it binds.
 function deferredSecurityRead(call: CallExpr, code: string, program: AnalyzedProgram, funcCtx: FuncGenContext | null): string {
   const deferred = program.securityDeferredTfs.get(call);
   if (deferred === undefined) return code;
-  return `($.bindSecurity(${deferred.slots[0]}, ${genExpr(deferred.tf, program, funcCtx)}), ${code})`;
+  const key = deferred.sites === undefined ? `${deferred.slots[0]}` : `${deferred.slots[0]} + __secIdx`;
+  return `($.bindSecurity(${key}, ${genExpr(deferred.tf, program, funcCtx)}), ${code})`;
 }
 
 // request.security 셋째 슬라이스 서브슬라이스 3b(ROADMAP [hard->분할], C181) — securityExprCallSlots
@@ -535,8 +537,14 @@ export function generateCode(program: AnalyzedProgram): string {
   }
   // A request whose timeframe the call binds on its first execution (securityDeferredTfs) gets its
   // cache, prepass and requested-context run then, from its binder, instead of here.
-  const deferredSlots = new Set<number>();
-  for (const d of program.securityDeferredTfs.values()) for (const s of d.slots) deferredSlots.add(s);
+  // The slots each binder binds: a call outside functions binds all of its own; in a function, call k
+  // of the function binds base + k of each of the request's slot blocks.
+  const deferredBinds: number[][] = [];
+  for (const { slots, sites } of program.securityDeferredTfs.values()) {
+    if (sites === undefined) deferredBinds.push(slots);
+    else for (let k = 0; k < sites; k++) deferredBinds.push(slots.map((base) => base + k));
+  }
+  const deferredSlots = new Set<number>(deferredBinds.flat());
   for (const line of generateSecurityExprPreamble(program, deferredSlots)) securityPreamble.push(line);
   const scriptRunLine = (run: SecurityScriptRun): string =>
     `$.securityExprCache[${run.slot}] = $.runSecurityScript(${run.slot}, ${JSON.stringify(run.runs)}, ${others.length});`;
@@ -544,7 +552,7 @@ export function generateCode(program: AnalyzedProgram): string {
     if (!deferredSlots.has(run.slot)) securityPreamble.push(scriptRunLine(run));
   }
   const prepassSlots = securityPrepassSlots(program);
-  for (const { slots } of program.securityDeferredTfs.values()) {
+  for (const slots of deferredBinds) {
     // An empty or na timeframe is the chart's (ref_v6_lang.txt request.security: "Use an empty
     // string or timeframe.period to request data from the chart's timeframe").
     const body = [`if (tf === "" || tf === null || tf === undefined) tf = ${JSON.stringify(program.chartTf)};`];
@@ -1809,8 +1817,15 @@ function walkForLazyHoist(
     }
     case "CallExpr": {
       // A request.security expression computed by the script in the requested context runs there,
-      // not here: the chart reads its result (generateCode hoists it into the child's record).
-      if (program.securityExprCallSlots.get(expr)?.script !== undefined || program.securityFuncScriptCalls.has(expr)) return;
+      // not here: the chart reads its result (generateCode hoists it into the child's record). One in
+      // a function no executed code calls is never evaluated.
+      if (
+        program.securityExprCallSlots.get(expr)?.script !== undefined ||
+        program.securityFuncScriptCalls.has(expr) ||
+        program.securityUncalledCalls.has(expr)
+      ) {
+        return;
+      }
       for (const a of expr.args) walkForLazyHoist(a, inLazy, program, funcCtx, out);
       // In v6 the lazy position is a short-circuited `and`/`or` operand (a `?:` branch is not
       // walked at all): the call runs only when that operand is evaluated, so it stays inline in
@@ -3569,11 +3584,17 @@ function genIndexAccess(
         `${securityExprCall.slot}`,
       );
     }
+    if (program.securityUncalledCalls.has(expr.obj)) return "NaN";
     const securityFuncScriptCall = program.securityFuncScriptCalls.get(expr.obj);
     if (securityFuncScriptCall !== undefined) {
       const slotRef = `${securityFuncScriptCall.base} + __secIdx`;
       return childSafeSecurityRead(
-        `rt.security.getFromArrayHist($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityFuncScriptCall.gaps}, ${securityFuncScriptCall.lookahead}, ${offsetCode})`,
+        deferredSecurityRead(
+          expr.obj,
+          `rt.security.getFromArrayHist($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityFuncScriptCall.gaps}, ${securityFuncScriptCall.lookahead}, ${offsetCode})`,
+          program,
+          funcCtx,
+        ),
         funcCtx,
         slotRef,
       );
@@ -3585,7 +3606,12 @@ function genIndexAccess(
     if (securityParamCall !== undefined) {
       const slotRef = `${securityParamCall.base} + __secIdx`;
       return childSafeSecurityRead(
-        `rt.security.getFromArrayHist($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityParamCall.gaps}, ${securityParamCall.lookahead}, ${offsetCode})`,
+        deferredSecurityRead(
+          expr.obj,
+          `rt.security.getFromArrayHist($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityParamCall.gaps}, ${securityParamCall.lookahead}, ${offsetCode})`,
+          program,
+          funcCtx,
+        ),
         funcCtx,
         slotRef,
       );
@@ -4462,13 +4488,20 @@ function genCallExpr(
       secSlotRef,
     );
   }
+  // A request in a function no executed code calls (analyzer securityUncalledCalls): never evaluated.
+  if (program.securityUncalledCalls.has(expr)) return "NaN";
   const securityFuncScriptCall = program.securityFuncScriptCalls.get(expr);
   if (securityFuncScriptCall !== undefined) {
     // A request in a function evaluated in its context: call k's child filled slot base + k
     // (analyzer securityFuncScriptCalls), read like a prepass's.
     const slotRef = `${securityFuncScriptCall.base} + __secIdx`;
     return childSafeSecurityRead(
-      `rt.security.getFromArray($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityFuncScriptCall.gaps}, ${securityFuncScriptCall.lookahead})`,
+      deferredSecurityRead(
+        expr,
+        `rt.security.getFromArray($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityFuncScriptCall.gaps}, ${securityFuncScriptCall.lookahead})`,
+        program,
+        funcCtx,
+      ),
       funcCtx,
       slotRef,
     );
@@ -4510,7 +4543,12 @@ function genCallExpr(
     // 항상 스코프에 존재한다.
     const slotRef = `${securityParamCall.base} + __secIdx`;
     return childSafeSecurityRead(
-      `rt.security.getFromArray($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityParamCall.gaps}, ${securityParamCall.lookahead})`,
+      deferredSecurityRead(
+        expr,
+        `rt.security.getFromArray($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityParamCall.gaps}, ${securityParamCall.lookahead})`,
+        program,
+        funcCtx,
+      ),
       funcCtx,
       slotRef,
     );

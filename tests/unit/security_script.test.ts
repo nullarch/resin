@@ -440,6 +440,74 @@ describe("request.security in a user-defined function: an argument that depends 
   });
 });
 
+// A function whose request's timeframe is known only when it runs: each call of the function binds
+// its own request on its first execution (concepts_other-timeframes-and-data.txt "In local scopes";
+// mig6.txt "Dynamic requests"). Values against the oracle: resin-harness suites/lang/probes/L38.json.
+describe("request.security in a user-defined function: a timeframe known only when the call runs", () => {
+  it("each call binds its own request: the same values as the literal timeframe's request, bare, prepass and requested-context forms", () => {
+    const [b1, b2, e1, s1, wb, we, ws] = plotsOf(
+      [
+        'tfIn = input.timeframe("D", "tf")',
+        "fb(tf) =>",
+        '    t = tf == "" ? "480" : tf',
+        "    request.security(syminfo.tickerid, t, close)",
+        "fe(tf) =>",
+        '    string t = "D"',
+        '    if tf != ""',
+        "        t := tf",
+        "    request.security(syminfo.tickerid, t, ta.ema(close, 2))",
+        "fs(tf, len) =>",
+        '    safe_tf = tf == "" ? timeframe.period : tf',
+        "    request.security(syminfo.tickerid, safe_tf, ta.sma(close, len) + len)",
+        "b1 = fb(tfIn)",
+        'b2 = fb("")',
+        "e1 = fe(tfIn)",
+        "s1 = fs(tfIn, 2)",
+        's0 = fs("D", 3)',
+        'wb = request.security(syminfo.tickerid, "480", close)',
+        'we = request.security(syminfo.tickerid, "D", ta.ema(close, 2))',
+        'ws = request.security(syminfo.tickerid, "D", ta.sma(close, 2) + 2)',
+        "plot(b1)",
+        "plot(b2)",
+        "plot(e1)",
+        "plot(s1)",
+        "plot(wb)",
+        "plot(we)",
+        "plot(ws)",
+      ].join("\n"),
+    );
+    const [lb1] = plotsOf('plot(request.security(syminfo.tickerid, "D", close))');
+    expect(b1).toEqual(lb1);
+    expect(b2).toEqual(wb);
+    expect(e1).toEqual(we);
+    expect(s1).toEqual(ws);
+    expect(b1).not.toEqual(b2);
+    expect(s1!.some((v) => Number.isFinite(v))).toBe(true);
+  });
+
+  it("a call whose timeframe changes on a later execution is refused at run time, as outside functions", () => {
+    const result = transpile(
+      ['getS(tf) =>', "    request.security(syminfo.tickerid, tf, close)", 'x = getS(bar_index < 3 ? "D" : "480")', "plot(x)"].join("\n"),
+    );
+    if (!result.ok) throw new Error(result.errors.join("\n"));
+    expect(() => run(result, DATA)).toThrow(/the timeframe of a request changed from "D" to "480"/);
+  });
+
+  it("a function no executed code calls, directly or through another such function, makes no request: the script runs", () => {
+    const [c] = plotsOf(
+      [
+        "req(tf, source) =>",
+        '    resolvedTf = tf != "" ? tf : timeframe.period',
+        "    request.security(syminfo.tickerid, resolvedTf, source)",
+        "wrap(tf, source) =>",
+        "    req(tf, source)",
+        "plot(close)",
+      ].join("\n"),
+    );
+    expect(c).toEqual(Array.from(DATA.close));
+  });
+});
+
 describe("rt.security.scriptValue", () => {
   it("numbers as they are, bools as 1/0, na as NaN, anything else stops the run", () => {
     expect(rt.security.scriptValue(1.5)).toBe(1.5);

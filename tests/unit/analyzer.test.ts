@@ -42,6 +42,27 @@ function expectTfBoundOnFirstExecution(prog: ReturnType<typeof analyzeSource>): 
   expect(prog.securityDeferredTfs.size).toBeGreaterThan(0);
 }
 
+// The same in a user-defined function: each call of the function is a request of its own
+// (concepts_other-timeframes-and-data.txt "In local scopes": "the Pine Script compiler extracts such
+// calls into the global scope during translation") and binds its timeframe on its own first execution
+// (securityDeferredTfs `sites`: the function's calls). The oracle agrees value for value:
+// resin-harness suites/lang/probes/L38.json.
+function expectTfBoundPerCall(prog: ReturnType<typeof analyzeSource>, sites?: number): void {
+  expect(prog.errors).toEqual([]);
+  const perCall = [...prog.securityDeferredTfs.values()].filter((d) => d.sites !== undefined);
+  expect(perCall.length).toBeGreaterThan(0);
+  if (sites !== undefined) expect(perCall.every((d) => d.sites === sites)).toBe(true);
+}
+
+// A request.security call in a function no executed code calls makes no request: the compiler
+// extracts a function's requests per call of the function, and there is none. It gets no slot and
+// reads na (AnalyzedProgram.securityUncalledCalls).
+function expectNeverRequested(prog: ReturnType<typeof analyzeSource>, calls = 1): void {
+  expect(prog.errors).toEqual([]);
+  expect(prog.securityUncalledCalls.size).toBe(calls);
+  expect(prog.securityTfs).toEqual([]);
+}
+
 // A request.security call in a user-defined function, the same way: one request per call of the
 // function, evaluated with that call's arguments (analyzer/security-script.ts
 // planSecurityScriptInFunction; concepts_other-timeframes-and-data.txt "In local scopes": "the Pine
@@ -21748,32 +21769,57 @@ describe("Analyzer request.security expression via UDF parameter(s) nested insid
 // NumberLiteral(1)(NaN이 아님) — codegen.test.ts C663 블록의 hand-verified E2E가 확인하듯, 이
 // 자리가 `ta.highest(high, days)`류 length 인자 위치면 프리앰블 1회성 taCalls 초기화가 `new
 // Array(length)`를 즉시 호출해 NaN이면 RangeError로 실측 크래시한다. ──
+// A function no executed code calls makes no request at all now (expectNeverRequested): the call gets
+// no slot instead of a placeholder request.
 describe("Analyzer request.security expression via a dead UDF (NO call sites anywhere — C663, expression-arg sibling of C624's tf-arg fix)", () => {
-  it("substitutes the UDF's own parameter directly (bare, no IndexAccess) to a safe NumberLiteral(1) placeholder", () => {
+  it("accepts the UDF's own parameter directly (bare, no IndexAccess) and makes no request", () => {
     const prog = analyzeSource('f_sec(val) =>\n    request.security(syminfo.tickerid, "D", val)\nplot(close)');
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityExprCallSlots.size).toBe(1);
-    const call = Array.from(prog.securityExprCallSlots.values())[0]!;
-    expect(call.bodyExpr).toEqual({ kind: "NumberLiteral", value: 1, raw: "1", line: expect.any(Number), col: expect.any(Number) });
-    expect(call.histReads).toEqual([]);
+    expectNeverRequested(prog);
   });
 
-  it("substitutes the wild PineCoders `_src[1]` IndexAccess-wrapped parameter form, registering a histRead over the placeholder", () => {
+  it("accepts the wild PineCoders `_src[1]` IndexAccess-wrapped parameter form and makes no request", () => {
     const prog = analyzeSource('f_security(_sym, _res, _src) =>\n    request.security(_sym, _res, _src[1])\nplot(close)');
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityExprCallSlots.size).toBe(1);
-    const call = Array.from(prog.securityExprCallSlots.values())[0]!;
-    expect(call.bodyExpr.kind).toBe("IndexAccess");
-    expect((call.bodyExpr as IndexAccess).obj).toEqual({ kind: "NumberLiteral", value: 1, raw: "1", line: expect.any(Number), col: expect.any(Number) });
-    expect(call.histReads.length).toBe(1);
+    expectNeverRequested(prog);
   });
 
-  it("substitutes a func-local '=' variable (not a declared parameter) used at the dynamic offset position of the wild `data[isLive ? 1 : 0]` idiom (6286e095aedb.pine/8cf4fcb9350b.pine shape)", () => {
+  it("accepts a func-local '=' variable (not a declared parameter) used at the dynamic offset position of the wild `data[isLive ? 1 : 0]` idiom (6286e095aedb.pine/8cf4fcb9350b.pine shape) and makes no request", () => {
     const prog = analyzeSource(
       'BackgroundData_slightlyWrong(symbol, timeframe, data) =>\n    isLive = barstate.isrealtime\n    request.security(symbol, timeframe, data[isLive ? 1 : 0])[isLive ? 0 : 1]\nplot(close)',
     );
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityExprCallSlots.size).toBe(1);
+    expectNeverRequested(prog);
+  });
+
+  it("makes no request in a function only a function no executed code calls calls (transitively uncalled)", () => {
+    const prog = analyzeSource(
+      [
+        "req(tf, source) =>",
+        '    resolvedTf = tf != "" ? tf : timeframe.period',
+        "    request.security(syminfo.tickerid, resolvedTf, source)",
+        "wrap(tf, source) =>",
+        "    req(tf, source)",
+        "plot(close)",
+      ].join("\n"),
+    );
+    expectNeverRequested(prog);
+  });
+
+  it("still requests in a function a called function calls, and in a function a method calls", () => {
+    const prog = analyzeSource(
+      [
+        "type P",
+        "    float v",
+        "req(tf, source) =>",
+        "    request.security(syminfo.tickerid, tf, source)",
+        "wrap(tf, source) =>",
+        "    req(tf, source)",
+        "req2(tf) =>",
+        "    request.security(syminfo.tickerid, tf, close)",
+        "method m(P self) =>",
+        '    req2("D")',
+        'a = wrap("D", close)',
+      ].join("\n"),
+    );
+    expect(prog.securityUncalledCalls.size).toBe(0);
   });
 
   // C692 이전에는 이 케이스가 거부됐다(당시 코멘트: "does NOT relax the check for a LIVE (actually
@@ -24274,7 +24320,7 @@ describe("Analyzer request.security tf 함수-로컬 단일대입 변수 (C623)"
     expect(prog.securityTfs).toEqual(["60", "240"]);
   });
 
-  it("still rejects when the UDF-local var is ':=' reassigned anywhere in the function (재대입 0회 전제 위반)", () => {
+  it("no longer rejects when the UDF-local var is ':=' reassigned anywhere in the function — each call binds it on its first execution (resin-harness suites/lang/probes/L38.json)", () => {
     const prog = analyzeSource(
       [
         "f() =>",
@@ -24285,10 +24331,10 @@ describe("Analyzer request.security tf 함수-로컬 단일대입 변수 (C623)"
         "y = f()",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundPerCall(prog, 1);
   });
 
-  it("still rejects when the same name has two '=' bindings inside the same function (top-of-func + nested block — 함수 안 유일성 위반)", () => {
+  it("no longer rejects when the same name has two '=' bindings inside the same function (top-of-func + nested block) — bound per call on its first execution (L38)", () => {
     const prog = analyzeSource(
       [
         "f() =>",
@@ -24299,21 +24345,21 @@ describe("Analyzer request.security tf 함수-로컬 단일대입 변수 (C623)"
         "y = f()",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundPerCall(prog, 1);
   });
 
-  it("still rejects a UDF-local var declared only inside a nested block (not at the function's own top level — funcTop 자격 위반)", () => {
+  it("no longer rejects a UDF-local var declared only inside a nested block — bound per call on its first execution (L38)", () => {
     const prog = analyzeSource(
       ["f() =>", "    if close > open", '        myTf = "60"', '        request.security("", myTf, close)', "y = f()"].join(
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundPerCall(prog, 1);
   });
 
-  it("still rejects use-before-declaration of the UDF-local tf var (선언-후-사용 위반, 함수판)", () => {
+  it("rejects use-before-declaration of the UDF-local tf var with the ordinary analysis's own error (선언-후-사용 위반, 함수판)", () => {
     const prog = analyzeSource(["f() =>", '    request.security("", myTf, close)', '    myTf = "60"', "y = f()"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("myTf"))).toBe(true);
   });
 
   it("registers a securityRuntimeTfSlots entry when the UDF-local tf var's definition needs the runtime path (direct input.bool/input.timeframe leaves)", () => {
@@ -24406,7 +24452,7 @@ describe("Analyzer request.security tf 함수-로컬 숫자/불리언 변수 (C6
     expectTfBoundOnFirstExecution(prog);
   });
 
-  it("still rejects when the func-local numeric var used in the tf ternary condition is declared only inside a nested block (funcTop 자격 위반 — request.security 콜 자체를 그 블록 안에 둬 바깥 if 조건의 폴딩 가능 여부와 무관하게 검증)", () => {
+  it("no longer rejects when the func-local numeric var used in the tf ternary condition is declared only inside a nested block — bound per call on its first execution (resin-harness suites/lang/probes/L38.json)", () => {
     const prog = analyzeSource(
       [
         "f() =>",
@@ -24416,7 +24462,7 @@ describe("Analyzer request.security tf 함수-로컬 숫자/불리언 변수 (C6
         "y = f()",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundPerCall(prog, 1);
   });
 });
 
@@ -25333,25 +25379,29 @@ describe("Analyzer request.security tf 배치31 (b)-2 (C600, tf-param 콜사이�
     expect(Array.from(prog.securityRuntimeTfSlots.keys())).toEqual([1]);
   });
 
-  it("still rejects a transitive param form (wrap(t) => getS(t) — 콜사이트 실인자가 호출자 자신의 매개변수라 양쪽 해석 모두 자연 실패)", () => {
+  // A call whose argument folds neither at compile time nor before the bar loop now binds its request
+  // on its first execution, every call of the function its own (resin-harness
+  // suites/lang/probes/L38.json); a value that changes later is refused at run time
+  // (Context.bindSecurity), as outside functions.
+  it("no longer rejects a transitive param form (wrap(t) => getS(t)) — the call in wrap binds its request on its first execution", () => {
     const prog = analyzeSource(
       ['getS(tf) =>', '    request.security("", tf, close)', "wrap(t) => getS(t)", 'a = wrap("60")'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundPerCall(prog, 1);
   });
 
-  it("still rejects when ANY call site is genuinely dynamic (bar-series ternary arg — 부분 지원 없음, 전체 하드 에러)", () => {
+  it("no longer rejects when a call site passes a bar-series ternary — every call binds its own request on its first execution", () => {
     const prog = analyzeSource(
       ['getS(tf) =>', '    request.security("", tf, close)', 'a = getS("D")', 'b = getS(close > open ? "60" : "240")'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundPerCall(prog, 2);
   });
 
-  it("still rejects a ':='-reassigned variable site arg (재대입 0회 전제는 사이트 실인자에도 동일)", () => {
+  it("no longer rejects a ':='-reassigned variable site arg — every call binds its own request on its first execution", () => {
     const prog = analyzeSource(
       ['tfv = "60"', 'tfv := "240"', 'getS(tf) =>', '    request.security("", tf, close)', 'a = getS("D")', "b = getS(tfv)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundPerCall(prog, 2);
   });
 
   it("keeps the all-literal C529 path byte-identical (uniform collapse + no runtime slots — 리졸버 교체 회귀 가드)", () => {
@@ -25494,7 +25544,9 @@ describe("Analyzer request.security tf via UDF parameter call-site folding (C529
     expect(Array.from(prog.funcSecIdxArgs.values()).sort()).toEqual([0, 1]);
   });
 
-  it("still rejects when ANY call site's argument fails compile-time folding (all-or-nothing, 부분 지원 금지)", () => {
+  // A call whose argument does not fold binds its request on its first execution now, every call of
+  // the function its own (resin-harness suites/lang/probes/L38.json).
+  it("no longer rejects when a call site's argument fails compile-time folding — every call binds its own request on its first execution", () => {
     const prog = analyzeSource(
       [
         'v = "60"',
@@ -25505,14 +25557,14 @@ describe("Analyzer request.security tf via UDF parameter call-site folding (C529
         'y = getS("D")',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundPerCall(prog, 2);
   });
 
-  it("still rejects when a call site omits the argument (param default substitution 미지원 — C453과 동일한 보수 원칙)", () => {
+  it("no longer rejects when a call site omits the argument — the call binds the parameter's default on its first execution", () => {
     const prog = analyzeSource(
       'getS(tf = "D") =>\n    request.security("", tf, close)\nx = getS("60")\ny = getS()',
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundPerCall(prog, 2);
   });
 
   // C624 교체(next_hint(C623) "udf_param" 잔여 축 실측 — wild tf-literal 131건 중 29건이 이
@@ -25523,12 +25575,10 @@ describe("Analyzer request.security tf via UDF parameter call-site folding (C529
   // 값이 실제로 무엇이어야 하는지 관측되지 않으므로 prog.chartTf로 접어 무해한 고정 리터럴
   // 경로(uniform collapse)로 흡수한다 — C532/C539가 세운 "거부→허용 전환, 근거는 새 폴딩
   // 능력" 선례와 동형.
-  it("accepts and folds to chartTf when the function has NO call sites at all (dead-UDF security — C624, uniform 고정 리터럴 경로로 흡수)", () => {
+  // A function no executed code calls makes no request at all now (expectNeverRequested).
+  it("accepts and makes no request when the function has NO call sites at all (dead-UDF security — C624)", () => {
     const prog = analyzeSource('getS(tf) =>\n    request.security("", tf, close)\nplot(close)');
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityTfs).toEqual(["D"]);
-    const call = Array.from(prog.securityCallSlots.values())[0]!;
-    expect(call).toEqual({ slot: 0, field: "close", gaps: false, lookahead: false });
+    expectNeverRequested(prog);
     expect(prog.funcSecIdxArgs.size).toBe(0);
     expect(prog.funcs.get("getS")!.hasSecParamCalls).toBe(false);
   });
@@ -25639,7 +25689,9 @@ describe("Analyzer request.security tf-param folding across in-func call sites (
     expect(prog.securityTfs).toEqual(["240", "60"]);
   });
 
-  it("still rejects the transitive form — an in-func site passing the CALLER's own parameter (wrap(t) => getS(t))", () => {
+  // An in-func site whose argument does not fold binds its request on its first execution now
+  // (resin-harness suites/lang/probes/L38.json), with the value the argument has there.
+  it("no longer rejects the transitive form — an in-func site passing the CALLER's own parameter (wrap(t) => getS(t)) binds on its first execution", () => {
     const prog = analyzeSource(
       [
         "getS(tf) =>",
@@ -25648,11 +25700,11 @@ describe("Analyzer request.security tf-param folding across in-func call sites (
         'y = wrap("60")',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
-    expect(prog.securityCallSlots.size).toBe(0);
+    expectTfBoundPerCall(prog, 1);
+    expect(prog.securityCallSlots.size).toBe(1);
   });
 
-  it("still rejects when the in-func site argument SHADOWS a same-named top-level const (C526 가드 — 절대 top-level \"60\"으로 접지 않는다)", () => {
+  it("binds, and never folds to the top-level const, an in-func site argument that SHADOWS a same-named top-level const (C526 가드 — 절대 top-level \"60\"으로 접지 않는다)", () => {
     const prog = analyzeSource(
       [
         'tf1 = "60"',
@@ -25662,8 +25714,9 @@ describe("Analyzer request.security tf-param folding across in-func call sites (
         'y = wrap("240")',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
-    expect(prog.securityTfs).toEqual([]);
+    expectTfBoundPerCall(prog, 1);
+    expect(prog.securityTfs).toEqual([prog.chartTf]);
+    expect(prog.securityTfConstGuards.size).toBe(0);
   });
 
   it("tf-param AND expression-param both folding across an in-func call site since C731 (구 'expression 축 top-level 전용' 경계 테스트 교체 — tf 콜사이트별 리터럴과 expression 콜사이트별 prepass가 같은 서수 인프라로 함께 흐른다)", () => {
@@ -25683,7 +25736,7 @@ describe("Analyzer request.security tf-param folding across in-func call sites (
     expect(prog.securityTfs).toEqual(["60", "240"]);
   });
 
-  it("still rejects when an in-func site argument is a runtime-varying expression (all-or-nothing 유지)", () => {
+  it("no longer rejects when an in-func site argument is a runtime-varying expression — every call binds its own request on its first execution", () => {
     const prog = analyzeSource(
       [
         "getS(tf) =>",
@@ -25693,7 +25746,7 @@ describe("Analyzer request.security tf-param folding across in-func call sites (
         'z = getS("D")',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundPerCall(prog, 2);
   });
 });
 
@@ -26136,11 +26189,14 @@ describe("Analyzer request.security distinct-tf tuple call-site slot blocks (C53
     expect(Array.from(prog.funcSecIdxArgs.values()).sort()).toEqual([0, 1]);
   });
 
-  it("still rejects when any call-site tf argument fails literal folding (all-or-nothing 보수 원칙 유지)", () => {
+  // Each call binds its own tuple request on its first execution now (resin-harness
+  // suites/lang/probes/L38.json).
+  it("no longer rejects when a call-site tf argument fails literal folding — every call binds its own request on its first execution", () => {
     const prog = analyzeSource(
       'f(tf) =>\n    request.security(syminfo.tickerid, tf, [close, open])\n[a, b] = f("60")\n[c, d] = f(close > 0 ? "60" : "D")',
     );
-    expect(prog.errors.some((e) => e.includes("'timeframe' argument only supports a compile-time string literal"))).toBe(true);
+    expectTfBoundPerCall(prog, 2);
+    expect([...prog.securityTupleCallSlots.values()][0]!.multiSite).toBe(true);
   });
 
   it("keeps two independent multiSite tuple calls in different UDFs on disjoint slot blocks", () => {
@@ -27019,12 +27075,13 @@ describe("Analyzer request.security ta-in-UDF expression (C533)", () => {
 
   // C624 교체(위 "accepts and folds to chartTf" 테스트와 동일 근거 — bare-field 축에 이어 ta.*
   // expression 축도 같은 tfLiteral 확정 지점을 공유해 동시에 해소됨, 별도 codegen/expression 변경 0줄).
-  it("accepts and folds to chartTf a tf-param + ta.* expression when the UDF has no call sites (dead-UDF — C624)", () => {
+  // A function no executed code calls makes no request at all now (expectNeverRequested): its ta.*
+  // call is the function's own code, with no global prepass slot.
+  it("accepts and makes no request for a tf-param + ta.* expression when the UDF has no call sites (dead-UDF — C624)", () => {
     const prog = analyzeSource('f(tf) =>\n    request.security(syminfo.tickerid, tf, ta.sma(close, 3))\nplot(close)');
-    expect(prog.errors).toEqual([]);
-    expect(prog.securityTfs).toEqual(["D"]);
-    expect(prog.securityExprCallSlots.size).toBe(1);
-    expect(prog.taSlotCount).toBe(1);
+    expectNeverRequested(prog);
+    expect(prog.securityExprCallSlots.size).toBe(0);
+    expect(prog.taSlotCount).toBe(0);
     expect(prog.funcSecIdxArgs.size).toBe(0);
   });
 

@@ -2013,6 +2013,47 @@ function resolveSecurityTfParamSiteValues(
   return values;
 }
 
+// The functions (FuncDecl, not methods) no executed code calls. The compiler extracts a function's
+// request.*() calls into the global scope, one request per call of the function
+// (concepts_other-timeframes-and-data.txt "In local scopes": "the Pine Script compiler extracts such
+// calls into the global scope during translation"), so such a function makes no request. Executed
+// code: the top level and the functions it calls, transitively, and, conservatively, a method's body
+// (a method's callers are not indexed, prog.funcAllCallSites) and every function of a library (its
+// exported ones are its importers' to call; the parser drops `export`).
+const uncalledFuncsCache = new WeakMap<AnalyzedProgram, ReadonlySet<string>>();
+function uncalledFuncs(prog: AnalyzedProgram): ReadonlySet<string> {
+  const cached = uncalledFuncsCache.get(prog);
+  if (cached !== undefined) return cached;
+  const body = prog.script.body;
+  const plain = new Set<string>();
+  const methods = new Set<string>();
+  let library = false;
+  for (const s of body) {
+    if (s.kind === "FuncDecl") plain.add(s.name);
+    else if (s.kind === "MethodDecl") methods.add(s.name);
+    else if (s.kind === "ExprStmt" && s.expr.kind === "CallExpr" && s.expr.callee.kind === "Identifier") {
+      library ||= s.expr.callee.name === "library";
+    }
+  }
+  const called = new Set<string>(library ? plain : []);
+  for (let changed = !library; changed; ) {
+    changed = false;
+    for (const [name, sites] of prog.funcAllCallSites) {
+      if (called.has(name)) continue;
+      const executed = sites.some(
+        (s) => s.inFuncName === null || methods.has(s.inFuncName) || !plain.has(s.inFuncName) || called.has(s.inFuncName),
+      );
+      if (executed) {
+        called.add(name);
+        changed = true;
+      }
+    }
+  }
+  const uncalled = new Set([...plain].filter((name) => !called.has(name)));
+  uncalledFuncsCache.set(prog, uncalled);
+  return uncalled;
+}
+
 // The symbol a request.security call reads, when it is known at compile time: a string the
 // timeframe resolver folds (a literal, a constant variable, an input's default, a constant
 // ternary, ...), or, for a parameter of the enclosing function, the one string every call site
@@ -7693,7 +7734,20 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       );
     } else {
       const leadArgs = resolveSecurityLeadArgs(expr, prog);
-      if (leadArgs !== null) {
+      if (
+        leadArgs !== null &&
+        scope.func !== null &&
+        uncalledFuncs(prog).has(scope.func.name) &&
+        leadArgs.seriesArg.kind !== "TupleExpr" &&
+        !prog.securityBareUdfCallSlots.has(expr) &&
+        !prog.securityBareTaCallSlots.has(expr)
+      ) {
+        // A function no executed code calls makes no request (uncalledFuncs): the call is never
+        // evaluated. Its arguments are the function's code all the same, analyzed as such (the
+        // positional ones by the shared pass below); it reads na (codegen).
+        for (const kw of expr.kwargs) analyzeExpr(kw.value, prog, scope, false);
+        prog.securityUncalledCalls.add(expr);
+      } else if (leadArgs !== null) {
       const { symbolArg, tfArg, seriesArg } = leadArgs;
       // C435: 빈 문자열 tf('')는 TV의 "차트 타임프레임" 관용구(wild에선 input.timeframe(defval='')가
       // 지배적 폼) — prog.chartTf(배치30 (1), C591부터 설정화. chartTf="D" 기본값에서는 이전
@@ -7771,6 +7825,28 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         // C600: C597 직접 input 콜/C598 치환 트리 이단 판정을 공용 헬퍼로 추출(tf-param 사이트별
         // 리졸버와 공유, 사본 발산 방지) — 동작은 기존 인라인 구현과 바이트 동등(헬퍼 주석 참조).
         tfRuntimeExpr = resolveSecurityRuntimeTfArg(tfArg, prog, scope.func?.name ?? null);
+      }
+      // A call in a function whose timeframe folds, for some call of the function, neither at
+      // compile time nor before the bar loop (a local computed from a parameter, `safe_tf = tf == ''
+      // ? timeframe.period : tf`, a switch over one, a parameter passed a value known only at run
+      // time): each call of the function is a request of its own (concepts_other-timeframes-and-
+      // data.txt "In local scopes": "the Pine Script compiler extracts such calls into the global
+      // scope during translation"), and it binds its timeframe where it stands, on its first
+      // execution, to the value the argument has there, as a call outside functions does
+      // (tfDeferrable below; mig6.txt "Dynamic requests": "the context of a data request (ticker ID
+      // and timeframe) must be known on the first script execution and remain unchanged across all
+      // subsequent executions"). One entry per call of the function, null: bound on execution.
+      let tfSiteDeferred: null[] | null = null;
+      if (
+        tfLiteral === undefined &&
+        tfSiteLiterals === null &&
+        tfSiteMixed === null &&
+        tfRuntimeExpr === null &&
+        scope.func !== null &&
+        !evidentlyNotString(tfArg)
+      ) {
+        const sites = prog.funcAllCallSites.get(scope.func.name);
+        if (sites !== undefined && sites.length > 0) tfSiteDeferred = sites.map(() => null);
       }
       // C432: bare UDF 콜(analyzeTupleDestructure가 튜플 arity 일치를 이미 확인하고 등록해둠,
       // securityBareUdfCallSlots 주석 참조) — buildSecurityExpr 좁은 문법과 완전히 별개 경로라
@@ -7942,7 +8018,11 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         !isTupleArg &&
         bareUdfInner === undefined &&
         bareTaInner === undefined &&
-        (tfLiteral !== undefined || tfSiteLiterals !== null || tfSiteMixed !== null || tfRuntimeExpr !== null)
+        (tfLiteral !== undefined ||
+          tfSiteLiterals !== null ||
+          tfSiteMixed !== null ||
+          tfRuntimeExpr !== null ||
+          tfSiteDeferred !== null)
       ) {
         const chartTicker = prog.syminfoStrings.get("tickerid") || null;
         const siteSymbols = resolveSecuritySiteSymbols(symbolArg, prog, scope);
@@ -8279,8 +8359,14 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         !tfViaRuntime &&
         !tfDiscarded &&
         (isBareSeries || tupleFields !== null || exprMatch !== null || scriptPlan !== null);
+      // The same in a function (tfSiteDeferred above): the forms that give each call of the function
+      // a slot block of its own, which that call binds.
+      const tfSiteDeferredOk =
+        tfSiteDeferred !== null &&
+        !tfDiscarded &&
+        (isBareSeries || tupleFields !== null || exprMatch !== null || funcScriptPlan !== null);
       if (!tfAvailable) {
-        if (tfViaRuntime || tfDiscarded || tfDeferred) {
+        if (tfViaRuntime || tfDiscarded || tfDeferred || tfSiteDeferredOk) {
           // C600: 혼합 배열이 슬롯 생성 폼에 소비되면 폴딩 성공 사이트의 freeze 가드는 정당
           // 소비라 유지한다(실패 시도분은 리졸버가 사이트 단위로 이미 롤백). 그 외(순수 런타임
           // tfRuntimeExpr/tf discard — AllBareUdf passthrough 포함: 슬롯을 안 만들어 freeze 전제
@@ -8423,22 +8509,28 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // 분기의 tfLiteral! 참조가 구조적으로 안전하다(위 수용 판정이 그 조합에 이미 하드 에러를
       // push했다). (b)-2, C600: tf-param 혼합 배열(tfSiteMixed)은 tfSiteLiterals와 같은 자리로
       // 흐른다(tfSiteValues) — 사이트 슬롯 push만 pushSiteTf가 리터럴/런타임을 갈라 처리한다.
-      const tfSiteValues: (string | Expr)[] | null = tfSiteLiterals ?? tfSiteMixed;
+      // The per-call timeframes the deferred parameter forms below take (never bound on execution:
+      // tfSiteDeferredOk leaves those forms out).
+      const tfSiteFolded: (string | Expr)[] | null = tfSiteLiterals ?? tfSiteMixed;
+      const tfSiteValues: (string | Expr | null)[] | null = tfSiteFolded ?? (tfSiteDeferredOk ? tfSiteDeferred : null);
+      // The slots the call binds on its first execution (securityDeferredTfs), in push order.
+      const deferredSlots: number[] = [];
       // C600: 콜사이트별 tf 슬롯 push — 리터럴이면 기존 그대로, 런타임 트리면 자리표시(chartTf) +
       // securityRuntimeTfSlots 등록(C597 단일 슬롯 메커니즘의 사이트별 적용 — codegen 프리앰블이
-      // 등록된 슬롯마다 $.rebuildSecurityCache(slot, tf)를 방출한다).
-      const pushSiteTf = (v: string | Expr): void => {
+      // 등록된 슬롯마다 $.rebuildSecurityCache(slot, tf)를 방출한다). null: a placeholder the call
+      // binds on its first execution (tfSiteDeferred).
+      const pushSiteTf = (v: string | Expr | null): void => {
         const siteSlot = prog.securityTfs.length;
         if (typeof v === "string") {
           prog.securityTfs.push(v);
         } else {
           prog.securityTfs.push(prog.chartTf);
-          prog.securityRuntimeTfSlots.set(siteSlot, v);
+          if (v === null) deferredSlots.push(siteSlot);
+          else prog.securityRuntimeTfSlots.set(siteSlot, v);
         }
       };
       // One slot on the call's timeframe: the compile-time literal, else a placeholder the preamble
       // rebuilds (securityRuntimeTfSlots) or the call binds on its first execution (deferredSlots).
-      const deferredSlots: number[] = [];
       const pushCallTf = (): number => {
         const slot = prog.securityTfs.length;
         prog.securityTfs.push(tfLiteral ?? prog.chartTf);
@@ -8448,7 +8540,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       };
       const slotsBefore = prog.securityTfs.length;
       try {
-      if (kwargsOk && (tfAvailable || tfViaRuntime || tfDiscarded || tfDeferred)) {
+      if (kwargsOk && (tfAvailable || tfViaRuntime || tfDiscarded || tfDeferred || tfSiteDeferredOk)) {
         if (seriesArg.kind === "Identifier" && BAR_SERIES_NAMES.has(seriesArg.name)) {
           const slot = prog.securityTfs.length;
           if (tfSiteValues !== null) {
@@ -8702,7 +8794,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             indexWrap: null,
             paramSubstRoot: null,
             passthroughSeriesArg: seriesArg,
-            tfLiteral: tfSiteValues ?? tfLiteral!,
+            tfLiteral: tfSiteFolded ?? tfLiteral!,
             gaps,
             lookahead,
             symbol,
@@ -8730,7 +8822,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             // C529: tf도 이 UDF의 매개변수면 콜사이트별 배열(같은 funcAllCallSites 순서라
             // 큐 처리의 서수와 1:1) — 고정 리터럴이면 기존 그대로 string 하나. C600: 배열 원소가
             // 런타임 tf 트리(Expr)면 큐 처리가 그 서수 슬롯을 securityRuntimeTfSlots에 등록한다.
-            tfLiteral: tfSiteValues ?? tfLiteral!,
+            tfLiteral: tfSiteFolded ?? tfLiteral!,
             gaps,
             lookahead,
             symbol,
@@ -8751,7 +8843,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             indexWrap: null,
             paramSubstRoot: secParamMultiSiteGeneric,
             passthroughSeriesArg: null,
-            tfLiteral: tfSiteValues ?? tfLiteral!,
+            tfLiteral: tfSiteFolded ?? tfLiteral!,
             gaps,
             lookahead,
             symbol,
@@ -8802,7 +8894,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           funcScriptPlan.sites.forEach((site, k) => {
             const slot = base + k;
             if (tfSiteValues !== null) {
-              pushSiteTf(tfSiteValues[k]!);
+              pushSiteTf(tfSiteValues[k] ?? null);
             } else {
               prog.securityTfs.push(tfLiteral ?? prog.chartTf);
               if (tfRuntimeExpr !== null && tfLiteral === undefined) prog.securityRuntimeTfSlots.set(slot, tfRuntimeExpr);
@@ -8821,7 +8913,15 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       }
       } finally {
         noteSecuritySymbol(prog, slotsBefore, symbol);
-        if (deferredSlots.length > 0) prog.securityDeferredTfs.set(expr, { slots: deferredSlots, tf: tfArg });
+        if (deferredSlots.length > 0) {
+          if (tfSiteDeferred !== null) {
+            // Per call of the function: the slots were pushed a block at a time, one per call.
+            const n = tfSiteDeferred.length;
+            prog.securityDeferredTfs.set(expr, { slots: deferredSlots.filter((_, i) => i % n === 0), tf: tfArg, sites: n });
+          } else {
+            prog.securityDeferredTfs.set(expr, { slots: deferredSlots, tf: tfArg });
+          }
+        }
       }
       }
     }
