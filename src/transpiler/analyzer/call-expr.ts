@@ -8136,6 +8136,9 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             return s !== null && s !== chartTicker;
           },
           requestedObjectType(seriesArg, prog, scope),
+          // Each call binds its timeframe on its first execution (tfSiteDeferredOk below, which a
+          // plan makes true).
+          tfSiteDeferred !== null,
         );
         if (planned.ok) {
           funcScriptPlan = planned.plan;
@@ -8430,7 +8433,16 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           scriptPlanRefusal = funcScriptPlanRefusal ?? "the call is in a function";
         } else {
           const chartTicker = prog.syminfoStrings.get("tickerid") || null;
-          const planned = planSecurityScript(prog, expr, seriesArg, symbol !== null && symbol !== chartTicker, requestedObjectType(seriesArg, prog, scope));
+          const planned = planSecurityScript(
+            prog,
+            expr,
+            seriesArg,
+            symbol !== null && symbol !== chartTicker,
+            requestedObjectType(seriesArg, prog, scope),
+            // The call binds its timeframe on its first execution (tfDeferred below, which a plan
+            // makes true).
+            tfLiteral === undefined && tfRuntimeExpr === null && tfDeferrable,
+          );
           if (planned.ok) {
             scriptPlan = planned.plan;
             scalarBareUdfInner = undefined;

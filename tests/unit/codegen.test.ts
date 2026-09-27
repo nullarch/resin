@@ -16370,7 +16370,9 @@ describe("CodeGen request.security expression via UDF parameter single-call-site
     expect(Array.from(wrappedPlots[0]!.values)).toEqual(Array.from(directPlots[0]!.values));
   });
 
-  it("accepts mixed top-level and in-func call sites since C731 — emits per-site prepasses and __secIdx ordinal at the in-func call site too (구 거부 테스트를 허용+방출 단언으로 교체, C539 선례)", () => {
+  // The in-func call is evaluated in the requested context through its caller's call (oracle:
+  // resin-harness suites/lang/probes/L45.json, L47.json); the E2E test below checks the values.
+  it("mixed top-level and in-func call sites: one requested-context run per call, the in-func one through its caller's call, and the __secIdx ordinal at each call", () => {
     const source = [
       'f_sec(sym, val) =>\n    request.security(sym, "D", val)',
       "wrapper() =>\n    f_sec(syminfo.tickerid, open)",
@@ -16379,12 +16381,14 @@ describe("CodeGen request.security expression via UDF parameter single-call-site
     ].join("\n");
     const code = codegenSource(source);
     expect(code).toContain("function f_sec(__slotBase, __secIdx, sym, val) {");
-    // 콜사이트 순서 = AST 워크 순서: wrapper 본문 안 f_sec(...)가 서수 0, top-level a가 서수 1.
-    expect(code).toContain("f_sec(");
-    const p0 = /function __secExpr0\(\) \{[\s\S]*?\n\}/.exec(code)![0];
-    const p1 = /function __secExpr1\(\) \{[\s\S]*?\n\}/.exec(code)![0];
-    expect(p0).toContain("out[h] = open;");
-    expect(p1).toContain("out[h] = close;");
+    // Call order = walk order: f_sec(...) in wrapper's body is call 0, the top-level a call 1.
+    expect(code).toContain('return f_sec(0, 0, "", $.open.get(0));');
+    expect(code).toContain('var a = f_sec(0, 1, "", $.close.get(0));');
+    expect(code).toContain("$.securityExprCache[0] = $.runSecurityScript(0, [], 2);");
+    expect(code).toContain("$.securityExprCache[1] = $.runSecurityScript(1, [], 2);");
+    expect(code).not.toContain("function __secExpr0()");
+    // Call 0's child evaluates wrapper(), whose call of f_sec records it.
+    expect(code).toMatch(/if \(\$\.secCapture === 0\) \{\nwrapper\(/);
   });
 
   it("hand-verified E2E (C731): values through mixed in-func/top-level wrapper call sites equal calling request.security directly with each argument inlined at top level", () => {

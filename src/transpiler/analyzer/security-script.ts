@@ -140,8 +140,10 @@ interface Effects {
   muts: Set<string>; // user names whose object may change in place
   groups: string[][]; // user names that may come to share an object
   request: boolean;
-  // The request.*() calls it makes, and whether each is written in a function's body.
-  requestCalls: { call: CallExpr; inFunction: boolean }[];
+  // The request.*() calls it makes, whether each is written in a function's body, and whether it
+  // may be skipped when the code walked runs (it sits in a block, a `?:` branch or the right operand
+  // of `and`/`or`, or in a function called from one).
+  requestCalls: { call: CallExpr; inFunction: boolean; conditional: boolean }[];
   strategy: boolean;
   timeframe: boolean; // a timeframe.*() call
   syminfo: boolean;
@@ -155,13 +157,14 @@ function newEffects(): Effects {
   };
 }
 
-function mergeInto(to: Effects, from: Effects): void {
+// `conditional`: `from` is the effect of code that may be skipped where `to` is walked.
+function mergeInto(to: Effects, from: Effects, conditional = false): void {
   for (const n of from.reads) to.reads.add(n);
   for (const n of from.defs) to.defs.add(n);
   for (const n of from.muts) to.muts.add(n);
   for (const g of from.groups) to.groups.push(g);
   to.request ||= from.request;
-  for (const r of from.requestCalls) to.requestCalls.push(r);
+  for (const r of from.requestCalls) to.requestCalls.push(conditional && !r.conditional ? { ...r, conditional: true } : r);
   to.strategy ||= from.strategy;
   to.timeframe ||= from.timeframe;
   to.syminfo ||= from.syminfo;
@@ -233,6 +236,37 @@ function bodiesOf(node: Stmt | Expr): Stmt[][] {
     default:
       return [];
   }
+}
+
+// The children of `node` (children()) evaluated whenever `node` is: an if's or a while's condition,
+// a for loop's bounds, a switch's subject, a `?:` condition, the left operand of `and`/`or`, and
+// everything below any other node. The rest may be skipped.
+function alwaysEvaluated(node: Stmt | Expr): ReadonlySet<Stmt | Expr> | null {
+  switch (node.kind) {
+    case "IfStmt":
+    case "WhileStmt":
+      return new Set([node.condition]);
+    case "ForStmt":
+      return new Set([node.start, node.end, ...(node.step ? [node.step] : [])]);
+    case "ForInStmt":
+      return new Set([node.iterable]);
+    case "SwitchStmt":
+      return new Set(node.subject ? [node.subject] : []);
+    case "TernaryOp":
+      return new Set([node.condition]);
+    case "BinOp":
+      return node.op === "and" || node.op === "or" ? new Set([node.left]) : null;
+    default:
+      return null;
+  }
+}
+
+// Whether evaluating `node` always evaluates `target`, a node below it (alwaysEvaluated).
+function alwaysReaches(node: Stmt | Expr, target: Expr): boolean {
+  if (node === target) return true;
+  const always = alwaysEvaluated(node);
+  const c = children(node).find((ch) => contains(ch, target));
+  return c !== undefined && (always === null || always.has(c)) && alwaysReaches(c, target);
 }
 
 function contains(node: Stmt | Expr, target: Expr): boolean {
@@ -322,6 +356,9 @@ class SliceAnalysis {
   // whose value on one bar can reach code that runs on a later bar.
   private readonly persistent = new Set<string>();
   private readonly historyNames = new Set<string>();
+  // How many nodes that may skip what is being walked enclose it (alwaysEvaluated), from the
+  // statement or function body the walk started at.
+  private condDepth = 0;
 
   // Whether a change to `name` late on a bar can be seen by code that runs before it on a later bar.
   carriesOver(name: string): boolean {
@@ -728,6 +765,10 @@ class SliceAnalysis {
     if (memo !== undefined) return memo;
     const eff = newEffects();
     this.funcEffects.set(name, eff);
+    // Whether the body's requests may be skipped is seen from the body (a call from a block adds its
+    // own: walkCall), whatever the walk that first asks was inside.
+    const outerDepth = this.condDepth;
+    this.condDepth = 0;
     for (const f of this.funcs.get(name) ?? []) {
       const body = newEffects();
       for (const p of f.params) if (p.default) this.walkExpr(p.default, body);
@@ -746,13 +787,22 @@ class SliceAnalysis {
         if (globals.length > 1) eff.groups.push(globals);
       }
       eff.request ||= body.request;
-      for (const r of body.requestCalls) eff.requestCalls.push({ call: r.call, inFunction: true });
+      for (const r of body.requestCalls) eff.requestCalls.push({ ...r, inFunction: true });
       eff.strategy ||= body.strategy;
       eff.timeframe ||= body.timeframe;
       eff.syminfo ||= body.syminfo;
       eff.globalWrite ||= body.globalWrite;
     }
+    this.condDepth = outerDepth;
     return eff;
+  }
+
+  // Walks `c`, a child of `parent`: under one more level of condDepth if `parent` may skip it.
+  private walkChild(parent: Stmt | Expr, c: Stmt | Expr, walk: () => void): void {
+    const skippable = !(alwaysEvaluated(parent)?.has(c) ?? true);
+    if (skippable) this.condDepth++;
+    walk();
+    if (skippable) this.condDepth--;
   }
 
   walkStmt(s: Stmt, eff: Effects): void {
@@ -793,8 +843,10 @@ class SliceAnalysis {
         return;
     }
     for (const c of children(s)) {
-      if (bodiesOf(s).some((b) => b.includes(c as Stmt))) this.walkStmt(c as Stmt, eff);
-      else this.walkExpr(c as Expr, eff);
+      this.walkChild(s, c, () => {
+        if (bodiesOf(s).some((b) => b.includes(c as Stmt))) this.walkStmt(c as Stmt, eff);
+        else this.walkExpr(c as Expr, eff);
+      });
     }
   }
 
@@ -824,7 +876,7 @@ class SliceAnalysis {
         this.walkStmt(e, eff);
         return;
     }
-    for (const c of children(e)) this.walkExpr(c as Expr, eff);
+    for (const c of children(e)) this.walkChild(e, c, () => this.walkExpr(c as Expr, eff));
   }
 
   private walkCall(c: CallExpr, eff: Effects): void {
@@ -840,7 +892,7 @@ class SliceAnalysis {
       for (const a of args) this.walkExpr(a, argEff);
       for (const n of argEff.reads) eff.reads.add(n);
       eff.request = true;
-      eff.requestCalls.push({ call: c, inFunction: false });
+      eff.requestCalls.push({ call: c, inFunction: false, conditional: this.condDepth > 0 });
       return;
     }
     for (const a of args) this.walkExpr(a, eff);
@@ -853,7 +905,7 @@ class SliceAnalysis {
     };
     if (callee.kind === "Identifier") {
       if (this.funcs.has(callee.name)) {
-        mergeInto(eff, this.effectsOfFunction(callee.name));
+        mergeInto(eff, this.effectsOfFunction(callee.name), this.condDepth > 0);
         handed();
       }
       return;
@@ -884,7 +936,7 @@ class SliceAnalysis {
       return;
     }
     this.walkExpr(obj, eff);
-    if (this.funcs.has(callee.attr)) mergeInto(eff, this.effectsOfFunction(callee.attr));
+    if (this.funcs.has(callee.attr)) mergeInto(eff, this.effectsOfFunction(callee.attr), this.condDepth > 0);
     handed([...this.objectNames(obj)]);
   }
 }
@@ -899,17 +951,29 @@ class SliceAnalysis {
 // nested request inherits that request.*() call's ticker ID or timeframe information") would read
 // another context's, which the reference does not do either (resin-harness state/disputes.md D11),
 // and is refused, as is a request in a function (its symbol and timeframe are the call's). Also
-// refused: a request.*() function other than request.security, and a request whose timeframe is
-// bound on its first execution (its data is not built before the child runs). Why the child
-// cannot read them, or null.
-function nestedRequestRefusal(prog: AnalyzedProgram, effs: readonly Effects[]): string | null {
+// refused: a request.*() function other than request.security, and a request whose data is not
+// built before the child runs. The child reads the data the chart has built when it runs: before
+// the bar loop, or, for a request whose timeframe its call binds on its first execution
+// (`boundLate`), from that execution on (Context.bindSecurity). A nested request bound on its own
+// first execution is built by then only if it executes whenever the code before the request does
+// (`effs` is that code): not one in a block, a `?:` branch or the right operand of `and`/`or`. Why
+// the child cannot read them, or null.
+// A request written in the requested expression itself runs only in the child: the chart never
+// executes it, so it is never bound by an execution there (`childOnly`).
+function childOnly(eff: Effects): Effects {
+  return { ...eff, requestCalls: eff.requestCalls.map((r) => ({ ...r, conditional: true })) };
+}
+
+function nestedRequestRefusal(prog: AnalyzedProgram, effs: readonly Effects[], boundLate: boolean): string | null {
   const dynamic = allowsDynamicRequests(prog);
   for (const e of effs) {
-    for (const { call, inFunction } of e.requestCalls) {
+    for (const { call, inFunction, conditional } of e.requestCalls) {
       const fn = call.callee.kind === "DotAccess" ? call.callee.attr : "";
       if (fn !== "security") return `it depends on a request.${fn}() call (not implemented in a requested context)`;
-      if (prog.securityDeferredTfs.has(call)) {
-        return "it depends on a request whose timeframe is bound on its first execution (not implemented in a requested context)";
+      if (prog.securityDeferredTfs.has(call) && !(boundLate && !conditional)) {
+        return boundLate
+          ? "it depends on a request whose timeframe is bound on its first execution, which the code before it may skip (not implemented in a requested context)"
+          : "it depends on a request whose timeframe is bound on its first execution (not implemented in a requested context)";
       }
       if (dynamic && (inFunction || requestInheritsContext(call))) {
         return "it depends on a request that, with dynamic requests, may run in the requested context's symbol or timeframe (not implemented; resin-harness state/disputes.md D11)";
@@ -965,12 +1029,15 @@ function requestableTypeRefusal(prog: AnalyzedProgram, typeName: string, visitin
   return null;
 }
 
+// `boundLate`: the call binds its timeframe on its first execution, and its child runs then
+// (nestedRequestRefusal).
 export function planSecurityScript(
   prog: AnalyzedProgram,
   call: CallExpr,
   expression: Expr,
   foreignSymbol: boolean,
   objectType: string | null,
+  boundLate: boolean,
 ): SecurityScriptPlanResult {
   const body = prog.script.body;
   const at = body.findIndex((s) => contains(s, call));
@@ -991,7 +1058,7 @@ export function planSecurityScript(
     a.walkStmt(s, eff);
     return eff;
   });
-  const sliced = sliceBefore(a, body, effects, at, call, exprEff, foreignSymbol);
+  const sliced = sliceBefore(a, body, effects, at, call, childOnly(exprEff), foreignSymbol, boundLate);
   if (!sliced.ok) return sliced;
   return { ok: true, plan: { stmt, slice: sliced.slice, strings: values.strings, objects: values.objects } };
 }
@@ -1008,7 +1075,7 @@ function declaredNames(stmt: Stmt): string[] {
 
 // The top-level statements before `body[at]` that a child must run so that `target`, evaluated where
 // `body[at]` begins, reads what it reads on the chart; `targetEff` is what evaluating it reads and
-// depends on. Or why the child cannot evaluate it.
+// depends on. Or why the child cannot evaluate it. `boundLate`: as planSecurityScript's.
 function sliceBefore(
   a: SliceAnalysis,
   body: readonly Stmt[],
@@ -1017,6 +1084,7 @@ function sliceBefore(
   target: Expr,
   targetEff: Effects,
   foreignSymbol: boolean,
+  boundLate: boolean,
 ): { ok: true; slice: Set<Stmt> } | { ok: false; reason: string } {
   const exprEff = targetEff;
   // A call in a local block (an if/switch/loop body at the top level) is hoisted as TradingView
@@ -1091,7 +1159,7 @@ function sliceBefore(
   }
 
   const all = [exprEff, ...[...slice].map((i) => effects[i]!)];
-  const nested = nestedRequestRefusal(a.prog, all);
+  const nested = nestedRequestRefusal(a.prog, all, boundLate);
   if (nested !== null) return { ok: false, reason: nested };
   if (all.some((e) => e.strategy)) return { ok: false, reason: "it reads the strategy's state" };
   if (all.some((e) => e.globalWrite)) return { ok: false, reason: "a function it calls assigns a global variable" };
@@ -1106,8 +1174,11 @@ function sliceBefore(
 // (after the statements before it that the call needs), and the function records the expression
 // where the request's statement of its body begins, when __secIdx is k. The function's code before
 // that statement runs in the child as it runs on the chart, with the call's own instance state.
+// A call in another function's body is evaluated through the top-level call that reaches it.
 // `foreignSymbol(k)`: whether call k requests another symbol than the chart's. `objectType`: the
 // user-defined type of the object the expression evaluates to, if it is one (requestedValueKind).
+// `boundLate`: each call binds the request's timeframe on its first execution, and its child runs
+// then (nestedRequestRefusal).
 export function planSecurityScriptInFunction(
   prog: AnalyzedProgram,
   call: CallExpr,
@@ -1115,6 +1186,7 @@ export function planSecurityScriptInFunction(
   funcName: string,
   foreignSymbol: (ordinal: number) => boolean,
   objectType: string | null,
+  boundLate: boolean,
 ): SecurityFuncScriptPlanResult {
   const body = prog.script.body;
   const decl = body.find((s): s is FuncDecl => s.kind === "FuncDecl" && s.name === funcName && contains(s, call));
@@ -1132,61 +1204,32 @@ export function planSecurityScriptInFunction(
   // request returned is not there.
   const exprEff = newEffects();
   a.walkExpr(expression, exprEff);
-  const fEffects = decl.body.map((s) => {
-    const eff = newEffects();
-    a.walkStmt(s, eff);
-    return eff;
-  });
+  const fEffects = bodyEffects(a, decl);
   const needed = new Set(exprEff.reads);
-  const dep = new Set<number>();
-  for (let changed = true; changed; ) {
-    changed = false;
-    fEffects.forEach((eff, i) => {
-      if (i >= fat || dep.has(i)) return;
-      const affects = [...eff.defs, ...eff.muts].some((n) => needed.has(n));
-      if (!affects) return;
-      dep.add(i);
-      for (const n of eff.reads) needed.add(n);
-      for (const n of eff.muts) needed.add(n);
-      changed = true;
-    });
-  }
+  const dep = depBefore(fEffects, fat, needed);
   const depEff = [exprEff, ...[...dep].map((i) => fEffects[i]!)];
-  if (depEff.some((e) => e.request)) return { ok: false, reason: "it depends on another request.*() call (a nested request through a variable is not implemented)" };
+  // A request the expression depends on through the function's own code (`t = request.security(sym,
+  // tf, src)`, `ci = t - ta.ema(t, len)`, then `request.security(sym, tf, ta.ema(ci, 2))`): a nested
+  // request, which the child reads as the chart computed it for the same call of the function,
+  // paired with its rows (Context.runSecurityScript), where nestedRequestRefusal allows it. One in the
+  // requested expression itself runs only in the child (childOnly).
+  const nested = nestedRequestRefusal(prog, [childOnly(exprEff), ...depEff.slice(1)].map(writtenInFunction), boundLate);
+  if (nested !== null) return { ok: false, reason: nested };
   if (depEff.some((e) => e.timeframe)) return { ok: false, reason: "it calls timeframe.*() (not implemented in the requested context)" };
   const sites = prog.funcAllCallSites.get(funcName) ?? [];
   if (depEff.some((e) => e.syminfo) && sites.some((_, k) => foreignSymbol(k))) {
     return { ok: false, reason: "it reads syminfo.* of another symbol (not implemented)" };
   }
-  if (inBody(fstmt, call)) {
-    const eff = fEffects[fat]!;
-    const touched = [...eff.defs, ...eff.muts].find((n) => needed.has(n));
-    if (touched !== undefined) {
-      return { ok: false, reason: `the call is in a local block whose statement also changes '${touched}', which the expression reads` };
-    }
-  }
-  // The function's code from the request's statement on that changes what the expression reads on a
-  // later call (a `var` local, or one read with history): disputed as at the top level (D9).
-  const persistentLocals = new Set<string>();
-  const notePersistent = (node: Stmt | Expr): void => {
-    if (node.kind === "VarDecl" && node.persistent) persistentLocals.add(node.name);
-    for (const c of children(node)) notePersistent(c);
-  };
-  for (const s of decl.body) notePersistent(s);
-  for (let i = fat; i < decl.body.length; i++) {
-    const eff = fEffects[i]!;
-    const changed = [...eff.defs, ...eff.muts].find((n) => needed.has(n) && (persistentLocals.has(n) || a.carriesOver(n)));
-    if (changed !== undefined) {
-      return {
-        ok: false,
-        reason: `the function changes '${changed}', which the expression reads, after the call (L${decl.body[i]!.line}; disputed: whether the requested context runs that code)`,
-      };
-    }
-  }
+  const blockRefusal = sameBlockChangeRefusal(fstmt, call, fEffects[fat]!, needed);
+  if (blockRefusal !== null) return { ok: false, reason: blockRefusal };
+  const laterRefusal = laterChangeRefusal(a, decl, fEffects, fat, needed);
+  if (laterRefusal !== null) return { ok: false, reason: laterRefusal };
 
   // The child evaluates the whole call, so all of the function's code runs there, not only what the
-  // expression needs: none of it may need what a child does not have. Its other requests read
-  // nothing in the child (codegen), which holds for request.security calls written in its body.
+  // expression needs: none of it may need what a child does not have. Its other requests are read
+  // there as the chart has built them by then, paired with the child's rows (codegen
+  // childSafeSecurityRead), which holds for request.security calls written in its body; only the ones
+  // the expression depends on reach what the child records, and nestedRequestRefusal checked those.
   const whole = newEffects();
   for (const eff of fEffects) mergeInto(whole, eff);
   // The request's own expression too: a statement's effects leave a request's arguments out.
@@ -1219,14 +1262,36 @@ export function planSecurityScriptInFunction(
   });
   const planned: SecurityFuncScriptSite[] = [];
   for (let k = 0; k < sites.length; k++) {
-    const site = sites[k]!;
-    if (site.inFuncName !== null) return { ok: false, reason: "the function is called from another function" };
-    const at = body.findIndex((s) => contains(s, site.call));
+    // A call in another function's body is reached from the top level through the calls of the
+    // functions it is in: the child evaluates the outermost one (`top`), and all of their code runs
+    // there. Each of them must be called once, since a request per chain of calls is not modelled (a
+    // function called twice would run this call, one request, on both chains).
+    let top = sites[k]!.call;
+    let topDecl = decl;
+    // What the functions on the way read of the caller's names: their globals.
+    const chainEffs = [funcEff];
+    const onTheWay = new Set([funcName]);
+    for (let caller = sites[k]!.inFuncName; caller !== null; ) {
+      const name = caller;
+      const callerDecls = body.filter((s): s is FuncDecl => s.kind === "FuncDecl" && s.name === name);
+      const callerSites = prog.funcAllCallSites.get(name) ?? [];
+      if (callerDecls.length !== 1 || callerSites.length !== 1 || onTheWay.has(name)) {
+        return { ok: false, reason: `the function is called from '${name}', which is not one function called once (a request per chain of calls is not implemented)` };
+      }
+      onTheWay.add(name);
+      const refusal = callerRefusal(a, callerDecls[0]!, top, topDecl.name, foreignSymbol(k));
+      if (refusal !== null) return { ok: false, reason: refusal };
+      chainEffs.push(a.effectsOfFunction(name));
+      top = callerSites[0]!.call;
+      topDecl = callerDecls[0]!;
+      caller = callerSites[0]!.inFuncName;
+    }
+    const at = body.findIndex((s) => contains(s, top));
     if (at < 0) return { ok: false, reason: "the function's call is not in a top-level statement" };
     const siteEff = newEffects();
     let tupleArg = false;
-    decl.params.forEach((p, pi) => {
-      const arg = site.call.args[pi] ?? site.call.kwargs.find((kw) => kw.name === p.name)?.value ?? p.default;
+    topDecl.params.forEach((p, pi) => {
+      const arg = top.args[pi] ?? top.kwargs.find((kw) => kw.name === p.name)?.value ?? p.default;
       if (!arg) return;
       a.walkExpr(arg, siteEff);
       // A tuple is no argument (language_type-system.txt: a call of a function returning one "must
@@ -1236,12 +1301,124 @@ export function planSecurityScriptInFunction(
     if (tupleArg) return { ok: false, reason: "a call of the function passes a tuple" };
     const selfRead = declaredNames(body[at]!).find((n) => siteEff.reads.has(n));
     if (selfRead !== undefined) return { ok: false, reason: `the function's call reads '${selfRead}', which its own statement declares` };
-    for (const n of funcEff.reads) siteEff.reads.add(n);
-    for (const n of funcEff.muts) siteEff.muts.add(n);
-    for (const g of funcEff.groups) siteEff.groups.push(g);
-    const sliced = sliceBefore(a, body, effects, at, site.call, siteEff, foreignSymbol(k));
+    for (const eff of chainEffs) {
+      for (const n of eff.reads) siteEff.reads.add(n);
+      for (const n of eff.muts) siteEff.muts.add(n);
+      for (const g of eff.groups) siteEff.groups.push(g);
+    }
+    const sliced = sliceBefore(a, body, effects, at, top, siteEff, foreignSymbol(k), boundLate);
     if (!sliced.ok) return sliced;
-    planned.push({ call: site.call, stmt: body[at]!, slice: sliced.slice });
+    planned.push({ call: top, stmt: body[at]!, slice: sliced.slice });
   }
   return { ok: true, plan: { stmt: fstmt, sites: planned, strings: values.strings, objects: values.objects } };
+}
+
+// The effects of each statement of a function's body.
+function bodyEffects(a: SliceAnalysis, decl: FuncDecl): Effects[] {
+  return decl.body.map((s) => {
+    const eff = newEffects();
+    a.walkStmt(s, eff);
+    return eff;
+  });
+}
+
+// The statements of a function's body before its statement `at` that can change what the `needed`
+// names hold, closed over what they read; `needed` grows by those reads.
+function depBefore(fEffects: readonly Effects[], at: number, needed: Set<string>): Set<number> {
+  const dep = new Set<number>();
+  for (let changed = true; changed; ) {
+    changed = false;
+    fEffects.forEach((eff, i) => {
+      if (i >= at || dep.has(i)) return;
+      const affects = [...eff.defs, ...eff.muts].some((n) => needed.has(n));
+      if (!affects) return;
+      dep.add(i);
+      for (const n of eff.reads) needed.add(n);
+      for (const n of eff.muts) needed.add(n);
+      changed = true;
+    });
+  }
+  return dep;
+}
+
+// The requests of a function's body are written there (nestedRequestRefusal).
+function writtenInFunction(eff: Effects): Effects {
+  return { ...eff, requestCalls: eff.requestCalls.map((r) => ({ ...r, inFunction: true })) };
+}
+
+// A call in a local block of `stmt` is evaluated where `stmt` begins, which holds as long as `stmt`
+// does not change what the `needed` names hold (`eff` is its effects). The refusal, or null.
+function sameBlockChangeRefusal(stmt: Stmt, call: CallExpr, eff: Effects, needed: ReadonlySet<string>): string | null {
+  if (!inBody(stmt, call)) return null;
+  const touched = [...eff.defs, ...eff.muts].find((n) => needed.has(n));
+  return touched !== undefined ? `the call is in a local block whose statement also changes '${touched}', which the expression reads` : null;
+}
+
+// The function's code from its statement `from` on that changes what the `needed` names hold on a
+// later call (a `var` local, or one read with history): disputed as at the top level (resin-harness
+// state/disputes.md D9). `who` names the function in the refusal, which is returned, or null.
+function laterChangeRefusal(
+  a: SliceAnalysis,
+  decl: FuncDecl,
+  fEffects: readonly Effects[],
+  from: number,
+  needed: ReadonlySet<string>,
+  who = "the function",
+): string | null {
+  const persistentLocals = new Set<string>();
+  const notePersistent = (node: Stmt | Expr): void => {
+    if (node.kind === "VarDecl" && node.persistent) persistentLocals.add(node.name);
+    for (const c of children(node)) notePersistent(c);
+  };
+  for (const s of decl.body) notePersistent(s);
+  for (let i = from; i < decl.body.length; i++) {
+    const eff = fEffects[i]!;
+    const changed = [...eff.defs, ...eff.muts].find((n) => needed.has(n) && (persistentLocals.has(n) || a.carriesOver(n)));
+    if (changed !== undefined) {
+      return `${who} changes '${changed}', which the expression reads, after the call (L${decl.body[i]!.line}; disputed: whether the requested context runs that code)`;
+    }
+  }
+  return null;
+}
+
+// Why the child cannot run `caller`, a function whose body holds `call` (a call of `callee` on the
+// way to the request), or null. All of its code runs there; what the arguments of `call` depend on
+// is computed in the requested context, as the function's own code before a request is.
+function callerRefusal(a: SliceAnalysis, caller: FuncDecl, call: CallExpr, callee: string, foreignSymbol: boolean): string | null {
+  const whole = a.effectsOfFunction(caller.name);
+  if (whole.strategy) return `'${caller.name}', which calls the function, reads the strategy's state`;
+  if (whole.globalWrite) return `a function '${caller.name}' calls assigns a global variable`;
+  // Its requests other than the ones of the call on the way: what the child would read of them is
+  // not modelled.
+  let request: string | null = null;
+  const scanCalls = (node: Stmt | Expr): void => {
+    if (node.kind === "CallExpr") {
+      const c = node.callee;
+      if (c.kind === "Identifier") {
+        if (c.name !== callee && a.isFunction(c.name) && a.effectsOfFunction(c.name).request) request ??= `'${caller.name}', which calls the function, also calls '${c.name}', which makes a request`;
+      } else if (c.obj.kind === "Identifier" && c.obj.name === "request" && !a.isFunction("request")) {
+        request ??= `'${caller.name}', which calls the function, makes a request of its own`;
+      }
+    }
+    for (const ch of children(node)) scanCalls(ch);
+  };
+  for (const s of caller.body) scanCalls(s);
+  if (request !== null) return `${request} (not implemented in a requested context)`;
+  const fEffects = bodyEffects(a, caller);
+  const cat = caller.body.findIndex((s) => contains(s, call));
+  // The requested context computes the request on every requested bar, whatever branch it is written
+  // in (as at the top level: the child records the expression where the request's statement of the
+  // function's body begins). A call on the way that the caller may skip would leave it unrecorded
+  // on the requested bars where the child skips it, so it is refused.
+  if (!alwaysReaches(caller.body[cat]!, call)) {
+    return `'${caller.name}', which calls the function, may skip the call (in a block, a '?:' branch or after 'and'/'or'; not implemented in a requested context)`;
+  }
+  const argEff = newEffects();
+  for (const arg of [...call.args, ...call.kwargs.map((kw) => kw.value)]) a.walkExpr(arg, argEff);
+  const needed = new Set(argEff.reads);
+  const dep = depBefore(fEffects, cat, needed);
+  const depEff = [argEff, ...[...dep].map((i) => fEffects[i]!)];
+  if (depEff.some((e) => e.timeframe)) return `'${caller.name}', which calls the function, calls timeframe.*() (not implemented in the requested context)`;
+  if (foreignSymbol && depEff.some((e) => e.syminfo)) return `'${caller.name}', which calls the function, reads syminfo.* of another symbol (not implemented)`;
+  return laterChangeRefusal(a, caller, fEffects, cat, needed, `'${caller.name}', which calls the function,`);
 }

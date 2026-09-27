@@ -544,9 +544,28 @@ describe("request.security in a user-defined function, evaluated in the requeste
 describe("request.security in a user-defined function: what the requested context refuses", () => {
   const SUM_UDF = "g(x) =>\n    var float s = 0.0\n    s := s + x\n    s";
 
-  it("a call of the function from another function", () => {
-    const errors = errorsOf([SUM_UDF, 'f(v) => request.security(syminfo.tickerid, "D", v)', "w() => f(g(close))", "x = w()"].join("\n"));
-    expect(errors.some((e) => e.includes("the function is called from another function"))).toBe(true);
+  // A call from another function called once is run through that call (the describe block on
+  // calls through another function below); a function called twice would run this call, one
+  // request, on both chains of calls.
+  it("a call of the function from another function called twice", () => {
+    const errors = errorsOf(
+      [SUM_UDF, 'f(v) => request.security(syminfo.tickerid, "D", v)', "w() => f(g(close))", "x = w()", "y = w()"].join("\n"),
+    );
+    expect(errors.some((e) => e.includes("the function is called from 'w', which is not one function called once"))).toBe(true);
+  });
+
+  // The requested context computes the request on every requested bar; a child evaluating the
+  // caller would skip the call wherever the caller's condition is false there.
+  it("a call of the function its caller may skip", () => {
+    const errors = errorsOf(
+      [
+        SUM_UDF,
+        'f(v) => request.security(syminfo.tickerid, "D", v)',
+        "w(c) =>\n    r = 0.0\n    if c\n        r := f(g(close))\n    r",
+        "x = w(close > open)",
+      ].join("\n"),
+    );
+    expect(errors.some((e) => e.includes("'w', which calls the function, may skip the call"))).toBe(true);
   });
 
   it("a variable the function changes after the request, which its next call sees (disputed, resin-harness D9)", () => {
@@ -606,6 +625,123 @@ describe("request.security in a user-defined function: an argument that depends 
     );
     expect(x).toEqual(want);
     expect(x!.some((v) => Number.isFinite(v))).toBe(true);
+  });
+});
+
+// A call in another function's body, reached from the top level through that function's one call:
+// the child evaluates that call. A request reading another request of the function through its own
+// code (VMC Cipher B's f_wavetrend: `tfsrc = request.security(sym, tf, src)`, `ci` from `tfsrc`,
+// `wt1 = request.security(sym, tf, ta.ema(ci, avg))`) reads it as the chart computed it for the same
+// call, paired with the requested bars, without dynamic requests (concepts_other-timeframes-and-
+// data.txt "Nested requests": "passing the first call's calculated value directly into the second
+// call rather than executing the first call within the second context"). Values against the oracle:
+// resin-harness suites/lang/probes/L47.json.
+describe("request.security in a user-defined function: calls through another function, and nested requests of the function", () => {
+  const SUM_UDF = "g(x) =>\n    var float s = 0.0\n    s := s + x\n    s";
+  // `var` state keeps the expressions out of the prepass grammar (and its substitution of `t`'s
+  // definition), so the requested context runs them.
+  const WT = [
+    "wt(src, len, tf) =>",
+    "    t = request.security(syminfo.tickerid, tf, src)",
+    "    var float ci = 0.0",
+    "    ci := ci + nz(t - ta.ema(t, len))",
+    "    w1 = request.security(syminfo.tickerid, tf, ta.ema(ci, 2))",
+    "    var float n = 0.0",
+    "    n += 1",
+    "    w2 = request.security(syminfo.tickerid, tf, ta.sma(w1, 2) + n)",
+    "    [w1, w2]",
+  ].join("\n");
+  // The same code written at the top level, where a nested request through a variable is read the
+  // same way (L37).
+  const WT_TOP = [
+    't = request.security(syminfo.tickerid, "D", close)',
+    "var float ci = 0.0",
+    "ci := ci + nz(t - ta.ema(t, 2))",
+    'w1 = request.security(syminfo.tickerid, "D", ta.ema(ci, 2))',
+    "var float n = 0.0",
+    "n += 1",
+    'w2 = request.security(syminfo.tickerid, "D", ta.sma(w1, 2) + n)',
+  ].join("\n");
+  // Ten days of 8-hour bars.
+  const LONG: OHLCVData = {
+    open: Array.from({ length: 30 }, (_, i) => 100 + ((i * 7) % 11)),
+    high: Array.from({ length: 30 }, (_, i) => 104 + ((i * 7) % 11)),
+    low: Array.from({ length: 30 }, (_, i) => 97 + ((i * 7) % 11)),
+    close: Array.from({ length: 30 }, (_, i) => 101 + ((i * 5) % 13)),
+    volume: Array.from({ length: 30 }, () => 1000),
+    time: Array.from({ length: 30 }, (_, i) => 1704067200000 + i * 8 * 3600_000),
+  };
+
+  it("a call from another function called once runs through that call: equal to the top-level request of its argument", () => {
+    const [x, t] = plotsOf(
+      [
+        SUM_UDF,
+        'f(v) => request.security(syminfo.tickerid, "D", v)',
+        "w() => f(g(close))",
+        "x = w()",
+        't = request.security(syminfo.tickerid, "D", g(close))',
+        "plot(x)",
+        "plot(t)",
+      ].join("\n"),
+    );
+    expect(x).toEqual(t);
+    expect(x!.some((v) => Number.isFinite(v))).toBe(true);
+  });
+
+  it("a request reading another request of the function through a local: equal to the same code at the top level", () => {
+    const [a1, a2, w1, w2] = plotsOf(
+      ["//@version=5", WT, '[a1, a2] = wt(close, 2, "D")', WT_TOP, "plot(a1)", "plot(a2)", "plot(w1)", "plot(w2)"].join("\n"),
+      LONG,
+    );
+    expect(a1).toEqual(w1);
+    expect(a2).toEqual(w2);
+    expect(a2!.some((v) => Number.isFinite(v))).toBe(true);
+  });
+
+  it("the same through another function passing on a timeframe each call binds on its first execution", () => {
+    const source = [
+      "//@version=5",
+      WT,
+      "flag(tf0) =>",
+      '    tf = tf0 == "" ? "480" : tf0',
+      "    [h1, h2] = wt(close, 2, tf)",
+      "    h1 - h2",
+      'fv = flag("D")',
+      WT_TOP,
+      "plot(fv)",
+      "plot(w1 - w2)",
+    ].join("\n");
+    const result = transpile(source);
+    if (!result.ok) throw new Error(result.errors.join("\n"));
+    expect(result.code).toContain("$.bindSecurity(");
+    const [fv, want] = plotsOf(source, LONG);
+    expect(fv).toEqual(want);
+    expect(fv!.some((v) => Number.isFinite(v))).toBe(true);
+  });
+
+  // With dynamic requests the nested call runs in the outer call's context (resin-harness
+  // state/disputes.md D11): not implemented.
+  it("refuses a nested request of the function with dynamic requests (v6)", () => {
+    const errors = errorsOf(["//@version=6", WT, '[a1, a2] = wt(close, 2, "D")'].join("\n"));
+    expect(errors.some((e) => e.includes("with dynamic requests, may run in the requested context's symbol or timeframe"))).toBe(true);
+  });
+
+  // A nested request bound on its first execution is built when the outer one's child runs only if
+  // it executes whenever the code before the outer request does.
+  it("refuses a nested request bound on its first execution that the function may skip", () => {
+    const errors = errorsOf(
+      [
+        "//@version=5",
+        "f(tf0) =>",
+        '    tf = tf0 == "" ? "480" : tf0',
+        "    float t = na",
+        "    if close > open",
+        "        t := request.security(syminfo.tickerid, tf, close)",
+        "    request.security(syminfo.tickerid, tf, ta.ema(t, 2))",
+        'x = f("D")',
+      ].join("\n"),
+    );
+    expect(errors.some((e) => e.includes("bound on its first execution, which the code before it may skip"))).toBe(true);
   });
 });
 
