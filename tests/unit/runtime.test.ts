@@ -1775,17 +1775,24 @@ describe("ta.mode", () => {
 });
 
 describe("ta.percentrank", () => {
-  it("returns NaN for the first length calls (window excludes the current bar, so warmup needs length+1 bars — one later than ta.median/ta.mode's length, length=3)", () => {
+  // One bar per call: the machine reads the call site's history and bar_index.
+  const ranker = (length: number) => {
     const state = {};
-    expect(percentrank(state, 101, 3)).toBeNaN();
-    expect(percentrank(state, 102, 3)).toBeNaN();
-    expect(percentrank(state, 103, 3)).toBeNaN(); // window still empty (buffer not yet written)
+    let bar = 0;
+    return (v: number) => percentrank(state, v, length, 100, bar++);
+  };
+
+  it("returns NaN while bar_index < length (the window excludes the current bar, so it needs length+1 bars — one later than ta.median/ta.mode's length, length=3)", () => {
+    const pr = ranker(3);
+    expect(pr(101)).toBeNaN();
+    expect(pr(102)).toBeNaN();
+    expect(pr(103)).toBeNaN();
   });
 
-  it("matches the pine2py-verified sample10.json trace (close, length=3)", () => {
-    const state = {};
+  it("matches the sample10.json trace (close, length=3)", () => {
+    const pr = ranker(3);
     const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
-    const results = closes.map((c) => percentrank(state, c, 3));
+    const results = closes.map((c) => pr(c));
     expect(results[0]).toBeNaN();
     expect(results[1]).toBeNaN();
     expect(results[2]).toBeNaN();
@@ -1796,48 +1803,53 @@ describe("ta.percentrank", () => {
   });
 
   it("returns 100 immediately for length=1 (window of 1 prior bar, current is always >= a single prior value once tied or higher)", () => {
-    const state = {};
-    expect(percentrank(state, 5, 1)).toBeNaN(); // no prior bar yet
-    expect(percentrank(state, 7, 1)).toBeCloseTo(100, 9); // prior=5, 5<=7
-    expect(percentrank(state, 3, 1)).toBeCloseTo(0, 9); // prior=7, 7<=3 false
+    const pr = ranker(1);
+    expect(pr(5)).toBeNaN(); // no prior bar yet
+    expect(pr(7)).toBeCloseTo(100, 9); // prior=5, 5<=7
+    expect(pr(3)).toBeCloseTo(0, 9); // prior=7, 7<=3 false
   });
 
-  // pine2py percentrank.py checks `math.isnan(current)` before even touching the window — the
-  // current bar's own value is never part of the counted window (i only ranges 1..length), so a
-  // NaN current must be checked separately from the buffer's NaN scan.
   it("returns NaN when the current value itself is NaN, independent of the window's content", () => {
-    const state = {};
-    percentrank(state, 1, 2);
-    percentrank(state, 2, 2);
-    expect(percentrank(state, NaN, 2)).toBeNaN(); // window [1,2] is fully valid, but current is NaN
+    const pr = ranker(2);
+    pr(1);
+    pr(2);
+    expect(pr(NaN)).toBeNaN(); // window [1,2] is fully valid, but current is NaN
   });
 
-  // Unlike ta.mode (individual NaN entries are skipped from the count), ta.percentrank poisons the
-  // whole result if any of the length prior bars is NaN — matching ta.median's "any NaN in window"
-  // gate, verified against a direct pine2py percentrank() run (300-trial fuzz, length 1-10, ~12%
-  // NaN injection, 0 mismatches).
-  it("poisons (does not skip) the result when a NaN is inside the prior-length window, and the poison persists until the NaN slot itself is overwritten by a later push", () => {
-    const state = {};
-    percentrank(state, 5, 2); // NaN (window empty), buffer [5, NaN]
-    percentrank(state, NaN, 2); // NaN (current itself is NaN), buffer [5, NaN]
-    expect(percentrank(state, 6, 2)).toBeNaN(); // window [5,NaN] has a real NaN slot, buffer [6, NaN]
-    expect(percentrank(state, 7, 2)).toBeNaN(); // window [6,NaN] still has that NaN slot, buffer [6, 7]
-    expect(percentrank(state, 8, 2)).toBeCloseTo(100, 9); // window [6,7] fully valid vs 8 -> 2/2
+  // The oracle (lib/array.py percentrank: "na elements are ignored when counting values at or below
+  // the target, but still count toward the array length"); resin-harness
+  // state/repros/ta.stats-seed-9.json: ta.percentrank(s0, 3) is 66.67 on bar 3 after an na bar 0.
+  it("counts a past NaN toward the length but not toward the rank", () => {
+    const pr = ranker(2);
+    pr(5);
+    pr(NaN); // NaN (current itself is NaN)
+    expect(pr(6)).toBeCloseTo(50, 9); // window [5, NaN] vs 6: 5 <= 6, the NaN counts only in the length
+    expect(pr(4)).toBeCloseTo(0, 9); // window [NaN, 6] vs 4
+    expect(pr(8)).toBeCloseTo(100, 9); // window [6, 4] vs 8 -> 2/2
+  });
+
+  // The oracle's comparison is tolerant (lib/array.py percentrank, probe m548: "a window whose other
+  // values sit a sub-EPSILON step above the current one still ranks 100").
+  it("counts a previous value a sub-epsilon step above the current one as at or below it", () => {
+    const pr = ranker(2);
+    pr(1 + 1e-12);
+    pr(1 + 2e-12);
+    expect(pr(1)).toBeCloseTo(100, 9);
   });
 
   it("keeps independent state across two call sites", () => {
-    const stateA = {};
-    const stateB = {};
-    percentrank(stateA, 5, 1);
-    expect(percentrank(stateA, 7, 1)).toBeCloseTo(100, 9);
-    expect(percentrank(stateB, 100, 1)).toBeNaN();
+    const prA = ranker(1);
+    const prB = ranker(1);
+    prA(5);
+    expect(prA(7)).toBeCloseTo(100, 9);
+    expect(prB(100)).toBeNaN();
   });
 
-  it("stays correct across many bars beyond the initial fill (circular buffer wraparound, read-before-write ordering)", () => {
-    const state = {};
+  it("stays correct across many bars beyond the initial fill", () => {
     const length = 4;
+    const pr = ranker(length);
     const values = Array.from({ length: 25 }, (_, i) => 100 + ((i * 7) % 11));
-    const results = values.map((v) => percentrank(state, v, length));
+    const results = values.map((v) => pr(v));
     function direct(idx: number): number {
       // window = the `length` bars strictly before idx (current bar excluded)
       const window = [values[idx - 4]!, values[idx - 3]!, values[idx - 2]!, values[idx - 1]!];

@@ -71,7 +71,13 @@ const CASES: Array<{ name: string; makeStep: (state: object, length: number) => 
   { name: "correlation", makeStep: (s, len) => (v) => correlation(s as never, v, v * 2 - 1, len) },
   { name: "median", makeStep: (s, len) => (v) => median(s as never, v, len) },
   { name: "mode", makeStep: (s, len) => (v) => mode(s as never, v, len) },
-  { name: "percentrank", makeStep: (s, len) => (v) => percentrank(s as never, v, len) },
+  {
+    name: "percentrank",
+    makeStep: (s, len) => {
+      let barIdx = 0;
+      return (v) => percentrank(s as never, v, len, 1000, barIdx++);
+    },
+  },
   {
     name: "percentileNearestRank",
     makeStep: (s, len) => {

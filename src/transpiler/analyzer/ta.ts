@@ -561,11 +561,9 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // "하나라도 있으면 전체 NaN"과 다름)가 갈린다 — runtime/ta.ts mode() 주석 참조. median(C115)에
   // 이은 GOAL.md O(1)/bar 네 번째 명시적 예외. A series length takes runtime/ta.ts modeVarLen.
   mode: { dispatch: "ta", displayName: "ta.mode", argCount: 2, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.mode" },
-  // ta.percentrank(source, length) — median/mode와 동일한 표준 시그니처지만 창이 현재 바 포함
-  // length개가 아니라 **1~length바 전(현재 제외) length개**라 읽기가 쓰기보다 먼저 오는 순환 버퍼
-  // 변형(runtime/ta.ts percentrank() 주석 참조). ta.* 44종 완주(alma C113/cci C114/median C115/
-  // mode C116에 이은 다섯 번째이자 마지막 GOAL.md O(1)/bar 명시적 예외 — 버퍼 스캔 자체는
-  // median/mode와 동일하게 O(length)/bar). A series length takes runtime/ta.ts percentrankVarLen.
+  // ta.percentrank(source, length) — the current value ranked among the `length` previous ones.
+  // One machine for a literal and a series length (runtime/ta.ts percentrank): it reads the call
+  // site's history and bar_index, so codegen passes the literal form the bar count and index too.
   percentrank: { dispatch: "ta", displayName: "ta.percentrank", argCount: 2, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.percentrank" },
   // ta.dev(source, length) — Mean Absolute Deviation. 다른 인자 개수/암묵 주입 없이 sma와 동일한
   // 표준 시그니처. ROADMAP.md의 "ta.* 44종 완주"(C118) 정정 시점에도 인라인으로만 남아있던 실제

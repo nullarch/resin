@@ -1918,14 +1918,22 @@ export interface StochState {
   ll?: ExtremeRingState;
 }
 
-// ta.percentrank(source, length) with a series length (lib/ta.py percentrank: array.percentrank of
-// source[0..length], index 0): na when the source is na or bar_index < length; otherwise the share of
-// the `length` previous values within Pine's tolerance at or below the current one ("Percent rank is
-// the percents of how many previous values was less than or equal to the current value",
-// ref_v6_ta_math.txt), counting the current value too, (count - 1) * 100 / length. A past na counts
-// toward the length and not toward the rank (lib/array.py percentrank: "na elements are ignored when
-// counting values at or below the target, but still count toward the array length").
-export function percentrankVarLen(state: ExtremeVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
+// ta.percentrank(source, length), one machine for a literal and a series length (lib/ta.py
+// percentrank: array.percentrank of source[0..length], index 0): na when the source is na or
+// bar_index < length; otherwise the share of the `length` previous values within Pine's tolerance at
+// or below the current one ("Percent rank is the percents of how many previous values was less than
+// or equal to the current value", ref_v6_ta_math.txt), counting the current value too,
+// (count - 1) * 100 / length. A past na counts toward the length and not toward the rank
+// (lib/array.py percentrank: "na elements are ignored when counting values at or below the target,
+// but still count toward the array length"; resin-harness state/repros/ta.stats-seed-9.json,
+// ta.percentrank(s0, 3) on bar 3 after an na bar 0: 66.67 on the oracle). The manual's remark "`na`
+// values in the `source` series are included in calculations and will produce an `na` result" is not
+// an na for any na in the window: ta.percentile_linear_interpolation carries the same remark, and
+// TradingView answers it with an na in the window (tier 1 ta_372_rolling_na_rank_order: bar 4 of
+// `bar_index < 3 ? na : float(bar_index)`, length 5, gives 3.25 at 75 and 4 at 100). The history is
+// the call site's, bar-keyed like the other *VarLen machines, so a loop call site needs no bar-start
+// rollback (codegen BAR_KEYED_TA_FNS).
+export function percentrank(state: ExtremeVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
   const w = recordVarLen(state, value, barCount, barIdx);
   const len = Math.trunc(length);
   if (!(len >= 1) || Number.isNaN(value) || barIdx < len) return NaN;
@@ -1939,6 +1947,9 @@ export function percentrankVarLen(state: ExtremeVarLenState, value: number, leng
   }
   return ((count - 1) * 100) / (n - 1);
 }
+
+// The series-length entry point (codegen VARLEN_RT_PATHS): the same machine.
+export const percentrankVarLen = percentrank;
 
 // ta.mode(source, length) with a series length (lib/ta.py mode): the most frequent of the last
 // `length` NON-na values, the smallest on a tie ("If there are several values with the same
@@ -2469,64 +2480,6 @@ export function mode(state: ModeState, value: number, length: number): number {
   for (const [v, c] of counts) {
     if (c === maxFreq && v < result) result = v;
   }
-  return result;
-}
-
-export interface PercentrankState {
-  buffer?: number[];
-  writeIdx?: number;
-}
-
-// ta.percentrank(source, length) - 최근 length바(현재 **제외**) 중 현재값 이하인 값의 비율(%).
-// pine2py wavealgo/ta/percentrank.py는 median/mode(둘 다 현재 바 포함 length개 창)와 달리 창이
-// i=1..length(현재 바로부터 1~length바 전, 현재 자신은 창에서 빠짐)라 median(C115)/mode(C116)에
-// 이어 percentrank가 여섯 번째 순환 버퍼 변형이자 처음으로 "읽기가 쓰기보다 먼저" 오는 사례다:
-// median/mode/sma/wma류는 현재 값을 먼저 버퍼에 push한 뒤 그 버퍼(현재 포함)를 읽어 결과를 내지만,
-// percentrank는 이번 바 push **이전**의 버퍼 내용(=1~length바 전 값들)으로 먼저 결과를 낸 다음에야
-// 현재 값을 버퍼에 push한다(다음 호출이 "1바 전" 값으로 이걸 보게 하기 위해). 이 순서 자체가
-// pine2py의 표면적인 "이중 게이트"(len(source)<length면 조기 NaN + 루프 안에서 i>=len(source)면
-// 재차 NaN)를 설명한다 — 실제로는 버그가 아니라 "length바 전 값까지 읽으려면 length+1바째부터
-// 값이 나온다"는 산식 자체의 필연적 결과임을 python(scratch, gitignored) 직접 실행으로 확인:
-// length=3일 때 워밍업이 끝나는 시점은 median/mode처럼 바2(0-index)가 아니라 바3이었다. NaN 처리는
-// 두 갈래: (1) 현재값이 NaN이면 버퍼 내용과 무관하게 즉시 NaN(버퍼는 현재값을 담지 않으므로 버퍼
-// NaN 스캔이 이 케이스를 못 잡음 — 별도 체크 필수), (2) 그 외엔 median과 동일하게 버퍼(1~length바
-// 전 창)에 NaN-프라임 잔존 슬롯이든 실제 NaN이든 하나라도 있으면 즉시 NaN(mode처럼 개별 스킵이
-// 아님). 두 게이트 모두 "버퍼에 하나라도 NaN이 있는가" 단일 스캔으로 워밍업/오염을 통합
-// 처리하므로(median과 동일 원칙) mode(C116)가 필요했던 별도 count 필드는 불필요 — 버퍼가 아직
-// 안 찼으면 NaN-프라임 슬롯 자체가 그 스캔에 자연히 걸린다. 현재값은 결과 계산 후 무조건 버퍼에
-// push(raw-passthrough, NaN도 그대로 기록 — change/crossover/median과 동일). python 300건
-// fuzz(length 1~10, NaN 12% 혼입, 최대 40바, scratch 검증 후 삭제) 0 mismatch로 확인.
-export function percentrank(state: PercentrankState, value: number, length: number): number {
-  length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조)
-  if (state.buffer === undefined) {
-    state.buffer = new Array(length).fill(NaN);
-    state.writeIdx = 0;
-  }
-  const buffer = state.buffer;
-  let result: number;
-  if (Number.isNaN(value)) {
-    result = NaN;
-  } else {
-    let hasNaN = false;
-    for (let i = 0; i < length; i++) {
-      if (Number.isNaN(buffer[i]!)) {
-        hasNaN = true;
-        break;
-      }
-    }
-    if (hasNaN) {
-      result = NaN;
-    } else {
-      let count = 0;
-      for (let i = 0; i < length; i++) {
-        if (buffer[i]! <= value) count++;
-      }
-      result = (count / length) * 100;
-    }
-  }
-  const writeIdx = state.writeIdx!;
-  buffer[writeIdx] = value;
-  state.writeIdx = (writeIdx + 1) % length;
   return result;
 }
 

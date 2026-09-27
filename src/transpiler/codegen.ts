@@ -4098,6 +4098,12 @@ const PER_EXECUTION_TA_FNS: ReadonlySet<string> = new Set([
   "random",
 ]);
 
+// The builtins whose one machine, for a literal length too, is their bar-keyed *VarLen machine
+// (runtime/ta.ts percentrank): the literal form takes the bar count and index the series form
+// takes, and a loop call site needs no bar-start rollback, since a same-bar execution already
+// overwrites the bar's slot.
+const BAR_KEYED_TA_FNS: ReadonlySet<string> = new Set(["percentrank"]);
+
 function genCallExpr(
   expr: CallExpr,
   program: AnalyzedProgram,
@@ -4405,6 +4411,9 @@ function genCallExpr(
       if (args.length === 2) args.push("50");
       if (!stateCall.seriesLength) args.push("$.barCount", secCtx === null ? "$.idx" : secCtx.loopVar);
     }
+    if (BAR_KEYED_TA_FNS.has(stateCall.fn) && !stateCall.seriesLength) {
+      args.push("$.barCount", secCtx === null ? "$.idx" : secCtx.loopVar);
+    }
     if (stateCall.seriesLength) {
       // *VarLen 변형(VARLEN_RT_PATHS)의 마지막 두 인자 — barCount는 자체 히스토리 버퍼를 최초 1회
       // 할당하기 위한 상한(runtime/ta.ts 주석 참조). barIdx는 "같은 바 안 반복 호출은 push가 아니라
@@ -4432,7 +4441,7 @@ function genCallExpr(
     // __taBase에 더해 실제 전역 슬롯을 만든다 — $.fnVars[__slotBase + i]와 동형.
     const slotRef = stateCall.inUdf ? `__taBase + ${stateCall.slot}` : String(stateCall.slot);
     let stateRef = `$.taSlots[${slotRef}]`;
-    if (stateCall.inLoop && !stateCall.seriesLength && !PER_EXECUTION_TA_FNS.has(stateCall.fn)) {
+    if (stateCall.inLoop && !stateCall.seriesLength && !PER_EXECUTION_TA_FNS.has(stateCall.fn) && !BAR_KEYED_TA_FNS.has(stateCall.fn)) {
       // A loop call site re-derives every same-bar execution from the bar-start state
       // (rt.ta.loopState). The *VarLen variants are bar-keyed already and skip the copy.
       stateRef = `rt.ta.loopState(${stateRef}, ${secCtx === null ? "$.idx" : secCtx.loopVar})`;
