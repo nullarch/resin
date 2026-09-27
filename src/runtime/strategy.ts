@@ -127,6 +127,12 @@ interface ExitLeg {
   commentLoss: string | null;
   commentProfit: string | null;
   commentTrailing: string | null;
+  // strategy.exit(oca_name=): the OCA group the leg is in ("" = only its own bracket, see applyOca),
+  // and the contracts the fills of that group have cut from its slice. The cut leaves the
+  // reservation alone and the leg fills `reserved - ocaCut`; a re-issue of the call restores the
+  // whole slice (the oracle replaces the reduced order with a new one of the call's size).
+  ocaName: string;
+  ocaCut: number;
   consumed: boolean;
   // Placed, or modified under its id, by the script on the current bar (see processFillsAtClose).
   placedThisBar: boolean;
@@ -727,7 +733,7 @@ export class StrategyState {
       id: "", entryId: "", binding: null, reserved: 0, boundSize: NaN, qty: NaN, qtyPercent: NaN,
       limit: NaN, stop: NaN, profitPoints: NaN, lossPoints: NaN, trailPoints: NaN, trailOffset: NaN,
       trailPriceArg: NaN, trailPrice: NaN, comment: "", commentLoss: null, commentProfit: null,
-      commentTrailing: null, consumed: false, placedThisBar: false, seq: 0,
+      commentTrailing: null, ocaName: "", ocaCut: 0, consumed: false, placedThisBar: false, seq: 0,
       fillPrice: NaN, fillKind: null, pathLeg: 0, pathDist: 0,
     };
     this.orderPending = false;
@@ -940,7 +946,7 @@ export class StrategyState {
         l.reserved = this.sizeRound(l.reserved + b.size - l.boundSize);
       }
       l.boundSize = b.size;
-      if (!(l.reserved > 0)) {
+      if (!(l.reserved - l.ocaCut > 0)) {
         this.exitLegs.splice(i, 1);
         continue;
       }
@@ -954,7 +960,7 @@ export class StrategyState {
       const reserved = this.legSlice(src.qty, src.qtyPercent, b.size, 0);
       if (!(reserved > 0)) continue;
       const leg: ExitLeg = {
-        ...src, binding: b, reserved, boundSize: b.size, trailPrice: NaN, consumed: false,
+        ...src, binding: b, reserved, boundSize: b.size, trailPrice: NaN, ocaCut: 0, consumed: false,
         placedThisBar: false, seq: ++this.exitSeq,
       };
       this.exitLegs.push(leg);
@@ -2059,8 +2065,12 @@ export class StrategyState {
   // book, so it is never its own sibling. An order consumed without executing anything (a gate kept
   // it from opening) leaves its group alone. Repros: resin-harness state/repros/oca-cancel.json,
   // oca-reduce.json, oca-mixed-types.json; tier 1 suites/strategy/tv/bollinger.
+  // The exit legs of a strategy.exit(oca_name=) call are in that group as reduce orders ("unlike
+  // strategy.exit(), whose orders automatically belong to a strategy.oca.reduce OCA group"): a fill
+  // of the group cuts their slices, and their own fills cut the group (executeLeg). Probe:
+  // resin-harness suites/strategy/probes/C57.json.
   // Not covered: a default-sized (percent_of_equity/cash) limit/stop sibling keeps its money budget
-  // under reduce, and strategy.exit(oca_name=) cannot join a group yet.
+  // under reduce.
   private applyOca(name: string, type: string, filledQty: number): void {
     if (name === "" || type === "none" || !(filledQty > 0)) return;
     for (let i = 0; i < this.pendingEntries.length; ) {
@@ -2093,6 +2103,19 @@ export class StrategyState {
         this.orderQty = toUnits(this.orderQty - filledQty, this.lotsPerContract);
         if (!(this.orderQty > 0)) this.orderPending = false;
       }
+    }
+    if (type !== "reduce") return;
+    for (let i = 0; i < this.exitLegs.length; ) {
+      const l = this.exitLegs[i]!;
+      if (l.ocaName === name && !l.consumed) {
+        l.ocaCut = toUnits(l.ocaCut + filledQty, this.lotsPerContract);
+        // A leg not sized yet (its default-sized entry order is pending) is judged once sized (bindLegs).
+        if (!(toUnits(l.reserved - l.ocaCut, this.lotsPerContract) > 0) && !Number.isNaN(l.reserved)) {
+          this.exitLegs.splice(i, 1);
+          continue;
+        }
+      }
+      i++;
     }
   }
 
@@ -2185,13 +2208,15 @@ export class StrategyState {
   // command uses the qty value"); an na, zero or negative quantity ignores the call (DIVERGENCES
   // #71). comment_loss=/comment_profit=/comment_trailing= override comment= for a fill by the
   // stop-loss, the take-profit or the trailing line (null = not given; hand-verified, C375/C673).
-  // when=false makes the call a no-op (C380).
+  // when=false makes the call a no-op (C380). oca_name= puts every leg of the call, on every entry
+  // it targets, in that OCA group of type reduce (see applyOca); omitted or na, each leg is a group
+  // of its own.
   exit(
     id: string | null | undefined, fromEntry?: string | null, limit?: number, stop?: number,
     qty?: number, trailPoints?: number, trailOffset?: number, comment?: string, trailPrice?: number,
     profit?: number, loss?: number, qtyPercent?: number,
     commentLoss?: string | null, commentProfit?: string | null, when: boolean = true,
-    commentTrailing?: string | null,
+    commentTrailing?: string | null, ocaName?: string | null,
   ): void {
     if (!when) return;
     if (id === null || id === undefined) return;
@@ -2217,6 +2242,7 @@ export class StrategyState {
     t.commentLoss = commentLoss ?? null;
     t.commentProfit = commentProfit ?? null;
     t.commentTrailing = commentTrailing ?? null;
+    t.ocaName = StrategyState.ocaName(ocaName);
     if (
       Number.isNaN(t.limit) && Number.isNaN(t.stop) && Number.isNaN(t.trailPoints) && Number.isNaN(t.trailPriceArg) &&
       Number.isNaN(t.profitPoints) && Number.isNaN(t.lossPoints)
@@ -2254,6 +2280,7 @@ export class StrategyState {
       existing.reserved = reserved;
       existing.boundSize = bound;
       existing.trailPrice = trailPrice;
+      existing.ocaCut = 0;
       existing.placedThisBar = true;
       return;
     }
@@ -2279,6 +2306,7 @@ export class StrategyState {
     dst.commentLoss = src.commentLoss;
     dst.commentProfit = src.commentProfit;
     dst.commentTrailing = src.commentTrailing;
+    dst.ocaName = src.ocaName;
   }
 
   // strategy.cancel(id) — 미체결 주문 취소. An entry order is cancelled whatever its type, a market
@@ -3391,13 +3419,22 @@ export class StrategyState {
           : l.fillKind === null && l.commentTrailing !== null
             ? l.commentTrailing
             : l.comment;
-    const wholeSlice = l.reserved <= Math.abs(this.posSize);
+    // What its OCA group left of its slice (see ExitLeg.ocaCut).
+    const qty = l.ocaCut > 0 ? toUnits(l.reserved - l.ocaCut, this.lotsPerContract) : l.reserved;
+    const wholeSlice = qty <= Math.abs(this.posSize);
+    const before = this.posSize;
     this.beginOrder();
-    this.closeAt(fill, l.reserved, cmt, barIndex, l.id, barTimeMs, l.binding);
+    this.closeAt(fill, qty, cmt, barIndex, l.id, barTimeMs, l.binding);
     const i = this.exitLegs.indexOf(l);
-    if (i < 0) return; // its entry is spent: the leg died with it
-    if (wholeSlice) l.consumed = true;
-    else this.exitLegs.splice(i, 1);
+    if (i >= 0) {
+      if (wholeSlice) l.consumed = true;
+      else this.exitLegs.splice(i, 1);
+    }
+    // The leg has left the book (consumed, gone, or dead with its spent entry), so it cuts only the
+    // other orders of its named group.
+    if (l.ocaName !== "") {
+      this.applyOca(l.ocaName, "reduce", toUnits(StrategyState.executedQty(before, this.posSize), this.lotsPerContract));
+    }
   }
 
   // pending entry/order 주문의 이번 바 체결가 — NaN이면 미체결(이월). pine2py _check_fill의 entry

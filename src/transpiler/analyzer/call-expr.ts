@@ -6924,8 +6924,13 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // 우선)이라 동시 지정도 상충이 아니라 단순 우선순위. 전부 hand-verified(TV 실측 미검증, DIVERGENCES
       // 갱신 필요) — 크래시/NaN 전파 없이 "일부 조건이 조용히 비활성"으로만 저하되는 안전한 근사.
       // profit=/loss= 등 나머지 주문 시맨틱 kwargs 자체의 화이트리스트 등재는 파싱-후-버림이 조용한
-      // 오답이라 여전히 하드 에러. oca_name= is one of them here: the exit's legs cannot join a
-      // user-named OCA group yet (entry/order accept it, see StrategyState.applyOca).
+      // 오답이라 여전히 하드 에러. oca_name= puts the call's orders in the named OCA group, whose
+      // type is always reduce (strategies.txt: "To assign an order to an OCA group, include an
+      // oca_name argument in the call to the order placement command"; strategy.exit()'s "orders
+      // automatically belong to a strategy.oca.reduce OCA group"; see StrategyState.applyOca).
+      // alert_trailing= is the trailing-stop twin of alert_profit=/alert_loss= below: alert text
+      // only (rn.txt: "text that will replace the '{{strategy.order.alert_message}}' placeholder if
+      // the exit was triggered by crossing trail_offset specifically"), so it gets no slot either.
       // comment_loss=/comment_profit=(C375, hand-verified, wild named-list kwarg 클러스터 최다빈도
       // 51건)는 qty_percent=/alert_message=와 같은 축(청산 조건 아님 — 아래 hasExitCondition에서
       // 제외)이되 alert_message와 달리 순수 discard가 아니다: comment=는 이미 exitOrderComment/
@@ -6985,10 +6990,12 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           kw.name !== "when" &&
           kw.name !== "alert_profit" &&
           kw.name !== "alert_loss" &&
-          kw.name !== "disable_alert"
+          kw.name !== "alert_trailing" &&
+          kw.name !== "disable_alert" &&
+          kw.name !== "oca_name"
         ) {
           prog.errors.push(
-            `'strategy.exit' only supports keyword arguments 'id='/'from_entry='/'limit='/'stop='/'trail_points='/'trail_offset='/'trail_price='/'qty='/'comment='/'profit='/'loss='/'qty_percent='/'alert_message='/'comment_loss='/'comment_profit='/'comment_trailing='/'when='/'alert_profit='/'alert_loss='/'disable_alert=' (this slice): '${kw.name}=' (L${kw.line}:${kw.col})`,
+            `'strategy.exit' only supports keyword arguments 'id='/'from_entry='/'limit='/'stop='/'trail_points='/'trail_offset='/'trail_price='/'qty='/'comment='/'profit='/'loss='/'qty_percent='/'alert_message='/'comment_loss='/'comment_profit='/'comment_trailing='/'when='/'alert_profit='/'alert_loss='/'alert_trailing='/'disable_alert='/'oca_name=' (this slice): '${kw.name}=' (L${kw.line}:${kw.col})`,
           );
         } else if (seenExitKwargs.has(kw.name)) {
           prog.errors.push(`duplicate keyword argument '${kw.name}' (L${kw.line}:${kw.col})`);

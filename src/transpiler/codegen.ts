@@ -4829,6 +4829,7 @@ function genCallExpr(
                   trail_price: 8, profit: 9, loss: 10, qty_percent: 11, comment_loss: 12, comment_profit: 13,
                   when: 14, // when=(C380, comment_profit 뒤 새 트레일링 슬롯 — 기존 콜사이트 출력 무변화)
                   comment_trailing: 15, // comment_trailing=(C673, when= 뒤 새 슬롯 — 기존 콜사이트 출력 무변화)
+                  oca_name: 16, // the named OCA group the exit's orders join (after comment_trailing)
                 }
               : builtinName === "strategy.close"
                 ? { id: 0, qty: 1, comment: 2, when: 3, qty_percent: 4, immediately: 5 } // id=(C293, 위치 슬롯 0을 kwarg로도 채움)

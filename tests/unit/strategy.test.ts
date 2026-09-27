@@ -2121,13 +2121,18 @@ describe("strategy.exit analyzer validation (C167)", () => {
   // C708 재마이그레이션: alert_profit=/alert_loss=/disable_alert=(discard 신규 지원, wild 9건)가
   // 목록에서 제거되고 별도 긍정 테스트로 이동 — disable_alert=는 alert_trailing=(TV 시그니처의
   // 형제 파라미터, wild 근거 0건이라 MEMORY C283 큐레이션 원칙대로 미이식)로 회전.
-  it("rejects unsupported strategy.exit kwargs (oca_name=/oca_type=/alert_trailing=)", () => {
-    for (const kw of ['oca_name="g"', 'oca_type="cancel"', "alert_trailing=true"]) {
+  // oca_name= (the exit's orders join the named reduce group, StrategyState.applyOca) and
+  // alert_trailing= (alert text, discarded like alert_profit=/alert_loss=) are supported now:
+  // resin-harness suites/strategy/probes/C57.json. strategy.exit() has no oca_type parameter (its
+  // orders "automatically belong to a strategy.oca.reduce OCA group", strategies.txt).
+  it("accepts strategy.exit oca_name=/alert_trailing= and rejects oca_type= or an unknown kwarg", () => {
+    expect(transpile('strategy("s")\nstrategy.exit("X", limit=15, oca_name="g", alert_trailing="t")').ok).toBe(true);
+    for (const kw of ['oca_type="cancel"', 'oca_group="g"']) {
       const errors = transpileErrors(`strategy("s")\nstrategy.exit("X", limit=15, ${kw})`);
       expect(
         errors.some((e) =>
           e.includes(
-            "'strategy.exit' only supports keyword arguments 'id='/'from_entry='/'limit='/'stop='/'trail_points='/'trail_offset='/'trail_price='/'qty='/'comment='/'profit='/'loss='/'qty_percent='/'alert_message='/'comment_loss='/'comment_profit='/'comment_trailing='/'when='/'alert_profit='/'alert_loss='/'disable_alert='",
+            "'strategy.exit' only supports keyword arguments 'id='/'from_entry='/'limit='/'stop='/'trail_points='/'trail_offset='/'trail_price='/'qty='/'comment='/'profit='/'loss='/'qty_percent='/'alert_message='/'comment_loss='/'comment_profit='/'comment_trailing='/'when='/'alert_profit='/'alert_loss='/'alert_trailing='/'disable_alert='/'oca_name='",
           ),
         ),
       ).toBe(true);
@@ -9880,6 +9885,68 @@ describe("StrategyState OCA groups", () => {
     expect(st.posSize).toBe(2);
     expect(() => st.entry("X", "long", 1, undefined, undefined, undefined, true, "G", "all")).toThrow(/oca_type/);
   });
+
+  // strategy.exit(oca_name=): the exit's legs are reduce orders of the named group ("unlike
+  // strategy.exit(), whose orders automatically belong to a strategy.oca.reduce OCA group",
+  // strategies.txt). Oracle-checked in resin-harness suites/strategy/probes/C57.json.
+  const exitIn = (st: StrategyState, id: string, from: string, qty: number | undefined, limit: number, group: string) =>
+    st.exit(id, from, limit, undefined, qty, undefined, undefined, undefined, undefined, undefined, undefined, undefined,
+      undefined, undefined, true, undefined, group);
+
+  it("exit legs of one group: a fill cuts the others' slices, not their reservations (C57 B)", () => {
+    const st = new StrategyState();
+    st.entry("B", "long", 6);
+    exitIn(st, "B1", "B", 2, 102, "G");
+    exitIn(st, "B2", "B", 4, 104, "G");
+    st.processFills(100, 101, 99);
+    st.processFills(100, 103, 99); // B1 fills 2 at 102; B2 is cut from 4 to 2
+    expect(st.exitLegs.map((l) => [l.id, l.reserved, l.ocaCut, l.consumed])).toEqual([["B1", 2, 0, true], ["B2", 4, 2, false]]);
+    st.processFills(102, 105, 101);
+    expect(st.closedTradeRecords.map((r) => [r.exitId, r.exitPrice, r.size])).toEqual([["B1", 102, 2], ["B2", 104, 2]]);
+    expect(st.posSize).toBe(2);
+  });
+
+  it("a leg cut to nothing is cancelled; re-issuing the call restores the whole slice (C57 A, C)", () => {
+    const st = new StrategyState();
+    st.entry("A", "long", 6);
+    exitIn(st, "A1", "A", 3, 102, "G");
+    exitIn(st, "A2", "A", 3, 104, "G");
+    st.processFills(100, 101, 99);
+    st.processFills(100, 103, 99);
+    expect(st.exitLegs.map((l) => l.id)).toEqual(["A1"]);
+    const again = new StrategyState();
+    again.entry("C", "long", 6);
+    exitIn(again, "C1", "C", 2, 102, "G");
+    exitIn(again, "C2", "C", 4, 104, "G");
+    again.processFills(100, 101, 99);
+    again.processFills(100, 103, 99);
+    exitIn(again, "C1", "C", 2, 102, "G");
+    exitIn(again, "C2", "C", 4, 104, "G");
+    again.processFills(102, 105, 101);
+    expect(again.closedTradeRecords.map((r) => [r.exitId, r.size])).toEqual([["C1", 2], ["C2", 4]]);
+    expect(again.posSize).toBe(0);
+  });
+
+  it("an exit fill cuts a strategy.order of its reduce group, and an entry fill of the group cuts the exit (C57 D, G)", () => {
+    const st = new StrategyState();
+    st.entry("D", "long", 2);
+    exitIn(st, "D1", "D", undefined, 102, "G");
+    st.order("DO", "short", 3, 104, undefined, undefined, true, "G", "reduce");
+    st.processFills(100, 101, 99);
+    st.processFills(100, 103, 99); // D1 closes 2: DO is cut from 3 to 1
+    st.processFills(102, 105, 101);
+    expect(st.posSize).toBe(-1);
+    const g = new StrategyState();
+    g.configure(1, 2);
+    g.entry("G", "long", 4);
+    exitIn(g, "G1", "G", 3, 110, "H");
+    g.entry("H", "long", 2, 95, undefined, undefined, true, "H", "reduce");
+    g.processFills(100, 101, 99);
+    g.processFills(100, 101, 94); // H fills 2: G1 is cut from 3 to 1
+    g.processFills(100, 111, 99);
+    expect(g.closedTradeRecords.map((r) => [r.exitId, r.exitPrice, r.size])).toEqual([["G1", 110, 1]]);
+    expect(g.posSize).toBe(5);
+  });
 });
 
 describe("strategy.entry/order oca_name=/oca_type= codegen", () => {
@@ -9889,6 +9956,13 @@ describe("strategy.entry/order oca_name=/oca_type= codegen", () => {
     );
     expect(code).toContain('$.strategy.entry("L", "long", undefined, undefined, $.high.get(0), undefined, undefined, "BB", "cancel")');
     expect(code).toContain('$.strategy.order("O", "short", undefined, undefined, undefined, undefined, undefined, "R", "reduce")');
+  });
+
+  it("passes strategy.exit's group after comment_trailing=, and drops alert_trailing=", () => {
+    const code = transpileCode('strategy("s")\nstrategy.exit("X", "L", limit=15, oca_name="G", alert_trailing="t")');
+    expect(code).toContain(
+      '$.strategy.exit("X", "L", 15, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, "G")',
+    );
   });
 });
 
