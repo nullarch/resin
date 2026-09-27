@@ -25,6 +25,7 @@ import {
   detectTupleReturnArityFromTailExpr,
   NZ_KWARG_PARAM_NAMES,
   resolveMethodReceiverTypeName,
+  resolveCloseAllSlots,
   resolveTaKwargPositions,
   resolveTimestampKwargSlots,
   RUNTIME_KWARG_PARAM_NAMES,
@@ -4816,7 +4817,14 @@ function genCallExpr(
       // 무변화) — runtime StrategyState.cancel(id, when)이 함수 최상단에서 게이팅(hand-verified,
       // pine2py cancel()엔 이 게이트가 없음 — DIVERGENCES.md 신규 항목 참조).
       // analyzer가 이름/중복/위치-키워드 충돌을 이미 검증했다.
-      const args = expr.args.map((a) => genExpr(a, program, funcCtx));
+      // strategy.close_all's positional arguments are bound to their parameter names first
+      // (resolveCloseAllSlots: TradingView's overloads), then placed like keyword arguments.
+      const closeAllSlots = builtinName === "strategy.close_all" ? resolveCloseAllSlots(expr, program.script.version ?? 1) : null;
+      const namedArgs =
+        closeAllSlots === null
+          ? expr.kwargs
+          : [...expr.args.map((value, i) => ({ name: closeAllSlots[i]!, value })), ...expr.kwargs];
+      const args = closeAllSlots === null ? expr.args.map((a) => genExpr(a, program, funcCtx)) : [];
       if (builtinName === "strategy.close" && expr.args.length === 2) {
         // C345: Pine 위치 슬롯 1(comment)은 런타임 StrategyState.close(id, qty, comment, when)의
         // 슬롯 2 — qty 슬롯(1)을 건너뛰어야 하므로 위 공용 1:1 매핑을 재배치로 덮어쓴다.
@@ -4860,11 +4868,11 @@ function genCallExpr(
               : builtinName === "strategy.close"
                 ? { id: 0, qty: 1, comment: 2, when: 3, qty_percent: 4, immediately: 5 } // id=(C293, 위치 슬롯 0을 kwarg로도 채움)
                 : builtinName === "strategy.close_all"
-                  ? { comment: 0, when: 1, immediately: 2 } // comment(위치 0) + when=(C378) + immediately=(C379)
+                  ? { comment: 0, when: 1, immediately: 2 } // StrategyState.close_all(comment, when, immediately); alert_message/disable_alert have no slot
                   : builtinName === "strategy.cancel"
                     ? { id: 0, when: 1 } // strategy.cancel(C382, when=은 C708 — id 뒤 새 슬롯, 기존 id 전용 출력 무변화)
                     : { when: 0 }; // strategy.cancel_all(when=), the v5 gate (StrategyState.cancel_all)
-        for (const kw of expr.kwargs) {
+        for (const kw of namedArgs) {
           const slot = KWARG_SLOTS[kw.name];
           if (slot === undefined) continue; // 방어적 fallback(현재 전 kwargs가 슬롯을 가짐)
           while (args.length < slot) args.push("undefined");
@@ -4872,7 +4880,7 @@ function genCallExpr(
         }
         if (
           (builtinName === "strategy.close" || builtinName === "strategy.close_all") &&
-          expr.kwargs.some((kw) => kw.name === "immediately")
+          namedArgs.some((kw) => kw.name === "immediately")
         ) {
           // immediately=(C379) — 런타임이 "이 바의 close가로 지금 체결"하려면 codegen이 현재 바의
           // close 가격/인덱스를 암묵 주입해야 한다(트레이드 접근자 OPEN_TRADE_CLOSE_PRICE_METHODS의

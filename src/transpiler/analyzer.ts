@@ -114,6 +114,7 @@ export {
   TIMEFRAME_IN_SECONDS_KWARG_PARAM_NAMES,
   RUNTIME_KWARG_PARAM_NAMES,
   TIME_CALL_KWARG_PARAM_NAMES,
+  resolveCloseAllSlots,
   resolveTimestampKwargSlots,
   resolveUserMethodCallInfo,
 } from "./analyzer/call-expr";

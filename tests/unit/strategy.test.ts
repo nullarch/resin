@@ -2954,21 +2954,29 @@ describe("strategy.close_all / qty= analyzer validation (C168)", () => {
     expect(errors.some((e) => e.includes("duplicate keyword argument 'comment'"))).toBe(true);
   });
 
-  // C467 재마이그레이션: pine2py engine.py `close_all(comment: str="", when: bool=True)`이 when도
-  // 2번째 named parameter로 받음을 재확인해 위치 인자 상한을 1개->2개로 확장(wild 실측 7건,
-  // `strategy.close_all('EOS', 'EOS', immediately=true)`류) — 경계는 3개부터 거부로 이동.
-  it("accepts strategy.close_all(comment, when) as two positional arguments (C467, wild 실측)", () => {
-    expect(transpile('strategy("s")\nstrategy.close_all("bye", close > open)').ok).toBe(true);
-    expect(transpile('strategy("s")\nstrategy.close_all("bye", true)').ok).toBe(true);
+  // The positional arguments bind to TradingView's overloads, (comment, alert_message, immediately,
+  // disable_alert) and v5's older (when, comment, alert_message, disable_alert), not to pine2py's
+  // (comment, when) (resin-harness suites/strategy/probes/C59.json: oracle = resin on every trade;
+  // realworld gary-ix/Trading-Indicators `strategy.close_all('EOD', 'End of Day Exit', true)`).
+  it("accepts strategy.close_all(comment, alert_message, immediately) as positional arguments", () => {
+    expect(transpile('strategy("s")\nstrategy.close_all("EOS", "EOS")').ok).toBe(true);
+    expect(transpile('strategy("s")\nstrategy.close_all("EOD", "End of Day Exit", true)').ok).toBe(true);
+    expect(transpile(V6 + 'strategy("s")\nstrategy.close_all("EOD", "End of Day Exit", true, false)').ok).toBe(true);
   });
 
-  it("rejects duplicate when specified both positionally and via when= (C467, comment C250과 동일 원칙)", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.close_all("bye", true, when=false)');
-    expect(errors.some((e) => e.includes("duplicate keyword argument 'when'"))).toBe(true);
+  it("accepts v5 strategy.close_all(when, comment, alert_message) as positional arguments", () => {
+    expect(transpile('strategy("s")\nstrategy.close_all(close > open, "bye", "msg")').ok).toBe(true);
   });
 
-  it("validates strategy.close_all arg count (위치 인자 0~2개 — 3개부터 거부, C467로 경계 확장)", () => {
-    const errors = transpileErrors('strategy("s")\nstrategy.close_all("bye", true, "extra")');
+  it("rejects a parameter given both positionally and by keyword, under either overload", () => {
+    const errors = transpileErrors('strategy("s")\nstrategy.close_all("bye", "msg", true, immediately=false)');
+    expect(errors.some((e) => e.includes("duplicate keyword argument 'immediately'"))).toBe(true);
+    const errors2 = transpileErrors('strategy("s")\nstrategy.close_all(close > open, "bye", comment="x")');
+    expect(errors2.some((e) => e.includes("duplicate keyword argument 'comment'"))).toBe(true);
+  });
+
+  it("validates strategy.close_all arg count (4 positional parameters)", () => {
+    const errors = transpileErrors('strategy("s")\nstrategy.close_all("bye", "msg", true, false, "extra")');
     expect(errors.some((e) => e.includes("'strategy.close_all' call argument count mismatch"))).toBe(true);
   });
 
@@ -3148,9 +3156,22 @@ describe("strategy.close_all / qty= codegen emission (C168)", () => {
     expect(code).toContain('$.strategy.site(1).close_all("bye!", true);');
   });
 
-  it("emits positional (comment, when) identically to comment=+when= (C467, no reslotting needed)", () => {
-    const code = transpileCode('strategy("s")\nstrategy.close_all("bye!", true)');
-    expect(code).toContain('$.strategy.site(1).close_all("bye!", true);');
+  // resin-harness suites/strategy/probes/C59.json: the second positional argument is alert_message
+  // (no slot), the third immediately; v5's `when` overload starts with the condition.
+  it("binds positional arguments to TradingView's close_all overloads", () => {
+    expect(transpileCode('strategy("s")\nstrategy.close_all("bye!", "msg")')).toContain(
+      '$.strategy.site(1).close_all("bye!");',
+    );
+    expect(transpileCode('strategy("s")\nstrategy.close_all("EOD", "End of Day Exit", true)')).toContain(
+      '$.strategy.site(1).close_all("EOD", undefined, true, $.close.get(0), $.idx, $.barTimeMs);',
+    );
+    expect(transpileCode('strategy("s")\nstrategy.close_all(close > open, "bye!")')).toContain(
+      '$.strategy.site(1).close_all("bye!", rt.pineGt($.close.get(0), $.open.get(0)));',
+    );
+    // v6 has no `when` overload.
+    expect(transpileCode(V6 + 'strategy("s")\nstrategy.close_all("bye!", "msg", true)')).toContain(
+      '$.strategy.site(1).close_all("bye!", undefined, true, $.close.get(0), $.idx, $.barTimeMs);',
+    );
   });
 
   it("lowers immediately= on strategy.close_all to the 3rd slot + implicit close/idx/barTimeMs (C379/C418)", () => {

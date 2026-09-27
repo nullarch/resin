@@ -4755,6 +4755,36 @@ export function resolveTimestampKwargSlots(expr: CallExpr): readonly string[] {
   return TIMESTAMP_WITH_TZ_SLOTS;
 }
 
+// strategy.close_all()'s parameters, in positional order. PyneCore (the oracle) and v6 take
+// `strategy.close_all(comment, alert_message, immediately, disable_alert)`; v5 has that overload
+// too (rn.txt: "New overloaded versions of the strategy.close() and strategy.close_all() functions
+// with the immediately parameter") beside the older one, which starts with the order condition
+// `when` (mig6.txt: "The when parameter for order creation functions was deprecated in v5 and is
+// removed in v6"). So `strategy.close_all("EOD", "End of Day Exit", true)` closes at once with the
+// comment "EOD", and v5's `strategy.close_all(barsHeld >= 5, "Timeout")` closes only when the
+// condition holds. Repro: resin-harness suites/strategy/probes/C59.json.
+export const CLOSE_ALL_SLOTS: readonly string[] = ["comment", "alert_message", "immediately", "disable_alert"];
+export const CLOSE_ALL_WHEN_SLOTS: readonly string[] = ["when", "comment", "alert_message", "disable_alert"];
+
+// The overload a strategy.close_all() call binds to (analyzer and codegen both call it). The
+// overloads differ in the type of their first parameter, a string comment or a bool condition, and
+// resin has no static types: a v5 call takes the `when` overload when its first positional argument
+// is a bool by its form (a comparison, `and`/`or`/`not`, true/false), or is not a string by its form
+// and the call names `comment`, so the positional argument cannot be the comment. A bool held in a
+// variable is not recognised and binds as the comment, as before.
+export function resolveCloseAllSlots(expr: CallExpr, version: number): readonly string[] {
+  if (version >= 6 || expr.args.length === 0) return CLOSE_ALL_SLOTS;
+  const named = new Set(expr.kwargs.map((kw) => kw.name));
+  if (named.has("immediately") || named.has("when")) return CLOSE_ALL_SLOTS;
+  const first = expr.args[0]!;
+  if (isStringExpr(first)) return CLOSE_ALL_SLOTS;
+  const boolByForm =
+    first.kind === "BoolLiteral" ||
+    (first.kind === "UnaryOp" && first.op === "not") ||
+    (first.kind === "BinOp" && ["==", "!=", "<", ">", "<=", ">=", "and", "or"].includes(first.op));
+  return boolByForm || named.has("comment") ? CLOSE_ALL_WHEN_SLOTS : CLOSE_ALL_SLOTS;
+}
+
 // The slots of timestamp()'s arguments that may be left out: hour, minute and second ("(Optional
 // argument) Hour. Default is 0.", ref_v6_lang.txt), and the timezone ("Optional. The default is
 // syminfo.timezone"). Naming a later argument does not make them required.
@@ -7159,20 +7189,19 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // `strategy.close_all(sellAlert,"Sell")` — codegen args 배열이 expr.args를 그대로 slot
       // 0/1에 매핑하는 범용 경로라 close/exit처럼 재배치 불필요, KWARG_SLOTS 표가 이미 이 2-위치
       // 폼을 전제하고 설계돼 있었음).
-      if (expr.args.length > 2) {
+      // The positional arguments bind to TradingView's parameters, not to pine2py's (comment, when):
+      // the second one is alert_message, or the comment under v5's `when` overload (see
+      // resolveCloseAllSlots). Realworld: gary-ix/Trading-Indicators 10c20ed82cae
+      // `strategy.close_all('EOD', 'End of Day Exit', true)`.
+      const closeAllSlots = resolveCloseAllSlots(expr, prog.script.version ?? 1);
+      if (expr.args.length > closeAllSlots.length) {
         prog.errors.push(
-          `'strategy.close_all' call argument count mismatch: requires 0~2 (comment, when), got ${expr.args.length} (L${expr.line}:${expr.col})`,
+          `'strategy.close_all' call argument count mismatch: requires 0~${closeAllSlots.length} (${closeAllSlots.join(", ")}), got ${expr.args.length} (L${expr.line}:${expr.col})`,
         );
       }
-      const seenCloseAllKwargs = new Set<string>();
-      if (expr.args.length >= 1) {
-        // 위치로 이미 채워진 comment(/when)를 먼저 등록 — 뒤이은 kwargs 루프가 `comment=`/`when=`과의
-        // 동시 지정을 기존 "중복 지정" 에러 경로로 자연스럽게 잡아낸다(신규 분기 불필요, C249와 동일 재사용).
-        seenCloseAllKwargs.add("comment");
-      }
-      if (expr.args.length >= 2) {
-        seenCloseAllKwargs.add("when");
-      }
+      // The parameters the positional arguments fill are registered first, so a keyword argument
+      // naming one of them again takes the "duplicate" error path below.
+      const seenCloseAllKwargs = new Set<string>(closeAllSlots.slice(0, expr.args.length));
       for (const kw of expr.kwargs) {
         if (
           kw.name !== "comment" &&
