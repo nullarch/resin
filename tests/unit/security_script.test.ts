@@ -27,6 +27,9 @@ function plotsOf(source: string, data: OHLCVData = DATA): number[][] {
   return run(result, data).plots.map((p) => Array.from(p.values));
 }
 
+// A stateful function: outside the prepass grammar, so the requested context runs the script.
+const SUM_UDF_TOP = "f(x) =>\n    var float s = 0.0\n    s := s + x\n    s";
+
 function errorsOf(source: string): string[] {
   const result = transpile(source);
   return result.ok ? [] : result.errors;
@@ -110,6 +113,44 @@ describe("request.security evaluated in the requested context", () => {
     expect(m!.some((v) => Number.isFinite(v))).toBe(true);
   });
 
+  // Without dynamic requests (v5's default) the child reads another request as the chart computed it,
+  // paired with the requested bars (concepts_other-timeframes-and-data.txt "Nested requests";
+  // checked against the oracle by resin-harness suites/lang/probes/L37.json).
+  it("a nested request through a variable: each requested bar reads the inner request's last bar closed by then", () => {
+    // The 8-hour request's last bar of each day closes with the day: the day's close.
+    const [nested, direct, chart] = plotsOf(
+      [
+        SUM_UDF_TOP,
+        'a = request.security(syminfo.tickerid, "480", close)',
+        "b = f(a) + 0",
+        'r = request.security(syminfo.tickerid, "D", b)',
+        'w = request.security(syminfo.tickerid, "D", f(close) + 0)',
+        "plot(r)",
+        "plot(w)",
+        "plot(b)",
+      ].join("\n"),
+    );
+    expect(nested).toEqual(direct);
+    expect(nested!.some((v) => Number.isFinite(v))).toBe(true);
+    // The chart's own b sums the 8-hour closes: the requested context's is its own.
+    expect(chart).not.toEqual(nested);
+  });
+
+  it("a nested request with gaps on is na on the requested bars where no new bar of it closed", () => {
+    // A daily request read by 8-hour bars: a new day closes on every third bar only.
+    const [got] = plotsOf(
+      [
+        SUM_UDF_TOP,
+        'd = request.security(syminfo.tickerid, "D", close, barmerge.gaps_on)',
+        "b = f(nz(d, 0)) + 0",
+        'r = request.security(syminfo.tickerid, "480", b, lookahead = barmerge.lookahead_on)',
+        "plot(r)",
+      ].join("\n"),
+    );
+    // Day closes 103, 109, 114, 119: the running sum grows on the day's last bar only.
+    expect(got).toEqual([0, 0, 103, 103, 103, 212, 212, 212, 326, 326, 326, 445]);
+  });
+
   it("time_close in the requested context is the requested bar's close", () => {
     const [got, want] = plotsOf(
       ['tc = time_close', 'g = request.security(syminfo.tickerid, "D", tc)', 'w = request.security(syminfo.tickerid, "D", time_close)', "plot(g)", "plot(w)"].join("\n"),
@@ -176,11 +217,24 @@ describe("request.security in the requested context: what is refused", () => {
     expect(errors.some((e) => e.includes("the script changes 'x'"))).toBe(true);
   });
 
-  it("a nested request through a variable", () => {
+  it("a nested request that, with dynamic requests (v6), names the context it runs in (disputed, resin-harness D11)", () => {
     const errors = errorsOf(
-      [SUM_UDF, 'a = request.security(syminfo.tickerid, "W", close)', "b = f(a) + 0", 'r = request.security(syminfo.tickerid, "D", b)'].join("\n"),
+      ["//@version=6", SUM_UDF, 'a = request.security(syminfo.tickerid, "480", close)', "b = f(a) + 0", 'r = request.security(syminfo.tickerid, "D", b)'].join("\n"),
     );
-    expect(errors.some((e) => e.includes("it depends on another request.*() call"))).toBe(true);
+    expect(errors.some((e) => e.includes("with dynamic requests, may run in the requested context's symbol or timeframe"))).toBe(true);
+  });
+
+  it("a nested request whose timeframe is bound on its first execution", () => {
+    const errors = errorsOf(
+      [
+        SUM_UDF,
+        'tf = bar_index > 5 ? "D" : "480"',
+        "a = request.security(syminfo.tickerid, tf, close)",
+        "b = f(a) + 0",
+        'r = request.security(syminfo.tickerid, "D", b)',
+      ].join("\n"),
+    );
+    expect(errors.some((e) => e.includes("bound on its first execution"))).toBe(true);
   });
 
   it("timeframe.* in the slice (the requested context's timeframe is not implemented)", () => {
@@ -281,7 +335,7 @@ describe("request.security in a user-defined function, evaluated in the requeste
     expect(got!.some((v) => Number.isFinite(v))).toBe(true);
   });
 
-  it("a sibling request in the function reads nothing in the child, and both read their own requests on the chart", () => {
+  it("a sibling request in the function reads its own data in the child, the child's own request nothing, and both read their own requests on the chart", () => {
     const source = [
       SUM_UDF,
       "trend() =>",
@@ -299,7 +353,9 @@ describe("request.security in a user-defined function, evaluated in the requeste
     ].join("\n");
     const result = transpile(source);
     if (!result.ok) throw new Error(result.errors.join("\n"));
-    expect(result.code).toContain("fast = ($.secCapture >= 0 ? NaN : rt.security.getFromArray($.securityExprCache[0]");
+    expect(result.code).toContain(
+      "fast = ($.secCapture >= 0 && $.securityCache[0] === undefined ? NaN : rt.security.getFromArray($.securityExprCache[0]",
+    );
     const [a, b, ta, tb] = plotsOf(source);
     expect(a).toEqual(ta);
     expect(b).toEqual(tb);
@@ -343,11 +399,44 @@ describe("request.security in a user-defined function: what the requested contex
     expect(errors.some((e) => e.includes("the function reads the strategy's state"))).toBe(true);
   });
 
-  it("an argument that depends on another request (a nested request)", () => {
+  it("the strategy's state in the request's own expression", () => {
     const errors = errorsOf(
-      [SUM_UDF, 'a = request.security(syminfo.tickerid, "W", close)', 'f(v) => request.security(syminfo.tickerid, "D", g(v) * 2)', "x = f(a)"].join("\n"),
+      ['strategy("s")', SUM_UDF, 'f(v) => request.security(syminfo.tickerid, "D", g(v) + strategy.position_size)', "a = f(close)"].join("\n"),
     );
-    expect(errors.some((e) => e.includes("it depends on another request.*() call"))).toBe(true);
+    expect(errors.some((e) => e.includes("the function reads the strategy's state"))).toBe(true);
+  });
+
+  it("an argument that, with dynamic requests (v6), depends on a request naming the context it runs in (disputed, resin-harness D11)", () => {
+    const errors = errorsOf(
+      [
+        "//@version=6",
+        SUM_UDF,
+        'a = request.security(syminfo.tickerid, "480", close)',
+        'f(v) => request.security(syminfo.tickerid, "D", g(v) * 2)',
+        "x = f(a)",
+      ].join("\n"),
+    );
+    expect(errors.some((e) => e.includes("with dynamic requests, may run in the requested context's symbol or timeframe"))).toBe(true);
+  });
+});
+
+describe("request.security in a user-defined function: an argument that depends on another request", () => {
+  const SUM_UDF = "g(x) =>\n    var float s = 0.0\n    s := s + x\n    s";
+
+  it("without dynamic requests the call's child reads it paired with the requested bars (resin-harness suites/lang/probes/L37.json)", () => {
+    const [x, want] = plotsOf(
+      [
+        SUM_UDF,
+        'a = request.security(syminfo.tickerid, "480", close)',
+        'f(v) => request.security(syminfo.tickerid, "D", g(v) * 2)',
+        "x = f(a)",
+        'w = request.security(syminfo.tickerid, "D", g(close) * 2)',
+        "plot(x)",
+        "plot(w)",
+      ].join("\n"),
+    );
+    expect(x).toEqual(want);
+    expect(x!.some((v) => Number.isFinite(v))).toBe(true);
   });
 });
 

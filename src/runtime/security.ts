@@ -371,6 +371,15 @@ export function pairNested(inner: SecurityCache, outer: SecurityCache, lookahead
   return pair;
 }
 
+// A request read by a script run in another request's context (Context.runSecurityScript): the
+// inner request's own cache, its bars paired with the outer context's rows (pairNested) as a feed
+// is paired with the chart's bars, so that every read of it in the child (get, getFromArray, their
+// history forms) takes the nested reading rule, readNested's.
+export function nestedView(inner: SecurityCache, outer: SecurityCache): SecurityCache {
+  const confirmed = pairNested(inner, outer, false);
+  return { ...inner, barMap: confirmed, confirmed, opened: pairNested(inner, outer, true) };
+}
+
 // The nested request's value on outer row `h` (pairNested): its prepass result on the paired row,
 // na before there is one; with gaps on, only on the outer row where that inner row first shows.
 export function readNested(values: Float64Array, pair: Int32Array, h: number, gaps: boolean): number {

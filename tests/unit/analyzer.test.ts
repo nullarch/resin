@@ -19676,14 +19676,19 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
   // C742 블록이 검증. ──
   const C742_UDF = ["f() =>", "    s = 0.0", "    for i = 0 to 2", "        s := s + close[i]", "    s / 3"].join("\n");
 
-  it("rejects ta.* over a chained same-sym+tf security var (C742): the inner request now runs in its requested context, and a nested request through a variable is not implemented (C742 accepted it as pine2py's chart-bar passthrough)", () => {
+  // The inner request runs f() in its requested context, and the outer one reads it there as a
+  // nested request through a variable: without dynamic requests, as the chart computed it, paired
+  // with the requested rows (concepts_other-timeframes-and-data.txt "Nested requests"; resin-harness
+  // suites/lang/probes/L37.json; values in codegen.test.ts's C742 block). C742 took both as pine2py's
+  // chart-bar passthrough.
+  it("accepts ta.* over a chained same-sym+tf security var (C742): a nested request read in the requested context", () => {
     const prog = analyzeSource(
       [C742_UDF, 'bbwp = request.security(syminfo.ticker, "D", f())', 'm = request.security(syminfo.ticker, "D", ta.sma(bbwp, 3))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("it depends on another request.*() call"))).toBe(true);
+    expect(prog.errors).toEqual([]);
   });
 
-  it("rejects the ternary MA-selector over a chained security var with a runtime input.timeframe tf (C742; nested request through a variable, as above)", () => {
+  it("accepts the ternary MA-selector over a chained security var with a runtime input.timeframe tf (C742; a nested request, as above)", () => {
     const prog = analyzeSource(
       [
         C742_UDF,
@@ -19693,35 +19698,42 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
         "m = request.security(syminfo.ticker, itf, mt == 'SMA' ? ta.sma(bbwp, 3) : ta.ema(bbwp, 3))",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("it depends on another request.*() call"))).toBe(true);
+    expect(prog.errors).toEqual([]);
   });
 
-  it("rejects a chained security ref nested in arithmetic and nz() (C742; nested request through a variable, as above)", () => {
+  it("accepts a chained security ref nested in arithmetic and nz() (C742; a nested request, as above)", () => {
     const prog = analyzeSource(
       [C742_UDF, 'bbwp = request.security(syminfo.ticker, "D", f())', 'm = request.security(syminfo.ticker, "D", ta.ema(nz(bbwp, 0.0), 3) - bbwp * 2)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("it depends on another request.*() call"))).toBe(true);
+    expect(prog.errors).toEqual([]);
   });
 
-  it("still rejects a chained ref whose inner call has a different tf (C742 — 다른-tf 체인 축 불변)", () => {
+  it("accepts a chained ref whose inner call has a different tf: each requested day reads the weekly request as a chart bar would", () => {
     const prog = analyzeSource(
       [C742_UDF, 'bbwp = request.security(syminfo.ticker, "W", f())', 'm = request.security(syminfo.ticker, "D", ta.sma(bbwp, 3))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(prog.errors).toEqual([]);
   });
 
-  it("still rejects a chained ref whose inner call has a different symbol (C742)", () => {
+  it("accepts a chained ref whose inner call has a different symbol (a nested request on its own feed)", () => {
     const prog = analyzeSource(
       [C742_UDF, 'bbwp = request.security("OTHER", "D", f())', 'm = request.security(syminfo.ticker, "D", ta.sma(bbwp, 3))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(prog.errors).toEqual([]);
   });
 
-  it("still rejects a tree mixing a bare HTF series leaf with the chained ref (C742 — 혼합 시맨틱 차단)", () => {
+  it("accepts a tree mixing a bare series leaf with the chained ref: the leaf is the requested bar's", () => {
     const prog = analyzeSource(
       [C742_UDF, 'bbwp = request.security(syminfo.ticker, "D", f())', 'm = request.security(syminfo.ticker, "D", ta.sma(bbwp, 3) + close)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(prog.errors).toEqual([]);
+  });
+
+  it("refuses the chained ref under dynamic requests (v6) when the inner call names the context it runs in (disputed, resin-harness D11)", () => {
+    const prog = analyzeSource(
+      ["//@version=6", C742_UDF, 'bbwp = request.security(syminfo.tickerid, "D", f())', 'm = request.security(syminfo.tickerid, "D", ta.sma(bbwp, 3))'].join("\n"),
+    );
+    expect(prog.errors.some((e) => e.includes("with dynamic requests, may run in the requested context's symbol or timeframe"))).toBe(true);
   });
 
   it("still rejects a tree containing timeframe.period alongside the chained ref (C742 — HTF 컨텍스트 의미 보존)", () => {
@@ -29003,9 +29015,10 @@ describe("Analyzer request.security expression via chained security-var substitu
     expect(prog.securityNestedReads.size).toBe(1);
   });
 
-  it("inherits the outer request's symbol and timeframe for a nested syminfo.tickerid/\"\" symbol and timeframe.period/\"\" timeframe", () => {
+  it("with dynamic requests (v6), inherits the outer request's symbol and timeframe for a nested syminfo.tickerid/\"\" symbol and timeframe.period/\"\" timeframe", () => {
     const prog = analyzeSource(
       [
+        "//@version=6",
         'inner = request.security("", timeframe.period, close)',
         'x = request.security("A:B", "W", inner + request.security(syminfo.tickerid, "", close))',
       ].join("\n"),
@@ -29016,6 +29029,27 @@ describe("Analyzer request.security expression via chained security-var substitu
       ["A:B", "W"],
       ["A:B", "W"],
     ]);
+  });
+
+  it("without dynamic requests (v5's default, or dynamic_requests = false), a nested syminfo.tickerid/\"\" symbol and timeframe.period/\"\" timeframe are the chart's (resin-harness suites/lang/probes/L37.json)", () => {
+    // concepts_other-timeframes-and-data.txt "Nested requests": "Without dynamic requests enabled,
+    // the script evaluates each call independently, passing the first call's calculated value
+    // directly into the second call rather than executing the first call within the second context".
+    for (const head of ["//@version=5", '//@version=6\nindicator("x", dynamic_requests = false)']) {
+      const prog = analyzeSource(
+        [
+          head,
+          'inner = request.security("", timeframe.period, close)',
+          'x = request.security("A:B", "W", inner + request.security(syminfo.tickerid, "", close))',
+        ].join("\n"),
+      );
+      expect(prog.errors).toEqual([]);
+      const nestedSlots = [...prog.securityNestedReads.values()].map((n) => n.slot);
+      expect(nestedSlots.map((s) => [prog.securitySymbols[s], prog.securityTfs[s]])).toEqual([
+        [null, prog.chartTf],
+        [null, prog.chartTf],
+      ]);
+    }
   });
 
   it("does not disturb a plain top-level arithmetic use of a security-result variable outside any request.security call (regression guard — chained-security-var judgment only fires when outerSymbol/outerTf are set)", () => {
@@ -29089,7 +29123,11 @@ describe("Analyzer request.security expression via wrapper-UDF-mediated chained 
     expect(prog.errors).toEqual([]);
   });
 
-  it("still rejects the chain when the wrapper's own tf differs from the outer call's tf (different HTF replay — collapse must not fire)", () => {
+  // A chain the collapse does not take (another timeframe or symbol) is a nested request through a
+  // variable: without dynamic requests the requested context reads it as the chart computed it,
+  // paired with its rows (concepts_other-timeframes-and-data.txt "Nested requests"; resin-harness
+  // suites/lang/probes/L37.json).
+  it("accepts the chain when the wrapper's own tf differs from the outer call's tf: a nested request read in the requested context", () => {
     const prog = analyzeSource(
       [
         "f(src) =>",
@@ -29098,10 +29136,10 @@ describe("Analyzer request.security expression via wrapper-UDF-mediated chained 
         'y = request.security(syminfo.tickerid, "W", ta.sma(a, 5))',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
+    expect(prog.errors).toEqual([]);
   });
 
-  it("still rejects the chain when the wrapper's own symbol differs from the outer call's symbol", () => {
+  it("accepts the chain when the wrapper's own symbol differs from the outer call's symbol: a nested request on its own feed", () => {
     const prog = analyzeSource(
       [
         "f(src) =>",
@@ -29110,10 +29148,10 @@ describe("Analyzer request.security expression via wrapper-UDF-mediated chained 
         'y = request.security(syminfo.tickerid, "D", ta.sma(a, 5))',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
+    expect(prog.errors).toEqual([]);
   });
 
-  it("registers independent ta slots for the collapsed inner expression (site-2's bodyExpr re-registers the inner ta.sma clone — no state sharing with site-1)", () => {
+  it("a second call of the wrapper over the first's result runs in its requested context and reads the first's request there (no collapsed clone)", () => {
     const prog = analyzeSource(
       [
         "f(src) =>",
@@ -29123,8 +29161,11 @@ describe("Analyzer request.security expression via wrapper-UDF-mediated chained 
       ].join("\n"),
     );
     expect(prog.errors).toEqual([]);
-    // 최소 3개 ta 슬롯: site1 sma20 / site2 outer sma5 / site2에 collapse로 재등록된 sma20 클론.
-    expect(prog.stateCallSlots.size).toBeGreaterThanOrEqual(3);
+    // Each call is a request its child evaluates (sma20 and sma5, one ta slot each); the second
+    // child reads the first call's request paired with its rows, where the collapse re-registered
+    // an sma20 clone of its own.
+    expect(prog.securityFuncScriptSites.length).toBe(2);
+    expect(prog.stateCallSlots.size).toBe(2);
   });
 });
 

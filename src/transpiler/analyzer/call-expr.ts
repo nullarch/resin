@@ -44,6 +44,7 @@ import { literalOffsetValue } from "./index-access";
 import { isUdtConstructorCall } from "./constructors";
 import { isHarmlessArgDup } from "./arg-dup";
 import {
+  allowsDynamicRequests,
   planSecurityScript,
   planSecurityScriptInFunction,
   type SecurityFuncScriptPlan,
@@ -2405,7 +2406,7 @@ export interface SecurityExprBuild {
 // own context's bars (`build`, its own slot and prepass), and each bar of the outer context reads it
 // with the rule a chart bar reads a request by (runtime/security.ts pairNested). `node` is the clone
 // the outer build embeds where the value is read; `symbol` (null: the chart's own) and `tf` are the
-// requested context with inheritance resolved.
+// requested context with inheritance resolved (only dynamic requests inherit, buildSecurityNestedRead).
 export interface SecurityNestedRead {
   node: CallExpr;
   symbol: string | null;
@@ -2865,12 +2866,16 @@ function tryResolveSecurityLeadArgsQuiet(node: Expr): { symbolArg: Expr; tfArg: 
 }
 
 // A request.security call met while building the expression of another, when that build evaluates
-// nested requests (secNestCtx, SecurityNestedRead): resolves the context it requests — a
-// syminfo.tickerid or "" symbol and a timeframe.period or "" timeframe are the outer request's
-// (concepts_other-timeframes-and-data.txt "Nested requests": "the nested request inherits that
-// request.*() call's ticker ID or timeframe information"), anything else must fold at compile time
-// — builds its own expression for that context, records it, and returns the clone that reads it.
-// undefined: `node` is not a request.security call; null: a nested request outside the grammar.
+// nested requests (secNestCtx, SecurityNestedRead): resolves the context it requests — with dynamic
+// requests, a syminfo.tickerid or "" symbol and a timeframe.period or "" timeframe are the outer
+// request's (concepts_other-timeframes-and-data.txt "Nested requests": "the nested request inherits
+// that request.*() call's ticker ID or timeframe information"); without them they are the chart's,
+// as for any call ("Without dynamic requests enabled, the script evaluates each call independently,
+// passing the first call's calculated value directly into the second call rather than executing the
+// first call within the second context"; the reference reads a request the other one depends on as
+// the chart resolved it, pynecore core/security.py __sec_read__); anything else must fold at compile
+// time — builds its own expression for that context, records it, and returns the clone that reads
+// it. undefined: `node` is not a request.security call; null: a nested request outside the grammar.
 function buildSecurityNestedRead(node: CallExpr, prog: AnalyzedProgram, funcName: string | null): Expr | null | undefined {
   const lead = tryResolveSecurityLeadArgsQuiet(node);
   if (lead === null) return undefined;
@@ -2893,9 +2898,13 @@ function buildSecurityNestedRead(node: CallExpr, prog: AnalyzedProgram, funcName
     else lookahead = v;
   }
   const isEmptyString = (e: Expr): boolean => e.kind === "StringLiteral" && e.value === "";
+  // The context a syminfo.tickerid/"" symbol or a timeframe.period/"" timeframe names.
+  const inherited = allowsDynamicRequests(prog)
+    ? outer
+    : { symbol: prog.syminfoStrings.get("tickerid") || null, tf: prog.chartTf };
   let symbol: string | null;
   if (isSyminfoTickerid(lead.symbolArg) || isEmptyString(lead.symbolArg)) {
-    symbol = outer.symbol;
+    symbol = inherited.symbol;
   } else {
     // A symbol is not a timeframe: the fold's input freeze guards (they protect an aggregation
     // cache from a timeframe input override) are rolled back, as resolveSecuritySymbol does.
@@ -2905,16 +2914,16 @@ function buildSecurityNestedRead(node: CallExpr, prog: AnalyzedProgram, funcName
       if (!guardKeysBefore.has(k)) prog.securityTfConstGuards.delete(k);
     }
     if (s === undefined) return null;
-    symbol = s === "" ? outer.symbol : s;
+    symbol = s === "" ? inherited.symbol : s;
   }
   let tf: string;
   const tfArg = lead.tfArg;
   if ((tfArg.kind === "DotAccess" && tfArg.obj.kind === "Identifier" && tfArg.obj.name === "timeframe" && tfArg.attr === "period") || isEmptyString(tfArg)) {
-    tf = outer.tf;
+    tf = inherited.tf;
   } else {
     const t = resolveSecurityTfLiteral(tfArg, prog, undefined, undefined, funcName);
     if (t === undefined) return null;
-    tf = t === "" ? outer.tf : t;
+    tf = t === "" ? inherited.tf : t;
   }
   // The inner build runs outside the outer build's var slice: its expression is its own.
   const savedSlice = secVarSliceCtx;

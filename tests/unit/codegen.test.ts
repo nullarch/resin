@@ -16187,7 +16187,7 @@ describe("CodeGen request.security expression via the enclosing UDF's own parame
     );
     expect(code).toContain("if ($.secCapture === 0 + __secIdx) {\n$.secOut[$.idx] = rt.security.scriptValue($.histSlots[__histBase + 0].get(1));\n}");
     expect(code).toContain(
-      "return ($.secCapture >= 0 ? NaN : rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false));",
+      "return ($.secCapture >= 0 && $.securityCache[0 + __secIdx] === undefined ? NaN : rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false));",
     );
     expect(code).toContain("$.securityExprCache[0] = $.runSecurityScript(0, [], 1);");
     expect(code).toContain("if ($.secCapture === 0) {\nget_sec(0, 0, 0, \"D\", myFunc(0, $.close.get(0)));\n}");
@@ -16416,7 +16416,7 @@ describe("CodeGen request.security expression via UDF parameter multi-call-site 
     expect(code).toContain("function f_sec(__slotBase, __secIdx, val) {");
     expect(code).toContain("if ($.secCapture === 0 + __secIdx) {\n$.secOut[$.idx] = rt.security.scriptValue(val);\n}");
     expect(code).toContain(
-      "return ($.secCapture >= 0 ? NaN : rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false));",
+      "return ($.secCapture >= 0 && $.securityCache[0 + __secIdx] === undefined ? NaN : rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false));",
     );
     expect(code).toContain("var a = f_sec(0, 0, $.close.get(0));");
     expect(code).toContain("var b = f_sec(0, 1, $.open.get(0));");
@@ -17501,18 +17501,15 @@ describe("CodeGen request.security time-call leaf paramEnv substitution folding 
 // 동치(pine2py eager 평가 정합 — request_security._resolve_expression은 평가된 값을 그대로 통과).
 // 오라클은 MEMORY.md C176 구조적 불가 축 그대로 hand-verified. ──
 describe("CodeGen request.security chained same-sym+tf passthrough E2E (C742)", () => {
+  // 8-hour bars over eight days, so that f() (three days) under a 3-day average has daily values.
+  const CLOSES = [102, 101, 103, 106, 107, 109, 111, 112, 114, 116, 113, 110, 108, 111, 115, 117, 116, 119, 121, 118, 115, 117, 120, 122];
   const DATA_MULTIDAY: OHLCVData = {
-    open: [100, 102, 101, 105, 108, 106, 110, 113, 111, 115],
-    high: [103, 105, 102, 108, 110, 108, 112, 115, 113, 117],
-    low: [99, 100, 100, 103, 106, 104, 108, 111, 109, 113],
-    close: [102, 101, 103, 106, 107, 109, 111, 112, 114, 116],
-    volume: [1000, 1100, 1050, 1200, 1150, 1300, 1250, 1400, 1350, 1500],
-    time: [
-      1704067200000, 1704096000000, 1704124800000,
-      1704153600000, 1704182400000, 1704211200000,
-      1704240000000, 1704268800000, 1704297600000,
-      1704326400000,
-    ],
+    open: CLOSES.map((c, i) => (i === 0 ? 100 : CLOSES[i - 1]!)),
+    high: CLOSES.map((c, i) => Math.max(c, i === 0 ? 100 : CLOSES[i - 1]!) + 1),
+    low: CLOSES.map((c, i) => Math.min(c, i === 0 ? 100 : CLOSES[i - 1]!) - 1),
+    close: CLOSES,
+    volume: CLOSES.map((_, i) => 1000 + 50 * i),
+    time: CLOSES.map((_, i) => 1704067200000 + i * 8 * 3600_000),
   };
   const runPlots = (source: string, inputs: Record<string, unknown> = {}) => {
     const result = transpile(source);
@@ -17534,46 +17531,60 @@ describe("CodeGen request.security chained same-sym+tf passthrough E2E (C742)", 
   };
   const UDF = ["f() =>", "    s = 0.0", "    for i = 0 to 2", "        s := s + close[i]", "    s / 3"].join("\n");
   const INNER = 'bbwp = request.security(syminfo.tickerid, "D", f())';
-  // The inner request now runs f() in its requested context (analyzer/security-script.ts), so the
-  // outer one is a nested request through a variable, which is not implemented: refused, where C742
-  // accepted it as pine2py's chart-bar passthrough (the "direct form" these cases compared with).
-  const NESTED = "it depends on another request.*() call";
-  const refusal = (source: string): string[] => {
-    const result = transpile(source);
-    expect(result.ok).toBe(false);
-    return result.ok ? [] : result.errors;
+  // The inner request runs f() in its requested context (analyzer/security-script.ts), and the outer
+  // one reads it as a nested request through a variable: without dynamic requests, as the chart
+  // computed it, paired with the requested rows (Context.runSecurityScript; checked against the
+  // oracle by resin-harness suites/lang/probes/L37.json). Both request "D", so each requested day
+  // reads the inner request's own value of that day, and an expression over the chained var equals
+  // the same expression over f() in the requested context. (C742 took both as pine2py's chart-bar
+  // passthrough; the requested context replaced it.)
+  const same = (chained: string, direct: string, inputs: Record<string, unknown> = {}, prefix: string[] = [INNER]): void => {
+    const [m, d] = runPlots([UDF, ...prefix, `m = ${chained}`, `d = ${direct}`, "plot(m)", "plot(d)"].join("\n"), inputs);
+    expect(Array.from(m!.values)).toEqual(Array.from(d!.values));
+    expect(Array.from(m!.values).some((v) => Number.isFinite(v))).toBe(true);
   };
 
-  it("refuses ta.sma over the chained var (nested request through a variable)", () => {
-    const errors = refusal([UDF, INNER, 'm = request.security(syminfo.tickerid, "D", ta.sma(bbwp, 3))', "plot(m)"].join("\n"));
-    expect(errors.some((e) => e.includes(NESTED))).toBe(true);
-    // The inner request alone runs, in its requested context.
-    expect(Array.from(runPlots([UDF, INNER, "plot(bbwp)"].join("\n"))[0]!.values).some((v) => Number.isFinite(v))).toBe(true);
+  it("reads ta.sma over the chained var in the requested context", () => {
+    same('request.security(syminfo.tickerid, "D", ta.sma(bbwp, 3))', 'request.security(syminfo.tickerid, "D", ta.sma(f(), 3))');
   });
 
-  it("refuses the ternary MA-selector over the chained var (wild 9960631a4fe0 shape)", () => {
-    const src = [UDF, "mt = input.string('EMA', title='T', options=['SMA','EMA'])", INNER, "m = request.security(syminfo.tickerid, \"D\", mt == 'SMA' ? ta.sma(bbwp, 3) : ta.ema(bbwp, 3))", "plot(m)"].join("\n");
-    expect(refusal(src).some((e) => e.includes(NESTED))).toBe(true);
+  it("reads the ternary MA-selector over the chained var (wild 9960631a4fe0 shape), and its input override", () => {
+    const pick = (x: string): string => `request.security(syminfo.tickerid, "D", mt == 'SMA' ? ta.sma(${x}, 3) : ta.ema(${x}, 3))`;
+    const mt = "mt = input.string('EMA', title='T', options=['SMA','EMA'])";
+    same(pick("bbwp"), pick("f()"), {}, [mt, INNER]);
+    same(pick("bbwp"), pick("f()"), { T: "SMA" }, [mt, INNER]);
   });
 
-  it("refuses the input-override variant of the same shape", () => {
-    const src = [UDF, "mt = input.string('SMA', title='T', options=['SMA','EMA'])", INNER, "m = request.security(syminfo.tickerid, \"D\", mt == 'SMA' ? ta.sma(bbwp, 3) : ta.ema(bbwp, 3))", "plot(m)"].join("\n");
-    expect(refusal(src).some((e) => e.includes(NESTED))).toBe(true);
+  it("reads the chain alongside main-path reads of the chained var, which stay the chart's", () => {
+    const [bbwp, m, d] = runPlots(
+      [
+        UDF,
+        INNER,
+        'm = request.security(syminfo.tickerid, "D", ta.sma(bbwp, 3))',
+        'd = request.security(syminfo.tickerid, "D", ta.sma(f(), 3))',
+        "plot(bbwp)",
+        "plot(m)",
+        "plot(d)",
+      ].join("\n"),
+    );
+    expect(Array.from(m!.values)).toEqual(Array.from(d!.values));
+    expect(Array.from(bbwp!.values)).toEqual(Array.from(runPlots([UDF, INNER, "plot(bbwp)"].join("\n"))[0]!.values));
   });
 
-  it("refuses the runtime input.timeframe tf chain", () => {
-    const src = [UDF, "itf = input.timeframe('D', title='TF')", "bbwp = request.security(syminfo.tickerid, itf, f())", "m = request.security(syminfo.tickerid, itf, ta.sma(bbwp, 3))", "plot(m)"].join("\n");
-    expect(refusal(src).some((e) => e.includes(NESTED))).toBe(true);
+  it("reads the chain over a runtime input.timeframe tf", () => {
+    same(
+      "request.security(syminfo.tickerid, itf, ta.sma(bbwp, 3))",
+      "request.security(syminfo.tickerid, itf, ta.sma(f(), 3))",
+      {},
+      ["itf = input.timeframe('D', title='TF')", "bbwp = request.security(syminfo.tickerid, itf, f())"],
+    );
   });
 
-  it("refuses the chain alongside main-path reads of the chained var", () => {
-    const src = [UDF, INNER, 'm = request.security(syminfo.tickerid, "D", ta.sma(bbwp, 3))', "plot(bbwp)", "plot(m)"].join("\n");
-    expect(refusal(src).some((e) => e.includes(NESTED))).toBe(true);
-  });
-
-  it("refuses nz()-wrapped and arithmetic chained refs", () => {
-    const src = [UDF, INNER, 'm = request.security(syminfo.tickerid, "D", ta.ema(nz(bbwp, 0.0), 3) - bbwp * 2)', "plot(m)"].join("\n");
-    expect(refusal(src).some((e) => e.includes(NESTED))).toBe(true);
+  it("reads nz()-wrapped and arithmetic chained refs", () => {
+    same(
+      'request.security(syminfo.tickerid, "D", ta.ema(nz(bbwp, 0.0), 3) - bbwp * 2)',
+      'request.security(syminfo.tickerid, "D", ta.ema(nz(f(), 0.0), 3) - f() * 2)',
+    );
   });
 });
 
@@ -17756,7 +17767,7 @@ describe("CodeGen request.security expression via UDF parameter multi-call-site 
     expect(code).toContain("function f_sec(__slotBase, __histBase, __secIdx, val) {");
     expect(code).toContain("if ($.secCapture === 0 + __secIdx) {\n$.secOut[$.idx] = rt.security.scriptValue($.histSlots[__histBase + 0].get(1));\n}");
     expect(code).toContain(
-      "return ($.secCapture >= 0 ? NaN : rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false));",
+      "return ($.secCapture >= 0 && $.securityCache[0 + __secIdx] === undefined ? NaN : rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false));",
     );
     expect(code).toContain("if ($.secCapture === 1) {\nf_sec(0, 1, 1, $.open.get(0));\n}");
   });
@@ -17850,7 +17861,7 @@ describe("CodeGen request.security expression via UDF parameter(s) nested inside
     expect(code).not.toContain("function __secExpr");
     expect(code).toContain("$.secOut[$.idx] = rt.security.scriptValue(rt.ta.rsi($.taSlots[__taBase + 0], src, len));");
     expect(code).toContain(
-      "return ($.secCapture >= 0 ? NaN : rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false));",
+      "return ($.secCapture >= 0 && $.securityCache[0 + __secIdx] === undefined ? NaN : rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false));",
     );
   });
 
@@ -17968,7 +17979,7 @@ describe("CodeGen request.security expression via UDF parameter whose call sites
     );
     expect(code).toContain("if ($.secCapture === 0 + __secIdx) {\n$.secOut[$.idx] = rt.security.scriptValue(val);\n}");
     expect(code).toContain(
-      "return ($.secCapture >= 0 ? NaN : rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false));",
+      "return ($.secCapture >= 0 && $.securityCache[0 + __secIdx] === undefined ? NaN : rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false));",
     );
     expect(code).toContain("$.securityExprCache[1] = $.runSecurityScript(1, [], 2);");
   });
@@ -29403,7 +29414,7 @@ describe("CodeGen history index '[]' on a request.security(...) call registered 
     const code = codegenSource('getS(tf, exp) =>\n    request.security("", tf, exp)[1]\nx = getS("60", close)\ny = getS("240", open)');
     expect(code).toContain("function getS(__slotBase, __secIdx, tf, exp) {");
     expect(code).toContain(
-      "return ($.secCapture >= 0 ? NaN : rt.security.getFromArrayHist($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false, 1));",
+      "return ($.secCapture >= 0 && $.securityCache[0 + __secIdx] === undefined ? NaN : rt.security.getFromArrayHist($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false, 1));",
     );
   });
 

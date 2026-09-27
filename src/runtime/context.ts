@@ -22,7 +22,7 @@
 
 import { Series, RefSeries } from "./series";
 import { StrategyState, type SubBarWindow } from "./strategy";
-import { build as buildSecurityCache, buildFromFeed, type SecurityCache } from "./security";
+import { build as buildSecurityCache, buildFromFeed, nestedView, type SecurityCache } from "./security";
 import { ExchangeCalendar, calendarSpecOf, type CalendarSpec, type SymbolCalendarOptions } from "./calendar";
 // Type-only: erased at runtime, so no runtime cycle back into the transpiler.
 import type { TranspileOk } from "../transpiler/pipeline";
@@ -445,6 +445,18 @@ export class Context {
   // statements `runs` (indices among the `stmtCount` of them) and records the expression where the
   // call's statement begins. The result, one value per requested bar, is what the chart reads, as it
   // reads a prepass's (security.ts getFromArray).
+  // The child's statements may read other requests (a nested request through a variable). Without
+  // dynamic requests, Pine passes such a request's value into this one as the chart computed it
+  // (concepts_other-timeframes-and-data.txt "Nested requests": "Without dynamic requests enabled,
+  // the script evaluates each call independently, passing the first call's calculated value
+  // directly into the second call rather than executing the first call within the second
+  // context"), and the reference reads it by its bars' closes (pynecore core/security.py
+  // __sec_read__: the producer's "last_close_at_or_before" the consumer bar's as-of instant). So
+  // each other request whose data is built by now reaches the child as its own cache and values
+  // paired with the requested rows (security.ts nestedView). This request's own slot is left out:
+  // its reads in the child are na (codegen childSafeSecurityRead). The analyzer refuses the forms
+  // this does not cover, among them a nested request that, with dynamic requests, would run in
+  // this context's symbol or timeframe (analyzer/security-script.ts nestedRequestRefusal).
   runSecurityScript(slot: number, runs: readonly number[], stmtCount: number): Float64Array {
     if (this.instantiate === undefined) {
       throw new Error("request.security: evaluating an expression in the requested context needs a context the module was compiled on (engine.compile)");
@@ -465,6 +477,11 @@ export class Context {
       this.condCallRefHistSlots.length,
     );
     child.barCloseTimes = cache.timeClose;
+    this.securityCache.forEach((inner, s) => {
+      if (s === slot || inner === undefined) return;
+      child.securityCache[s] = nestedView(inner, cache);
+      child.securityExprCache[s] = this.securityExprCache[s];
+    });
     const skip = new Uint8Array(stmtCount).fill(1);
     for (const i of runs) skip[i] = 0;
     child.secCapture = slot;

@@ -18,9 +18,11 @@
 // every bar whatever branch the call is written in (pynecore transformers/security_slice.py
 // _force_conditional_writes, "MEASURED"), which recording at the statement's start does.
 //
-// What the child cannot reproduce is refused instead of approximated: a slice that reads another
-// request.*() call (a nested request through a variable), the strategy's state, `timeframe.*`
-// (folded to the chart's timeframe at compile time), or `syminfo.*` of another symbol.
+// A slice may read another request.security call (a nested request through a variable): the child
+// reads it as the chart computed it, paired with the requested bars (Context.runSecurityScript).
+// What the child cannot reproduce is refused instead of approximated: a nested request the child
+// could not read that way (nestedRequestRefusal), the strategy's state, `timeframe.*` (folded to
+// the chart's timeframe at compile time), or `syminfo.*` of another symbol.
 
 import type { CallExpr, Expr, FuncDecl, MethodDecl, Stmt } from "../ast";
 import { EARNINGS_CONSTANTS, SYMINFO_STRING_PROPS, type AnalyzedProgram } from "../analyzer";
@@ -56,6 +58,35 @@ export interface SecurityFuncScriptPlan {
 }
 
 export type SecurityFuncScriptPlanResult = { ok: true; plan: SecurityFuncScriptPlan } | { ok: false; reason: string };
+
+// Whether the script allows dynamic requests: its declaration's `dynamic_requests` argument, else
+// the version's default (mig6.txt: "Non-dynamic requests are the default in Pine v5 ... If not
+// specified, the default argument is false"; "In Pine v6, the dynamic_requests parameter of the
+// indicator(), strategy(), and library() functions is true by default").
+export function allowsDynamicRequests(prog: AnalyzedProgram): boolean {
+  for (const s of prog.script.body) {
+    if (s.kind !== "ExprStmt" || s.expr.kind !== "CallExpr") continue;
+    const callee = s.expr.callee;
+    if (callee.kind !== "Identifier" || !["indicator", "strategy", "library"].includes(callee.name)) continue;
+    const arg = s.expr.kwargs.find((k) => k.name === "dynamic_requests")?.value;
+    if (arg?.kind === "BoolLiteral") return arg.value;
+  }
+  return (prog.script.version ?? 1) >= 6;
+}
+
+// Whether a request.security call names the context it runs in rather than a context of its own: a
+// syminfo.tickerid or "" symbol, a timeframe.period or "" timeframe (concepts_other-timeframes-and-
+// data.txt "Nested requests": "the requested ticker ID or timeframe depends on the context where
+// the call executes").
+export function requestInheritsContext(call: CallExpr): boolean {
+  const byName = (i: number, name: string): Expr | undefined => call.args[i] ?? call.kwargs.find((k) => k.name === name)?.value;
+  const symbol = byName(0, "symbol");
+  const tf = byName(1, "timeframe");
+  const isEmpty = (e: Expr | undefined): boolean => e?.kind === "StringLiteral" && e.value === "";
+  const isNs = (e: Expr | undefined, ns: string, attr: string): boolean =>
+    e?.kind === "DotAccess" && e.obj.kind === "Identifier" && e.obj.name === ns && e.attr === attr;
+  return isEmpty(symbol) || isNs(symbol, "syminfo", "tickerid") || isEmpty(tf) || isNs(tf, "timeframe", "period");
+}
 
 // strategy.* calls that place or cancel orders: they read no strategy state into the script.
 const STRATEGY_ORDER_CALLS = new Set(["entry", "order", "exit", "close", "close_all", "cancel", "cancel_all"]);
@@ -95,6 +126,8 @@ interface Effects {
   muts: Set<string>; // user names whose object may change in place
   groups: string[][]; // user names that may come to share an object
   request: boolean;
+  // The request.*() calls it makes, and whether each is written in a function's body.
+  requestCalls: { call: CallExpr; inFunction: boolean }[];
   strategy: boolean;
   timeframe: boolean;
   syminfo: boolean;
@@ -104,7 +137,7 @@ interface Effects {
 function newEffects(): Effects {
   return {
     reads: new Set(), defs: new Set(), muts: new Set(), groups: [],
-    request: false, strategy: false, timeframe: false, syminfo: false, globalWrite: false,
+    request: false, requestCalls: [], strategy: false, timeframe: false, syminfo: false, globalWrite: false,
   };
 }
 
@@ -114,6 +147,7 @@ function mergeInto(to: Effects, from: Effects): void {
   for (const n of from.muts) to.muts.add(n);
   for (const g of from.groups) to.groups.push(g);
   to.request ||= from.request;
+  for (const r of from.requestCalls) to.requestCalls.push(r);
   to.strategy ||= from.strategy;
   to.timeframe ||= from.timeframe;
   to.syminfo ||= from.syminfo;
@@ -284,7 +318,7 @@ class SliceAnalysis {
     return [...this.persistent, ...this.historyNames];
   }
 
-  private readonly prog: AnalyzedProgram;
+  readonly prog: AnalyzedProgram;
 
   constructor(prog: AnalyzedProgram) {
     this.prog = prog;
@@ -698,6 +732,7 @@ class SliceAnalysis {
         if (globals.length > 1) eff.groups.push(globals);
       }
       eff.request ||= body.request;
+      for (const r of body.requestCalls) eff.requestCalls.push({ call: r.call, inFunction: true });
       eff.strategy ||= body.strategy;
       eff.timeframe ||= body.timeframe;
       eff.syminfo ||= body.syminfo;
@@ -779,7 +814,21 @@ class SliceAnalysis {
   }
 
   private walkCall(c: CallExpr, eff: Effects): void {
+    const callee = c.callee;
     const args = [...c.args, ...c.kwargs.map((k) => k.value)];
+    if (callee.kind === "DotAccess" && callee.obj.kind === "Identifier" && callee.obj.name === "request" && !this.isUser("request")) {
+      // A request. A child reads the value the chart computed for it and evaluates none of its
+      // arguments (nestedRequestRefusal): its symbol and timeframe are resolved as on the chart,
+      // its expression in its own context. Only the names they read are kept (a request in a
+      // function whose call a child evaluates records its expression there, and the slice must
+      // hold what that reads; planSecurityScriptInFunction checks the expression itself).
+      const argEff = newEffects();
+      for (const a of args) this.walkExpr(a, argEff);
+      for (const n of argEff.reads) eff.reads.add(n);
+      eff.request = true;
+      eff.requestCalls.push({ call: c, inFunction: false });
+      return;
+    }
     for (const a of args) this.walkExpr(a, eff);
     // The objects the call is handed: it may change them or make them share one another.
     const handed = (extra: string[] = []): void => {
@@ -788,7 +837,6 @@ class SliceAnalysis {
       for (const n of names) eff.muts.add(n);
       if (names.size > 1) eff.groups.push([...names]);
     };
-    const callee = c.callee;
     if (callee.kind === "Identifier") {
       if (this.funcs.has(callee.name)) {
         mergeInto(eff, this.effectsOfFunction(callee.name));
@@ -799,8 +847,7 @@ class SliceAnalysis {
     const obj = callee.obj;
     if (obj.kind === "Identifier" && !this.isUser(obj.name)) {
       const ns = obj.name;
-      if (ns === "request") eff.request = true;
-      else if (ns === "strategy") {
+      if (ns === "strategy") {
         if (!STRATEGY_ORDER_CALLS.has(callee.attr)) eff.strategy = true;
       } else if (ns === "timeframe") eff.timeframe = true;
       else if (ns === "syminfo") eff.syminfo = true;
@@ -826,6 +873,36 @@ class SliceAnalysis {
     if (this.funcs.has(callee.attr)) mergeInto(eff, this.effectsOfFunction(callee.attr));
     handed([...this.objectNames(obj)]);
   }
+}
+
+// The requests a child reads (a nested request through a variable), from `effs`: the child reads
+// each as the chart computed it, paired with its own rows (Context.runSecurityScript). Without
+// dynamic requests that is Pine's rule (concepts_other-timeframes-and-data.txt "Nested requests":
+// "Without dynamic requests enabled, the script evaluates each call independently, passing the
+// first call's calculated value directly into the second call rather than executing the first call
+// within the second context"); with them a call that names its own symbol and timeframe reads the
+// same bars from within the requested context, but one that names the context it runs in ("the
+// nested request inherits that request.*() call's ticker ID or timeframe information") would read
+// another context's, which the reference does not do either (resin-harness state/disputes.md D11),
+// and is refused, as is a request in a function (its symbol and timeframe are the call's). Also
+// refused: a request.*() function other than request.security, and a request whose timeframe is
+// bound on its first execution (its data is not built before the child runs). Why the child
+// cannot read them, or null.
+function nestedRequestRefusal(prog: AnalyzedProgram, effs: readonly Effects[]): string | null {
+  const dynamic = allowsDynamicRequests(prog);
+  for (const e of effs) {
+    for (const { call, inFunction } of e.requestCalls) {
+      const fn = call.callee.kind === "DotAccess" ? call.callee.attr : "";
+      if (fn !== "security") return `it depends on a request.${fn}() call (not implemented in a requested context)`;
+      if (prog.securityDeferredTfs.has(call)) {
+        return "it depends on a request whose timeframe is bound on its first execution (not implemented in a requested context)";
+      }
+      if (dynamic && (inFunction || requestInheritsContext(call))) {
+        return "it depends on a request that, with dynamic requests, may run in the requested context's symbol or timeframe (not implemented; resin-harness state/disputes.md D11)";
+      }
+    }
+  }
+  return null;
 }
 
 export function planSecurityScript(prog: AnalyzedProgram, call: CallExpr, expression: Expr, foreignSymbol: boolean): SecurityScriptPlanResult {
@@ -951,7 +1028,8 @@ function sliceBefore(
   }
 
   const all = [exprEff, ...[...slice].map((i) => effects[i]!)];
-  if (all.some((e) => e.request)) return { ok: false, reason: "it depends on another request.*() call (a nested request through a variable is not implemented)" };
+  const nested = nestedRequestRefusal(a.prog, all);
+  if (nested !== null) return { ok: false, reason: nested };
   if (all.some((e) => e.strategy)) return { ok: false, reason: "it reads the strategy's state" };
   if (all.some((e) => e.globalWrite)) return { ok: false, reason: "a function it calls assigns a global variable" };
   if (all.some((e) => e.timeframe)) return { ok: false, reason: "it reads timeframe.* (the requested context's timeframe is not implemented)" };
@@ -1047,6 +1125,8 @@ export function planSecurityScriptInFunction(
   // nothing in the child (codegen), which holds for request.security calls written in its body.
   const whole = newEffects();
   for (const eff of fEffects) mergeInto(whole, eff);
+  // The request's own expression too: a statement's effects leave a request's arguments out.
+  mergeInto(whole, exprEff);
   if (whole.strategy) return { ok: false, reason: "the function reads the strategy's state" };
   if (whole.globalWrite) return { ok: false, reason: "a function it calls assigns a global variable" };
   let otherRequest: string | null = null;

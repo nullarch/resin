@@ -8,7 +8,7 @@
 import { describe, expect, it } from "vitest";
 import { Context, type SecurityFeed } from "../../src/runtime/context";
 import { ExchangeCalendar, calendarSpecOf } from "../../src/runtime/calendar";
-import { pairNested, readNested, type SecurityCache } from "../../src/runtime/security";
+import { get, getFromArray, getFromArrayHist, nestedView, pairNested, readNested, type SecurityCache } from "../../src/runtime/security";
 import { compile, transpile } from "../../src/index";
 
 const NYSE = {
@@ -184,6 +184,21 @@ describe("pairNested / readNested", () => {
     const pair = Int32Array.from([-1, 1, 1, 3]);
     expect([0, 1, 2, 3].map((h) => readNested(values, pair, h, false))).toEqual([NaN, 2, 2, 4]);
     expect([0, 1, 2, 3].map((h) => readNested(values, pair, h, true))).toEqual([NaN, 2, NaN, 4]);
+  });
+
+  it("nestedView: a requested context's reads of another request (getFromArray, get, their history) follow readNested on its rows", () => {
+    // Outer rows close at 5, 25, 28, 45: row 0 before any inner bar, rows 1 and 2 on the same one.
+    const out4 = cache([0, 5, 25, 28], [5, 25, 28, 45]);
+    const view = nestedView({ ...inner, close: values } as SecurityCache, out4);
+    const pair = pairNested(inner, out4, false);
+    for (const gaps of [false, true]) {
+      const want = [0, 1, 2, 3].map((h) => readNested(values, pair, h, gaps));
+      expect([0, 1, 2, 3].map((h) => getFromArray(values, view, h, gaps, false))).toEqual(want);
+      expect([0, 1, 2, 3].map((h) => get(view, h, "close", gaps, false))).toEqual(want);
+      expect([1, 2, 3].map((h) => getFromArrayHist(values, view, h, gaps, false, 1))).toEqual(want.slice(0, 3));
+    }
+    // With lookahead on, the inner bar that opened before the outer row's close.
+    expect([0, 1, 2, 3].map((h) => getFromArray(values, view, h, false, true))).toEqual([1, 3, 3, 4]);
   });
 });
 

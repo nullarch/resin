@@ -209,11 +209,13 @@ interface FuncGenContext {
   secScriptChild?: boolean;
 }
 
-// A request read in a function a request's child context runs (FuncInfo.secScriptChild): the child
-// has no request data (Context.runSecurityScript), and what the function returns there is not what
-// the child records, so the read is na in the child.
-function childSafeSecurityRead(code: string, funcCtx: FuncGenContext | null): string {
-  return funcCtx?.secScriptChild ? `($.secCapture >= 0 ? NaN : ${code})` : code;
+// A request read in a function a request's child context runs (FuncInfo.secScriptChild), at slot
+// `slotRef`. The child holds the other requests paired with its rows (Context.runSecurityScript),
+// so another call of the function reads its request there; the call whose request the child
+// computes finds no data at its own slot (what the function returns there is not what the child
+// records), and that read is na.
+function childSafeSecurityRead(code: string, funcCtx: FuncGenContext | null, slotRef: string): string {
+  return funcCtx?.secScriptChild ? `($.secCapture >= 0 && $.securityCache[${slotRef}] === undefined ? NaN : ${code})` : code;
 }
 
 // A request whose timeframe the call binds where it stands (AnalyzedProgram.securityDeferredTfs):
@@ -522,9 +524,10 @@ export function generateCode(program: AnalyzedProgram): string {
   // 스크립트에 이 패턴이 없으면(대다수) 빈 맵이라 기존 출력 무변화.
   // A script with request.security expressions evaluated by running the script itself in the
   // requested context (securityScriptRuns) instantiates this module again for each of them, in a
-  // child context (Context.runSecurityScript, $.secCapture >= 0). The child has no request data of
-  // its own and reads none (its slice holds no request, analyzer/security-script.ts), so it skips
-  // everything below that builds or computes it.
+  // child context (Context.runSecurityScript, $.secCapture >= 0). The child builds no request data
+  // of its own: it reads the chart's, paired with its rows, so it skips everything below that
+  // builds or computes it, and the runs go in the order of their statements, a request its slice
+  // reads being computed before it (securityScriptRuns).
   const scriptRuns = securityScriptRuns(program, others);
   const securityPreamble: string[] = [];
   for (const [slot, tfExpr] of program.securityRuntimeTfSlots) {
@@ -777,7 +780,10 @@ function securityScriptRuns(program: AnalyzedProgram, others: readonly Stmt[]): 
     if (at < 0) throw new Error("internal: the call of a function whose request is evaluated in its context is not in a per-bar statement");
     out.push({ slot: site.slot, at, runs: runsOf(site.slice), expression: site.call, call: true });
   }
-  return out;
+  // A child reads the requests of the statements before its own (a nested request through a
+  // variable, analyzer/security-script.ts), so those are computed first: statement order, the
+  // order of discovery within one statement (a stable sort).
+  return out.sort((a, b) => a.at - b.at);
 }
 
 // C738: var 슬라이스 문장 방출 — Pine if 시맨틱과 JS if가 정확히 동형(조건 na→NaN falsy = 본문
@@ -3547,6 +3553,7 @@ function genIndexAccess(
           funcCtx,
         ),
         funcCtx,
+        secSlotRef,
       );
     }
     const securityExprCall = program.securityExprCallSlots.get(expr.obj);
@@ -3559,6 +3566,7 @@ function genIndexAccess(
           funcCtx,
         ),
         funcCtx,
+        `${securityExprCall.slot}`,
       );
     }
     const securityFuncScriptCall = program.securityFuncScriptCalls.get(expr.obj);
@@ -3567,6 +3575,7 @@ function genIndexAccess(
       return childSafeSecurityRead(
         `rt.security.getFromArrayHist($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityFuncScriptCall.gaps}, ${securityFuncScriptCall.lookahead}, ${offsetCode})`,
         funcCtx,
+        slotRef,
       );
     }
     // C699: securityParamExprCalls(C453/C534 — UDF 매개변수 다중 콜사이트, __secIdx 서수) 슬롯 —
@@ -3578,6 +3587,7 @@ function genIndexAccess(
       return childSafeSecurityRead(
         `rt.security.getFromArrayHist($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityParamCall.gaps}, ${securityParamCall.lookahead}, ${offsetCode})`,
         funcCtx,
+        slotRef,
       );
     }
     // UDF 본문 안 CallExpr 히스토리(C483) — funcCtx.localCallHistSlots(콜사이트-상대 슬롯)를
@@ -4449,6 +4459,7 @@ function genCallExpr(
         funcCtx,
       ),
       funcCtx,
+      secSlotRef,
     );
   }
   const securityFuncScriptCall = program.securityFuncScriptCalls.get(expr);
@@ -4459,6 +4470,7 @@ function genCallExpr(
     return childSafeSecurityRead(
       `rt.security.getFromArray($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityFuncScriptCall.gaps}, ${securityFuncScriptCall.lookahead})`,
       funcCtx,
+      slotRef,
     );
   }
   const securityExprCall = program.securityExprCallSlots.get(expr);
@@ -4475,6 +4487,7 @@ function genCallExpr(
         funcCtx,
       ),
       funcCtx,
+      `${securityExprCall.slot}`,
     );
   }
   const securityFieldOffsetCall = program.securityFieldOffsetCalls.get(expr);
@@ -4486,6 +4499,7 @@ function genCallExpr(
     return childSafeSecurityRead(
       `rt.security.getFieldHtfOffset($.securityCache[${securityFieldOffsetCall.slot}], $.idx, "${securityFieldOffsetCall.field}", ${securityFieldOffsetCall.gaps}, ${securityFieldOffsetCall.lookahead}, ${offsetCode})`,
       funcCtx,
+      `${securityFieldOffsetCall.slot}`,
     );
   }
   const securityParamCall = program.securityParamExprCalls.get(expr);
@@ -4498,6 +4512,7 @@ function genCallExpr(
     return childSafeSecurityRead(
       `rt.security.getFromArray($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityParamCall.gaps}, ${securityParamCall.lookahead})`,
       funcCtx,
+      slotRef,
     );
   }
   const securityTupleCall = program.securityTupleCallSlots.get(expr);
@@ -4516,13 +4531,15 @@ function genCallExpr(
       : `${securityTupleCall.slot}`;
     const writes = securityTupleCall.fields.map((field, i) => {
       let readExpr: string;
+      let readSlotRef: string;
       if (field.kind === "bare") {
+        readSlotRef = tupleSlotRef;
         readExpr = `rt.security.get($.securityCache[${tupleSlotRef}], $.idx, "${field.field}", ${securityTupleCall.gaps}, ${securityTupleCall.lookahead})`;
       } else {
-        const fieldSlotRef = securityTupleCall.multiSite ? `${field.slot} + __secIdx` : `${field.slot}`;
-        readExpr = `rt.security.getFromArray($.securityExprCache[${fieldSlotRef}], $.securityCache[${fieldSlotRef}], $.idx, ${securityTupleCall.gaps}, ${securityTupleCall.lookahead})`;
+        readSlotRef = securityTupleCall.multiSite ? `${field.slot} + __secIdx` : `${field.slot}`;
+        readExpr = `rt.security.getFromArray($.securityExprCache[${readSlotRef}], $.securityCache[${readSlotRef}], $.idx, ${securityTupleCall.gaps}, ${securityTupleCall.lookahead})`;
       }
-      return `$.taScratch[${i}] = ${childSafeSecurityRead(readExpr, funcCtx)}`;
+      return `$.taScratch[${i}] = ${childSafeSecurityRead(readExpr, funcCtx, readSlotRef)}`;
     });
     return deferredSecurityRead(expr, `(${writes.join(", ")})`, program, funcCtx);
   }
