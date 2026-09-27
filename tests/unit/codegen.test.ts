@@ -12417,6 +12417,21 @@ describe("CodeGen input.bool/string/bare input() new positional discard slots (C
     expect(code).toBe('var x = rt.input.timeframe($.inputs, "5", "Resolution", undefined);');
   });
 
+  // input.int/float's options form (analyzer/call-expr.ts inputParamNames): a `[...]` third argument
+  // binds options, tooltip, inline, group (all discard slots), not minval/maxval/step
+  // (resin-harness suites/lang/probes/L49.json: oracle = resin; realworld 0863f3c4686b.pine L35).
+  it("binds a positional [...] third argument of input.int/input.float to the options form", () => {
+    expect(codegenSource('x = input.int(10, "ATR Length", [10, 14], inline = "Line 1", group = "Supertrend")')).toBe(
+      'var x = rt.input.int($.inputs, 10, "ATR Length", undefined);',
+    );
+    expect(codegenSource('x = input.float(2.5, "Mult", [1.5, 2.5], "a tooltip")')).toBe(
+      'var x = rt.input.float($.inputs, 2.5, "Mult", undefined, undefined);',
+    );
+    expect(codegenSource('x = input.int(7, "Start Hour", 4, 8, 1, inline = "Line 1")')).toBe(
+      'var x = rt.input.int($.inputs, 7, "Start Hour", 4, 8, 1);',
+    );
+  });
+
   it("end-to-end: input.timeframe with a positional options array still returns its defval and honors a title-keyed override", () => {
     const source = [
       'tf = input.timeframe("5", "Resolution", ["1", "5", "D"])',
@@ -21113,6 +21128,32 @@ describe("CodeGen timestamp(...) kwargs (C406, next_hint(C405) 1순위)", () => 
   it("allows timestamp(...) kwargs inside a conditional if-body (stateless, same as nz/na)", () => {
     const prog = analyze(parse('if close > open\n    x = timestamp(year=2024, month=1, day=1)'));
     expect(prog.errors).toEqual([]);
+  });
+
+  // With positional arguments the overload is the one they bind to (resolveTimestampKwargSlots):
+  // three positional date parts and a named hour are the timezone-less overload, which the timezone
+  // one would leave without a day (resin-harness suites/lang/probes/L49.json: oracle = resin;
+  // realworld 0863f3c4686b.pine L13).
+  it("binds positional date parts + a named hour to the timezone-less overload", () => {
+    const code = codegenSource("h = 7\nt = timestamp(year, month, dayofmonth, hour = h)");
+    expect(code).toBe(codegenSource("h = 7\nt = timestamp(year, month, dayofmonth, h)"));
+  });
+
+  it("a string first argument is the timezone", () => {
+    expect(codegenSource('t = timestamp("UTC", 2024, 1, 2, hour = 5)')).toBe(codegenSource('t = timestamp("UTC", 2024, 1, 2, 5)'));
+  });
+
+  // ref_v6_lang.txt timestamp: "ARG hour [series int]: (Optional argument) Hour. Default is 0."
+  // (minute, second alike); naming a later part does not make them required (L49 channels
+  // ts_hour_left_out_minute_named, ts_literal_year_second_named, ts_timezone_rest_named).
+  it("an optional hour/minute left out before a named later part takes its default 0", () => {
+    expect(codegenSource("t = timestamp(2024, 1, 2, minute = 30)")).toBe(codegenSource("t = timestamp(2024, 1, 2, 0, 30)"));
+    expect(codegenSource("t = timestamp(year = 2024, month = 1, day = 2, second = 5)")).toBe(
+      codegenSource("t = timestamp(2024, 1, 2, 0, 0, 5)"),
+    );
+    expect(codegenSource("t = timestamp(syminfo.timezone, year = 2024, month = 1, day = 2, minute = 15)")).toBe(
+      codegenSource("t = timestamp(syminfo.timezone, 2024, 1, 2, 0, 15)"),
+    );
   });
 });
 

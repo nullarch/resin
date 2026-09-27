@@ -26,6 +26,7 @@ import {
   resolveNestedVarOrEqLocalKind,
   resolvesToLoopHeaderVar,
   isStaticIntExpr,
+  isStringExpr,
   isIntDivision,
   BAR_SERIES_NAMES,
   DERIVED_PRICE_NAMES,
@@ -4543,6 +4544,23 @@ export const INPUT_PARAM_NAMES: Readonly<Record<string, readonly string[]>> = {
   enum: ["defval", "title", "options"],
 };
 
+// input.int() and input.float() have two positional forms after the title: `minval, maxval, step,
+// tooltip, ...` (INPUT_PARAM_NAMES) and `options, tooltip, inline, group, ...`; a `[...]` third
+// argument is the options form (`input.int(10, "ATR Length", [10, 14], inline = "Line 1")`).
+// language_type-system.txt: tuple arguments are for "the input.*() functions that include an options
+// parameter"; the oracle binds the same two forms by the third argument (PyneCore core/script.py
+// _bind_numeric_tail, "mirroring what the v6 reference publishes").
+const INPUT_NUMERIC_OPTIONS_PARAM_NAMES: readonly string[] = ["defval", "title", "options", "tooltip", "inline", "group"];
+
+// The positional parameter names of one input.* call: INPUT_PARAM_NAMES, or the options form of a
+// numeric input (above). The analyzer and codegen both call it, so they bind the same slots.
+export function inputParamNames(method: string, expr: CallExpr): readonly string[] {
+  if ((method === "int" || method === "float") && expr.args.length > 2 && expr.args[2]!.kind === "TupleExpr") {
+    return INPUT_NUMERIC_OPTIONS_PARAM_NAMES;
+  }
+  return INPUT_PARAM_NAMES[method]!;
+}
+
 // bool/string/bare input()의 새 위치 슬롯(C292) 중 값이 실제로 런타임에 영향을 주면 안 되는 순수
 // UI 메타데이터 이름 — enum/string의 기존 "options" discard 원칙(C258)을 group/tooltip/inline까지
 // 일반화한 것. codegen의 genCallExpr input.* 분기가 이 집합에 속한 슬롯은 위치로 왔든 kwarg로
@@ -4709,15 +4727,38 @@ export const TIMESTAMP_WITHOUT_TZ_SLOTS: readonly string[] = ["year", "month", "
 
 // 콜사이트 하나가 어느 슬롯 표를 써야 하는지 판별하는 순수 함수 — analyzer/codegen이 각자 독립
 // 호출해도 항상 같은 결과(analyzer가 이미 통과시킨 콜사이트만 codegen이 재계산하므로 안전, C400
-// resolveTaKwargPositions와 동일 원칙). 'dateString' 키워드가 있으면 그 오버로드 전용, 그 외엔
-// 위치 인자가 1개라도 있거나(맨 앞이 곧 tz 슬롯) 'timezone' 키워드가 있으면 tz-포함 표, 아니면
-// tz-미포함 표.
+// resolveTaKwargPositions와 동일 원칙). 'dateString' 키워드가 있으면 그 오버로드 전용; 위치 인자가
+// 없으면 'timezone' 키워드 유무로 고른다.
+// With positional arguments, the overload is the one the arguments bind to: ref_v6_lang.txt lists
+// `timestamp(year, month, day, hour, minute, second)` beside `timestamp(timezone, year, month, day,
+// hour, minute, second)`, and the first positional argument is the timezone only when it is a string.
+// A string or number literal settles it; otherwise the overload is the one under which the call binds
+// year, month and day without naming a slot a positional argument already fills. So
+// `timestamp(year, month, dayofmonth, hour = h)` is the timezone-less overload (the timezone one would
+// leave day unset), and `timestamp(syminfo.timezone, year = y, month = m, day = d)` the timezone one
+// (the other would bind year twice). When both bind (four positional arguments or more, only
+// minute/second named), the timezone overload stays the choice, as before.
 export function resolveTimestampKwargSlots(expr: CallExpr): readonly string[] {
   const kwargNames = new Set(expr.kwargs.map((kw) => kw.name));
   if (kwargNames.has("dateString")) return TIMESTAMP_DATESTRING_SLOT;
-  if (expr.args.length > 0 || kwargNames.has("timezone")) return TIMESTAMP_WITH_TZ_SLOTS;
-  return TIMESTAMP_WITHOUT_TZ_SLOTS;
+  if (expr.args.length === 0) return kwargNames.has("timezone") ? TIMESTAMP_WITH_TZ_SLOTS : TIMESTAMP_WITHOUT_TZ_SLOTS;
+  const first = expr.args[0]!;
+  if (isStringExpr(first)) return TIMESTAMP_WITH_TZ_SLOTS;
+  if (first.kind === "NumberLiteral" || (first.kind === "UnaryOp" && first.operand.kind === "NumberLiteral")) {
+    return TIMESTAMP_WITHOUT_TZ_SLOTS;
+  }
+  const binds = (slots: readonly string[]): boolean =>
+    expr.args.length <= slots.length &&
+    expr.kwargs.every((kw) => slots.indexOf(kw.name) >= expr.args.length) &&
+    ["year", "month", "day"].every((name) => slots.indexOf(name) < expr.args.length || kwargNames.has(name));
+  if (binds(TIMESTAMP_WITHOUT_TZ_SLOTS) && !binds(TIMESTAMP_WITH_TZ_SLOTS)) return TIMESTAMP_WITHOUT_TZ_SLOTS;
+  return TIMESTAMP_WITH_TZ_SLOTS;
 }
+
+// The slots of timestamp()'s arguments that may be left out: hour, minute and second ("(Optional
+// argument) Hour. Default is 0.", ref_v6_lang.txt), and the timezone ("Optional. The default is
+// syminfo.timezone"). Naming a later argument does not make them required.
+export const TIMESTAMP_OPTIONAL_SLOTS: ReadonlySet<string> = new Set(["timezone", "hour", "minute", "second"]);
 
 // input.* 인자개수/kwargs 검증 공통 로직(C133) — namespace 호출(input.color 등, DotAccess 분기
 // 아래)과 bare input()(any_input, Identifier 콜 분기) 양쪽에서 재사용한다. paramNames 표
@@ -4727,7 +4768,7 @@ export function resolveTimestampKwargSlots(expr: CallExpr): readonly string[] {
 // 호출 표기(namespace는 "input.color", bare는 "input()")를 에러 메시지에 그대로 반영하기 위한
 // 것으로, builtinCalls 등록 키(항상 "input.<method>")와는 별개다.
 function analyzeInputCall(expr: CallExpr, method: string, errorLabel: string, prog: AnalyzedProgram): void {
-  const paramNames = INPUT_PARAM_NAMES[method]!;
+  const paramNames = inputParamNames(method, expr);
   const maxArgs = paramNames.length;
   if (expr.args.length > maxArgs) {
     prog.errors.push(
@@ -5691,7 +5732,8 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         } else {
           const maxIdx = seen.size === 0 ? -1 : Math.max(...Array.from(seen).map((n) => slots.indexOf(n)));
           for (let i = 0; i < maxIdx; i++) {
-            if (!seen.has(slots[i]!)) {
+            // An optional slot left out before a named one takes its default (codegen fills it).
+            if (!seen.has(slots[i]!) && !TIMESTAMP_OPTIONAL_SLOTS.has(slots[i]!)) {
               prog.errors.push(
                 `'timestamp' call is missing argument '${slots[i]}' (a later argument was specified by name) (L${expr.line}:${expr.col})`,
               );
@@ -7498,8 +7540,8 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     // 위치 options는 corpus/wild 근거가 없어 기존 결정대로 계속 거부 — optionsIdx가 "string"/
     // "timeframe"에서만 계산돼 다른 method는 이 우회 대상이 아니다).
     {
-      const optionsIdx =
-        method === "string" || method === "timeframe" ? INPUT_PARAM_NAMES[method]!.indexOf("options") : -1;
+      // int/float: the options form's `[...]` (inputParamNames).
+      const optionsIdx = method === "enum" ? -1 : inputParamNames(method, expr).indexOf("options");
       for (let i = 0; i < expr.args.length; i++) {
         const arg = expr.args[i]!;
         if (i === optionsIdx && arg.kind === "TupleExpr") {

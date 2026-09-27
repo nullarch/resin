@@ -15,7 +15,7 @@ import {
   CHART_POINT_FIELD_TYPE,
   DERIVED_PRICE_NAMES,
   INPUT_DISCARD_SLOT_NAMES,
-  INPUT_PARAM_NAMES,
+  inputParamNames,
   isUdtReferenceFieldType,
   lookupMethodOverload,
   mangleMethodName,
@@ -4699,12 +4699,13 @@ function genCallExpr(
       // input.*(C131)는 Pine 문법에 없는 외부 오버라이드 dict를 첫 인자로 암묵 주입한다 —
       // ta.vwma/ta.mfi가 volume을 splice하는 것과 동일한 원리(analyzer.ts input 분기 주석 참조).
       // 키워드 인자(title=/minval=/maxval=/step=, C132)는 UDT `.new()`(C129)와 동일한 기법으로
-      // 위치 슬롯에 낮춘다: INPUT_PARAM_NAMES(analyzer.ts, analyze-time에 이미 검증 완료)로 값이
+      // 위치 슬롯에 낮춘다: inputParamNames(INPUT_PARAM_NAMES, or a numeric input's options form;
+      // analyzer/call-expr.ts, analyze-time에 이미 검증 완료)로 값이
       // 실제로 지정된 가장 뒤쪽 슬롯까지만 인자를 방출하고, 그 범위 안에서 kwargs가 건너뛴 중간
       // 슬롯만 리터럴 "undefined"로 채운다(JS 기본 파라미터가 "생략"과 "명시적 undefined"를 동일
       // 취급 — genUdtValueForFieldType 같은 필드 타입별 na 재코드젠이 필요 없어 UDT보다 단순).
       const method = builtinName.slice("input.".length);
-      const paramNames = INPUT_PARAM_NAMES[method]!;
+      const paramNames = inputParamNames(method, expr);
       const kwargsByName = new Map(expr.kwargs.map((kw) => [kw.name, kw.value]));
       let lastSetIndex = expr.args.length - 1;
       paramNames.forEach((name, i) => {
@@ -5141,7 +5142,11 @@ function genCallExpr(
       for (const kw of expr.kwargs) {
         const slot = slots.indexOf(kw.name);
         if (slot === -1) continue; // 방어적 fallback(analyzer가 이미 이 이름만 허용)
-        while (args.length < slot) args.push("undefined");
+        // A slot left out before a named one can only be hour or minute (the analyzer requires year,
+        // month and day, and the timezone slot is first): its default is 0 ("(Optional argument)
+        // Hour. Default is 0.", ref_v6_lang.txt timestamp). rt.timestamp reads a passed undefined as
+        // a value, not as the default.
+        while (args.length < slot) args.push("0");
         args[slot] = genExpr(kw.value, program, funcCtx);
       }
       return `rt.timestamp(${args.join(", ")})`;
