@@ -2261,19 +2261,51 @@ describe("ta.cross", () => {
     expect(cross(stateB, 15, 10)).toBe(false); // stateB has no prior value yet
   });
 
-  it("agrees with crossover(a,b) || crossunder(a,b) across a scripted sequence", () => {
-    // 두 상태 슬롯을 병렬로 굴려, cross()가 매 바 crossover||crossunder와 정확히 동치임을 확인
-    // (pine2py cross.py L54-55가 이 두 부울식의 OR임을 소스 대조로 확인한 것의 실행 레벨 검증)
-    const crossState = {};
-    const overState = {};
-    const underState = {};
-    const as = [5, 15, 15, 5, 5, 20, 10, 10];
-    const bs = [10, 10, 10, 10, 10, 10, 10, 10];
-    for (let i = 0; i < as.length; i++) {
-      const c = cross(crossState, as[i]!, bs[i]!);
-      const expected = crossover(overState, as[i]!, bs[i]!) || crossunder(underState, as[i]!, bs[i]!);
-      expect(c).toBe(expected);
+  // ta.cross is not crossover || crossunder: it keeps the last unequal relation, starts with none,
+  // and an equality run keeps the relation from before it. resin-harness tier 1
+  // ta_113_cross_plateau (TradingView-measured, each series against 1.0).
+  it("follows the last unequal relation, not the previous bar (tier 1 ta_113_cross_plateau)", () => {
+    const run = (fn: typeof cross, xs: number[]) => {
+      const state = {};
+      return xs.map((x) => (fn(state, x, 1) ? 1 : 0));
+    };
+    const u = [1, 1, 1, 1, 1, 1, 2, 2];
+    const w = [0, 0, 0, 1, 1, 1, 0, 0];
+    const f = [0, 0, 0, 1, 1, 1, 2, 2];
+    const b = [2, 2, 2, 1, 1, 1, 2, 2];
+    expect(run(cross, u)).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
+    expect(run(crossover, u)).toEqual([0, 0, 0, 0, 0, 0, 1, 0]);
+    expect(run(cross, w)).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
+    expect(run(crossunder, w)).toEqual([0, 0, 0, 0, 0, 0, 1, 0]);
+    expect(run(cross, f)).toEqual([0, 0, 0, 0, 0, 0, 1, 0]);
+    expect(run(cross, b)).toEqual([0, 0, 0, 0, 0, 0, 0, 0]);
+    expect(run(crossover, b)).toEqual([0, 0, 0, 0, 0, 0, 1, 0]);
+  });
+
+  it("treats a difference within 1e-10 as equality when arming", () => {
+    const state = {};
+    cross(state, 1 + 5e-11, 1); // within the band: stays unarmed
+    expect(cross(state, 0, 1)).toBe(false);
+    expect(cross(state, 2, 1)).toBe(true);
+  });
+});
+
+// An na source bar is a bool na (v5) or false (v6) and leaves the state alone, so the next bar
+// compares against the last bar where both sources were defined. resin-harness tier 1
+// ta_374_cross_bool_na: 0 on bar 4, na on bar 5, 2 on bar 6 crosses 1.0 on bar 6.
+describe("ta.crossover/crossunder/cross over an na gap", () => {
+  it("returns a bool na (NaN) when asked to, false otherwise, and keeps the state", () => {
+    for (const fn of [crossover, cross]) {
+      const state = {};
+      fn(state, 0, 1, true);
+      fn(state, 0, 1, true);
+      expect(fn(state, NaN, 1, true)).toBeNaN();
+      expect(fn(state, 2, 1, true)).toBe(true);
     }
+    const state = {};
+    crossunder(state, 2, 1);
+    expect(crossunder(state, NaN, 1)).toBe(false);
+    expect(crossunder(state, 0, 1)).toBe(true);
   });
 });
 

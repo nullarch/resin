@@ -269,62 +269,62 @@ export function rma(state: RmaState, value: number, length: number): number {
 }
 
 export interface CrossState {
-  aPrev?: number;
-  bPrev?: number;
+  // crossover: source1 <= source2 on the last bar where both were defined (crossunder: >=).
+  was?: boolean;
+  // ta.cross: the last tolerantly unequal relation, -1 below, +1 above, 0 none yet.
+  armed?: number;
 }
 
-// ta.crossover(a, b) - a가 이전 바에서 b 이하였다가 현재 바에서 b 초과로 전환됐는지.
-// pine2py wavealgo/ta/crossover.py는 인자를 ensure_series()로 승격하는데, context가 있으면
-// (오라클 실행은 항상 context가 있음) 스칼라도 context.param()으로 growable Series로 승격돼
-// 항상 "Series 모드"(a.get(0)/a.get(1) 직접 비교) 분기를 타서 "context 있으면 상태로 추적"하는
-// elif 분기는 실행되지 않는다 — 하지만 매 바 한 번만 호출된다는 전제(HoistingPass 미구현 동안의
-// 동일 제약) 하에서는 "직전 호출에 전달된 값을 기억"하는 것과 "한 바 전 히스토리를 조회"하는 것이
-// 완전히 동치이므로, 단일 상태 슬롯(aPrev/bPrev)으로 그대로 이식 가능하다. 첫 호출은 aPrev/bPrev가
-// 아직 없어 NaN으로 초기화되고, NaN 비교는 항상 false라 pine2py의 "state.get(..., nan)" 기본값과
-// 동일하게 false로 떨어진다(별도의 "첫 호출" 분기 불필요).
-export function crossover(state: CrossState, a: number, b: number): boolean {
-  if (state.aPrev === undefined) {
-    state.aPrev = NaN;
-    state.bPrev = NaN;
-  }
-  const aPrev = state.aPrev;
-  const bPrev = state.bPrev!;
-  state.aPrev = a;
-  state.bPrev = b;
-  if (Number.isNaN(a) || Number.isNaN(b) || Number.isNaN(aPrev) || Number.isNaN(bPrev)) return false;
-  return aPrev <= bPrev && a > b;
+// The three crosses compare against the last bar where both sources were defined, not the
+// previous bar: a bar with an na source returns a bool na and leaves the state alone (tier 1
+// ta_374_cross_bool_na: `up` na on bar 5, 0 on bar 4 and 2 on bar 6, `ta.crossover(up, 1.0)` is na
+// on bar 5 and true on bar 6; oracle pynecore lib/ta.py crossover: "TV compares against the last
+// bar where both sources were defined, so na gaps must not reset it"). A bool na exists up to v5
+// only ("Values of the bool type are now strictly true or false. They are never na in v6", rn.txt),
+// so `naBool` (codegen: the script's version is below 6) chooses NaN, resin's bool na, over false.
+//
+// ta.crossover: "on the current bar, the value of `source1` is greater than the value of `source2`,
+// and on the previous bar, the value of `source1` was less than or equal to the value of `source2`"
+// (ref_v6_ta_math.txt). The comparison is raw, not the operators' tolerant one: TradingView fires
+// and blocks on a 5e-11 step (oracle lib/ta.py crossover, "Measured EXACT rule", probes S1-S9).
+// The first defined bar has no previous relation and yields false.
+export function crossover(state: CrossState, a: number, b: number, naBool = false): boolean | number {
+  if (a !== a || b !== b) return naBool ? NaN : false;
+  const res = a > b && state.was === true;
+  state.was = a <= b;
+  return res;
 }
 
-// ta.crossunder(a, b) - crossover와 대칭(a가 이전 바에서 b 이상이었다가 현재 바에서 b 미만으로 전환).
-export function crossunder(state: CrossState, a: number, b: number): boolean {
-  if (state.aPrev === undefined) {
-    state.aPrev = NaN;
-    state.bPrev = NaN;
-  }
-  const aPrev = state.aPrev;
-  const bPrev = state.bPrev!;
-  state.aPrev = a;
-  state.bPrev = b;
-  if (Number.isNaN(a) || Number.isNaN(b) || Number.isNaN(aPrev) || Number.isNaN(bPrev)) return false;
-  return aPrev >= bPrev && a < b;
+// ta.crossunder, the mirror of crossover: "the value of `source1` is less than the value of
+// `source2`, and on the previous bar, the value of `source1` was greater than or equal to the value
+// of `source2`" (ref_v6_ta_math.txt).
+export function crossunder(state: CrossState, a: number, b: number, naBool = false): boolean | number {
+  if (a !== a || b !== b) return naBool ? NaN : false;
+  const res = a < b && state.was === true;
+  state.was = a >= b;
+  return res;
 }
 
-// ta.cross(a, b) - crossover OR crossunder(방향 무관 교차). pine2py wavealgo/ta/cross.py 소스 대조로
-// crossover/crossunder와 완전히 동일한 CrossState(aPrev/bPrev 단일 상태 슬롯)를 쓰지만 반환식만 두
-// 부울식의 OR로 합쳐져 있음을 확인(cross.py L54-55) — 상태 모양은 같아도 반환 로직이 달라 alias
-// 재사용(mom처럼)은 불가하고 별도 함수가 필요(roc/change와 동일 원칙).
-export function cross(state: CrossState, a: number, b: number): boolean {
-  if (state.aPrev === undefined) {
-    state.aPrev = NaN;
-    state.bPrev = NaN;
-  }
-  const aPrev = state.aPrev;
-  const bPrev = state.bPrev!;
-  state.aPrev = a;
-  state.bPrev = b;
-  if (Number.isNaN(a) || Number.isNaN(b) || Number.isNaN(aPrev) || Number.isNaN(bPrev)) return false;
-  return (aPrev <= bPrev && a > b) || (aPrev >= bPrev && a < b);
+// ta.cross is not `crossover or crossunder`: it remembers the last relation that was unequal beyond
+// the comparison tolerance (1e-10, as pineLt & co.) and fires on a strict move to the other side of
+// it. It starts with no relation, so a plateau of equality from the first bar never fires, and an
+// equality run keeps the relation from before it, so a move back to the side it came from does not
+// fire either (tier 1 ta_113_cross_plateau: 1,1,…,2 against 1 fires ta.crossover but not ta.cross;
+// 0,0,0,1,1,1,0 against 1 fires ta.crossunder but not ta.cross; 0,0,0,1,1,1,2 fires both; oracle
+// pynecore lib/ta.py cross, "Measured: ta.cross is NOT crossover or crossunder", probes U-I).
+export function cross(state: CrossState, a: number, b: number, naBool = false): boolean | number {
+  if (a !== a || b !== b) return naBool ? NaN : false;
+  const armed = state.armed ?? 0;
+  const res = (armed < 0 && a > b) || (armed > 0 && a < b);
+  const diff = a - b;
+  if (diff < -CROSS_EPS) state.armed = -1;
+  else if (diff > CROSS_EPS) state.armed = 1;
+  return res;
 }
+
+// The equality band ta.cross shares with the comparison operators (numeric.ts CMP_EPS; oracle
+// core/pine_compare.py EPSILON).
+const CROSS_EPS = 1e-10;
 
 export interface WmaState {
   buffer?: number[];

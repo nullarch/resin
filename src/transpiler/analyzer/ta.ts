@@ -250,9 +250,8 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
     rtPath: "rt.ta.crossunder",
     kwargParamNames: ["source1", "source2"],
   },
-  // ta.cross(a, b) — crossover OR crossunder(방향 무관). pine2py wavealgo/ta/cross.py 소스 대조로
-  // crossover/crossunder와 완전히 동일한 CrossState를 재사용하지만 반환식이 두 부울식의 OR라 별도
-  // rt.ta.cross가 필요(roc/change와 동일 원칙 — 상태 모양이 같아도 반환 로직이 다르면 alias 불가).
+  // ta.cross(a, b) — not `crossover or crossunder`: it keeps the last unequal relation and starts
+  // with none (runtime/ta.ts cross), so it has its own rt.ta.cross.
   cross: {
     dispatch: "ta",
     displayName: "ta.cross",

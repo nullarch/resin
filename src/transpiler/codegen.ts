@@ -299,6 +299,12 @@ function lazyBoolOps(program: AnalyzedProgram): boolean {
   return (program.script.version ?? 1) >= 6;
 }
 
+// Whether a bool may be na: up to v5 only (rn.txt, Pine v6: "Values of the bool type are now
+// strictly true or false. They are never na in v6").
+function boolMayBeNa(program: AnalyzedProgram): boolean {
+  return (program.script.version ?? 1) < 6;
+}
+
 // 제어문-식 결과 임시변수(`let __cfrN = NaN`) 이름 카운터 — lazyTempCounter와 동일하게
 // generateCode 호출 단위로 리셋한다. 임시변수를 거치는 이유(C266): target에 NaN을 선대입한 뒤
 // 분기가 target을 직접 덮어쓰는 이전 구조는, 분기 값 표현식이 대입 대상 자기 자신을 읽는 조합
@@ -4045,6 +4051,11 @@ function genCallExpr(
       // ta.vwap(close) on the 17:00 New York bar). Inside a request.security prepass the
       // session is not modelled: the first row anchors, as session.isfirstbar_regular reads there.
       if (args.length === 2) args.push(secCtx === null ? SESSION_PROPS.get("isfirstbar")! : `(${secCtx.loopVar} === 0)`);
+    }
+    if (stateCall.fn === "cross" || stateCall.fn === "crossover" || stateCall.fn === "crossunder") {
+      // A bar with an na source returns a bool na up to v5 and false from v6 on, where a bool is
+      // never na (runtime/ta.ts crossover).
+      args.push(String(boolMayBeNa(program)));
     }
     if (stateCall.fn === "rci") {
       // ta.rci(source, length) is na while bar_index < length (runtime/ta.ts rci; pynecore lib/ta.py

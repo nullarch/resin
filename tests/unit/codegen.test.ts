@@ -3508,12 +3508,19 @@ describe("CodeGen", () => {
 
   it("emits ta.crossover call through $.taSlots[slot]", () => {
     const code = codegenSource("x = ta.crossover(close, open)");
-    expect(code).toBe("var x = rt.ta.crossover($.taSlots[0], $.close.get(0), $.open.get(0));");
+    expect(code).toBe("var x = rt.ta.crossover($.taSlots[0], $.close.get(0), $.open.get(0), true);");
+  });
+
+  // The last argument says whether an na source bar returns a bool na (up to v5) or false (v6,
+  // where a bool is never na). resin-harness tier 1 ta_374_cross_bool_na (v5).
+  it("v6: a cross over an na source returns false, not a bool na", () => {
+    const code = codegenSource("//@version=6\nx = ta.crossover(close, open)");
+    expect(code).toBe("var x = rt.ta.crossover($.taSlots[0], $.close.get(0), $.open.get(0), false);");
   });
 
   it("emits ta.crossunder call through $.taSlots[slot]", () => {
     const code = codegenSource("x = ta.crossunder(close, open)");
-    expect(code).toBe("var x = rt.ta.crossunder($.taSlots[0], $.close.get(0), $.open.get(0));");
+    expect(code).toBe("var x = rt.ta.crossunder($.taSlots[0], $.close.get(0), $.open.get(0), true);");
   });
 
   it("emits ta.crossover/ta.crossunder sharing the $.taSlots pool with ta.sma", () => {
@@ -3521,15 +3528,15 @@ describe("CodeGen", () => {
     expect(code).toBe(
       [
         "var a = rt.ta.sma($.taSlots[0], $.close.get(0), 3);",
-        "var b = rt.ta.crossover($.taSlots[1], $.close.get(0), a);",
-        "var c = rt.ta.crossunder($.taSlots[2], $.close.get(0), a);",
+        "var b = rt.ta.crossover($.taSlots[1], $.close.get(0), a, true);",
+        "var c = rt.ta.crossunder($.taSlots[2], $.close.get(0), a, true);",
       ].join("\n"),
     );
   });
 
   it("emits ta.cross call through $.taSlots[slot]", () => {
     const code = codegenSource("x = ta.cross(close, open)");
-    expect(code).toBe("var x = rt.ta.cross($.taSlots[0], $.close.get(0), $.open.get(0));");
+    expect(code).toBe("var x = rt.ta.cross($.taSlots[0], $.close.get(0), $.open.get(0), true);");
   });
 
   it("emits ta.rising call through $.taSlots[slot]", () => {
@@ -4102,7 +4109,7 @@ describe("CodeGen", () => {
         "var j = rt.ta.change($.taSlots[11], $.close.get(0), 3);",
         "var k = rt.ta.change($.taSlots[12], $.close.get(0), 3);",
         "var l = rt.ta.roc($.taSlots[13], $.close.get(0), 3);",
-        "var m = rt.ta.cross($.taSlots[14], $.close.get(0), $.open.get(0));",
+        "var m = rt.ta.cross($.taSlots[14], $.close.get(0), $.open.get(0), true);",
         "var n = rt.ta.rising($.taSlots[15], $.close.get(0), 2);",
         "var o = rt.ta.falling($.taSlots[16], $.close.get(0), 2);",
         "var p = rt.ta.variance($.taSlots[17], $.close.get(0), 3);",
@@ -4472,7 +4479,7 @@ describe("CodeGen", () => {
   it("hoists a stateful call in an 'and' rhs, keeping the rt.pineAnd shape (C66/C69)", () => {
     const code = codegenSource("x = close > open and ta.crossover(close, close)");
     expect(code).toBe(
-      "let __lazy0 = rt.ta.crossover($.taSlots[0], $.close.get(0), $.close.get(0));\n" +
+      "let __lazy0 = rt.ta.crossover($.taSlots[0], $.close.get(0), $.close.get(0), true);\n" +
         "var x = rt.pineAnd(rt.pineGt($.close.get(0), $.open.get(0)), __lazy0);",
     );
   });
@@ -4486,7 +4493,7 @@ describe("CodeGen", () => {
   it("v5: still hoists a stateful call in an 'and' rhs (strict evaluation)", () => {
     const code = codegenSource("//@version=5\nx = close > open and ta.crossover(close, close)");
     expect(code).toBe(
-      "let __lazy0 = rt.ta.crossover($.taSlots[0], $.close.get(0), $.close.get(0));\n" +
+      "let __lazy0 = rt.ta.crossover($.taSlots[0], $.close.get(0), $.close.get(0), true);\n" +
         "var x = rt.pineAnd(rt.pineGt($.close.get(0), $.open.get(0)), __lazy0);",
     );
   });
@@ -4494,7 +4501,7 @@ describe("CodeGen", () => {
   it("v6: keeps a stateful call in an 'and' rhs in a thunk, run only when the lhs is true", () => {
     const code = codegenSource("//@version=6\nx = close > open and ta.crossover(close, close)");
     expect(code).toBe(
-      "var x = rt.pineAndLazy(rt.pineGt($.close.get(0), $.open.get(0)), () => (rt.ta.crossover($.taSlots[0], $.close.get(0), $.close.get(0))));",
+      "var x = rt.pineAndLazy(rt.pineGt($.close.get(0), $.open.get(0)), () => (rt.ta.crossover($.taSlots[0], $.close.get(0), $.close.get(0), false)));",
     );
   });
 
@@ -4578,7 +4585,7 @@ describe("CodeGen", () => {
   it("hoists a lazy (and-rhs) stateful call inside an if's primary condition to a prelude before the if (C246)", () => {
     const code = codegenSource("if close > open and ta.crossover(close, close)\n    x = 1.0");
     expect(code).toBe(
-      "let __lazy0 = rt.ta.crossover($.taSlots[0], $.close.get(0), $.close.get(0));\n" +
+      "let __lazy0 = rt.ta.crossover($.taSlots[0], $.close.get(0), $.close.get(0), true);\n" +
         "if (rt.pineAnd(rt.pineGt($.close.get(0), $.open.get(0)), __lazy0)) {\nlet x = 1.0;\n}",
     );
   });
@@ -4587,7 +4594,7 @@ describe("CodeGen", () => {
     const code = codegenSource("y = if close > open and ta.crossover(close, close)\n    1.0\nelse\n    0.0");
     expect(code).toBe(
       "let __cfr0 = NaN;\n" +
-        "let __lazy0 = rt.ta.crossover($.taSlots[0], $.close.get(0), $.close.get(0));\n" +
+        "let __lazy0 = rt.ta.crossover($.taSlots[0], $.close.get(0), $.close.get(0), true);\n" +
         "if (rt.pineAnd(rt.pineGt($.close.get(0), $.open.get(0)), __lazy0)) {\n__cfr0 = 1.0;\n} else {\n__cfr0 = 0.0;\n}\n" +
         "var y = __cfr0;",
     );
