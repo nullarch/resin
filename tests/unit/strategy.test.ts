@@ -995,13 +995,40 @@ describe("strategy.* analyzer validation", () => {
     expect(code).toContain("$.strategy.configure(1, 1, 100000);");
   });
 
+  // Each numeric strategy() argument is a const, and "the results of expressions that use only values
+  // qualified as “const” automatically inherit the “const” qualifier" (language_type-system.txt
+  // "const"; its `var PLOT1_TITLE` example: `var` keeps a constant const). v5 divides two const ints
+  // as integers (mig6.txt "Fractional division of constants"). Harness probe C55, the twin of
+  // real-world `margin_long=1./20*50` and `var int initial_balance = 10000` before strategy().
+  it("folds const arithmetic and var constants in strategy() numeric arguments", () => {
+    const v5 = transpileCode(
+      '//@version=5\nvar int CAPITAL = 1000 / 3 * 3\nstrategy("s", initial_capital=CAPITAL, margin_long=1./20*50, margin_short=-(-7) % 4, commission_value=0.1 * 2)',
+    );
+    expect(v5).toContain("$.strategy.configure(1, 1, 999);");
+    expect(v5).toContain("$.strategy.setMargin(2.5, 3);");
+    expect(v5).toContain('$.strategy.setCommission("percent", 0.2);');
+    // From v6 the same ints divide fractionally.
+    const v6 = transpileCode('//@version=6\nstrategy("s", initial_capital=1000 / 8)');
+    expect(v6).toContain("$.strategy.configure(1, 1, 125);");
+    expect(transpileCode('//@version=5\nstrategy("s", initial_capital=1001 / 2)')).toContain("$.strategy.configure(1, 1, 500);");
+    expect(transpileCode('//@version=6\nstrategy("s", initial_capital=1001 / 2)')).toContain("$.strategy.configure(1, 1, 500.5);");
+    // A var that ':=' writes, an input, and a division by zero (na) are no constant number.
+    for (const src of [
+      'var cap = 1000\nstrategy("s", initial_capital=cap)\ncap := 2000',
+      'cap = input.int(1000)\nstrategy("s", initial_capital=cap * 2)',
+      'strategy("s", initial_capital=1000 / 0)',
+    ]) {
+      expect(transpileErrors(src).some((e) => e.includes("'initial_capital' argument only supports a number literal >= 0"))).toBe(true);
+    }
+  });
+
   it("rejects non-integer or negative pyramiding", () => {
     expect(
       transpileErrors('strategy("s", pyramiding=1.5)').some((e) =>
         e.includes("'pyramiding' argument only supports an int literal >= 0"),
       ),
     ).toBe(true);
-    // -1은 파서가 UnaryOp('-', 1)로 만들어 NumberLiteral이 아니므로 같은 에러로 떨어진다.
+    // -1 folds to a negative constant, below the allowed range.
     expect(
       transpileErrors('strategy("s", pyramiding=-1)').some((e) =>
         e.includes("'pyramiding' argument only supports an int literal >= 0"),

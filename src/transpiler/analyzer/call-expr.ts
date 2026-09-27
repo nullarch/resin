@@ -25,6 +25,7 @@ import {
   resolveArrayGetElemDrawingKind,
   resolveNestedVarOrEqLocalKind,
   isStaticIntExpr,
+  isIntDivision,
   BAR_SERIES_NAMES,
   DERIVED_PRICE_NAMES,
   BARMERGE_CONSTANTS,
@@ -599,21 +600,60 @@ function directiveArgExpr(expr: CallExpr, paramNames: readonly string[], name: s
   return undefined;
 }
 
-// C764: strategy() 지시어 숫자 인자(default_qty_value/pyramiding/initial_capital)가 top-level 유일
-// '=' 상수 식별자를 가리키는 경우(`qty1 = 180` 후 `default_qty_value = qty1`, wild 실사용) 재귀
-// 해석해 리터럴로 치환한다 — resolveSecurityTfLiteral류와 동일한 uniqueTopEqVars 안전 근거(top-level
-// 유일 바인딩 + 재대입 0). strategy()는 항상 top-level 문장이므로(topLevel 게이트) shadowFuncs 대조는
-// 불필요 — 그 값 참조 자체가 함수 본문 안일 수 없다.
-function resolveDirectiveConstNumber(value: Expr, prog: AnalyzedProgram, visiting: Set<string> = new Set()): number | undefined {
-  if (value.kind === "NumberLiteral") return value.value;
-  if (value.kind === "Identifier") {
-    if (visiting.has(value.name)) return undefined;
-    const top = prog.uniqueTopEqVars.get(value.name);
-    if (top === undefined) return undefined;
-    visiting.add(value.name);
-    return resolveDirectiveConstNumber(top.value, prog, visiting);
+// The value of a strategy() numeric argument (default_qty_value, pyramiding, initial_capital,
+// slippage, margin_long/short, commission_value), each a "const int/float". A const is a literal or
+// anything built only from constants: "All literal values and the results of expressions that use
+// only values qualified as “const” automatically inherit the “const” qualifier"
+// (language_type-system.txt "const"), whose example passes `var PLOT1_TITLE = "High"` as a const
+// title — `var` sets when a variable initializes, not its qualifier. So this folds literals, unary
+// minus, + - * / % and variables naming a constant, with Pine's arithmetic: `/` divides two const
+// ints as integers before v6 (isIntDivision, the rule codegen's rt.idiv follows), `%` rounds the
+// quotient down (rt.pineMod), and a division by zero is na, not a number. A variable is a top-level
+// '=' bound once and never reassigned (uniqueTopEqVars, C764), or a top-level var/varip that no
+// ':=' ever writes (topVarSliceCandidates without writes; real-world `var int initial_balance =
+// 10000` before strategy(initial_capital = initial_balance)). strategy() is a top-level statement
+// (topLevel gate), so its scope is the one those names live in.
+function resolveDirectiveConstNumber(
+  value: Expr,
+  prog: AnalyzedProgram,
+  scope: LexScope,
+  visiting: Set<string> = new Set(),
+): number | undefined {
+  switch (value.kind) {
+    case "NumberLiteral":
+      return value.value;
+    case "UnaryOp": {
+      if (value.op !== "-") return undefined;
+      const inner = resolveDirectiveConstNumber(value.operand, prog, scope, visiting);
+      return inner === undefined ? undefined : -inner;
+    }
+    case "BinOp": {
+      if (value.op !== "+" && value.op !== "-" && value.op !== "*" && value.op !== "/" && value.op !== "%") return undefined;
+      const left = resolveDirectiveConstNumber(value.left, prog, scope, visiting);
+      const right = resolveDirectiveConstNumber(value.right, prog, scope, visiting);
+      if (left === undefined || right === undefined) return undefined;
+      if (value.op === "+") return left + right;
+      if (value.op === "-") return left - right;
+      if (value.op === "*") return left * right;
+      if (right === 0) return undefined;
+      if (value.op === "%") return pineMod(left, right);
+      return isIntDivision(value, prog, scope) ? Math.trunc(left / right) : left / right;
+    }
+    case "Identifier": {
+      if (visiting.has(value.name)) return undefined;
+      const persistent = prog.topVarSliceCandidates.get(value.name);
+      const def =
+        prog.uniqueTopEqVars.get(value.name)?.value ??
+        (persistent !== undefined && persistent.writeLines.length === 0 ? persistent.value : undefined);
+      if (def === undefined) return undefined;
+      visiting.add(value.name);
+      const result = resolveDirectiveConstNumber(def, prog, scope, visiting);
+      visiting.delete(value.name);
+      return result;
+    }
+    default:
+      return undefined;
   }
-  return undefined;
 }
 
 // request.security의 gaps=/lookahead= kwarg 값을 컴파일타임 boolean으로 확정(C177) — true/false
@@ -5191,7 +5231,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           // 관용구. runtime(strategy.ts L1324)이 이미 qty<=0을 별도 no-op 가드로 처리하므로 0은
           // "조용한 오답"이 아니라 well-defined(해당 fallback이 실제로 쓰이면 그 주문만 무발동).
           // 음수/비-리터럴/미해석 식별자는 여전히 하드 에러(값 자체를 모르거나 의미 없는 입력).
-          const dqVal = resolveDirectiveConstNumber(dq, prog);
+          const dqVal = resolveDirectiveConstNumber(dq, prog, scope);
           if (dqVal !== undefined && dqVal >= 0) {
             prog.strategyDefaultQty = dqVal;
           } else {
@@ -5202,7 +5242,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         }
         const pyr = directiveArgExpr(expr, STRATEGY_PARAM_NAMES, "pyramiding");
         if (pyr !== undefined) {
-          const pyrVal = resolveDirectiveConstNumber(pyr, prog);
+          const pyrVal = resolveDirectiveConstNumber(pyr, prog, scope);
           if (pyrVal !== undefined && Number.isInteger(pyrVal) && pyrVal >= 0) {
             prog.strategyPyramiding = pyrVal;
           } else {
@@ -5218,7 +5258,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         // 원 결정이 `initial_capital=0` 3건을 걸러냄, default_qty_value=0(C465)과 동일 근거).
         const cap = directiveArgExpr(expr, STRATEGY_PARAM_NAMES, "initial_capital");
         if (cap !== undefined) {
-          const capVal = resolveDirectiveConstNumber(cap, prog);
+          const capVal = resolveDirectiveConstNumber(cap, prog, scope);
           if (capVal !== undefined && capVal >= 0) {
             prog.strategyInitialCapital = capVal;
           } else {
@@ -5322,7 +5362,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         // dropping it would silently move those fills.
         const slip = directiveArgExpr(expr, STRATEGY_PARAM_NAMES, "slippage");
         if (slip !== undefined) {
-          const slipVal = resolveDirectiveConstNumber(slip, prog);
+          const slipVal = resolveDirectiveConstNumber(slip, prog, scope);
           if (slipVal !== undefined && Number.isInteger(slipVal) && slipVal >= 0) {
             prog.strategySlippage = slipVal;
           } else {
@@ -5337,7 +5377,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         for (const key of ["margin_long", "margin_short"] as const) {
           const m = directiveArgExpr(expr, STRATEGY_PARAM_NAMES, key);
           if (m === undefined) continue;
-          const v = resolveDirectiveConstNumber(m, prog);
+          const v = resolveDirectiveConstNumber(m, prog, scope);
           if (v !== undefined && v >= 0) {
             if (key === "margin_long") prog.strategyMarginLong = v;
             else prog.strategyMarginShort = v;
@@ -5371,7 +5411,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         }
         const cval = directiveArgExpr(expr, STRATEGY_PARAM_NAMES, "commission_value");
         if (cval !== undefined) {
-          const cvalNum = resolveDirectiveConstNumber(cval, prog);
+          const cvalNum = resolveDirectiveConstNumber(cval, prog, scope);
           if (cvalNum !== undefined && cvalNum >= 0) {
             prog.strategyCommissionValue = cvalNum;
           } else {
