@@ -2191,14 +2191,8 @@ export function atr(state: AtrState, high: number, low: number, prevClose: numbe
 
 export interface MfiState {
   prevSource?: number;
-  upperBuffer?: number[];
-  lowerBuffer?: number[];
-  writeIdx?: number;
-  stored?: number;
-  sumUpper?: number;
-  sumLower?: number;
-  nonZeroUpper?: number;
-  nonZeroLower?: number;
+  up?: SmaState;
+  down?: SmaState;
 }
 
 // ta.mfi(source, length) - the manual's reference (ref_v6_ta_math.txt "ta.mfi"):
@@ -2214,52 +2208,32 @@ export interface MfiState {
 //   ta_211_mfi_rsi_stoch bar 13 of mfi(close, 14): 46.173185267; the window of bars 1..14 on).
 // - The direction test is tolerant: a change within PINE_EPS counts as neither side (PyneCore
 //   lib/ta.py mfi, TradingView probes m548/m549).
-// - An na volume makes both terms na; math.sum's window is na-compacted, so the bar stores
-//   nothing and reports the standing sums (na while fewer than length terms are stored).
-// - A side within PINE_EPS of zero is zero (the rolling sums keep dust when their whole window is
-//   zero; probe m566), and a zero lower side is 100 (both sides zero included; probe m550).
-//   resin's running sums are not compensated, so their dust can exceed PINE_EPS on large money
-//   flows; a side whose window holds only zeros is therefore reset to an exact 0 (the count of
-//   non-zero terms says when), which is what the tolerance makes of TradingView's residue.
+// - Both sums are math.sum itself (naSkipSum: TradingView's rolling compensated sum on the
+//   na-compacted window; the oracle's lib/ta.py mfi calls lib_math.sum for each side). An na volume
+//   makes both terms na, so the bar stores nothing and reports the standing sums (na while fewer
+//   than length terms are stored).
+// - A side within PINE_EPS of zero is zero, and a zero lower side is 100 (both sides zero
+//   included; probe m550). The rolling sums keep dust when their window turns to zeros (probe
+//   m566), and on large money flows that dust exceeds PINE_EPS and stays: resin-harness
+//   state/repros/ta.osc-seed-25.json, ta.mfi(hlc3, 11) on a flat stretch, where the oracle plots
+//   1.56e-13 on bar 245 (upper window all zeros, its sum 2.3e-10) and 0, not 100, on bar 247
+//   (both windows all zeros: upper 2.9e-11 counts as 0, lower 3.8e-10 does not). resin's plain
+//   running sums, reset to an exact 0 when a window held only zeros, gave 0, 0 and 100.
 export function mfi(state: MfiState, source: number, volume: number, length: number): number {
-  length = Math.trunc(length); // C569: restore the int length (see sma())
-  if (state.upperBuffer === undefined) {
+  if (state.up === undefined) {
     state.prevSource = NaN;
-    state.upperBuffer = new Array(length).fill(0);
-    state.lowerBuffer = new Array(length).fill(0);
-    state.writeIdx = 0;
-    state.stored = 0;
-    state.sumUpper = 0;
-    state.sumLower = 0;
-    state.nonZeroUpper = 0;
-    state.nonZeroLower = 0;
+    state.up = {};
+    state.down = {};
   }
   if (Number.isNaN(source)) return NaN;
 
   const change = source - state.prevSource!;
   state.prevSource = source;
 
-  if (!Number.isNaN(volume)) {
-    // NaN <= x is false: the na change of the first bar takes `src` on both sides.
-    const up = volume * (change <= PINE_EPS ? 0 : source);
-    const down = volume * (change >= -PINE_EPS ? 0 : source);
-    const writeIdx = state.writeIdx!;
-    // Until the window is full the slot holds its initial 0, so nothing leaves.
-    const oldUp = state.upperBuffer[writeIdx]!;
-    const oldDown = state.lowerBuffer![writeIdx]!;
-    state.nonZeroUpper! += (up !== 0 ? 1 : 0) - (oldUp !== 0 ? 1 : 0);
-    state.nonZeroLower! += (down !== 0 ? 1 : 0) - (oldDown !== 0 ? 1 : 0);
-    state.sumUpper = state.nonZeroUpper === 0 ? 0 : state.sumUpper! - oldUp + up;
-    state.sumLower = state.nonZeroLower === 0 ? 0 : state.sumLower! - oldDown + down;
-    state.upperBuffer[writeIdx] = up;
-    state.lowerBuffer![writeIdx] = down;
-    state.writeIdx = (writeIdx + 1) % length;
-    state.stored! += 1;
-  }
-  if (state.stored! < length) return NaN;
-
-  let upper = state.sumUpper!;
-  let lower = state.sumLower!;
+  // NaN <= x is false: the na change of the first bar takes `src` on both sides.
+  let upper = naSkipSum(state.up, volume * (change <= PINE_EPS ? 0 : source), length);
+  let lower = naSkipSum(state.down!, volume * (change >= -PINE_EPS ? 0 : source), length);
+  if (Number.isNaN(upper) || Number.isNaN(lower)) return NaN;
   if (Math.abs(upper) <= PINE_EPS) upper = 0;
   if (Math.abs(lower) <= PINE_EPS) lower = 0;
   if (lower === 0) return 100.0;

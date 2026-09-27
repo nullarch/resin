@@ -517,7 +517,7 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   },
   // ta.mfi(source, length) — Money Flow Index. Pine 문법상 volume은 인자가 아니라 내장 bar series를
   // 암묵 사용한다(vwma와 동일한 특수 케이스 — codegen.genCallExpr이 $.volume.get(0)을 source와
-  // length 사이에 끼워 넣는다). length는 upperBuffer/lowerBuffer의 고정폭 순환 버퍼 크기를 결정하므로
+  // length 사이에 끼워 넣는다). length는 두 math.sum 창(naSkipSum)의 고정폭 순환 버퍼 크기를 결정하므로
   // sma와 동일하게 lengthArgIndex: 1(series 하드 에러). The rule (first bar in both sums, na source
   // skipped, na volume stores nothing) is in the runtime/ta.ts mfi() comment. A series length takes
   // mfiVarLen.
