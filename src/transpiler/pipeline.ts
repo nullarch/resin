@@ -1,6 +1,6 @@
-// Pipeline orchestration: Lexer -> Parser -> Analyzer -> transform passes
-// (hoisting) -> CodeGen. The five stages are fixed; this file is just the
-// sequence.
+// Pipeline orchestration: Lexer -> Parser -> (scope pass: renameShadowingDecls)
+// -> Analyzer -> transform passes (hoisting) -> CodeGen. The five stages are
+// fixed; this file is just the sequence.
 
 import {
   analyze,
@@ -18,6 +18,7 @@ import {
 import type { CalendarSpec } from "../runtime/calendar";
 import { generateCode } from "./codegen";
 import { hoist } from "./passes/hoisting";
+import { renameShadowingDecls } from "./passes/shadowing";
 import { ParseError, parse } from "./parser";
 
 export interface TranspileOk {
@@ -80,7 +81,7 @@ export function transpile(source: string, options?: AnalyzeOptions): TranspileRe
     throw e;
   }
 
-  const analyzed = hoist(analyze(script, options));
+  const analyzed = hoist(analyze(renameShadowingDecls(script), options));
   if (analyzed.errors.length > 0) {
     return { ok: false, errors: analyzed.errors };
   }

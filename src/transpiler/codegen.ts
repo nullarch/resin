@@ -2746,9 +2746,10 @@ function genControlFlowAssignment(
     return genControlFlowExprValue(value, program, funcCtx, (temp) => `${target} = ${temp};`);
   }
   // 프리앰블 승격된 top-level '=' 로컬은 선언 키워드 없이 대입한다(genStmt Assignment 분기와
-  // 동일 규칙 — 선언은 프리앰블 담당). 중첩 '=' 로컬(let)이 바깥 동명 변수를 값 표현식에서 읽는
-  // 조합은 JS TDZ로 크래시할 수 있으나 이는 비-제어문-식 '=' 경로(`let x = <x 참조 식>;`)와 동일한
-  // 기존 한계다(자기 이름 참조가 없는 일반 섀도잉은 안전 — C5). nested 블록 안에서 같은 이름이
+  // 동일 규칙 — 선언은 프리앰블 담당). A nested '=' local whose value (or an earlier statement of
+  // its block) reads the outer variable of its name never reaches here under that name: the scope
+  // pass renamed it (passes/shadowing.ts), so its `let` cannot put the outer read in the TDZ.
+  // nested 블록 안에서 같은 이름이
   // 이미 '='로 선언된 뒤라면(findRedeclaredAssignments, C319) 두 번째 `let`은 JS SyntaxError라
   // 선언 키워드를 생략한다(genStmt Assignment 분기의 redeclared 처리와 동일 원칙).
   const decl = (!nested && promoted?.has(stmt.name)) || redeclared?.assigns.has(stmt) ? "" : nested ? "let " : "var ";
