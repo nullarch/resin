@@ -71,6 +71,59 @@ describe("renameShadowingDecls", () => {
     expect((fnBody(script, 2)[0] as Assignment).name).toBe("v");
     expect(((script.body[3] as { body: Assignment[] }).body[0]!).name).toBe("i");
   });
+
+  // A function's `var` belongs to its own block, but the analyzer keys a function's var slots by
+  // name across the body: harness probe suites/lang/probes/L51.json (transpile error before; a
+  // sibling branch's read of the global read the var's slot), realworld 8fb3f514575f.
+  it("renames a function's var whose name another block of the function declares; every use of the var follows", () => {
+    const script = renamed(
+      [
+        "f(t, src) =>",
+        "    out = 0.0",
+        '    if t == "A"',
+        "        b = 0.0",
+        "        out := b",
+        '    else if t == "B"',
+        "        var b = array.new_float(0)",
+        "        array.push(b, src)",
+        "        out := array.sum(b)",
+        "    else",
+        "        b = 0.0",
+        "        b := src + nz(b[1])",
+        "        out := b",
+        "    out",
+      ].join("\n"),
+    );
+    const chain = fnBody(script, 0)[1] as IfStmt;
+    expect(chain.thenBody[0]).toMatchObject({ kind: "Assignment", name: "b" });
+    const [decl, push, sum] = chain.elifClauses[0]!.body;
+    expect(decl).toMatchObject({ kind: "VarDecl", name: "b$1" });
+    expect(push).toMatchObject({ expr: { args: [{ kind: "Identifier", name: "b$1" }, { name: "src" }] } });
+    expect(sum).toMatchObject({ value: { args: [{ kind: "Identifier", name: "b$1" }] } });
+    const [eq, reassign] = chain.elseBody! as Assignment[];
+    expect(eq!.name).toBe("b");
+    expect(reassign!.name).toBe("b");
+    expect(reassign!.value).toMatchObject({ right: { args: [{ kind: "IndexAccess", obj: { name: "b" } }] } });
+  });
+
+  it("renames a function's var named like a global, and a sibling block's read keeps the global", () => {
+    const script = renamed(
+      ["var float g = 0.0", "f(t) =>", "    out = g", "    if t", "        var g = 1.0", "        g += 1", "        out := g", "    out"].join("\n"),
+    );
+    const [head, chain] = fnBody(script, 1);
+    expect(head).toMatchObject({ value: { kind: "Identifier", name: "g" } });
+    const [decl, inc, read] = (chain as IfStmt).thenBody as Assignment[];
+    expect(decl).toMatchObject({ kind: "VarDecl", name: "g$1" });
+    expect(inc!.name).toBe("g$1");
+    expect(read!.value).toMatchObject({ kind: "Identifier", name: "g$1" });
+  });
+
+  it("leaves a function's var alone when its name means nothing else, also when another function has one", () => {
+    const script = renamed(["f() =>", "    var c = 0", "    c += 1", "    c", "h() =>", "    var c = 5", "    c"].join("\n"));
+    expect(fnBody(script, 0)[0]).toMatchObject({ kind: "VarDecl", name: "c" });
+    expect(fnBody(script, 0)[1]).toMatchObject({ name: "c" });
+    expect(fnBody(script, 1)[0]).toMatchObject({ kind: "VarDecl", name: "c" });
+  });
 });
 
 describe("E2E: a local that shadows a variable its block read first", () => {
@@ -133,5 +186,51 @@ describe("E2E: a local that shadows a variable its block read first", () => {
     expect(obs("__tot")).toEqual([601, 601, 601, 601]);
     expect(obs("__n6")).toEqual([401, 802, 1203, 1604]);
     expect(obs("__n9")).toEqual([11, 12, 13, 14]);
+  });
+});
+
+describe("E2E: a function's var and the other variables of its name", () => {
+  it("keeps the var's state, the sibling branches' locals and their histories, and the global apart", () => {
+    const close = [1, 2, 3, 4];
+    const data: OHLCVData = { open: close, high: close, low: close, close, volume: close.map(() => 1) };
+    // get_ma_out's shape (realworld 8fb3f514575f): one branch keeps `var b`, its siblings declare
+    // their own `b`; values as in harness probe L51 (oracle = resin).
+    const src = [
+      "gl = close * 2",
+      "f(t, src) =>",
+      "    out = 0.0",
+      "    if t == 1",
+      "        b = 0.0",
+      "        b := src + nz(b[1])",
+      "        out := b",
+      "    else if t == 2",
+      "        var b = array.new_float(0)",
+      "        array.push(b, src)",
+      "        out := array.sum(b)",
+      "    else if t == 3",
+      "        b = 0.0",
+      "        b := src * 2 + nz(b[1]) / 2",
+      "        out := b",
+      "    else",
+      "        out := gl + 1",
+      "        var gl = 0.0",
+      "        gl += 1",
+      "        out := out * 100 + gl",
+      "    out",
+      "var float __p1 = na",
+      "__p1 := f(1, close)",
+      "var float __p2 = na",
+      "__p2 := f(2, close)",
+      "var float __p3 = na",
+      "__p3 := f(3, close)",
+      "var float __p4 = na",
+      "__p4 := f(4, close)",
+    ].join("\n");
+    const result = runPipeline(src, data);
+    const obs = (name: string) => result.bars.map((b) => b[`var:${name}`] as number);
+    expect(obs("__p1")).toEqual([1, 3, 6, 10]);
+    expect(obs("__p2")).toEqual([1, 3, 6, 10]);
+    expect(obs("__p3")).toEqual([2, 5, 8.5, 12.25]);
+    expect(obs("__p4")).toEqual([301, 502, 703, 904]);
   });
 });

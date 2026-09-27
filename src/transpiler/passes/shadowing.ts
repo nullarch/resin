@@ -25,40 +25,103 @@
 // `$fn`/`Type$method` names. Every later read and reassignment the declaration's scope resolves to
 // it is renamed with it, so the analyzer and codegen see two distinct variables. Programs without
 // the pattern are left untouched.
+//
+// A function's `var` is renamed the same way when its name also means another variable of the
+// function (one declared in another block — a sibling `else if` branch's `b = 0.0` next to
+// `var b = array.new_float(0)`, a nested block's shadow, a loop's counter —, a parameter, a global
+// the function reads), or names a global `var`. Such a `var` belongs to its own block like any
+// declaration ("Each function definition creates a distinct local scope",
+// language_user-defined-functions.txt; `=` "means *this is a new variable*", ref_v6_lang.txt), but
+// the analyzer keys a function's `var` slots by name across the whole body and checks them against
+// the global `var` slots by name, so the other variable's declaration was rejected ("variable
+// declared with var cannot be reassigned with '='", "duplicate var declaration") and its reads fell
+// into the var's slot (resin-harness realworld 8fb3f514575f, repro
+// state/repros/fn-var-sibling-block.json).
 import type { Expr, FuncParam, IfStmt, Script, Stmt, SwitchStmt } from "../ast";
+
+interface Binding {
+  // The name the rest of the pipeline sees for the variable.
+  name: string;
+  // For a function's `var`: every node naming it, so a later rename reaches them all.
+  refs: Array<(name: string) => void> | null;
+}
+
+// One function (or method) body.
+interface FnScope {
+  // Pine name -> every variable the name stood for in this body.
+  meanings: Map<string, Set<Binding>>;
+  vars: Array<{ pine: string; binding: Binding }>;
+}
 
 interface Scope {
   parent: Scope | null;
-  // Pine name -> the name the rest of the pipeline sees for it.
-  bindings: Map<string, string>;
+  // Pine name -> the variable it names in this scope.
+  bindings: Map<string, Binding>;
   // Names read or reassigned in this block (or a block inside it) while they meant a variable
   // declared outside this block.
   outerUses: Set<string>;
+  fn: FnScope | null;
 }
 
 export function renameShadowingDecls(script: Script): Script {
   let counter = 0;
   // A few nodes are shared by two parents (`obj.field += v` reuses `obj`); resolve each once.
   const resolved = new WeakSet<object>();
+  const fns: FnScope[] = [];
+  // Pine names declared with `var` outside every function, at any depth.
+  const globalVarNames = new Set<string>();
+  const root: Scope = { parent: null, bindings: new Map(), outerUses: new Set(), fn: null };
 
-  const child = (parent: Scope): Scope => ({ parent, bindings: new Map(), outerUses: new Set() });
+  const child = (parent: Scope): Scope => ({ parent, bindings: new Map(), outerUses: new Set(), fn: parent.fn });
 
-  const use = (scope: Scope, name: string): string | undefined => {
-    let s: Scope | null = scope;
-    while (s !== null && !s.bindings.has(name)) s = s.parent;
-    if (s === null) return undefined; // a built-in or an undeclared name
-    for (let t: Scope = scope; t !== s; t = t.parent!) t.outerUses.add(name);
-    return s.bindings.get(name);
+  const bind = (scope: Scope, pine: string, b: Binding, rename: (name: string) => void): void => {
+    rename(b.name);
+    b.refs?.push(rename);
+    if (scope.fn === null) return;
+    const meanings = scope.fn.meanings.get(pine) ?? new Set();
+    meanings.add(b);
+    scope.fn.meanings.set(pine, meanings);
   };
 
-  const declare = (scope: Scope, name: string): string => {
+  // A read or a reassignment: `rename` stores the name of the variable it resolves to.
+  const use = (scope: Scope, name: string, rename: (name: string) => void): void => {
+    let s: Scope | null = scope;
+    while (s !== null && !s.bindings.has(name)) s = s.parent;
+    if (s === null) return; // a built-in or an undeclared name
+    for (let t: Scope = scope; t !== s; t = t.parent!) t.outerUses.add(name);
+    bind(scope, name, s.bindings.get(name)!, rename);
+  };
+
+  const noRename = (): void => {};
+
+  const declare = (scope: Scope, name: string, rename: (name: string) => void, isVar = false): void => {
     // A second declaration in the same scope (a parameter, a loop header's variable, an earlier
     // '=') names the variable already there; codegen emits it as a plain assignment.
     const existing = scope.bindings.get(name);
-    if (existing !== undefined) return existing;
-    const jsName = scope.outerUses.has(name) ? `${name}$${++counter}` : name;
-    scope.bindings.set(name, jsName);
-    return jsName;
+    if (existing !== undefined) {
+      bind(scope, name, existing, rename);
+      return;
+    }
+    const b: Binding = {
+      name: scope.outerUses.has(name) ? `${name}$${++counter}` : name,
+      refs: isVar && scope.fn !== null ? [] : null,
+    };
+    scope.bindings.set(name, b);
+    if (b.refs !== null) scope.fn!.vars.push({ pine: name, binding: b });
+    bind(scope, name, b, rename);
+  };
+
+  // Gives a function's `var` a name of its own when its Pine name also means another variable of
+  // that function or names a global `var` (see the header).
+  const settleFunctionVars = (): void => {
+    for (const fn of fns) {
+      for (const { pine, binding } of fn.vars) {
+        if (binding.name !== pine) continue; // already renamed
+        if (fn.meanings.get(pine)!.size === 1 && !globalVarNames.has(pine)) continue;
+        binding.name = `${pine}$${++counter}`;
+        for (const rename of binding.refs!) rename(binding.name);
+      }
+    }
   };
 
   const block = (body: Stmt[], scope: Scope): void => {
@@ -68,7 +131,7 @@ export function renameShadowingDecls(script: Script): Script {
   const params = (ps: FuncParam[], scope: Scope): void => {
     for (const p of ps) {
       if (p.default !== null) expr(p.default, scope.parent!);
-      declare(scope, p.name);
+      declare(scope, p.name, noRename);
     }
   };
 
@@ -94,21 +157,20 @@ export function renameShadowingDecls(script: Script): Script {
     switch (stmt.kind) {
       case "VarDecl":
         expr(stmt.value, scope);
-        stmt.name = declare(scope, stmt.name);
+        if (scope.fn === null) globalVarNames.add(stmt.name);
+        declare(scope, stmt.name, (n) => (stmt.name = n), true);
         return;
       case "Assignment": {
         expr(stmt.value, scope);
-        if (stmt.operator === "=") {
-          stmt.name = declare(scope, stmt.name);
-        } else {
-          const target = use(scope, stmt.name);
-          if (target !== undefined) stmt.name = target;
-        }
+        if (stmt.operator === "=") declare(scope, stmt.name, (n) => (stmt.name = n));
+        else use(scope, stmt.name, (n) => (stmt.name = n));
         return;
       }
       case "TupleDestructure":
         expr(stmt.value, scope);
-        stmt.names = stmt.names.map((n) => (n === "_" ? n : declare(scope, n)));
+        stmt.names.forEach((n, i) => {
+          if (n !== "_") declare(scope, n, (m) => (stmt.names[i] = m));
+        });
         return;
       case "ExprStmt":
         expr(stmt.expr, scope);
@@ -134,21 +196,23 @@ export function renameShadowingDecls(script: Script): Script {
         expr(stmt.end, scope);
         if (stmt.step !== null) expr(stmt.step, scope);
         const body = child(scope);
-        declare(body, stmt.varName);
+        declare(body, stmt.varName, noRename);
         block(stmt.body, body);
         return;
       }
       case "ForInStmt": {
         expr(stmt.iterable, scope);
         const body = child(scope);
-        if (stmt.indexName !== null) declare(body, stmt.indexName);
-        declare(body, stmt.varName);
+        if (stmt.indexName !== null) declare(body, stmt.indexName, noRename);
+        declare(body, stmt.varName, noRename);
         block(stmt.body, body);
         return;
       }
       case "FuncDecl":
       case "MethodDecl": {
-        const fn = child(scope);
+        const fnScope: FnScope = { meanings: new Map(), vars: [] };
+        fns.push(fnScope);
+        const fn: Scope = { ...child(scope), fn: fnScope };
         params(stmt.params, fn);
         block(stmt.body, fn);
         return;
@@ -168,8 +232,7 @@ export function renameShadowingDecls(script: Script): Script {
       case "Identifier": {
         if (resolved.has(e)) return;
         resolved.add(e);
-        const name = use(scope, e.name);
-        if (name !== undefined) e.name = name;
+        use(scope, e.name, (n) => (e.name = n));
         return;
       }
       case "BinOp":
@@ -216,6 +279,7 @@ export function renameShadowingDecls(script: Script): Script {
     }
   };
 
-  block(script.body, { parent: null, bindings: new Map(), outerUses: new Set() });
+  block(script.body, root);
+  settleFunctionVars();
   return script;
 }
