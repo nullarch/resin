@@ -374,6 +374,28 @@ export function resolveUdtMethodReceiverType(receiver: Expr, prog: AnalyzedProgr
   if (receiver.kind !== "CallExpr") return undefined;
   return resolveArrayGetElemUdtType(receiver, prog, scope) ?? isUdtConstructorCall(receiver, prog, scope) ?? undefined;
 }
+
+// The user-declared method a call invokes, or undefined when it invokes none. Once the call is
+// analyzed, the receiver type its dispatch recorded (udtMethodCallTypes: UDT, enum, scalar, drawing
+// and container receivers alike); before that, the dispatch's own receiver rules for a UDT or enum
+// receiver: resolveUdtMethodReceiverType for `recv.m(...)`, resolveUdtObjectType of the first
+// argument for `m(recv, ...)`. A bare call of a name a plain function has calls that function
+// (analyzeCallExpr tries prog.funcs first).
+export function resolveUserMethodCallInfo(expr: CallExpr, prog: AnalyzedProgram, scope?: LexScope): FuncInfo | undefined {
+  const recorded = prog.udtMethodCallTypes.get(expr);
+  if (expr.callee.kind === "Identifier") {
+    if (prog.funcs.has(expr.callee.name) || expr.args.length === 0) return undefined;
+    const receiverType = recorded ?? (scope !== undefined ? resolveUdtObjectType(expr.args[0]!, prog, scope) : undefined);
+    return receiverType !== undefined
+      ? lookupMethodOverload(prog, receiverType, expr.callee.name, expr.args.length + expr.kwargs.length, expr)
+      : undefined;
+  }
+  if (expr.callee.kind !== "DotAccess") return undefined;
+  const receiverType = recorded ?? (scope !== undefined ? resolveUdtMethodReceiverType(expr.callee.obj, prog, scope) : undefined);
+  return receiverType !== undefined
+    ? lookupMethodOverload(prog, receiverType, expr.callee.attr, 1 + expr.args.length + expr.kwargs.length, expr)
+    : undefined;
+}
 import { TA_REGISTRY, analyzeStatefulCall, taCallReturnArity, resolveTaKwargPositions, type TaRegistryEntry } from "./ta";
 import {
   ARRAY_REGISTRY,

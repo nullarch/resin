@@ -15243,7 +15243,11 @@ describe("Analyzer UDF-returned UDT instance tracking (C253)", () => {
     expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
   });
 
-  it("computes FuncInfo.returnUdtType for a 'method' whose last statement is an if/else too (internal bookkeeping symmetry), without changing its bare-UDF-call consumption gap (method-call syntax remains a DotAccess callee, out of scope, C264)", () => {
+  // A method call's value has the type the method's body returns, as a function call's does
+  // (language_methods.txt: methods "behave the same as regular functions in most regards"). The
+  // harness twin probe suites/lang/probes/L44.json (a method returning an if/else of constructors,
+  // `k = s.pick(close > open)` then `k.y`) equals the oracle on every bar.
+  it("types a method call's value by the method's FuncInfo.returnUdtType when its last statement is an if/else (L44)", () => {
     const prog = analyzeSource(
       [
         "type Bar",
@@ -15258,9 +15262,13 @@ describe("Analyzer UDF-returned UDT instance tracking (C253)", () => {
         "p = Bar.new(2.0)",
         "sig = p.toSignal()",
         "y = sig.value",
+        "var vs = p.toSignal()",
+        "z = vs.value",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
+    expect(prog.errors).toEqual([]);
+    expect(prog.funcs.get("Bar$toSignal")!.returnUdtType).toBe("Signal");
+    expect(prog.udtVarTypes.get("vs")).toBe("Signal");
   });
 
   it("does not treat a UDF that returns a plain scalar as a UDT instance (regression, no false positive on unrelated UDFs)", () => {
@@ -15311,7 +15319,10 @@ describe("Analyzer UDF-returned UDT instance tracking (C253)", () => {
     expect(prog.funcs.get("outer")!.returnUdtType).toBe("Signal");
   });
 
-  it("computes FuncInfo.returnUdtType for a user-declared 'method' too (internal bookkeeping symmetry, C232 lesson) without changing its bare-UDF-call consumption (method-call syntax 'p.toSignal()' is a DotAccess callee, not the Identifier-callee shape isUdtConstructorCall matches -- out of scope, LIMITATIONS.md)", () => {
+  // Same rule for both call spellings, `p.toSignal()` and `toSignal(p)`, and for a field read
+  // chained on the call (harness probe suites/lang/probes/L44.json: `p = s.dirVariables(dir)`,
+  // `q = dirVariables(s, -dir)`, `s.dirVariables(1).x`, all equal to the oracle).
+  it("types a method call's value by the method's FuncInfo.returnUdtType, called as recv.m() or m(recv) (L44)", () => {
     const prog = analyzeSource(
       [
         "type Bar",
@@ -15323,9 +15334,16 @@ describe("Analyzer UDF-returned UDT instance tracking (C253)", () => {
         "p = Bar.new(2.0)",
         "sig = p.toSignal()",
         "y = sig.value",
+        "sig2 = toSignal(p)",
+        "y2 = sig2.value",
+        "y3 = p.toSignal().value",
+        "var vs = toSignal(p)",
+        "z = vs.value",
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("namespace access supported only as a call expression"))).toBe(true);
+    expect(prog.errors).toEqual([]);
+    expect(prog.funcs.get("Bar$toSignal")!.returnUdtType).toBe("Signal");
+    expect(prog.udtVarTypes.get("vs")).toBe("Signal");
   });
 
   // C392: 위 "bare identifier referencing its own '=' local UDT instance" 테스트(9748행)는 함수

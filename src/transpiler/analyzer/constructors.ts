@@ -12,6 +12,7 @@ import {
   resolveContainerExprKind,
   resolveMatrixExprKind,
   resolveUdtObjectType,
+  resolveUserMethodCallInfo,
   CHART_POINT_FIELD_TYPE,
 } from "../analyzer";
 import { TA_REGISTRY } from "./ta";
@@ -213,6 +214,17 @@ export function isUdtConstructorCall(value: Expr, prog: AnalyzedProgram, scope?:
   if (value.kind === "CallExpr" && value.callee.kind === "Identifier") {
     const funcInfo = prog.funcs.get(value.callee.name);
     if (funcInfo !== undefined && funcInfo.returnUdtType !== null) return funcInfo.returnUdtType;
+  }
+  // A call of a user-declared method returns what the method's body returns, exactly as a function
+  // call does, whether written `recv.m(...)` or `m(recv, ...)` (language_methods.txt: methods
+  // "behave the same as regular functions in most regards while offering a shorter, more convenient
+  // syntax"; "Defining a method is essentially the same as defining a function"). Methods are
+  // registered under a mangled name, so the function lookup above never finds them: `p =
+  // s.dirVariables()` then `p.y` was refused as a namespace access (wild 36d1187c01d2.pine,
+  // RozaniGhani-RG "Simple Zigzag UDT").
+  if (value.kind === "CallExpr") {
+    const methodInfo = resolveUserMethodCallInfo(value, prog, scope);
+    if (methodInfo !== undefined && methodInfo.returnUdtType !== null) return methodInfo.returnUdtType;
   }
   // request.security(sym, tf, f()) 스칼라 bare-UDF passthrough(C436) 결과 UDT 힌트(C621, wild
   // "네임스페이스 접근은 호출식만 지원" 클러스터 재조사 — `biasRaw = request.security(tk, tf,

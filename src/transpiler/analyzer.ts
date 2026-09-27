@@ -114,6 +114,7 @@ export {
   RUNTIME_KWARG_PARAM_NAMES,
   TIME_CALL_KWARG_PARAM_NAMES,
   resolveTimestampKwargSlots,
+  resolveUserMethodCallInfo,
 } from "./analyzer/call-expr";
 import {
   analyzeIndexAccess,
