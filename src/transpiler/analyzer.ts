@@ -1247,8 +1247,8 @@ export interface FuncInfo {
   // 이름은 예전처럼 eqLocalNames 이름-키 축을 그대로 씀 — 이 Set엔 안 들어감).
   nestedEqLocalNames: Set<string>;
   // 위 nestedEqLocalNames 중 같은 이름이 이 함수의 udf-body 루트(무조건, func.eqLocalNames)에도
-  // 있거나 중첩 선언 자리를 두 번째(이상) 가지는 경우(사후 진단 메시지 선택 전용 — 읽기 쪽 게이트는
-  // resolveAmbiguousFuncNestedEqLocalDeclStmt의 조상 탐색 성공 여부만으로 이미 무모호하게 갈린다).
+  // 있거나 중첩 선언 자리를 두 번째(이상) 가지는 경우(진단 메시지 선택 전용 — 읽기 쪽은 조상 탐색이
+  // 찾은 중첩 선언, 없으면 읽기 자리에서 보이는 body 루트 로컬로 무모호하게 갈린다).
   nestedHistShadowedNames: Set<string>;
   // 중첩 블록 '=' 로컬 히스토리 대입문(Assignment 노드) -> 함수-상대 hist 슬롯(C714 UDF 확장,
   // localHistSlots·localCallHistSlots와 동일한 localHistSlotCount 카운터 공유 — 형제 선언마다
@@ -1656,6 +1656,22 @@ export function resolveNestedVarOrEqLocalKind(scope: LexScope, name: string): Ne
     // variant를 그대로 재사용한다.
     if (s.nestedEqLocalDeclStmts.has(name) || s.nestedTupleLocalNames.has(name)) return { kind: "eq-local" };
     s = s.parent;
+  }
+  return null;
+}
+
+// The nested block's '=' declaration that `name`, used at `scope`, refers to: the nearest scope
+// declaring the name declared it with '=' in a block that is neither the script's top level nor a
+// function body's root. null when that nearest declaration is anything else (such a root local, a
+// parameter, a var, a loop header's variable, a tuple target). Pine resolves a name to the
+// declaration visible where it stands (language_execution-model.txt: "The variables and expressions
+// defined within a local scope belong exclusively to that scope").
+export function resolveNestedEqLocalDecl(scope: LexScope, name: string): Assignment | null {
+  for (let s: LexScope | null = scope; s !== null; s = s.parent) {
+    if (s.loopHeaderNames.has(name)) return null;
+    const decl = s.nestedEqLocalDeclStmts.get(name);
+    if (decl !== undefined) return decl.kind === "Assignment" ? decl : null;
+    if (s.names.has(name) || s.nestedVarDeclStmts.has(name) || s.nestedTupleLocalNames.has(name)) return null;
   }
   return null;
 }
@@ -2670,6 +2686,15 @@ export interface AnalyzedProgram {
   ambiguousNestedHistReadSlots: Map<Expr, number>;
   ambiguousNestedRefDeclSlots: Map<Assignment, number>;
   ambiguousNestedRefReadSlots: Map<Expr, number>;
+  // The nested block's '=' declaration each assignment writes (resolveNestedEqLocalDecl), at the
+  // top level and in functions: a nested '=' declaration maps to itself, a ':=' (compound
+  // assignments included) to the declaration of its name nearest to it. Every one of them records
+  // into that declaration's history slot (ambiguousNested*DeclSlots, or the function's
+  // localAmbiguousNested*DeclSlots), and never into a function body's local of the same name:
+  // language_execution-model.txt "All functions, methods, conditional structures, and loops create
+  // their own local scopes . The variables and expressions defined within a local scope belong
+  // exclusively to that scope", and `[]` on a local "represents the variable’s last committed value".
+  nestedEqAssignDecls: Map<Assignment, Assignment>;
   // C748: 위 ambiguousNestedHist*/Ref* 쌍의 튜플 디스트럭처 판 — Assignment는 이름 하나당 노드 하나뿐
   // (declStmt 자체가 무모호 키)이지만 TupleDestructure는 한 노드가 여러 이름을 동시에 선언해 노드만으로
   // 키잉하면 같은 문장의 서로 다른 원소끼리 슬롯이 섞인다(예: `[_h, _l] = request.security(...)`에서
@@ -3921,6 +3946,7 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
     refHistorySlotCount: 0,
     ambiguousNestedHistDeclSlots: new Map(),
     ambiguousNestedHistReadSlots: new Map(),
+    nestedEqAssignDecls: new Map(),
     ambiguousNestedRefDeclSlots: new Map(),
     ambiguousNestedRefReadSlots: new Map(),
     ambiguousNestedTupleHistDeclSlots: new Map(),
@@ -5912,13 +5938,12 @@ function resolvePendingTupleDestructuresFor(func: FuncInfo, prog: AnalyzedProgra
 function checkHistShadowConflicts(funcName: string, line: number, col: number, info: FuncInfo, prog: AnalyzedProgram): void {
   // localRefHistSlots(C541, drawing 핸들 판)도 같은 이름-기반 record 주입이라 동일한 모호성 거부가
   // 필요하다 — 두 맵은 kind 분기로 상호 배타(같은 이름이 양쪽에 들어갈 수 없음)라 단순 연결로 안전.
-  // nestedHistShadowedNames(C714 UDF 확장, next_hint(C715))도 함께 검사한다 — 이름-키 축
-  // (localHistSlots/localRefHistSlots)에 이미 슬롯을 받은 이름이 나중에(소스 순서상 앞/뒤 무관)
-  // 중첩 블록에서 또 '='로 선언되면(analyzeAssignment 나머지 분기 참조) codegen의 record 주입이
-  // 여전히 이름 하나로 두 물리 선언을 공유해버린다 — 순수 중첩-대-중첩(형제 블록끼리만) 충돌은
-  // 애초에 이 이름-키 축을 안 타므로(전량 node-keyed) 여기 안 걸린다.
+  // A nested block's '=' of a body local's name (nestedHistShadowedNames) is no conflict: it is
+  // another variable, each assignment records into the declaration it writes
+  // (AnalyzedProgram.nestedEqAssignDecls), and a read takes the declaration visible where it stands
+  // (analyzeIndexAccess). Repro: resin-harness state/repros/udf-shadowed-history.json.
   for (const name of [...info.localHistSlots.keys(), ...info.localRefHistSlots.keys()]) {
-    if (info.histShadowedNames.has(name) || info.nestedHistShadowedNames.has(name)) {
+    if (info.histShadowedNames.has(name)) {
       prog.errors.push(
         `history index target '${name}' is redeclared/shadowed with '=' inside function '${funcName}' — ambiguous which variable the history refers to, not supported (L${line}:${col})`,
       );
@@ -6852,6 +6877,10 @@ function analyzeAssignment(stmt: Assignment, prog: AnalyzedProgram, scope: LexSc
   const nestedVarDecl = nestedKind?.kind === "var" ? nestedKind.decl : null;
   let isNewLocal = false;
   if (stmt.operator === ":=") {
+    // A reassignment of a nested block's '=' local changes the value that local commits, so it
+    // records into that declaration's history slot too (AnalyzedProgram.nestedEqAssignDecls).
+    const nestedEqDecl = resolveNestedEqLocalDecl(scope, stmt.name);
+    if (nestedEqDecl !== null) prog.nestedEqAssignDecls.set(stmt, nestedEqDecl);
     if (resolvesToLoopHeaderVar(scope, stmt.name)) {
       // Reassigns the loop's own counter or item, not a var of that name (resolvesToLoopHeaderVar).
       prog.eqLocalShadowedVarAssigns.add(stmt);
@@ -6924,6 +6953,7 @@ function analyzeAssignment(stmt: Assignment, prog: AnalyzedProgram, scope: LexSc
           // scope 객체라 이름이 겹쳐도 이 맵은 절대 섞이지 않는다(index-access.ts
           // resolveAmbiguousNestedEqLocalDeclStmt가 조상 스코프 탐색으로 정확히 하나만 찾아낸다).
           scope.nestedEqLocalDeclStmts.set(stmt.name, stmt);
+          prog.nestedEqAssignDecls.set(stmt, stmt);
           if (prog.topLevelLocalNames.has(stmt.name) || prog.nestedTopLevelEqLocalNames.has(stmt.name)) {
             prog.nestedTopLevelHistShadowedNames.add(stmt.name);
           } else {
@@ -6959,6 +6989,9 @@ function analyzeAssignment(stmt: Assignment, prog: AnalyzedProgram, scope: LexSc
             func.histShadowedNames.add(stmt.name);
           } else {
             scope.nestedEqLocalDeclStmts.set(stmt.name, stmt);
+            // A shadow of the body's local of this name is another variable: it records into its
+            // own slot, never the body local's (AnalyzedProgram.nestedEqAssignDecls).
+            prog.nestedEqAssignDecls.set(stmt, stmt);
             if (func.eqLocalNames.has(stmt.name) || func.nestedEqLocalNames.has(stmt.name)) {
               func.nestedHistShadowedNames.add(stmt.name);
             } else {

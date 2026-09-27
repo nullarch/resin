@@ -6625,6 +6625,36 @@ describe("CodeGen", () => {
     expect(lines[reassignIdx + 1]).toBe("$.histSlots[__histBase + 0].record(val);");
   });
 
+  // resin-harness suites/lang/probes/L48.json: a nested block's '=' of a body local's name is another
+  // variable; its assignments commit into its own history, the body local's into the body local's.
+  it("records a nested '=' shadow and its ':=' into the shadow's slot, never the body local's of the same name", () => {
+    const code = codegenSource(
+      "h() =>\n    s = 1\n    if close > open\n        s := nz(s[1]) + 1\n    else\n        s = bar_index\n        s := s * 2\n        t = nz(s[1])\n    s\nz = h()",
+    );
+    const lines = code.split("\n");
+    const at = (l: string) => {
+      const i = lines.indexOf(l);
+      expect(i).toBeGreaterThan(-1);
+      return i;
+    };
+    expect(lines[at("let s = 1;") + 1]).toBe("$.histSlots[__histBase + 0].record(s);");
+    expect(lines[at("s = (rt.nz($.histSlots[__histBase + 0].get(1)) + 1);") + 1]).toBe("$.histSlots[__histBase + 0].record(s);");
+    expect(lines[at("let s = $.idx;") + 1]).toBe("$.histSlots[__histBase + 1].record(s);");
+    expect(lines[at("s = (s * 2);") + 1]).toBe("$.histSlots[__histBase + 1].record(s);");
+    expect(code).toContain("let t = rt.nz($.histSlots[__histBase + 1].get(1));");
+  });
+
+  it("records a top-level nested '=' local after each ':=' of it, from a deeper block too (L48 top_shadow_reassigned)", () => {
+    const code = codegenSource("k = 0\nif close < open\n    k = bar_index\n    if bar_index % 2 == 0\n        k := k + 100\n    kt = nz(k[1])");
+    const lines = code.split("\n");
+    const decl = lines.indexOf("let k = $.idx;");
+    expect(decl).toBeGreaterThan(-1);
+    expect(lines[decl + 1]).toBe("$.histSlots[0].record(k);");
+    const reassign = lines.indexOf("k = (k + 100);");
+    expect(reassign).toBeGreaterThan(-1);
+    expect(lines[reassign + 1]).toBe("$.histSlots[0].record(k);");
+  });
+
   it("emits the UDF-internal var history record in the top-level bar-end loop reading $.fnVars (not in the body)", () => {
     const code = codegenSource("h() =>\n    var float acc = 0.0\n    acc := acc + close\n    acc[1]\nz = h()");
     const lines = code.split("\n");

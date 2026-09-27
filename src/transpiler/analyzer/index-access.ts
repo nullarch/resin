@@ -22,6 +22,7 @@ import {
   resolveContainerExprKind,
   resolveDrawingExprKind,
   resolveMatrixExprKind,
+  resolveNestedEqLocalDecl,
   resolveUdtFieldTypeHint,
 } from "../analyzer";
 import {
@@ -103,6 +104,21 @@ function resolveAmbiguousFuncNestedEqLocalDeclStmt(func: FuncInfo, scope: LexSco
     s = s.parent;
   }
   return null;
+}
+
+// Whether `name`, read at `scope` in `func`, is the '=' local of the function body's root: the
+// nearest scope declaring the name is the body itself. A nested block elsewhere in the function may
+// declare the name again with '='; that is another variable, which this read does not see
+// (language_execution-model.txt: "The variables and expressions defined within a local scope belong
+// exclusively to that scope"), so the read takes the body local's history slot (keyed by name, its
+// assignments record into it; the nested one's record into their own, nestedEqAssignDecls).
+function resolvesToFuncBodyEqLocal(func: FuncInfo, scope: LexScope, name: string): boolean {
+  for (let s: LexScope | null = scope; s !== null && s.func === func; s = s.parent) {
+    if (s.names.has(name)) {
+      return s.kind === "udf-body" && func.eqLocalNames.has(name) && !func.histShadowedNames.has(name);
+    }
+  }
+  return false;
 }
 
 // 명시 typeHint 문자열("series float"/"array<int>"/"MyType" 등)이 Float64Array 히스토리 슬롯에
@@ -1032,13 +1048,24 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
     return;
   }
 
-  const isFuncLocalVar = scope.func !== null && scope.func.localVarIndex.has(name);
+  // The nested block's '=' local this name resolves to here, if any. It is the variable the read
+  // names even when a var of the name is declared outside the block (the '=' is a new local that
+  // hides it, C679(a)/C729): the read takes that local's history, never the var's
+  // (language_execution-model.txt "The variables and expressions defined within a local scope belong
+  // exclusively to that scope"; repro resin-harness state/repros/udf-shadowed-history.json).
+  const nestedEqDecl = resolveNestedEqLocalDecl(scope, name);
+  const isFuncLocalVar = nestedEqDecl === null && scope.func !== null && scope.func.localVarIndex.has(name);
   // C728: 중첩 top-level var(depth>0)도 물리적으로는 flat var와 동일한 $.vars[] 슬롯 배열을 쓰므로
   // (analyzer.ts LexScope.nestedVarDeclStmts 주석 참조) 슬롯만 정확히 찾으면 아래 모든 히스토리
   // 가드(string/array/map/matrix/drawing/UDT/enum, name 키 그대로 재사용 가능 — analyzeVarDecl이
   // 그 aux map들을 flat/nested 공통 꼬리 로직으로 채워둠)가 그대로 적용된다.
-  const nestedVarDecl = scope.func === null ? resolveAmbiguousNestedVarDeclStmt(scope, name) : null;
-  const slot = nestedVarDecl !== null ? prog.nestedVarDeclSlots.get(nestedVarDecl) : prog.varIndex.get(name);
+  const nestedVarDecl = nestedEqDecl === null && scope.func === null ? resolveAmbiguousNestedVarDeclStmt(scope, name) : null;
+  const slot =
+    nestedEqDecl !== null
+      ? undefined
+      : nestedVarDecl !== null
+        ? prog.nestedVarDeclSlots.get(nestedVarDecl)
+        : prog.varIndex.get(name);
   // codegen은 scope 없이 이 IndexAccess 노드(expr)만으로 슬롯을 다시 찾아야 하므로(다른
   // ambiguousNested* 축과 동일 원칙) 여기서 확정해둔다 — read 쪽 name 기반 program.varIndex 조회는
   // nestedVarDecl일 때 항상 undefined라 codegen에 이 기록이 없으면 못 찾는다.
@@ -1064,13 +1091,21 @@ export function analyzeIndexAccess(expr: IndexAccess, prog: AnalyzedProgram, sco
         // 읽기 지점이 정확히 어느 선언의 자손인지부터 확인한다(resolveAmbiguousFuncNestedEqLocalDeclStmt
         // — resolveAmbiguousNestedEqLocalDeclStmt의 함수 경계 판) — 형제는 서로의 조상이 아니므로
         // 무모호하게 하나만 찾히거나(그 선언 노드로 슬롯을 키잉해 독립 시리즈 보존), 어느 선언의
-        // 자손도 아니면 하드 에러. C715의 "udf-body 루트 무조건 재선언으로 폴백"은 의도적으로 이식
-        // 안 함(범위 밖) — 그 폴백은 root+nested가 공존할 때 root 쪽 record가 nested 선언의 대입문도
-        // 이름으로 함께 덮어써 두 축이 뒤섞일 위험이 있어(top-level엔 이런 이중 record 경로가 없어
-        // 문제 없지만 UDF는 함수-상대 슬롯 카운터를 공유), 이번 슬라이스는 "형제끼리만 충돌"(next_hint가
-        // 지목한 실제 wild 패턴)로 좁혀 안전하게 간다.
-        if (role.role === "local" && (func.nestedEqLocalNames.has(name) || func.nestedHistShadowedNames.has(name))) {
-          const declStmt = resolveAmbiguousFuncNestedEqLocalDeclStmt(func, scope, name);
+        // 자손도 아니면 하드 에러. The body's root local of the name (C715's fallback, the function
+        // form) is safe now that every assignment records only into the declaration it writes
+        // (AnalyzedProgram.nestedEqAssignDecls): a nested '=' of the name no longer records into the
+        // root local's slot by name.
+        // A read the nearest declaration of which is the body's own '=' local takes that local's
+        // name-keyed slot below even when a nested block declares the name again
+        // (resolvesToFuncBodyEqLocal); a read of a nested block's local, a function var's shadow
+        // included (nestedEqDecl), takes its declaration's slot.
+        if (
+          nestedEqDecl !== null ||
+          (role.role === "local" &&
+            (func.nestedEqLocalNames.has(name) || func.nestedHistShadowedNames.has(name)) &&
+            !resolvesToFuncBodyEqLocal(func, scope, name))
+        ) {
+          const declStmt = nestedEqDecl ?? resolveAmbiguousFuncNestedEqLocalDeclStmt(func, scope, name);
           if (declStmt === null) {
             prog.errors.push(
               func.nestedHistShadowedNames.has(name)

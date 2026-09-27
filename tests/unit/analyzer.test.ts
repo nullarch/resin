@@ -12030,11 +12030,14 @@ describe("Analyzer", () => {
     expect(prog.errors.some((e) => e.includes("UDF parameter holding drawing handle value"))).toBe(true);
   });
 
-  it("rejects history on a UDF drawing-handle name '=' shadowed in a nested block (ref-hist shadow conflict, C541)", () => {
+  // The drawing-handle form of the rule L48 checks on numbers: the shadow is another variable.
+  it("accepts history on a UDF drawing-handle local that a nested block shadows with '=' (the read is the body local's, C541)", () => {
     const prog = analyzeSource(
       ["g() =>", "    lb = label.new(bar_index, close)", "    q = na(lb[1])", "    if close > open", "        lb = label.new(bar_index, open)", "    q", "z = g()"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("redeclared/shadowed"))).toBe(true);
+    expect(prog.errors).toEqual([]);
+    expect(prog.funcs.get("g")!.localRefHistSlots.get("lb")).toBe(0);
+    expect(prog.nestedEqAssignDecls.size).toBe(1);
   });
 
   it("keeps numeric and drawing-handle history in the same UDF on separate counters/bases (C541)", () => {
@@ -12070,9 +12073,34 @@ describe("Analyzer", () => {
     expect(func.localRefHistKinds.get("s")).toBe("var");
   });
 
-  it("rejects history on a name that is '=' shadowed in a nested block of the same function (record ambiguity)", () => {
+  // A nested block's '=' of a body local's name is another variable (language_execution-model.txt
+  // "The variables and expressions defined within a local scope belong exclusively to that scope");
+  // the read takes the body local's slot, the shadow's declaration writes only its own. Was refused
+  // as ambiguous; resin-harness suites/lang/probes/L48.json (channels fn_root_*) contradicts that.
+  it("accepts history on a body local that a nested block of the same function shadows with '=' (the read is the body local's)", () => {
     const prog = analyzeSource(["f() =>", "    y = 0.0", "    q = y[1]", "    if close > open", "        y = 9.0", "    q", "z = f()"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("redeclared/shadowed"))).toBe(true);
+    expect(prog.errors).toEqual([]);
+    const func = prog.funcs.get("f")!;
+    expect(func.localHistSlots.get("y")).toBe(0);
+    expect(func.localHistKinds.get("y")).toBe("local");
+    const shadow = [...prog.nestedEqAssignDecls.values()];
+    expect(shadow).toHaveLength(1);
+    expect(prog.nestedEqAssignDecls.get(shadow[0]!)).toBe(shadow[0]);
+  });
+
+  it("resolves a read after a nested shadow to the declaration visible there: the shadow in its block, the body local elsewhere", () => {
+    const prog = analyzeSource(
+      ["f() =>", "    y = 0.0", "    if close > open", "        y = 9.0", "        y := y + 1", "        w = y[1]", "    y[1]", "z = f()"].join("\n"),
+    );
+    expect(prog.errors).toEqual([]);
+    const func = prog.funcs.get("f")!;
+    expect(func.localHistSlots.get("y")).toBe(1);
+    expect(func.localAmbiguousNestedHistDeclSlots.size).toBe(1);
+    expect([...func.localAmbiguousNestedHistReadSlots.values()]).toEqual([0]);
+    // The ':=' in the block writes the shadow, so it records into the shadow's slot.
+    const ofY = [...prog.nestedEqAssignDecls].filter(([a]) => a.name === "y");
+    expect(ofY.map(([a]) => a.operator)).toEqual(["=", ":="]);
+    expect(ofY[1]![1]).toBe(ofY[0]![0]);
   });
 
   it("rejects history on a parameter redeclared as a body-root '=' local (entry record would go stale)", () => {

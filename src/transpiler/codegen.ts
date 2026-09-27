@@ -2016,20 +2016,27 @@ function genStmt(
       // UDF 내부 drawing 핸들 '=' 로컬(C541, localRefHistKinds "local")도 같은 same-site 타이밍 —
       // 물리 배열만 $.refHistSlots(__refHistBase 콜사이트 블록)로 분리(이름은 numeric 판과 kind
       // 분기로 상호 배타라 체인 순서 무관).
+      // An assignment writing a nested block's '=' local (its declaration, or a ':=' of it) records
+      // into that declaration's slot only, never into a function body's local of the same name,
+      // which is another variable (AnalyzedProgram.nestedEqAssignDecls; repro resin-harness
+      // state/repros/udf-shadowed-history.json).
+      const nestedEqDecl = program.nestedEqAssignDecls.get(stmt);
       const histRecord =
-        funcCtx !== null && funcCtx.localHistKinds.get(stmt.name) === "local"
-          ? `\n$.histSlots[__histBase + ${funcCtx.localHistSlots.get(stmt.name)}].record(${safeLocalName(stmt.name)});`
-          : funcCtx !== null && funcCtx.localRefHistKinds.get(stmt.name) === "local"
-            ? `\n$.refHistSlots[__refHistBase + ${funcCtx.localRefHistSlots.get(stmt.name)}].record(${safeLocalName(stmt.name)});`
-            : funcCtx !== null && funcCtx.localAmbiguousNestedHistDeclSlots.has(stmt)
-              ? `\n$.histSlots[__histBase + ${funcCtx.localAmbiguousNestedHistDeclSlots.get(stmt)}].record(${safeLocalName(stmt.name)});`
-              : funcCtx !== null && funcCtx.localAmbiguousNestedRefDeclSlots.has(stmt)
-                ? `\n$.refHistSlots[__refHistBase + ${funcCtx.localAmbiguousNestedRefDeclSlots.get(stmt)}].record(${safeLocalName(stmt.name)});`
-                : funcCtx === null && program.ambiguousNestedHistDeclSlots.has(stmt)
-                  ? `\n$.histSlots[${program.ambiguousNestedHistDeclSlots.get(stmt)}].record(${safeLocalName(stmt.name)});`
-                  : funcCtx === null && program.ambiguousNestedRefDeclSlots.has(stmt)
-                    ? `\n$.refHistSlots[${program.ambiguousNestedRefDeclSlots.get(stmt)}].record(${safeLocalName(stmt.name)});`
-                    : "";
+        nestedEqDecl !== undefined
+          ? funcCtx !== null && funcCtx.localAmbiguousNestedHistDeclSlots.has(nestedEqDecl)
+            ? `\n$.histSlots[__histBase + ${funcCtx.localAmbiguousNestedHistDeclSlots.get(nestedEqDecl)}].record(${safeLocalName(stmt.name)});`
+            : funcCtx !== null && funcCtx.localAmbiguousNestedRefDeclSlots.has(nestedEqDecl)
+              ? `\n$.refHistSlots[__refHistBase + ${funcCtx.localAmbiguousNestedRefDeclSlots.get(nestedEqDecl)}].record(${safeLocalName(stmt.name)});`
+              : funcCtx === null && program.ambiguousNestedHistDeclSlots.has(nestedEqDecl)
+                ? `\n$.histSlots[${program.ambiguousNestedHistDeclSlots.get(nestedEqDecl)}].record(${safeLocalName(stmt.name)});`
+                : funcCtx === null && program.ambiguousNestedRefDeclSlots.has(nestedEqDecl)
+                  ? `\n$.refHistSlots[${program.ambiguousNestedRefDeclSlots.get(nestedEqDecl)}].record(${safeLocalName(stmt.name)});`
+                  : ""
+          : funcCtx !== null && funcCtx.localHistKinds.get(stmt.name) === "local"
+            ? `\n$.histSlots[__histBase + ${funcCtx.localHistSlots.get(stmt.name)}].record(${safeLocalName(stmt.name)});`
+            : funcCtx !== null && funcCtx.localRefHistKinds.get(stmt.name) === "local"
+              ? `\n$.refHistSlots[__refHistBase + ${funcCtx.localRefHistSlots.get(stmt.name)}].record(${safeLocalName(stmt.name)});`
+              : "";
       if (isControlFlowExpr(stmt.value)) {
         return genControlFlowAssignment(stmt, stmt.value, program, nested, funcCtx, promoted, redeclared) + histRecord;
       }
@@ -3824,6 +3831,27 @@ function genIndexAccess(
     }
     return `rt.datetime.${name}($.barTimeAt(${offsetCode}))`;
   }
+  // C714 UDF 확장(next_hint(C715)) — 형제 if/for 블록마다 독립 선언된 '=' 로컬은 이름이 아니라 읽기
+  // 지점 자신(expr)으로 analyzer가 이미 확정해둔 함수-상대 슬롯을 조회한다(funcCtx.
+  // localAmbiguousNestedHistReadSlots — top-level program.ambiguousNestedHistReadSlots의 UDF 판).
+  // Looked up before the name-keyed slot of the body's local: a read the analyzer resolved to a
+  // nested block's declaration reads that variable even when the body declares the name too
+  // (a shadow; repro resin-harness state/repros/udf-shadowed-history.json, channel
+  // shadow_own_history).
+  const funcAmbigHistIdx = funcCtx?.localAmbiguousNestedHistReadSlots.get(expr);
+  if (funcAmbigHistIdx !== undefined) {
+    return isDynamic
+      ? `rt.histGet(${genIdentifier(name, program, funcCtx)}, $.histSlots[__histBase + ${funcAmbigHistIdx}], ${offsetCode})`
+      : `$.histSlots[__histBase + ${funcAmbigHistIdx}].get(${offsetCode})`;
+  }
+  // C714 UDF 확장의 drawing 핸들 판(funcAmbigHistIdx와 동형) — 형제 블록마다 독립 선언된 drawing
+  // 핸들 '=' 로컬은 읽기 지점 자신(expr)으로 확정해둔 함수-상대 ref-hist 슬롯을 조회한다.
+  const funcAmbigRefHistIdx = funcCtx?.localAmbiguousNestedRefReadSlots.get(expr);
+  if (funcAmbigRefHistIdx !== undefined) {
+    return isDynamic
+      ? `rt.refHistGet(${genIdentifier(name, program, funcCtx)}, $.refHistSlots[__refHistBase + ${funcAmbigRefHistIdx}], ${offsetCode})`
+      : `$.refHistSlots[__refHistBase + ${funcAmbigRefHistIdx}].get(${offsetCode})`;
+  }
   // UDF 함수-내부 히스토리(C364) — analyzer의 판별 순서(함수-내부 우선, resolveFuncInternalRole)와
   // 동일하게 funcCtx를 top-level 맵보다 먼저 조회한다(함수 '=' 로컬이 동명 top-level '=' 로컬을
   // 섀도잉하는 경우에도 analyzer와 같은 답 — C363의 잠재 섀도잉 갭 수정과 짝).
@@ -3832,15 +3860,6 @@ function genIndexAccess(
     return isDynamic
       ? `rt.histGet(${genIdentifier(name, program, funcCtx)}, $.histSlots[__histBase + ${funcHistIdx}], ${offsetCode})`
       : `$.histSlots[__histBase + ${funcHistIdx}].get(${offsetCode})`;
-  }
-  // C714 UDF 확장(next_hint(C715)) — 형제 if/for 블록마다 독립 선언된 '=' 로컬은 이름이 아니라 읽기
-  // 지점 자신(expr)으로 analyzer가 이미 확정해둔 함수-상대 슬롯을 조회한다(funcCtx.
-  // localAmbiguousNestedHistReadSlots — top-level program.ambiguousNestedHistReadSlots의 UDF 판).
-  const funcAmbigHistIdx = funcCtx?.localAmbiguousNestedHistReadSlots.get(expr);
-  if (funcAmbigHistIdx !== undefined) {
-    return isDynamic
-      ? `rt.histGet(${genIdentifier(name, program, funcCtx)}, $.histSlots[__histBase + ${funcAmbigHistIdx}], ${offsetCode})`
-      : `$.histSlots[__histBase + ${funcAmbigHistIdx}].get(${offsetCode})`;
   }
   // UDF 함수-내부 drawing 핸들 히스토리(C541) — 바로 위 localHistSlots와 동일한 함수-내부 우선
   // 순서, 물리 배열($.refHistSlots, __refHistBase 콜사이트 블록)과 동적 오프셋 fallback 함수
@@ -3851,14 +3870,6 @@ function genIndexAccess(
       ? `rt.refHistGet(${genIdentifier(name, program, funcCtx)}, $.refHistSlots[__refHistBase + ${funcRefHistIdx}], ${offsetCode})`
       : `$.refHistSlots[__refHistBase + ${funcRefHistIdx}].get(${offsetCode})`;
   }
-  // C714 UDF 확장의 drawing 핸들 판(funcAmbigHistIdx와 동형) — 형제 블록마다 독립 선언된 drawing
-  // 핸들 '=' 로컬은 읽기 지점 자신(expr)으로 확정해둔 함수-상대 ref-hist 슬롯을 조회한다.
-  const funcAmbigRefHistIdx = funcCtx?.localAmbiguousNestedRefReadSlots.get(expr);
-  if (funcAmbigRefHistIdx !== undefined) {
-    return isDynamic
-      ? `rt.refHistGet(${genIdentifier(name, program, funcCtx)}, $.refHistSlots[__refHistBase + ${funcAmbigRefHistIdx}], ${offsetCode})`
-      : `$.refHistSlots[__refHistBase + ${funcAmbigRefHistIdx}].get(${offsetCode})`;
-  }
   // C728: 중첩 top-level var(depth>0)는 이름이 아니라 이 IndexAccess 노드(expr)로 슬롯을 찾는다
   // (analyzer.ts index-access.ts nestedVarReadSlots 주석 참조) — program.varIndex는 이 축을 절대
   // 등록하지 않으므로 이 조회가 우선.
@@ -3867,9 +3878,11 @@ function genIndexAccess(
   // 직접 키로 쓴다(historySlots의 varSlot 기반과 대칭, strategyPropHistorySlots와 동일 패턴).
   // 중첩 블록(depth>0, C450/C714) 축은 이름이 아니라 읽기 지점(expr) 자신으로 analyzer가 이미
   // 무모호하게 확정해둔 슬롯을 폴백으로 조회한다(program.ambiguousNestedHistReadSlots — 형제
-  // 블록마다 독립적으로 같은 이름을 선언해도 섞이지 않음).
+  // 블록마다 독립적으로 같은 이름을 선언해도 섞이지 않음). The read's own slot comes first: a
+  // nested block's '=' of a name the top level declares too is another variable (a shadow).
   const histIdx =
-    slot !== undefined ? program.historySlots.get(slot) : (program.localHistorySlots.get(name) ?? program.ambiguousNestedHistReadSlots.get(expr));
+    program.ambiguousNestedHistReadSlots.get(expr) ??
+    (slot !== undefined ? program.historySlots.get(slot) : program.localHistorySlots.get(name));
   if (histIdx !== undefined) {
     return isDynamic
       ? `rt.histGet(${genIdentifier(name, program, funcCtx)}, $.histSlots[${histIdx}], ${offsetCode})`
@@ -3880,9 +3893,9 @@ function genIndexAccess(
   // UDT 타입 top-level var(C637)는 이름이 아니라 슬롯 번호가 키(historySlots와 동일 원칙)라
   // varRefHistorySlots를 슬롯으로 조회하는 세 번째 폴백이 필요하다.
   const refHistIdx =
+    program.ambiguousNestedRefReadSlots.get(expr) ??
     program.refHistorySlots.get(name) ??
-    (slot !== undefined ? program.varRefHistorySlots.get(slot) : undefined) ??
-    program.ambiguousNestedRefReadSlots.get(expr);
+    (slot !== undefined ? program.varRefHistorySlots.get(slot) : undefined);
   if (refHistIdx === undefined) throw new Error(`internal: history slot missing for '${name}' (unreachable after analyzer pass)`);
   return isDynamic
     ? `rt.refHistGet(${genIdentifier(name, program, funcCtx)}, $.refHistSlots[${refHistIdx}], ${offsetCode})`
