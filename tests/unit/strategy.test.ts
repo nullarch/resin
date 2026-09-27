@@ -9798,6 +9798,110 @@ describe("StrategyState margin calls", () => {
   });
 });
 
+// ── entries the account cannot margin ──
+// strategies.txt, "Margin and leverage": "With a margin of 100%, the trader must cover the entire
+// position using their account's available funds". When TradingView judges it is the oracle's
+// measurement (tier 2): at placement (the order's own size at the close), at the open for the orders
+// filled there (the position the fill leaves), and while a limit/stop order rests. Oracle-checked:
+// resin-harness state/repros/mixed-seed-48.json, qtyType-seed-81.json, mixed-seed-50.json,
+// margin-reversal-leg.json, margin-reversal-rejected.json.
+describe("StrategyState entry margin: orders the account cannot margin", () => {
+  function account(pct: boolean, margin = 100, pyramiding = 1): StrategyState {
+    const st = new StrategyState();
+    st.configure(100, pyramiding, 1000, pct);
+    st.setMargin(margin, margin);
+    st.barClose = 10;
+    return st;
+  }
+
+  it("does not place a 100% percent_of_equity buy limit below the close (mixed-seed-48.json)", () => {
+    // Sized at the limit: 1000 / 9 = 111 contracts, which cost 1110 at the close 10.
+    const st = account(true);
+    st.entry("L", "long", undefined, 9);
+    st.processFills(9, 9.5, 8, 1, NaN, 9);
+    expect(st.posSize).toBe(0);
+    // Without a margin it is placed and fills at its limit.
+    const free = account(true, 0);
+    free.entry("L", "long", undefined, 9);
+    free.processFills(9, 9.5, 8, 1, NaN, 9);
+    expect(free.posSize).toBe(111);
+  });
+
+  it("places a sell limit above the close: its size costs less than the equity there", () => {
+    const st = account(true);
+    st.entry("S", "short", undefined, 11); // 1000 / 11 = 90 contracts, 900 at the close
+    st.processFills(10, 11, 9.5, 1, NaN, 10.5);
+    expect(st.posSize).toBe(-90);
+  });
+
+  it("rejects at the open an entry sized at the close when the open costs more (qtyType-seed-81.json)", () => {
+    // 1000 / 10 = 100 contracts; at the open 10.5 they need 1050 of margin against 1000.
+    const st = account(true);
+    st.entry("L", "long");
+    st.processFills(10.5, 11, 10, 1, NaN, 10.8);
+    expect(st.posSize).toBe(0);
+    expect(st.closedTradeRecords).toEqual([]);
+    const free = account(true, 0);
+    free.entry("L", "long");
+    free.processFills(10.5, 11, 10, 1, NaN, 10.8);
+    expect(free.posSize).toBe(100);
+  });
+
+  it("rejects a pyramid add the equity cannot carry with the position (mixed-seed-50.json)", () => {
+    const st = account(true, 100, 2);
+    st.entry("A", "long");
+    st.processFills(10, 10.2, 9.8, 1, NaN, 10);
+    expect(st.posSize).toBe(100);
+    // B alone fits the equity at the close (100 at 10), the 200 it would leave do not.
+    st.entry("B", "long");
+    st.processFills(10, 10.2, 9.8, 2, NaN, 10);
+    expect(st.posSize).toBe(100);
+  });
+
+  it("rejects a reversal whole, closing leg included, unless a close already flattened the position at the open (margin-reversal-rejected.json, margin-reversal-leg.json)", () => {
+    const setup = () => {
+      const st = account(false);
+      st.entry("A", "long", 50);
+      st.processFills(10, 10.2, 9.8, 1, NaN, 10);
+      return st;
+    };
+    // The reversal of 100: at the open 10.5 the short 100 needs 1050, the equity marked at the
+    // previous close is 1000. Nothing executes, the long stays.
+    const st = setup();
+    st.entry("S", "short", 100);
+    st.processFills(10.5, 10.6, 10.4, 2, NaN, 10.5);
+    expect(st.posSize).toBe(50);
+    expect(st.closedTradeRecords).toEqual([]);
+    // strategy.close() first: the long closes at 10.5 (equity 1025), and the short's opening leg is
+    // filled; the margin call at the open trims it: 25 short -> cover TRUNCATE(25 / 10.5) = 2 -> 8.
+    const closed = setup();
+    closed.close("A");
+    closed.entry("S", "short", 100);
+    closed.processFills(10.5, 10.6, 10.4, 2, NaN, 10.5);
+    expect(closed.posSize).toBe(-92);
+    expect(closed.closedTradeRecords.map((r) => [r.exitId, r.exitComment, r.size])).toEqual([
+      ["Close entry(s) order A", "", 50],
+      [null, "Margin call", -8],
+    ]);
+  });
+
+  it("cancels a resting limit entry once its own size costs more than the equity at a close", () => {
+    // 90 contracts at the limit 9: 900 at the placement close 10, 1035 at the next close 11.5.
+    const st = account(false);
+    st.entry("L", "long", 90, 9);
+    st.processFills(11.5, 12, 11.2, 1, NaN, 11.5);
+    st.barClose = 11.5;
+    st.processFills(9, 9.2, 8.5, 2, NaN, 9);
+    expect(st.posSize).toBe(0);
+    const free = account(false, 0);
+    free.entry("L", "long", 90, 9);
+    free.processFills(11.5, 12, 11.2, 1, NaN, 11.5);
+    free.barClose = 11.5;
+    free.processFills(9, 9.2, 8.5, 2, NaN, 9);
+    expect(free.posSize).toBe(90);
+  });
+});
+
 describe("strategy(margin_long=, margin_short=) codegen and E2E", () => {
   it("defaults to 100 from v6 on and to 0 before (mig6.txt \"Default margin percentage\")", () => {
     expect(transpileCode('//@version=6\nstrategy("s")')).toContain("$.strategy.setMargin(100, 100);");

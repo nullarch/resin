@@ -129,6 +129,10 @@ interface PendingEntry {
   direction: string; // "long" | "short" (entry() validates it)
   qty: number; // contracts; when qtyAuto, the money budget frozen at placement instead
   qtyAuto: boolean; // a default-sized limit/stop order: its size resolves at the fill price (see moneyQtyAt)
+  // The order's own quantity in contracts as placed (flip excluded): qty itself, or for a qtyAuto
+  // order the size its budget buys at the price it would fill at when placed. The margin the order
+  // needs while it rests is judged on it (cancelUnaffordableEntries).
+  size: number;
   limit: number; // NaN = none; limit and stop both NaN = a market order
   stop: number; // NaN = none; both given = a stop-limit order
   comment: string;
@@ -151,6 +155,19 @@ interface PendingEntry {
   fillPrice: number;
   pathLeg: number;
   pathDist: number;
+}
+
+// The state of the chart bar's open an entry filled there is margined against (entryMarginRejected):
+// the position and the equity before the bar's first fill, the fill count then, the chart bar's
+// close, whether a closing order has filled at this open, and the direction of the last market
+// entry filled at it (0 = none).
+interface OpenMarginGate {
+  startSize: number;
+  startEquity: number;
+  startFills: number;
+  close: number;
+  closeFilled: boolean;
+  entrySign: number;
 }
 
 // The lower-timeframe bars inside one chart bar, for strategy(use_bar_magnifier=true): indexes
@@ -360,6 +377,12 @@ export class StrategyState {
   // arms for the next checkpoint of its bar (marginCallStage2).
   private mcDeferred: { price: number; short: boolean } | null;
   private mcStage2: MarginCallStage | null;
+  // Fills so far (every opening and every closing fill): tells whether this bar has filled anything
+  // yet, which moves the mark of the equity an entry's margin is judged against (entryMarginRejected).
+  private fillCount: number;
+  // While the orders at the chart bar's open fill: what the margin judgment of an entry filled there
+  // reads (see fillOnPath, entryMarginRejected). null elsewhere.
+  private openGate: OpenMarginGate | null;
   // syminfo.pointvalue: the money one contract makes or loses when the price moves by 1.0. Every
   // money amount the engine derives from a price (profit, entry value, percent commission, the
   // unit cost a default-sized order divides its budget by, the marks behind the statistics) is
@@ -619,6 +642,8 @@ export class StrategyState {
     this.marginShort = 0;
     this.mcDeferred = null;
     this.mcStage2 = null;
+    this.fillCount = 0;
+    this.openGate = null;
     this.realizedPnl = 0;
     this.closedTrades = 0;
     this.winTrades = 0;
@@ -938,6 +963,7 @@ export class StrategyState {
     entryId: string, entryComment: string, fillPrice: number, signedQty: number,
     barIndex: number, barTimeMs: number,
   ): void {
+    this.fillCount++;
     const commission = this.bookCommission(Math.abs(signedQty), fillPrice);
     this.openCommission += commission;
     this.updateNetProfit();
@@ -1546,9 +1572,11 @@ export class StrategyState {
   // slippage; repros resin-harness state/repros/mixed-seed-5.json and qtyType-seed-1.json).
   // Returns null when the order is dropped: nothing sizable, or zero lots with no opposite position
   // for the order to close (`reverses`: an entry facing an opposite position still closes it).
+  // `size` is the quantity in contracts at placement (for an auto order, the estimate its margin is
+  // judged on until it fills).
   private defaultOrderQty(
     sign: number, limit: number, stop: number, reverses: boolean,
-  ): { qty: number; auto: boolean } | null {
+  ): { qty: number; auto: boolean; size: number } | null {
     const moneyBased = this.qtyIsPercent || this.qtyIsCash;
     const priceBased = !Number.isNaN(limit) || !Number.isNaN(stop);
     let qty: number;
@@ -1566,7 +1594,7 @@ export class StrategyState {
       qty = this.defaultQty > 0 ? this.defaultQty : NaN;
     }
     if (Number.isNaN(qty) || (qty === 0 && !reverses)) return null;
-    return moneyBased && priceBased ? { qty: money, auto: true } : { qty, auto: false };
+    return moneyBased && priceBased ? { qty: money, auto: true, size: qty } : { qty, auto: false, size: qty };
   }
 
   // strategy.default_entry_qty(price): the size an entry/order that omits qty would get if it filled
@@ -1696,6 +1724,7 @@ export class StrategyState {
     }
     for (const rec of records) this.recordClosedTrade(rec);
     records.length = 0;
+    if (closedQty > 0) this.fillCount++;
     if (this.openTrades.length === 0) {
       this.posSize = 0;
       this.openCommission = 0;
@@ -1853,14 +1882,38 @@ export class StrategyState {
     const existing = this.pendingEntry(id);
     const reissued = existing !== undefined && existing.placedThisBar;
     let qtyAuto = false;
+    let size: number;
     if (qty === undefined || Number.isNaN(qty)) {
       const reverses = !reissued && this.posSize !== 0 && this.posSize > 0 !== sign > 0;
       const sized = this.defaultOrderQty(sign, limit ?? NaN, stop ?? NaN, reverses);
       if (sized === null) return;
       qty = sized.qty;
       qtyAuto = sized.auto;
+      size = sized.size;
     } else if (!(qty > 0)) {
       return;
+    } else {
+      size = qty;
+    }
+    const priceBased = (limit !== undefined && !Number.isNaN(limit)) || (stop !== undefined && !Number.isNaN(stop));
+    // An entry the account cannot margin is not placed. strategies.txt ("Margin and leverage"):
+    // "With a margin of 100%, the trader must cover the entire position using their account's
+    // available funds"; "A trader can open a position for up to four times their available funds
+    // when using this amount of leverage" (25%). The oracle measured when TradingView judges it
+    // (tier 2, entry(): "TV cancels an entry order it cannot open: required margin is evaluated at
+    // the CURRENT price ... with the order sized at the price it would execute at now"): the order's
+    // own size (a reversal's flip needs no margin) times this bar's close, slipped against a market
+    // order, times the margin percent, against the equity marked at this close. So at 100%
+    // percent_of_equity a buy limit below the market is never placed (its budget divided by the
+    // limit costs more than the equity at the close). A call that fails leaves an order already
+    // resting under its id as it was. strategy.order() is not judged. Not covered: from 1e7 of equity
+    // upward the oracle quantizes this comparison onto a tick grid (`_gate_entry_lots`).
+    // Repro: resin-harness state/repros/mixed-seed-48.json.
+    const percent = sign < 0 ? this.marginShort : this.marginLong;
+    if (percent > 0) {
+      const c = this.barClose;
+      const needed = size * (priceBased ? c : this.slipped(c, sign)) * this.pointvalue * (percent / 100);
+      if (needed > this.equity(c)) return;
     }
     // The pyramiding limit is also judged when the call runs, not only at the fill: a same-direction
     // entry placed while the position already holds `pyramiding` entries is dropped, whatever its
@@ -1895,7 +1948,6 @@ export class StrategyState {
     if (!reissued) {
       const pos = this.positionAfterPlacedMarketOrders();
       if (pos !== 0 && pos > 0 === sign > 0 && this.entryCount >= this.pyramiding) return;
-      const priceBased = (limit !== undefined && !Number.isNaN(limit)) || (stop !== undefined && !Number.isNaN(stop));
       if (priceBased) flip = this.posSize !== 0 && pos !== 0 && pos > 0 !== sign > 0 ? Math.abs(pos) : 0;
     } else {
       flip = 0;
@@ -1913,6 +1965,7 @@ export class StrategyState {
       existing.direction = direction;
       existing.qty = qty;
       existing.qtyAuto = qtyAuto;
+      existing.size = size;
       existing.limit = limit ?? NaN;
       existing.stop = stop ?? NaN;
       existing.comment = cmt;
@@ -1923,7 +1976,7 @@ export class StrategyState {
       return;
     }
     this.pendingEntries.push({
-      id, direction, qty, qtyAuto, limit: limit ?? NaN, stop: stop ?? NaN, comment: cmt,
+      id, direction, qty, qtyAuto, size, limit: limit ?? NaN, stop: stop ?? NaN, comment: cmt,
       ocaName: ocaGroup, ocaType: oca, flip,
       seq: ++this.orderSeq, placedThisBar: true, fillPrice: NaN, pathLeg: 0, pathDist: 0,
     });
@@ -1979,6 +2032,7 @@ export class StrategyState {
           }
           if (flip > rest) e.flip = rest;
           e.qty = toUnits(rest - (Number.isNaN(e.flip) ? 0 : e.flip), this.lotsPerContract);
+          e.size = e.qty;
         }
       }
       i++;
@@ -2407,14 +2461,106 @@ export class StrategyState {
       if (l.binding === null && this.pendingEntry(l.entryId) === undefined) this.exitLegs.splice(i, 1);
       else i++;
     }
-    if (sub !== undefined && this.useBarMagnifier && sub.from < sub.to) {
+    // Until this bar fills something, the equity is the one marked at the previous close (barClose
+    // still holds it here); see entryMarginRejected.
+    const fillsBefore = this.fillCount;
+    this.openGate = {
+      startSize: this.posSize, startEquity: this.equity(this.barClose), startFills: fillsBefore,
+      close: closePrice, closeFilled: false, entrySign: 0,
+    };
+    const magnified = sub !== undefined && this.useBarMagnifier && sub.from < sub.to;
+    if (magnified) {
       for (let k = sub.from; k < sub.to; k++) {
         this.fillOnPath(sub.open[k]!, sub.high[k]!, sub.low[k]!, sub.close[k]!, barIndex, barTimeMs, k === sub.from);
       }
     } else {
       this.fillOnPath(openPrice, high, low, closePrice, barIndex, barTimeMs, true);
+      this.cancelUnaffordableEntries(closePrice, fillsBefore);
     }
+    this.openGate = null;
     this.updateTradeExcursion(high, low);
+  }
+
+  // Cancels the resting limit/stop entry orders the account can no longer margin, once the bar's
+  // fills are done: the order's own size (its flip needs no margin) at this bar's close, times the
+  // margin percent, against the equity (marked at this close once the bar has filled anything, at
+  // the previous one otherwise). This is the oracle's `_cancel_unaffordable_entries` (tier 2, measured
+  // on TradingView: "TradingView re-evaluates an unfilled entry order's required margin at the CURRENT
+  // price ..., cancelling the order once the requirement exceeds equity"; "The requirement is the
+  // ORDER's own margin, not that of the position it would leave behind"). It is the placement judgment
+  // of entry() repeated while the order rests; the manual's rule is the one quoted there. The oracle's
+  // bar-magnifier path runs no such sweep.
+  private cancelUnaffordableEntries(closePrice: number, fillsBefore: number): void {
+    if (this.pendingEntries.length === 0 || Number.isNaN(closePrice)) return;
+    const equity = this.equity(this.fillCount > fillsBefore ? closePrice : this.barClose);
+    for (let i = 0; i < this.pendingEntries.length; ) {
+      const e = this.pendingEntries[i]!;
+      const percent = e.direction === "short" ? this.marginShort : this.marginLong;
+      if (percent > 0 && StrategyState.isPriceBased(e) && e.size * closePrice * this.pointvalue * (percent / 100) > equity) {
+        this.pendingEntries.splice(i, 1);
+      } else {
+        i++;
+      }
+    }
+  }
+
+  // Whether the position `base` plus an entry's signed quantity `orderSize` (its flip included),
+  // filled at `fillPrice`, needs more margin than `equity` (the margin percent of the entry's side
+  // `sign`). Below 1e7 of equity the comparison is strict with a float-noise tolerance, from 1e7
+  // upward it is in whole ticks, the equity rounded half-up against the margin truncated. The
+  // oracle's `_entry_exceeds_margin_after_fill` (tier 2, measured on TradingView: "Below the 1e7 gate
+  // TV rejects on a strict 'margin exceeds equity' ... The tolerance is float noise only"; above it
+  // "a sub-tick shortfall fills").
+  private marginExceeded(sign: number, base: number, orderSize: number, fillPrice: number, equity: number): boolean {
+    const percent = sign < 0 ? this.marginShort : this.marginLong;
+    if (!(percent > 0)) return false;
+    const qty = Math.abs(base + orderSize);
+    if (qty === 0) return false;
+    const needed = qty * fillPrice * this.pointvalue * (percent / 100);
+    if (equity >= 1e7 && this.mintick > 0) return Math.floor(equity / this.mintick + 0.5) < Math.floor(needed / this.mintick);
+    return needed - equity > Math.abs(equity) * 1e-11;
+  }
+
+  // Whether an entry about to fill at `fillPrice` (its signed quantity `orderSize`, flip included) is
+  // rejected because the position it would leave cannot be margined. strategies.txt ("Margin and
+  // leverage"): "With a margin of 100%, the trader must cover the entire position using their
+  // account's available funds". The broker emulator judges it for the orders filled at the chart
+  // bar's open (`gate`: market orders, and price-based ones the open has already crossed) and on the
+  // process_orders_on_close pass (`gate` "close"); an order filled by the price path inside the bar is
+  // not judged, the margin call handles what it overdraws. This is the oracle's bar-open and close
+  // pass (tier 2, `_process_at_bar_open`: "TV rejects entry orders BEFORE filling if the position
+  // would exceed margin"), with its measured exceptions at the open:
+  // - the equity is marked at the previous close until the bar has filled something, at this bar's
+  //   close after (the oracle re-marks the open profit at the close with every fill);
+  // - the opening leg of a reversal whose position a closing order already flattened at this open is
+  //   filled, the margin call at the open trims it ("TV fills it and lets the bar-open margin call trim
+  //   the over-margin excess");
+  // - an entry that fits against the bar's starting position and equity, and only over-margins
+  //   because another entry filled at this open, is filled likewise (a pyramid stack);
+  // - an entry reversing a position a market entry opened at this same open is margined on both legs
+  //   at once, the closing one not freed first ("Verified with a live TradingView probe").
+  // Not covered: the oracle walks this bar's market orders in placement order, so a strategy.close()
+  // placed after a reversing entry is cancelled with it; resin fills the close first.
+  // Repros: resin-harness state/repros/mixed-seed-50.json (a pyramid add at 100% percent_of_equity
+  // never fills), qtyType-seed-81.json (an entry sized at the close, the open above it),
+  // margin-reversal-rejected.json (a reversal rejected whole, the long kept) and
+  // margin-reversal-leg.json (the same short after a strategy.close() fills, then trimmed).
+  private entryMarginRejected(
+    gate: OpenMarginGate | "close", sign: number, orderSize: number, fillPrice: number,
+  ): boolean {
+    const pos = this.posSize;
+    if (gate === "close") return this.marginExceeded(sign, pos, orderSize, fillPrice, this.equity(this.barClose));
+    const equity = this.equity(this.fillCount > gate.startFills ? gate.close : this.barClose);
+    if (gate.entrySign !== 0 && pos !== 0 && Math.sign(pos) === gate.entrySign && sign === -gate.entrySign) {
+      const pv = this.pointvalue;
+      const held = Math.abs(pos) * fillPrice * pv * ((pos < 0 ? this.marginShort : this.marginLong) / 100);
+      const opened = Math.abs(pos + orderSize) * fillPrice * pv * ((sign < 0 ? this.marginShort : this.marginLong) / 100);
+      if (held + opened - equity > Math.abs(equity) * 1e-11) return true;
+    }
+    if (!this.marginExceeded(sign, pos, orderSize, fillPrice, equity)) return false;
+    const reversalLeg = gate.closeFilled && gate.startSize !== 0 && sign === -Math.sign(gate.startSize);
+    const stacks = pos !== gate.startSize && !this.marginExceeded(sign, gate.startSize, orderSize, fillPrice, gate.startEquity);
+    return !reversalLeg && !stacks;
   }
 
   // Fills what the price path open → nearer extreme → farther extreme → close reaches: the chart bar,
@@ -2445,6 +2591,7 @@ export class StrategyState {
     this.barPath[3] = closePrice;
     this.legQueue.length = 0;
     this.fillMoment++; // the open
+    const closedBefore = this.closedTrades;
     if (this.closePending) this.fillPendingClose(openPrice, barIndex, barTimeMs);
     // exit 브래킷(C167)은 close(마켓 청산) 다음, entry 앞에서 판정한다 — 마켓 close는 open 체결이라
     // 항상 이 바의 첫 가격이고, exit도 청산 계열이라 기존 "청산 먼저 → entry" 순서 원칙에 합류한다
@@ -2457,10 +2604,14 @@ export class StrategyState {
     // before any intrabar price. The legs their fills bind are judged once they are all done (a
     // second market entry meets the position the first one opened, not the exit's close; repro
     // resin-harness state/repros/mixed-seed-475.json).
+    // At the chart bar's open each entry is margined before it fills (entryMarginRejected); the
+    // closes above are what `closeFilled` records.
+    const gate = chartOpen ? this.openGate : null;
+    if (gate !== null) gate.closeFilled = this.closedTrades > closedBefore;
     const due = this.dueEntries(openPrice, high, low);
     let i = 0;
     for (; i < due.length && due[i]!.pathLeg === 0; i++) {
-      if (this.pendingEntries.includes(due[i]!)) this.fillPendingEntry(due[i]!, due[i]!.fillPrice, barIndex, barTimeMs);
+      if (this.pendingEntries.includes(due[i]!)) this.fillPendingEntry(due[i]!, due[i]!.fillPrice, barIndex, barTimeMs, gate);
     }
     this.queueExitLegs(true, 0);
     this.runExitLegs(0, barIndex, barTimeMs, false);
@@ -2620,15 +2771,20 @@ export class StrategyState {
     for (const e of due) {
       if (!this.pendingEntries.includes(e)) continue; // cancelled by an OCA sibling's fill
       const price = this.directionalFillPrice(e.direction, e.limit, e.stop, closePrice, closePrice, closePrice);
-      if (!Number.isNaN(price)) this.fillPendingEntry(e, price, barIndex, barTimeMs);
+      if (!Number.isNaN(price)) this.fillPendingEntry(e, price, barIndex, barTimeMs, "close");
     }
     due.length = 0;
   }
 
   // Fills the entry order `e` at `fillPrice`, its trigger already judged: it closes what it can of
   // an opposite position first, then the risk and pyramiding gates decide whether the rest opens a
-  // trade. The order is consumed either way.
-  private fillPendingEntry(e: PendingEntry, fillPrice: number, barIndex: number, barTimeMs: number): void {
+  // trade. The order is consumed either way. At the chart bar's open and on the close pass (`gate`)
+  // an order that cannot be margined executes nothing, its reversal leg included
+  // (entryMarginRejected).
+  private fillPendingEntry(
+    e: PendingEntry, fillPrice: number, barIndex: number, barTimeMs: number,
+    gate: OpenMarginGate | "close" | null = null,
+  ): void {
     this.removePendingEntry(e);
     const before = this.posSize;
     const sign = e.direction === "long" ? 1 : -1;
@@ -2672,6 +2828,8 @@ export class StrategyState {
     const held = this.posSize !== 0 && this.posSize > 0 !== sign > 0 ? Math.abs(this.posSize) : 0;
     const flip = Number.isNaN(e.flip) ? held : e.flip;
     if (!(qty + flip > 0)) return;
+    if (gate !== null && this.entryMarginRejected(gate, sign, sign * (qty + flip), fillPrice)) return;
+    const fillsBefore = this.fillCount;
     const closesAll = held > 0 && (flip === held || qty + flip >= held);
     const closeQty = held === 0 ? 0 : closesAll ? held : toUnits(qty + flip, this.lotsPerContract);
     // A flip equal to the position it meets leaves exactly the order's own quantity to open.
@@ -2723,6 +2881,9 @@ export class StrategyState {
     }
     // else: 같은 방향 + pyramiding 소진 → 주문 취소(이월 없음)
     this.applyOca(e.ocaName, e.ocaType, toUnits(StrategyState.executedQty(before, this.posSize), this.lotsPerContract));
+    // A market entry that executed at the open sets the direction a later reversing entry of this
+    // open is margined on both legs against (entryMarginRejected).
+    if (gate !== null && gate !== "close" && !StrategyState.isPriceBased(e) && this.fillCount > fillsBefore) gate.entrySign = sign;
   }
 
   // Fills the pending strategy.order() at `orderFill`, its trigger already judged: netted against an
