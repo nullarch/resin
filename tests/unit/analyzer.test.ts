@@ -36,6 +36,15 @@ function expectScriptContext(prog: ReturnType<typeof analyzeSource>): void {
   expect([...prog.securityExprCallSlots.values()].some((v) => v.script !== undefined)).toBe(true);
 }
 
+// A string (or color) expression the prepass grammar does not take: the requested context evaluates
+// it and records the string (concepts_other-timeframes-and-data.txt "Requestable data": request.security
+// "can retrieve values of any fundamental type ( int , float , bool , color , or string )"; values
+// against the oracle: resin-harness suites/lang/probes/L42.json).
+function expectStringScriptContext(prog: ReturnType<typeof analyzeSource>): void {
+  expect(prog.errors).toEqual([]);
+  expect([...prog.securityExprCallSlots.values()].some((v) => v.script?.strings === true)).toBe(true);
+}
+
 // A request.security call outside functions whose timeframe folds neither at compile time nor before
 // the bar loop is no longer refused: the call binds the request to the value the argument has on its
 // first execution (AnalyzedProgram.securityDeferredTfs; mig6.txt "Dynamic requests": "the context of
@@ -18682,8 +18691,9 @@ describe("Analyzer request.security (C176 first slice + C177 second slice — ba
   it("does not register a security slot when validation fails (no half-registered slot on error)", () => {
     // C367: close + 1 → math.sum(C543이 수용) → 값위치 삼항(C601이 수용) → 'not'(C733이 수용)
     // 순으로 무효 필러가 회전해 왔다 — '%'는 이제 요청 컨텍스트 실행(analyzer/security-script.ts)이
-    // 받으므로, 어느 경로도 아직 못 받는 문자열 값 요청으로 재교체.
-    const prog = analyzeSource('x = request.security("", "D", str.tostring(close))');
+    // 받으므로, 어느 경로도 아직 못 받는 문자열 값 요청으로 재교체. A string is requestable now (resin-harness
+    // suites/lang/probes/L42.json): an object value, which no path takes yet.
+    const prog = analyzeSource('x = request.security("", "D", array.from(close))');
     expect(prog.securityTfs).toEqual([]);
     const stmt = prog.script.body[0] as Assignment;
     expect(prog.securityCallSlots.has(stmt.value as CallExpr)).toBe(false);
@@ -18773,8 +18783,9 @@ describe("Analyzer request.security symbol=/timeframe=/expression= kwargs (C409,
 
   it("does not register a security slot when the fully-keyword expression argument is invalid", () => {
     // C543: math.sum 유효화로 TernaryOp 교체 → C601이 값위치 삼항 수용해 'not' → C733이 'not'도
-    // 수용해 '%'로 재교체 → '%'는 요청 컨텍스트 실행이 받으므로 문자열 값 요청으로 재교체.
-    const prog = analyzeSource('x = request.security(symbol="", timeframe="D", expression=str.tostring(close))');
+    // 수용해 '%'로 재교체 → '%'는 요청 컨텍스트 실행이 받으므로 문자열 값 요청으로 재교체 → a string is
+    // requestable now (resin-harness suites/lang/probes/L42.json): an object value.
+    const prog = analyzeSource('x = request.security(symbol="", timeframe="D", expression=array.from(close))');
     expect(prog.securityTfs).toEqual([]);
     const stmt = prog.script.body[0] as Assignment;
     expect(prog.securityCallSlots.has(stmt.value as CallExpr)).toBe(false);
@@ -19328,7 +19339,8 @@ describe("Analyzer request.security expression call site (C180, third slice sub-
 
   it("does not register a security-expr slot when the outer expression shape is invalid (no half-registered slot on error)", () => {
     // '%' 조건 삼항은 이제 요청 컨텍스트 실행이 받으므로, 어느 경로도 아직 못 받는 문자열 값 요청으로 교체.
-    const prog = analyzeSource('x = request.security("", "D", close > open ? "up" : "down")');
+    // A string is requestable now (resin-harness suites/lang/probes/L42.json): an object value.
+    const prog = analyzeSource('x = request.security("", "D", close > open ? array.from(close) : array.from(open))');
     expect(prog.securityTfs).toEqual([]);
     const stmt = prog.script.body[0] as Assignment;
     expect(prog.securityExprCallSlots.has(stmt.value as CallExpr)).toBe(false);
@@ -19564,11 +19576,11 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     expectScriptContext(prog);
   });
 
-  it("rejects a string-typed var (Float64Array 프리패스 캐시에 문자열을 실을 수 없음, C738)", () => {
+  it("evaluates a string-typed var in the requested context and records the string (the prepass cache is Float64Array-only, C738)", () => {
     const prog = analyzeSource(
       ['var string dir = "n"', "if close > open", '    dir := "b"', 'x = request.security("", "D", dir)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectStringScriptContext(prog);
   });
 
   it("rejects a var written after the security call line (샘플 시점이 갱신보다 앞 — C738)", () => {
@@ -19679,11 +19691,11 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     expectScriptContext(prog);
   });
 
-  it("still rejects a string-typed var init input.string in a value position (C741 — Float64Array 캐시 부식 차단 유지)", () => {
+  it("evaluates a string-typed var init input.string in a value position in the requested context, recording the string (C741's Float64Array cache is not used)", () => {
     const prog = analyzeSource(
       ['var string t = input.string("a", "T")', 'x = request.security("", "D", t)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectStringScriptContext(prog);
   });
 
   it("still rejects an input-init var written after the security call line (C741 — 위치-안전성 게이트 불변)", () => {
@@ -19906,9 +19918,9 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     expect(prog.securityTfs.slice(base, base + 2)).toEqual(["60", "240"]);
   });
 
-  it("rejects an input.string definition (not a scalar const, no identity-passthrough exception)", () => {
+  it("evaluates an input.string definition in the requested context, recording the string (not a prepass scalar const)", () => {
     const progStr = analyzeSource('s = input.string("a", "S")\nx = request.security("", "D", s)');
-    expect(progStr.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectStringScriptContext(progStr);
   });
 
   // C438: input.source(defval, ...)는 pine2py source_input(defval, title, **kwargs)가 title/kwargs를
@@ -20349,9 +20361,9 @@ describe("Analyzer request.security expression barstate.isconfirmed / syminfo.* 
     expect(prog.errors).toEqual([]);
   });
 
-  it("still rejects syminfo.* string constants (SYMINFO_STRING_PROPS) as the expression — the prepass cache is Float64Array-only", () => {
+  it("evaluates syminfo.* string constants (SYMINFO_STRING_PROPS) in the requested context, recording the string — the prepass cache is Float64Array-only", () => {
     const prog = analyzeSource('x = request.security("", "D", syminfo.description)');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectStringScriptContext(prog);
   });
 
   it("still rejects an undeclared syminfo.* attribute name", () => {
@@ -20492,9 +20504,9 @@ describe("Analyzer request.security expression earnings.future_* number constant
     expect(prog.errors).toEqual([]);
   });
 
-  it("still rejects earnings.actual/estimate/standardized (EARNINGS_CONSTANTS string field-selectors) as the expression — the prepass cache is Float64Array-only", () => {
+  it("evaluates earnings.actual/estimate/standardized (EARNINGS_CONSTANTS string field-selectors) in the requested context, recording the string — the prepass cache is Float64Array-only", () => {
     const prog = analyzeSource('x = request.security("", "D", earnings.actual)');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectStringScriptContext(prog);
   });
 
   it("still rejects an undeclared earnings.* attribute name", () => {
@@ -20537,9 +20549,9 @@ describe("Analyzer request.security expression timeframe.* boolean constant leav
     expect(prog.errors).toEqual([]);
   });
 
-  it("still rejects timeframe.period/main_period (TIMEFRAME_STRING_PROPS) as the expression — the prepass cache is Float64Array-only", () => {
+  it("evaluates timeframe.period/main_period (TIMEFRAME_STRING_PROPS) in the requested context, recording the string — the prepass cache is Float64Array-only (resin-harness suites/lang/probes/L42.json tp)", () => {
     const prog = analyzeSource('x = request.security("", "D", timeframe.period)');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectStringScriptContext(prog);
   });
 
   it("evaluates timeframe.multiplier (TIMEFRAME_NUMBER_PROPS, outside the prepass grammar) by running the script in the requested context (resin-harness suites/lang/probes/L41.json m4)", () => {
@@ -21147,19 +21159,19 @@ describe("Analyzer request.security expression input.string var-subst equality l
     expect(prog.errors).toEqual([]);
   });
 
-  it("still rejects an input.string var-subst at the expression ROOT (value position — Float64Array cache would coerce the string to NaN)", () => {
+  it("leaves an input.string var-subst at the expression ROOT to the requested context, which records the string (value position — the Float64Array prepass cache would coerce it to NaN)", () => {
     const prog = analyzeSource('maType = input.string("SMA", "T")\nx = request.security("", "D", maType)');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectStringScriptContext(prog);
   });
 
-  it("still rejects an input.string var-subst in a ternary BRANCH (value position)", () => {
+  it("leaves an input.string var-subst in a ternary BRANCH (value position) to the requested context, which records the string", () => {
     const prog = analyzeSource('maType = input.string("SMA", "T")\nx = request.security("", "D", close > open ? maType : maType)');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectStringScriptContext(prog);
   });
 
-  it("still rejects a string-constant var-subst as an ARITHMETIC operand (allowString stays false outside equality)", () => {
+  it("does not take a string-constant var-subst as an ARITHMETIC operand into the prepass (allowString stays false outside equality)", () => {
     const prog = analyzeSource('mode = "A"\nx = request.security("", "D", close + mode)');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect([...prog.securityExprCallSlots.values()].every((v) => v.script !== undefined)).toBe(true);
   });
 
   it("evaluates an input.string with a 'var' defval by running the script in the requested context (ordinary code there, C598's prepass hazard does not arise)", () => {

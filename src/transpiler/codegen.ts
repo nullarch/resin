@@ -214,8 +214,32 @@ interface FuncGenContext {
 // so another call of the function reads its request there; the call whose request the child
 // computes finds no data at its own slot (what the function returns there is not what the child
 // records), and that read is na.
-function childSafeSecurityRead(code: string, funcCtx: FuncGenContext | null, slotRef: string): string {
-  return funcCtx?.secScriptChild ? `($.secCapture >= 0 && $.securityCache[${slotRef}] === undefined ? NaN : ${code})` : code;
+// A read of values a child context computes (`cache` "securityExprCache", filled by
+// Context.runSecurityScript) is na there too while that request's child has not run yet: the runs go
+// in statement order, and one call of the function evaluates every request in its body, the ones
+// after its own included (`f() => a = request.security(..., x)`, `b = request.security(..., y)`: the
+// child of a's request reads b's before b's child ran). Such a read never reaches what the child
+// records: a request whose expression depends on another request of the function is refused
+// (analyzer/security-script.ts planSecurityScriptInFunction).
+function childSafeSecurityRead(
+  code: string,
+  funcCtx: FuncGenContext | null,
+  slotRef: string,
+  na = "NaN",
+  cache: "securityCache" | "securityExprCache" = "securityCache",
+): string {
+  return funcCtx?.secScriptChild ? `($.secCapture >= 0 && $.${cache}[${slotRef}] === undefined ? ${na} : ${code})` : code;
+}
+
+// A request whose expression a child context evaluates (Context.runSecurityScript) records a number
+// or a bool in a Float64Array, a string or a color in a plain array with na null
+// (analyzer/security-script.ts requestedValueKind): how the child records it, and how the chart
+// reads it (`hist`: with the history operator) with which na.
+function scriptRecordFn(strings: boolean): string {
+  return strings ? "rt.security.scriptText" : "rt.security.scriptValue";
+}
+function scriptReadFn(strings: boolean, hist: boolean): string {
+  return `rt.security.get${strings ? "Text" : ""}FromArray${hist ? "Hist" : ""}`;
 }
 
 // A request whose timeframe the call binds where it stands (AnalyzedProgram.securityDeferredTfs):
@@ -556,7 +580,7 @@ export function generateCode(program: AnalyzedProgram): string {
   const deferredSlots = new Set<number>(deferredBinds.flat());
   for (const line of generateSecurityExprPreamble(program, deferredSlots)) securityPreamble.push(line);
   const scriptRunLine = (run: SecurityScriptRun): string =>
-    `$.securityExprCache[${run.slot}] = $.runSecurityScript(${run.slot}, ${JSON.stringify(run.runs)}, ${others.length});`;
+    `$.securityExprCache[${run.slot}] = $.runSecurityScript(${run.slot}, ${JSON.stringify(run.runs)}, ${others.length}${run.strings ? ", true" : ""});`;
   for (const run of scriptRuns) {
     if (!deferredSlots.has(run.slot)) securityPreamble.push(scriptRunLine(run));
   }
@@ -588,7 +612,7 @@ export function generateCode(program: AnalyzedProgram): string {
       hoistLazyStatefulCalls(run.expression, program, null, pre);
       const value = genExpr(run.expression, program, null);
       // The call of a function whose request this is: the function records the expression.
-      const record = run.call ? `${value};` : `$.secOut[$.idx] = rt.security.scriptValue(${value});`;
+      const record = run.call ? `${value};` : `$.secOut[$.idx] = ${scriptRecordFn(run.strings)}(${value});`;
       lines.push(`if ($.secCapture === ${run.slot}) {`, ...pre, record, "}");
     }
     const line = genStmt(stmt, program, /* nested */ false, /* funcCtx */ null, promoted);
@@ -774,13 +798,14 @@ function securityPrepassSlots(program: AnalyzedProgram): Set<number> {
 // statements before it that the child runs.
 // A request in a user-defined function has one run per call of the function
 // (securityFuncScriptSites): its child evaluates the call, and the function records the expression
-// (`call`: true).
+// (`call`: true). `strings`: the expression is a string or a color, recorded and read with na null.
 interface SecurityScriptRun {
   slot: number;
   at: number;
   runs: number[];
   expression: Expr;
   call: boolean;
+  strings: boolean;
 }
 
 // Whether a request's child context runs the program's code (securityScriptRuns has any run).
@@ -801,12 +826,12 @@ function securityScriptRuns(program: AnalyzedProgram, others: readonly Stmt[]): 
     if (info.script === undefined) continue;
     const at = others.indexOf(info.script.stmt);
     if (at < 0) throw new Error("internal: a request.security call evaluated in its context is not in a per-bar statement");
-    out.push({ slot: info.slot, at, runs: runsOf(info.script.slice), expression: info.bodyExpr, call: false });
+    out.push({ slot: info.slot, at, runs: runsOf(info.script.slice), expression: info.bodyExpr, call: false, strings: info.script.strings });
   }
   for (const site of program.securityFuncScriptSites) {
     const at = others.indexOf(site.stmt);
     if (at < 0) throw new Error("internal: the call of a function whose request is evaluated in its context is not in a per-bar statement");
-    out.push({ slot: site.slot, at, runs: runsOf(site.slice), expression: site.call, call: true });
+    out.push({ slot: site.slot, at, runs: runsOf(site.slice), expression: site.call, call: true, strings: site.strings });
   }
   // A child reads the requests of the statements before its own (a nested request through a
   // variable, analyzer/security-script.ts), so those are computed first: statement order, the
@@ -1348,7 +1373,7 @@ function pushSecurityFuncRecords(stmt: Stmt, program: AnalyzedProgram, funcCtx: 
     const pre: string[] = [];
     hoistLazyStatefulCalls(rec.expression, program, funcCtx, pre);
     const value = genExpr(rec.expression, program, funcCtx);
-    lines.push(`if ($.secCapture === ${rec.base} + __secIdx) {`, ...pre, `$.secOut[$.idx] = rt.security.scriptValue(${value});`, "}");
+    lines.push(`if ($.secCapture === ${rec.base} + __secIdx) {`, ...pre, `$.secOut[$.idx] = ${scriptRecordFn(rec.strings)}(${value});`, "}");
   }
 }
 
@@ -3610,15 +3635,17 @@ function genIndexAccess(
     }
     const securityExprCall = program.securityExprCallSlots.get(expr.obj);
     if (securityExprCall !== undefined) {
+      const strings = securityExprCall.script?.strings === true;
       return childSafeSecurityRead(
         deferredSecurityRead(
           expr.obj,
-          `rt.security.getFromArrayHist($.securityExprCache[${securityExprCall.slot}], $.securityCache[${securityExprCall.slot}], $.idx, ${securityExprCall.gaps}, ${securityExprCall.lookahead}, ${offsetCode})`,
+          `${scriptReadFn(strings, true)}($.securityExprCache[${securityExprCall.slot}], $.securityCache[${securityExprCall.slot}], $.idx, ${securityExprCall.gaps}, ${securityExprCall.lookahead}, ${offsetCode})`,
           program,
           funcCtx,
         ),
         funcCtx,
         `${securityExprCall.slot}`,
+        strings ? "null" : "NaN",
       );
     }
     if (program.securityUncalledCalls.has(expr.obj)) return "NaN";
@@ -3628,12 +3655,14 @@ function genIndexAccess(
       return childSafeSecurityRead(
         deferredSecurityRead(
           expr.obj,
-          `rt.security.getFromArrayHist($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityFuncScriptCall.gaps}, ${securityFuncScriptCall.lookahead}, ${offsetCode})`,
+          `${scriptReadFn(securityFuncScriptCall.strings, true)}($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityFuncScriptCall.gaps}, ${securityFuncScriptCall.lookahead}, ${offsetCode})`,
           program,
           funcCtx,
         ),
         funcCtx,
         slotRef,
+        securityFuncScriptCall.strings ? "null" : "NaN",
+        "securityExprCache",
       );
     }
     // C699: securityParamExprCalls(C453/C534 — UDF 매개변수 다중 콜사이트, __secIdx 서수) 슬롯 —
@@ -4545,12 +4574,14 @@ function genCallExpr(
     return childSafeSecurityRead(
       deferredSecurityRead(
         expr,
-        `rt.security.getFromArray($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityFuncScriptCall.gaps}, ${securityFuncScriptCall.lookahead})`,
+        `${scriptReadFn(securityFuncScriptCall.strings, false)}($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityFuncScriptCall.gaps}, ${securityFuncScriptCall.lookahead})`,
         program,
         funcCtx,
       ),
       funcCtx,
       slotRef,
+      securityFuncScriptCall.strings ? "null" : "NaN",
+      "securityExprCache",
     );
   }
   const securityExprCall = program.securityExprCallSlots.get(expr);
@@ -4559,15 +4590,18 @@ function genCallExpr(
     // 심어둔 $.securityExprCache[slot](HTF-네이티브 시퀀스 위에서 재실행된 결과 Float64Array)를
     // $.securityCache[slot]의 barMap과 함께 getFromArray로 lookup — get()의 field 분기 대신
     // 배열 자체를 인덱싱한다는 점만 다르고 gaps/lookahead 처리(analyze-time 확정 리터럴)는 동일.
+    // A string or a color a child records is read with na null (scriptReadFn).
+    const strings = securityExprCall.script?.strings === true;
     return childSafeSecurityRead(
       deferredSecurityRead(
         expr,
-        `rt.security.getFromArray($.securityExprCache[${securityExprCall.slot}], $.securityCache[${securityExprCall.slot}], $.idx, ${securityExprCall.gaps}, ${securityExprCall.lookahead})`,
+        `${scriptReadFn(strings, false)}($.securityExprCache[${securityExprCall.slot}], $.securityCache[${securityExprCall.slot}], $.idx, ${securityExprCall.gaps}, ${securityExprCall.lookahead})`,
         program,
         funcCtx,
       ),
       funcCtx,
       `${securityExprCall.slot}`,
+      strings ? "null" : "NaN",
     );
   }
   const securityFieldOffsetCall = program.securityFieldOffsetCalls.get(expr);

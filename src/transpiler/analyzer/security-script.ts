@@ -38,6 +38,8 @@ export interface SecurityScriptPlan {
   stmt: Stmt;
   // The top-level statements before it that the child runs.
   slice: ReadonlySet<Stmt>;
+  // The expression is a string or a color (requestedValueKind).
+  strings: boolean;
 }
 
 export type SecurityScriptPlanResult = { ok: true; plan: SecurityScriptPlan } | { ok: false; reason: string };
@@ -60,6 +62,8 @@ export interface SecurityFuncScriptPlan {
   stmt: Stmt;
   // One per call of the function, in prog.funcAllCallSites order (the calls' __secIdx ordinals).
   sites: SecurityFuncScriptSite[];
+  // The expression is a string or a color (requestedValueKind).
+  strings: boolean;
 }
 
 export type SecurityFuncScriptPlanResult = { ok: true; plan: SecurityFuncScriptPlan } | { ok: false; reason: string };
@@ -910,6 +914,19 @@ function nestedRequestRefusal(prog: AnalyzedProgram, effs: readonly Effects[]): 
   return null;
 }
 
+// What the child records for the chart, from what the expression evaluates to
+// (concepts_other-timeframes-and-data.txt "Requestable data": "The request.security() function is
+// quite versatile, as it can retrieve values of any fundamental type ( int , float , bool , color , or
+// string )"). A number or a bool goes in a Float64Array (the prepass results' encoding); a string or a
+// color, which resin represents as a string with na null, in a plain array read with na null
+// (Context.runSecurityScript). An object or a tuple is not implemented. A value the text does not tell
+// ("unknown", e.g. a function's result) is taken as a number: anything else stops the run
+// (runtime/security.ts scriptValue).
+function requestedValueKind(kind: ValueKind): { ok: true; strings: boolean } | { ok: false; reason: string } {
+  if (kind === "object") return { ok: false, reason: "requesting a tuple or object value is not implemented" };
+  return { ok: true, strings: kind === "string" || kind === "color" };
+}
+
 export function planSecurityScript(prog: AnalyzedProgram, call: CallExpr, expression: Expr, foreignSymbol: boolean): SecurityScriptPlanResult {
   const body = prog.script.body;
   const at = body.findIndex((s) => contains(s, call));
@@ -919,11 +936,8 @@ export function planSecurityScript(prog: AnalyzedProgram, call: CallExpr, expres
   if (stmt.kind === "TupleDestructure" && stmt.value === call) return { ok: false, reason: "requesting a tuple value is not implemented" };
 
   const a = new SliceAnalysis(prog);
-  // The chart reads the child's values from a Float64Array (Context.runSecurityScript).
-  const kind = a.valueKind(expression);
-  if (kind !== "number" && kind !== "unknown") {
-    return { ok: false, reason: `requesting a ${kind === "object" ? "tuple or object" : kind} value is not implemented` };
-  }
+  const values = requestedValueKind(a.valueKind(expression));
+  if (!values.ok) return values;
   const exprEff = newEffects();
   a.walkExpr(expression, exprEff);
   const selfRead = declaredNames(stmt).find((n) => exprEff.reads.has(n));
@@ -935,7 +949,7 @@ export function planSecurityScript(prog: AnalyzedProgram, call: CallExpr, expres
   });
   const sliced = sliceBefore(a, body, effects, at, call, exprEff, foreignSymbol);
   if (!sliced.ok) return sliced;
-  return { ok: true, plan: { stmt, slice: sliced.slice } };
+  return { ok: true, plan: { stmt, slice: sliced.slice, strings: values.strings } };
 }
 
 // The names a top-level statement declares (`x = request.security(..., x)`: the name is not declared
@@ -1063,10 +1077,9 @@ export function planSecurityScriptInFunction(
   const fstmt = decl.body[fat]!;
 
   const a = new SliceAnalysis(prog);
-  const kind = a.valueKind(expression);
-  if (kind !== "number" && kind !== "unknown") {
-    return { ok: false, reason: `requesting a ${kind === "object" ? "tuple or object" : kind} value is not implemented` };
-  }
+  // In the function's scope: a parameter or a local is resolved there.
+  const values = requestedValueKind(a.valueKind(expression, new Set(), localEnvOf(decl)));
+  if (!values.ok) return values;
 
   // What the expression depends on in the function: the statements of its body before the request's
   // that can change what it reads. The requested context computes them itself; a value another
@@ -1184,5 +1197,5 @@ export function planSecurityScriptInFunction(
     if (!sliced.ok) return sliced;
     planned.push({ call: site.call, stmt: body[at]!, slice: sliced.slice });
   }
-  return { ok: true, plan: { stmt: fstmt, sites: planned } };
+  return { ok: true, plan: { stmt: fstmt, sites: planned, strings: values.strings } };
 }

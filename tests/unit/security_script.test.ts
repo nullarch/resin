@@ -253,6 +253,75 @@ describe("request.security evaluated in the requested context", () => {
     // Through compile() it runs.
     expect(() => compile(result.code)(Context.from(result, DATA))).not.toThrow();
   });
+
+  // concepts_other-timeframes-and-data.txt "Requestable data": request.security "can retrieve values
+  // of any fundamental type ( int , float , bool , color , or string )". Values against the oracle:
+  // resin-harness suites/lang/probes/L42.json (var strings under if chains, a color, history on the
+  // call and on its variable, requests in functions).
+  it("a string value: the child records it as it is, the chart reads it with na null", () => {
+    const source = [
+      "s = str.tostring(close)",
+      'r = request.security(syminfo.tickerid, "D", s)',
+      'c = request.security(syminfo.tickerid, "D", close)',
+      "p = r[1]",
+      "plot(na(r) ? -1 : str.tonumber(r))",
+      "plot(na(c) ? -1 : c)",
+      "plot(na(p) ? -1 : str.tonumber(p))",
+      "plot(na(c[1]) ? -1 : c[1])",
+    ].join("\n");
+    const result = transpile(source);
+    if (!result.ok) throw new Error(result.errors.join("\n"));
+    expect(result.code).toContain("rt.security.scriptText(");
+    expect(result.code).toContain("rt.security.getTextFromArray(");
+    const [r, c, p, c1] = run(result, DATA).plots.map((q) => Array.from(q.values));
+    expect(r).toEqual(c);
+    expect(r).toContain(-1);
+    expect(r!.some((v) => v > 0)).toBe(true);
+    expect(p).toEqual(c1);
+  });
+
+  it("a string element of a tuple declaration and a color", () => {
+    const [s, want, k] = plotsOf(
+      [
+        "f() => [str.tostring(close), close]",
+        "[s, x] = f()",
+        "var color col = color.red",
+        "if close > open",
+        "    col := color.green",
+        'r = request.security(syminfo.tickerid, "D", s)',
+        'c = request.security(syminfo.tickerid, "D", x)',
+        'k = request.security(syminfo.tickerid, "D", col)',
+        "plot(na(r) ? -1 : str.tonumber(r))",
+        "plot(na(c) ? -1 : c)",
+        "plot(na(k) ? -1 : k == color.green ? 1 : 0)",
+      ].join("\n"),
+    );
+    expect(s).toEqual(want);
+    // On the daily bars col turns green on the first (close 103 > open 100) and, var, stays green;
+    // the chart reads a day once it has closed.
+    expect(k).toEqual([-1, -1, -1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
+  });
+
+  // One call of a function evaluates every request in its body, so the child of its first request
+  // reads the second before that one's child ran: na there, and never what the child records.
+  it("two requests in one function, each evaluated by its child", () => {
+    const [got, want] = plotsOf(
+      [
+        "var float acc = 0.0",
+        "acc := acc + (close - open)",
+        "var float hi = 0.0",
+        "hi := math.max(hi, high)",
+        "g() =>",
+        '    a = request.security(syminfo.tickerid, "D", acc)',
+        '    b = request.security(syminfo.tickerid, "D", hi)',
+        "    a - b",
+        "plot(g())",
+        'plot(request.security(syminfo.tickerid, "D", ta.cum(close - open)) - request.security(syminfo.tickerid, "D", ta.max(high)))',
+      ].join("\n"),
+    );
+    expect(got).toEqual(want);
+    expect(got!.some((v) => Number.isFinite(v))).toBe(true);
+  });
 });
 
 describe("request.security in the requested context: what is refused", () => {
@@ -321,14 +390,9 @@ describe("request.security in the requested context: what is refused", () => {
     expect(errors.some((e) => e.includes("it reads the strategy's state"))).toBe(true);
   });
 
-  it("a string value", () => {
-    const errors = errorsOf(['s = str.tostring(close)', 'r = request.security(syminfo.tickerid, "D", s)'].join("\n"));
-    expect(errors.some((e) => e.includes("requesting a string value is not implemented"))).toBe(true);
-  });
-
-  it("a string element of a tuple declaration", () => {
-    const errors = errorsOf(["f() => [str.tostring(close), close]", "[s, x] = f()", 'r = request.security(syminfo.tickerid, "D", s)'].join("\n"));
-    expect(errors.some((e) => e.includes("requesting a string value is not implemented"))).toBe(true);
+  it("an object value", () => {
+    const errors = errorsOf(['a = array.from(close)', 'r = request.security(syminfo.tickerid, "D", a)'].join("\n"));
+    expect(errors.some((e) => e.includes("requesting a tuple or object value is not implemented"))).toBe(true);
   });
 
   it("a block whose own statement changes what the expression reads", () => {

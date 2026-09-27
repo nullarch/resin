@@ -508,6 +508,43 @@ export function scriptValue(v: unknown): number {
   throw new Error("request.security: requesting a value that is not a number or a bool is not implemented for an expression evaluated in the requested context");
 }
 
+// The same for an expression the analyzer found to be a string or a color (analyzer/security-script.ts
+// requestedValueKind), both strings in resin, na null: recorded as it is in a plain array. A number
+// here can only be na (NaN).
+export function scriptText(v: unknown): string | null {
+  if (typeof v === "string") return v;
+  if (v === null || v === undefined || (typeof v === "number" && Number.isNaN(v))) return null;
+  throw new Error("request.security: an expression evaluated in the requested context as a string or a color gave another value");
+}
+
+// getFromArray/getFromArrayHist for those values: the same bar, na null.
+export function getTextFromArray(
+  values: ArrayLike<string | null>,
+  cache: SecurityCache,
+  idx: number,
+  gaps: boolean,
+  lookahead: boolean,
+): string | null {
+  const htfIdx = resolveHtfIndex(cache, idx, gaps, lookahead);
+  if (htfIdx < 0) return null;
+  return values[htfIdx] ?? null;
+}
+
+export function getTextFromArrayHist(
+  values: ArrayLike<string | null>,
+  cache: SecurityCache,
+  idx: number,
+  gaps: boolean,
+  lookahead: boolean,
+  offset: number,
+): string | null {
+  const off = Math.trunc(offset);
+  if (!(off >= 0)) return null;
+  const mainIdx = idx - off;
+  if (mainIdx < 0) return null;
+  return getTextFromArray(values, cache, mainIdx, gaps, lookahead);
+}
+
 // request.security(...)[N] top-level 히스토리 참조 전용(C448, ROADMAP index-dynamic-or-negative
 // 잔여 CallExpr 축 — index-access.ts analyzeIndexAccess CallExpr 분기 주석 참조). ta.* 콜 히스토리
 // (series.ts histGet)와 달리 record() 인라인이 필요 없다 -- get()/getFromArray()가 읽는

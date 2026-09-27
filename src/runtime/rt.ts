@@ -355,8 +355,12 @@ export const rt = {
     // Nested requests read inside the prepass of the request that depends on them.
     pairNested: securityFns.pairNested,
     readNested: securityFns.readNested,
-    // The value a request's child context records (Context.runSecurityScript).
+    // The value a request's child context records (Context.runSecurityScript), and for a string or a
+    // color, its record and reads with na null.
     scriptValue: securityFns.scriptValue,
+    scriptText: securityFns.scriptText,
+    getTextFromArray: securityFns.getTextFromArray,
+    getTextFromArrayHist: securityFns.getTextFromArrayHist,
   },
   // label/line/box/table/polyline(신규, corpus 93개 파일 실측) — array/map/matrix/input과 동일한
   // 중첩 네임스페이스 원칙(builtinCalls 값이 "label.set_text"처럼 점 경로라 codegen의 범용

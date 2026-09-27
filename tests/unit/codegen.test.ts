@@ -14341,9 +14341,15 @@ describe("CodeGen request.security expression 확장 좁은 문법 (C367)", () =
     expect(lines).toContain("out[h] = 0.01;");
   });
 
-  it("still rejects syminfo.* string constants as the expression (Float64Array prepass cache can't carry a string)", () => {
+  // A string is requestable (concepts_other-timeframes-and-data.txt "Requestable data"; resin-harness
+  // suites/lang/probes/L42.json): the Float64Array prepass cache cannot carry it, the requested context
+  // records it in a plain array, read with na null.
+  it("leaves syminfo.* string constants as the expression to the requested context, which records the string (Float64Array prepass cache can't carry a string)", () => {
     const program = analyzeSecuritySource('x = request.security("", "D", syminfo.description)');
-    expect(program.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(program.errors).toEqual([]);
+    const code = generateCode(program);
+    expect(code).toContain("rt.security.scriptText(");
+    expect(code).toContain("rt.security.getTextFromArray($.securityExprCache[0]");
   });
 
   it("hand-verified E2E: syminfo.shares_outstanding_float as the whole expression is 0 on every confirmed HTF row (same lookahead=off 1-row lag)", () => {
@@ -14371,9 +14377,10 @@ describe("CodeGen request.security expression 확장 좁은 문법 (C367)", () =
     expect(lines).toContain("out[h] = NaN;");
   });
 
-  it("still rejects earnings.actual/estimate/standardized (EARNINGS_CONSTANTS string field-selectors) as the expression (Float64Array prepass cache can't carry a string)", () => {
+  it("leaves earnings.actual/estimate/standardized (EARNINGS_CONSTANTS string field-selectors) as the expression to the requested context, which records the string (Float64Array prepass cache can't carry a string)", () => {
     const program = analyzeSecuritySource('x = request.security("", "D", earnings.actual)');
-    expect(program.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(program.errors).toEqual([]);
+    expect(generateCode(program)).toContain("rt.security.getTextFromArray($.securityExprCache[0]");
   });
 
   it("hand-verified E2E: earnings.future_time as the whole expression is NaN on every row (always-NaN stub, no lag distinction possible since untouched and touched values are the same)", () => {
@@ -14409,9 +14416,10 @@ describe("CodeGen request.security expression 확장 좁은 문법 (C367)", () =
     expect(lines).toContain('out[h] = rt.timeframe.variable(cache.timeframe || "D", "isdaily");');
   });
 
-  it("still rejects timeframe.period (TIMEFRAME_STRING_PROPS) as the expression (Float64Array prepass cache can't carry a string)", () => {
+  it("leaves timeframe.period (TIMEFRAME_STRING_PROPS) as the expression to the requested context, which records the requested timeframe's string (resin-harness suites/lang/probes/L42.json tp)", () => {
     const program = analyzeSecuritySource('x = request.security("", "D", timeframe.period)');
-    expect(program.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(program.errors).toEqual([]);
+    expect(generateCode(program)).toContain("rt.security.getTextFromArray($.securityExprCache[0]");
   });
 
   it("evaluates timeframe.multiplier (outside the prepass grammar) by running the script in the requested context, where it is the requested timeframe's (resin-harness suites/lang/probes/L41.json m4)", () => {
@@ -14741,9 +14749,11 @@ describe("CodeGen request.security expression equality operators (C602)", () => 
     expect(lines).toContain('out[h] = rt.pineEq(close, "USD");');
   });
 
-  it("still rejects a StringLiteral used outside an equality operand (ternary branch/root — Float64Array cache would silently coerce the string to NaN)", () => {
+  it("leaves a StringLiteral used outside an equality operand (ternary branch/root) to the requested context, which records the string (the Float64Array cache would coerce it to NaN; resin-harness suites/lang/probes/L42.json)", () => {
     const prog = analyzeSecuritySource('x = request.security("", "D", close > open ? "a" : "b")');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(prog.errors).toEqual([]);
+    expect(generateSecurityExprPreamble(prog)).toEqual([]);
+    expect(generateCode(prog)).toContain("rt.security.getTextFromArray($.securityExprCache[0]");
   });
 
   it("hand-verified E2E: an '==' comparison against a number literal resolves to the per-HTF-row boolean (high == 105 true only on the first confirmed HTF row)", () => {
@@ -16198,7 +16208,7 @@ describe("CodeGen request.security expression via the enclosing UDF's own parame
     );
     expect(code).toContain("if ($.secCapture === 0 + __secIdx) {\n$.secOut[$.idx] = rt.security.scriptValue($.histSlots[__histBase + 0].get(1));\n}");
     expect(code).toContain(
-      "return ($.secCapture >= 0 && $.securityCache[0 + __secIdx] === undefined ? NaN : rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false));",
+      "return ($.secCapture >= 0 && $.securityExprCache[0 + __secIdx] === undefined ? NaN : rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false));",
     );
     expect(code).toContain("$.securityExprCache[0] = $.runSecurityScript(0, [], 1);");
     expect(code).toContain("if ($.secCapture === 0) {\nget_sec(0, 0, 0, \"D\", myFunc(0, $.close.get(0)));\n}");
@@ -16427,7 +16437,7 @@ describe("CodeGen request.security expression via UDF parameter multi-call-site 
     expect(code).toContain("function f_sec(__slotBase, __secIdx, val) {");
     expect(code).toContain("if ($.secCapture === 0 + __secIdx) {\n$.secOut[$.idx] = rt.security.scriptValue(val);\n}");
     expect(code).toContain(
-      "return ($.secCapture >= 0 && $.securityCache[0 + __secIdx] === undefined ? NaN : rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false));",
+      "return ($.secCapture >= 0 && $.securityExprCache[0 + __secIdx] === undefined ? NaN : rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false));",
     );
     expect(code).toContain("var a = f_sec(0, 0, $.close.get(0));");
     expect(code).toContain("var b = f_sec(0, 1, $.open.get(0));");
@@ -17778,7 +17788,7 @@ describe("CodeGen request.security expression via UDF parameter multi-call-site 
     expect(code).toContain("function f_sec(__slotBase, __histBase, __secIdx, val) {");
     expect(code).toContain("if ($.secCapture === 0 + __secIdx) {\n$.secOut[$.idx] = rt.security.scriptValue($.histSlots[__histBase + 0].get(1));\n}");
     expect(code).toContain(
-      "return ($.secCapture >= 0 && $.securityCache[0 + __secIdx] === undefined ? NaN : rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false));",
+      "return ($.secCapture >= 0 && $.securityExprCache[0 + __secIdx] === undefined ? NaN : rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false));",
     );
     expect(code).toContain("if ($.secCapture === 1) {\nf_sec(0, 1, 1, $.open.get(0));\n}");
   });
@@ -17872,7 +17882,7 @@ describe("CodeGen request.security expression via UDF parameter(s) nested inside
     expect(code).not.toContain("function __secExpr");
     expect(code).toContain("$.secOut[$.idx] = rt.security.scriptValue(rt.ta.rsi($.taSlots[__taBase + 0], src, len));");
     expect(code).toContain(
-      "return ($.secCapture >= 0 && $.securityCache[0 + __secIdx] === undefined ? NaN : rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false));",
+      "return ($.secCapture >= 0 && $.securityExprCache[0 + __secIdx] === undefined ? NaN : rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false));",
     );
   });
 
@@ -17990,7 +18000,7 @@ describe("CodeGen request.security expression via UDF parameter whose call sites
     );
     expect(code).toContain("if ($.secCapture === 0 + __secIdx) {\n$.secOut[$.idx] = rt.security.scriptValue(val);\n}");
     expect(code).toContain(
-      "return ($.secCapture >= 0 && $.securityCache[0 + __secIdx] === undefined ? NaN : rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false));",
+      "return ($.secCapture >= 0 && $.securityExprCache[0 + __secIdx] === undefined ? NaN : rt.security.getFromArray($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false));",
     );
     expect(code).toContain("$.securityExprCache[1] = $.runSecurityScript(1, [], 2);");
   });
@@ -29425,7 +29435,7 @@ describe("CodeGen history index '[]' on a request.security(...) call registered 
     const code = codegenSource('getS(tf, exp) =>\n    request.security("", tf, exp)[1]\nx = getS("60", close)\ny = getS("240", open)');
     expect(code).toContain("function getS(__slotBase, __secIdx, tf, exp) {");
     expect(code).toContain(
-      "return ($.secCapture >= 0 && $.securityCache[0 + __secIdx] === undefined ? NaN : rt.security.getFromArrayHist($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false, 1));",
+      "return ($.secCapture >= 0 && $.securityExprCache[0 + __secIdx] === undefined ? NaN : rt.security.getFromArrayHist($.securityExprCache[0 + __secIdx], $.securityCache[0 + __secIdx], $.idx, false, false, 1));",
     );
   });
 

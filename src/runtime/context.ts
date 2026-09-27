@@ -141,14 +141,15 @@ export class Context {
   // codegen puts in the preamble, which run right after construction. The
   // constructor cannot compute them itself: doing so would mean generating
   // code for a user Pine expression, which a runtime module cannot do.
-  securityExprCache: (Float64Array | undefined)[];
+  // A child's record of a string or a color is a plain array, na null (runSecurityScript).
+  securityExprCache: (Float64Array | (string | null)[] | undefined)[];
   // request.security whose expression the script itself computes in the requested context
   // (runSecurityScript). In such a child context: the security slot whose expression it records
   // (-1 in a chart context), which per-bar statements it runs (secSkip[i] === 0; null runs all),
   // and the values it records, by requested bar.
   secCapture = -1;
   secSkip: Uint8Array | null = null;
-  secOut: Float64Array | null = null;
+  secOut: Float64Array | (string | null)[] | null = null;
   // In such a child, the requested timeframe, which the timeframe.* variables describe there
   // (ref_v6_lang.txt timeframe.period: "The variable's value represents the timeframe of a requested
   // dataset when used in the `expression` argument of a `request.*()` function call"); undefined in
@@ -462,7 +463,9 @@ export class Context {
   // its reads in the child are na (codegen childSafeSecurityRead). The analyzer refuses the forms
   // this does not cover, among them a nested request that, with dynamic requests, would run in
   // this context's symbol or timeframe (analyzer/security-script.ts nestedRequestRefusal).
-  runSecurityScript(slot: number, runs: readonly number[], stmtCount: number): Float64Array {
+  // `strings`: the expression is a string or a color (resin: a string, na null), recorded in a plain
+  // array (analyzer/security-script.ts requestedValueKind).
+  runSecurityScript(slot: number, runs: readonly number[], stmtCount: number, strings = false): Float64Array | (string | null)[] {
     if (this.instantiate === undefined) {
       throw new Error("request.security: evaluating an expression in the requested context needs a context the module was compiled on (engine.compile)");
     }
@@ -494,7 +497,7 @@ export class Context {
     // An empty timeframe is the chart's (ref_v6_lang.txt request.security: "Use an empty string or
     // timeframe.period to request data from the chart's timeframe").
     child.secTf = cache.timeframe || undefined;
-    const out = new Float64Array(cache.close.length).fill(NaN);
+    const out = strings ? new Array<string | null>(cache.close.length).fill(null) : new Float64Array(cache.close.length).fill(NaN);
     child.secOut = out;
     const bar = this.instantiate(child);
     for (let i = 0; i < child.barCount; i++) {

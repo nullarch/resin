@@ -8960,11 +8960,11 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
               if (tfRuntimeExpr !== null && tfLiteral === undefined) prog.securityRuntimeTfSlots.set(slot, tfRuntimeExpr);
             }
             prog.securitySymbols[slot] = funcSiteSymbols![k] ?? null;
-            prog.securityFuncScriptSites.push({ slot, call: site.call, stmt: site.stmt, slice: site.slice });
+            prog.securityFuncScriptSites.push({ slot, call: site.call, stmt: site.stmt, slice: site.slice, strings: funcScriptPlan!.strings });
           });
-          prog.securityFuncScriptCalls.set(expr, { base, gaps, lookahead });
+          prog.securityFuncScriptCalls.set(expr, { base, gaps, lookahead, strings: funcScriptPlan.strings });
           const records = prog.securityFuncScriptRecords.get(funcScriptPlan.stmt) ?? [];
-          records.push({ base, expression: seriesArg });
+          records.push({ base, expression: seriesArg, strings: funcScriptPlan.strings });
           prog.securityFuncScriptRecords.set(funcScriptPlan.stmt, records);
           registerSecurityTfSiteOrdinals(prog, scope.func!);
           scope.func!.secScriptChild = true;

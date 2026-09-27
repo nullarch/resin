@@ -2467,15 +2467,16 @@ export interface AnalyzedProgram {
   // call of the function, base + __secIdx, filled by that call's child (Context.runSecurityScript).
   // `expression` is recorded where `stmt`, the request's statement of the function body, begins
   // (securityFuncScriptRecords); each call's child evaluates the call where its top-level statement
-  // begins (securityFuncScriptSites).
-  securityFuncScriptCalls: Map<CallExpr, { base: number; gaps: boolean; lookahead: boolean }>;
+  // begins (securityFuncScriptSites). `strings`: the expression is a string or a color, recorded and
+  // read with na null (analyzer/security-script.ts requestedValueKind).
+  securityFuncScriptCalls: Map<CallExpr, { base: number; gaps: boolean; lookahead: boolean; strings: boolean }>;
   // A request.security call in a function no executed code calls: the compiler extracts a function's
   // requests into the global scope per call of the function (concepts_other-timeframes-and-data.txt
   // "In local scopes"), and there is none, so it makes no request. Its arguments are analyzed as the
   // function's code; the call, never evaluated, reads na (analyzer/call-expr.ts uncalledFuncs).
   securityUncalledCalls: Set<CallExpr>;
-  securityFuncScriptRecords: Map<Stmt, { base: number; expression: Expr }[]>;
-  securityFuncScriptSites: { slot: number; call: CallExpr; stmt: Stmt; slice: ReadonlySet<Stmt> }[];
+  securityFuncScriptRecords: Map<Stmt, { base: number; expression: Expr; strings: boolean }[]>;
+  securityFuncScriptSites: { slot: number; call: CallExpr; stmt: Stmt; slice: ReadonlySet<Stmt>; strings: boolean }[];
   // C453: 위 큐 처리 결과 (3) — 콜사이트 CallExpr -> 그 콜사이트의 서수(0-based, funcAllCallSites
   // 순서). codegen이 __slotBase/__taBase/__histBase 뒤에 리터럴로 전달한다.
   funcSecIdxArgs: Map<CallExpr, number>;
@@ -6960,7 +6961,12 @@ function analyzeAssignment(stmt: Assignment, prog: AnalyzedProgram, scope: LexSc
     // 문자열 힌트(C363, LexScope.stringLocalHints 주석 참조): '=' 로컬이 순수 구문상 문자열식
     // (isStringExpr)을 직접 대입받으면 기록 — 히스토리 슬롯(Float64Array 기반)이 문자열을 담을 수
     // 없다는 var string 가드(varTypeHints)를 '=' 로컬에 미러링.
-    if (isStringExpr(stmt.value)) scope.stringLocalHints.add(stmt.name);
+    // So does a request whose expression the requested context evaluates as a string or a color (its
+    // analysis above registered it; analyzer/security-script.ts requestedValueKind): `r = request.
+    // security(..., stringVar)` then `r[1]` reads the string the chart read a bar ago.
+    if (isStringExpr(stmt.value) || prog.securityExprCallSlots.get(stmt.value)?.script?.strings === true) {
+      scope.stringLocalHints.add(stmt.name);
+    }
     // for-in 이터러블 종류 힌트(C216, containerKindHints 주석 참조): '=' 로컬이 array/map 생성자
     // 콜을 직접 대입받으면 기록. isArrayConstructorCall/isMapConstructorCall은 analyzeVarDecl이
     // top-level var에 쓰는 것과 동일한 순수 구조 판별 — prog+scope를 넘기면 method-call 스타일로
