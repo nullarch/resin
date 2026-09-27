@@ -355,10 +355,11 @@ export const rt = {
     // Nested requests read inside the prepass of the request that depends on them.
     pairNested: securityFns.pairNested,
     readNested: securityFns.readNested,
-    // The value a request's child context records (Context.runSecurityScript), and for a string or a
-    // color, its record and reads with na null.
+    // The value a request's child context records (Context.runSecurityScript), and for a string, a
+    // color or an object, its record and reads with na null.
     scriptValue: securityFns.scriptValue,
     scriptText: securityFns.scriptText,
+    scriptObject: securityFns.scriptObject,
     getTextFromArray: securityFns.getTextFromArray,
     getTextFromArrayHist: securityFns.getTextFromArrayHist,
   },

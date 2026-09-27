@@ -16043,41 +16043,44 @@ describe("CodeGen request.security() SCALAR bare UDF call expression (C436)", ()
   });
 });
 
-// ── request.security(sym, tf, f()) 스칼라 bare-UDF passthrough 결과가 UDT일 때 필드 접근(C621,
-// analyzer.test.ts C621 describe와 짝 — 여기는 codegen 산출물/런타임 값이 field-less 일반 UDF 호출과
-// 완전히 동일함을 검증). codegen은 constructors.ts의 새 분기 덕에 field access 자체를 통과시킬 뿐
-// 이 describe(C436) 자체는 codegen.ts 변경 0줄(analyzer 전용 수정).
+// ── request.security(sym, tf, f()) where f returns an object of a user-defined type (C621), then a
+// field read of the result. pine2py passed the call through (the chart's own f() result); the
+// requested context evaluates it instead, as the oracle does (resin-harness
+// suites/lang/probes/L46.json channel gt: `request.security(sym, "240", mk())` with `var` state in
+// mk counts the requested bars), and records the object for the chart.
 describe("CodeGen request.security() SCALAR bare UDF result — UDT field access (C621)", () => {
   const SRC_F_BIAS = ["type Bias", "    float flag = 0.0", "    float strength = 0.0", "f_bias() =>", "    b = Bias.new(1.0, 2.0)", "    b"].join(
     "\n",
   );
 
-  it("emits the exact same code as a plain (non-security) UDF call, field access included — the request.security wrapper is fully discarded", () => {
+  it("is evaluated in the requested context, not passed through: the child records the function's object", () => {
     const withSecurity = codegenSource(
       [SRC_F_BIAS, 'biasRaw = request.security(syminfo.tickerid, "60", f_bias())', "y = biasRaw.flag"].join("\n"),
     );
     const plain = codegenSource([SRC_F_BIAS, "biasRaw = f_bias()", "y = biasRaw.flag"].join("\n"));
-    expect(withSecurity).toBe(plain);
+    expect(withSecurity).not.toBe(plain);
+    expect(withSecurity).toContain("rt.security.scriptObject(");
   });
 
-  it("hand-verified E2E: biasRaw.flag reads the UDT field's actual constructed value every bar (plain object property access, no rt.security.* reference)", () => {
+  it("E2E: biasRaw.flag reads the field of the object each requested day recorded, na before the first", () => {
     const source = [
       SRC_F_BIAS,
-      'biasRaw = request.security(syminfo.tickerid, "60", f_bias())',
-      "y = biasRaw.flag",
+      'biasRaw = request.security(syminfo.tickerid, "D", f_bias())',
+      "y = na(biasRaw) ? -1 : biasRaw.flag",
       "plot(y)",
+      'plot(nz(request.security(syminfo.tickerid, "D", close * 0 + 1.0), -1))',
     ].join("\n");
     const result = transpile(source);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.code).not.toContain("rt.security");
+    // 8-hour bars: three per day, two days.
     const data: OHLCVData = {
-      open: [1, 2, 3],
-      high: [1, 2, 3],
-      low: [1, 2, 3],
-      close: [1, 2, 3],
-      volume: [1, 1, 1],
-      time: [1704067200000, 1704096000000, 1704124800000],
+      open: [1, 2, 3, 4, 5, 6],
+      high: [1, 2, 3, 4, 5, 6],
+      low: [1, 2, 3, 4, 5, 6],
+      close: [1, 2, 3, 4, 5, 6],
+      volume: [1, 1, 1, 1, 1, 1],
+      time: Array.from({ length: 6 }, (_, i) => 1704067200000 + i * 8 * 3600_000),
     };
     const { plots } = run(
       result.code,
@@ -16091,9 +16094,12 @@ describe("CodeGen request.security() SCALAR bare UDF result — UDT field access
       result.plotTitles,
       result.securityTfs,
     );
-    // Bias.new(1.0, 2.0) — flag는 매 바 상수 1.0으로 재구성된다(myFunc가 매 바 그 자리에서 직접
-    // 호출되는 C436 passthrough 원칙과 동일, 이 값은 UDT 필드라는 점만 다르다).
-    expect(Array.from(plots[0]!.values)).toEqual([1.0, 1.0, 1.0]);
+    // Bias.new(1.0, 2.0): flag 1.0 wherever a requested day has been recorded, on the chart bars a
+    // number requested from the same days shows.
+    const [flag, want] = plots.map((p) => Array.from(p.values));
+    expect(flag).toEqual(want);
+    expect(flag).toContain(1.0);
+    expect(flag).toContain(-1);
   });
 });
 

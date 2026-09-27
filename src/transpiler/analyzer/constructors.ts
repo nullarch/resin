@@ -253,6 +253,15 @@ export function isUdtConstructorCall(value: Expr, prog: AnalyzedProgram, scope?:
         if (t !== undefined) return t;
       }
     }
+    // A request whose expression is an object of a user-defined type returns such an object
+    // (concepts_other-timeframes-and-data.txt "User-defined types": "The request.security() function
+    // can retrieve the IDs of objects produced by UDTs from other contexts"; the requested context
+    // records it, analyzer/security-script.ts requestedValueKind).
+    const expression = value.args[2] ?? value.kwargs.find((k) => k.name === "expression")?.value;
+    if (expression !== undefined) {
+      const t = isUdtConstructorCall(expression, prog, scope) ?? (scope !== undefined ? resolveUdtObjectType(expression, prog, scope) : undefined);
+      if (t !== undefined && t !== null && prog.udtTypes.has(t)) return t;
+    }
   }
   // C636: 삼항 양쪽 분기가 생성자 콜 자신이 아니라 "이미 UDT로 확정된 값을 그대로 참조"하는 형태도
   // 인정한다(wild `plan1 = not na(planRaw1) ? planRaw1 : defaultPlan`류 — 양쪽 다 bare Identifier가

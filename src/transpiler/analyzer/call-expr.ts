@@ -411,6 +411,15 @@ import {
 } from "./collections";
 import { lookupMethodOverload, mangleMethodName, resolveMethodReceiverTypeName, resolveScalarMethodInfo } from "./udt-types";
 
+// The user-defined type of the object a request's expression evaluates to, as the analysis of the
+// call's scope finds it (a constructor, a function or method returning one, a variable, parameter or
+// field holding one), or null. The requested context records such an object for the chart
+// (analyzer/security-script.ts requestedValueKind).
+function requestedObjectType(expression: Expr, prog: AnalyzedProgram, scope: LexScope): string | null {
+  const t = isUdtConstructorCall(expression, prog, scope) ?? resolveUdtObjectType(expression, prog, scope) ?? null;
+  return t !== null && prog.udtTypes.has(t) ? t : null;
+}
+
 // input.int/float/bool/string의 파라미터 이름 -> 위치 고정 매핑표(C132). UDT `.new()`(C129)는
 // "필드 이름 -> 슬롯"을 타입 선언마다 동적으로 조회해야 했지만, input.*는 pine2py 시그니처
 // (int_input/float_input: defval/title/minval/maxval/step, bool_input/string_input: defval/title,
@@ -8117,10 +8126,17 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         const chartTicker = prog.syminfoStrings.get("tickerid") || null;
         const siteSymbols = resolveSecuritySiteSymbols(symbolArg, prog, scope);
         const siteSymbol = (k: number): string | null => (siteSymbols !== null ? siteSymbols[k] ?? null : symbol);
-        const planned = planSecurityScriptInFunction(prog, expr, seriesArg, scope.func.name, (k) => {
-          const s = siteSymbol(k);
-          return s !== null && s !== chartTicker;
-        });
+        const planned = planSecurityScriptInFunction(
+          prog,
+          expr,
+          seriesArg,
+          scope.func.name,
+          (k) => {
+            const s = siteSymbol(k);
+            return s !== null && s !== chartTicker;
+          },
+          requestedObjectType(seriesArg, prog, scope),
+        );
         if (planned.ok) {
           funcScriptPlan = planned.plan;
           funcSiteSymbols = planned.plan.sites.map((_, k) => siteSymbol(k));
@@ -8414,7 +8430,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           scriptPlanRefusal = funcScriptPlanRefusal ?? "the call is in a function";
         } else {
           const chartTicker = prog.syminfoStrings.get("tickerid") || null;
-          const planned = planSecurityScript(prog, expr, seriesArg, symbol !== null && symbol !== chartTicker);
+          const planned = planSecurityScript(prog, expr, seriesArg, symbol !== null && symbol !== chartTicker, requestedObjectType(seriesArg, prog, scope));
           if (planned.ok) {
             scriptPlan = planned.plan;
             scalarBareUdfInner = undefined;
@@ -9007,11 +9023,13 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
               if (tfRuntimeExpr !== null && tfLiteral === undefined) prog.securityRuntimeTfSlots.set(slot, tfRuntimeExpr);
             }
             prog.securitySymbols[slot] = funcSiteSymbols![k] ?? null;
-            prog.securityFuncScriptSites.push({ slot, call: site.call, stmt: site.stmt, slice: site.slice, strings: funcScriptPlan!.strings });
+            const values = { strings: funcScriptPlan!.strings, objects: funcScriptPlan!.objects };
+            prog.securityFuncScriptSites.push({ slot, call: site.call, stmt: site.stmt, slice: site.slice, ...values });
           });
-          prog.securityFuncScriptCalls.set(expr, { base, gaps, lookahead, strings: funcScriptPlan.strings });
+          const values = { strings: funcScriptPlan.strings, objects: funcScriptPlan.objects };
+          prog.securityFuncScriptCalls.set(expr, { base, gaps, lookahead, ...values });
           const records = prog.securityFuncScriptRecords.get(funcScriptPlan.stmt) ?? [];
-          records.push({ base, expression: seriesArg, strings: funcScriptPlan.strings });
+          records.push({ base, expression: seriesArg, ...values });
           prog.securityFuncScriptRecords.set(funcScriptPlan.stmt, records);
           registerSecurityTfSiteOrdinals(prog, scope.func!);
           scope.func!.secScriptChild = true;

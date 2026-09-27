@@ -32,6 +32,7 @@
 import type { CallExpr, Expr, FuncDecl, MethodDecl, Stmt } from "../ast";
 import { EARNINGS_CONSTANTS, SYMINFO_STRING_PROPS, type AnalyzedProgram } from "../analyzer";
 import { TA_REGISTRY, taCallReturnArity } from "./ta";
+import { CHART_POINT_FIELD_TYPE } from "./udt-types";
 
 export interface SecurityScriptPlan {
   // The top-level statement the call is in: the child records the expression where it begins.
@@ -40,6 +41,8 @@ export interface SecurityScriptPlan {
   slice: ReadonlySet<Stmt>;
   // The expression is a string or a color (requestedValueKind).
   strings: boolean;
+  // The expression is an object of a user-defined type (requestedValueKind).
+  objects: boolean;
 }
 
 export type SecurityScriptPlanResult = { ok: true; plan: SecurityScriptPlan } | { ok: false; reason: string };
@@ -64,6 +67,8 @@ export interface SecurityFuncScriptPlan {
   sites: SecurityFuncScriptSite[];
   // The expression is a string or a color (requestedValueKind).
   strings: boolean;
+  // The expression is an object of a user-defined type (requestedValueKind).
+  objects: boolean;
 }
 
 export type SecurityFuncScriptPlanResult = { ok: true; plan: SecurityFuncScriptPlan } | { ok: false; reason: string };
@@ -919,15 +924,54 @@ function nestedRequestRefusal(prog: AnalyzedProgram, effs: readonly Effects[]): 
 // quite versatile, as it can retrieve values of any fundamental type ( int , float , bool , color , or
 // string )"). A number or a bool goes in a Float64Array (the prepass results' encoding); a string or a
 // color, which resin represents as a string with na null, in a plain array read with na null
-// (Context.runSecurityScript). An object or a tuple is not implemented. A value the text does not tell
-// ("unknown", e.g. a function's result) is taken as a number: anything else stops the run
+// (Context.runSecurityScript). So does an object of a user-defined type, `objectType` as the analysis
+// of the call's scope found it ("User-defined types": "The request.security() function can retrieve
+// the IDs of objects produced by UDTs from other contexts"; requestableTypeRefusal), recorded as a
+// copy taken on the requested bar (runtime/security.ts scriptObject). A tuple, a collection, a drawing
+// or an object whose type the analysis does not know is not implemented. A value the text does not
+// tell ("unknown", e.g. a function's result) is taken as a number: anything else stops the run
 // (runtime/security.ts scriptValue).
-function requestedValueKind(kind: ValueKind): { ok: true; strings: boolean } | { ok: false; reason: string } {
-  if (kind === "object") return { ok: false, reason: "requesting a tuple or object value is not implemented" };
-  return { ok: true, strings: kind === "string" || kind === "color" };
+function requestedValueKind(
+  prog: AnalyzedProgram,
+  kind: ValueKind,
+  objectType: string | null,
+): { ok: true; strings: boolean; objects: boolean } | { ok: false; reason: string } {
+  if (objectType !== null) {
+    const refusal = requestableTypeRefusal(prog, objectType, new Set());
+    return refusal !== null ? { ok: false, reason: refusal } : { ok: true, strings: false, objects: true };
+  }
+  if (kind === "object") return { ok: false, reason: "requesting a tuple, a collection or a drawing is not implemented" };
+  return { ok: true, strings: kind === "string" || kind === "color", objects: false };
 }
 
-export function planSecurityScript(prog: AnalyzedProgram, call: CallExpr, expression: Expr, foreignSymbol: boolean): SecurityScriptPlanResult {
+// Why an object of the user-defined type `typeName` cannot be requested, or null. Its fields must be
+// requestable (concepts_other-timeframes-and-data.txt "User-defined types": "if their fields consist
+// of: Fundamental types, Chart points, Collections that satisfy the criteria listed in the section
+// above, Other UDTs whose fields consist of any of these types"); a collection field is not
+// implemented, and neither is anything the list leaves out (a drawing, an enum).
+function requestableTypeRefusal(prog: AnalyzedProgram, typeName: string, visiting: Set<string>): string | null {
+  if (visiting.has(typeName)) return null;
+  visiting.add(typeName);
+  for (const field of prog.udtTypes.get(typeName)?.fields ?? []) {
+    const t = field.typeHint;
+    if (PRIMITIVE_TYPES.has(t) || t === CHART_POINT_FIELD_TYPE) continue;
+    if (prog.udtTypes.has(t)) {
+      const inner = requestableTypeRefusal(prog, t, visiting);
+      if (inner !== null) return inner;
+      continue;
+    }
+    return `requesting an object whose field '${typeName}.${field.name}' holds '${t}' is not implemented`;
+  }
+  return null;
+}
+
+export function planSecurityScript(
+  prog: AnalyzedProgram,
+  call: CallExpr,
+  expression: Expr,
+  foreignSymbol: boolean,
+  objectType: string | null,
+): SecurityScriptPlanResult {
   const body = prog.script.body;
   const at = body.findIndex((s) => contains(s, call));
   if (at < 0) return { ok: false, reason: "the call is not in a top-level statement" };
@@ -936,7 +980,7 @@ export function planSecurityScript(prog: AnalyzedProgram, call: CallExpr, expres
   if (stmt.kind === "TupleDestructure" && stmt.value === call) return { ok: false, reason: "requesting a tuple value is not implemented" };
 
   const a = new SliceAnalysis(prog);
-  const values = requestedValueKind(a.valueKind(expression));
+  const values = requestedValueKind(prog, a.valueKind(expression), objectType);
   if (!values.ok) return values;
   const exprEff = newEffects();
   a.walkExpr(expression, exprEff);
@@ -949,7 +993,7 @@ export function planSecurityScript(prog: AnalyzedProgram, call: CallExpr, expres
   });
   const sliced = sliceBefore(a, body, effects, at, call, exprEff, foreignSymbol);
   if (!sliced.ok) return sliced;
-  return { ok: true, plan: { stmt, slice: sliced.slice, strings: values.strings } };
+  return { ok: true, plan: { stmt, slice: sliced.slice, strings: values.strings, objects: values.objects } };
 }
 
 // The names a top-level statement declares (`x = request.security(..., x)`: the name is not declared
@@ -1062,13 +1106,15 @@ function sliceBefore(
 // (after the statements before it that the call needs), and the function records the expression
 // where the request's statement of its body begins, when __secIdx is k. The function's code before
 // that statement runs in the child as it runs on the chart, with the call's own instance state.
-// `foreignSymbol(k)`: whether call k requests another symbol than the chart's.
+// `foreignSymbol(k)`: whether call k requests another symbol than the chart's. `objectType`: the
+// user-defined type of the object the expression evaluates to, if it is one (requestedValueKind).
 export function planSecurityScriptInFunction(
   prog: AnalyzedProgram,
   call: CallExpr,
   expression: Expr,
   funcName: string,
   foreignSymbol: (ordinal: number) => boolean,
+  objectType: string | null,
 ): SecurityFuncScriptPlanResult {
   const body = prog.script.body;
   const decl = body.find((s): s is FuncDecl => s.kind === "FuncDecl" && s.name === funcName && contains(s, call));
@@ -1078,7 +1124,7 @@ export function planSecurityScriptInFunction(
 
   const a = new SliceAnalysis(prog);
   // In the function's scope: a parameter or a local is resolved there.
-  const values = requestedValueKind(a.valueKind(expression, new Set(), localEnvOf(decl)));
+  const values = requestedValueKind(prog, a.valueKind(expression, new Set(), localEnvOf(decl)), objectType);
   if (!values.ok) return values;
 
   // What the expression depends on in the function: the statements of its body before the request's
@@ -1197,5 +1243,5 @@ export function planSecurityScriptInFunction(
     if (!sliced.ok) return sliced;
     planned.push({ call: site.call, stmt: body[at]!, slice: sliced.slice });
   }
-  return { ok: true, plan: { stmt: fstmt, sites: planned, strings: values.strings } };
+  return { ok: true, plan: { stmt: fstmt, sites: planned, strings: values.strings, objects: values.objects } };
 }

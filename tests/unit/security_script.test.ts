@@ -302,6 +302,43 @@ describe("request.security evaluated in the requested context", () => {
     expect(k).toEqual([-1, -1, -1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
   });
 
+  // concepts_other-timeframes-and-data.txt "User-defined types": request.security "can retrieve the
+  // IDs of objects produced by UDTs from other contexts". Values against the oracle: resin-harness
+  // suites/lang/probes/L46.json (a `var` object changed on every bar, gaps_on in a function, an
+  // object field, a function returning an object).
+  it("an object of a user-defined type: each requested bar's object as that bar left it", () => {
+    const source = [
+      "type Bar",
+      "    float c",
+      "    int n",
+      "var Bar run = Bar.new(na, 0)",
+      "run.n += 1",
+      "run.c := close",
+      "var int k = 0",
+      "k += 1",
+      "getB(string tf) => request.security(syminfo.tickerid, tf, Bar.new(close, 0), gaps = barmerge.gaps_on)",
+      'r = request.security(syminfo.tickerid, "D", run)',
+      'Bar g = getB("D")',
+      "plot(na(r) ? -1 : r.n)",
+      'plot(nz(request.security(syminfo.tickerid, "D", k), -1))',
+      "plot(na(r) ? -1 : r.c)",
+      'plot(nz(request.security(syminfo.tickerid, "D", close), -1))',
+      "plot(na(g) ? -1 : g.c)",
+      'plot(nz(request.security(syminfo.tickerid, "D", close, gaps = barmerge.gaps_on), -1))',
+    ].join("\n");
+    const result = transpile(source);
+    if (!result.ok) throw new Error(result.errors.join("\n"));
+    expect(result.code).toContain("rt.security.scriptObject(");
+    const [rn, kn, rc, c, gc, cg] = run(result, DATA).plots.map((q) => Array.from(q.values));
+    // The child's one `var` object, recorded as a copy on every requested bar: the chart reads the
+    // count each day left, not the last day's everywhere.
+    expect(rn).toEqual(kn);
+    expect(new Set(rn!.filter((v) => v > 0)).size).toBeGreaterThan(1);
+    expect(rc).toEqual(c);
+    expect(gc).toEqual(cg);
+    expect(gc).toContain(-1);
+  });
+
   // One call of a function evaluates every request in its body, so the child of its first request
   // reads the second before that one's child ran: na there, and never what the child records.
   it("two requests in one function, each evaluated by its child", () => {
@@ -390,9 +427,16 @@ describe("request.security in the requested context: what is refused", () => {
     expect(errors.some((e) => e.includes("it reads the strategy's state"))).toBe(true);
   });
 
-  it("an object value", () => {
+  // A collection is requestable (concepts_other-timeframes-and-data.txt "Collections"), not
+  // implemented; an object of a user-defined type is (resin-harness suites/lang/probes/L46.json),
+  // unless a field holds one.
+  it("a collection value, and an object with a collection field", () => {
     const errors = errorsOf(['a = array.from(close)', 'r = request.security(syminfo.tickerid, "D", a)'].join("\n"));
-    expect(errors.some((e) => e.includes("requesting a tuple or object value is not implemented"))).toBe(true);
+    expect(errors.some((e) => e.includes("requesting a tuple, a collection or a drawing is not implemented"))).toBe(true);
+    const fieldErrors = errorsOf(
+      ["type T", "    array<float> xs", "t = T.new(array.from(close))", 'r = request.security(syminfo.tickerid, "D", t)'].join("\n"),
+    );
+    expect(fieldErrors.some((e) => e.includes("requesting an object whose field 'T.xs' holds 'array<float>' is not implemented"))).toBe(true);
   });
 
   it("a block whose own statement changes what the expression reads", () => {

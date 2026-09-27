@@ -517,27 +517,52 @@ export function scriptText(v: unknown): string | null {
   throw new Error("request.security: an expression evaluated in the requested context as a string or a color gave another value");
 }
 
-// getFromArray/getFromArrayHist for those values: the same bar, na null.
-export function getTextFromArray(
-  values: ArrayLike<string | null>,
+// The same for an expression the analyzer found to be an object of a user-defined type
+// (requestedValueKind): recorded in a plain array, na null, as a copy of the object taken on the
+// requested bar. The object is the requested context's own, and a later requested bar may change it
+// (a `var` object): what the chart reads on a bar is the object as that requested bar left it (the
+// oracle transfers each requested bar's value as a copy, pickled, core/security_shm.py
+// write_result; resin-harness suites/lang/probes/L46.json channel ft, a `var` object counting the
+// requested bars). A field holding another object is copied with it (requestableTypeRefusal lets
+// only fundamental types, chart points and such objects through).
+export function scriptObject(v: unknown): object | null {
+  if (v === null || v === undefined || (typeof v === "number" && Number.isNaN(v))) return null;
+  if (typeof v !== "object") throw new Error("request.security: an expression evaluated in the requested context as an object gave another value");
+  return copyRequested(v, new Map());
+}
+
+// `seen`: the copies made so far, so that two fields holding one object hold one copy.
+function copyRequested(obj: object, seen: Map<object, object>): object {
+  const done = seen.get(obj);
+  if (done !== undefined) return done;
+  const out: Record<string, unknown> = {};
+  seen.set(obj, out);
+  for (const [k, x] of Object.entries(obj)) out[k] = x !== null && typeof x === "object" ? copyRequested(x, seen) : x;
+  return out;
+}
+
+// getFromArray/getFromArrayHist for those values (a string, a color, an object): the same bar, na
+// null.
+export function getTextFromArray<T>(
+  values: ArrayLike<T | null>,
   cache: SecurityCache,
   idx: number,
   gaps: boolean,
   lookahead: boolean,
-): string | null {
+): T | null {
   const htfIdx = resolveHtfIndex(cache, idx, gaps, lookahead);
   if (htfIdx < 0) return null;
   return values[htfIdx] ?? null;
 }
 
-export function getTextFromArrayHist(
-  values: ArrayLike<string | null>,
+export function getTextFromArrayHist<T>(
+  values: ArrayLike<T | null>,
   cache: SecurityCache,
   idx: number,
   gaps: boolean,
   lookahead: boolean,
   offset: number,
-): string | null {
+): T | null {
   const off = Math.trunc(offset);
   if (!(off >= 0)) return null;
   const mainIdx = idx - off;

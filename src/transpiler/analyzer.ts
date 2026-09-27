@@ -2494,15 +2494,16 @@ export interface AnalyzedProgram {
   // `expression` is recorded where `stmt`, the request's statement of the function body, begins
   // (securityFuncScriptRecords); each call's child evaluates the call where its top-level statement
   // begins (securityFuncScriptSites). `strings`: the expression is a string or a color, recorded and
-  // read with na null (analyzer/security-script.ts requestedValueKind).
-  securityFuncScriptCalls: Map<CallExpr, { base: number; gaps: boolean; lookahead: boolean; strings: boolean }>;
+  // read with na null; `objects`: an object of a user-defined type, recorded as a copy and read with
+  // na null (analyzer/security-script.ts requestedValueKind).
+  securityFuncScriptCalls: Map<CallExpr, { base: number; gaps: boolean; lookahead: boolean; strings: boolean; objects: boolean }>;
   // A request.security call in a function no executed code calls: the compiler extracts a function's
   // requests into the global scope per call of the function (concepts_other-timeframes-and-data.txt
   // "In local scopes"), and there is none, so it makes no request. Its arguments are analyzed as the
   // function's code; the call, never evaluated, reads na (analyzer/call-expr.ts uncalledFuncs).
   securityUncalledCalls: Set<CallExpr>;
-  securityFuncScriptRecords: Map<Stmt, { base: number; expression: Expr; strings: boolean }[]>;
-  securityFuncScriptSites: { slot: number; call: CallExpr; stmt: Stmt; slice: ReadonlySet<Stmt>; strings: boolean }[];
+  securityFuncScriptRecords: Map<Stmt, { base: number; expression: Expr; strings: boolean; objects: boolean }[]>;
+  securityFuncScriptSites: { slot: number; call: CallExpr; stmt: Stmt; slice: ReadonlySet<Stmt>; strings: boolean; objects: boolean }[];
   // C453: 위 큐 처리 결과 (3) — 콜사이트 CallExpr -> 그 콜사이트의 서수(0-based, funcAllCallSites
   // 순서). codegen이 __slotBase/__taBase/__histBase 뒤에 리터럴로 전달한다.
   funcSecIdxArgs: Map<CallExpr, number>;

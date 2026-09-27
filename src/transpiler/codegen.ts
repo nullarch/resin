@@ -232,14 +232,22 @@ function childSafeSecurityRead(
 }
 
 // A request whose expression a child context evaluates (Context.runSecurityScript) records a number
-// or a bool in a Float64Array, a string or a color in a plain array with na null
-// (analyzer/security-script.ts requestedValueKind): how the child records it, and how the chart
-// reads it (`hist`: with the history operator) with which na.
-function scriptRecordFn(strings: boolean): string {
-  return strings ? "rt.security.scriptText" : "rt.security.scriptValue";
+// or a bool in a Float64Array, a string or a color in a plain array with na null, and an object of a
+// user-defined type there too, as a copy (analyzer/security-script.ts requestedValueKind): how the
+// child records it, whether in a plain array, and how the chart reads it (`hist`: with the history
+// operator) with which na.
+interface ScriptValues {
+  strings: boolean;
+  objects: boolean;
 }
-function scriptReadFn(strings: boolean, hist: boolean): string {
-  return `rt.security.get${strings ? "Text" : ""}FromArray${hist ? "Hist" : ""}`;
+function scriptRecordFn(values: ScriptValues): string {
+  return values.objects ? "rt.security.scriptObject" : values.strings ? "rt.security.scriptText" : "rt.security.scriptValue";
+}
+function scriptPlain(values: ScriptValues | undefined): boolean {
+  return values !== undefined && (values.strings || values.objects);
+}
+function scriptReadFn(plain: boolean, hist: boolean): string {
+  return `rt.security.get${plain ? "Text" : ""}FromArray${hist ? "Hist" : ""}`;
 }
 
 // A request whose timeframe the call binds where it stands (AnalyzedProgram.securityDeferredTfs):
@@ -580,7 +588,7 @@ export function generateCode(program: AnalyzedProgram): string {
   const deferredSlots = new Set<number>(deferredBinds.flat());
   for (const line of generateSecurityExprPreamble(program, deferredSlots)) securityPreamble.push(line);
   const scriptRunLine = (run: SecurityScriptRun): string =>
-    `$.securityExprCache[${run.slot}] = $.runSecurityScript(${run.slot}, ${JSON.stringify(run.runs)}, ${others.length}${run.strings ? ", true" : ""});`;
+    `$.securityExprCache[${run.slot}] = $.runSecurityScript(${run.slot}, ${JSON.stringify(run.runs)}, ${others.length}${scriptPlain(run) ? ", true" : ""});`;
   for (const run of scriptRuns) {
     if (!deferredSlots.has(run.slot)) securityPreamble.push(scriptRunLine(run));
   }
@@ -612,7 +620,7 @@ export function generateCode(program: AnalyzedProgram): string {
       hoistLazyStatefulCalls(run.expression, program, null, pre);
       const value = genExpr(run.expression, program, null);
       // The call of a function whose request this is: the function records the expression.
-      const record = run.call ? `${value};` : `$.secOut[$.idx] = ${scriptRecordFn(run.strings)}(${value});`;
+      const record = run.call ? `${value};` : `$.secOut[$.idx] = ${scriptRecordFn(run)}(${value});`;
       lines.push(`if ($.secCapture === ${run.slot}) {`, ...pre, record, "}");
     }
     const line = genStmt(stmt, program, /* nested */ false, /* funcCtx */ null, promoted);
@@ -798,14 +806,14 @@ function securityPrepassSlots(program: AnalyzedProgram): Set<number> {
 // statements before it that the child runs.
 // A request in a user-defined function has one run per call of the function
 // (securityFuncScriptSites): its child evaluates the call, and the function records the expression
-// (`call`: true). `strings`: the expression is a string or a color, recorded and read with na null.
-interface SecurityScriptRun {
+// (`call`: true). `strings`: the expression is a string or a color, recorded and read with na null;
+// `objects`: an object of a user-defined type, recorded as a copy and read with na null.
+interface SecurityScriptRun extends ScriptValues {
   slot: number;
   at: number;
   runs: number[];
   expression: Expr;
   call: boolean;
-  strings: boolean;
 }
 
 // Whether a request's child context runs the program's code (securityScriptRuns has any run).
@@ -826,12 +834,13 @@ function securityScriptRuns(program: AnalyzedProgram, others: readonly Stmt[]): 
     if (info.script === undefined) continue;
     const at = others.indexOf(info.script.stmt);
     if (at < 0) throw new Error("internal: a request.security call evaluated in its context is not in a per-bar statement");
-    out.push({ slot: info.slot, at, runs: runsOf(info.script.slice), expression: info.bodyExpr, call: false, strings: info.script.strings });
+    const { strings, objects } = info.script;
+    out.push({ slot: info.slot, at, runs: runsOf(info.script.slice), expression: info.bodyExpr, call: false, strings, objects });
   }
   for (const site of program.securityFuncScriptSites) {
     const at = others.indexOf(site.stmt);
     if (at < 0) throw new Error("internal: the call of a function whose request is evaluated in its context is not in a per-bar statement");
-    out.push({ slot: site.slot, at, runs: runsOf(site.slice), expression: site.call, call: true, strings: site.strings });
+    out.push({ slot: site.slot, at, runs: runsOf(site.slice), expression: site.call, call: true, strings: site.strings, objects: site.objects });
   }
   // A child reads the requests of the statements before its own (a nested request through a
   // variable, analyzer/security-script.ts), so those are computed first: statement order, the
@@ -1373,7 +1382,7 @@ function pushSecurityFuncRecords(stmt: Stmt, program: AnalyzedProgram, funcCtx: 
     const pre: string[] = [];
     hoistLazyStatefulCalls(rec.expression, program, funcCtx, pre);
     const value = genExpr(rec.expression, program, funcCtx);
-    lines.push(`if ($.secCapture === ${rec.base} + __secIdx) {`, ...pre, `$.secOut[$.idx] = ${scriptRecordFn(rec.strings)}(${value});`, "}");
+    lines.push(`if ($.secCapture === ${rec.base} + __secIdx) {`, ...pre, `$.secOut[$.idx] = ${scriptRecordFn(rec)}(${value});`, "}");
   }
 }
 
@@ -3635,33 +3644,34 @@ function genIndexAccess(
     }
     const securityExprCall = program.securityExprCallSlots.get(expr.obj);
     if (securityExprCall !== undefined) {
-      const strings = securityExprCall.script?.strings === true;
+      const plain = scriptPlain(securityExprCall.script);
       return childSafeSecurityRead(
         deferredSecurityRead(
           expr.obj,
-          `${scriptReadFn(strings, true)}($.securityExprCache[${securityExprCall.slot}], $.securityCache[${securityExprCall.slot}], $.idx, ${securityExprCall.gaps}, ${securityExprCall.lookahead}, ${offsetCode})`,
+          `${scriptReadFn(plain, true)}($.securityExprCache[${securityExprCall.slot}], $.securityCache[${securityExprCall.slot}], $.idx, ${securityExprCall.gaps}, ${securityExprCall.lookahead}, ${offsetCode})`,
           program,
           funcCtx,
         ),
         funcCtx,
         `${securityExprCall.slot}`,
-        strings ? "null" : "NaN",
+        plain ? "null" : "NaN",
       );
     }
     if (program.securityUncalledCalls.has(expr.obj)) return "NaN";
     const securityFuncScriptCall = program.securityFuncScriptCalls.get(expr.obj);
     if (securityFuncScriptCall !== undefined) {
       const slotRef = `${securityFuncScriptCall.base} + __secIdx`;
+      const plain = scriptPlain(securityFuncScriptCall);
       return childSafeSecurityRead(
         deferredSecurityRead(
           expr.obj,
-          `${scriptReadFn(securityFuncScriptCall.strings, true)}($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityFuncScriptCall.gaps}, ${securityFuncScriptCall.lookahead}, ${offsetCode})`,
+          `${scriptReadFn(plain, true)}($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityFuncScriptCall.gaps}, ${securityFuncScriptCall.lookahead}, ${offsetCode})`,
           program,
           funcCtx,
         ),
         funcCtx,
         slotRef,
-        securityFuncScriptCall.strings ? "null" : "NaN",
+        plain ? "null" : "NaN",
         "securityExprCache",
       );
     }
@@ -4571,16 +4581,17 @@ function genCallExpr(
     // A request in a function evaluated in its context: call k's child filled slot base + k
     // (analyzer securityFuncScriptCalls), read like a prepass's.
     const slotRef = `${securityFuncScriptCall.base} + __secIdx`;
+    const plain = scriptPlain(securityFuncScriptCall);
     return childSafeSecurityRead(
       deferredSecurityRead(
         expr,
-        `${scriptReadFn(securityFuncScriptCall.strings, false)}($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityFuncScriptCall.gaps}, ${securityFuncScriptCall.lookahead})`,
+        `${scriptReadFn(plain, false)}($.securityExprCache[${slotRef}], $.securityCache[${slotRef}], $.idx, ${securityFuncScriptCall.gaps}, ${securityFuncScriptCall.lookahead})`,
         program,
         funcCtx,
       ),
       funcCtx,
       slotRef,
-      securityFuncScriptCall.strings ? "null" : "NaN",
+      plain ? "null" : "NaN",
       "securityExprCache",
     );
   }
@@ -4590,18 +4601,18 @@ function genCallExpr(
     // 심어둔 $.securityExprCache[slot](HTF-네이티브 시퀀스 위에서 재실행된 결과 Float64Array)를
     // $.securityCache[slot]의 barMap과 함께 getFromArray로 lookup — get()의 field 분기 대신
     // 배열 자체를 인덱싱한다는 점만 다르고 gaps/lookahead 처리(analyze-time 확정 리터럴)는 동일.
-    // A string or a color a child records is read with na null (scriptReadFn).
-    const strings = securityExprCall.script?.strings === true;
+    // A string, a color or an object a child records is read with na null (scriptReadFn).
+    const plain = scriptPlain(securityExprCall.script);
     return childSafeSecurityRead(
       deferredSecurityRead(
         expr,
-        `${scriptReadFn(strings, false)}($.securityExprCache[${securityExprCall.slot}], $.securityCache[${securityExprCall.slot}], $.idx, ${securityExprCall.gaps}, ${securityExprCall.lookahead})`,
+        `${scriptReadFn(plain, false)}($.securityExprCache[${securityExprCall.slot}], $.securityCache[${securityExprCall.slot}], $.idx, ${securityExprCall.gaps}, ${securityExprCall.lookahead})`,
         program,
         funcCtx,
       ),
       funcCtx,
       `${securityExprCall.slot}`,
-      strings ? "null" : "NaN",
+      plain ? "null" : "NaN",
     );
   }
   const securityFieldOffsetCall = program.securityFieldOffsetCalls.get(expr);
