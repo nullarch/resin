@@ -704,77 +704,38 @@ export function swma(state: SwmaState, value: number): number {
 
 export interface CmoState {
   prevValue?: number;
-  gainsBuffer?: number[];
-  lossesBuffer?: number[];
-  writeIdx?: number;
-  sumGains?: number;
-  sumLosses?: number;
+  up?: SmaState; // math.sum of the rising momenta
+  down?: SmaState; // math.sum of the falling momenta, negated
 }
 
-// ta.cmo - Chande Momentum Oscillator: CMO = 100*(sumGains-sumLosses)/(sumGains+sumLosses), 두
-// 신호(gain/loss, momentum=value-prevValue에서 파생)의 고정폭 length 윈도우 합계(가중치 없는 단순
-// 합계, RSI의 Wilder 스무딩과 다름). pine2py wavealgo/ta/cmo.py는 momentum을 `source.get(0)`/
-// `source.get(1)`(진짜 Series 히스토리)로 계산하고, 둘 중 하나라도 NaN이면 gains_win/losses_win을
-// 건드리지 않고(append 자체를 안 함) 즉시 NaN을 반환한다 — sma/wma/vwma의 "NaN도 버퍼에 push해
-// 오염시키는" 패턴과 달리 "유효한 momentum만 조건부로 push"하는 새 변형이다. prevValue 상태 슬롯은
-// crossover/swma와 동일한 "1회/바 호출 전제 하 직전 호출 값 기억 = 1바 전 히스토리 조회" 동치
-// 근거로 매 호출 무조건 갱신한다(RSI의 prevValue와 달리 NaN이어도 갱신 — RSI의 prevValue는
-// pine2py 자체 구현이 skip-on-NaN 상태이지만, cmo는 진짜 Series.get(1) 원값을 그대로 반영해야
-// 하므로 RSI와 다른 갱신 규칙 필요). 이 gate를 통과하면 mom/gain/loss는 항상 유한값이라 버퍼에는
-// NaN이 push될 일이 없고, sma와 동일한 "버퍼가 아직 NaN-프라임으로 덜 찬" 워밍업만 recompute-on-
-// pollution으로 처리하면 된다.
+// ta.cmo(series, length), the manual's reference (ref_v6_ta_math.txt f_cmo): mom = ta.change(src),
+// sm1 = math.sum(mom >= 0 ? mom : 0.0, length), sm2 = math.sum(mom >= 0 ? 0.0 : -mom, length),
+// 100 * (sm1 - sm2) / (sm1 + sm2) — the same rule as cmoVarLen, on a fixed length.
+// - The momentum is the change from the previous bar, na when either bar is na; an na momentum
+//   returns na and feeds neither sum (oracle lib/ta.py cmo).
+// - The sign test is tolerant: a momentum within Pine's 1e-10 of zero counts as rising (tier 1
+//   ta_241_tolerant_compare, TradingView probe m548: `ta.cmo(r, 4)` over a series stepping by 1e-12
+//   is NaN, both sums collapsing to 0 as the up side takes the negative steps too; resin's exact
+//   `mom >= 0` gave 0). A sub-tolerance negative momentum in an otherwise flat window leaves sm1
+//   alone nonzero, so the oscillator is 100, not -100.
+// - Both sums are math.sum itself (naSkipSum: TradingView's rolling compensated sum), not a plain
+//   `sum - old + new`.
+// - Both sums zero is 0/0: na, not 0 (oracle lib/ta.py cmo "TradingView's 0/0 is nan").
 export function cmo(state: CmoState, value: number, length: number): number {
-  length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조)
-  if (state.prevValue === undefined) {
+  if (state.up === undefined) {
     state.prevValue = NaN;
-    state.gainsBuffer = new Array(length).fill(NaN);
-    state.lossesBuffer = new Array(length).fill(NaN);
-    state.writeIdx = 0;
-    state.sumGains = NaN;
-    state.sumLosses = NaN;
+    state.up = {};
+    state.down = {};
   }
-  const prevVal = state.prevValue;
+  const mom = value - state.prevValue!;
   state.prevValue = value;
-  if (Number.isNaN(value) || Number.isNaN(prevVal)) return NaN;
-
-  const mom = value - prevVal;
-  const gain = mom >= 0 ? mom : 0;
-  const loss = mom < 0 ? -mom : 0;
-
-  const gainsBuffer = state.gainsBuffer!;
-  const lossesBuffer = state.lossesBuffer!;
-  const writeIdx = state.writeIdx!;
-  const oldGain = gainsBuffer[writeIdx]!;
-  const oldLoss = lossesBuffer[writeIdx]!;
-  gainsBuffer[writeIdx] = gain;
-  lossesBuffer[writeIdx] = loss;
-  state.writeIdx = (writeIdx + 1) % length;
-
-  if (Number.isNaN(oldGain) || Number.isNaN(state.sumGains!)) {
-    let totalGain = 0;
-    let totalLoss = 0;
-    let hasNaN = false;
-    for (let i = 0; i < length; i++) {
-      const g = gainsBuffer[i]!;
-      if (Number.isNaN(g)) {
-        hasNaN = true;
-        break;
-      }
-      totalGain += g;
-      totalLoss += lossesBuffer[i]!;
-    }
-    state.sumGains = hasNaN ? NaN : totalGain;
-    state.sumLosses = hasNaN ? NaN : totalLoss;
-  } else {
-    state.sumGains = state.sumGains! - oldGain + gain;
-    state.sumLosses = state.sumLosses! - oldLoss + loss;
-  }
-
-  if (Number.isNaN(state.sumGains!)) return NaN;
-
-  // Both sums zero (a flat window) is the manual's `100 * (sm1 - sm2) / (sm1 + sm2)` at 0/0: NaN,
-  // na, not 0 (see "Division by zero" at ta.iii; oracle lib/ta.py cmo "TradingView's 0/0 is nan").
-  return (100 * (state.sumGains! - state.sumLosses!)) / (state.sumGains! + state.sumLosses!);
+  if (Number.isNaN(mom)) return NaN;
+  const rising = mom >= -PINE_EPS;
+  const sum1 = naSkipSum(state.up, rising ? mom : 0, length);
+  const sum2 = naSkipSum(state.down!, rising ? 0 : -mom, length);
+  const total = sum1 + sum2;
+  if (total === 0) return NaN;
+  return (100 * (sum1 - sum2)) / total;
 }
 
 // ta.cci(source, length) (lib/ta.py cci): mean = ta.sma(source, length), mdev = ta.dev(source,
@@ -861,17 +822,17 @@ export interface StreakState {
   streak?: number;
 }
 
-// ta.rising - source가 length 바 연속 상승(엄격 증가)했는지. pine2py wavealgo/ta/cross.py의
-// rising()은 매 호출 source.get(0..length)(진짜 Series 히스토리)를 O(length) 재스캔해 인접한 모든
-// 쌍이 엄격 증가(curr>prev, 둘 다 non-na)인지 확인하고, data_len<=length(아직 충분한 바가 없음)면
-// 즉시 false를 반환한다. "최근 length번의 바-대-바 전이가 전부 엄격 증가"는 O(1) streak
-// 카운터(직전 바 대비 현재 값이 엄격히 컸던 연속 횟수)와 정확히 동치다: 이번 바 값이 직전 바 값보다
-// 크면(둘 다 non-na) streak을 이어서 +1, 아니면(NaN 포함) 0으로 리셋 — 반환은 streak>=length.
-// data_len<=length로 인한 false도 streak가 아직 length에 못 미쳤다는 사실 하나로 자연스럽게
-// 통합된다(swma/change의 NaN-프라임 워밍업 통합과 동일 원칙). prevValue는 crossover/swma/change와
-// 동일한 raw-passthrough(항상 갱신, NaN이어도 기억)로 갱신한다 — pine2py가 진짜 source.get(1) 원값을
-// 그대로 비교하므로(cmo의 파생 집계값 skip-on-NaN과 다름). 고정폭 버퍼를 전혀 쓰지 않으므로 length가
-// 바마다 달라져도(series) 안전 — TA_REGISTRY.lengthArgIndex는 null(sma류와 달리 하드 에러 불필요).
+// ta.rising(source, length): the source rose on each of the last `length` bar-to-bar steps
+// (ref_v6_ta_math.txt "ta.rising": "Test if the `source` series is now rising for `length` bars
+// long"). A streak counter: a step up continues it, anything else (a flat or falling step, an na on
+// either side) resets it to 0; true once it reaches `length`. The counter keeps no window, so a
+// series length is safe (TA_REGISTRY lengthArgIndex null).
+// The step test is tolerant: a rise of at most Pine's 1e-10 is not a rise, while ta.highest and
+// ta.crossover stay bit-exact (tier 1 ta_241_tolerant_compare, TradingView probes m547/m548:
+// `ta.rising(r, 1)` and `ta.falling(r, 1)` are false on every bar of a series stepping by 1e-12
+// around 100, true for the 1e-8 control; oracle lib/ta.py rising `source - last_val > _EPSILON`).
+// resin-harness state/repros/ta.extremes-seed-32.json: ta.rising(ohlc4, 5) on bar 299, where bar
+// 297's ohlc4 sits one ulp (1.4e-14) above bar 296's: false on the oracle, true bit-exact.
 export function rising(state: StreakState, value: number, length: number): boolean {
   if (state.prevValue === undefined) {
     state.prevValue = NaN;
@@ -879,15 +840,13 @@ export function rising(state: StreakState, value: number, length: number): boole
   }
   const prev = state.prevValue;
   state.prevValue = value;
-  if (Number.isNaN(value) || Number.isNaN(prev) || value <= prev) {
-    state.streak = 0;
-  } else {
-    state.streak = state.streak! + 1;
-  }
+  // An na on either side makes the difference NaN, and NaN > PINE_EPS is false: a reset.
+  state.streak = value - prev > PINE_EPS ? state.streak! + 1 : 0;
   return state.streak >= length;
 }
 
-// ta.falling - rising과 대칭(연속 하락, curr<prev). 상세는 rising 주석 참조.
+// ta.falling(source, length): rising's mirror, a step down by more than Pine's 1e-10 (see rising;
+// oracle lib/ta.py falling `last_val - source > _EPSILON`).
 export function falling(state: StreakState, value: number, length: number): boolean {
   if (state.prevValue === undefined) {
     state.prevValue = NaN;
@@ -895,11 +854,7 @@ export function falling(state: StreakState, value: number, length: number): bool
   }
   const prev = state.prevValue;
   state.prevValue = value;
-  if (Number.isNaN(value) || Number.isNaN(prev) || value >= prev) {
-    state.streak = 0;
-  } else {
-    state.streak = state.streak! + 1;
-  }
+  state.streak = prev - value > PINE_EPS ? state.streak! + 1 : 0;
   return state.streak >= length;
 }
 

@@ -1485,6 +1485,21 @@ describe("ta.cmo", () => {
     expect(cmo(state, 10, 2)).toBeNaN();
   });
 
+  // The sign test is tolerant: a momentum within 1e-10 of zero is a rising one (resin-harness
+  // tier 1 ta_241_tolerant_compare: TradingView's ta.cmo(r, 4) over r alternating 100 and
+  // 100 + 1e-12 is NaN, the steps down landing in the up sum and cancelling there). So a lone
+  // sub-tolerance fall in a flat window is +100, not -100 (fuzz seed 57 of ta.osc).
+  it("counts a momentum within Pine's 1e-10 tolerance as rising", () => {
+    const zigzag = {};
+    const got: number[] = [];
+    for (let i = 0; i < 18; i++) got.push(cmo(zigzag, i % 2 === 0 ? 100 : 100 + 1e-12, 4));
+    for (const v of got.slice(12)) expect(v).toBeNaN(); // the bars TradingView logged
+
+    const dip = {};
+    for (const v of [100, 100, 100]) cmo(dip, v, 2);
+    expect(cmo(dip, 100 - 1e-12, 2)).toBe(100);
+  });
+
   it("skips (does not poison) the gain/loss window across a NaN gap, unlike ta.sma/ta.vwma/ta.swma's push-and-poison buffers", () => {
     // pine2py cmo.py returns NaN immediately (without appending) when source.get(0) or
     // source.get(1) is NaN — the gains/losses window is only ever touched by valid momentum.
@@ -2379,6 +2394,22 @@ describe("ta.rising", () => {
     expect(rising(state, 14, 2)).toBe(true); // 13->14: streak=2
   });
 
+  // A step of at most Pine's 1e-10 is not a rise (resin-harness tier 1 ta_241_tolerant_compare:
+  // TradingView's ta.rising(r, 1) is false on every bar of r alternating 100 and 100 + 1e-12,
+  // true on the odd bars of the 1e-8 control; state/repros/ta.extremes-seed-32.json).
+  it("does not count a step within Pine's 1e-10 tolerance as a rise", () => {
+    const sub = {};
+    const sup = {};
+    const got: boolean[] = [];
+    const control: boolean[] = [];
+    for (let i = 0; i < 6; i++) {
+      got.push(rising(sub, i % 2 === 0 ? 100 : 100 + 1e-12, 1));
+      control.push(rising(sup, i % 2 === 0 ? 100 : 100 + 1e-8, 1));
+    }
+    expect(got).toEqual([false, false, false, false, false, false]);
+    expect(control).toEqual([false, true, false, true, false, true]);
+  });
+
   it("matches the pine2py-verified sample10.json trace (close, length=2)", () => {
     const state = {};
     const closes = [101, 102, 103, 102, 104, 105, 106, 105, 107, 108];
@@ -2427,6 +2458,21 @@ describe("ta.falling", () => {
     falling(state, 10, 2);
     falling(state, 5, 2); // streak=1
     expect(falling(state, 8, 2)).toBe(false); // increase -> reset
+  });
+
+  // rising's mirror (resin-harness tier 1 ta_241_tolerant_compare: ta.falling(r, 1) false on every
+  // bar of the 1e-12 series, true on the even bars of the 1e-8 control).
+  it("does not count a step within Pine's 1e-10 tolerance as a fall", () => {
+    const sub = {};
+    const sup = {};
+    const got: boolean[] = [];
+    const control: boolean[] = [];
+    for (let i = 0; i < 6; i++) {
+      got.push(falling(sub, i % 2 === 0 ? 100 : 100 + 1e-12, 1));
+      control.push(falling(sup, i % 2 === 0 ? 100 : 100 + 1e-8, 1));
+    }
+    expect(got).toEqual([false, false, false, false, false, false]);
+    expect(control).toEqual([false, false, true, false, true, false]);
   });
 
   it("matches the pine2py-verified sample10.json trace (open, length=1)", () => {
