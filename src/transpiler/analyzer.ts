@@ -2460,7 +2460,9 @@ export interface AnalyzedProgram {
     indexWrap: { index: Expr; line: number; col: number } | null;
     paramSubstRoot: Expr | null;
     passthroughSeriesArg: Expr | null;
-    tfLiteral: string | (string | Expr)[];
+    // A null element: that call of the function binds its timeframe on its first execution
+    // (securityDeferredTfs, whose entry for `expr` the queue gives its slots).
+    tfLiteral: string | (string | Expr | null)[];
     gaps: boolean;
     lookahead: boolean;
     // The call's compile-time symbol (securitySymbols), given to the slots the queue assigns.

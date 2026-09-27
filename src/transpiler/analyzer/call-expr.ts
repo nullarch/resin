@@ -8450,11 +8450,20 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         !tfDiscarded &&
         (isBareSeries || tupleFields !== null || exprMatch !== null || scriptPlan !== null);
       // The same in a function (tfSiteDeferred above): the forms that give each call of the function
-      // a slot block of its own, which that call binds.
+      // a slot block of its own, which that call binds. An expression built from each call's
+      // arguments (secParamMultiSite/Generic, the queue below) is one: a request per call, its
+      // prepass run by the call's binder (`f(src, tf) => request.security(sym, tf, src)` also called
+      // as `f(hlc3, tf)` from a function passed an input; concepts_other-timeframes-and-data.txt "In
+      // local scopes": "the Pine Script compiler extracts such calls into the global scope").
       const tfSiteDeferredOk =
         tfSiteDeferred !== null &&
         !tfDiscarded &&
-        (isBareSeries || tupleFields !== null || exprMatch !== null || funcScriptPlan !== null);
+        (isBareSeries ||
+          tupleFields !== null ||
+          exprMatch !== null ||
+          funcScriptPlan !== null ||
+          secParamMultiSite !== null ||
+          secParamMultiSiteGeneric !== null);
       if (!tfAvailable) {
         if (tfViaRuntime || tfDiscarded || tfDeferred || tfSiteDeferredOk) {
           // C600: 혼합 배열이 슬롯 생성 폼에 소비되면 폴딩 성공 사이트의 freeze 가드는 정당
@@ -8599,8 +8608,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // 분기의 tfLiteral! 참조가 구조적으로 안전하다(위 수용 판정이 그 조합에 이미 하드 에러를
       // push했다). (b)-2, C600: tf-param 혼합 배열(tfSiteMixed)은 tfSiteLiterals와 같은 자리로
       // 흐른다(tfSiteValues) — 사이트 슬롯 push만 pushSiteTf가 리터럴/런타임을 갈라 처리한다.
-      // The per-call timeframes the deferred parameter forms below take (never bound on execution:
-      // tfSiteDeferredOk leaves those forms out).
+      // The per-call timeframes: folded, or (tfSiteDeferred) bound on each call's first execution.
       const tfSiteFolded: (string | Expr)[] | null = tfSiteLiterals ?? tfSiteMixed;
       const tfSiteValues: (string | Expr | null)[] | null = tfSiteFolded ?? (tfSiteDeferredOk ? tfSiteDeferred : null);
       // The slots the call binds on its first execution (securityDeferredTfs), in push order.
@@ -8627,6 +8635,15 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         if (tfLiteral === undefined && tfRuntimeExpr !== null) prog.securityRuntimeTfSlots.set(slot, tfRuntimeExpr);
         else if (tfLiteral === undefined && tfDeferred) deferredSlots.push(slot);
         return slot;
+      };
+      // The timeframes the queue (processPendingSecurityParamExprs) gives the calls of the function.
+      // Bound on each call's first execution: the call's entry in securityDeferredTfs is made now, so
+      // that a request planned before the queue runs sees it (nestedRequestRefusal), and the queue
+      // gives it its slots.
+      const pendingTf = (): string | (string | Expr | null)[] => {
+        if (tfSiteValues === null) return tfLiteral!;
+        if (tfSiteFolded === null) prog.securityDeferredTfs.set(expr, { slots: [], tf: tfArg, sites: tfSiteValues.length });
+        return tfSiteValues;
       };
       const slotsBefore = prog.securityTfs.length;
       try {
@@ -8912,7 +8929,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             // C529: tf도 이 UDF의 매개변수면 콜사이트별 배열(같은 funcAllCallSites 순서라
             // 큐 처리의 서수와 1:1) — 고정 리터럴이면 기존 그대로 string 하나. C600: 배열 원소가
             // 런타임 tf 트리(Expr)면 큐 처리가 그 서수 슬롯을 securityRuntimeTfSlots에 등록한다.
-            tfLiteral: tfSiteFolded ?? tfLiteral!,
+            tfLiteral: pendingTf(),
             gaps,
             lookahead,
             symbol,
@@ -8933,7 +8950,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             indexWrap: null,
             paramSubstRoot: secParamMultiSiteGeneric,
             passthroughSeriesArg: null,
-            tfLiteral: tfSiteFolded ?? tfLiteral!,
+            tfLiteral: pendingTf(),
             gaps,
             lookahead,
             symbol,
@@ -9589,6 +9606,9 @@ export function processPendingSecurityParamExprs(prog: AnalyzedProgram, rootScop
       const tfv = typeof pending.tfLiteral === "string" ? pending.tfLiteral : pending.tfLiteral[ordinal]!;
       if (typeof tfv === "string") {
         prog.securityTfs.push(tfv);
+      } else if (tfv === null) {
+        // Bound by call `ordinal` on its first execution (securityDeferredTfs, sites = the calls).
+        prog.securityTfs.push(prog.chartTf);
       } else {
         prog.securityRuntimeTfSlots.set(prog.securityTfs.length, tfv);
         prog.securityTfs.push(prog.chartTf);
@@ -9606,6 +9626,7 @@ export function processPendingSecurityParamExprs(prog: AnalyzedProgram, rootScop
       for (const tc of built.taCalls) analyzeStatefulCall(tc.taCall, tc.fn, tc.entry, prog, rootScope);
     });
     noteSecuritySymbol(prog, base, pending.symbol);
+    prog.securityDeferredTfs.get(pending.expr)?.slots.push(base);
     prog.securityParamExprCalls.set(pending.expr, { base, gaps: pending.gaps, lookahead: pending.lookahead });
     info!.hasSecParamCalls = true;
     // 서수 배정 — 같은 함수에 pending이 여러 개(본문에 해당 콜 2개 이상)면 같은 값으로 재설정될

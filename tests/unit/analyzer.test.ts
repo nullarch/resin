@@ -25797,6 +25797,34 @@ describe("Analyzer request.security tf-param folding across in-func call sites (
     );
     expectTfBoundPerCall(prog, 2);
   });
+
+  // The expression is the function's own argument (built per call from that call's argument, the
+  // queue processPendingSecurityParamExprs) and one call passes on its caller's `tf`: each call binds
+  // its own request on its first execution, its prepass run by its binder. The oracle agrees value for
+  // value: resin-harness suites/lang/probes/L45.json (VMC Cipher B's f_wavetrend(src, ..., tf) called
+  // from f_findSommiFlag(tf, ...), realworld ed3e89b0cdb3).
+  it("binds per call a request whose expression is a parameter, when a call passes on its caller's tf", () => {
+    const prog = analyzeSource(
+      [
+        'tfIn = input.timeframe("240", "tf")',
+        "f(src, tf) =>",
+        '    request.security("", tf, src)',
+        "fi(src, tf) =>",
+        '    request.security("", tf, src[1])',
+        "fe(src, len, tf) =>",
+        '    request.security("", tf, ta.ema(src, len))',
+        "g(tf) =>",
+        "    f(hl2, tf) + fi(close, tf) + fe(close, 3, tf)",
+        'a = f(close, "480") + fi(high, "240") + fe(low, 2, "480")',
+        "b = g(tfIn)",
+      ].join("\n"),
+    );
+    expectTfBoundPerCall(prog, 2);
+    expect(prog.securityParamExprCalls.size).toBe(3);
+    for (const [call, { base }] of prog.securityParamExprCalls) {
+      expect(prog.securityDeferredTfs.get(call)?.slots).toEqual([base]);
+    }
+  });
 });
 
 // ── C530: UDF 본문 마지막 문장이 request.security(sym, tf, [e1, e2, ...]) 튜플 리터럴 expression
