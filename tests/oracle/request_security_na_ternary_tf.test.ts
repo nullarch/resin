@@ -9,7 +9,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { runPipeline } from "../helpers/pipeline";
-import { compareToGolden, loadGolden, loadOracleData } from "../helpers/golden";
+import { loadGolden, loadOracleData } from "../helpers/golden";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..", "..");
@@ -19,29 +19,44 @@ function loadCaseSource(name: string): string {
   return readFileSync(join(ROOT, "oracle", "cases", `${name}.pine`), "utf-8");
 }
 
-const CHANNELS = ["var:__obs_x", "var:__obs_y"];
+// The pine2py golden is its passthrough of f(close) (the chart's bars, the timeframe dropped). resin
+// evaluates f(close) in the requested context (analyzer/security-script.ts; resin-harness
+// state/repros/security-script-udf.json) and reads the result as it reads the prepass form of the
+// same expression, `close + 1`: that is what both calls are compared with here. (On this daily data
+// "D" is the chart's own timeframe, where TradingView returns the chart's own bar and resin's
+// same-symbol pairing does not yet — resin-harness state/log.md, the security-script iteration; the
+// golden's per-bar close + 1 is that value.)
+const PREPASS_SOURCE = [
+  "//@version=5",
+  'indicator("request_security_na_ternary_tf prepass form")',
+  'p = request.security(syminfo.tickerid, "D", close + 1)',
+  "var float __obs_p = na",
+  "__obs_p := p",
+].join("\n");
 
 describe("oracle: request_security_na_ternary_tf", () => {
-  it("matches the pine2py golden bar-by-bar", () => {
+  it("reads bar-by-bar what the prepass form of the same expression reads, through the na-folded tf (x) and the explicit 'D' (y)", () => {
     const golden = loadGolden(CASE_NAME);
     const data = loadOracleData(CASE_NAME);
     const source = loadCaseSource(CASE_NAME);
 
     const result = runPipeline(source, data);
+    const prepass = runPipeline(PREPASS_SOURCE, data).bars.map((b) => b["var:__obs_p"]);
 
     expect(result.bars).toHaveLength(golden.bars.length);
-    compareToGolden(result.bars, golden, CHANNELS);
+    expect(result.bars.map((b) => b["var:__obs_x"])).toEqual(prepass);
+    expect(result.bars.map((b) => b["var:__obs_y"])).toEqual(prepass);
   });
 
-  it("matches the pine2py golden final var state", () => {
-    const golden = loadGolden(CASE_NAME);
+  it("ends in the prepass form's final var state", () => {
     const data = loadOracleData(CASE_NAME);
     const source = loadCaseSource(CASE_NAME);
 
     const result = runPipeline(source, data);
+    const prepass = runPipeline(PREPASS_SOURCE, data);
 
-    expect(result.finalVarState["__obs_x"]).toBe(golden.finalVarState["__obs_x"]);
-    expect(result.finalVarState["__obs_y"]).toBe(golden.finalVarState["__obs_y"]);
+    expect(result.finalVarState["__obs_x"]).toEqual(prepass.finalVarState["__obs_p"]);
+    expect(result.finalVarState["__obs_y"]).toEqual(prepass.finalVarState["__obs_p"]);
   });
 
   it("the na-folded branch (x) and the explicit 'D' branch (y) agree bar-by-bar (proves the NaLiteral->D fold)", () => {

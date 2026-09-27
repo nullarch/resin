@@ -43,6 +43,7 @@ import {
 import { literalOffsetValue } from "./index-access";
 import { isUdtConstructorCall } from "./constructors";
 import { isHarmlessArgDup } from "./arg-dup";
+import { planSecurityScript, type SecurityScriptPlan } from "./security-script";
 // C512: request.security tf 삼항 조건의 산술 임계값 폴딩이 timeframe.in_seconds(상수 tf)를
 // 컴파일타임에 계산할 때 런타임과 정확히 같은 값을 내도록 런타임 순수 함수를 직접 import한다
 // (transpiler→runtime 첫 값 import — in_seconds는 상태/Context 의존이 전혀 없는 순수 함수라
@@ -2495,9 +2496,11 @@ function isSecurityUdfScopeOffsetExpr(node: Expr, paramNames: readonly string[])
 // request.security expression 좁은 문법 거부 에러(단일 발신 지점 — C453부터 인라인 경로와 지연
 // 처리 경로(processPendingSecurityParamExprs)가 같은 메시지를 공유한다. 문구는 기존 테스트가
 // 매칭하는 문자열이므로 바꾸지 말 것).
-function pushSecurityExprUnsupportedError(prog: AnalyzedProgram, expr: CallExpr): void {
+// `refusal`: why the requested context could not run the script itself either
+// (analyzer/security-script.ts), appended after the location.
+function pushSecurityExprUnsupportedError(prog: AnalyzedProgram, expr: CallExpr, refusal: string | null = null): void {
   prog.errors.push(
-    `'request.security' 'expression' argument only supports bare/derived series ('open'/'high'/'low'/'close'/'volume'/'hl2'/'hlc3'/'ohlc4'/'hlcc4')·TV built-in bar variables ('time'/'time_close'/'bar_index')·number/boolean/na literals·arithmetic (+ - * /)·integer-literal history ('close[1]'/'ta.sma(close,10)[1]' — any valid subexpression)·comparison (</>/<=/>=/==/!=)·logical (and/or/not)·ternary ('cond ? a : b' — in value/offset position)·ta.* calls (multiple/nested allowed)·nz() calls (1~2 positional arguments)·na() calls (1 argument)·fixnan() calls (1 argument)·math.* calls (positional only, abs/round/max/min/avg/floor/ceil/sqrt/pow/log/log10/exp/sign/trig·inverse trig/atan2/todegrees/toradians/round_to_mintick)·substitution of a globally unique top-level '=' variable (when its value fits this grammar, including input.int/float/bool scalar constants) — request.*/strategy.*/UDF calls·multi-return TA·':=' reassigned variables are not implemented (L${expr.line}:${expr.col})`,
+    `'request.security' 'expression' argument only supports bare/derived series ('open'/'high'/'low'/'close'/'volume'/'hl2'/'hlc3'/'ohlc4'/'hlcc4')·TV built-in bar variables ('time'/'time_close'/'bar_index')·number/boolean/na literals·arithmetic (+ - * /)·integer-literal history ('close[1]'/'ta.sma(close,10)[1]' — any valid subexpression)·comparison (</>/<=/>=/==/!=)·logical (and/or/not)·ternary ('cond ? a : b' — in value/offset position)·ta.* calls (multiple/nested allowed)·nz() calls (1~2 positional arguments)·na() calls (1 argument)·fixnan() calls (1 argument)·math.* calls (positional only, abs/round/max/min/avg/floor/ceil/sqrt/pow/log/log10/exp/sign/trig·inverse trig/atan2/todegrees/toradians/round_to_mintick)·substitution of a globally unique top-level '=' variable (when its value fits this grammar, including input.int/float/bool scalar constants) — request.*/strategy.*/UDF calls·multi-return TA·':=' reassigned variables are not implemented (L${expr.line}:${expr.col})${refusal !== null ? `; the requested context cannot run the script for it: ${refusal}` : ""}`,
   );
 }
 
@@ -8090,6 +8093,44 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
       // 수행한다). 수용 시 실패한 폴딩 시도의 신규 freeze 가드를 롤백한다(C598 — 이 콜사이트는
       // "컴파일타임 고정 캐시" 전제가 없어 가드가 스퓨리어스 throw만 만든다).
       const tfAvailable = tfLiteral !== undefined || tfSiteLiterals !== null;
+      // An expression none of the forms above takes is evaluated by running the script itself in the
+      // requested context: the code before the call that the expression depends on, on the requested
+      // bars (analyzer/security-script.ts; concepts_other-timeframes-and-data.txt "Declared
+      // variables": "the function call duplicates all preceding code that determines the assigned
+      // value or reference"). Only for a call outside functions (one in a block of a top-level
+      // statement is hoisted, as TradingView hoists it).
+      // A scalar user-defined-function form (scalarBareUdfInner, C436/C442/C742) was pine2py's
+      // passthrough: the call evaluated on the chart's bars and the timeframe dropped. The requested
+      // context runs it instead whenever it can (resin-harness state/repros/security-script-udf.json,
+      // `z = g(close)` with `var` state in g: the oracle sums the requested bars' closes); the
+      // passthrough stays only where it cannot (a timeframe resolved at neither compile time nor
+      // once at run time, or a slice this path refuses).
+      let scriptPlan: SecurityScriptPlan | null = null;
+      let scriptPlanRefusal: string | null = null;
+      if (
+        !isBareSeries &&
+        !isTupleArg &&
+        bareUdfInner === undefined &&
+        bareTaInner === undefined &&
+        exprMatch === null &&
+        secParamMultiSite === null &&
+        secParamAllBareUdf === null &&
+        secParamMultiSiteGeneric === null &&
+        (scalarBareUdfInner === undefined || (scope.func === null && (tfLiteral !== undefined || tfRuntimeExpr !== null)))
+      ) {
+        if (scope.func !== null) {
+          scriptPlanRefusal = "the call is in a function";
+        } else {
+          const chartTicker = prog.syminfoStrings.get("tickerid") || null;
+          const planned = planSecurityScript(prog, expr, seriesArg, symbol !== null && symbol !== chartTicker);
+          if (planned.ok) {
+            scriptPlan = planned.plan;
+            scalarBareUdfInner = undefined;
+          } else {
+            scriptPlanRefusal = planned.reason;
+          }
+        }
+      }
       // 배치31 (b)-2, C600: tf-param 혼합 배열(tfSiteMixed)의 소비 가능 폼 — 직접 multiSite 3폼
       // (bare/튜플/exprMatch — C529/C532 사이트별 슬롯 블록의 각 슬롯을 securityRuntimeTfSlots로)과
       // pending secParam* 3폼(C453 큐가 이미 사이트별 슬롯 블록을 서수 1:1로 배정하므로 같은 혼합
@@ -8104,7 +8145,8 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           secParamMultiSiteGeneric !== null ||
           secParamAllBareUdf !== null);
       const tfViaRuntime =
-        (tfRuntimeExpr !== null && (isBareSeries || tupleFields !== null || exprMatch !== null)) || tfSiteMixedConsumable;
+        (tfRuntimeExpr !== null && (isBareSeries || tupleFields !== null || exprMatch !== null || scriptPlan !== null)) ||
+        tfSiteMixedConsumable;
       const tfDiscarded = bareUdfInner !== undefined || bareTaInner !== undefined || scalarBareUdfInner !== undefined;
       if (!tfAvailable) {
         if (tfViaRuntime || tfDiscarded) {
@@ -8142,9 +8184,10 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         exprMatch === null &&
         secParamMultiSite === null &&
         secParamAllBareUdf === null &&
-        secParamMultiSiteGeneric === null
+        secParamMultiSiteGeneric === null &&
+        scriptPlan === null
       ) {
-        pushSecurityExprUnsupportedError(prog, expr);
+        pushSecurityExprUnsupportedError(prog, expr, scriptPlanRefusal);
       }
       // C533(C367 게이트 해제): ta.* 콜 포함 expression 폼도 UDF/method 본문 안에서 지원한다.
       // 문제였던 것은 프리패스가 top-level 함수로 방출되는데 UDF 스코프의 analyzeStatefulCall이
@@ -8582,6 +8625,32 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           });
           analyzeExpr(symbolArg, prog, scope, false);
           analyzeExpr(tfArg, prog, scope, false);
+          return;
+        } else if (scriptPlan !== null) {
+          // The script itself runs in the requested context (analyzer/security-script.ts); the chart
+          // reads its result like a prepass's (securityExprCache[slot], runtime/security.ts
+          // getFromArray). The expression is ordinary code there, executed on every requested bar
+          // whatever branch the call sits in: it is analyzed in the top-level scope, unconditional.
+          let root = scope;
+          while (root.parent !== null) root = root.parent;
+          const errorsBefore = prog.errors.length;
+          analyzeExpr(seriesArg, prog, root, false);
+          analyzeExpr(symbolArg, prog, scope, false);
+          analyzeExpr(tfArg, prog, scope, false);
+          // An expression its own analysis rejects gets no slot (no half-registered request).
+          if (prog.errors.length > errorsBefore) return;
+          const slot = prog.securityTfs.length;
+          prog.securityTfs.push(tfLiteral ?? prog.chartTf);
+          if (tfRuntimeExpr !== null && tfLiteral === undefined) prog.securityRuntimeTfSlots.set(slot, tfRuntimeExpr);
+          prog.securityExprCallSlots.set(expr, {
+            slot,
+            gaps,
+            lookahead,
+            bodyExpr: seriesArg,
+            histReads: [],
+            varSlice: null,
+            script: scriptPlan,
+          });
           return;
         }
       }

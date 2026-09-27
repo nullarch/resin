@@ -486,15 +486,43 @@ export function generateCode(program: AnalyzedProgram): string {
   // $.securityCache[slot]을 실제 값으로 다시 빌드한다. 반드시 바 루프 시작 전(이 지점)에서 끝나야
   // securityExprCallSlots 프리패스(위 3b, 바로 아래)와 바 루프 본문이 항상 최종 값을 읽는다.
   // 스크립트에 이 패턴이 없으면(대다수) 빈 맵이라 기존 출력 무변화.
+  // A script with request.security expressions evaluated by running the script itself in the
+  // requested context (securityScriptRuns) instantiates this module again for each of them, in a
+  // child context (Context.runSecurityScript, $.secCapture >= 0). The child has no request data of
+  // its own and reads none (its slice holds no request, analyzer/security-script.ts), so it skips
+  // everything below that builds or computes it.
+  const scriptRuns = securityScriptRuns(program, others);
+  const securityPreamble: string[] = [];
   for (const [slot, tfExpr] of program.securityRuntimeTfSlots) {
-    lines.push(`$.rebuildSecurityCache(${slot}, ${genExpr(tfExpr, program, null)});`);
+    securityPreamble.push(`$.rebuildSecurityCache(${slot}, ${genExpr(tfExpr, program, null)});`);
   }
-  for (const line of generateSecurityExprPreamble(program)) lines.push(line);
+  for (const line of generateSecurityExprPreamble(program)) securityPreamble.push(line);
+  for (const run of scriptRuns) {
+    securityPreamble.push(
+      `$.securityExprCache[${run.slot}] = $.runSecurityScript(${run.slot}, ${JSON.stringify(run.runs)}, ${others.length});`,
+    );
+  }
+  if (scriptRuns.length > 0 && securityPreamble.length > 0) {
+    lines.push("if ($.secCapture < 0) {", ...securityPreamble, "}");
+  } else {
+    lines.push(...securityPreamble);
+  }
   lines.push("return function () {");
-  for (const stmt of others) {
+  others.forEach((stmt, i) => {
+    // The child of a request whose call is in this statement records the expression here, where
+    // the statement begins, on every requested bar (analyzer/security-script.ts).
+    for (const run of scriptRuns) {
+      if (run.at !== i) continue;
+      const pre: string[] = [];
+      hoistLazyStatefulCalls(run.expression, program, null, pre);
+      const value = genExpr(run.expression, program, null);
+      lines.push(`if ($.secCapture === ${run.slot}) {`, ...pre, `$.secOut[$.idx] = rt.security.scriptValue(${value});`, "}");
+    }
     const line = genStmt(stmt, program, /* nested */ false, /* funcCtx */ null, promoted);
-    if (line) lines.push(line);
-  }
+    if (!line) return;
+    // A child runs only the statements its slice holds.
+    lines.push(scriptRuns.length > 0 ? `if ($.secSkip === null || $.secSkip[${i}] === 0) {\n${line}\n}` : line);
+  });
   // 히스토리 참조가 있는 top-level var마다, 이 바의 모든 문장이 실행을 마친 뒤 그 최종 값을
   // $.histSlots[]에 기록한다(analyzer의 analyzeIndexAccess 주석 참조) — 다음 바의 x[1]이 정확히
   // "이 바가 끝난 시점의 x 값"을 읽도록 하는 지점은 여기 단 한 곳뿐이다.
@@ -588,6 +616,9 @@ export function generateSecurityExprPreamble(program: AnalyzedProgram): string[]
   // Nested requests' prepasses first (innermost first, analyzer securityNestedPrepasses): the
   // prepasses that read them pair their results with their own rows.
   for (const info of [...program.securityNestedPrepasses, ...program.securityExprCallSlots.values(), ...program.securityParamExprPrepasses]) {
+    // Evaluated by running the script in the requested context instead (generateCode,
+    // securityScriptRuns).
+    if ((info as { script?: unknown }).script !== undefined) continue;
     const fnName = `__secExpr${info.slot}`;
     // C370 hist-on-expr: histReads(안쪽 서브식 먼저 순서)의 배열 인덱스가 곧 버퍼 인덱스 —
     // 콜사이트마다 프리패스 함수가 독립이라 secCtx도 콜사이트별로 새로 만든다(버퍼 맵 격리).
@@ -651,6 +682,29 @@ export function generateSecurityExprPreamble(program: AnalyzedProgram): string[]
     );
   }
   return lines;
+}
+
+// The request.security calls whose expression the script itself computes in the requested context
+// (analyzer/security-script.ts): per call, its slot, the index in `others` (the per-bar statements)
+// of the statement it is in, where its child records the expression, and the indices of the
+// statements before it that the child runs.
+interface SecurityScriptRun {
+  slot: number;
+  at: number;
+  runs: number[];
+  expression: Expr;
+}
+
+function securityScriptRuns(program: AnalyzedProgram, others: readonly Stmt[]): SecurityScriptRun[] {
+  const out: SecurityScriptRun[] = [];
+  for (const info of program.securityExprCallSlots.values()) {
+    if (info.script === undefined) continue;
+    const at = others.indexOf(info.script.stmt);
+    if (at < 0) throw new Error("internal: a request.security call evaluated in its context is not in a per-bar statement");
+    const runs = [...info.script.slice].map((s) => others.indexOf(s)).filter((i) => i >= 0);
+    out.push({ slot: info.slot, at, runs: runs.sort((a, b) => a - b), expression: info.bodyExpr });
+  }
+  return out;
 }
 
 // C738: var 슬라이스 문장 방출 — Pine if 시맨틱과 JS if가 정확히 동형(조건 na→NaN falsy = 본문
@@ -1659,6 +1713,9 @@ function walkForLazyHoist(
       return;
     }
     case "CallExpr": {
+      // A request.security expression computed by the script in the requested context runs there,
+      // not here: the chart reads its result (generateCode hoists it into the child's record).
+      if (program.securityExprCallSlots.get(expr)?.script !== undefined) return;
       for (const a of expr.args) walkForLazyHoist(a, inLazy, program, funcCtx, out);
       // In v6 the lazy position is a short-circuited `and`/`or` operand (a `?:` branch is not
       // walked at all): the call runs only when that operand is evaluated, so it stays inline in

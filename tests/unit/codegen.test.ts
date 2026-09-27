@@ -14938,21 +14938,27 @@ describe("CodeGen request.security(...)[N] result history indexing (C448)", () =
   });
 });
 
-// ── request.security(...)[N]의 bare-UDF passthrough(securityScalarBareUdfCallSlots, C436) 서브축
-// (C711, wild hist-index(all) 클러스터 잔여 최다 서브그룹) — `request.security(sym, tf, myFunc(x))[N]`.
-// C436에서 이미 genCallExpr이 securityScalarBareUdfCallSlots 등록 콜을 genExpr(inner UDF)로 리다이렉트해
-// 두므로, 이 히스토리 인덱싱도 별도 codegen 배선 없이 기존 taCallHistorySlots record+get(C340과 동일
-// 메커니즘)만 analyzer 쪽에서 허용하면 값 생성이 자동으로 올바르다 — 아래 exact-string 테스트가 이를
-// 직접 확인한다. ──
-describe("CodeGen request.security(...)[N] bare-UDF passthrough history indexing (C711)", () => {
+// ── request.security(...)[N] on a UDF expression (C711, wild hist-index(all) 클러스터 잔여 최다
+// 서브그룹) — `request.security(sym, tf, myFunc(x))[N]`. C711 read it as C436's pine2py passthrough
+// (the UDF on the chart's bars, tf dropped); the expression now runs in the requested context
+// (analyzer/security-script.ts), and [N] is the request's own result history (C448 getFromArrayHist).
+// Its values must equal the prepass form of the same expression (`close * 2`), whose reading of the
+// requested bars tier 1 certifies. ──
+describe("CodeGen request.security(...)[N] on a UDF expression evaluated in the requested context (C711)", () => {
   const SRC_MYFUNC = "myFunc(v) =>\n    v * 2\n";
+  // 8-hour bars from 2024-01-01 00:00 UTC: three per day, so "D" aggregates them.
   const DATA: OHLCVData = {
-    open: [1, 2, 3, 4, 5],
-    high: [1, 2, 3, 4, 5],
-    low: [1, 2, 3, 4, 5],
-    close: [10, 20, 30, 40, 50],
-    volume: [1, 1, 1, 1, 1],
-    time: [0, 1, 2, 3, 4],
+    open: [100, 102, 101, 105, 108, 106, 110, 113, 111, 115],
+    high: [103, 105, 102, 108, 110, 108, 112, 115, 113, 117],
+    low: [99, 100, 100, 103, 106, 104, 108, 111, 109, 113],
+    close: [102, 101, 103, 106, 107, 109, 111, 112, 114, 116],
+    volume: [1000, 1100, 1050, 1200, 1150, 1300, 1250, 1400, 1350, 1500],
+    time: [
+      1704067200000, 1704096000000, 1704124800000,
+      1704153600000, 1704182400000, 1704211200000,
+      1704240000000, 1704268800000, 1704297600000,
+      1704326400000,
+    ],
   };
   const runOf = (source: string) => {
     const result = transpile(source);
@@ -14975,31 +14981,34 @@ describe("CodeGen request.security(...)[N] bare-UDF passthrough history indexing
     ).bars.map((b) => b["var:x"]);
   };
 
-  it("exact-string: record+get is keyed on histSlots (not rt.security.*), and the recorded value is a direct native UDF call", () => {
+  it("exact-string: [1] reads the request's own result history, and the child records the UDF call", () => {
     const result = transpile(SRC_MYFUNC + 'x = request.security(syminfo.tickerid, "D", myFunc(close))[1]');
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");
-    expect(result.code).toContain("$.histSlots[0].record(myFunc(0, $.close.get(0)))");
-    expect(result.code).not.toContain("rt.security");
+    expect(result.code).toContain("rt.security.getFromArrayHist($.securityExprCache[0], $.securityCache[0], $.idx, false, false, 1)");
+    expect(result.code).toContain("$.secOut[$.idx] = rt.security.scriptValue(myFunc(0, $.close.get(0)));");
+    expect(result.code).not.toContain("record(myFunc(");
   });
 
-  it("hand-verified E2E: offset 0 is byte-identical to the un-indexed bare passthrough call", () => {
+  it("E2E: offset 0 equals the un-indexed call, and both equal the prepass form of the same expression", () => {
     const bare = runOf(SRC_MYFUNC + 'var float x = na\nx := request.security(syminfo.tickerid, "D", myFunc(close))');
     const idx0 = runOf(SRC_MYFUNC + 'var float x = na\nx := request.security(syminfo.tickerid, "D", myFunc(close))[0]');
+    const prepass = runOf('var float x = na\nx := request.security(syminfo.tickerid, "D", close * 2)');
     expect(idx0).toEqual(bare);
-    expect(bare).toEqual([20, 40, 60, 80, 100]);
+    expect(bare).toEqual(prepass);
+    expect(bare.some((v) => Number.isFinite(v))).toBe(true);
   });
 
-  it("hand-verified E2E: literal offset 1 equals the offset-0 sequence shifted 1 bar later (NaN before that) — matches a plain UDF-call history index (C520), since the security wrapper is fully discarded", () => {
+  it("E2E: literal offset 1 equals the offset-0 sequence one chart bar later (NaN before that), as the prepass form's does", () => {
     const offset0 = runOf(SRC_MYFUNC + 'var float x = na\nx := request.security(syminfo.tickerid, "D", myFunc(close))');
     const offset1 = runOf(SRC_MYFUNC + 'var float x = na\nx := request.security(syminfo.tickerid, "D", myFunc(close))[1]');
-    const plainUdfHist = runOf(SRC_MYFUNC + 'var float x = na\nx := myFunc(close)[1]');
+    const prepass1 = runOf('var float x = na\nx := request.security(syminfo.tickerid, "D", close * 2)[1]');
     const expected = offset0.map((_, i) => (i - 1 >= 0 ? offset0[i - 1] : NaN));
     expect(offset1).toEqual(expected);
-    expect(offset1).toEqual(plainUdfHist);
+    expect(offset1).toEqual(prepass1);
   });
 
-  it("hand-verified E2E: reading from inside a conditional block matches unconditional reading (uses condCallHistorySlots compressed index, not the top-level taCallHistorySlots path — but same genExpr redirect)", () => {
+  it("E2E: reading from inside a conditional block matches unconditional reading (the call is hoisted: its requested context computes on every requested bar, as TradingView's does)", () => {
     const bars = runOf(
       SRC_MYFUNC +
         [
@@ -15197,9 +15206,11 @@ describe("CodeGen request.security expression dynamic history offset (C437)", ()
     expect(lines).not.toContain("rt.secHistGet");
   });
 
-  it("still rejects a ta.* call used as the offset expression itself (allowTa=false at the offset position — no state re-advance via repeated offsetCode emission)", () => {
-    const program = analyzeSecuritySource('x = request.security("", "D", close[ta.sma(close, 1)])');
-    expect(program.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+  it("evaluates a ta.* call used in the offset expression by running the script in the requested context (allowTa=false guarded the prepass's repeated offsetCode emission, which that path does not have)", () => {
+    const program = analyzeSecuritySource('x = request.security("", "D", close[int(ta.sma(close, 1))])');
+    expect(program.errors).toEqual([]);
+    expect([...program.securityExprCallSlots.values()].some((v) => v.script !== undefined)).toBe(true);
+    expect(program.securityExprCallSlots.size).toBe(1);
   });
 
   const DATA: OHLCVData = {
@@ -15854,32 +15865,32 @@ describe("CodeGen request.security() bare UDF call expression (C432)", () => {
 });
 
 // ── request.security SCALAR(비튜플) bare UDF call expression(C436, wild 신규 최대 서브클러스터
-// 214/483) — `x = request.security(sym, tf, myFunc(...))`에서 expression 인자가 브래킷/튜플
-// 디스트럭처 없이 단일 반환 UDF 호출인 폼. bareUdfCall(C432)의 스칼라 자매 축 — 같은
-// _resolve_expression literal passthrough 오라클 근거(python 소스 확인 — Series 여부는
-// hasattr(expr,'get') and hasattr(expr,'_data')로만 판별해 튜플/스칼라 구분 자체가 없음).
-// genCallExpr이 securityScalarBareUdfCallSlots로 등록된 내부 UDF CallExpr에서 곧장 genExpr한다.
+// 214/483) — `x = request.security(sym, tf, myFunc(...))`. C436 emitted it as pine2py's passthrough
+// (the UDF called on the chart's bars, symbol/tf/gaps/lookahead dropped); the expression is now
+// evaluated by running the script in the requested context (analyzer/security-script.ts): a child
+// context on the requested bars records it where its statement begins, and the chart reads the
+// result as it reads a prepass's (resin-harness state/repros/security-script-udf.json checks the
+// values against the oracle).
 describe("CodeGen request.security() SCALAR bare UDF call expression (C436)", () => {
   const SRC_MYFUNC = "myFunc(x) =>\n    x + 1\n";
 
-  it("emits the exact same code as a plain (non-security) UDF call — the request.security wrapper (symbol/tf/gaps/lookahead) is fully discarded", () => {
-    const withSecurity = codegenSource(SRC_MYFUNC + 'ma = request.security(syminfo.tickerid, "D", myFunc(close))');
-    const plain = codegenSource(SRC_MYFUNC + "ma = myFunc(close)");
-    expect(withSecurity).toBe(plain);
-  });
-
-  it("exact-string: the emitted statement is a native JS call to the UDF directly, no rt.security.* reference anywhere", () => {
+  it("runs the script in the requested context and reads its values like a prepass's", () => {
     const code = codegenSource(SRC_MYFUNC + 'ma = request.security(syminfo.tickerid, "D", myFunc(close))');
-    expect(code).toContain("var ma = myFunc(0, $.close.get(0));");
-    expect(code).not.toContain("rt.security");
+    expect(code).toContain("if ($.secCapture < 0) {\n$.securityExprCache[0] = $.runSecurityScript(0, [], 1);\n}");
+    expect(code).not.toBe(codegenSource(SRC_MYFUNC + "ma = myFunc(close)"));
   });
 
-  it("discards gaps=/lookahead= kwargs with no codegen change (still byte-identical to the wrapper-free form)", () => {
+  it("exact-string: the child records the UDF call where the statement begins; the chart reads the request", () => {
+    const code = codegenSource(SRC_MYFUNC + 'ma = request.security(syminfo.tickerid, "D", myFunc(close))');
+    expect(code).toContain("if ($.secCapture === 0) {\n$.secOut[$.idx] = rt.security.scriptValue(myFunc(0, $.close.get(0)));\n}");
+    expect(code).toContain("var ma = rt.security.getFromArray($.securityExprCache[0], $.securityCache[0], $.idx, false, false);");
+  });
+
+  it("honours gaps=/lookahead= in the read", () => {
     const withKwargs = codegenSource(
       SRC_MYFUNC + 'ma = request.security(syminfo.tickerid, "D", myFunc(close), gaps=true, lookahead=true)',
     );
-    const withoutKwargs = codegenSource(SRC_MYFUNC + 'ma = request.security(syminfo.tickerid, "D", myFunc(close))');
-    expect(withKwargs).toBe(withoutKwargs);
+    expect(withKwargs).toContain("var ma = rt.security.getFromArray($.securityExprCache[0], $.securityCache[0], $.idx, true, true);");
   });
 
   it("emits byte-identical code for the fully-keyword form vs the positional form", () => {
@@ -15892,12 +15903,13 @@ describe("CodeGen request.security() SCALAR bare UDF call expression (C436)", ()
 
   it("works when nested inside a larger expression, not just a bare Assignment RHS", () => {
     const nested = codegenSource(SRC_MYFUNC + 'plot(request.security(syminfo.tickerid, "D", myFunc(close)) + 1)');
-    const plain = codegenSource(SRC_MYFUNC + "plot(myFunc(close) + 1)");
-    expect(nested).toBe(plain);
+    expect(nested).toContain("rt.security.scriptValue(myFunc(0, $.close.get(0)))");
+    expect(nested).toContain("rt.security.getFromArray($.securityExprCache[0], $.securityCache[0], $.idx, false, false) + 1");
   });
 
-  it("hand-verified E2E: the UDF re-executes on every bar at the current (chart) timeframe — values track the current bar, they do NOT hold constant across the 'D' HTF period (pine2py oracle behavior, python-verified — literal port, not real HTF re-execution)", () => {
+  it("E2E: the values are the requested bars' (held across each 'D' period), equal to the prepass form of the same expression", () => {
     const source = [SRC_MYFUNC, 'ma = request.security(syminfo.tickerid, "D", myFunc(close))', "plot(ma)"].join("\n");
+    const prepassSource = ['ma = request.security(syminfo.tickerid, "D", close + 1)', "plot(ma)"].join("\n");
     const data: OHLCVData = {
       open: [100, 102, 101, 105, 108, 106, 110, 113, 111, 115],
       high: [103, 105, 102, 108, 110, 108, 112, 115, 113, 117],
@@ -15926,9 +15938,17 @@ describe("CodeGen request.security() SCALAR bare UDF call expression (C436)", ()
       result.plotTitles,
       result.securityTfs,
     );
-    // myFunc(x) = x+1 — 매 바 그 자리에서 직접 호출되므로 ma는 그 바의 close+1 그대로다(같은 'D'
-    // HTF 기간 안에서도 값이 매 바 바뀜 — 진짜 HTF 집계와 정반대 증거, C432 describe와 동일 원칙).
-    expect(Array.from(plots[0]!.values)).toEqual(Array.from(data.close).map((c) => c + 1));
+    const prepass = transpile(prepassSource);
+    expect(prepass.ok).toBe(true);
+    if (!prepass.ok) return;
+    const expected = run(
+      prepass.code, prepass.varSlots, prepass.taSlotCount, data, prepass.fnVarSlotCount, prepass.historySlotCount,
+      prepass.taScratchSize, {}, prepass.plotTitles, prepass.securityTfs,
+    ).plots[0]!.values;
+    expect(Array.from(plots[0]!.values)).toEqual(Array.from(expected));
+    // Not the chart bars' close + 1: the requested daily bar's value holds across its chart bars.
+    expect(Array.from(plots[0]!.values)).not.toEqual(Array.from(data.close).map((c) => c + 1));
+    expect(Array.from(plots[0]!.values).some((v) => Number.isFinite(v))).toBe(true);
   });
 });
 
@@ -15996,19 +16016,20 @@ describe("CodeGen request.security() SCALAR bare UDF result — UDT field access
 describe("CodeGen request.security() SCALAR bare UDF call via top-level '=' var substitution (C442)", () => {
   const SRC_MYFUNC = "myFunc(x) =>\n    x + 1\n";
 
-  it("emits a plain identifier read for the request.security position — the UDF call itself is NOT re-emitted a second time", () => {
+  it("the UDF call is emitted once, in the variable's own statement: the child runs that statement and records the variable", () => {
     const code = codegenSource(SRC_MYFUNC + 'source = myFunc(close)\nma = request.security(syminfo.tickerid, "D", source)');
     // myFunc(...) 호출 자체(함수 선언부의 시그니처 "function myFunc(__slotBase, x)"는 "(0,"을 포함하지
-    // 않아 이 패턴에 안 걸림)는 'source' 대입문에서 정확히 1회만 나타나야 한다 — request.security
-    // 자리는 'source'를 그대로 읽기만 해야 한다.
+    // 않아 이 패턴에 안 걸림)는 'source' 대입문에서 정확히 1회만 나타나야 한다 — 요청 컨텍스트의
+    // 자식은 그 문장을 자기 봉 위에서 실행하고 'source'를 기록할 뿐이다.
     const callSiteCount = (code.match(/myFunc\(0,/g) ?? []).length;
     expect(callSiteCount).toBe(1);
     expect(code).toContain("var source = myFunc(0, $.close.get(0));");
-    expect(code).toContain("var ma = source;");
-    expect(code).not.toContain("rt.security");
+    expect(code).toContain("$.secOut[$.idx] = rt.security.scriptValue(source);");
+    expect(code).toContain("$.securityExprCache[0] = $.runSecurityScript(0, [0], 2);");
+    expect(code).toContain("var ma = rt.security.getFromArray($.securityExprCache[0], $.securityCache[0], $.idx, false, false);");
   });
 
-  it("discards gaps=/lookahead= kwargs and the fully-keyword form with no codegen change (byte-identical to the plain positional form)", () => {
+  it("the fully-keyword form is byte-identical to the positional one; gaps=/lookahead= reach the read", () => {
     const base = codegenSource(SRC_MYFUNC + 'source = myFunc(close)\nma = request.security(syminfo.tickerid, "D", source)');
     const withKwargs = codegenSource(
       SRC_MYFUNC + 'source = myFunc(close)\nma = request.security(syminfo.tickerid, "D", source, gaps=true, lookahead=true)',
@@ -16016,17 +16037,19 @@ describe("CodeGen request.security() SCALAR bare UDF call via top-level '=' var 
     const keyword = codegenSource(
       SRC_MYFUNC + 'source = myFunc(close)\nma = request.security(symbol=syminfo.tickerid, timeframe="D", expression=source)',
     );
-    expect(withKwargs).toBe(base);
     expect(keyword).toBe(base);
+    expect(withKwargs).toContain("$.idx, true, true)");
   });
 
-  it("hand-verified E2E: a stateful UDF (var accumulator) referenced through the substituted variable advances its state exactly ONCE per bar — request.security's copy tracks the SAME value, it does not double-advance the counter (regression guard for the C180-class double-registration bug this slice fixed)", () => {
+  it("E2E: a stateful UDF (var accumulator) behind the variable keeps its own state in each context — once per chart bar on the chart, once per requested bar in the requested context (equal to the prepass ta.cum(1) count there)", () => {
     const source = [
       "counter() =>\n    var int n = 0\n    n := n + 1\n    n",
       "source = counter()",
       'ma = request.security(syminfo.tickerid, "D", source)',
+      'cnt = request.security(syminfo.tickerid, "D", ta.cum(1))',
       "plot(source)",
       "plot(ma)",
+      "plot(cnt)",
     ].join("\n");
     const data: OHLCVData = {
       open: [100, 102, 101, 105, 108],
@@ -16051,77 +16074,80 @@ describe("CodeGen request.security() SCALAR bare UDF call via top-level '=' var 
       result.plotTitles,
       result.securityTfs,
     );
-    // 이중 등록 버그가 있었다면 ma는 [2,4,6,8,10]류로 나왔을 것 — 정상은 source와 완전히 동일한
-    // [1,2,3,4,5](매 바 1회 전진).
+    // The chart's counter advances once per chart bar, untouched by the requested context's run (a
+    // double registration would make it [2, 4, 6, 8, 10]); the requested context's counts its own
+    // bars, as ta.cum(1) there does.
     expect(Array.from(plots[0]!.values)).toEqual([1, 2, 3, 4, 5]);
-    expect(Array.from(plots[1]!.values)).toEqual([1, 2, 3, 4, 5]);
+    expect(Array.from(plots[1]!.values)).toEqual(Array.from(plots[2]!.values));
+    expect(Array.from(plots[1]!.values).some((v) => Number.isFinite(v))).toBe(true);
   });
 
   it("works when the request.security call appears directly inside a larger expression (not just a bare Assignment RHS)", () => {
     const nested = codegenSource(
       SRC_MYFUNC + 'source = myFunc(close)\nplot(request.security(syminfo.tickerid, "D", source) + 1)',
     );
-    const plain = codegenSource(SRC_MYFUNC + "source = myFunc(close)\nplot(source + 1)");
-    expect(nested).toBe(plain);
+    expect(nested).toContain("rt.security.scriptValue(source)");
+    expect(nested).toContain("rt.security.getFromArray($.securityExprCache[0], $.securityCache[0], $.idx, false, false) + 1");
   });
 });
 
 // ── request.security SCALAR bare UDF call wrapped in a history index (C562, wild solo actionable
 // 최다 서브클러스터) — `request.security(sym, tf, myFunc(...)[1])` / `data[cond?1:0]`(data가 bare
-// UDF 콜로 도달). C436/C442의 IndexAccess 자매 축 — genCallExpr은 등록된 원본 IndexAccess를 그대로
-// genExpr한다(codegen.ts 변경 0줄, 이미 존재하는 "일반 UDF 콜 히스토리 인덱싱" 경로 재사용).
+// UDF 콜로 도달). C562 emitted it as pine2py's passthrough (the chart bars' history); the expression
+// now runs in the requested context, so [1] is the previous requested bar's value there.
 describe("CodeGen request.security() SCALAR bare UDF call wrapped in a history index (C562)", () => {
   const SRC_MYFUNC = "myFunc(x) =>\n    x + 1\n";
 
-  it("emits the exact same code as a plain (non-security) UDF call history read — the request.security wrapper is fully discarded", () => {
+  it("runs the history read in the requested context, not on the chart's bars", () => {
     const withSecurity = codegenSource(SRC_MYFUNC + 'ma = request.security(syminfo.tickerid, "D", myFunc(close)[1])');
     const plain = codegenSource(SRC_MYFUNC + "ma = myFunc(close)[1]");
-    expect(withSecurity).toBe(plain);
+    expect(withSecurity).not.toBe(plain);
+    expect(withSecurity).toContain("$.securityExprCache[0] = $.runSecurityScript(0, [], 1);");
   });
 
-  it("exact-string: uses the standard histSlots record/get pair, no rt.security reference anywhere", () => {
+  it("exact-string: the child records the UDF call's history read; the chart reads the request", () => {
     const code = codegenSource(SRC_MYFUNC + 'ma = request.security(syminfo.tickerid, "D", myFunc(close)[1])');
     expect(code).toContain("histSlots");
     expect(code).toContain("myFunc(0, $.close.get(0))");
-    expect(code).not.toContain("rt.security");
+    expect(code).toContain("var ma = rt.security.getFromArray($.securityExprCache[0], $.securityCache[0], $.idx, false, false);");
   });
 
-  it("also matches through a top-level '=' var substitution (data = myFunc(close); request.security(sym, tf, data[1])) — emits a plain identifier history read, myFunc is NOT re-emitted a second time", () => {
+  it("also through a top-level '=' variable (data = myFunc(close); request.security(sym, tf, data[1])): myFunc is emitted once, in data's statement, which the child runs", () => {
     const code = codegenSource(SRC_MYFUNC + 'data = myFunc(close)\nma = request.security(syminfo.tickerid, "D", data[1])');
     const callSiteCount = (code.match(/myFunc\(0,/g) ?? []).length;
     expect(callSiteCount).toBe(1);
-    expect(code).not.toContain("rt.security");
-    const plain = codegenSource(SRC_MYFUNC + "data = myFunc(close)\nma = data[1]");
-    expect(code).toBe(plain);
+    expect(code).toContain("$.securityExprCache[0] = $.runSecurityScript(0, [0], 2);");
   });
 
-  it("hand-verified E2E: the UDF re-executes on every bar at the current (chart) timeframe and the [1] offset reads the PREVIOUS bar's already-computed value — no real HTF aggregation happens (pine2py oracle behavior: request.security._resolve_expression passes non-Series values through as-is)", () => {
+  it("E2E: [1] is the previous requested (daily) bar's value, equal to the prepass form of the same expression", () => {
     const source = [SRC_MYFUNC, 'ma = request.security(syminfo.tickerid, "D", myFunc(close)[1])', "plot(ma)"].join("\n");
+    const prepassSource = ['ma = request.security(syminfo.tickerid, "D", close[1] + 1)', "plot(ma)"].join("\n");
+    // 8-hour bars from 2024-01-01 00:00 UTC: three per day.
     const data: OHLCVData = {
-      open: [100, 102, 101, 105, 108],
-      high: [103, 105, 102, 108, 110],
-      low: [99, 100, 100, 103, 106],
-      close: [102, 101, 103, 106, 107],
-      volume: [1000, 1100, 1050, 1200, 1150],
-      time: [1704067200000, 1704096000000, 1704124800000, 1704153600000, 1704182400000],
+      open: [100, 102, 101, 105, 108, 106, 110, 113, 111, 115],
+      high: [103, 105, 102, 108, 110, 108, 112, 115, 113, 117],
+      low: [99, 100, 100, 103, 106, 104, 108, 111, 109, 113],
+      close: [102, 101, 103, 106, 107, 109, 111, 112, 114, 116],
+      volume: [1000, 1100, 1050, 1200, 1150, 1300, 1250, 1400, 1350, 1500],
+      time: [
+        1704067200000, 1704096000000, 1704124800000,
+        1704153600000, 1704182400000, 1704211200000,
+        1704240000000, 1704268800000, 1704297600000,
+        1704326400000,
+      ],
     };
-    const result = transpile(source);
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    const { plots } = run(
-      result.code,
-      result.varSlots,
-      result.taSlotCount,
-      data,
-      result.fnVarSlotCount,
-      result.historySlotCount,
-      result.taScratchSize,
-      {},
-      result.plotTitles,
-      result.securityTfs,
-    );
-    // myFunc(x)=x+1 매 바 그 자리에서 직접 호출 -> [close+1]의 1바 전 값 = NaN(워밍업), close[i-1]+1(i>=1)
-    expect(Array.from(plots[0]!.values)).toEqual([NaN, 103, 102, 104, 107]);
+    const plotsOf = (src: string) => {
+      const result = transpile(src);
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error("unreachable");
+      return run(
+        result.code, result.varSlots, result.taSlotCount, data, result.fnVarSlotCount, result.historySlotCount,
+        result.taScratchSize, {}, result.plotTitles, result.securityTfs,
+      ).plots;
+    };
+    const got = Array.from(plotsOf(source)[0]!.values);
+    expect(got).toEqual(Array.from(plotsOf(prepassSource)[0]!.values));
+    expect(got.some((v) => Number.isFinite(v))).toBe(true);
   });
 });
 
@@ -17463,51 +17489,46 @@ describe("CodeGen request.security chained same-sym+tf passthrough E2E (C742)", 
   };
   const UDF = ["f() =>", "    s = 0.0", "    for i = 0 to 2", "        s := s + close[i]", "    s / 3"].join("\n");
   const INNER = 'bbwp = request.security(syminfo.tickerid, "D", f())';
+  // The inner request now runs f() in its requested context (analyzer/security-script.ts), so the
+  // outer one is a nested request through a variable, which is not implemented: refused, where C742
+  // accepted it as pine2py's chart-bar passthrough (the "direct form" these cases compared with).
+  const NESTED = "it depends on another request.*() call";
+  const refusal = (source: string): string[] => {
+    const result = transpile(source);
+    expect(result.ok).toBe(false);
+    return result.ok ? [] : result.errors;
+  };
 
-  it("hand-verified E2E: ta.sma over the chained var equals the unwrapped direct form bar-for-bar", () => {
-    const chained = runPlots([UDF, INNER, 'm = request.security(syminfo.tickerid, "D", ta.sma(bbwp, 3))', "plot(m)"].join("\n"));
-    const direct = runPlots([UDF, INNER, "m = ta.sma(bbwp, 3)", "plot(m)"].join("\n"));
-    expect(Array.from(chained[0]!.values)).toEqual(Array.from(direct[0]!.values));
-    expect(Array.from(direct[0]!.values).some((v) => Number.isFinite(v))).toBe(true);
+  it("refuses ta.sma over the chained var (nested request through a variable)", () => {
+    const errors = refusal([UDF, INNER, 'm = request.security(syminfo.tickerid, "D", ta.sma(bbwp, 3))', "plot(m)"].join("\n"));
+    expect(errors.some((e) => e.includes(NESTED))).toBe(true);
+    // The inner request alone runs, in its requested context.
+    expect(Array.from(runPlots([UDF, INNER, "plot(bbwp)"].join("\n"))[0]!.values).some((v) => Number.isFinite(v))).toBe(true);
   });
 
-  it("hand-verified E2E: ternary MA-selector default branch (EMA) equals the direct ta.ema form bar-for-bar (wild 9960631a4fe0 shape)", () => {
+  it("refuses the ternary MA-selector over the chained var (wild 9960631a4fe0 shape)", () => {
     const src = [UDF, "mt = input.string('EMA', title='T', options=['SMA','EMA'])", INNER, "m = request.security(syminfo.tickerid, \"D\", mt == 'SMA' ? ta.sma(bbwp, 3) : ta.ema(bbwp, 3))", "plot(m)"].join("\n");
-    const tern = runPlots(src);
-    const emaDirect = runPlots([UDF, INNER, "m = ta.ema(bbwp, 3)", "plot(m)"].join("\n"));
-    expect(Array.from(tern[0]!.values)).toEqual(Array.from(emaDirect[0]!.values));
-    expect(Array.from(emaDirect[0]!.values).some((v) => Number.isFinite(v))).toBe(true);
+    expect(refusal(src).some((e) => e.includes(NESTED))).toBe(true);
   });
 
-  it("hand-verified E2E: input override {T:'SMA'} selects the SMA branch and differs from the EMA default run", () => {
-    const src = [UDF, "mt = input.string('EMA', title='T', options=['SMA','EMA'])", INNER, "m = request.security(syminfo.tickerid, \"D\", mt == 'SMA' ? ta.sma(bbwp, 3) : ta.ema(bbwp, 3))", "plot(m)"].join("\n");
-    const ov = runPlots(src, { T: "SMA" });
-    const smaDirect = runPlots([UDF, INNER, "m = ta.sma(bbwp, 3)", "plot(m)"].join("\n"));
-    expect(Array.from(ov[0]!.values)).toEqual(Array.from(smaDirect[0]!.values));
-    expect(Array.from(ov[0]!.values)).not.toEqual(Array.from(runPlots(src)[0]!.values));
+  it("refuses the input-override variant of the same shape", () => {
+    const src = [UDF, "mt = input.string('SMA', title='T', options=['SMA','EMA'])", INNER, "m = request.security(syminfo.tickerid, \"D\", mt == 'SMA' ? ta.sma(bbwp, 3) : ta.ema(bbwp, 3))", "plot(m)"].join("\n");
+    expect(refusal(src).some((e) => e.includes(NESTED))).toBe(true);
   });
 
-  it("hand-verified E2E: runtime input.timeframe tf chain equals the literal-tf chain bar-for-bar (tf 완전 discard)", () => {
-    const rt_tf = runPlots(
-      [UDF, "itf = input.timeframe('D', title='TF')", "bbwp = request.security(syminfo.tickerid, itf, f())", "m = request.security(syminfo.tickerid, itf, ta.sma(bbwp, 3))", "plot(m)"].join("\n"),
-    );
-    const lit_tf = runPlots([UDF, INNER, 'm = request.security(syminfo.tickerid, "D", ta.sma(bbwp, 3))', "plot(m)"].join("\n"));
-    expect(Array.from(rt_tf[0]!.values)).toEqual(Array.from(lit_tf[0]!.values));
+  it("refuses the runtime input.timeframe tf chain", () => {
+    const src = [UDF, "itf = input.timeframe('D', title='TF')", "bbwp = request.security(syminfo.tickerid, itf, f())", "m = request.security(syminfo.tickerid, itf, ta.sma(bbwp, 3))", "plot(m)"].join("\n");
+    expect(refusal(src).some((e) => e.includes(NESTED))).toBe(true);
   });
 
-  it("hand-verified E2E: main-path reads of the chained var stay unchanged alongside the outer security use", () => {
-    const both = runPlots([UDF, INNER, 'm = request.security(syminfo.tickerid, "D", ta.sma(bbwp, 3))', "plot(bbwp)", "plot(m)"].join("\n"));
-    const innerOnly = runPlots([UDF, INNER, "plot(bbwp)"].join("\n"));
-    const outerOnly = runPlots([UDF, INNER, 'm = request.security(syminfo.tickerid, "D", ta.sma(bbwp, 3))', "plot(m)"].join("\n"));
-    expect(Array.from(both[0]!.values)).toEqual(Array.from(innerOnly[0]!.values));
-    expect(Array.from(both[1]!.values)).toEqual(Array.from(outerOnly[0]!.values));
+  it("refuses the chain alongside main-path reads of the chained var", () => {
+    const src = [UDF, INNER, 'm = request.security(syminfo.tickerid, "D", ta.sma(bbwp, 3))', "plot(bbwp)", "plot(m)"].join("\n");
+    expect(refusal(src).some((e) => e.includes(NESTED))).toBe(true);
   });
 
-  it("hand-verified E2E: nz()-wrapped and arithmetic chained refs equal the unwrapped direct expression bar-for-bar", () => {
-    const chained = runPlots([UDF, INNER, 'm = request.security(syminfo.tickerid, "D", ta.ema(nz(bbwp, 0.0), 3) - bbwp * 2)', "plot(m)"].join("\n"));
-    const direct = runPlots([UDF, INNER, "m = ta.ema(nz(bbwp, 0.0), 3) - bbwp * 2", "plot(m)"].join("\n"));
-    expect(Array.from(chained[0]!.values)).toEqual(Array.from(direct[0]!.values));
-    expect(Array.from(direct[0]!.values).some((v) => Number.isFinite(v))).toBe(true);
+  it("refuses nz()-wrapped and arithmetic chained refs", () => {
+    const src = [UDF, INNER, 'm = request.security(syminfo.tickerid, "D", ta.ema(nz(bbwp, 0.0), 3) - bbwp * 2)', "plot(m)"].join("\n");
+    expect(refusal(src).some((e) => e.includes(NESTED))).toBe(true);
   });
 });
 

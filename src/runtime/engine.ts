@@ -149,8 +149,13 @@ export interface RunResult {
 export function compile(code: string): (ctx: Context) => () => void {
   // eslint-disable-next-line @typescript-eslint/no-implied-eval
   const factory = new Function("$", "rt", code) as (ctx: Context, runtime: typeof rt) => () => void;
-  return (ctx: Context) => {
-    const barFn = factory(ctx, rt);
+  const instantiate = (ctx: Context, runtime: typeof rt): (() => void) => {
+    // A request.security expression evaluated in its requested context runs this same module on a
+    // child context (Context.runSecurityScript). The child's log output is not the chart's: it
+    // gets a runtime whose log functions are silent (the oracle's security contexts log in
+    // processes of their own).
+    ctx.instantiate = (child) => instantiate(child, { ...runtime, logInfo: silent, logWarning: silent, logError: silent });
+    const barFn = factory(ctx, runtime);
     if (typeof barFn !== "function") {
       throw new Error("compiled module did not return a per-bar function (not two-layer output)");
     }
@@ -162,6 +167,11 @@ export function compile(code: string): (ctx: Context) => () => void {
       ctx.finishBar();
     };
   };
+  return (ctx: Context) => instantiate(ctx, rt);
+}
+
+function silent(): undefined {
+  return undefined;
 }
 
 // Object form (viz S0): everything run() needs is already on TranspileOk, so take it

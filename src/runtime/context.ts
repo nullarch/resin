@@ -141,6 +141,18 @@ export class Context {
   // constructor cannot compute them itself: doing so would mean generating
   // code for a user Pine expression, which a runtime module cannot do.
   securityExprCache: (Float64Array | undefined)[];
+  // request.security whose expression the script itself computes in the requested context
+  // (runSecurityScript). In such a child context: the security slot whose expression it records
+  // (-1 in a chart context), which per-bar statements it runs (secSkip[i] === 0; null runs all),
+  // and the values it records, by requested bar.
+  secCapture = -1;
+  secSkip: Uint8Array | null = null;
+  secOut: Float64Array | null = null;
+  // Set by engine.compile(): instantiates the compiled module on another context, a child.
+  instantiate: ((ctx: Context) => () => void) | undefined = undefined;
+  // A child's bar close times, the requested bars' own, which time_close reads instead of the
+  // next bar's open time.
+  private barCloseTimes: ArrayLike<number> | undefined = undefined;
   // Kept so a security cache can be rebuilt when its timeframe turns out to be
   // a runtime value. open/high/low/close/volume are already wrapped as Series
   // above (reverse access only, no raw exposure), but the cache builder needs
@@ -311,6 +323,48 @@ export class Context {
     );
   }
 
+  // request.security whose expression the script itself computes in the requested context
+  // (transpiler/analyzer/security-script.ts; concepts_other-timeframes-and-data.txt "Declared
+  // variables": "the function call duplicates all preceding code that determines the assigned value
+  // or reference"). The compiled module runs again in a child context whose bars are the requested
+  // ones, security slot `slot`'s rows, with state of its own: it executes only the per-bar
+  // statements `runs` (indices among the `stmtCount` of them) and records the expression where the
+  // call's statement begins. The result, one value per requested bar, is what the chart reads, as it
+  // reads a prepass's (security.ts getFromArray).
+  runSecurityScript(slot: number, runs: readonly number[], stmtCount: number): Float64Array {
+    if (this.instantiate === undefined) {
+      throw new Error("request.security: evaluating an expression in the requested context needs a context the module was compiled on (engine.compile)");
+    }
+    const cache = this.securityCache[slot]!;
+    const child = new Context(
+      { open: cache.open, high: cache.high, low: cache.low, close: cache.close, volume: cache.volume, time: cache.timeOpen },
+      this.vars.length,
+      this.taSlots.length,
+      this.fnVars.length,
+      this.histSlots.length,
+      this.taScratch.length,
+      this.inputs,
+      this.plots.length,
+      [],
+      this.refHistSlots.length,
+      this.condCallHistSlots.length,
+      this.condCallRefHistSlots.length,
+    );
+    child.barCloseTimes = cache.timeClose;
+    const skip = new Uint8Array(stmtCount).fill(1);
+    for (const i of runs) skip[i] = 0;
+    child.secCapture = slot;
+    child.secSkip = skip;
+    const out = new Float64Array(cache.close.length).fill(NaN);
+    child.secOut = out;
+    const bar = this.instantiate(child);
+    for (let i = 0; i < child.barCount; i++) {
+      child.advance();
+      bar();
+    }
+    return out;
+  }
+
   get barCount(): number {
     return this.close.length;
   }
@@ -359,6 +413,7 @@ export class Context {
   timeCloseAt(offset: number): number {
     const t = Math.trunc(offset);
     if (!(t >= 0) || this.idx - t < 0) return NaN;
+    if (this.barCloseTimes !== undefined) return this.barCloseTimes[this.idx - t] ?? 0;
     if (this.time === undefined || this.time.length === 0) return 0;
     const i = this.idx - t;
     const n = this.time.length;
@@ -400,6 +455,7 @@ export class Context {
   // successor, so it extrapolates the previous interval; a single-bar series
   // has zero duration and returns itself.
   get timeCloseMs(): number {
+    if (this.barCloseTimes !== undefined) return this.barCloseTimes[this.idx] ?? 0;
     if (this.time === undefined || this.time.length === 0) return 0;
     const n = this.time.length;
     if (this.idx + 1 < n) return this.time[this.idx + 1]!;

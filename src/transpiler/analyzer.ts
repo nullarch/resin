@@ -70,6 +70,7 @@ import {
 } from "./analyzer/constructors";
 import type { DrawingKind } from "./analyzer/constructors";
 import type { UdtTypeInfo, MethodOverloadEntry } from "./analyzer/udt-types";
+import type { SecurityScriptPlan } from "./analyzer/security-script";
 import {
   arrayUdtElemType,
   arrayDrawingElemType,
@@ -2931,6 +2932,10 @@ export interface AnalyzedProgram {
       varSlice: SecurityVarSlice | null;
       // The securityNestedReads nodes bodyExpr, histReads and varSlice read.
       nested?: readonly Expr[];
+      // Set when the expression is evaluated by running the script itself in the requested context
+      // (analyzer/security-script.ts) instead of a prepass: bodyExpr is then the call's own
+      // expression argument, analyzed as ordinary code, and histReads/varSlice are empty.
+      script?: SecurityScriptPlan;
     }
   >;
   // Nested requests (call-expr.ts SecurityNestedRead): the clone an outer request's prepass reads a

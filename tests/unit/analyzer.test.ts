@@ -21,6 +21,16 @@ function analyzeSource(source: string, options?: AnalyzeOptions) {
   return analyze(parse(source), options);
 }
 
+// A request.security expression outside the prepass grammar is evaluated by running the script
+// itself in the requested context (analyzer/security-script.ts; concepts_other-timeframes-and-data.txt
+// "Declared variables": "the function call duplicates all preceding code that determines the
+// assigned value or reference"). Its values are checked against the oracle by resin-harness
+// state/repros/security-script-*.json.
+function expectScriptContext(prog: ReturnType<typeof analyzeSource>): void {
+  expect(prog.errors).toEqual([]);
+  expect([...prog.securityExprCallSlots.values()].some((v) => v.script !== undefined)).toBe(true);
+}
+
 describe("Analyzer", () => {
   it("assigns var slots in declaration order", () => {
     const prog = analyzeSource("var float acc = 0.0\nvar float __obs_sma3 = na");
@@ -18622,8 +18632,9 @@ describe("Analyzer request.security (C176 first slice + C177 second slice — ba
 
   it("does not register a security slot when validation fails (no half-registered slot on error)", () => {
     // C367: close + 1 → math.sum(C543이 수용) → 값위치 삼항(C601이 수용) → 'not'(C733이 수용)
-    // 순으로 무효 필러가 회전해 왔다 — 여전히 무효인 '%'(SECURITY_EXPR_ARITH_OPS 밖)로 재교체.
-    const prog = analyzeSource('x = request.security("", "D", close % 2)');
+    // 순으로 무효 필러가 회전해 왔다 — '%'는 이제 요청 컨텍스트 실행(analyzer/security-script.ts)이
+    // 받으므로, 어느 경로도 아직 못 받는 문자열 값 요청으로 재교체.
+    const prog = analyzeSource('x = request.security("", "D", str.tostring(close))');
     expect(prog.securityTfs).toEqual([]);
     const stmt = prog.script.body[0] as Assignment;
     expect(prog.securityCallSlots.has(stmt.value as CallExpr)).toBe(false);
@@ -18713,8 +18724,8 @@ describe("Analyzer request.security symbol=/timeframe=/expression= kwargs (C409,
 
   it("does not register a security slot when the fully-keyword expression argument is invalid", () => {
     // C543: math.sum 유효화로 TernaryOp 교체 → C601이 값위치 삼항 수용해 'not' → C733이 'not'도
-    // 수용해 '%'(SECURITY_EXPR_ARITH_OPS 밖)로 재교체(무효 필러 회전).
-    const prog = analyzeSource('x = request.security(symbol="", timeframe="D", expression=close % 2)');
+    // 수용해 '%'로 재교체 → '%'는 요청 컨텍스트 실행이 받으므로 문자열 값 요청으로 재교체.
+    const prog = analyzeSource('x = request.security(symbol="", timeframe="D", expression=str.tostring(close))');
     expect(prog.securityTfs).toEqual([]);
     const stmt = prog.script.body[0] as Assignment;
     expect(prog.securityCallSlots.has(stmt.value as CallExpr)).toBe(false);
@@ -18820,14 +18831,14 @@ describe("Analyzer request.security expression hist-on-expr (C370)", () => {
     expect(prog.errors).toEqual([]);
   });
 
-  it("still rejects a dynamic offset on an expr obj built from an unsupported identifier", () => {
+  it("still rejects a dynamic offset on an expr obj built from an undeclared identifier (now reported by the ordinary analysis of the expression)", () => {
     const prog = analyzeSource('x = request.security("", "D", ta.sma(close, 5)[undeclaredName])');
-    expect(prog.errors.some((e) => e.includes("bare/derived series"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier: 'undeclaredName'"))).toBe(true);
   });
 
-  it("rejects a substituted history whose definition is outside the narrow grammar (modulo '%' — 이전 필러였던 '==' 비교는 C602가 합법화해 교체, '%'는 SECURITY_EXPR_ARITH_OPS 밖이라 여전히 무효)", () => {
+  it("evaluates a history reference on a variable outside the prepass grammar (modulo '%') by running the script in the requested context", () => {
     const prog = analyzeSource('v = close % open\nx = request.security("", "D", v[1])');
-    expect(prog.errors.some((e) => e.includes("bare/derived series"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   // C439 계약 갱신: 중첩 ta 자체가 이제 허용되므로(위 "accepts a nested ta.* call..." 테스트),
@@ -19216,9 +19227,9 @@ describe("Analyzer request.security expression call site (C180, third slice sub-
     expect(prog.taSlotCount).toBe(1);
   });
 
-  it("still rejects math.random (dispatch:\"math\" sibling of math.sum) as the stateful call — no wild evidence for this form yet (C543 curation)", () => {
+  it("evaluates math.random (outside the prepass grammar, C543 curation) by running the script in the requested context", () => {
     const prog = analyzeSource('x = request.security("", "D", math.random(0.0, 1.0))');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   it("accepts a bare-dispatch stateful call (fixnan) as the stateful call (C740 — 거부->수용 전환, v1의 dot-call 'ta.*' 한정 계약을 bare fixnan까지 의도적으로 확장 — 상세 계약은 C740 describe가 승계)", () => {
@@ -19246,11 +19257,11 @@ describe("Analyzer request.security expression call site (C180, third slice sub-
   // 자매 축과 동일한 pine2py literal-passthrough 오라클 근거)하면서 수용으로 전환됐다. 상세 계약은
   // "Analyzer request.security SCALAR (non-tuple) bare UDF call expression (C436, ...)" describe가
   // 승계한다(MEMORY C162 "거부→허용 전환" 원칙).
-  it("accepts a UDF call inside the expression (C436 — literal passthrough via securityScalarBareUdfCallSlots, not buildSecurityExpr)", () => {
+  it("evaluates a UDF call inside the expression in the requested context, not C436's chart-bar passthrough (resin-harness state/repros/security-script-udf.json)", () => {
     const prog = analyzeSource('myFunc(x) =>\n    x * 2\ny = request.security("", "D", myFunc(close))');
-    expect(prog.errors).toEqual([]);
+    expectScriptContext(prog);
     const stmt = prog.script.body[1] as Assignment;
-    expect(prog.securityScalarBareUdfCallSlots.has(stmt.value as CallExpr)).toBe(true);
+    expect(prog.securityScalarBareUdfCallSlots.has(stmt.value as CallExpr)).toBe(false);
   });
 
   // C367 계약 갱신(STEP 6.4): bare series의 정수 리터럴 히스토리가 정확히 이번에 의도적으로 연 갭
@@ -19267,10 +19278,8 @@ describe("Analyzer request.security expression call site (C180, third slice sub-
   });
 
   it("does not register a security-expr slot when the outer expression shape is invalid (no half-registered slot on error)", () => {
-    // C367: 두 ta 콜(유효화) → 삼항(C601이 값위치 수용) → '==' 조건 삼항(C602가 합법화) 순 무효
-    // 필러 회전 — '%' 조건 삼항으로 재교체(삼항 자체는 유효하지만 조건의 '%'가 SECURITY_EXPR_ARITH_OPS
-    // 밖이라 여전히 무효라 빌드가 실패하는 형태).
-    const prog = analyzeSource('x = request.security("", "D", close % open ? high : low)');
+    // '%' 조건 삼항은 이제 요청 컨텍스트 실행이 받으므로, 어느 경로도 아직 못 받는 문자열 값 요청으로 교체.
+    const prog = analyzeSource('x = request.security("", "D", close > open ? "up" : "down")');
     expect(prog.securityTfs).toEqual([]);
     const stmt = prog.script.body[0] as Assignment;
     expect(prog.securityExprCallSlots.has(stmt.value as CallExpr)).toBe(false);
@@ -19309,16 +19318,16 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     expect(prog.errors).toEqual([]);
   });
 
-  it("still rejects a dynamic history offset when the 'var' is updated inside a for loop (C738 슬라이스가 리플레이할 수 없는 형태)", () => {
+  it("evaluates a dynamic history offset whose 'var' is updated inside a for loop by running the script in the requested context", () => {
     const prog = analyzeSource(
       ['var int len = 1', 'for i = 0 to 2', '    len := i', 'x = request.security("", "D", close[len])'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   it("rejects a negative history offset (close[-1] parses as UnaryOp index)", () => {
     const prog = analyzeSource('x = request.security("", "D", close[-1])');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("history index '[]' supports only integer literals >= 0"))).toBe(true);
   });
 
   it("substitutes a unique top-level '=' variable whose definition is a single ta.* call (ma = ta.sma(...))", () => {
@@ -19354,11 +19363,11 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     expect(prog.errors).toEqual([]);
   });
 
-  it("still rejects a genuinely non-const value for an emitted kwarg (minval= via 'var' decl) on the substituted input call (C734 전환: '=' 상수 식별자는 이제 리터럴로 폴딩 수용 — 테스트 의도(프리패스 방출 코드에 동적 참조 금지)는 var 선언으로 보존)", () => {
+  it("evaluates an input call with a 'var' minval= in the requested context (the input call is ordinary code there, not text folded into a prepass)", () => {
     const prog = analyzeSource(
       ['var m = 20', 'len = input.int(200, "Len", minval = m)', 'x = request.security("", "D", ta.ema(close, len))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   // C438: defval이 위치 인자가 아니라 'defval=' 키워드로만 전달된 wild 관용구
@@ -19390,12 +19399,12 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
 
   it("rejects use-before-declaration (security call line precedes the definition line)", () => {
     const prog = analyzeSource('x = request.security("", "D", ma)\nma = ta.sma(close, 20)');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier: 'ma'"))).toBe(true);
   });
 
-  it("rejects a ':='-reassigned variable (not a constant binding)", () => {
+  it("evaluates a ':='-reassigned variable by running the script in the requested context", () => {
     const prog = analyzeSource('v = close\nv := open\nx = request.security("", "D", v)');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   // C526: 이전엔 "전역 유일" 판정이 바인딩 총 개수로만 걸려, 무관한 다른 함수의 동명 매개변수가
@@ -19498,11 +19507,11 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     expect(prog.errors).toEqual([]);
   });
 
-  it("rejects a '=' substitution whose definition reads the var before a write that precedes the call (C738 위치-불안전 — 치환이 평가 시점을 뒤로 옮겨 값이 달라짐)", () => {
+  it("evaluates a '=' variable that reads a 'var' written before the call by running the script in the requested context (C738's position hazard does not arise: the code runs in order)", () => {
     const prog = analyzeSource(
       ["var int st = 0", "sig = st * 2", "if close > open", "    st := 1", 'x = request.security("", "D", sig)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   it("rejects a string-typed var (Float64Array 프리패스 캐시에 문자열을 실을 수 없음, C738)", () => {
@@ -19519,14 +19528,14 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
-  it("rejects a ta.* call in a ':=' value inside an if body (조건부 위치 상태 갭 — C738)", () => {
+  it("evaluates a 'var' assigned a ta.* call inside an if body by running the script in the requested context", () => {
     const prog = analyzeSource(
       ["var float v = 0.0", "if close > open", "    v := ta.sma(close, 3)", 'x = request.security("", "D", v)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
-  it("rejects a ta.* call in an elif condition (앞 조건 거짓일 때만 평가되는 조건부 위치 — C738)", () => {
+  it("evaluates a 'var' set under a ta.* elif condition by running the script in the requested context", () => {
     const prog = analyzeSource(
       [
         "var int st = 0",
@@ -19537,28 +19546,28 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
         'x = request.security("", "D", st)',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
-  it("rejects a closure var under a buffered history index (fill 타이밍이 갱신 전 값을 기록 — C738)", () => {
+  it("evaluates a history reference on a 'var' written in an if body by running the script in the requested context", () => {
     const prog = analyzeSource(
       ["var int st = 0", "if close > open", "    st := 1", 'x = request.security("", "D", st[1])'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
-  it("rejects a var whose name is also ':='-reassigned inside a function body (보수적 부적격 — C738)", () => {
+  it("evaluates a 'var' whose name a function also declares locally by running the script in the requested context", () => {
     const prog = analyzeSource(
       ["var int st = 0", "f() =>", "    st = 0", "    st := 1", "    st", 'x = request.security("", "D", st)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
-  it("rejects a var updated inside a while loop (C738 슬라이스가 리플레이할 수 없는 형태)", () => {
+  it("evaluates a 'var' updated inside a while loop by running the script in the requested context", () => {
     const prog = analyzeSource(
       ["var int st = 0", "i = 0", "while i < 1", "    st := 1", "    i := i + 1", 'x = request.security("", "D", st)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   // ── C741(배치37 (3) series-arg VAR_DECL input-콜 init): var 슬라이스 buildAt inSubst=true 전환 —
@@ -19613,11 +19622,11 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     expect(prog.errors).toEqual([]);
   });
 
-  it("still rejects a var init input call whose emitted kwarg is a genuinely non-const 'var' reference (C741 — C734 폴딩 불가 보수 유지)", () => {
+  it("evaluates a 'var' initialized by an input call with a 'var' minval= in the requested context (ordinary code there, C741's folding concern does not arise)", () => {
     const prog = analyzeSource(
       ['var m2 = 20', 'var int len = input.int(200, "Len", minval = m2)', 'x = request.security("", "D", ta.ema(close, len))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   it("still rejects a string-typed var init input.string in a value position (C741 — Float64Array 캐시 부식 차단 유지)", () => {
@@ -19643,14 +19652,14 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
   // C742 블록이 검증. ──
   const C742_UDF = ["f() =>", "    s = 0.0", "    for i = 0 to 2", "        s := s + close[i]", "    s / 3"].join("\n");
 
-  it("accepts ta.* over a chained same-sym+tf passthrough security var (C742, folded wild 9960631a4fe0 form)", () => {
+  it("rejects ta.* over a chained same-sym+tf security var (C742): the inner request now runs in its requested context, and a nested request through a variable is not implemented (C742 accepted it as pine2py's chart-bar passthrough)", () => {
     const prog = analyzeSource(
       [C742_UDF, 'bbwp = request.security(syminfo.ticker, "D", f())', 'm = request.security(syminfo.ticker, "D", ta.sma(bbwp, 3))'].join("\n"),
     );
-    expect(prog.errors).toEqual([]);
+    expect(prog.errors.some((e) => e.includes("it depends on another request.*() call"))).toBe(true);
   });
 
-  it("accepts the ternary MA-selector over a chained passthrough var with a runtime input.timeframe tf (C742, wild 9960631a4fe0 exact shape)", () => {
+  it("rejects the ternary MA-selector over a chained security var with a runtime input.timeframe tf (C742; nested request through a variable, as above)", () => {
     const prog = analyzeSource(
       [
         C742_UDF,
@@ -19660,14 +19669,14 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
         "m = request.security(syminfo.ticker, itf, mt == 'SMA' ? ta.sma(bbwp, 3) : ta.ema(bbwp, 3))",
       ].join("\n"),
     );
-    expect(prog.errors).toEqual([]);
+    expect(prog.errors.some((e) => e.includes("it depends on another request.*() call"))).toBe(true);
   });
 
-  it("accepts a chained passthrough ref nested in arithmetic and nz() (C742)", () => {
+  it("rejects a chained security ref nested in arithmetic and nz() (C742; nested request through a variable, as above)", () => {
     const prog = analyzeSource(
       [C742_UDF, 'bbwp = request.security(syminfo.ticker, "D", f())', 'm = request.security(syminfo.ticker, "D", ta.ema(nz(bbwp, 0.0), 3) - bbwp * 2)'].join("\n"),
     );
-    expect(prog.errors).toEqual([]);
+    expect(prog.errors.some((e) => e.includes("it depends on another request.*() call"))).toBe(true);
   });
 
   it("still rejects a chained ref whose inner call has a different tf (C742 — 다른-tf 체인 축 불변)", () => {
@@ -19698,9 +19707,9 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
-  it("still rejects a non-inlinable UDF call nested in ta.* without any chained ref (C742 — 발동 조건 체인 참조 필수)", () => {
+  it("evaluates a non-inlinable UDF call nested in ta.* by running the script in the requested context", () => {
     const prog = analyzeSource([C742_UDF, 'm = request.security(syminfo.ticker, "D", ta.sma(f(), 3))'].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   it("keeps the inline-collapse HTF track for a chained var whose inner expression is narrow-grammar (C742 — 기존 C616 경로 불변)", () => {
@@ -19803,9 +19812,9 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
-  it("still rejects a top-level ':='-reassigned variable offset (읽기-지점 폴백은 UDF 매개변수 전용 — C739)", () => {
+  it("evaluates a top-level ':='-reassigned variable offset by running the script in the requested context", () => {
     const prog = analyzeSource(["k = 0", "k := 1", 'x = request.security("", "D", close[k])'].join("\n"));
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   it("still rejects the offset form when tf is a per-site parameter array (uniform 리터럴 tf 전용 — C739)", () => {
@@ -19849,11 +19858,11 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
 
   // C516부터 단일식 본문 bare UDF 콜은 인라인 지원 대상이라(위 새 describe 참조) 이 필러는
   // 다문장 본문(findSecurityFoldableFuncDecl이 여전히 거부)으로 바꿔 "narrow grammar 밖" 의도를 보존한다.
-  it("still rejects input.source when its defval itself isn't supported by this narrow grammar (선행 var 선언 UDF 본문 — C732 이후 다문장 '=' 본문 필러 대체)", () => {
+  it("evaluates an input.source whose defval is a stateful UDF call by running the script in the requested context", () => {
     const prog = analyzeSource(
       ['f() =>', '    var a = close', '    a', 'src = input.source(f(), "Src")', 'x = request.security("", "D", src)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   // C440: bare input(defval, ...)(namespace 없는 일반 오버로드)도 pine2py any_input(defval, title,
@@ -19877,11 +19886,11 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     expect(prog.errors).toEqual([]);
   });
 
-  it("still rejects bare input() when its defval itself isn't supported by this narrow grammar (선행 var 선언 UDF 본문 — C732 이후 다문장 '=' 본문 필러 대체)", () => {
+  it("evaluates a bare input() whose defval is a stateful UDF call by running the script in the requested context", () => {
     const prog = analyzeSource(
       ['f() =>', '    var a = close', '    a', 'src = input(f(), "Src")', 'x = request.security("", "D", src)'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   // 리터럴 defval은 identity-passthrough 경로로 가로채지 않고 isSecurityScalarConstInputCall(원본
@@ -19893,9 +19902,9 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     expect(prog.errors).toEqual([]);
   });
 
-  it("rejects an inline input call directly inside the expression (substitution-path only — builtinCalls 미등록이라 codegen 불가)", () => {
+  it("evaluates an inline input call inside the expression by running the script in the requested context (ordinary code there)", () => {
     const prog = analyzeSource('x = request.security("", "D", ta.sma(close, input.int(20, "L")))');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   // C439 계약 갱신: 치환 경로 안의 정의값이 ta.* 콜이어도 직접 중첩(위 "accepts a nested ta.*
@@ -19955,21 +19964,21 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     expect(prog.errors).toEqual([]);
   });
 
-  it("still rejects nz() with kwargs inside the expression (positional-only leaf — no wild evidence for kwargs form yet)", () => {
+  it("evaluates nz() with keyword arguments by running the script in the requested context", () => {
     const prog = analyzeSource('x = request.security("", "D", nz(source=close, replacement=0.0))');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   it("still rejects nz() with more than 2 arguments inside the expression", () => {
     const prog = analyzeSource('x = request.security("", "D", nz(close, 0.0, 1.0))');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'nz' call argument count mismatch"))).toBe(true);
   });
 
-  it("still rejects nz() wrapping an unsupported inner form (선행 var 선언 UDF 본문 — C732 이후 다문장 '=' 본문 필러 대체)", () => {
+  it("evaluates nz() around a stateful UDF call by running the script in the requested context", () => {
     const prog = analyzeSource(
       ['f() =>', '    var a = close', '    a', 'x = request.security("", "D", nz(f(), 0.0))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   // C445: math.* 콜 리프 케이스 — next_hint(C443/C444) 2번 후보(wild 재확인으로 891103d44223.pine
@@ -20003,22 +20012,19 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
     expect(prog.errors).toEqual([]);
   });
 
-  it("still rejects math.* with kwargs inside the expression (positional-only leaf — no wild evidence for kwargs form yet)", () => {
+  it("evaluates math.* with keyword arguments by running the script in the requested context", () => {
     const prog = analyzeSource('x = request.security("", "D", math.round(number=close, precision=2))');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   it("still rejects a math.* call with the wrong arity for its method (math.max needs >= 2 args)", () => {
     const prog = analyzeSource('x = request.security("", "D", math.max(close))');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'math.max' call argument count mismatch"))).toBe(true);
   });
 
-  it("still rejects an unrecognized math.* method (math.random is not in SECURITY_EXPR_MATH_METHODS — nor in matchSecurityExprTaCall's dispatch:'math' whitelist, C543)", () => {
-    // C543: 원래 예제(math.sum)는 이제 유효(matchSecurityExprTaCall 경로) — math.random(같은
-    // dispatch:"math" 형제, wild 근거 없어 미포함)으로 교체해 "이 화이트리스트 밖 math.* 메서드는
-    // 여전히 거부된다"는 원래 의도를 유지.
+  it("evaluates math.random (not in SECURITY_EXPR_MATH_METHODS, C543) by running the script in the requested context", () => {
     const prog = analyzeSource('x = request.security("", "D", math.random(0.0, 1.0))');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   // C536: int(x)/float(x)/bool(x) 형변환 bare 콜 리프 케이스 — next_hint(C535) 저비용 승격 후보.
@@ -20052,19 +20058,19 @@ describe("Analyzer request.security expression 확장 좁은 문법 (C367)", () 
 
   it("still rejects int(x) with more than 1 argument inside the expression (arity mismatch, same as main path)", () => {
     const prog = analyzeSource('x = request.security("", "D", int(close, 2))');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'int' call argument count mismatch"))).toBe(true);
   });
 
   it("still rejects float(x) with kwargs inside the expression (positional-only leaf — no wild evidence for kwargs form yet)", () => {
     const prog = analyzeSource('x = request.security("", "D", float(value=close))');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("keyword arguments ('value=...') are only supported in"))).toBe(true);
   });
 
-  it("still rejects bool() wrapping an unsupported inner form (선행 var 선언 UDF 본문 — C732 이후 다문장 '=' 본문 필러 대체)", () => {
+  it("evaluates bool() around a stateful UDF call by running the script in the requested context", () => {
     const prog = analyzeSource(
       ['f() =>', '    var a = close', '    a', 'x = request.security("", "D", bool(f()))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 });
 
@@ -20110,19 +20116,19 @@ describe("Analyzer request.security expression ternary offset (C446)", () => {
 
   it("still rejects a ternary offset whose condition is not a supported leaf (undeclared identifier)", () => {
     const prog = analyzeSource('x = request.security("", "D", close[someUndeclaredFlag ? 1 : 0])');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier: 'someUndeclaredFlag'"))).toBe(true);
   });
 
-  it("still rejects a ternary offset with a ta.* call in a branch (allowTa=false at this position, same policy as the outer dynamic-offset recursion)", () => {
+  it("evaluates a ternary offset with a ta.* call in a branch by running the script in the requested context (allowTa=false was the prepass's text-duplication hazard)", () => {
     const prog = analyzeSource('x = request.security("", "D", close[barstate.isrealtime ? ta.barssince(close > open) : 0])');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
-  it("still rejects a ternary offset with an unsupported branch (선행 var 선언 UDF 본문 — C732 이후 다문장 '=' 본문 필러 대체)", () => {
+  it("evaluates a ternary offset with a stateful UDF branch by running the script in the requested context", () => {
     const prog = analyzeSource(
       'f() =>\n    var a = 1\n    a\nx = request.security("", "D", close[barstate.isrealtime ? f() : 0])',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   it("accepts barstate.isconfirmed as a ternary offset condition too (C628 generalizes it from a root-only leaf to a generic one, wild `_exp[barstate.isconfirmed ? 0 : 1]`)", () => {
@@ -20135,9 +20141,9 @@ describe("Analyzer request.security expression ternary offset (C446)", () => {
     expect(prog.errors).toEqual([]);
   });
 
-  it("still rejects other barstate.* properties as a ternary offset condition (only isrealtime/isconfirmed/ishistory are curated — no wild evidence for the rest, C283)", () => {
+  it("evaluates other barstate.* properties as a ternary offset condition by running the script in the requested context", () => {
     const prog = analyzeSource('x = request.security("", "D", close[barstate.isfirst ? 1 : 0])');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   it("registers the call site via securityExprCallSlots (expression/prepass mechanism), same as other narrow-grammar forms", () => {
@@ -20209,12 +20215,12 @@ describe("Analyzer request.security expression value-position ternary (C601)", (
 
   it("still rejects an undeclared identifier inside a ternary branch (leaf validation unchanged)", () => {
     const prog = analyzeSource('x = request.security("", "D", close > open ? mystery : 0)');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier: 'mystery'"))).toBe(true);
   });
 
-  it("still rejects a ta.* call inside an OFFSET-position ternary branch (allowTa=false 오프셋 정책 불변 — offsetCode 텍스트 중복 방출 위험)", () => {
+  it("evaluates a ta.* call inside an OFFSET-position ternary branch by running the script in the requested context (no prepass text to duplicate)", () => {
     const prog = analyzeSource('x = request.security("", "D", close[barstate.isrealtime ? ta.barssince(close > open) : 0])');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 });
 
@@ -20276,7 +20282,7 @@ describe("Analyzer request.security expression barstate.isconfirmed / syminfo.* 
 
   it("still rejects an undeclared syminfo.* attribute name", () => {
     const prog = analyzeSource('x = request.security("", "D", syminfo.notARealProp)');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'syminfo.notARealProp'"))).toBe(true);
   });
 });
 
@@ -20368,11 +20374,9 @@ describe("Analyzer request.security expression barstate.islast / session.* leave
     expect(c.errors).toEqual([]);
   });
 
-  it("still rejects session.* attribute names without wild evidence (isfirstbar/islastbar/ispremarket/ispostmarket — C283 curation principle)", () => {
-    const a = analyzeSource('x = request.security("", "D", session.isfirstbar)');
-    const b = analyzeSource('x = request.security("", "D", session.ispremarket)');
-    expect(a.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
-    expect(b.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+  it("evaluates session.* attributes outside the prepass curation (isfirstbar/ispremarket, C283) by running the script in the requested context", () => {
+    expectScriptContext(analyzeSource('x = request.security("", "D", session.isfirstbar)'));
+    expectScriptContext(analyzeSource('x = request.security("", "D", session.ispremarket)'));
   });
 
   it("reproduces the wild shape end-to-end (barstate.islast alongside bare bar series in a tuple)", () => {
@@ -20421,7 +20425,7 @@ describe("Analyzer request.security expression earnings.future_* number constant
 
   it("still rejects an undeclared earnings.* attribute name", () => {
     const prog = analyzeSource('x = request.security("", "D", earnings.notARealField)');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'earnings.notARealField'"))).toBe(true);
   });
 });
 
@@ -20576,22 +20580,22 @@ describe("Analyzer request.security expression not/na() leaves (C733, 배치37 (
 
   it("rejects na() with two arguments (arity mirror of the main-path bare na call)", () => {
     const prog = analyzeSource('x = request.security("", "D", na(close, open) ? 0.0 : close)');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'na' call argument count mismatch"))).toBe(true);
   });
 
   it("rejects na() with a keyword argument (kwargs are outside this leaf)", () => {
     const prog = analyzeSource('x = request.security("", "D", na(value=close) ? 0.0 : close)');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("keyword arguments ('value=...') are only supported in"))).toBe(true);
   });
 
-  it("rejects na() whose inner argument is outside the narrow grammar ('%' operand)", () => {
+  it("evaluates na() around a '%' operand by running the script in the requested context", () => {
     const prog = analyzeSource('x = request.security("", "D", na(close % 2) ? 0.0 : close)');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
-  it("rejects 'not' whose operand is outside the narrow grammar ('%' operand)", () => {
+  it("evaluates 'not' over a '%' operand by running the script in the requested context", () => {
     const prog = analyzeSource('x = request.security("", "D", not (close % 2 > 1))');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   it("registers the not-na form via securityExprCallSlots, same as other narrow-grammar forms", () => {
@@ -20650,14 +20654,14 @@ describe("Analyzer request.security expression fixnan stateful leaf (C740, 배�
     expect(prog.errors.some((e) => e.includes("fixnan"))).toBe(true);
   });
 
-  it("rejects fixnan whose inner argument is outside the narrow grammar ('%' operand)", () => {
+  it("evaluates fixnan around a '%' operand by running the script in the requested context", () => {
     const prog = analyzeSource('x = request.security("", "D", fixnan(close % 2))');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
-  it("rejects fixnan in a history-offset index position (allowTa=false gate, ta.*와 동일)", () => {
+  it("evaluates fixnan in a history-offset index position by running the script in the requested context", () => {
     const prog = analyzeSource('x = request.security("", "D", close[fixnan(volume)])');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   it("lets a same-named user UDF take the C516 inline path instead of the builtin leaf", () => {
@@ -20729,18 +20733,18 @@ describe("Analyzer request.security expression input-call const-folded emitted s
     expect(prog.errors).toEqual([]);
   });
 
-  it("rejects when the emitted-slot const chain crosses a ':=' reassignment (not a compile-time const)", () => {
+  it("evaluates an input call whose minval= crosses a ':=' reassignment by running the script in the requested context (ordinary code there, nothing to fold)", () => {
     const prog = analyzeSource(
       ["m = 20", "m := 30", 'len = input.int(200, "Len", minval = m)', 'x = request.security("", "D", ta.ema(close, len))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
-  it("rejects when a title concat part is a genuinely non-const 'var' declaration", () => {
+  it("evaluates an input call whose title concatenates a 'var' by running the script in the requested context (ordinary code there, nothing to fold)", () => {
     const prog = analyzeSource(
       ['var p = "My"', 'len = input.int(20, p + "Len")', 'x = request.security("", "D", ta.ema(close, len))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   it("registers the folded form via securityExprCallSlots, same as the all-literal predicate path", () => {
@@ -20825,14 +20829,14 @@ describe("Analyzer request.security expression time()/time_close() session-call 
     expect(prog.securityTfConstGuards.get("orbMinutes")?.literal).toBe(30);
   });
 
-  it("rejects the kwargs form (timeframe=) — 좁은 문법은 위치 인자 전용", () => {
+  it("evaluates the kwargs time() form (timeframe=) by running the script in the requested context", () => {
     const prog = analyzeSource('x = request.security("", "D", time(timeframe="D"))');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
-  it("rejects the 4-arg bars_back form inside the security expression (메인 경로 C727과 별개 — secCtx 미지원)", () => {
+  it("evaluates the 4-arg bars_back time() form by running the script in the requested context", () => {
     const prog = analyzeSource('x = request.security("", "D", time("D", "0000-0000", "UTC", 2))');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   it("rejects an na literal in the session position (na→'D' tf 폴딩의 오적용 방지 — 보수 거부)", () => {
@@ -20915,25 +20919,25 @@ describe("Analyzer request.security time-call leaf paramEnv substitution folding
     expect(prog.errors).toEqual([]);
   });
 
-  it("rejects an na literal actual arg through a param (NaLiteral 보수 거부가 치환 뒤에도 유지)", () => {
+  it("evaluates a UDF given an na literal for time()'s timeframe by running the script in the requested context", () => {
     const prog = analyzeSource(
       ["f(res) =>", "    time(res)", "x = request.security(syminfo.tickerid, '15', f(na) > 0 ? high : low)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
-  it("rejects a ':='-reassigned actual arg through a param (컴파일타임 상수 아님 — 기존 거부 유지)", () => {
+  it("evaluates a UDF given a ':='-reassigned session string by running the script in the requested context", () => {
     const prog = analyzeSource(
       ["f(s2) =>", '    time("D", s2)', 's = "0000-1200"', 's := "1200-1300"', "x = request.security(syminfo.tickerid, '15', f(s) > 0 ? high : low)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
-  it("rejects the kwargs time form inside an inlined UDF body (좁은 문법 위치 인자 전용 — 치환과 무관)", () => {
+  it("evaluates a UDF with the kwargs time() form by running the script in the requested context", () => {
     const prog = analyzeSource(
       ["f(res) =>", "    time(timeframe=res)", "x = request.security(syminfo.tickerid, '15', f('D') > 0 ? high : low)"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 });
 
@@ -21076,18 +21080,18 @@ describe("Analyzer request.security expression input.string var-subst equality l
     expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
   });
 
-  it("rejects when the input.string defval is a genuinely non-const 'var' declaration (emitted slot must fold to a literal — prepass runs outside the bar loop, C598 ReferenceError class. C734 전환: '=' 상수 식별자는 폴딩 수용, var 선언으로 의도 보존)", () => {
+  it("evaluates an input.string with a 'var' defval by running the script in the requested context (ordinary code there, C598's prepass hazard does not arise)", () => {
     const prog = analyzeSource(
       'var base = "SMA"\nmaType = input.string(base, "T")\nx = request.security("", "D", maType == "SMA" ? ta.sma(close, 3) : ta.ema(close, 3))',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
-  it("rejects when the input.string title (emitted slot) is a genuinely non-const 'var' declaration (C734 전환: '=' 상수 변수는 폴딩 수용, var 선언으로 의도 보존)", () => {
+  it("evaluates an input.string with a 'var' title by running the script in the requested context", () => {
     const prog = analyzeSource(
       'var t = "MA Type"\nmaType = input.string("SMA", t)\nx = request.security("", "D", maType == "SMA" ? ta.sma(close, 3) : ta.ema(close, 3))',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 });
 
@@ -21123,7 +21127,7 @@ describe("Analyzer request.security expression TV time-component identifiers (C6
 
   it("still rejects an unrelated DotAccess on the 'dayofweek' identifier that isn't a known constant", () => {
     const prog = analyzeSource('x = request.security("", "D", dayofweek.bogus)');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'dayofweek.bogus'"))).toBe(true);
   });
 
   it("accepts the full wild shape: '==' comparison against dayofweek.friday nested inside a ta.* call argument (1783e8094cac.pine)", () => {
@@ -21170,30 +21174,30 @@ describe("Analyzer request.security expression via top-level unique tuple-destru
     expect(prog.securityExprCallSlots.size).toBe(1);
   });
 
-  it("rejects when the tuple-destructure target is reassigned via ':=' elsewhere (not a stable top-level value)", () => {
+  it("evaluates a tuple-destructure target reassigned via ':=' before the call by running the script in the requested context", () => {
     const prog = analyzeSource(
       '[supertrend, stDir] = ta.supertrend(2.0, 10)\nif close > open\n    stDir := 0\nx = request.security("", "D", stDir == -1)',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   it("rejects when the tuple destructure is NOT top-level (inside a UDF body — the reference at top level resolves to nothing, since UDF-local bindings never populate uniqueTopEqTuples)", () => {
     const prog = analyzeSource(
       'f() =>\n    [supertrend, stDir] = ta.supertrend(2.0, 10)\n    stDir\ny = f()\nx = request.security("", "D", stDir == -1)',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier: 'stDir'"))).toBe(true);
   });
 
-  it("rejects when the same name is bound by a tuple destructure in TWO places (not globally unique)", () => {
+  it("evaluates a name bound by a tuple destructure in two places by running the script in the requested context", () => {
     const prog = analyzeSource(
       '[supertrend, stDir] = ta.supertrend(2.0, 10)\n[supertrend2, stDir] = ta.supertrend(3.0, 14)\nx = request.security("", "D", stDir == -1)',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   it("enforces declared-before-use: rejects when the request.security call appears BEFORE the tuple destructure in source order", () => {
     const prog = analyzeSource('x = request.security("", "D", stDir == -1)\n[supertrend, stDir] = ta.supertrend(2.0, 10)');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier: 'stDir'"))).toBe(true);
   });
 
   it("still rejects a bare multi-return ta.* call that ISN'T behind a top-level unique tuple destructure (e.g. never destructured at all — analyzer would reject the tuple-arity mismatch before this path is even reachable, so the narrow expression grammar itself must reject the raw identifier)", () => {
@@ -21900,11 +21904,11 @@ describe("Analyzer request.security expression ternary offset via top-level var 
     expect(prog.errors).toEqual([]);
   });
 
-  it("still rejects the substituted ternary when the substitution var is redeclared/reassigned (multi-binding, existing var-subst gate unaffected)", () => {
+  it("evaluates a history offset variable reassigned before the call by running the script in the requested context", () => {
     const prog = analyzeSource(
       'idxVar = barstate.isrealtime ? 1 : 0\nidxVar := 0\nx = request.security("", "D", close[idxVar])',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expectScriptContext(prog);
   });
 
   it("accepts a top-level var substituted ternary used at the value position (C601 배치31 (c) 전환 — var-subst:eq-value:ternary, C600까지 거부)", () => {
@@ -21974,11 +21978,11 @@ describe("Analyzer request.security(...)[N] result history indexing (C448)", () 
     expect(prog.errors.some((e) => e.includes("stateful TA call (ta.*)/request.security results/pure numeric builtins"))).toBe(true);
   });
 
-  it("accepts indexing the outer call of a bare-UDF security expression (C711 — securityScalarBareUdfCallSlots is a passthrough, genExpr(expr.obj) already redirects to the inner UDF call, so the generic taCallHistorySlots record+get mechanism is safe to reuse)", () => {
+  it("accepts indexing the outer call of a UDF security expression: the request's own result history (C448), read from the requested context's values", () => {
     const prog = analyzeSource('myFunc(x) =>\n    x * 2\ny = request.security("", "D", myFunc(close))[1]');
-    expect(prog.errors).toEqual([]);
+    expectScriptContext(prog);
     const stmt = prog.script.body[1] as Assignment;
-    expect(prog.taCallHistorySlots.has((stmt.value as IndexAccess).obj)).toBe(true);
+    expect(prog.taCallHistorySlots.has((stmt.value as IndexAccess).obj)).toBe(false);
   });
 
   it("ta.*(...)[N] in a conditional position is now accepted too, but via its own compressed call-count slot (C671), not this shared request.security mechanism", () => {
@@ -22668,7 +22672,7 @@ describe("Analyzer request.security expression time/bar_index built-ins (C441)",
 
   it("still rejects an unrelated undeclared bare identifier (scope wasn't widened beyond the 3 curated names)", () => {
     const prog = analyzeSource('x = request.security("", "D", someUndeclaredThing)');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier: 'someUndeclaredThing'"))).toBe(true);
   });
 
   it("accepts 'time' nested inside a ta.* call argument (allowTa recursion reaches the new leaf case too, same as bare series)", () => {
@@ -23010,20 +23014,19 @@ describe("Analyzer request.security bare UDF call expression (C432, wild 클러�
 describe("Analyzer request.security SCALAR (non-tuple) bare UDF call expression (C436, wild 신규 최대 서브클러스터 214/483 — x = request.security(sym, tf, myFunc(...)), no brackets/destructure around a single-return UDF call)", () => {
   const SRC_MYFUNC = "myFunc(x) =>\n    x + 1\n";
 
-  it("registers the outer request.security call in securityScalarBareUdfCallSlots, pointing at the inner UDF CallExpr", () => {
+  it("evaluates a scalar bare UDF call in the requested context instead of C436's chart-bar passthrough (resin-harness state/repros/security-script-udf.json)", () => {
     const prog = analyzeSource(SRC_MYFUNC + 'ma = request.security(syminfo.tickerid, "D", myFunc(close))');
-    expect(prog.errors).toEqual([]);
+    expectScriptContext(prog);
     const stmt = prog.script.body[1] as Assignment;
     const outer = stmt.value as CallExpr;
-    const inner = prog.securityScalarBareUdfCallSlots.get(outer);
-    expect(inner).toBeDefined();
-    expect((inner as CallExpr).callee).toEqual({ kind: "Identifier", name: "myFunc", line: expect.any(Number), col: expect.any(Number) });
+    expect(prog.securityScalarBareUdfCallSlots.has(outer)).toBe(false);
+    expect(prog.securityExprCallSlots.get(outer)?.bodyExpr).toBe(outer.args[2]);
   });
 
-  it("does NOT register any HTF slot machinery — no securityTfs/securityExprCallSlots/securityTupleCallSlots/securityCallSlots entries", () => {
+  it("registers the call's own requested-context slot (securityTfs + securityExprCallSlots), not C436's slot-free passthrough", () => {
     const prog = analyzeSource(SRC_MYFUNC + 'ma = request.security(syminfo.tickerid, "D", myFunc(close))');
-    expect(prog.securityTfs).toEqual([]);
-    expect(prog.securityExprCallSlots.size).toBe(0);
+    expect(prog.securityTfs).toEqual(["D"]);
+    expect([...prog.securityExprCallSlots.values()].filter((v) => v.script !== undefined).length).toBe(1);
     expect(prog.securityTupleCallSlots.size).toBe(0);
     expect(prog.securityCallSlots.size).toBe(0);
   });
@@ -23050,13 +23053,11 @@ describe("Analyzer request.security SCALAR (non-tuple) bare UDF call expression 
     expect(prog.securityExprCallSlots.has(stmt.value as CallExpr)).toBe(true);
   });
 
-  it("supports the fully-keyword form (symbol=/timeframe=/expression=myFunc(...))", () => {
+  it("supports the fully-keyword form (symbol=/timeframe=/expression=myFunc(...)) in the requested context", () => {
     const prog = analyzeSource(
       SRC_MYFUNC + 'ma = request.security(symbol=syminfo.tickerid, timeframe="D", expression=myFunc(close))',
     );
-    expect(prog.errors).toEqual([]);
-    const stmt = prog.script.body[1] as Assignment;
-    expect(prog.securityScalarBareUdfCallSlots.has(stmt.value as CallExpr)).toBe(true);
+    expectScriptContext(prog);
   });
 
   it("still parses (and discards) gaps=/lookahead= kwargs alongside the bare UDF call without error", () => {
@@ -23093,20 +23094,18 @@ describe("Analyzer request.security SCALAR (non-tuple) bare UDF call expression 
 describe("Analyzer request.security SCALAR bare UDF call reached via top-level '=' var substitution (C442, wild var-subst:eq-value:udf-call(bare) 클러스터 23건 — source = myFunc(...); request.security(sym, tf, source), the UDF call itself is one hop away through a unique top-level '=' variable)", () => {
   const SRC_MYFUNC = "myFunc(x) =>\n    x + 1\n";
 
-  it("registers the outer request.security call in securityScalarBareUdfCallSlots, pointing at the ORIGINAL Identifier (not the substituted inner UDF CallExpr — reusing the resolved CallExpr would double-register/double-evaluate the UDF's state)", () => {
+  it("evaluates a variable holding a UDF call (C442's var-subst form) in the requested context: the variable's statement runs there, once per requested bar", () => {
     const prog = analyzeSource(SRC_MYFUNC + 'source = myFunc(close)\nma = request.security(syminfo.tickerid, "D", source)');
-    expect(prog.errors).toEqual([]);
-    const stmt = prog.script.body[2] as Assignment;
-    const outer = stmt.value as CallExpr;
-    const inner = prog.securityScalarBareUdfCallSlots.get(outer);
-    expect(inner).toBeDefined();
-    expect(inner).toEqual({ kind: "Identifier", name: "source", line: expect.any(Number), col: expect.any(Number) });
+    expectScriptContext(prog);
+    const outer = (prog.script.body[2] as Assignment).value as CallExpr;
+    expect(prog.securityScalarBareUdfCallSlots.has(outer)).toBe(false);
+    expect(prog.securityExprCallSlots.get(outer)?.script?.slice.has(prog.script.body[1]!)).toBe(true);
   });
 
-  it("does NOT register any HTF slot machinery — no securityTfs/securityExprCallSlots/securityTupleCallSlots/securityCallSlots entries", () => {
+  it("registers the call's own requested-context slot for the var-subst form too", () => {
     const prog = analyzeSource(SRC_MYFUNC + 'source = myFunc(close)\nma = request.security(syminfo.tickerid, "D", source)');
-    expect(prog.securityTfs).toEqual([]);
-    expect(prog.securityExprCallSlots.size).toBe(0);
+    expect(prog.securityTfs).toEqual(["D"]);
+    expect([...prog.securityExprCallSlots.values()].filter((v) => v.script !== undefined).length).toBe(1);
     expect(prog.securityTupleCallSlots.size).toBe(0);
     expect(prog.securityCallSlots.size).toBe(0);
   });
@@ -23126,20 +23125,20 @@ describe("Analyzer request.security SCALAR bare UDF call reached via top-level '
     expect(funcCallExprKeys.length).toBe(1);
   });
 
-  it("rejects when the substituted variable is reassigned elsewhere via ':=' (disqualifies uniqueTopEqVars — falls back to generic rejection)", () => {
+  it("evaluates a UDF-call variable reassigned via ':=' before the call in the requested context (both statements run there)", () => {
     const prog = analyzeSource(
       SRC_MYFUNC + 'source = myFunc(close)\nsource := source + 1\nma = request.security(syminfo.tickerid, "D", source)',
     );
-    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
+    expectScriptContext(prog);
     expect(prog.securityScalarBareUdfCallSlots.size).toBe(0);
   });
 
-  it("rejects when the variable has more than one top-level '=' binding (disqualifies uniqueTopEqVars)", () => {
+  it("evaluates a variable bound twice by '=' before the call in the requested context", () => {
     const prog = analyzeSource(
       SRC_MYFUNC +
         'source = myFunc(close)\nsource = myFunc(open)\nma = request.security(syminfo.tickerid, "D", source)',
     );
-    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
+    expectScriptContext(prog);
     expect(prog.securityScalarBareUdfCallSlots.size).toBe(0);
   });
 
@@ -23147,30 +23146,25 @@ describe("Analyzer request.security SCALAR bare UDF call reached via top-level '
     const prog = analyzeSource(
       SRC_MYFUNC + 'ma = request.security(syminfo.tickerid, "D", source)\nsource = myFunc(close)',
     );
-    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("unknown identifier: 'source'"))).toBe(true);
     expect(prog.securityScalarBareUdfCallSlots.size).toBe(0);
   });
 
-  it("rejects when the variable is bound inside a nested block (not top-level — disqualifies uniqueTopEqVars)", () => {
+  it("evaluates a variable also bound inside a nested block in the requested context (the block runs there as well)", () => {
     const prog = analyzeSource(
       SRC_MYFUNC +
         "flag = close > open\nsource = close\nif flag\n    source = myFunc(close)\nma = request.security(syminfo.tickerid, \"D\", source)",
     );
-    expect(prog.errors.some((e) => e.includes("'request.security' 'expression' argument"))).toBe(true);
+    expectScriptContext(prog);
     expect(prog.securityScalarBareUdfCallSlots.size).toBe(0);
   });
 
-  it("follows a two-hop unique top-level '=' chain (a = myFunc(close); b = a; request.security(..., b))", () => {
+  it("follows a two-hop '=' chain (a = myFunc(close); b = a; request.security(..., b)): both statements run in the requested context", () => {
     const prog = analyzeSource(SRC_MYFUNC + 'a = myFunc(close)\nb = a\nma = request.security(syminfo.tickerid, "D", b)');
-    expect(prog.errors).toEqual([]);
-    const stmt = prog.script.body[3] as Assignment;
-    const outer = stmt.value as CallExpr;
-    expect(prog.securityScalarBareUdfCallSlots.get(outer)).toEqual({
-      kind: "Identifier",
-      name: "b",
-      line: expect.any(Number),
-      col: expect.any(Number),
-    });
+    expectScriptContext(prog);
+    const outer = (prog.script.body[3] as Assignment).value as CallExpr;
+    const slice = prog.securityExprCallSlots.get(outer)!.script!.slice;
+    expect(slice.has(prog.script.body[1]!) && slice.has(prog.script.body[2]!)).toBe(true);
   });
 
   it("rejects a tuple-returning UDF reached via var substitution (falls back to the generic buildSecurityExpr rejection — that value belongs in a tuple destructure, not here)", () => {
@@ -23182,13 +23176,11 @@ describe("Analyzer request.security SCALAR bare UDF call reached via top-level '
     expect(prog.securityScalarBareUdfCallSlots.size).toBe(0);
   });
 
-  it("supports the fully-keyword form (symbol=/timeframe=/expression=source)", () => {
+  it("supports the fully-keyword form (symbol=/timeframe=/expression=source) in the requested context", () => {
     const prog = analyzeSource(
       SRC_MYFUNC + 'source = myFunc(close)\nma = request.security(symbol=syminfo.tickerid, timeframe="D", expression=source)',
     );
-    expect(prog.errors).toEqual([]);
-    const stmt = prog.script.body[2] as Assignment;
-    expect(prog.securityScalarBareUdfCallSlots.has(stmt.value as CallExpr)).toBe(true);
+    expectScriptContext(prog);
   });
 });
 
@@ -23240,57 +23232,41 @@ describe("Analyzer request.security scalar bare-UDF result UDT field access (C62
 describe("Analyzer request.security SCALAR bare UDF call wrapped in a history index (C562, wild solo actionable 최다 서브클러스터 — request.security(sym, tf, myFunc(...)[1]) / data[cond?1:0] where data resolves to a bare UDF call, C436/C442's IndexAccess sibling)", () => {
   const SRC_MYFUNC = "myFunc(x) =>\n    x + 1\n";
 
-  it("registers the outer request.security call in securityScalarBareUdfCallSlots, pointing at the ORIGINAL IndexAccess node (obj is the bare UDF CallExpr directly, no substitution needed)", () => {
+  it("evaluates a history index on a bare UDF call (C562's form) in the requested context", () => {
     const prog = analyzeSource(SRC_MYFUNC + 'ma = request.security(syminfo.tickerid, "D", myFunc(close)[1])');
-    expect(prog.errors).toEqual([]);
-    const stmt = prog.script.body[1] as Assignment;
-    const outer = stmt.value as CallExpr;
-    const inner = prog.securityScalarBareUdfCallSlots.get(outer);
-    expect(inner).toBeDefined();
-    expect((inner as IndexAccess).kind).toBe("IndexAccess");
-    expect(((inner as IndexAccess).obj as CallExpr).callee).toEqual({
-      kind: "Identifier",
-      name: "myFunc",
-      line: expect.any(Number),
-      col: expect.any(Number),
-    });
+    expectScriptContext(prog);
+    const outer = (prog.script.body[1] as Assignment).value as CallExpr;
+    expect(prog.securityScalarBareUdfCallSlots.has(outer)).toBe(false);
+    expect(prog.securityExprCallSlots.get(outer)?.bodyExpr.kind).toBe("IndexAccess");
   });
 
-  it("does NOT register any HTF slot machinery — no securityTfs/securityExprCallSlots/securityTupleCallSlots/securityCallSlots entries", () => {
+  it("registers the call's own requested-context slot for the history-indexed form too", () => {
     const prog = analyzeSource(SRC_MYFUNC + 'ma = request.security(syminfo.tickerid, "D", myFunc(close)[1])');
-    expect(prog.securityTfs).toEqual([]);
-    expect(prog.securityExprCallSlots.size).toBe(0);
+    expect(prog.securityTfs).toEqual(["D"]);
+    expect([...prog.securityExprCallSlots.values()].filter((v) => v.script !== undefined).length).toBe(1);
     expect(prog.securityTupleCallSlots.size).toBe(0);
     expect(prog.securityCallSlots.size).toBe(0);
   });
 
-  it("also matches through a top-level '=' var substitution (data = myFunc(close); request.security(sym, tf, data[1]) — obj chases uniqueTopEqVars exactly like C442's bare-Identifier case)", () => {
+  it("evaluates a history index on a variable holding a UDF call (data = myFunc(close); data[1]) in the requested context", () => {
     const prog = analyzeSource(SRC_MYFUNC + 'data = myFunc(close)\nma = request.security(syminfo.tickerid, "D", data[1])');
-    expect(prog.errors).toEqual([]);
-    const stmt = prog.script.body[2] as Assignment;
-    const outer = stmt.value as CallExpr;
-    const inner = prog.securityScalarBareUdfCallSlots.get(outer) as IndexAccess;
-    expect(inner.kind).toBe("IndexAccess");
-    // obj는 치환된 CallExpr이 아니라 원본 Identifier 그대로여야 한다(C442와 동일 원칙 — 상태 이중소비 방지)
-    expect(inner.obj).toEqual({ kind: "Identifier", name: "data", line: expect.any(Number), col: expect.any(Number) });
+    expectScriptContext(prog);
+    const outer = (prog.script.body[2] as Assignment).value as CallExpr;
+    expect(prog.securityScalarBareUdfCallSlots.has(outer)).toBe(false);
   });
 
-  it("supports a ternary offset (TV C446 idiom: data[isLive ? 1 : 0])", () => {
+  it("evaluates a ternary offset on a UDF call (TV C446 idiom: data[isLive ? 1 : 0]) in the requested context", () => {
     const prog = analyzeSource(
       "isLive = true\n" + SRC_MYFUNC + 'ma = request.security(syminfo.tickerid, "D", myFunc(close)[isLive ? 1 : 0])',
     );
-    expect(prog.errors).toEqual([]);
-    const stmt = prog.script.body[2] as Assignment;
-    expect(prog.securityScalarBareUdfCallSlots.has(stmt.value as CallExpr)).toBe(true);
+    expectScriptContext(prog);
   });
 
-  it("supports a dynamic (non-literal, non-ternary) offset — more permissive than buildSecurityExpr's narrow grammar, since this path bypasses it entirely (C228 general dynamic history offsets)", () => {
+  it("evaluates a dynamic offset on a UDF call (C228) in the requested context", () => {
     const prog = analyzeSource(
       "n = 2\n" + SRC_MYFUNC + 'ma = request.security(syminfo.tickerid, "D", myFunc(close)[n])',
     );
-    expect(prog.errors).toEqual([]);
-    const stmt = prog.script.body[2] as Assignment;
-    expect(prog.securityScalarBareUdfCallSlots.has(stmt.value as CallExpr)).toBe(true);
+    expectScriptContext(prog);
   });
 
   it("does not affect a bare/derived-series IndexAccess (close[1] still uses the existing narrow-grammar path, not this shortcut)", () => {
@@ -23447,11 +23423,11 @@ describe("Analyzer request.security expression ta.* call kwargs form (C443, matc
     expect(prog.securityExprCallSlots.has(stmt.value as CallExpr)).toBe(true);
   });
 
-  it("rejects when the kwarg value does NOT fit the narrow grammar (선행 var 선언 UDF 본문 — C732 이후 다문장 '=' 본문 필러 대체)", () => {
+  it("rejects a ta.atr keyword length given a stateful UDF call: a series length (ta.atr takes a simple int), now reported by the ordinary analysis of the expression", () => {
     const prog = analyzeSource(
       'myFunc(x) =>\n    var y = 0.0\n    y := x + 1\n    y\nx = request.security("", "D", ta.atr(length = myFunc(close)))',
     );
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("length argument of 'ta.atr' cannot be 'series'"))).toBe(true);
   });
 
   it("rejects an unrecognized kwarg name on a function that DOES support kwargs (ta.ema has kwargParamNames=[source,length], but 'bogus' isn't one of them — resolveTaKwargPositions silently drops it, so buildSecurityExprNode still shapes a 0-arg clone and it's analyzeStatefulCall's own arg-count check downstream that surfaces the error, not a specific '이름 없음' message — matching the general narrow-grammar convention of losing message granularity on malformed edge cases)", () => {
@@ -23461,9 +23437,7 @@ describe("Analyzer request.security expression ta.* call kwargs form (C443, matc
 
   it("rejects when a required position is filled by neither a positional nor a keyword arg (hole in the middle — ta.sma(length=14) missing source)", () => {
     const prog = analyzeSource('x = request.security("", "D", ta.sma(length = 14))');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare") || e.includes("argument count mismatch"))).toBe(
-      true,
-    );
+    expect(prog.errors.some((e) => e.includes("'ta.sma' call is missing argument 'source'"))).toBe(true);
     expect(prog.securityExprCallSlots.size).toBe(0);
   });
 
@@ -23475,7 +23449,7 @@ describe("Analyzer request.security expression ta.* call kwargs form (C443, matc
 
   it("still rejects kwargs entirely for a ta.* function with no kwargParamNames entry at all (ta.hma — blanket rejection preserved, not just an unrecognized name; ta.wma gained kwargParamNames in C473)", () => {
     const prog = analyzeSource('x = request.security("", "D", ta.hma(close, length = 14))');
-    expect(prog.errors.some((e) => e.includes("'expression' argument only supports bare"))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("keyword arguments ('length=...') are only supported in"))).toBe(true);
     expect(prog.securityExprCallSlots.size).toBe(0);
   });
 
@@ -28532,11 +28506,11 @@ describe("Analyzer request.security expression bare UDF 콜 인라인 치환 (C5
     expect(prog.securityExprCallSlots.size).toBe(1);
   });
 
-  it("C732 still rejects a multi-statement body containing a leading 'var' declaration (선행 문장은 전부 '=' 로컬이어야 — var/varip 상태 선언은 HTF 재평가 문맥의 지속 상태라 보수 거부)", () => {
+  it("evaluates a UDF with a leading 'var' declaration inside ta.* by running the script in the requested context (its state is the requested context's own)", () => {
     const prog = analyzeSource(
       ["f_bad(x) =>\n    var tmp = 0.0\n    tmp := x + 1\n    tmp", 'y = request.security("", "D", ta.sma(f_bad(close), 5))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes(EXPR_ERR))).toBe(true);
+    expectScriptContext(prog);
   });
 
   // C695(배치35 (1) series-arg 잔여 — wild getMidPoint(len, off) => MidPointOffset = math.avg(...)류):
@@ -28569,7 +28543,7 @@ describe("Analyzer request.security expression bare UDF 콜 인라인 치환 (C5
     expect(prog.securityExprCallSlots.size).toBe(1);
   });
 
-  it("still rejects an Assignment-body UDF whose single statement uses ':=' instead of '=' (:= requires a pre-existing declaration, not a fresh local return value)", () => {
+  it("rejects a UDF that assigns a global with ':=' (not valid Pine; the requested context's slice cannot see the write)", () => {
     const prog = analyzeSource(
       [
         "var float acc = 0.0",
@@ -28577,7 +28551,7 @@ describe("Analyzer request.security expression bare UDF 콜 인라인 치환 (C5
         'y = request.security("", "D", ta.sma(f_bad2(close), 5))',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes(EXPR_ERR))).toBe(true);
+    expect(prog.errors.some((e) => e.includes(EXPR_ERR) && e.includes("a function it calls assigns a global variable"))).toBe(true);
   });
 
   it("accepts a two-statement body whose last statement is a fresh '=' Assignment since C732 (구 거부 테스트 회전 — 마지막 '=' 대입값이 암묵 반환값, 선행 '=' 로컬은 치환으로 해소)", () => {
@@ -28598,30 +28572,30 @@ describe("Analyzer request.security expression bare UDF 콜 인라인 치환 (C5
     expect(prog.securityExprCallSlots.size).toBe(1);
   });
 
-  it("C732 still rejects a ':=' last statement whose RHS reads the reassigned local itself (재대입 이름은 funcLocalUniqueEqVars 미등재 — 이전 값 시맨틱을 흉내낼 수 없어 보수 거부)", () => {
+  it("evaluates a UDF whose last statement reassigns its own local by running the script in the requested context", () => {
     const prog = analyzeSource(
       ["f_selfref(x) =>\n    v = x\n    v := v + 1", 'y = request.security("", "D", ta.sma(f_selfref(close), 5))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes(EXPR_ERR))).toBe(true);
+    expectScriptContext(prog);
   });
 
-  it("still rejects a callsite that uses kwargs (위치 인자 전용 — 보수 원칙)", () => {
+  it("evaluates a UDF call with keyword arguments by running the script in the requested context", () => {
     const prog = analyzeSource(
       ["f_ma(src, len) =>\n    ta.ema(src, len)", 'x = request.security("", "D", ta.sma(f_ma(src=close, len=20), 5))'].join(
         "\n",
       ),
     );
-    expect(prog.errors.some((e) => e.includes(EXPR_ERR))).toBe(true);
+    expectScriptContext(prog);
   });
 
   it("still rejects an argument-count mismatch (기본값 의존 — 보수 원칙)", () => {
     const prog = analyzeSource(
       ["f_ma(src, len) =>\n    ta.ema(src, len)", 'x = request.security("", "D", ta.sma(f_ma(close), 5))'].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes(EXPR_ERR))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("'f_ma' call argument count mismatch"))).toBe(true);
   });
 
-  it("still rejects when the call-site argument itself isn't narrow-grammar-legal (a ':='-reassigned '=' name — C738부터 no-write var는 슬라이스로 합법이라 필러 회전)", () => {
+  it("evaluates a UDF call given a ':='-reassigned '=' name by running the script in the requested context", () => {
     const prog = analyzeSource(
       [
         "f_ma(src, len) =>\n    src + len",
@@ -28630,15 +28604,14 @@ describe("Analyzer request.security expression bare UDF 콜 인라인 치환 (C5
         'x = request.security("", "D", ta.sma(f_ma(close, bad), 5))',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes(EXPR_ERR))).toBe(true);
+    expectScriptContext(prog);
   });
 
   it("terminates on a self-recursive UDF via the fn: visiting guard (폴딩 포기, 에러 유지, 무한재귀 없이 정지)", () => {
     const prog = analyzeSource(
       ["rec(x) =>\n    rec(x)", 'y = request.security("", "D", ta.sma(rec(close), 5))'].join("\n"),
     );
-    expect(prog.errors.length > 0).toBe(true);
-    expect(prog.securityExprCallSlots.size).toBe(0);
+    expect(prog.errors.some((e) => e.includes("'rec' function call has a recursive cycle"))).toBe(true);
   });
 
   it("accepts a nested bare UDF call inside an already-inlined body since C732 (구 거부 테스트 회전 — paramEnv===null 게이트 제거, 안쪽 콜 실인자의 바깥 매개변수 참조는 entry.env 렉시컬 캡처가 해소)", () => {
@@ -28653,7 +28626,7 @@ describe("Analyzer request.security expression bare UDF 콜 인라인 치환 (C5
     expect(prog.securityExprCallSlots.size).toBe(1);
   });
 
-  it("C732 still rejects a nested bare UDF call whose callee body is itself unsupported (선행 var 선언 — 중첩이 열려도 안쪽 본문 자격은 그대로 검증)", () => {
+  it("evaluates a nested UDF call whose callee has 'var' state by running the script in the requested context", () => {
     const prog = analyzeSource(
       [
         "inner2(v) =>\n    var acc = 0.0\n    acc := v + 1\n    acc",
@@ -28661,7 +28634,7 @@ describe("Analyzer request.security expression bare UDF 콜 인라인 치환 (C5
         'y = request.security("", "D", ta.sma(outer2(close), 5))',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes(EXPR_ERR))).toBe(true);
+    expectScriptContext(prog);
   });
 
   it("still rejects when the callee name has a duplicate top-level FuncDecl (findSecurityFoldableFuncDecl requires a unique declaration — conservative bail)", () => {
@@ -28672,7 +28645,7 @@ describe("Analyzer request.security expression bare UDF 콜 인라인 치환 (C5
         'x = request.security("", "D", ta.sma(f_ma(close, 20), 5))',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes(EXPR_ERR))).toBe(true);
+    expect(prog.errors.some((e) => e.includes("name conflicts with an existing declaration: 'f_ma'"))).toBe(true);
   });
 });
 
@@ -28736,7 +28709,7 @@ describe("Analyzer request.security expression UDF 콜 인라인 — switch/if �
     expect((info.bodyExpr as BinOp).left.kind).toBe("NaLiteral");
   });
 
-  it("rejects when the switch subject is NOT compile-time constant (재대입 var — 분기 선택 불가, 보수 거부)", () => {
+  it("evaluates a UDF switching on a reassigned 'var' subject by running the script in the requested context (the switch runs there as ordinary code)", () => {
     const prog = analyzeSource(
       [
         'var string mt = "SMA"',
@@ -28745,7 +28718,7 @@ describe("Analyzer request.security expression UDF 콜 인라인 — switch/if �
         'h = request.security(syminfo.tickerid, "60", ta.wma(ma(close, 20, mt), 3))',
       ].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes(EXPR_ERR))).toBe(true);
+    expectScriptContext(prog);
   });
 
   it("selects the then/else branch of an if-expression body when the condition param is fed an input.bool constant (calculateMA idiom)", () => {

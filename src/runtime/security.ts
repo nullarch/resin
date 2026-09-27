@@ -482,6 +482,17 @@ export function getFromArray(
   return valueArr[htfIdx]!;
 }
 
+// The value a request's child context records for the chart (Context.runSecurityScript): a number
+// as it is, a bool as 1/0 (the prepass results' encoding, read back by pineEq as the bool), na as
+// NaN. Any other type has no place in the Float64Array the chart reads, so it stops the run rather
+// than turning into NaN.
+export function scriptValue(v: unknown): number {
+  if (typeof v === "number") return v;
+  if (typeof v === "boolean") return v ? 1 : 0;
+  if (v === null || v === undefined) return NaN;
+  throw new Error("request.security: requesting a value that is not a number or a bool is not implemented for an expression evaluated in the requested context");
+}
+
 // request.security(...)[N] top-level 히스토리 참조 전용(C448, ROADMAP index-dynamic-or-negative
 // 잔여 CallExpr 축 — index-access.ts analyzeIndexAccess CallExpr 분기 주석 참조). ta.* 콜 히스토리
 // (series.ts histGet)와 달리 record() 인라인이 필요 없다 -- get()/getFromArray()가 읽는
