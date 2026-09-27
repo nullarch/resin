@@ -99,6 +99,28 @@ export class Series {
       this.data[this.cursor] = value;
     }
   }
+
+  // What one run of the script body can change in the buffer: the cursor (push() moves it), the
+  // index of the last record, and the value at the cursor. A calc_on_order_fills re-execution is
+  // discarded afterwards (Context.recalcOnOrderFills), so these are saved before it and put back
+  // after it.
+  head(): number[] {
+    const at = this.cursor >= 0 && this.cursor < this.data.length ? this.data[this.cursor]! : NaN;
+    return [this.cursor, this.last, at];
+  }
+
+  restoreHead(h: readonly number[]): void {
+    this.cursor = h[0]!;
+    this.last = h[1]!;
+    if (this.cursor >= 0 && this.cursor < this.data.length) this.data[this.cursor] = h[2]!;
+  }
+
+  // Overwrites the current bar's value: a calc_on_order_fills re-execution sees the bar only as far
+  // as the broker emulator has walked it (Context.recalcOnOrderFills), and gets the whole bar back
+  // afterwards. Only for the chart's own price series, whose buffer is a private copy.
+  setCurrent(value: number): void {
+    if (this.cursor >= 0 && this.cursor < this.data.length) this.data[this.cursor] = value;
+  }
 }
 
 // histSlot 대상(top-level var/varip·'=' 로컬·UDF param/'=' 로컬/내부 var)의 동적(런타임) 히스토리
@@ -180,6 +202,18 @@ export class RefSeries {
     if (this.cursor >= 0 && this.cursor < this.data.length) {
       this.data[this.cursor] = value ?? null;
     }
+  }
+
+  // Series.head/restoreHead for reference values.
+  head(): unknown[] {
+    const at = this.cursor >= 0 && this.cursor < this.data.length ? this.data[this.cursor] : null;
+    return [this.cursor, this.last, at];
+  }
+
+  restoreHead(h: readonly unknown[]): void {
+    this.cursor = h[0] as number;
+    this.last = h[1] as number;
+    if (this.cursor >= 0 && this.cursor < this.data.length) this.data[this.cursor] = h[2];
   }
 
   get length(): number {

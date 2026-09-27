@@ -1208,7 +1208,7 @@ export class Parser {
       : this.expect("IDENTIFIER", "in var declaration");
     this.expect("ASSIGN", "in var declaration (expected '=')");
     const value = this.parseExpr();
-    return {
+    const decl: VarDecl = {
       kind: "VarDecl",
       name: nameTok.value,
       persistent: true,
@@ -1217,6 +1217,8 @@ export class Parser {
       line: kw.line,
       col: kw.col,
     };
+    if (kw.type === "VARIP") decl.intrabar = true;
+    return decl;
   }
 
   private parseAssignmentOrExpr(): Assignment | ExprStmt | FieldAssignment {

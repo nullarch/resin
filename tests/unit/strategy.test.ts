@@ -15,8 +15,8 @@ import { describe, it, expect } from "vitest";
 import { StrategyState } from "../../src/runtime/strategy";
 import { transpile } from "../../src/transpiler/pipeline";
 import { runPipeline } from "../helpers/pipeline";
-import { run } from "../../src/runtime/engine";
-import { CONTEXT_OPTION_KEYS, type OHLCVData } from "../../src/runtime/context";
+import { compile, run } from "../../src/runtime/engine";
+import { CONTEXT_OPTION_KEYS, Context, type OHLCVData } from "../../src/runtime/context";
 
 function transpileErrors(source: string): string[] {
   const r = transpile(source);
@@ -8689,6 +8689,132 @@ describe("strategy(process_orders_on_close=true) E2E", () => {
   it("rejects a process_orders_on_close that is not a true/false literal", () => {
     const errs = transpileErrors('strategy("s", process_orders_on_close=1)');
     expect(errs.some((e) => e.includes("'process_orders_on_close' argument must be a true/false literal"))).toBe(true);
+  });
+});
+
+// ── strategy(calc_on_order_fills=true) ──
+// strategies.txt ("calc_on_order_fills"): "enables a strategy to recalculate immediately after an
+// order fills"; faq.txt: it "sets take-profit and stop-loss orders during the entry bar, based on
+// the entry price strategy.position_avg_price". The body runs again at the node of the bar's path
+// the fill happened at, then at least one node further, never at the close (at most four runs per
+// bar); every re-execution is rolled back but for its orders and its varip variables
+// (Context.recalcOnOrderFills). Oracle-checked: resin-harness probe C25 and state/repros/coof-*.json.
+describe("strategy(calc_on_order_fills=true) E2E", () => {
+  it("emits the flag, and the varip slots its re-executions leave alone, only when it is on", () => {
+    const body = ["var int runs = 0", "varip int execs = 0", "runs += 1", "execs += 1"];
+    const on = transpileCode(['strategy("s", calc_on_order_fills=true)', ...body].join("\n"));
+    expect(on).toContain("$.strategy.calcOnOrderFills = true;");
+    expect(on).toContain("$.setIntrabarSlots([1], []);");
+    const off = transpileCode(['strategy("s")', ...body].join("\n"));
+    expect(off).not.toContain("calcOnOrderFills");
+    expect(off).not.toContain("setIntrabarSlots");
+  });
+
+  it("counts a function's varip in every call's block", () => {
+    const src = [
+      'strategy("s", calc_on_order_fills=true)',
+      "f() =>",
+      "    var int c = 0",
+      "    varip int e = 0",
+      "    c += 1",
+      "    e += 1",
+      "    c + e",
+      "g() => f()",
+      "a = f()",
+      "b = g()",
+    ].join("\n");
+    expect(transpileCode(src)).toContain("$.setIntrabarSlots([], [1, 3]);");
+  });
+
+  it("takes a true/false literal or a top-level constant naming one, and rejects anything else", () => {
+    expect(transpileCode('coof = true\nstrategy("s", calc_on_order_fills=coof)')).toContain("calcOnOrderFills = true");
+    expect(transpileCode('strategy("s", calc_on_order_fills=false)')).not.toContain("calcOnOrderFills");
+    const errs = transpileErrors('strategy("s", calc_on_order_fills=close > open)');
+    expect(errs.some((e) => e.includes("'calc_on_order_fills' argument must be a true/false constant"))).toBe(true);
+  });
+
+  // Probe C25: the entry fills at bar 1's open 100; the re-execution there places the bracket
+  // (take-profit 101, stop-loss 99) and bar 1 (O=100 H=101.5 L=99.8) reaches 101 on its way to the
+  // high. Without the re-execution the bracket is placed at bar 1's close and bar 2 opens at 101.
+  it("fills a bracket placed from position_avg_price on the entry bar", () => {
+    const data: OHLCVData = {
+      open: [100, 100, 101, 98.5], high: [101, 101.5, 101.2, 99], low: [99, 99.8, 98, 98],
+      close: [100, 101, 98.5, 98.5], volume: [1, 1, 1, 1],
+    };
+    const body = [
+      "if bar_index == 0",
+      '    strategy.entry("L", strategy.long, qty=1)',
+      "if strategy.position_size != 0",
+      '    strategy.exit("x", "L", stop=strategy.position_avg_price*0.99, limit=strategy.position_avg_price*1.01)',
+      "var float __net = na",
+      "__net := strategy.netprofit",
+    ];
+    const net = (decl: string): unknown[] =>
+      runPipeline([decl, ...body].join("\n"), data).bars.map((b) => b["var:__net"]);
+    expect(net('strategy("s", initial_capital=100000, calc_on_order_fills=true)')).toEqual([0, 1, 1, 1]);
+    expect(net('strategy("s", initial_capital=100000)')).toEqual([0, 0, 1, 1]);
+  });
+
+  // A body that closes when it holds a position and enters when flat fills on every pass. Bar 1
+  // (O=100 H=103 L=99.5) walks open → low → high: the entry fills at the open, the re-executions at
+  // the open (node 0), the low (node 1) and the high (node 2) close, enter and close again, and the
+  // run at the close enters for the next bar: two trades a bar, four body runs a bar (the varip
+  // counter), one of them counted (the var counter). The drawings, the array and ta.sma of the
+  // re-executions are rolled back with them.
+  it("re-executes at most at nodes 0, 1 and 2, and rolls every re-execution back", () => {
+    const data: OHLCVData = {
+      open: [100, 100, 102, 99, 98], high: [101, 103, 102.5, 100, 99.5], low: [99, 99.5, 98, 97, 97.5],
+      close: [100, 102, 99, 98, 99], volume: [1, 1, 1, 1, 1],
+    };
+    const src = [
+      'strategy("s", initial_capital=100000, calc_on_order_fills=true)',
+      "var int runs = 0",
+      "varip int execs = 0",
+      "runs += 1",
+      "execs += 1",
+      "var a = array.new_float()",
+      "array.push(a, close)",
+      "label.new(bar_index, close)",
+      "if strategy.position_size == 0",
+      '    strategy.entry("L", strategy.long, qty=1)',
+      "else",
+      '    strategy.close("L")',
+      "var float __closed = na",
+      "__closed := strategy.closedtrades",
+      'plot(ta.sma(close, 2), "sma")',
+      'plot(array.size(a), "size")',
+    ].join("\n");
+    const r = transpile(src);
+    if (!r.ok) throw new Error(r.errors.join("; "));
+    const out = run(r, data);
+    expect(out.bars.map((b) => b["var:runs"])).toEqual([1, 2, 3, 4, 5]);
+    expect(out.bars.map((b) => b["var:execs"])).toEqual([1, 5, 9, 13, 17]);
+    expect(out.bars.map((b) => b["var:__closed"])).toEqual([0, 2, 4, 6, 8]);
+    expect(out.plots[0]!.values.slice(1)).toEqual([101, 100.5, 98.5, 98.5]);
+    expect(out.plots[1]!.values).toEqual([1, 2, 3, 4, 5]);
+    expect(out.viz!.drawings.map((d) => [d.bar, d.state.y])).toEqual([[0, 100], [1, 102], [2, 99], [3, 98], [4, 99]]);
+  });
+
+  it("fills a re-execution's market order at its node's price", () => {
+    const data: OHLCVData = {
+      open: [100, 100], high: [101, 103], low: [99, 99.5], close: [100, 102], volume: [1, 1],
+    };
+    const src = [
+      'strategy("s", initial_capital=100000, calc_on_order_fills=true)',
+      "if strategy.position_size == 0",
+      '    strategy.entry("L", strategy.long, qty=1)',
+      "else",
+      '    strategy.close("L")',
+    ].join("\n");
+    const r = transpile(src);
+    if (!r.ok) throw new Error(r.errors.join("; "));
+    const ctx = Context.from(r, data);
+    const bar = compile(r.code)(ctx);
+    for (let i = 0; i < ctx.barCount; i++) {
+      ctx.advance();
+      bar();
+    }
+    expect(ctx.strategy.closedTradeRecords.map((t) => [t.entryPrice, t.exitPrice])).toEqual([[100, 100], [99.5, 103]]);
   });
 });
 

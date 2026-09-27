@@ -1018,6 +1018,10 @@ export interface FuncInfo {
   // c) =>`류, 항상 전체 위치 인자로 호출). paramHasDefault로 각 인덱스가 실제 필수인지 판별.
   paramHasDefault: boolean[]; // 매개변수 인덱스 -> 기본값 존재 여부(선언 순서, requiredParamCount와 짝)
   localVarSlots: string[]; // 함수-상대 슬롯 인덱스 -> var/varip 이름 (선언 순서)
+  // The localVarSlots declared with varip, and — once the layout is final (varSlotCount) — every
+  // varip slot of one call's block, those of the calls written in the body included.
+  localVaripSlots: number[];
+  varipOffsets: number[];
   localVarIndex: Map<string, number>;
   // 함수 본문 안 stateful 콜(TA_REGISTRY)의 함수-상대 슬롯 개수(C162, ROADMAP line 809 UDF 본문
   // 조각). localVarSlots와 정확히 같은 원리의 ta 버전: 본문 안 각 stateful 콜사이트는 0부터
@@ -2236,6 +2240,10 @@ export interface AnalyzedProgram {
   calendar: SymbolCalendar;
   usesCalendar: boolean;
   varSlots: string[]; // slot index -> 변수명 (선언 순서)
+  // The varSlots declared with varip, and the $.fnVars slots (every UDF call's block) declared with
+  // varip: a discarded run of the body does not roll them back (runtime/rollback.ts).
+  varipSlots: number[];
+  varipFnVarSlots: number[];
   varIndex: Map<string, number>;
   varTypeHints: Map<string, string | null>;
   locals: Set<string>; // var가 아닌 '=' 재계산 변수 (UDF 매개변수 + 함수 내부 '=' 로컬 포함)
@@ -2390,6 +2398,9 @@ export interface AnalyzedProgram {
   // strategy(use_bar_magnifier=true): fills are judged on the run's lower-timeframe bars, when it
   // supplies them. codegen sets $.strategy.useBarMagnifier.
   strategyUseBarMagnifier: boolean;
+  // strategy(calc_on_order_fills=true): the body runs again on a bar after its order fills. codegen
+  // sets $.strategy.calcOnOrderFills and hands the varip slots to the context.
+  strategyCalcOnOrderFills: boolean;
   // strategy(slippage=N): ticks added against the order to every market and stop fill (0 = none).
   // codegen passes it as configure()'s seventh argument.
   strategySlippage: number;
@@ -3820,6 +3831,8 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
     usesCalendar: false,
     declaredTypeNames,
     varSlots: [],
+    varipSlots: [],
+    varipFnVarSlots: [],
     varIndex: new Map(),
     varTypeHints: new Map(),
     locals: new Set(),
@@ -3867,6 +3880,7 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
     strategyQtyIsCash: false,
     strategyProcessOrdersOnClose: false,
     strategyUseBarMagnifier: false,
+    strategyCalcOnOrderFills: false,
     strategySlippage: 0,
     strategyMarginLong: null,
     strategyMarginShort: null,
@@ -4722,6 +4736,8 @@ function registerFuncSignature(stmt: FuncDecl, prog: AnalyzedProgram): void {
     requiredParamCount: 0,
     paramHasDefault: [],
     localVarSlots: [],
+    localVaripSlots: [],
+    varipOffsets: [],
     localVarIndex: new Map(),
     localTaSlotCount: 0,
     tupleArity: null,
@@ -5994,6 +6010,8 @@ function analyzeMethodDecl(stmt: MethodDecl, prog: AnalyzedProgram, scope: LexSc
     requiredParamCount: 0,
     paramHasDefault: [],
     localVarSlots: [],
+    localVaripSlots: [],
+    varipOffsets: [],
     localVarIndex: new Map(),
     localTaSlotCount: 0,
     tupleArity: null,
@@ -6563,6 +6581,7 @@ function analyzeVarDecl(stmt: VarDecl, prog: AnalyzedProgram, scope: LexScope): 
       const slot = func.localVarSlots.length;
       func.localVarSlots.push(stmt.name);
       func.localVarIndex.set(stmt.name, slot);
+      if (stmt.intrabar) func.localVaripSlots.push(slot);
       registered = true;
       // func-local var의 drawing kind 추적(C358, C124 paramUdtTypes 원칙을 var 선언에도 적용):
       // 초기값이 label/line/box/table/polyline/linefill 생성자 콜이거나(드묾), wild 지배적 관용구인
@@ -6680,6 +6699,7 @@ function analyzeVarDecl(stmt: VarDecl, prog: AnalyzedProgram, scope: LexScope): 
   } else {
     const slot = prog.varSlots.length;
     prog.varSlots.push(stmt.name);
+    if (stmt.intrabar) prog.varipSlots.push(slot);
     if (scope.depth > 0) {
       // 물리 슬롯은 이 VarDecl 노드로만 키잉(이름 공유 무관 — 형제 블록의 동명 선언과 절대 안
       // 섞임). scope.names에도 등록해 analyzeExpr Identifier 케이스의 scopeHasLocal 가시성 판정이

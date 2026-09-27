@@ -5226,6 +5226,20 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             );
           }
         }
+        // calc_on_order_fills=true runs the body again on a bar after its order fills
+        // (Context.recalcOnOrderFills). A const bool: a literal, or a top-level constant naming one;
+        // anything else is a hard error, since dropping it would silently change the fills.
+        const coof = directiveArgExpr(expr, STRATEGY_PARAM_NAMES, "calc_on_order_fills");
+        if (coof !== undefined) {
+          const value = resolveSecurityBooleanKwarg(coof, prog);
+          if (value !== undefined) {
+            prog.strategyCalcOnOrderFills = value;
+          } else {
+            prog.errors.push(
+              `'strategy()' 'calc_on_order_fills' argument must be a true/false constant (L${expr.line}:${expr.col})`,
+            );
+          }
+        }
         // slippage (const int, ticks) moves every market and stop fill against the order
         // (StrategyState.slipped). Anything but a compile-time int >= 0 is a hard error, since
         // dropping it would silently move those fills.
@@ -8986,9 +9000,11 @@ function finalizeFuncSlotLayout(func: FuncInfo, prog: AnalyzedProgram): void {
   if (func.slotLayout !== "open") return;
   func.slotLayout = "visiting";
   func.varSlotCount = func.localVarSlots.length;
+  func.varipOffsets = [...func.localVaripSlots];
   for (const [expr, callee] of func.nestedCalls) {
     finalizeFuncSlotLayout(callee, prog);
     prog.funcCallSlots.set(expr, callee.varSlotCount > 0 ? func.varSlotCount : 0);
+    for (const o of callee.varipOffsets) func.varipOffsets.push(func.varSlotCount + o);
     func.varSlotCount += callee.varSlotCount;
     if (callee.localTaSlotCount > 0) {
       prog.funcTaBases.set(expr, func.localTaSlotCount);
@@ -9018,6 +9034,7 @@ function allocateFuncCallSlots(expr: CallExpr, func: FuncInfo, prog: AnalyzedPro
   finalizeFuncSlotLayout(func, prog);
   if (func.varSlotCount > 0) {
     prog.funcCallSlots.set(expr, prog.fnVarSlotCount);
+    for (const o of func.varipOffsets) prog.varipFnVarSlots.push(prog.fnVarSlotCount + o);
     prog.fnVarSlotCount += func.varSlotCount;
   } else {
     prog.funcCallSlots.set(expr, 0); // var 없는 함수 — slotBase는 codegen에서 참조되지 않음

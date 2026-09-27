@@ -46,13 +46,60 @@ export function setDrawingContext(sink: DrawingSink): void {
 
 let nextDrawingId = 0;
 
+// Every handle newHandle made, so that a state snapshot (runtime/rollback.ts) can keep a handle as
+// the reference it is instead of copying it like a UDT object.
+const handles = new WeakSet<object>();
+
+export function isDrawingHandle(v: object): boolean {
+  return handles.has(v);
+}
+
 function newHandle(kind: string): DrawingHandle {
   nextDrawingId += 1;
   const h: DrawingHandle = { kind, id: nextDrawingId, state: {} };
+  handles.add(h);
   if (currentSink !== null) {
     currentSink.drawingLog.push({ kind, id: h.id, bar: currentSink.idx, state: h.state });
   }
   return h;
+}
+
+// A run of the script body that is discarded afterwards (a calc_on_order_fills re-execution,
+// Context.recalcOnOrderFills) must leave the drawings as they were: while a journal is open, every
+// set_* write on a handle records what it overwrote, and rollbackDrawings() undoes those writes,
+// drops the handles created since and gives their ids back. The oracle restores its drawings around
+// such a run too (pynecore core/drawing_snapshot.py: "A bar's body can run more than once").
+// Entries: state, field, whether the field was set, the value it held.
+let journal: unknown[] | null = null;
+let journalIdMark = 0;
+let journalLogMark = 0;
+
+export function openDrawingJournal(log: readonly DrawingRecord[]): void {
+  journal = [];
+  journalIdMark = nextDrawingId;
+  journalLogMark = log.length;
+}
+
+export function rollbackDrawings(log: DrawingRecord[]): void {
+  if (journal === null) return;
+  for (let i = journal.length - 4; i >= 0; i -= 4) {
+    const state = journal[i] as DrawingHandle["state"];
+    const field = journal[i + 1] as string;
+    if (journal[i + 2]) state[field] = journal[i + 3] as number | string | null;
+    else delete state[field];
+  }
+  journal.length = 0;
+  log.length = journalLogMark;
+  nextDrawingId = journalIdMark;
+}
+
+export function closeDrawingJournal(): void {
+  journal = null;
+}
+
+function writeField(h: DrawingHandle, field: string, value: number | string | null): void {
+  if (journal !== null) journal.push(h.state, field, Object.prototype.hasOwnProperty.call(h.state, field), h.state[field]);
+  h.state[field] = value;
 }
 
 function numArg(args: readonly unknown[], i: number): number {
@@ -145,11 +192,11 @@ function strField(h: unknown, field: string): string | null {
   return typeof v === "string" ? v : null;
 }
 function setNumField(h: unknown, field: string, value: number): undefined {
-  if (isHandle(h)) h.state[field] = value;
+  if (isHandle(h)) writeField(h, field, value);
   return undefined;
 }
 function setStrField(h: unknown, field: string, value: string | null): undefined {
-  if (isHandle(h)) h.state[field] = value;
+  if (isHandle(h)) writeField(h, field, value);
   return undefined;
 }
 // viz S4 — 표시용 setter 승격: drawingNoop이던 set_color/set_style류가 이제 state에 쓴다
@@ -157,7 +204,7 @@ function setStrField(h: unknown, field: string, value: string | null): undefined
 // 받아 문자열/숫자만 싣고 그 외(na 등)는 null로 낮춘다.
 export function setDisplayField(field: string): (h: unknown, v: unknown) => undefined {
   return (h: unknown, v: unknown): undefined => {
-    if (isHandle(h)) h.state[field] = typeof v === "number" || typeof v === "string" ? v : null;
+    if (isHandle(h)) writeField(h, field, typeof v === "number" || typeof v === "string" ? v : null);
     return undefined;
   };
 }

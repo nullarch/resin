@@ -348,6 +348,20 @@ export class StrategyState {
   // profit=, stop= and loss=, trail_price= and trail_points=) uses the one the market reaches first;
   // before v6 the absolute level alone (see exitLimitLevel).
   exitPairsFirstReached: boolean;
+  // strategy(calc_on_order_fills=true) (codegen sets it): after a bar's order fills, the script body
+  // runs again on that bar where the broker emulator stands (Context.recalcOnOrderFills).
+  calcOnOrderFills: boolean;
+  // Set by processFills when such a strategy's bar has filled an order: the re-executions are due.
+  coofPending: boolean;
+  // The node of the bar's assumed path (0 = the open, 1 = the extreme nearer it, 2 = the other
+  // extreme, 3 = the close; see pathPrice) the last fill happened at, and the node the fills being
+  // made now happen at. A re-execution stands at a node (Context.recalcOnOrderFills).
+  lastFillNode: number;
+  private walkNode: number;
+  // The node a calc_on_order_fills pass fills from (processFillsFrom); -1 in an ordinary pass.
+  private coofCursor: number;
+  // A re-execution of the body is running: it will be discarded (beginRecalc).
+  private recalc: boolean;
   // strategy(slippage=N): ticks every market or stop fill is moved against the order (see slipped).
   slippage: number;
   // strategy(commission_type=, commission_value=): the fee every filled order pays (see
@@ -626,6 +640,12 @@ export class StrategyState {
     this.processOrdersOnClose = false;
     this.useBarMagnifier = false;
     this.exitPairsFirstReached = false;
+    this.calcOnOrderFills = false;
+    this.coofPending = false;
+    this.lastFillNode = 0;
+    this.walkNode = 0;
+    this.coofCursor = -1;
+    this.recalc = false;
     this.slippage = 0;
     this.commissionType = "percent";
     this.commissionValue = 0;
@@ -964,6 +984,7 @@ export class StrategyState {
     barIndex: number, barTimeMs: number,
   ): void {
     this.fillCount++;
+    this.lastFillNode = this.walkNode;
     const commission = this.bookCommission(Math.abs(signedQty), fillPrice);
     this.openCommission += commission;
     this.updateNetProfit();
@@ -1627,9 +1648,10 @@ export class StrategyState {
   // annihilate are booked LONG side first, whichever order came first", for strategy.entry and
   // strategy.order alike; "a reversal whose legs land on different bars or different points of the
   // bar walk keeps its order even when both legs price identically". Its other exception, an order
-  // placed by a calc_on_order_fills re-execution after the trade opened, cannot happen in resin:
-  // every order is placed by the script body, before the fills of the moment it fills at. The price,
-  // bar and P&L of the record are the same either way. Repro: resin-harness
+  // placed by a calc_on_order_fills re-execution after the trade opened ("TradingView then books a
+  // SHORT round trip"), falls out of the moments: such an order fills in a pass of its own
+  // (processFillsFrom), whose moments are new. The price, bar and P&L of the record are the same
+  // either way. Repro: resin-harness
   // state/repros/mixed-seed-17.json (short "S" then long "Q" placed on one bar, both filled at the
   // next open: TradingView books Q → S, size 3).
   private closeAt(
@@ -1724,7 +1746,10 @@ export class StrategyState {
     }
     for (const rec of records) this.recordClosedTrade(rec);
     records.length = 0;
-    if (closedQty > 0) this.fillCount++;
+    if (closedQty > 0) {
+      this.fillCount++;
+      this.lastFillNode = this.walkNode;
+    }
     if (this.openTrades.length === 0) {
       this.posSize = 0;
       this.openCommission = 0;
@@ -2330,6 +2355,11 @@ export class StrategyState {
     if (!(q > 0)) return; // NaN에서도 안전한 긍정형 가드(MEMORY.md C91)
     const cmt = comment ?? "";
     if (immediately) {
+      // A calc_on_order_fills re-execution is discarded, and so is the close it would make at once:
+      // the oracle queues such closes during the body and drops the ones a re-execution queued
+      // (pynecore lib/strategy `_discard_deferred_immediate_closes`: "Undo any immediate close a
+      // COOF trial body run enqueued (position-side analog of the restored var state)").
+      if (this.recalc) return;
       // A market order at the close: slipped against the position (closing a long sells).
       const fill = this.slipped(currentClose ?? NaN, this.posSize > 0 ? -1 : 1);
       this.beginOrder();
@@ -2363,6 +2393,7 @@ export class StrategyState {
     if (this.posSize === 0) return;
     const cmt = comment ?? "";
     if (immediately) {
+      if (this.recalc) return; // as in close()
       const fill = this.slipped(currentClose ?? NaN, this.posSize > 0 ? -1 : 1); // as in close()
       this.beginOrder();
       this.closeAt(fill, Infinity, cmt, currentBarIndex ?? NaN, "", currentBarTimeMs ?? NaN);
@@ -2479,6 +2510,73 @@ export class StrategyState {
     }
     this.openGate = null;
     this.updateTradeExcursion(high, low);
+    this.coofPending = this.calcOnOrderFills && !magnified && this.fillCount > fillsBefore;
+  }
+
+  // A calc_on_order_fills pass (Context.recalcOnOrderFills): after a re-execution of the body that
+  // stood at path node `cursor`, the orders are filled again over the same bar, from that node on.
+  // Returns whether anything filled. This is the oracle's `process_orders` with `_coof_cursor` set
+  // (tier 2, measured on TradingView), which differs from the bar's first pass in three points:
+  // - a market order, and a stop order the open is already past, fills at the node's price, not at
+  //   the open ("the four in-bar fill moments price at open, open, near, far"; Hull Moving Average
+  //   Swing Trader, all 590 of its four-entry bars); a limit order the open is past keeps the open,
+  //   as does an exit whose entry this pass filled at the open;
+  // - the legs of the path behind the node are history: "an order the re-run body placed cannot fill
+  //   on a price the bar reached before the fill that triggered the re-run ... Only the cursor's OWN
+  //   leg is walked again" (Donchian Breakout Strategy) — at node 2 the leg to the nearer extreme is
+  //   skipped by the orders' levels (a trailing line still walks the whole bar, as in the oracle);
+  // - the orders placed on this bar keep their mark: they are the bar's own orders still.
+  processFillsFrom(
+    cursor: number, openPrice: number, high: number, low: number, closePrice: number, barIndex: number, barTimeMs: number,
+  ): boolean {
+    for (let i = 0; i < this.exitLegs.length; ) {
+      const l = this.exitLegs[i]!;
+      if (l.binding === null && this.pendingEntry(l.entryId) === undefined) this.exitLegs.splice(i, 1);
+      else i++;
+    }
+    this.freshLegs.length = 0;
+    const fillsBefore = this.fillCount;
+    this.openGate = {
+      startSize: this.posSize, startEquity: this.equity(this.barClose), startFills: fillsBefore,
+      close: closePrice, closeFilled: false, entrySign: 0,
+    };
+    this.coofCursor = cursor;
+    try {
+      this.fillOnPath(openPrice, high, low, closePrice, barIndex, barTimeMs, true);
+    } finally {
+      this.coofCursor = -1;
+    }
+    this.cancelUnaffordableEntries(closePrice, fillsBefore);
+    this.openGate = null;
+    this.updateTradeExcursion(high, low);
+    return this.fillCount > fillsBefore;
+  }
+
+  // The price of node `node` of the path the last fill pass walked (see lastFillNode).
+  pathPrice(node: number): number {
+    return this.barPath[node < 0 ? 0 : node > 3 ? 3 : node]!;
+  }
+
+  // A re-execution of the body starts at a node priced `price`: it is marked there, so a
+  // default-sized order it places is sized at that price (defaultOrderQty reads barClose), and the
+  // equity an entry's margin is judged against is marked there until its pass fills something
+  // (entryMarginRejected). The oracle's `_mark_to_last_fill` (tier 2, measured on TradingView: "the
+  // pass the fill triggers marks the open position at the extreme that ends the leg the stop filled
+  // on", and a re-entry "sizes at 62382.48 where the bar close 62921.19 gives one lot step less").
+  beginRecalc(price: number): void {
+    this.recalc = true;
+    this.barClose = price;
+  }
+
+  endRecalc(closePrice: number): void {
+    this.recalc = false;
+    this.barClose = closePrice;
+  }
+
+  // Where the fills at the start of a pass happen: the open, or the node a calc_on_order_fills
+  // pass fills from.
+  private openNode(): number {
+    return this.coofCursor > 0 ? this.coofCursor : 0;
   }
 
   // Cancels the resting limit/stop entry orders the account can no longer margin, once the bar's
@@ -2591,21 +2689,22 @@ export class StrategyState {
     this.barPath[3] = closePrice;
     this.legQueue.length = 0;
     this.fillMoment++; // the open
+    // A calc_on_order_fills pass starts where its re-execution stood: its market orders fill at that
+    // node's price (processFillsFrom).
+    const cursor = this.coofCursor;
+    const marketPrice = cursor >= 0 ? this.barPath[cursor]! : openPrice;
+    this.walkNode = this.openNode();
     const closedBefore = this.closedTrades;
-    if (this.closePending) this.fillPendingClose(openPrice, barIndex, barTimeMs);
-    // exit 브래킷(C167)은 close(마켓 청산) 다음, entry 앞에서 판정한다 — 마켓 close는 open 체결이라
-    // 항상 이 바의 첫 가격이고, exit도 청산 계열이라 기존 "청산 먼저 → entry" 순서 원칙에 합류한다
-    // (같은 바에 exit 체결+재진입 entry 체결이 순차 발생 가능 — TV 실측 미검증 가설, DIVERGENCES #70).
-    // These are the legs bound to entries filled on earlier bars; the legs an entry fill of this bar
-    // binds are judged after that fill.
+    if (this.closePending) this.fillPendingClose(marketPrice, barIndex, barTimeMs);
+    // The exit legs bound to entries filled on earlier bars are judged over the path from the open;
+    // the legs an entry fill of this bar binds are judged after that fill.
     this.queueExitLegs(false, 0);
-    this.runExitLegs(0, barIndex, barTimeMs, false);
     // The market orders, and the orders whose level the open is already past, fill at the open, all
     // before any intrabar price. The legs their fills bind are judged once they are all done (a
     // second market entry meets the position the first one opened, not the exit's close; repro
     // resin-harness state/repros/mixed-seed-475.json).
     // At the chart bar's open each entry is margined before it fills (entryMarginRejected); the
-    // closes above are what `closeFilled` records.
+    // close above is what `closeFilled` records.
     const gate = chartOpen ? this.openGate : null;
     if (gate !== null) gate.closeFilled = this.closedTrades > closedBefore;
     const due = this.dueEntries(openPrice, high, low);
@@ -2613,6 +2712,16 @@ export class StrategyState {
     for (; i < due.length && due[i]!.pathLeg === 0; i++) {
       if (this.pendingEntries.includes(due[i]!)) this.fillPendingEntry(due[i]!, due[i]!.fillPrice, barIndex, barTimeMs, gate);
     }
+    // An exit leg whose level the open is already past fills at the open only after the entry
+    // orders filled there: those are the market orders and the batch of orders the open has
+    // crossed, "The batch fills entries first, exits after -- MEASURED on TradingView", with the
+    // market orders ahead of the batch ("a MARKET order queued on an earlier bar still cancels an
+    // exit leg outright (MEASURED, 6/6 events -- a market reversal leaves the gapped exit
+    // unfilled)"); the oracle's `_process_at_bar_open`. So an entry reversing the position takes the
+    // legs of the old one with it (dropBinding), a pyramid add is margined against the position the
+    // leg has not closed yet, and it still gets its own leg off a live exit (bindLegs), which then
+    // fills at the open too. Repros: resin-harness state/repros/coof-gap-leg-after-entry.json.
+    this.runExitLegs(0, barIndex, barTimeMs, false);
     this.queueExitLegs(true, 0);
     this.runExitLegs(0, barIndex, barTimeMs, false);
     // order 넷팅 주문(C169)은 같은 경로 지점의 entry 다음에 판정한다 — 청산 계열 먼저 원칙(기존 순서
@@ -2625,6 +2734,9 @@ export class StrategyState {
     if (this.orderPending) {
       orderFill = this.directionalFillPrice(this.orderDirection, this.orderLimit, this.orderStop, openPrice, high, low);
       if (!Number.isNaN(orderFill)) orderSeg = orderFill === openPrice ? 0 : orderFill > openPrice === this.pathUpFirst ? 1 : 2;
+      // A calc_on_order_fills pass, as for the entry orders (dueEntries).
+      if (cursor >= 0 && orderSeg === 0 && Number.isNaN(this.orderLimit)) orderFill = marketPrice;
+      else if (cursor === 2 && orderSeg === 1) orderSeg = -1;
     }
     if (orderSeg === 0) this.fillOrderOnPath(orderFill, 0, 0, barIndex, barTimeMs);
     // The margin call at the open, after the open's fills: only on the chart bar's open (a later
@@ -2651,6 +2763,7 @@ export class StrategyState {
     let deferred = false;
     for (let s = 1; s <= 2; s++) {
       this.fillMoment++; // segment s
+      this.walkNode = s;
       if (deferred) {
         this.runExitLegs(s, barIndex, barTimeMs, true);
         continue;
@@ -2675,6 +2788,9 @@ export class StrategyState {
     this.runExitLegs(3, barIndex, barTimeMs, deferred);
     this.legQueue.length = 0;
     due.length = 0;
+    // What fills after the path (the process_orders_on_close pass, the margin calls at the close)
+    // happens at the close.
+    this.walkNode = 3;
   }
 
   // Fills the strategy.order() slot at `orderFill`, reached on path segment `seg` `dist` from its
@@ -2745,15 +2861,22 @@ export class StrategyState {
   // add; bindLegs) is live on the fill bar itself, not from the next one: the order exists before the
   // fill, so the rest of this bar can trigger it (the manual's "Take-profit and stop-loss demo" places
   // both on one bar), over the path from that fill on (walkLeg).
+  // In a calc_on_order_fills pass (processFillsFrom) a market order, or a stop order the open is
+  // already past, fills at the pass's node instead, and at node 2 a level on the leg to the nearer
+  // extreme is not reached any more.
   private dueEntries(openPrice: number, high: number, low: number): PendingEntry[] {
     const due = this.entryScratch;
     due.length = 0;
+    const cursor = this.coofCursor;
     for (const e of this.pendingEntries) {
-      const price = this.directionalFillPrice(e.direction, e.limit, e.stop, openPrice, high, low);
+      let price = this.directionalFillPrice(e.direction, e.limit, e.stop, openPrice, high, low);
       if (Number.isNaN(price)) continue; // its level is not reached on this bar: the order rests
+      const leg = price === openPrice ? 0 : price > openPrice === this.pathUpFirst ? 1 : 2;
+      if (cursor >= 0 && leg === 0 && Number.isNaN(e.limit)) price = this.barPath[cursor]!;
+      else if (cursor === 2 && leg === 1) continue;
       e.fillPrice = price;
-      e.pathLeg = price === openPrice ? 0 : price > openPrice === this.pathUpFirst ? 1 : 2;
-      e.pathDist = e.pathLeg === 0 ? 0 : Math.abs(price - this.barPath[e.pathLeg - 1]!);
+      e.pathLeg = leg;
+      e.pathDist = leg === 0 ? 0 : Math.abs(price - this.barPath[leg - 1]!);
       due.push(e);
     }
     if (due.length > 1) due.sort((a, b) => a.pathLeg - b.pathLeg || a.pathDist - b.pathDist || a.seq - b.seq);
@@ -2934,11 +3057,15 @@ export class StrategyState {
     const legs = onlyFresh ? this.freshLegs : this.exitLegs;
     if (legs.length === 0) return;
     if (this.posSize !== 0) {
+      // In a calc_on_order_fills pass a resting leg whose stop the open is already past fills at the
+      // pass's node, like a stop entry (dueEntries); a leg bound by an entry this pass filled at the
+      // open fills at the open (the oracle's "gap-through exits whose entries just filled").
+      const gapFill = !onlyFresh && seg === 0 && this.coofCursor >= 0 ? this.barPath[this.coofCursor]! : NaN;
       for (const l of legs) {
         if (l.consumed || l.binding === null) continue;
         const queued = this.legQueue.indexOf(l);
         if (queued >= 0) this.legQueue.splice(queued, 1);
-        const price = this.walkLeg(l, seg, seg === 0 ? this.barPath[0]! : l.binding.entryPrice);
+        const price = this.walkLeg(l, seg, seg === 0 ? this.barPath[0]! : l.binding.entryPrice, gapFill);
         if (Number.isNaN(price)) continue;
         l.fillPrice = price;
         this.legQueue.push(l);
@@ -2972,11 +3099,14 @@ export class StrategyState {
       }
     }
     if (due.length > 1) due.sort((a, b) => a.pathLeg - b.pathLeg || a.pathDist - b.pathDist || a.seq - b.seq);
+    const node = this.walkNode;
     for (const l of due) {
       if (this.posSize !== 0 && !l.consumed && l.binding !== null && this.exitLegs.includes(l)) {
+        this.walkNode = l.pathLeg === 0 ? this.openNode() : l.pathLeg;
         this.executeLeg(l, l.fillPrice, barIndex, barTimeMs);
       }
     }
+    this.walkNode = node;
     due.length = 0;
   }
 
@@ -2991,18 +3121,24 @@ export class StrategyState {
   private marginCheckpoint(seg: number, barIndex: number, barTimeMs: number): boolean {
     const near = this.barPath[1]!;
     const far = this.barPath[2]!;
+    // A liquidation happens at the extreme it is judged at (see lastFillNode).
+    this.walkNode = 1;
     if (seg === 1) {
       if (this.pathUpFirst) {
         if (this.marginCall(near, true, barIndex, barTimeMs, false, true, false)) return true;
         this.marginCall(near, false, barIndex, barTimeMs, false, false, false);
+        this.walkNode = 2;
         this.marginCall(far, true, barIndex, barTimeMs, false, false, false);
       } else {
         if (this.marginCall(near, false, barIndex, barTimeMs, false, true, false)) return true;
+        this.walkNode = 2;
         this.marginCall(far, false, barIndex, barTimeMs, false, false, false);
       }
     } else if (this.pathUpFirst) {
+      this.walkNode = 2;
       this.marginCall(far, false, barIndex, barTimeMs, false, false, false);
     } else {
+      this.walkNode = 2;
       this.marginCall(far, true, barIndex, barTimeMs, false, false, false);
       this.marginCall(far, false, barIndex, barTimeMs, false, false, false);
     }
@@ -3292,7 +3428,11 @@ export class StrategyState {
   // the take-profit precedes the line's arming unless that arming fills at a level not beyond the
   // take-profit (the oracle's `_process_trailing_stop`). NaN prices (unit tests without high/low/close)
   // compare false, so their segments fill nothing (C91).
-  private walkLeg(l: ExitLeg, seg: number, first: number): number {
+  //
+  // In a calc_on_order_fills pass (processFillsFrom), a stop-loss the first tick is already past
+  // fills at `gapFill` when given (the pass's node, see queueExitLegs), and at node 2 the take-profit
+  // and stop-loss levels are not reached on the leg to the nearer extreme (the trailing line is).
+  private walkLeg(l: ExitLeg, seg: number, first: number, gapFill: number = NaN): number {
     const isLong = this.posSize > 0;
     const dir = isLong ? 1 : -1;
     const base = l.binding!.entryPrice;
@@ -3301,13 +3441,14 @@ export class StrategyState {
     const stp = dir * this.exitStopLevel(l, isLong, base);
     const offset = hasTrail ? l.trailOffset * this.mintick : NaN;
     const act = hasTrail ? dir * this.exitTrailActivation(l, isLong, base) : NaN;
+    const behind = this.coofCursor === 2 ? 1 : 0;
     let line = dir * l.trailPrice;
     let x = dir * first;
     let hit = NaN;
     let kind: "profit" | "loss" | null = null;
     // The first tick.
     if (x <= stp) {
-      hit = x;
+      hit = Number.isNaN(gapFill) ? x : dir * gapFill;
       kind = "loss";
     } else if (x <= line) {
       hit = x;
@@ -3326,9 +3467,11 @@ export class StrategyState {
     if (Number.isNaN(hit)) {
       for (s = seg === 0 ? 1 : seg; s <= 3; s++) {
         const nxt = dir * this.barPath[s]!;
+        const limS = s === behind ? Infinity : lim;
+        const stpS = s === behind ? -Infinity : stp;
         if (nxt > x) {
           const armsAt = hasTrail && Number.isNaN(line) && nxt >= act ? act : NaN;
-          if (nxt >= lim && !(offset <= 0 && armsAt <= lim)) {
+          if (nxt >= limS && !(offset <= 0 && armsAt <= limS)) {
             hit = lim;
             kind = "profit";
           } else if (hasTrail) {
@@ -3340,7 +3483,7 @@ export class StrategyState {
           }
         } else if (nxt < x) {
           const trailHit = nxt <= line;
-          if (nxt <= stp && !(trailHit && line > stp)) {
+          if (nxt <= stpS && !(trailHit && line > stpS)) {
             hit = stp;
             kind = "loss";
           } else if (trailHit) {

@@ -86,6 +86,9 @@ export interface VarDecl extends Pos {
   kind: "VarDecl";
   name: string;
   persistent: boolean; // var/varip 키워드 존재 여부
+  // Declared with varip: not rolled back when a run of the body is discarded (a calc_on_order_fills
+  // re-execution; runtime/rollback.ts). Absent on nodes built without the keyword.
+  intrabar?: boolean;
   typeHint: string | null;
   value: Expr;
 }

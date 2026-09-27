@@ -163,6 +163,9 @@ export function compile(code: string): (ctx: Context) => () => void {
     // not once, so interleaved streaming contexts never cross-contaminate.
     return () => {
       setDrawingContext(ctx);
+      // strategy(calc_on_order_fills=true): the re-executions after this bar's order fills come
+      // before the body's ordinary run (Context.recalcOnOrderFills).
+      if (ctx.strategy.coofPending) ctx.recalcOnOrderFills(barFn);
       barFn();
       ctx.finishBar();
     };

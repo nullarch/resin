@@ -27,6 +27,7 @@ import { ExchangeCalendar, calendarSpecOf, type CalendarSpec, type SymbolCalenda
 // Type-only: erased at runtime, so no runtime cycle back into the transpiler.
 import type { TranspileOk } from "../transpiler/pipeline";
 import type { DrawingRecord } from "./drawing";
+import { BarState } from "./rollback";
 
 export interface OHLCVData {
   open: ArrayLike<number>;
@@ -150,6 +151,11 @@ export class Context {
   secOut: Float64Array | null = null;
   // Set by engine.compile(): instantiates the compiled module on another context, a child.
   instantiate: ((ctx: Context) => () => void) | undefined = undefined;
+  // The $.vars and $.fnVars slots declared with varip, which a discarded run of the body does not
+  // roll back (setIntrabarSlots; runtime/rollback.ts). Filled only for a strategy that recalculates
+  // on order fills.
+  intrabarVarSlots: ReadonlySet<number> = new Set();
+  intrabarFnVarSlots: ReadonlySet<number> = new Set();
   // A child's bar close times, the requested bars' own, which time_close reads instead of the
   // next bar's open time.
   private barCloseTimes: ArrayLike<number> | undefined = undefined;
@@ -249,6 +255,85 @@ export class Context {
     }
     this.subStart = start;
     this.subWindow = { open: feed.open, high: feed.high, low: feed.low, close: feed.close, from: 0, to: 0 };
+  }
+
+  // Called once from the generated preamble of a strategy(calc_on_order_fills=true): the var slots
+  // declared with varip, top-level ($.vars) and in functions ($.fnVars, every call's own block).
+  setIntrabarSlots(vars: readonly number[], fnVars: readonly number[]): void {
+    this.intrabarVarSlots = new Set(vars);
+    this.intrabarFnVarSlots = new Set(fnVars);
+  }
+
+  // strategy(calc_on_order_fills=true): after the bar's first order fills (advance(), processFills),
+  // the body runs again where the broker emulator stands, and each run's orders are filled from
+  // there on; the body's ordinary run, the one that counts, follows (engine.compile). props.txt:
+  // "Recalculate After order is filled ... the strategy recalculates on the same bar after an order
+  // is filled"; strategies.txt ("calc_on_order_fills"): "The calc_on_order_fills parameter of the
+  // strategy() declaration statement enables a strategy to recalculate immediately after an order
+  // fills, allowing it to use more granular information and place additional orders without
+  // waiting for a confirmed bar"; faq.txt: "sets take-profit and stop-loss orders during the entry
+  // bar, based on the entry price strategy.position_avg_price". Every re-execution is discarded
+  // (runtime/rollback.ts): only its orders stay.
+  // How, as the oracle measured it on TradingView (pynecore core/script_runner.py `_coof_loop`,
+  // `_set_path_bar`, `_LAST_PATH_NODE`; lib/strategy `_path_price`, `_mark_to_last_fill`):
+  // - the emulator walks the path open (node 0) → the nearer extreme (1) → the farther extreme (2)
+  //   → close (3). The first re-execution stands at the node of the pass's last fill, each further
+  //   one at least one node further on, and none at node 3, the ordinary run's own place: "at most
+  //   FOUR body runs per bar" ("a body that closes and re-enters on every pass ... flatlines at 4");
+  // - the body sees the bar as built up to its node: open, the running high and low of the nodes
+  //   walked, the node's price as close, (node + 1) / 4 of the volume ("cumulative (node + 1) / 4 of
+  //   the bar's volume, exact on every probed bar"; the whole bar would be TradingView's own
+  //   look-ahead, which the oracle does not reproduce either);
+  // - the strategy is marked at the node's price: strategy.equity/openprofit read there, and a
+  //   default-sized order is sized there ("a default-sized market entry it places is sized — and
+  //   the equity it reads is marked — there");
+  // - the orders of the re-execution fill from the node on (StrategyState.processFillsFrom).
+  // Not covered: a strategy that also uses the bar magnifier re-executes nothing yet
+  // (processFills), and neither does calc_on_every_tick.
+  recalcOnOrderFills(body: () => void): void {
+    const s = this.strategy;
+    s.coofPending = false;
+    const o = this.open.get(0);
+    const h = this.high.get(0);
+    const l = this.low.get(0);
+    const c = this.close.get(0);
+    const v = this.volume.get(0);
+    const state = new BarState(this);
+    try {
+      for (let node = s.lastFillNode; node <= 2; ) {
+        state.restore();
+        const price = s.pathPrice(node);
+        let hi = o;
+        let lo = o;
+        for (let k = 1; k <= node; k++) {
+          const p = s.pathPrice(k);
+          if (p > hi) hi = p;
+          if (p < lo) lo = p;
+        }
+        this.high.setCurrent(hi);
+        this.low.setCurrent(lo);
+        this.close.setCurrent(price);
+        this.volume.setCurrent((v * (node + 1)) / 4);
+        s.beginRecalc(price);
+        try {
+          body();
+        } finally {
+          this.high.setCurrent(h);
+          this.low.setCurrent(l);
+          this.close.setCurrent(c);
+          this.volume.setCurrent(v);
+        }
+        const filled = s.processFillsFrom(node, o, h, l, c, this.idx, this.barTimeMs);
+        s.endRecalc(c);
+        s.updateDrawdown(c);
+        s.updateStatistics(h, l);
+        if (!filled) break;
+        node = Math.max(node + 1, s.lastFillNode);
+      }
+    } finally {
+      s.endRecalc(c);
+      state.close();
+    }
   }
 
   // viz S1 — called once from the generated preamble when the script has runtime

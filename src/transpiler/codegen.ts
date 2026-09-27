@@ -440,6 +440,14 @@ export function generateCode(program: AnalyzedProgram): string {
   if (program.isStrategy && program.strategyUseBarMagnifier) {
     lines.push("$.strategy.useBarMagnifier = true;");
   }
+  // strategy(calc_on_order_fills=true): emitted only when it is on, with the varip slots its
+  // discarded re-executions leave alone (Context.recalcOnOrderFills).
+  if (program.isStrategy && program.strategyCalcOnOrderFills) {
+    lines.push("$.strategy.calcOnOrderFills = true;");
+    if (program.varipSlots.length > 0 || program.varipFnVarSlots.length > 0) {
+      lines.push(`$.setIntrabarSlots([${program.varipSlots.join(", ")}], [${program.varipFnVarSlots.join(", ")}]);`);
+    }
+  }
   // From v6 on, strategy.exit() weighs both levels of an absolute/relative pair and uses the one the
   // market reaches first; before v6 the absolute level wins (mig6.txt, "strategy.exit() evaluates
   // parameter pairs"; StrategyState.exitLimitLevel).
