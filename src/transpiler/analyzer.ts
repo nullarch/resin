@@ -1476,6 +1476,12 @@ export interface LexScope {
   // 담는다. resolveNestedVarOrEqLocalKind가 eq-local과 동일하게 "var 슬롯 조회를 건너뛰고 이 스코프의
   // plain 로컬을 쓴다"로 취급하도록 이 Set만 있으면 충분(eq-local variant 자체가 노드 payload 없음).
   nestedTupleLocalNames: Set<string>;
+  // The variables this loop body's header declares: a for counter, a for-in item and index.
+  // language_loops.txt "Scope": "Variables declared within a loop’s header are also part of the
+  // local scope." They are new locals of the loop, so inside it they hide a variable of the same
+  // name declared outside it, a var included (top-level, in a block or in a function), and leave
+  // that variable untouched (resolvesToLoopHeaderVar).
+  loopHeaderNames: Set<string>;
   inLoop: boolean;
   func: FuncInfo | null;
   // Set on a loop body scope only: the names the body reassigns (`:=` and compound assignments, at
@@ -1598,6 +1604,7 @@ function pushScope(
     nestedEqLocalDeclStmts: new Map(),
     nestedVarDeclStmts: new Map(),
     nestedTupleLocalNames: new Set(),
+    loopHeaderNames: new Set(),
     inLoop,
     func,
   };
@@ -1650,6 +1657,22 @@ export function resolveNestedVarOrEqLocalKind(scope: LexScope, name: string): Ne
     s = s.parent;
   }
   return null;
+}
+
+// Whether `name`, used at `scope`, is a variable a loop header declared (LexScope.loopHeaderNames):
+// the nearest scope declaring the name is a loop body whose header declares it. Such a read or
+// reassignment is the loop's own JS binding (`let i` of the emitted for), never a var's slot of the
+// same name (eqLocalShadowedVarReads/Assigns carry the mark to codegen). Unlike
+// resolveNestedVarOrEqLocalKind it walks into function bodies too: a counter hides a function's
+// var or a top-level var the function reads just as well.
+export function resolvesToLoopHeaderVar(scope: LexScope, name: string): boolean {
+  let s: LexScope | null = scope;
+  while (s !== null) {
+    if (s.loopHeaderNames.has(name)) return true;
+    if (s.names.has(name)) return false;
+    s = s.parent;
+  }
+  return false;
 }
 
 // scope 체인을 타고 '=' 로컬의 한정자를 조회(pine2py ScopeManager.resolve와 동일한 체인 탐색).
@@ -2676,6 +2699,8 @@ export interface AnalyzedProgram {
   // var가 존재하면 이 섀도 읽기/재대입도 무조건 그 var 슬롯으로 오인식한다는 것 — 이 두 Set은 analyzer가
   // (resolveNestedVarOrEqLocalKind로) "이 특정 읽기/재대입 지점은 var보다 가까운 섀도가 있다"고 이미
   // 확정해둔 노드만 담아 codegen이 program.varIndex를 건너뛰고 안전하게 bare 식별자로 방출하게 한다.
+  // They also hold every read and reassignment of a loop header's variable (a for counter, a for-in
+  // item or index; resolvesToLoopHeaderVar), in a function too, which hides a var of its name there.
   eqLocalShadowedVarReads: Set<Expr>;
   eqLocalShadowedVarAssigns: Set<Assignment>;
   // UDT 인스턴스 스칼라 필드 히스토리 obj.field[N](C523, wild "히스토리 인덱스는 식별자에만 지원"
@@ -3987,6 +4012,7 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
     nestedEqLocalDeclStmts: new Map(),
     nestedVarDeclStmts: new Map(),
     nestedTupleLocalNames: new Set(),
+    loopHeaderNames: new Set(),
     inLoop: false,
     func: null,
   };
@@ -6822,7 +6848,10 @@ function analyzeAssignment(stmt: Assignment, prog: AnalyzedProgram, scope: LexSc
   const nestedVarDecl = nestedKind?.kind === "var" ? nestedKind.decl : null;
   let isNewLocal = false;
   if (stmt.operator === ":=") {
-    if (nestedVarDecl !== null) {
+    if (resolvesToLoopHeaderVar(scope, stmt.name)) {
+      // Reassigns the loop's own counter or item, not a var of that name (resolvesToLoopHeaderVar).
+      prog.eqLocalShadowedVarAssigns.add(stmt);
+    } else if (nestedVarDecl !== null) {
       prog.nestedVarAssignSlots.set(stmt, prog.nestedVarDeclSlots.get(nestedVarDecl)!);
     } else if (nestedKind?.kind === "eq-local") {
       // C729: 이 이름을 재대입하는 ':='가 var보다 가까운 기존 '=' 섀도를 가리킨다 — 그 섀도가
@@ -7319,9 +7348,10 @@ function analyzeForStmt(stmt: ForStmt, prog: AnalyzedProgram, scope: LexScope): 
   }
   if (stmt.step) analyzeExpr(stmt.step, prog, scope, false);
 
-  if (prog.varIndex.has(stmt.varName)) {
-    prog.errors.push(`for loop variable name already declared with var: '${stmt.varName}' (L${stmt.line}:${stmt.col})`);
-  }
+  // The counter is a new local of the loop even when a var outside it has the same name
+  // (language_loops.txt "Scope": "Variables declared within a loop’s header are also part of the
+  // local scope"; "counter ... can be any valid identifier"): the loop reads and steps its own
+  // binding, and the var keeps its value (loopHeaderNames).
   prog.locals.add(stmt.varName);
 
   // 루프 변수 + 본문을 하나의 블록 스코프로 묶는다(pine2py ScopeManager의 BLOCK 스코프와 동일
@@ -7329,6 +7359,7 @@ function analyzeForStmt(stmt: ForStmt, prog: AnalyzedProgram, scope: LexScope): 
   // 해서다). while과 동일하게 inLoop=true로 강제해 본문의 break/continue를 허용한다.
   const bodyScope = pushScope(scope, "loop-body", /* inLoop */ true);
   bodyScope.names.add(stmt.varName);
+  bodyScope.loopHeaderNames.add(stmt.varName);
   // 루프 변수는 반복마다 값이 바뀌므로 'series'로 태그한다(C161 — loop-body stateful 콜 허용과
   // 동반 도입). 유일한 qualifier 소비처인 ta.* length series 하드 에러가 `ta.sma(close, i)`뿐
   // 아니라 파생식(`i + 1` 등, inferQualifier merge로 series 전파)까지 자동으로 거부하게 된다 —
@@ -7372,21 +7403,17 @@ function analyzeForInStmt(stmt: ForInStmt, prog: AnalyzedProgram, scope: LexScop
   }
   prog.forInKinds.set(stmt, kind);
 
-  if (prog.varIndex.has(stmt.varName)) {
-    prog.errors.push(`for-in loop variable name already declared with var: '${stmt.varName}' (L${stmt.line}:${stmt.col})`);
-  }
+  // The item and the index are new locals of the loop, as a for counter is (analyzeForStmt): a var
+  // outside the loop with the same name is hidden inside it and keeps its value.
   prog.locals.add(stmt.varName);
-  if (stmt.indexName !== null) {
-    if (prog.varIndex.has(stmt.indexName)) {
-      prog.errors.push(`for-in loop variable name already declared with var: '${stmt.indexName}' (L${stmt.line}:${stmt.col})`);
-    }
-    prog.locals.add(stmt.indexName);
-  }
+  if (stmt.indexName !== null) prog.locals.add(stmt.indexName);
 
   // analyzeForStmt와 동일한 구조(루프 변수 + 본문을 하나의 블록 스코프로 묶음, inLoop=true로
   // break/continue 허용).
   const bodyScope = pushScope(scope, "loop-body", /* inLoop */ true);
   bodyScope.names.add(stmt.varName);
+  bodyScope.loopHeaderNames.add(stmt.varName);
+  if (stmt.indexName !== null) bodyScope.loopHeaderNames.add(stmt.indexName);
   // 원소 값은 반복마다 바뀌므로 range-for 카운터와 동일하게 'series'로 태그(analyzeForStmt 주석
   // 참조) — numType은 지정하지 않는다(array 원소가 항상 int라는 보장이 없음, range-for 카운터와
   // 다른 지점).
@@ -8545,6 +8572,11 @@ export function analyzeExpr(expr: Expr, prog: AnalyzedProgram, scope: LexScope, 
       return;
     case "Identifier": {
       const name = expr.name;
+      // A loop header's variable, nearer than any var of its name (resolvesToLoopHeaderVar).
+      if (resolvesToLoopHeaderVar(scope, name)) {
+        prog.eqLocalShadowedVarReads.add(expr);
+        return;
+      }
       // C728: 이 읽기가 중첩 top-level var(depth>0)를 가리키면 codegen이 scope 정보 없이도
       // 정확한 물리 슬롯을 찾도록 이 Identifier 노드 자신에 슬롯을 기록해둔다(LexScope.
       // nestedVarDeclStmts 주석 참조) — scope.names에 이미 등록돼(analyzeVarDecl) 아래
@@ -8980,7 +9012,9 @@ export function analyzeExpr(expr: Expr, prog: AnalyzedProgram, scope: LexScope, 
         // (analyzeCallExpr 꼬리 재귀 주석 참조) 중첩 top-level var(depth>0)에 담긴 UDT 인스턴스
         // 필드 접근(`previousHighPoint.openTime`류)이 codegen에서 슬롯을 못 찾았다.
         const nestedKind = resolveNestedVarOrEqLocalKind(scope, expr.obj.name);
-        if (nestedKind?.kind === "var") {
+        if (resolvesToLoopHeaderVar(scope, expr.obj.name)) {
+          prog.eqLocalShadowedVarReads.add(expr.obj);
+        } else if (nestedKind?.kind === "var") {
           prog.nestedVarReadSlots.set(expr.obj, prog.nestedVarDeclSlots.get(nestedKind.decl)!);
         } else if (nestedKind?.kind === "eq-local" && prog.varIndex.has(expr.obj.name)) {
           // C729: Identifier read 분기와 동일한 var-섀도 표시(위 Identifier case 주석 참조).

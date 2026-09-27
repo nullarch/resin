@@ -7127,6 +7127,60 @@ describe("CodeGen", () => {
     expect(obsVar[3]).toBe(close[3]);
   });
 
+  // A loop header's variables are the loop's own locals (language_loops.txt "Scope": "Variables
+  // declared within a loop’s header are also part of the local scope"): a for counter or a for-in
+  // item named like a var outside the loop hides it inside the loop and leaves it untouched. Harness
+  // probe suites/lang/probes/L43.json, oracle = resin. A var in a block and a function's var used to
+  // compile and read the var's slot inside the loop (u 303, f 2408 on the probe's bar 0).
+  it("E2E: a for counter or for-in item hides a top-level var, a var in a block and a function's var of its name", () => {
+    const close = [1, 2, 3, 4];
+    const n = close.length;
+    const data: OHLCVData = { open: close, high: close, low: close, close, volume: new Array(n).fill(1) };
+    const src = [
+      "var int i = 10",
+      "s = 0",
+      "for i = 0 to 3",
+      "    s += i",
+      "i += 1",
+      "var float __s = na",
+      "__s := s",
+      "var float __i = na",
+      "__i := i",
+      "var float __u = na",
+      "if true",
+      "    var int j = 100",
+      "    j += 1",
+      "    u = 0",
+      "    for j = 0 to 2",
+      "        u += j",
+      "    __u := u * 1000 + j",
+      "f(n) =>",
+      "    var int m = 7",
+      "    m += 1",
+      "    acc = 0",
+      "    for m = 1 to n",
+      "        acc += m",
+      "    acc * 100 + m",
+      "var float __f = na",
+      "__f := f(3)",
+      "var float v = -1.0",
+      "a = array.from(1.0, 2.0, 3.0)",
+      "w = 0.0",
+      "for v in a",
+      "    w += v",
+      "v += 0.5",
+      "var float __w = na",
+      "__w := w * 100 + v",
+    ].join("\n");
+    const result = runPipeline(src, data);
+    const obs = (name: string) => result.bars.map((b) => b[`var:${name}`] as number);
+    expect(obs("__s")).toEqual([6, 6, 6, 6]);
+    expect(obs("__i")).toEqual([11, 12, 13, 14]);
+    expect(obs("__u")).toEqual([3101, 3102, 3103, 3104]);
+    expect(obs("__f")).toEqual([608, 609, 610, 611]);
+    expect(obs("__w")).toEqual([599.5, 600, 600.5, 601]);
+  });
+
   // ── 튜플 디스트럭처 대상이 조상 스코프의 var 이름을 재사용할 때(C745, 배치37(1)(a) 승인
   // 잔여 — wild `var bool activeAnchorEnabled=false` 후 nested-if
   // `[activeAnchorEnabled,...]=f_init()`류) analyzeAssignment의 '=' 섀도(C729)와 동일하게 새

@@ -15,7 +15,7 @@ import {
   TIMEFRAME_BOOLEAN_PROPS,
   mangleMethodName,
 } from "../../src/transpiler/analyzer";
-import type { Assignment, BinOp, CallExpr, DotAccess, ExprStmt, FuncDecl, IndexAccess, StringLiteral, TupleDestructure, TypeDecl, VarDecl } from "../../src/transpiler/ast";
+import type { Assignment, BinOp, CallExpr, DotAccess, ExprStmt, ForStmt, FuncDecl, IndexAccess, StringLiteral, TupleDestructure, TypeDecl, VarDecl } from "../../src/transpiler/ast";
 
 function analyzeSource(source: string, options?: AnalyzeOptions) {
   return analyze(parse(source), options);
@@ -9819,9 +9819,16 @@ describe("Analyzer", () => {
     expect(prog.errors.some((e) => e.includes("unknown identifier") && e.includes("i"))).toBe(true);
   });
 
-  it("errors when the for-loop variable name collides with an existing var slot", () => {
-    const prog = analyzeSource(["var float i = 0.0", "for i = 1 to 5", "    x := i"].join("\n"));
-    expect(prog.errors.some((e) => e.includes("already declared with var"))).toBe(true);
+  // language_loops.txt "Scope": "Variables declared within a loop’s header are also part of the
+  // local scope." The counter hides the var inside the loop (harness probe L43: oracle = resin).
+  it("accepts a for-loop counter named like a var: the counter is the loop's own local, and its reads are marked as that binding", () => {
+    const prog = analyzeSource(["var float i = 0.0", "x = 0.0", "for i = 1 to 5", "    x := i", "y = i"].join("\n"));
+    expect(prog.errors).toEqual([]);
+    const loop = prog.script.body.find((s) => s.kind === "ForStmt") as ForStmt;
+    const read = (loop.body[0] as Assignment).value;
+    expect(prog.eqLocalShadowedVarReads.has(read)).toBe(true);
+    const after = prog.script.body[prog.script.body.length - 1] as Assignment;
+    expect(prog.eqLocalShadowedVarReads.has(after.value)).toBe(false); // `y = i` after the loop reads the var
   });
 
   it("allows a ta.* call directly in the for-loop's end expression (evaluated once per entry, unlike while's condition it is not a conditional zone)", () => {
@@ -9972,13 +9979,12 @@ describe("Analyzer", () => {
     expect(prog.errors).toEqual([]);
   });
 
-  it("rejects a for-in loop variable name that collides with an existing var declaration", () => {
+  // language_loops.txt "Scope", as the for counter above (harness probe L43: oracle = resin).
+  it("accepts a for-in item and index named like vars: both are the loop's own locals", () => {
     const prog = analyzeSource(
-      ["var x = 0.0", "var a = array.new_float(3)", "for x in a", "    y = x"].join("\n"),
+      ["var x = 0.0", "var k = 0", "var a = array.new_float(3)", "for x in a", "    y = x", "for [k, e] in a", "    z = k * e"].join("\n"),
     );
-    expect(prog.errors.some((e) => e.includes("for-in") && e.includes("already declared with var") && e.includes("'x'"))).toBe(
-      true,
-    );
+    expect(prog.errors).toEqual([]);
   });
 
   it("allows break/continue inside a for-in body (inLoop propagates like ForStmt/WhileStmt)", () => {

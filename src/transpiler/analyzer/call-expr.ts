@@ -24,6 +24,7 @@ import {
   resolveArrayGetElemUdtType,
   resolveArrayGetElemDrawingKind,
   resolveNestedVarOrEqLocalKind,
+  resolvesToLoopHeaderVar,
   isStaticIntExpr,
   isIntDivision,
   BAR_SERIES_NAMES,
@@ -9021,7 +9022,10 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     // resolveAmbiguousNestedVarDeclStmt/nestedVarReadSlots 주석 참조. C729(배치37(2) 2차 슬라이스):
     // var보다 가까운 '=' 섀도가 있으면(eqLocalShadowedVarReads 주석 참조) 그쪽으로 표시한다.
     const nestedKind = resolveNestedVarOrEqLocalKind(scope, callee.obj.name);
-    if (nestedKind?.kind === "var") {
+    if (resolvesToLoopHeaderVar(scope, callee.obj.name)) {
+      // A loop header's variable as the receiver (a for-in item: `for b in boxes` / `b.delete()`).
+      prog.eqLocalShadowedVarReads.add(callee.obj);
+    } else if (nestedKind?.kind === "var") {
       prog.nestedVarReadSlots.set(callee.obj, prog.nestedVarDeclSlots.get(nestedKind.decl)!);
     } else if (nestedKind?.kind === "eq-local" && prog.varIndex.has(callee.obj.name)) {
       prog.eqLocalShadowedVarReads.add(callee.obj);
