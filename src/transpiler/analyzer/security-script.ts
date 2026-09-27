@@ -241,6 +241,20 @@ function isPrimitiveHint(hint: string): boolean {
   return PRIMITIVE_TYPES.has(words[words.length - 1]!);
 }
 
+function hintKind(hint: string): ValueKind {
+  const words = hint.trim().split(/\s+/);
+  const t = words[words.length - 1]!;
+  return t === "string" ? "string" : t === "color" ? "color" : PRIMITIVE_TYPES.has(t) ? "number" : "object";
+}
+
+// A function's parameters and locals.
+function localEnvOf(f: FuncDecl | MethodDecl): LocalEnv {
+  const env: LocalEnv = new Map();
+  for (const p of f.params) env.set(p.name, [{ hint: p.typeHint, value: null }]);
+  collectLocalDefs(f.body, env);
+  return env;
+}
+
 function rootIdentifier(e: Expr): string | null {
   let cur = e;
   while (cur.kind === "DotAccess" || cur.kind === "IndexAccess") cur = cur.obj;
@@ -249,7 +263,8 @@ function rootIdentifier(e: Expr): string | null {
 
 class SliceAnalysis {
   private readonly userNames = new Set<string>();
-  private readonly topDefs = new Map<string, { hint: string | null; value: Expr | null }[]>();
+  // `elem`: the name is element `elem` of the tuple `value` evaluates to (`[a, b] = f()`).
+  private readonly topDefs = new Map<string, { hint: string | null; value: Expr | null; elem?: number }[]>();
   private readonly primitiveMemo = new Map<string, boolean>();
   private readonly funcs = new Map<string, (FuncDecl | MethodDecl)[]>();
   private readonly funcEffects = new Map<string, Effects>();
@@ -275,11 +290,11 @@ class SliceAnalysis {
     this.prog = prog;
     for (const s of prog.script.body) if (s.kind === "TypeDecl") this.typeNames.add(s.name);
     const collectNames = (node: Stmt | Expr, top: boolean): void => {
-      const note = (name: string, hint: string | null, value: Expr | null): void => {
+      const note = (name: string, hint: string | null, value: Expr | null, elem?: number): void => {
         this.userNames.add(name);
         if (!top) return;
         const defs = this.topDefs.get(name) ?? [];
-        defs.push({ hint, value });
+        defs.push(elem === undefined ? { hint, value } : { hint, value, elem });
         this.topDefs.set(name, defs);
       };
       switch (node.kind) {
@@ -294,7 +309,7 @@ class SliceAnalysis {
           if (node.obj.kind === "Identifier") this.historyNames.add(node.obj.name);
           break;
         case "TupleDestructure":
-          for (const n of node.names) note(n, null, node.value);
+          node.names.forEach((n, i) => note(n, null, node.value, i));
           break;
         case "ForStmt":
           note(node.varName, "int", null);
@@ -438,10 +453,7 @@ class SliceAnalysis {
     this.funcPrimitiveMemo.set(name, true); // Pine functions cannot recurse
     let prim = true;
     for (const f of this.funcs.get(name) ?? []) {
-      const env: LocalEnv = new Map();
-      for (const p of f.params) env.set(p.name, [{ hint: p.typeHint, value: null }]);
-      collectLocalDefs(f.body, env);
-      if (!this.isPrimitiveResult(f.body, new Set(), env)) {
+      if (!this.isPrimitiveResult(f.body, new Set(), localEnvOf(f))) {
         prim = false;
         break;
       }
@@ -450,7 +462,9 @@ class SliceAnalysis {
     return prim;
   }
 
-  valueKind(e: Expr, visiting: Set<string> = new Set()): ValueKind {
+  // `env`: inside a function body, its parameters and locals (a name found there is resolved there,
+  // any other name at the top level).
+  valueKind(e: Expr, visiting: Set<string> = new Set(), env?: LocalEnv): ValueKind {
     switch (e.kind) {
       case "NumberLiteral":
       case "BoolLiteral":
@@ -464,23 +478,36 @@ class SliceAnalysis {
         return "color";
       case "BinOp":
         if (e.op !== "+") return "number";
-        return combineKinds(combineKinds(this.valueKind(e.left, visiting), this.valueKind(e.right, visiting)), "number");
+        return combineKinds(combineKinds(this.valueKind(e.left, visiting, env), this.valueKind(e.right, visiting, env)), "number");
       case "TernaryOp":
-        return combineKinds(this.valueKind(e.trueExpr, visiting), this.valueKind(e.falseExpr, visiting));
+        return combineKinds(this.valueKind(e.trueExpr, visiting, env), this.valueKind(e.falseExpr, visiting, env));
       case "IndexAccess":
-        return this.valueKind(e.obj, visiting);
+        return this.valueKind(e.obj, visiting, env);
       case "TupleExpr":
         return "object";
       case "Identifier": {
+        const local = env?.get(e.name);
+        if (local !== undefined) {
+          const key = `local:${e.name}`;
+          if (visiting.has(key)) return "unknown";
+          visiting.add(key);
+          let kind: ValueKind = "unknown";
+          for (const d of local) {
+            if (d.hint !== null) kind = combineKinds(kind, hintKind(d.hint));
+            else if (d.value !== null) kind = combineKinds(kind, this.valueKind(d.value, visiting, env));
+          }
+          visiting.delete(key);
+          return kind;
+        }
         if (!this.isUser(e.name)) return "number";
         if (visiting.has(e.name)) return "unknown";
         visiting.add(e.name);
         let kind: ValueKind = "unknown";
         for (const d of this.topDefs.get(e.name) ?? []) {
           if (d.hint !== null) {
-            const words = d.hint.trim().split(/\s+/);
-            const t = words[words.length - 1]!;
-            kind = combineKinds(kind, t === "string" ? "string" : t === "color" ? "color" : PRIMITIVE_TYPES.has(t) ? "number" : "object");
+            kind = combineKinds(kind, hintKind(d.hint));
+          } else if (d.value !== null && d.elem !== undefined) {
+            kind = combineKinds(kind, this.tupleElementKind(d.value, d.elem, visiting));
           } else if (d.value !== null) {
             kind = combineKinds(kind, this.valueKind(d.value, visiting));
           }
@@ -514,8 +541,8 @@ class SliceAnalysis {
               info.returnArrayElemDrawingKind !== null;
             return returnsObject ? "object" : info.returnIsScalarSafe ? "number" : "unknown";
           }
-          if (callee.name === "nz" || callee.name === "fixnan") return e.args.length > 0 ? this.valueKind(e.args[0]!, visiting) : "unknown";
-          if (callee.name === "input") return e.args.length > 0 ? this.valueKind(e.args[0]!, visiting) : "unknown";
+          if (callee.name === "nz" || callee.name === "fixnan") return e.args.length > 0 ? this.valueKind(e.args[0]!, visiting, env) : "unknown";
+          if (callee.name === "input") return e.args.length > 0 ? this.valueKind(e.args[0]!, visiting, env) : "unknown";
           return VALUE_FUNCTIONS.has(callee.name) ? "number" : "unknown";
         }
         if (callee.obj.kind === "DotAccess" && callee.obj.obj.kind === "Identifier" && callee.obj.obj.name === "chart") return "object";
@@ -526,7 +553,7 @@ class SliceAnalysis {
         switch (ns) {
           case "ta": {
             // ta.valuewhen returns its source's type.
-            if (fn === "valuewhen") return e.args.length > 1 ? this.valueKind(e.args[1]!, visiting) : "unknown";
+            if (fn === "valuewhen") return e.args.length > 1 ? this.valueKind(e.args[1]!, visiting, env) : "unknown";
             const entry = TA_REGISTRY[fn];
             if (entry?.returnsArrayHandle) return "object";
             const arity = entry !== undefined ? taCallReturnArity(entry, e.args.length + e.kwargs.length) : undefined;
@@ -557,6 +584,52 @@ class SliceAnalysis {
           default:
             return "unknown";
         }
+      }
+      default:
+        return "unknown";
+    }
+  }
+
+  // What element `i` of the tuple `e` evaluates to (`[a, b] = f()`: `b` is element 1 of `f()`). A
+  // name declared by a tuple declaration holds one of the values, not the tuple
+  // (language_type-system.txt "Tuples": "the script must use a tuple declaration to declare one new
+  // variable for each value returned by the function", and "The compiler automatically determines
+  // the type of each variable in a declared tuple").
+  private tupleElementKind(e: Expr, i: number, visiting: Set<string>): ValueKind {
+    switch (e.kind) {
+      case "TupleExpr":
+        return i < e.elements.length ? this.valueKind(e.elements[i]!, visiting) : "unknown";
+      case "CallExpr": {
+        const callee = e.callee;
+        if (callee.kind === "Identifier") {
+          if (!this.funcs.has(callee.name)) return "unknown";
+          // What the analysis of the function's body found its tuple's element to be: a string or
+          // an object (collection, drawing, user-defined type) that a history slot cannot hold. A
+          // function declared after the call has not been analyzed yet: not known.
+          const info = this.prog.funcs.get(callee.name);
+          if (info === undefined) return "unknown";
+          if (!info.bodyAnalyzed) return "object";
+          const k = info.tupleElemNonNumericKinds?.[i];
+          if (k !== undefined && k !== null) return k === "string" ? "string" : "object";
+          // Otherwise what the element's own expression says, in the function's scope (a str.*
+          // call is a string, a color.* call a color), over every declaration of the function.
+          let kind: ValueKind = "unknown";
+          for (const f of this.funcs.get(callee.name)!) {
+            const last = f.body[f.body.length - 1];
+            if (last?.kind !== "ExprStmt" || last.expr.kind !== "TupleExpr") continue;
+            const el = last.expr.elements[i];
+            if (el !== undefined) kind = combineKinds(kind, this.valueKind(el, visiting, localEnvOf(f)));
+          }
+          return kind;
+        }
+        if (callee.obj.kind !== "Identifier" || this.isUser(callee.obj.name)) return "unknown";
+        // A multi-return ta.* call returns numbers (ta.macd, ta.bb, ta.dmi, ...).
+        if (callee.obj.name === "ta") return "number";
+        if (callee.obj.name === "request" && callee.attr === "security") {
+          const expression = e.args[2] ?? e.kwargs.find((k) => k.name === "expression")?.value;
+          return expression !== undefined ? this.tupleElementKind(expression, i, visiting) : "unknown";
+        }
+        return "unknown";
       }
       default:
         return "unknown";

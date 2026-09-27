@@ -88,6 +88,28 @@ describe("request.security evaluated in the requested context", () => {
     expect(inBlock).toEqual(top);
   });
 
+  it("a name a tuple declaration declares holds its element, not the tuple (resin-harness suites/lang/probes/L36.json)", () => {
+    const [d, dWant, m, mWant] = plotsOf(
+      [
+        "f() => [close - open, str.tostring(close)]",
+        "[d, s] = f()",
+        "[m, sg, hist] = ta.macd(close, 2, 3, 2)",
+        'a = request.security(syminfo.tickerid, "D", d[1])',
+        'b = request.security(syminfo.tickerid, "D", (close - open)[1])',
+        'c = request.security(syminfo.tickerid, "D", m)',
+        'e = request.security(syminfo.tickerid, "D", ta.ema(close, 2) - ta.ema(close, 3))',
+        "plot(a)",
+        "plot(b)",
+        "plot(c)",
+        "plot(e)",
+      ].join("\n"),
+    );
+    expect(d).toEqual(dWant);
+    expect(d!.some((v) => Number.isFinite(v))).toBe(true);
+    expect(m).toEqual(mWant);
+    expect(m!.some((v) => Number.isFinite(v))).toBe(true);
+  });
+
   it("time_close in the requested context is the requested bar's close", () => {
     const [got, want] = plotsOf(
       ['tc = time_close', 'g = request.security(syminfo.tickerid, "D", tc)', 'w = request.security(syminfo.tickerid, "D", time_close)', "plot(g)", "plot(w)"].join("\n"),
@@ -186,6 +208,11 @@ describe("request.security in the requested context: what is refused", () => {
 
   it("a string value", () => {
     const errors = errorsOf(['s = str.tostring(close)', 'r = request.security(syminfo.tickerid, "D", s)'].join("\n"));
+    expect(errors.some((e) => e.includes("requesting a string value is not implemented"))).toBe(true);
+  });
+
+  it("a string element of a tuple declaration", () => {
+    const errors = errorsOf(["f() => [str.tostring(close), close]", "[s, x] = f()", 'r = request.security(syminfo.tickerid, "D", s)'].join("\n"));
     expect(errors.some((e) => e.includes("requesting a string value is not implemented"))).toBe(true);
   });
 
