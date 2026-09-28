@@ -133,6 +133,8 @@ compare across versions. The public exports are unchanged; `transpile()`,
 
 ### Added
 
+- `transpile(src, { strategy: { … } })` — TradingView's strategy Properties tab: `initial_capital`, `default_qty_type`/`default_qty_value`, `pyramiding`, `commission_type`/`commission_value`, `slippage`, `process_orders_on_close`, `calc_on_order_fills`, `use_bar_magnifier`, `margin_long`/`margin_short` replace what the script's `strategy()` declares, so many scripts can be measured under one set of rules without editing them.
+
 #### Environment and API
 
 - `transpile(source, { syminfo })`: the chart symbol's tick and lot grids (`mintick`, `pricescale`, `minmove`, `mincontract`). (27b1a9c)

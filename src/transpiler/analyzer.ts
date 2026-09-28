@@ -3716,6 +3716,112 @@ function prescanConstVars(script: Script, chartTf: string): {
 export interface AnalyzeOptions {
   chartTf?: string;
   syminfo?: SymbolGridOptions;
+  strategy?: StrategyPropertyOptions;
+}
+
+// A strategy's properties as TradingView's strategy "Properties" tab sets them: each given key
+// replaces what the script's strategy() declaration says, or its default when the declaration
+// omits it (props.txt: the Properties tab settings "override" the script's declaration arguments;
+// the declaration only sets their default values). A caller that measures many scripts under one
+// set of rules — the same capital, fees and fill timing for every script — passes those rules here
+// instead of editing each script's source. Keys are the strategy() parameter names; values take the
+// strategy() argument's type (constants as their names: default_qty_type "percent_of_equity",
+// commission_type "cash_per_order"). Every value is validated like the declaration's own argument,
+// and a bad one is a transpile error. Ignored for a script that is not a strategy.
+export interface StrategyPropertyOptions {
+  initial_capital?: number;
+  default_qty_type?: "fixed" | "percent_of_equity" | "cash";
+  default_qty_value?: number;
+  pyramiding?: number;
+  commission_type?: "percent" | "cash_per_contract" | "cash_per_order";
+  commission_value?: number;
+  slippage?: number;
+  process_orders_on_close?: boolean;
+  calc_on_order_fills?: boolean;
+  use_bar_magnifier?: boolean;
+  margin_long?: number;
+  margin_short?: number;
+}
+
+// The keys transpile's `strategy` option honours (a caller can feature-test for one).
+export const STRATEGY_OPTION_KEYS: readonly (keyof StrategyPropertyOptions)[] = [
+  "initial_capital",
+  "default_qty_type",
+  "default_qty_value",
+  "pyramiding",
+  "commission_type",
+  "commission_value",
+  "slippage",
+  "process_orders_on_close",
+  "calc_on_order_fills",
+  "use_bar_magnifier",
+  "margin_long",
+  "margin_short",
+];
+
+// Applies transpile's `strategy` option over what the script's strategy() declaration set. Runs
+// after the whole script is analyzed, so it replaces the declaration's values wherever they are.
+function applyStrategyOverrides(props: StrategyPropertyOptions | undefined, prog: AnalyzedProgram): void {
+  if (props === undefined || !prog.isStrategy) return;
+  const bad = (key: string, want: string, v: unknown) =>
+    prog.errors.push(`strategy option '${key}' must be ${want}, got ${JSON.stringify(v)}`);
+  const num = (key: keyof StrategyPropertyOptions, int: boolean): number | undefined => {
+    const v = props[key];
+    if (v === undefined) return undefined;
+    if (typeof v !== "number" || !Number.isFinite(v) || v < 0 || (int && !Number.isInteger(v))) {
+      bad(key, int ? "an int >= 0" : "a finite number >= 0", v);
+      return undefined;
+    }
+    return v;
+  };
+  const bool = (key: keyof StrategyPropertyOptions): boolean | undefined => {
+    const v = props[key];
+    if (v === undefined) return undefined;
+    if (typeof v !== "boolean") {
+      bad(key, "true or false", v);
+      return undefined;
+    }
+    return v;
+  };
+  for (const key of Object.keys(props)) {
+    if (!(STRATEGY_OPTION_KEYS as readonly string[]).includes(key)) {
+      prog.errors.push(`strategy option '${key}' is not a strategy property resin honours (${STRATEGY_OPTION_KEYS.join(", ")})`);
+    }
+  }
+  const capital = num("initial_capital", false);
+  if (capital !== undefined) prog.strategyInitialCapital = capital;
+  const qtyValue = num("default_qty_value", false);
+  if (qtyValue !== undefined) prog.strategyDefaultQty = qtyValue;
+  const pyramiding = num("pyramiding", true);
+  if (pyramiding !== undefined) prog.strategyPyramiding = pyramiding;
+  if (props.default_qty_type !== undefined) {
+    const t = props.default_qty_type;
+    if (t === "fixed" || t === "percent_of_equity" || t === "cash") {
+      prog.strategyQtyIsPercent = t === "percent_of_equity";
+      prog.strategyQtyIsCash = t === "cash";
+    } else {
+      bad("default_qty_type", '"fixed", "percent_of_equity" or "cash"', t);
+    }
+  }
+  if (props.commission_type !== undefined) {
+    const t = STRATEGY_COMMISSION_CONSTANTS.get(String(props.commission_type));
+    if (t !== undefined) prog.strategyCommissionType = t;
+    else bad("commission_type", '"percent", "cash_per_contract" or "cash_per_order"', props.commission_type);
+  }
+  const commission = num("commission_value", false);
+  if (commission !== undefined) prog.strategyCommissionValue = commission;
+  const slippage = num("slippage", true);
+  if (slippage !== undefined) prog.strategySlippage = slippage;
+  const poc = bool("process_orders_on_close");
+  if (poc !== undefined) prog.strategyProcessOrdersOnClose = poc;
+  const coof = bool("calc_on_order_fills");
+  if (coof !== undefined) prog.strategyCalcOnOrderFills = coof;
+  const magnifier = bool("use_bar_magnifier");
+  if (magnifier !== undefined) prog.strategyUseBarMagnifier = magnifier;
+  const marginLong = num("margin_long", false);
+  if (marginLong !== undefined) prog.strategyMarginLong = marginLong;
+  const marginShort = num("margin_short", false);
+  if (marginShort !== undefined) prog.strategyMarginShort = marginShort;
 }
 
 // The chart symbol's price and quantity grids and its point value. A TradingView run happens on a
@@ -4196,6 +4302,8 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
   for (const [call, repeated] of prog.repeatedKwargs) {
     call.kwargs = call.kwargs.filter((kw) => !repeated.has(kw));
   }
+  // transpile's `strategy` option: the Properties-tab overrides, over the declaration's values.
+  applyStrategyOverrides(options?.strategy, prog);
   return prog;
 }
 
