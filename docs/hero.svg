@@ -29,8 +29,8 @@
   <text x="24" y="242" xml:space="preserve" class="c">wrote rsi-cross.js (179 bytes)</text>
 
   <text x="24" y="282" xml:space="preserve"><tspan class="p">$</tspan><tspan class="t"> resin run rsi-cross.pine --bars 300</tspan></text>
-  <text x="24" y="302" xml:space="preserve"><tspan class="t">RSI                      </tspan><tspan class="n">57.66239695569333</tspan></text>
-  <text x="24" y="322" xml:space="preserve"><tspan class="t">Smoothed                 </tspan><tspan class="n">54.056462491106444</tspan></text>
+  <text x="24" y="302" xml:space="preserve"><tspan class="t">RSI                      </tspan><tspan class="n">57.66239695541216</tspan></text>
+  <text x="24" y="322" xml:space="preserve"><tspan class="t">Smoothed                 </tspan><tspan class="n">54.05646249096931</tspan></text>
 
   <text x="24" y="362" xml:space="preserve"><tspan class="p">$</tspan><tspan class="t"> resin check oracle/cases</tspan></text>
   <text x="24" y="382" xml:space="preserve"><tspan class="n">263</tspan><tspan class="t">/</tspan><tspan class="n">263</tspan><tspan class="t"> compiled (100.0%)</tspan></text>

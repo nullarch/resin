@@ -21,24 +21,62 @@ const LANGS = [
 
 // Every claim in the README that came from a measurement rather than prose.
 const FIGURES = [
+  // Verification (0.3.0, resin-harness): TradingView's own exports.
+  "15,989", // strategy trade and statistic records matched
+  "46,482", // indicator records matched
+  // The certified reference engine and the fuzz corpus against it.
+  "380", // of 402 published strategies, trade for trade (PyneCore's certification)
+  "402",
+  "99.64%", // of bars bit for bit (PyneCore's certification)
+  "61.8M",
+  "5,000", // generated scenarios
+  "4,937", // of them matching
+  "3,600", // strategy scenarios, all matching
+  "737", // of 800 indicator scenarios
+  "1e-9", // fuzz and differential tolerance
+  // The real-world corpus (acceptance only).
+  "3,904", // v5/v6 files
+  "543", // repositories
+  "413", // scraped pages left out
+  "313", // judged invalid
+  "199", // library-importing
+  "2,979", // plain scripts
+  "2,970", // transpile
+  "2,964", // run
+  "99.7%", // transpile rate
+  "99.5%", // run rate
+  // The 0.1 survey, kept as a historical measurement.
   "95.1%", // corpus compile rate
   "12,424", // snapshot
   "1,085", // TradingView rejects them too
   "719", // unresolvable private imports
   "10,618", // denominator
   "10,100", // compiles
-  "9,883", // tests
-  "263", // oracle scripts
-  "1e-9", // oracle tolerance
+  // The test suites.
+  "10,305", // tests
+  "9,883", // tests that hid the first loop's mistakes
+  "263", // oracle/ regression cases
+  // Quick start output.
+  "57.66239695541216",
+  "54.05646249096931",
+  // Everything else.
   "22.18", // minimum Node
+  "121", // commits of the correctness loop since 0.2.2
   "365", // compiler messages (translated to English)
-  "14,000", // untranslated comment lines
+  "12,400", // untranslated Korean comment lines
 ];
 
 // Bare numbers that need a word boundary so they don't match inside a larger figure.
-const BOUNDED_FIGURES = [68 /* ta.* functions */, 800 /* agent iterations */];
+const BOUNDED_FIGURES = [
+  68 /* ta.* functions */,
+  800 /* agent iterations; indicator scenarios */,
+  19 /* strategy scenarios */,
+  72 /* indicator scenarios */,
+  117 /* of 118 probes */,
+  118,
+];
 
-const SHARED_LINKS = ["API.md", "LICENSE", "docs/logo.svg", "docs/hero.svg"];
+const SHARED_LINKS = ["API.md", "CHANGELOG.md", "LICENSE", "docs/logo.svg", "docs/hero.svg"];
 
 const read = (file: string) => readFileSync(join(REPO_ROOT, file), "utf-8");
 

@@ -1,6 +1,6 @@
 {
   "name": "@nullarch/resin",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Run TradingView Pine Script v5/v6 outside TradingView — a compiler and runtime for JavaScript",
   "license": "Apache-2.0",
   "type": "module",
@@ -33,6 +33,7 @@
     "register.mjs",
     "scripts/ts-esm-loader-hook.mjs",
     "API.md",
+    "CHANGELOG.md",
     "README.zh-CN.md",
     "README.ja.md",
     "README.ko.md"

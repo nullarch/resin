@@ -1,0 +1,218 @@
+# Changelog
+
+All notable changes to resin are recorded here. The format follows
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
+[semantic versioning](https://semver.org/) — before 1.0, a minor version may change
+what a script computes. Versions before 0.3.0 were not recorded in this file; see the
+git history.
+
+Every entry below names the commit that made it. Each of those commit messages states
+the rule, quotes its evidence (a TradingView export, the certified reference engine,
+or the Pine manual) and lists what moved.
+
+## [0.3.0] - 2026-09-28
+
+0.3.0 is the first release measured against TradingView's own results instead of a
+sibling implementation. It is 121 commits, one rule each, and most of them change
+numbers: the same script can produce different values, trades and statistics than it
+did on 0.2.x. Read "Behaviour changes" before upgrading anything whose outputs you
+compare across versions. The public exports are unchanged; `transpile()`,
+`run()` and `Context.from()` gain options and `TranspileOk` gains fields (see Added).
+
+### Behaviour changes (outputs differ from 0.2.x)
+
+#### Strategy engine
+
+- `strategy()` without `initial_capital` starts from 1,000,000 (was 100,000). (27b1a9c)
+- Commission (`commission_type`, `commission_value`) is charged on every filled order; it was parsed and ignored. The type defaults to percent. (b10e60f)
+- `slippage=N` moves market and stop fills N ticks against the order; it was ignored. (3dac569)
+- `process_orders_on_close=true` fills the bar's orders at its close; it was ignored. (0f4f890)
+- `calc_on_order_fills=true` runs the script again after a bar's fills (at most four runs a bar, each rolled back except `varip`); it was ignored. (9d27bca)
+- `margin_long`/`margin_short` are honoured and margin calls liquidate a position the account can no longer margin. Omitted, they are 100 from v6 on (0 before), so a v6 strategy can now be margin-called without setting either. (35980ab)
+- An entry the account cannot margin is not placed, not filled at the open, and cancelled while it rests. (778be7e)
+- Each entry fill is its own trade, and closing fills consume open trades oldest first (FIFO); a pyramided position is no longer one averaged trade. `strategy.close(id)` closes that id's open quantity (was: the whole position), and its exit id is `"Close entry(s) order <id>"`. (218c3c6)
+- `strategy.exit()` binds to a pending entry order and is live from the bar that entry fills; it was dropped whenever the position was flat, so an entry + exit bracket placed on one bar had no exit. (6b2820e)
+- `strategy.exit(profit=, loss=, trail_points=, trail_offset=)` are ticks (`syminfo.mintick`) from the entry's own fill price, not price points from `position_avg_price`; the levels snap to the tick grid. (c2c3673)
+- `strategy.exit(limit=, stop=)` snap to the tick grid, away from the market. (603571c)
+- An omitted or na `trail_offset` trails 0 ticks behind the best price (was: `trail_points`; `trail_price=` without an offset never armed). (e842ab3)
+- `strategy.exit()` legs are kept per exit id and per entry, each reserving its slice of the position: a second exit id rests beside the first (was dropped), and a filled leg is not placed again while its entry is open. (0457580)
+- Exit legs meet their levels in the bar's assumed path: open → nearer extreme → farther extreme → close (was always open → low → high → close, so a long's stop-loss always beat its take-profit). (8b64d22)
+- On one segment of that path, levels fill in the order the path reaches them, entries and exit legs alike. (f6665af)
+- At a bar's open, entries fill before exit legs whose level the open has gapped past. (9d27bca)
+- In v6, a `strategy.exit()` given both levels of a pair (`limit`/`profit`, `stop`/`loss`, `trail_price`/`trail_points`) uses the one the market reaches first; v5 keeps the absolute level. (b124a55)
+- An exit leg keeps the side it was placed for; placed for the other side, it closes nothing. (78a378d)
+- Entry orders rest side by side, one per id (was a single pending slot that dropped a second id); pyramiding is judged when `strategy.entry()` is called; entry limit/stop levels snap to the tick grid; `strategy.cancel`/`cancel_all` also cancel a market entry placed in the same execution. (1621cd0)
+- A limit/stop `strategy.entry` against an opposite position fixes its reversal size when it is placed, not when it fills. (4957300)
+- Default-sized orders (`percent_of_equity`, `cash`) are sized when placed, from the close (a market order's slipped), the budget rounded to 10 significant digits and the quantity floored to whole lots of `syminfo.mincontract`; zero lots place nothing (was: fractional sizes at the fill price). (169ce9a)
+- `strategy.entry`/`strategy.order` with an na `qty` use the default order size (was: no order). (c70f730)
+- A bar's market orders — entries, closes and `strategy.order()` — fill in the order the script placed them (was: every close first). (df23f2d)
+- Each `strategy.close()`/`strategy.close_all()` statement places its own close order (was one close slot, last call wins); `strategy.cancel`/`cancel_all` reach them; `close_all`'s exit id is `"Close position order"` (was `""`). (8c8af57)
+- `strategy.close(immediately=true)`/`close_all(immediately=true)` fill at the bar's close after the script body, so `strategy.*` values read later in the body are still the pre-close ones. (0fca693)
+- `strategy.close_all()` positional arguments bind to TradingView's overloads: v5 `strategy.close_all(cond)` closes only where `cond` holds (was: `cond` read as the comment, closing on every bar). (109651e)
+- Two opposite orders filled at the same moment book their closed trade long side first (its entry/exit ids and the sign of its size). (78f3320)
+- Strategy statistics follow TradingView's definitions: `max_drawdown`/`max_runup` run from the realized peak and the entry-fill trough to the bar's high/low marks; `grossloss` is positive and includes the open trades' entry fees; averages are na with no trade to average; `avg_losing_trade` is positive; `max_contracts_held_*` count entry fills. (836fdc1)
+- Per-trade `max_drawdown`/`max_runup` are marked after the bar's fills, so a trade filled at the open is marked by its entry bar's range. (a9acee7)
+- A `strategy.closedtrades.*` number with no listed trade reads 0 for amounts and na for prices, bars and times instead of throwing. (a9acee7)
+- A `strategy.opentrades.*` number with no open trade reads 0/na instead of throwing, and a missing closed trade's `entry_id`/`exit_id`/comments read na instead of `""`. (4117faa)
+
+#### Indicators (`ta.*`, `math.*`)
+
+- `ta.supertrend`: direction is 1 in a downtrend and -1 in an uptrend (was the reverse); the first bar is (0, 1), warm-up bars (na, 1), and a flip is judged against this bar's adjusted bands. (e014447)
+- `ta.rsi` seeds on the first `length` changes, so its first value lands one bar later, on bar `length`. (725ad54)
+- `ta.mfi` counts the first bar in both sums, so its first value lands one bar earlier, on bar `length - 1`. (725ad54)
+- `ta.dmi` is TradingView's built-in DMI: every rma seeded like `ta.rma`, true range `ta.tr(false)`, a tolerant directional-movement comparison. (100147b)
+- `ta.tr` and bare `ta.tr` default `handle_na` to false: na on the first bar. (481cf09)
+- `ta.kc`/`ta.kcw` smooth `ta.ema(ta.tr(false))` (or `ta.ema(high - low)`), and `ta.kcw` is a ratio (was ×100). (5dbeaa8)
+- `ta.sma` and `math.sum` average/sum the last `length` non-na values (was: na for `length` bars after an na; `math.sum` counted na as 0). (2cf7ce1)
+- `ta.variance`, `ta.stdev`, `ta.bb`, `ta.bbw` use the last `length` non-na values. (aaf903b)
+- `ta.median` uses the last `length` non-na values. (39d7458)
+- `ta.mode` uses the last `length` non-na values and is na until that many exist. (b7cb0b2)
+- `ta.cog` uses the last `length` non-na values. (0132b1d)
+- `ta.vwma` is `sma(source * volume) / sma(volume)`, each over its own non-na window. (ed04c08)
+- `ta.wma` carries the last value forward through an na source; `ta.hma` skips na bars. (0bdfc8d)
+- `ta.highest`/`lowest`/`highestbars`/`lowestbars`: an na source resets the window; a call skipped on some bars reads its own window's stale slots. (f97acf4)
+- `ta.highestbars`/`lowestbars` report the oldest occurrence of a tied extreme (was the newest). (311c039)
+- `ta.range` is `ta.highest - ta.lowest` on their windows: an na source is skipped, and a length below 1 is na (was -Infinity). (da7cbec)
+- `ta.stoch`/`ta.wpr` with a literal length: a bar with an na input is skipped, and `ta.wpr(1)` is the close. (f1f42de)
+- `ta.pivothigh`/`ta.pivotlow`: a tie on the right side breaks the pivot. (61813f5)
+- `ta.pivothigh`/`ta.pivotlow`: an na source is skipped instead of blanking the window; a negative or na strength is na. (b7ea01b)
+- `ta.linreg` reads its line `offset` bars back (was forward) and skips na sources. (b104f4f)
+- `ta.rci` is na while `bar_index < length` and ranks ties by their average rank. (feee5f2)
+- `ta.cum` of an na source is na and leaves the total alone; `ta.obv` and `ta.pvt` are na on the first bar. (b13f051)
+- `ta.vwap` is na until its first anchor, and `ta.vwap(source)`/bare `ta.vwap` start over on each session's first bar (was one running sum from bar 0). (8fc9dc4)
+- `ta.vwap` bands sum `source * source * volume` in TradingView's order (flat anchor bars give a zero band width). (febad20)
+- Builtins defined as a quotient divide by zero as Pine does (x / 0 is ±inf, 0 / 0 is NaN, both na) instead of substituting 0, or 50 for `ta.stoch`: `ta.iii`, `ta.wvad`, `ta.accdist`'s money-flow term, `ta.cmo`, `ta.cci`, `ta.wpr`, `ta.tsi` and `ta.stoch` on a flat window or zero volume. (7dce07c)
+- `ta.percentile_nearest_rank`/`percentile_linear_interpolation` run TradingView's rolling rank machine: a new interpolation position, and na elements take part in the ranking. (079e201)
+- `ta.percentrank`: a past na counts toward the length but not the rank, and comparisons are tolerant. (2a3f5b5)
+- `ta.cci`/`ta.dev` with a fixed length: the mean is `ta.sma`'s, the deviation is over the last `length` bars and na while one of them is na. (1bdaada)
+- `ta.correlation` with a fixed length: five na-skipping sums; 0 for a constant source and for length 1 (was na). (aaf758a)
+- `ta.cross` remembers the last unequal relation and is not `crossover or crossunder`; the crosses skip an na bar and return na there up to v5, false from v6. (9b13c89)
+- `ta.sar` starts its trend on bar 1 from `high[1]` against `high`, and each call site keeps its own window. (7eef8ad)
+- `ta.rising`/`ta.falling`/`ta.cmo` count a step only beyond Pine's 1e-10 tolerance. (7eb06fe)
+- A stateful builtin called in a loop keeps one state per call site, each same-bar execution starting from the bar's starting state (was: stepped once per iteration). (3233418)
+- `ta.ema`/`ta.rma` step in TradingView's floating-point order (last-bit changes in everything built on them). (d9a76c1)
+- `math.sum`, `ta.sma`, `ta.variance` and what builds on them keep TradingView's compensated rolling sum (last-bit changes; flat windows keep their rounding dust). (80b12eb)
+- The same compensated sum with a length that changes from bar to bar. (2baba0b)
+- The same compensated sum inside a fixed-length `ta.mfi`. (0791692)
+- `math.avg` of three or more terms adds with a flushed Kahan sum (last bit). (7de28a4)
+- `math.random` with a seed gives `java.util.Random`'s repeatable sequence, one draw per execution (was the same value on every bar); unseeded calls stay reproducible but draw other numbers. (9665aae)
+- `math.round(x, precision)` and `math.round_to_mintick` decide a tie on the exact value (`math.round(1.005, 2)` is 1.01); a negative precision rounds to an integer (was to tens). (8105cf9)
+
+#### Language
+
+- `%` is the floored modulo: the result takes the divisor's sign (`-1 % 100` is 99). (962e63d)
+- `/` truncates only before v6 and only between two const ints: v6 always keeps the fraction, and v5 `n = -9` then `n / 100` is 0. (f34cf33)
+- `?:` evaluates only the branch its condition selects; a stateful call in the other branch does not advance. (8235f56)
+- v6 `and`/`or` short-circuit: the right operand runs only when the left one does not decide. (dedef84)
+- A comparison with an na operand is false (was na, and `!=` was true). (2bec756)
+- Float comparisons treat operands within 1e-10 of each other as equal; ints stay exact. (80b12eb)
+- UDT fields declared without a default are na, false for bool (were 0 and `""`). (f7406c5)
+- A local series (an if-block local, a function's local or parameter) holds its last committed value on bars its scope did not run (was na). (c288f43)
+- A function called in another function's body is one instance per call of the outer function (was shared by all of them). (6ab95b7)
+- A v6 `for` loop re-reads its `to` bound before every iteration. (60f1818)
+- `barstate.ishistory` is true and `barstate.isrealtime` false on every bar, the last one included. (6f35cd8)
+- A line starting with `+` indented by a multiple of four spaces (outside brackets) opens a statement instead of continuing the line before. (d7b75f3)
+- A `=` in a nested block declares a new variable even when an outer scope has the name, and every read and assignment goes to the declaration visible where it stands (was: histories of the two mixed). (33f0634)
+- A `for` counter or `for`-in item named like a `var` hides it inside the loop (was: read the `var` when it was declared in a block or a function). (1f0a746)
+- A function's `var` named like another variable of the function, or like a global `var`, is a variable of its own (was: a sibling branch's read of the global read the `var`). (2f8d3a1)
+
+#### Strings and time
+
+- `str.tostring` and `str.format` (and so log messages) print TradingView's number text: `1` not `1.0`, `true` not `True`, `NaN` not `nan`, DecimalFormat masks and MessageFormat patterns. (8e3ab54)
+- `str.format_time` renders in its timezone, by default `syminfo.timezone` (was always UTC); an na time is na. (56a2a80)
+- `timeframe.in_seconds` reads the whole timeframe string (`"4D"` is 345,600), a month is 2,628,003 seconds, the default is the chart timeframe, and an invalid string is an error (were 86,400 fallbacks). (6c1b553)
+- `timeframe.change` is computed on the symbol's exchange calendar (was always false). (5e949ca)
+- `session.isfirstbar`, `islastbar` and `ismarket` read the symbol's session schedule (were bar 0, the last bar, and always true); with no schedule every day is one session from 00:00. (faf5d54)
+- `timeframe.isdaily`/`isweekly`/`ismonthly` follow the unit whatever the multiplier (`"2D"` is daily), and `timeframe.isintraday` includes ticks. (849ee25)
+- String literals are decoded when lexed, so compile-time strings (plot titles, symbols, formats) no longer keep an escape's backslash. (8fc9dc4)
+
+#### request.security
+
+- An expression the prepass cannot replay — a user-defined function, `var` state, a variable built with `:=` or in a block, an object — is evaluated in the requested context on the requested bars. 0.2.x evaluated some of these forms on the chart's own bars with the timeframe dropped. (cd72165, bcdaf18, 053ae7b, d5cfdd8, 3e68286)
+- `timeframe.is*` inside a request's expression read the requested timeframe (was the chart's). (849ee25)
+
+### Added
+
+#### Environment and API
+
+- `transpile(source, { syminfo })`: the chart symbol's tick and lot grids (`mintick`, `pricescale`, `minmove`, `mincontract`). (27b1a9c)
+- `syminfo.pointvalue` through the same option; every money amount taken from a price is scaled by it. (b34aef9)
+- The symbol's exchange calendar through the same option: `timezone`, `type`, `opening_hours`, `session_starts`. (5e949ca)
+- `session_ends` in the same option. (faf5d54)
+- The symbol's identity, `prefix` and `ticker`, in the same option; `syminfo.tickerid` is `"PREFIX:TICKER"`. (54890e0)
+- `run(result, data, { magnifier })` and `Context.from(result, data, { magnifier })`: the bar magnifier's lower-timeframe feed. (ec86e8c)
+- `run(result, data, { security })` and `Context.from(result, data, { security })`: other symbols' feeds for `request.security`, keyed `"SYMBOL"` or `"SYMBOL:TF"`. (dda41fd, 54890e0)
+- `TranspileOk.securitySymbols` and `TranspileOk.calendar`. (dda41fd)
+
+#### Strategy engine
+
+- `strategy(use_bar_magnifier=true)` fills orders on the magnifier feed's bars. (ec86e8c)
+- OCA groups: `oca_name`/`oca_type` on `strategy.entry` and `strategy.order`, and `strategy.oca.cancel`/`reduce`/`none`. (1b3a9ae)
+- `strategy.exit(oca_name=)`, a reduce group, and `alert_trailing=`. (32bc587)
+- `strategy.grossprofit_percent`, `strategy.grossloss_percent`, `strategy.avg_trade`, `strategy.avg_trade_percent`, `strategy.closedtrades.first_index`. (836fdc1)
+- `strategy.closedtrades/opentrades.max_drawdown_percent` and `max_runup_percent`. (a9acee7)
+- `strategy.opentrades.entry_comment`. (383b05a)
+- `strategy.cancel_all(when=)` (v5). (5b2190d)
+- `[]` on a `strategy.opentrades.*(n)`/`strategy.closedtrades.*(n)` call. (75d8994)
+- `strategy()` numeric arguments take constant expressions and constant variables. (a61fe01)
+- `overlay`, `process_orders_on_close`, `use_bar_magnifier` and `calc_on_order_fills` take any const bool, and a number before v6. (344d64c)
+
+#### Indicators
+
+- A length that changes from bar to bar for `ta.change`, `ta.mom`, `ta.roc`, `ta.cmo`, `ta.cci`, `ta.dev`, `ta.variance`, `ta.stdev`, `ta.bb`, `ta.bbw`, `ta.mfi`, `ta.stoch`, `ta.wpr`, `ta.percentrank`, `ta.mode` and `ta.correlation`; `ta.variance(biased=)`. (bba2857)
+- `ta.alma(..., floor)`. (a31a6f0)
+- Keyword arguments for `ta.kc`/`ta.kcw`. (5dbeaa8)
+- `syminfo.prefix(symbol)`. (4b43ad6)
+
+#### request.security
+
+- Another symbol's own bars, from `opts.security`. (dda41fd)
+- Nested requests, run in the outer request's context. (54890e0)
+- A request whose expression depends on another request reads that request as the chart computed it. (27990a9)
+- A function's request may read another request of the function, and a call made through another function runs in the requested context. (3e68286)
+- Expressions evaluated in the requested context: `:=`-built variables, `var` state, user-defined functions, local history. (cd72165)
+- Requests inside user-defined functions, one request per call of the function. (bcdaf18)
+- Strings and colors computed in the requested context. (437045d)
+- Objects of user-defined types. (053ae7b)
+- Timeframes known only at run time, bound on the call's first execution. (d5cfdd8)
+- The same inside functions, per call. (bfae5b2)
+- The same for requests built from a function's argument. (19b5805)
+- A name declared by a tuple declaration reads as its element. (93e1a76)
+- `timeframe.*` inside a request's expression is the requested timeframe; `timeframe.main_period` the chart's. (849ee25)
+
+#### Language
+
+- Same-arity function overloads, told apart by their parameter types. (c4d881d)
+- Before v6, a keyword argument given twice keeps its first value. (6d4ee5a)
+- Before v6, a parameter given positionally and again by keyword keeps the positional value. (15a55c0)
+
+### Fixed
+
+- A local declaration that shadows a variable its block already read ("Cannot access … before initialization"). (17aa4b7)
+- A UDT variable declared from another variable holding one (`a = p`, then `a.x := …`). (8170578)
+- `timestamp()` with later parts given by name, and `input.int`/`input.float` with an options list as the third argument. (a9f3df7)
+- A user-declared method's call has the UDT its body returns. (382ad71)
+- `array.from(...)` of drawings or UDT objects. (c55684f)
+- An untyped parameter passed on to another function. (2a7f4d1)
+- A function-body local with history that a nested block declares again. (33f0634)
+- A `for` counter or `for`-in item named like a top-level `var`. (1f0a746)
+- A function's `var` beside a sibling branch's `=` of the same name. (2f8d3a1)
+- A `switch` case starting with `+` (`+1 => …`). (d7b75f3)
+- `strategy.close_all('EOD', 'End of Day Exit', true)`. (109651e)
+- `ta.mode` with an na length returns na instead of throwing. (079e201)
+
+### Known issues
+
+- A `request.security` on the chart's own symbol, built from the chart's bars, delivers each higher-timeframe value one chart bar later than the reference engine and the manual, and a same-timeframe request reads the previous bar. Requests handed a feed through `opts.security` pair as TradingView does.
+- `hour`, `dayofweek`, `time()` and the other time builtins read UTC, not `syminfo.timezone`; only `str.format_time`, `timeframe.change` and `session.*` use the symbol's timezone.
+- `ta.alma` and `ta.cog` still refuse a length that changes from bar to bar.
+- 63 of the 800 generated indicator scenarios still differ from the reference engine somewhere (series-length `ta.mode`/`ta.bbw`/`ta.cci`, `ta.roc` over na bars, `hlcc4`'s last bit, …).
+
+### Verification
+
+Measured at this release by the separate resin-harness:
+
+- TradingView's own exports (published by PyneSys in PyneCore's repository): 19/19 strategy scenarios, 15,989/15,989 trade and statistic records; 72/72 indicator scenarios, 46,482/46,482 plot values, log lines and measured expectations. 0.2.2 matched 2 of the 19 strategy scenarios in full.
+- The certified reference engine (PyneCore, pinned; 380 of 402 published strategies trade for trade against TradingView): 3,600/3,600 generated strategy scenarios (0.2.2: 550), 737/800 indicator and 600/600 language scenarios, 117/118 hand-written probes.
+- A real-world corpus (3,904 v5/v6 files from 543 GitHub repositories): 2,970 of the 2,979 valid plain scripts transpile (99.7%) and 2,964 run (99.5%). Acceptance only: their values are not checked.
+- resin's own suite: 10,305 tests.
