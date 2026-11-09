@@ -28,6 +28,7 @@
 //   동일 경로로 literal port(별도 분기 불필요).
 
 import { pyFloatStr } from "./str";
+import { inheritIntKind, isIntArray, markIntArray } from "./array-kind";
 
 export type PineArray = number[];
 
@@ -40,19 +41,33 @@ export function new_float(size: number = 0, initialValue: number = NaN): PineArr
   return new Array<number>(n).fill(initialValue);
 }
 
-// array.get(id, index) — 범위 밖은 pine2py 가드 그대로 nan(literal port).
-export function get(arr: PineArray | null, index: number): number {
-  if (arr === null) return NaN;
+// The slot an element index addresses, or -1 when it addresses none. A float index is truncated
+// and a negative one counts from the end of the array, so -size..-1 are the last element back to
+// the first ("Negative indices are a Pine v6 feature": tier 1 array_001_array_basic, where
+// array.set(a, -2, v) on a 5-element array writes slot 3 for float, int, string and color arrays;
+// the Pine manual, "Arrays": array.get/set/insert/remove "support negative indexing"). An na
+// index (NaN) addresses nothing. An index outside -size..size-1 halts the script on TradingView;
+// here it stays "reads give na, writes do nothing" (DIVERGENCES #19).
+function slotOf(arr: PineArray, index: number): number {
   const i = Math.trunc(index);
-  if (i >= 0 && i < arr.length) return arr[i]!;
-  return NaN;
+  const len = arr.length;
+  if (i >= 0 && i < len) return i;
+  if (i < 0 && i >= -len) return len + i;
+  return -1;
 }
 
-// array.set(id, index, value) — 범위 밖은 pine2py 가드 그대로 조용히 no-op(literal port).
+// array.get(id, index) — an index outside the array reads na.
+export function get(arr: PineArray | null, index: number): number {
+  if (arr === null) return NaN;
+  const i = slotOf(arr, index);
+  return i === -1 ? NaN : arr[i]!;
+}
+
+// array.set(id, index, value) — an index outside the array writes nothing.
 export function set(arr: PineArray | null, index: number, value: number): void {
   if (arr === null) return;
-  const i = Math.trunc(index);
-  if (i >= 0 && i < arr.length) arr[i] = value;
+  const i = slotOf(arr, index);
+  if (i !== -1) arr[i] = value;
 }
 
 // array.push(id, value) — 끝에 추가(in-place 뮤테이션).
@@ -118,18 +133,27 @@ export function unshift(arr: PineArray | null, value: number): void {
   arr.unshift(value);
 }
 
-// array.insert(id, index, value) — 지정 위치 삽입(in-place). null 배열/na 인덱스는 no-op.
+// array.insert(id, index, value) — insert in place. A negative index counts from the end like
+// get/set, and the array size itself is a valid index (it appends). An na index appends too: it
+// resolves to the array size, it is not clamped to 0 (tier 1 array_008_array_na_index:
+// insert([10, 20, 30, 40], na, 77) gives 10,20,30,40,77 and insert(array.new_int(), na, 77) gives
+// 77). A na (null) array is a no-op.
 export function insert(arr: PineArray | null, index: number, value: number): void {
-  if (arr === null || Number.isNaN(index)) return;
+  if (arr === null) return;
+  if (Number.isNaN(index)) {
+    arr.push(value);
+    return;
+  }
   arr.splice(Math.trunc(index), 0, value);
 }
 
-// array.remove(id, index) — 지정 위치 제거 & 반환. get과 동일한 명시적 범위 가드 literal port.
+// array.remove(id, index) — remove and return the element at a slot; the index rule is get's, so
+// a negative index counts from the end and an na or outside index removes nothing and returns na
+// (tier 1 array_008_array_na_index: remove([10, 20, 30, 40], na) is NaN and the array is intact).
 export function remove(arr: PineArray | null, index: number): number {
   if (arr === null) return NaN;
-  const i = Math.trunc(index);
-  if (i >= 0 && i < arr.length) return arr.splice(i, 1)[0]!;
-  return NaN;
+  const i = slotOf(arr, index);
+  return i === -1 ? NaN : arr.splice(i, 1)[0]!;
 }
 
 // array.clear(id) — 전부 제거(in-place). null 배열은 크래시하는 미정의 동작이라 no-op.
@@ -138,14 +162,17 @@ export function clear(arr: PineArray | null): void {
   arr.length = 0;
 }
 
-// array.fill(id, value, index_from=0, index_to=-1) — 범위 채우기(in-place). null 배열/na
-// index_from·index_to는 no-op. index_to<0(기본값 포함)은 배열 길이로 literal port. index_from이
-// 음수면 pine2py 자체가 크래시하는 latent 버그라 0으로 클램프(DIVERGENCES #20).
-export function fill(arr: PineArray | null, value: number, indexFrom: number = 0, indexTo: number = -1): void {
-  if (arr === null || Number.isNaN(indexFrom) || Number.isNaN(indexTo)) return;
-  let to = Math.trunc(indexTo);
+// array.fill(id, value, index_from=0, index_to=na) — 범위 채우기(in-place). null 배열은 no-op.
+// na index_from은 0, na index_to(기본값)는 배열 길이. index_to<0은 배열 길이로 literal port.
+// index_from이 음수면 pine2py 자체가 크래시하는 latent 버그라 0으로 클램프(DIVERGENCES #20).
+export function fill(arr: PineArray | null, value: number, indexFrom: number = 0, indexTo: number = NaN): void {
+  if (arr === null) return;
+  // An na index_from starts at the first element and an na index_to (the default) ends at the
+  // array size, instead of doing nothing (tier 1 array_008_array_na_index: fill([10, 20, 30, 40],
+  // 5, na, 2) gives 5,5,30,40 and fill(a, 5, 1, na) gives 10,5,5,5).
+  let to = Number.isNaN(indexTo) ? arr.length : Math.trunc(indexTo);
   if (to < 0) to = arr.length;
-  const from = Math.max(0, Math.trunc(indexFrom));
+  const from = Number.isNaN(indexFrom) ? 0 : Math.max(0, Math.trunc(indexFrom));
   const end = Math.min(to, arr.length);
   for (let i = from; i < end; i++) arr[i] = value;
 }
@@ -198,9 +225,15 @@ export function avg(arr: PineArray | null): number {
 // 그 경로만 O(n) 단일 스캔으로 처리 — sort()는 nth!==0(n번째 값 조회)일 때만 필요(C586, wild
 // 실측: for-loop 안에서 매 바/매 반복 array.max(id)를 호출하는 관용구가 O(n) 배열에 O(n log n)
 // sort+할당을 반복시켜 5000바 실데이터에서만 timeout 발현 — 500바 합성에선 안 드러남).
+// The rank array.min/array.max read: truncated, and an na rank is 0, the smallest/largest
+// (tier 1 array_008_array_na_index: max([10, 20, 30, 40], na) is 40 and min(.., na) is 10).
+function nthRank(nth: number): number {
+  return Number.isNaN(nth) ? 0 : Math.trunc(nth);
+}
+
 export function min(arr: PineArray | null, nth: number = 0): number {
   if (arr === null) return NaN;
-  const idx = Math.trunc(nth);
+  const idx = nthRank(nth);
   if (idx === 0) {
     let best = Infinity;
     let found = false;
@@ -219,7 +252,7 @@ export function min(arr: PineArray | null, nth: number = 0): number {
 
 export function max(arr: PineArray | null, nth: number = 0): number {
   if (arr === null) return NaN;
-  const idx = Math.trunc(nth);
+  const idx = nthRank(nth);
   if (idx === 0) {
     let best = -Infinity;
     let found = false;
@@ -294,105 +327,141 @@ export function stdev(arr: PineArray | null, biased: boolean = true): number {
   return Math.sqrt(variance(arr, biased));
 }
 
-// ── C82 검색: includes/indexof/lastindexof ──
-// pine2py array.py L134-154: includes는 `value in arr`, indexof는 `arr.index(value)`(미발견 시
-// -1), lastindexof는 역방향 순회 + `==`. 셋 다 순수 읽기(뮤테이션 없음) — null 배열은 get/size
-// (#19)와 동일한 "읽기는 na(NaN)" 원칙(includes도 bool 반환이지만 str.contains류(C76)처럼
-// numeric-na로 통일).
+// ── C82 search: includes/indexof/lastindexof ──
+// Pine's tolerant equality, the one `==` applies (numeric.ts pineEq): two floats at most 1e-10
+// apart are equal at every magnitude, the boundary included; strings, bools, colors and handles
+// compare exactly. An na never equals anything, itself included (NaN - x is NaN, which fails the
+// band), so a search for na finds nothing.
+const SEARCH_EPS = 1e-10;
+
+function looseEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (typeof a !== "number" || typeof b !== "number") return false;
+  const d = a - b;
+  return -SEARCH_EPS <= d && d <= SEARCH_EPS;
+}
+
+// array.includes/indexof/lastindexof compare TOLERANTLY (tier 1 array_007_tolerant_search, read on
+// TradingView: indexof(from(100, 101, 100, 102), 100 + 1e-12) is 0, lastindexof is 2 and includes
+// is true, while 100 + 1e-8 is outside the band, so lastindexof gives -1). array.binary_search and
+// the percentile reductions are bit-exact on the same arrays (see binary_search below). All three
+// are pure reads; a null array reads na like get/size (#19).
 //
-// **NaN 검색값의 divergence(#22, python/node 교차 실측)**: Python `in`/`.index()`는 "identity
-// 우선, 그 다음 `==`" 순서로 비교한다(CPython list.__contains__/list.index 공통 구현) — 새
-// `float('nan')`끼리는 `==`가 항상 False라 못 찾지만, **배열에서 그대로 읽어온 것과 동일한 객체
-// 참조**(예: `array.includes(arr, array.get(arr,0))`)를 검색값으로 넘기면 identity가 매치돼
-// 찾아진다(python으로 `nan in [nan_같은_객체]`→True, `float('nan') in [...]`→False 직접 확인).
-// JS 숫자는 프리미티브라 이런 "동일 객체 재사용" 개념 자체가 없다 — `Array.prototype.includes`는
-// SameValueZero라 NaN을 항상 찾고(모든 NaN이 무조건 매치), `indexOf`/`lastIndexOf`는 strict
-// equality라 NaN을 항상 못 찾는다(node 실측). Python의 identity 예외는 CPython 객체 모델의
-// 구현 디테일이지 PineScript가 의도한 na 시맨틱이 아니라고 판단(GOAL.md "pine2py의 알려진
-// 버그는 따르지 않는다"에 준하는 근거 — 이 저장소의 na 비교 관례(DIVERGENCES #4류: 일반 `==`은
-// na를 찾지 못한다)와도 일관됨) — includes를 strict equality 기반으로 구현해 NaN이 항상
-// "못 찾음"으로 수렴하도록 결정(indexOf/lastIndexOf는 이미 strict equality라 그대로 매핑,
-// includes만 SameValueZero를 우회하는 커스텀 구현 필요).
+// **NaN search value (divergence #22, node/python cross-checked)**: Python's `in`/`.index()` find
+// a NaN only by object identity, a CPython detail rather than a Pine rule; Resin's NaN is never
+// found, in line with the rest of the repository's na comparisons (DIVERGENCES #4: a plain `==`
+// does not find na).
 export function includes(arr: PineArray | null, value: number): boolean | number {
   if (arr === null) return NaN;
-  return arr.indexOf(value) !== -1;
+  for (let i = 0; i < arr.length; i++) if (looseEqual(arr[i], value)) return true;
+  return false;
 }
 
-// array.indexof(id, value) — 미발견 시 -1(NaN 아님, pine2py `except ValueError: return -1`
-// literal port). JS Array.indexOf가 이미 strict equality라 그대로 매핑.
+// array.indexof(id, value) — the first tolerant match, -1 when there is none (not NaN).
 export function indexof(arr: PineArray | null, value: number): number {
   if (arr === null) return NaN;
-  return arr.indexOf(value);
+  for (let i = 0; i < arr.length; i++) if (looseEqual(arr[i], value)) return i;
+  return -1;
 }
 
-// array.lastindexof(id, value) — 마지막 일치 인덱스, 미발견 시 -1. JS Array.lastIndexOf도
-// strict equality라 그대로 매핑.
+// array.lastindexof(id, value) — the last tolerant match, -1 when there is none.
 export function lastindexof(arr: PineArray | null, value: number): number {
   if (arr === null) return NaN;
-  return arr.lastIndexOf(value);
+  for (let i = arr.length - 1; i >= 0; i--) if (looseEqual(arr[i], value)) return i;
+  return -1;
 }
 
-// ── C83: covariance/percentile_nearest_rank/percentile_linear_interpolation/percentrank/
-// standardize (pine2py array.py L314-370) ──
-// null 배열은 sum/avg류(C81, DIVERGENCES #21)와 동일한 "읽기는 na" 원칙 재적용 — 단
-// standardize만 참조형(배열) 반환이라 na가 NaN이 아니라 null(GOAL.md na 3분할, get(C79)의
-// "읽기 na"를 참조형 반환에 적용한 첫 사례).
+// ── C83: percentile_nearest_rank/percentile_linear_interpolation/percentrank (covariance and
+// standardize follow) ──
+// A null array reads na (the sum/avg family, DIVERGENCES #21).
 //
-// **percentage 클램프의 NaN 함정(python 직접 실행으로 확정)**: pine2py는
-// `max(0.0, min(100.0, percentage))`로 클램프하는데, Python 내장 min(100.0, percentage)은
-// "첫 인자를 기본값으로 두고 두 번째가 그보다 작을 때만 교체"하는 구현이라 percentage가 NaN이면
-// `NaN < 100.0`이 False라 100.0이 그대로 살아남는다(교체가 안 일어남) — 즉 pine2py는
-// percentile_nearest_rank(arr, na)를 크래시도 NaN 전파도 아니라 **100%로 조용히 클램프**한다
-// (python 실측: percentile_nearest_rank([1..5], nan) == 5.0). 이건 인자 순서에 따라 결과가
-// 달라지는 rt.max/min(C13)의 "순서-의존" 버그와 달라서(percentage는 항상 같은 위치에 고정) 그
-// 버그 판정 기준에 해당하지 않는다고 판단 — TV 실제 시맨틱을 확인할 WebSearch 권한이 없는 이
-// 세션에서는 MEMORY.md Pitfalls의 폴백 원칙(확신 없으면 pine2py 문자 그대로 포트)을 적용해
-// literal port. 단 **Math.min/Math.max로 그대로 옮기면 안 된다** — JS Math.min/max는 NaN이
-// 섞이면 무조건 NaN을 반환해(Python min/max와 반대 방향 함정) clampPercentage가 100 대신 NaN을
-// 내놓는 조용한 오답이 된다. 대신 Python의 원시 비교 흐름(대입 후 `<`/`>` 조건부 교체)을 그대로
-// 재현하면 JS `NaN < 100`도 False이므로 자연히 100이 살아남는다(node 교차 실측으로 python과
-// 바이트 단위 일치 확인 완료 — scratch/probe_array_stats2.mjs).
+// The percentiles sort the array with its na elements KEPT: they go to the end, as if they were
+// the largest values, and the FULL length (na included) drives the rank, so a rank that lands in
+// the na tail is na. That is what TradingView does (tier 1 array_006_array_na_percentile, the
+// array [10, na, 20, 30, na, 40]); it is also the rule the rolling ta.percentile_* machines
+// (runtime/ta.ts percentileStep) already follow, where ta_372_rolling_na_rank_order pins it.
+// Dropping the na elements first, as this file did, shifts every rank.
+
+// Clamp a percentage to 0..100. TradingView halts on a percentage outside the range
+// (RE10002); here it clamps, the lenient reading the other out-of-range arguments get (#19).
 function clampPercentage(percentage: number): number {
-  let minResult = 100;
-  if (percentage < 100) minResult = percentage;
-  let maxResult = 0;
-  if (minResult > 0) maxResult = minResult;
-  return maxResult;
+  return percentage < 0 ? 0 : percentage > 100 ? 100 : percentage;
 }
 
-// array.percentile_nearest_rank(id, percentage) — 가장 가까운 순위 백분위(보간 없음).
+// The numeric elements ascending. The na ones are not materialised: they sit after the last one.
+function sortedNumbers(arr: PineArray): number[] {
+  return validNums(arr).sort((a, b) => a - b);
+}
+
+// array.percentile_nearest_rank(id, percentage) — the element at rank ceil(percentage * n / 100),
+// 1-based, clamped to 1..n, n being the full length. A rank on an na element is na, an empty array
+// is na, and an na percentage counts as 0 (tier 1 ta_247_percentile_na_percentage pins the same
+// rule for ta.percentile_nearest_rank: "rank_na" equals "rank_zero"). The product is formed as
+// percentage * n / 100 and not (percentage / 100) * n, which rounds 70 * 10 / 100 = 7 up to
+// 7.000000000000001 and with it to rank 8 (tier 1 array_002_array_functions: rank 7 of 0..10 at
+// the 70th percentile).
 export function percentile_nearest_rank(arr: PineArray | null, percentage: number): number {
   if (arr === null) return NaN;
-  const vals = validNums(arr).sort((a, b) => a - b);
-  if (vals.length === 0) return NaN;
-  const p = clampPercentage(percentage);
-  const idx = Math.max(0, Math.ceil((p / 100) * vals.length) - 1);
-  return vals[idx]!;
+  const n = arr.length;
+  if (n === 0) return NaN;
+  const vals = sortedNumbers(arr);
+  const p = Number.isNaN(percentage) ? 0 : clampPercentage(percentage);
+  const rank = Math.max(1, Math.min(Math.ceil((p * n) / 100), n));
+  return rank <= vals.length ? vals[rank - 1]! : NaN;
 }
 
-// array.percentile_linear_interpolation(id, percentage) — 선형 보간 백분위.
+// array.percentile_linear_interpolation(id, percentage) — the 1-based position
+// pos = n * percentage / 100 + 0.5 over the full length n (tier 1 array_006_array_na_percentile:
+// [0, 1.1, 2.2, 4.4, 5.5, 6.6, 7.7, 8.8, 9.9, 10.1] reads 0.55 at 10, 1.1 at 15, 8.8 at 75 and 10 at
+// 90), clamped to the ends, interpolating between the two ranks around it. With no na the answer is
+// the interpolation. Once the array holds ANY na, only the low clamp (pos <= 1) and a pos on an
+// exact integer rank give a value; every fractional position is na even when both neighbours are
+// numeric, and so is an exact rank, or the high clamp, that lands in the na tail (the same
+// array: 10 at 0, 20 at 25, na at 10, 50, 75 and 100). An na percentage is na; an empty array is na.
+// A pos within 1e-9 of an integer snaps to it, and the two neighbours are weighed as
+// lower * (1 - frac) + upper * frac (runtime/ta.ts percentileLinearInterpolation: lo + frac *
+// (hi - lo) rounds differently and is not the one TradingView follows).
 export function percentile_linear_interpolation(arr: PineArray | null, percentage: number): number {
   if (arr === null) return NaN;
-  const vals = validNums(arr).sort((a, b) => a - b);
-  if (vals.length === 0) return NaN;
-  if (vals.length === 1) return vals[0]!;
-  const p = clampPercentage(percentage);
-  const rank = (p / 100) * (vals.length - 1);
-  const lower = Math.floor(rank);
-  const upper = Math.min(lower + 1, vals.length - 1);
-  const frac = rank - lower;
-  return vals[lower]! + frac * (vals[upper]! - vals[lower]!);
+  const n = arr.length;
+  if (n === 0 || Number.isNaN(percentage)) return NaN;
+  const vals = sortedNumbers(arr);
+  const m = vals.length;
+  let pos = (n * clampPercentage(percentage)) / 100 + 0.5;
+  const nearest = Math.round(pos);
+  if (Math.abs(pos - nearest) < 1e-9) pos = nearest;
+  if (pos <= 1) return m > 0 ? vals[0]! : NaN;
+  if (pos >= n) return m === n ? vals[n - 1]! : NaN;
+  const lower = Math.floor(pos);
+  const frac = pos - lower;
+  if (frac === 0) return lower <= m ? vals[lower - 1]! : NaN;
+  if (m < n) return NaN;
+  return vals[lower - 1]! * (1 - frac) + vals[lower]! * frac;
 }
 
-// array.percentrank(id, value) — value 미만인 유효 원소의 비율(%). value가 NaN이면 모든 `<`
-// 비교가 False라(Python도 동일) 자연히 0.0 — 별도 가드 불필요(literal port).
-export function percentrank(arr: PineArray | null, value: number): number {
+// array.percentrank(id, index) — the percentile rank of the ELEMENT AT `index` (not of a value):
+// "the percentage of how many elements in the array are less than or equal to the value at the
+// index" (Pine reference). It is (count - 1) * 100 / (n - 1), count being the elements within
+// Pine's tolerance at or below that value, the value itself included (tier 1
+// array_002_array_functions: index 4 of [0, 1, 2, 4, 5, 6, 7, 8, 9, 10] is 44.444 = 4 / 9, and
+// array_003_array_functions_float: index 1 of [0, 1.1, ...] is 11.111 = 1 / 9). The na elements
+// are not counted at or below the target but they stay in n (array_006_array_na_percentile, the
+// array [10, na, 20, 30, na, 40]: index 0 is 0, index 2 is 20, index 5 is 60); an na element at
+// the index is na. An na index reads as index 0 (array_008_array_na_index: percentrank of
+// [10, 20, 30, 40] at na is 0, the value at index 0 ranks 0), a float index is truncated. An
+// array of fewer than two elements has no denominator and is na, so is an empty one. An index
+// outside the array halts on TradingView; here it reads na (#19).
+export function percentrank(arr: PineArray | null, index: number): number {
   if (arr === null) return NaN;
-  const vals = validNums(arr);
-  if (vals.length === 0) return NaN;
-  let countBelow = 0;
-  for (const v of vals) if (v < value) countBelow++;
-  return (countBelow / vals.length) * 100;
+  const n = arr.length;
+  if (n < 2) return NaN;
+  const i = Number.isNaN(index) ? 0 : Math.trunc(index);
+  if (!(i >= 0 && i < n)) return NaN;
+  const target = arr[i]!;
+  if (Number.isNaN(target)) return NaN;
+  let count = 0;
+  for (const v of arr) if (v <= target || v - target <= SEARCH_EPS) count++;
+  return ((count - 1) * 100) / (n - 1);
 }
 
 // array.standardize(id) — Z-score 정규화, **새 배열을 반환**(지금까지의 통계류 8종(C81)과 달리
@@ -429,8 +498,8 @@ export function standardize(arr: PineArray | null): PineArray | null {
 export function new_int(size: number = 0, initialValue: number = 0): number[] | null {
   if (Number.isNaN(size)) return null;
   const n = Math.trunc(size);
-  if (n <= 0) return [];
-  return new Array<number>(n).fill(initialValue);
+  if (n <= 0) return markIntArray([]);
+  return markIntArray(new Array<number>(n).fill(initialValue));
 }
 
 export function new_bool(size: number = 0, initialValue: boolean = false): boolean[] | null {
@@ -493,6 +562,13 @@ export function from<T>(...items: T[]): T[] {
   return items;
 }
 
+// array.from(...) whose arguments the analyzer proved int (literals, for counters): the same
+// array, marked as holding ints so that join and log print 10 where an array<float> prints 10.0
+// (array-kind.ts).
+export function from_int(...items: number[]): number[] {
+  return markIntArray(items);
+}
+
 // ── C85: sort/reverse/slice/concat/copy (pine2py array.py L159-195) ──
 // sort/reverse는 in-place 뮤테이터(MUTATING_ARRAY_BUILTINS 등재), slice/concat/copy는 새 배열을
 // 반환하는 constructor류(ARRAY_CONSTRUCTOR_METHODS 등재, standardize(C83)와 동일 원칙). 전부 null
@@ -539,20 +615,23 @@ export function reverse(arr: PineArray | null): void {
 // standardize(C83)와 동일하게 na(null) 전파로 결정.
 export function slice(arr: PineArray | null, indexFrom: number = 0, indexTo: number = -1): PineArray | null {
   if (arr === null) return null;
-  const from = Math.trunc(indexFrom);
-  let to = Math.trunc(indexTo);
-  if (Number.isNaN(from) || Number.isNaN(to)) return null;
+  // An na index_from starts at the beginning and an na index_to ends at the array size, instead
+  // of an na array (tier 1 array_008_array_na_index: slice([10, 20, 30, 40], na, 2) is 10,20,
+  // slice(a, 1, na) is 20,30,40 and slice(a, na, na) is the whole array).
+  const from = Number.isNaN(indexFrom) ? 0 : Math.trunc(indexFrom);
+  let to = Number.isNaN(indexTo) ? arr.length : Math.trunc(indexTo);
   if (to < 0) to = arr.length;
-  return arr.slice(from, to);
+  return inheritIntKind(arr, arr.slice(from, to));
 }
 
-// array.concat(id1, id2) — appends the elements of id2 to id1 IN PLACE and returns id1 (TradingView
-// manual: "appends elements of one array to another"; the TradingView log of array_002 shows `a`
-// grown by the call). A null (na) array on either side is na (null) and mutates nothing. id2 may be
-// id1 itself (the elements are duplicated once).
+// array.concat(id1, id2) — appends the elements of id2 to id1 IN PLACE and returns id1 itself, not
+// a new array: "The function merges the id2 array with the id1 array and returns the id1 array"
+// (Pine reference; tier 1 array_002_array_functions: after `c = array.concat(a, b)`, `c`, `a` and
+// the logged `a` are all the merged array while `b` is unchanged). concat(a, a) doubles a. Either
+// array null is na: the result is null and nothing is appended.
 export function concat(arr1: PineArray | null, arr2: PineArray | null): PineArray | null {
   if (arr1 === null || arr2 === null) return null;
-  const n = arr2.length;
+  const n = arr2.length; // read once: arr2 may be arr1
   for (let i = 0; i < n; i++) arr1.push(arr2[i]!);
   return arr1;
 }
@@ -561,7 +640,7 @@ export function concat(arr1: PineArray | null, arr2: PineArray | null): PineArra
 // null이면 Python `None[:]`가 크래시(미정의) — na(null) 전파.
 export function copy(arr: PineArray | null): PineArray | null {
   if (arr === null) return null;
-  return arr.slice();
+  return inheritIntKind(arr, arr.slice());
 }
 
 // ── C86: abs/every/some/range/binary_search·leftmost·rightmost/sort_indices
@@ -577,7 +656,7 @@ export function copy(arr: PineArray | null): PineArray | null {
 // 실측: abs(-0.0)==0.0(양의 0)도 Math.abs(-0)===+0으로 일치).
 export function abs(arr: PineArray | null): PineArray | null {
   if (arr === null) return null;
-  return arr.map(Math.abs);
+  return inheritIntKind(arr, arr.map(Math.abs));
 }
 
 // array.every(id) — 모든 원소가 truthy. pine2py는 Python `nan`이 truthy라 별도 isnan 분기로
@@ -607,11 +686,8 @@ export function range(arr: PineArray | null): number {
   return max(arr) - min(arr);
 }
 
-// pine2py `bisect.bisect_left`/`bisect.bisect_right`(array.py binary_search류) 이식 — 둘 다
-// `<` 비교만 쓰는 알고리즘이라 NaN 비교가 항상 false인 IEEE754 규칙이 Python/JS 양쪽에서
-// 동일하게 적용돼(비교 연산자 자체의 언어별 차이가 없음), 배열/검색값에 NaN이 섞여도 알고리즘을
-// 특수 분기 없이 그대로 literal port할 수 있다(python 교차 실측으로 확인 — value=NaN/배열에
-// NaN 포함 두 경우 다 바이트 단위 일치).
+// The insertion points of a value in an ascending array, by `<` alone: NaN compares false both
+// ways, so a NaN value or element needs no special branch.
 function bisectLeft(arr: PineArray, value: number): number {
   let lo = 0;
   let hi = arr.length;
@@ -634,34 +710,51 @@ function bisectRight(arr: PineArray, value: number): number {
   return lo;
 }
 
-// array.binary_search(id, value) — 정렬된 배열 전제, 발견 인덱스 또는 -1(pine2py
-// `bisect_left`+동치 확인, 미발견은 -1). NaN 검색값은 bisectLeft가 항상 lo=0으로 수렴한 뒤
-// arr[0]===value가 false라 자연히 -1(별도 가드 불필요).
+// The three binary searches compare EXACTLY, unlike indexof/includes (tier 1
+// array_007_tolerant_search: binary_search([100, 101, 102], 100 + 1e-12) is -1 where
+// indexof finds 100 + 1e-12 in a copy of the same values). The array is assumed ascending.
+//
+// array.binary_search(id, value) — the index of the value, -1 when absent. Among duplicates it
+// answers the one the classic halving lands on, not the first: [10, 20, 20, 20, 30, 40] at 20 is
+// slot 2 (the oracle's TradingView probe notes, tests/t01_lib/t06_array/test_014: 10 -> 0, 15 -> -1,
+// 20 -> 2, 30 -> 4, 40 -> 5, 45 -> -1; no export of the h2h corpus covers a duplicate).
 export function binary_search(arr: PineArray | null, value: number): number {
   if (arr === null) return NaN;
-  const idx = bisectLeft(arr, value);
-  return idx < arr.length && arr[idx] === value ? idx : -1;
+  let lo = 0;
+  let hi = arr.length - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const v = arr[mid]!;
+    if (v === value) return mid;
+    if (value < v) hi = mid - 1;
+    else lo = mid + 1;
+  }
+  return -1;
 }
 
-// array.binary_search_leftmost(id, value) — if the value is found, the index of its first occurrence;
-// otherwise the index of the closest element to the LEFT of where the value would be inserted (the
-// insertion point minus one, so -1 when the value is below every element). TradingView log
-// (array_002): leftmost([1,2,4,5,6], 3) == 1 (the old insertion point 2 was wrong).
+// array.binary_search_leftmost(id, value) — the FIRST index holding the value; for an absent value
+// "the index of the next smallest element to the left of where the value would lie" (Pine
+// reference), which is 0 for a value below the whole array, never -1. Tier 1
+// array_002_array_functions: on [1, 2, 4, 5, ...] the value 3 answers 1, the slot of 2 (it was the
+// insertion point, 2). The oracle's probe notes (test_014) add, on [10, 20, 20, 20, 30, 40]:
+// 5 -> 0, 10 -> 0, 15 -> 0, 20 -> 1, 25 -> 3, 45 -> 5.
 export function binary_search_leftmost(arr: PineArray | null, value: number): number {
   if (arr === null) return NaN;
   const idx = bisectLeft(arr, value);
-  return idx < arr.length && arr[idx] === value ? idx : idx - 1;
+  if (idx < arr.length && arr[idx] === value) return idx;
+  return idx > 0 ? idx - 1 : 0;
 }
 
-// array.binary_search_rightmost(id, value) — if the value is found, the index of its last occurrence;
-// otherwise the index of the closest element to the RIGHT of where the value would be inserted (the
-// insertion point itself, which equals the array size when the value is above every element).
-// TradingView log (array_002): rightmost([1,2,4,5,6], 3) == 2. The found-value branch follows the
-// manual ("index of the value"); no TradingView log covers duplicates.
+// array.binary_search_rightmost(id, value) — the LAST index holding the value; for an absent value
+// the index of the element to the right of where it would lie, the array size for a value above
+// the whole array. Tier 1 array_002_array_functions: on [1, 2, 4, 5, ...] the value 3 answers 2.
+// The oracle's probe notes (test_014), on [10, 20, 20, 20, 30, 40]: 5 -> 0, 10 -> 0, 15 -> 1,
+// 20 -> 3, 25 -> 4, 40 -> 5, 45 -> 6.
 export function binary_search_rightmost(arr: PineArray | null, value: number): number {
   if (arr === null) return NaN;
   const idx = bisectRight(arr, value);
-  return idx > 0 && arr[idx - 1] === value ? idx - 1 : idx;
+  if (idx > 0 && arr[idx - 1] === value) return idx - 1;
+  return idx;
 }
 
 // array.sort_indices(id, order=order.ascending) — the indices that sort the array (the array itself is
@@ -681,7 +774,7 @@ export function sort_indices(arr: PineArray | null, ascending: boolean = true): 
   }
   validPairs.sort((a, b) => a[1] - b[1]);
   if (!ascending) validPairs.reverse();
-  return validPairs.map((p) => p[0]).concat(nanIndices);
+  return markIntArray(validPairs.map((p) => p[0]).concat(nanIndices));
 }
 
 // array.covariance(id1, id2[, biased=true]) — covariance of the index-paired elements. The pairing
@@ -755,15 +848,18 @@ export function covariance(arr1: PineArray | null, arr2: PineArray | null, biase
 //   보강에 대비해 방어적으로 NaN과 동일하게 "nan"을 반환한다.
 type JoinElement = number | string | boolean | null;
 
-function joinElement(x: JoinElement): string {
+function joinElement(x: JoinElement, intKind: boolean): string {
   if (x === null) return "nan";
   if (typeof x === "string") return x;
   if (typeof x === "boolean") return x ? "True" : "False";
   if (Number.isNaN(x)) return "nan";
+  // An int array prints its elements without a fraction, an array<float> with one (array-kind.ts).
+  if (intKind && Number.isInteger(x)) return String(x);
   return pyFloatStr(x);
 }
 
 export function join(arr: JoinElement[] | null, separator: string | null = " "): string | null {
   if (arr === null || separator === null) return null;
-  return arr.map(joinElement).join(separator);
+  const intKind = isIntArray(arr);
+  return arr.map((x) => joinElement(x, intKind)).join(separator);
 }

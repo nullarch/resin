@@ -10,6 +10,7 @@
 
 import { runtimeError } from "./log";
 import { zoneOffsetMs } from "./datetime";
+import { isIntArray } from "./array-kind";
 
 // str.length — pine2py wavealgo.builtins.str_funcs.length는 `len(source) if source else 0`로
 // None(na)/빈 문자열을 동일하게 0으로 처리하는 명시적 가드를 갖고 있다(다른 str.* 함수와 달리
@@ -655,11 +656,13 @@ function formatValue(value: FormatArg): string {
   if (typeof value === "boolean") return value ? "true" : "false";
   if (typeof value === "number") return formatDecimal(value, DECIMAL_FORMAT_DEFAULT);
   if (Array.isArray(value)) {
+    // An array<int> prints "[1, 0]" and an array<float> "[1.0, 0.0]" (array-kind.ts).
+    const intKind = isIntArray(value);
     return "[" + value.map((x) => {
       if (x === null || x === undefined || (typeof x === "number" && Number.isNaN(x))) return "NaN";
       if (typeof x === "string") return x;
       if (typeof x === "boolean") return x ? "true" : "false";
-      if (typeof x === "number") return pyFloatStr(x);
+      if (typeof x === "number") return intKind && Number.isInteger(x) ? String(x) : pyFloatStr(x);
       return String(x);
     }).join(", ") + "]";
   }

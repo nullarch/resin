@@ -2855,6 +2855,10 @@ export interface AnalyzedProgram {
   // LIMITATIONS.md "str.tostring int/float 갭" 근본 수정) — codegen이 rt.tostring에 isInt=true를
   // 추가 인자로 실어 기본(format_str 없음) 포맷을 pyFloatStr 대신 정수 포맷으로 낸다.
   tostringIntArgCalls: Set<CallExpr>;
+  // array.from(...) call sites whose every argument isStaticIntExpr proves int: codegen emits
+  // rt.array.from_int, which marks the array as holding ints so array.join and log formatting print
+  // 10 where an array<float> prints 10.0 (runtime/array-kind.ts).
+  arrayFromIntCalls: Set<CallExpr>;
   // UDT 타입명 -> 필드 목록(선언 순서, 이번 슬라이스는 float/int/bool/string/color 스칼라만).
   udtTypes: Map<string, UdtTypeInfo>;
   // top-level TypeDecl 이름 전체(C130) — analyze()가 단일 패스 시작 전 미리 훑어 채우는 사전 스캔
@@ -4148,6 +4152,7 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
     idivBinOps: new Set(),
     concatBinOps: new Set(),
     tostringIntArgCalls: new Set(),
+    arrayFromIntCalls: new Set(),
     udtTypes: new Map(),
     udtVarTypes: new Map(),
     arrayElemUdtType: new Map(),

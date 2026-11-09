@@ -5256,6 +5256,9 @@ function genCallExpr(
     ) {
       args.push(...grid.map((k) => String(program.syminfoNumbers.get(k)!)));
     }
+    if (builtinName === "array.from" && program.arrayFromIntCalls.has(expr)) {
+      return `rt.array.from_int(${args.join(", ")})`;
+    }
     return `rt.${builtinName}(${args.join(", ")})`;
   }
   const userSlotBase = program.funcCallSlots.get(expr);

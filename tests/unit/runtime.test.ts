@@ -9122,12 +9122,15 @@ describe("array builtins (rt.array, C79)", () => {
     expect(parray.new_float(2.9, 1.0)).toEqual([1.0, 1.0]);
   });
 
-  it("get() returns the element in range and NaN out of range / for negative indices (pine2py guard literal port)", () => {
+  it("get() returns the element in range, counts a negative index from the end, and is NaN outside -size..size-1", () => {
+    // A negative index is a v6 feature, tier 1 array_001_array_basic (set(a, -2, v) writes slot 3 of 5).
     const a = [10.0, 20.0];
     expect(parray.get(a, 0)).toBe(10.0);
     expect(parray.get(a, 1)).toBe(20.0);
     expect(Number.isNaN(parray.get(a, 2))).toBe(true);
-    expect(Number.isNaN(parray.get(a, -1))).toBe(true);
+    expect(parray.get(a, -1)).toBe(20.0);
+    expect(parray.get(a, -2)).toBe(10.0);
+    expect(Number.isNaN(parray.get(a, -3))).toBe(true);
   });
 
   it("get() with a NaN index returns NaN without crashing (same path as pine2py's chained comparison being False)", () => {
@@ -9263,10 +9266,10 @@ describe("array builtins — residual slice (rt.array, C80)", () => {
     expect(a).toEqual([1.0, 9.0, 2.0, 3.0]);
   });
 
-  it("insert() with a NaN index is a silent no-op — pine2py's list.insert(nan,...) crashes (TypeError), JS Array.splice(NaN,...) would silently default to index 0 instead (DIVERGENCES #20)", () => {
+  it("insert() with a NaN index appends (tier 1 array_008_array_na_index: the na resolves to the array size, it is not clamped to 0 as Array.splice(NaN, ...) would)", () => {
     const a = [1.0, 2.0, 3.0];
     parray.insert(a, NaN, 9.0);
-    expect(a).toEqual([1.0, 2.0, 3.0]);
+    expect(a).toEqual([1.0, 2.0, 3.0, 9.0]);
   });
 
   it("insert() on a na (null) array is a silent no-op (pine2py crashes — DIVERGENCES #20)", () => {
@@ -9279,12 +9282,14 @@ describe("array builtins — residual slice (rt.array, C80)", () => {
     expect(a).toEqual([1.0, 3.0]);
   });
 
-  it("remove() returns NaN without mutating for an out-of-range or NaN index (pine2py's `0<=index<len(arr)` guard literal port)", () => {
+  it("remove() returns NaN without mutating for an outside or NaN index; a negative index in -size..-1 counts from the end", () => {
     const a = [1.0, 2.0];
     expect(Number.isNaN(parray.remove(a, 5))).toBe(true);
-    expect(Number.isNaN(parray.remove(a, -1))).toBe(true);
+    expect(Number.isNaN(parray.remove(a, -3))).toBe(true);
     expect(Number.isNaN(parray.remove(a, NaN))).toBe(true);
     expect(a).toEqual([1.0, 2.0]);
+    expect(parray.remove(a, -1)).toBe(2.0);
+    expect(a).toEqual([1.0]);
   });
 
   it("remove() on a na (null) array returns NaN (pine2py crashes — DIVERGENCES #20)", () => {
@@ -9325,12 +9330,13 @@ describe("array builtins — residual slice (rt.array, C80)", () => {
     expect(a).toEqual([9.0, 9.0, 9.0, 9.0, 9.0]);
   });
 
-  it("fill() with a NaN index_from or index_to is a silent no-op — pine2py's range(nan,...) crashes (TypeError, DIVERGENCES #20)", () => {
+  it("fill() with a NaN index_from starts at the first element and a NaN index_to ends at the array size (tier 1 array_008_array_na_index)", () => {
     const a = [1.0, 2.0, 3.0];
-    parray.fill(a, 9.0, NaN);
-    expect(a).toEqual([1.0, 2.0, 3.0]);
-    parray.fill(a, 9.0, 0, NaN);
-    expect(a).toEqual([1.0, 2.0, 3.0]);
+    parray.fill(a, 9.0, NaN, 1);
+    expect(a).toEqual([9.0, 2.0, 3.0]);
+    const b = [1.0, 2.0, 3.0];
+    parray.fill(b, 9.0, 1, NaN);
+    expect(b).toEqual([1.0, 9.0, 9.0]);
   });
 
   it("fill() on a na (null) array is a silent no-op (pine2py crashes — DIVERGENCES #20)", () => {
@@ -9597,18 +9603,15 @@ describe("array builtins — residual slice (rt.array, C80)", () => {
     expect(parray.percentile_nearest_rank(vals, 200.0)).toBe(5);
   });
 
-  it("percentile_nearest_rank()/percentile_linear_interpolation() clamp a NaN percentage to 100 (literal port of pine2py's `max(0, min(100, p))` quirk, NOT a divergence)", () => {
-    // Python's builtin min(100.0, percentage) keeps 100.0 when percentage is nan (`nan < 100.0`
-    // is False, so no replacement happens) — pine2py itself resolves this to 100%, not a crash
-    // and not na (python 실측: percentile_nearest_rank([1..5], nan) == 5.0). This is deterministic
-    // per fixed argument order (not the order-dependent rt.max/min bug, C13) and unverifiable
-    // against real TV without WebSearch in this session, so it's literal-ported as-is (MEMORY.md
-    // Pitfalls fallback). The JS implementation must NOT use Math.min/Math.max here — those
-    // propagate NaN (opposite direction from Python's) and would silently produce NaN instead of
-    // 100.
+  it("an na percentage counts as 0 for percentile_nearest_rank() and is na for percentile_linear_interpolation()", () => {
+    // pine2py clamped it to 100 (Python's min(100.0, nan) keeps 100.0). TradingView's measurement,
+    // which runtime/ta.ts already follows for ta.percentile_* (tier 1 ta_247_percentile_na_percentage:
+    // "rank_na" equals "rank_zero"), is the rank of 0 for the nearest-rank form and na for the
+    // interpolating one.
     const vals = [1.0, 2.0, 3.0, 4.0, 5.0];
-    expect(parray.percentile_nearest_rank(vals, NaN)).toBe(5);
-    expect(parray.percentile_linear_interpolation(vals, NaN)).toBe(5);
+    expect(parray.percentile_nearest_rank(vals, NaN)).toBe(1);
+    expect(parray.percentile_nearest_rank([4.0, 3.0, 2.0, 1.0], NaN)).toBe(1);
+    expect(Number.isNaN(parray.percentile_linear_interpolation(vals, NaN))).toBe(true);
   });
 
   it("percentile_nearest_rank() returns na on an empty/all-na array or a na (null) array", () => {
@@ -9617,10 +9620,12 @@ describe("array builtins — residual slice (rt.array, C80)", () => {
     expect(Number.isNaN(parray.percentile_nearest_rank(null, 50.0))).toBe(true);
   });
 
-  it("percentile_linear_interpolation() interpolates between the two bracketing ranks", () => {
+  it("percentile_linear_interpolation() interpolates between the two bracketing ranks at the 1-based position n * p / 100 + 0.5", () => {
+    // n = 5: p50 is position 3.0 (rank 3); p25 is position 1.75, three quarters of the way from
+    // rank 1 to rank 2, where pine2py's (p / 100) * (n - 1) read rank 2 exactly.
     const vals = [1.0, 2.0, 3.0, 4.0, 5.0];
     expect(parray.percentile_linear_interpolation(vals, 50.0)).toBe(3);
-    expect(parray.percentile_linear_interpolation(vals, 25.0)).toBe(2);
+    expect(parray.percentile_linear_interpolation(vals, 25.0)).toBe(1.75);
   });
 
   it("percentile_linear_interpolation() returns the single element for a 1-valid array without dividing by zero, and na for empty/null", () => {
@@ -9629,13 +9634,17 @@ describe("array builtins — residual slice (rt.array, C80)", () => {
     expect(Number.isNaN(parray.percentile_linear_interpolation(null, 50.0))).toBe(true);
   });
 
-  it("percentrank() reports the percentage of valid elements strictly below value (ties do not count)", () => {
-    expect(parray.percentrank([1.0, 2.0, 2.0, 3.0], 2.0)).toBe(25);
-    expect(parray.percentrank([1.0, 2.0, 3.0, 4.0, 5.0], 3.0)).toBe(40);
+  it("percentrank() ranks the element AT the index: (count at or below it - 1) * 100 / (n - 1), ties counted", () => {
+    // pine2py read the second argument as a value and counted the elements strictly below it.
+    // [1, 2, 2, 3] at index 1 (value 2): three elements are <= 2, so (3 - 1) * 100 / 3.
+    expect(parray.percentrank([1.0, 2.0, 2.0, 3.0], 1)).toBeCloseTo(66.66666666666667, 12);
+    expect(parray.percentrank([1.0, 2.0, 3.0, 4.0, 5.0], 2)).toBe(50);
+    expect(parray.percentrank([1.0, 2.0, 3.0, 4.0, 5.0], 4)).toBe(100);
   });
 
-  it("percentrank() with a NaN value naturally reports 0 (every '<' comparison is false, no special-case needed — literal port)", () => {
+  it("percentrank() with a NaN index reads index 0 (tier 1 array_008_array_na_index)", () => {
     expect(parray.percentrank([1.0, 2.0, 3.0, 4.0, 5.0], NaN)).toBe(0);
+    expect(parray.percentrank([5.0, 4.0, 3.0, 2.0, 1.0], NaN)).toBe(100);
   });
 
   it("percentrank() returns na on an empty array or a na (null) array", () => {
@@ -9888,16 +9897,17 @@ describe("array builtins — sort/reverse/slice/concat/copy (rt.array, C85)", ()
     expect(parray.slice(null)).toBeNull();
   });
 
-  it("slice(arr, NaN index_from/index_to) returns na(null) — pine2py crashes on NaN slice indices (undefined), JS would otherwise silently coerce NaN to 0", () => {
-    expect(parray.slice([1, 2, 3], NaN)).toBeNull();
-    expect(parray.slice([1, 2, 3], 0, NaN)).toBeNull();
+  it("slice(arr, NaN index_from/index_to) starts at the beginning / ends at the array size (tier 1 array_008_array_na_index)", () => {
+    expect(parray.slice([1, 2, 3], NaN, 2)).toEqual([1, 2]);
+    expect(parray.slice([1, 2, 3], 1, NaN)).toEqual([2, 3]);
+    expect(parray.slice([1, 2, 3], NaN, NaN)).toEqual([1, 2, 3]);
   });
 
-  it("concat(arr1, arr2) appends arr2 to arr1 IN PLACE and returns arr1 itself; arr2 is untouched (TradingView log, h2h array_002)", () => {
+  it("concat(arr1, arr2) appends arr2 to arr1 IN PLACE and returns arr1 itself (tier 1 array_002_array_functions); arr2 is untouched", () => {
     const a = [1, 2];
     const b = [3, 4];
-    const r = parray.concat(a, b);
-    expect(r).toBe(a);
+    const c = parray.concat(a, b);
+    expect(c).toBe(a);
     expect(a).toEqual([1, 2, 3, 4]);
     expect(b).toEqual([3, 4]);
   });
@@ -10144,19 +10154,23 @@ describe("array builtins — abs/every/some/range/binary_search·leftmost·right
     expect(parray.binary_search(null, 5)).toBeNaN();
   });
 
-  it("binary_search_leftmost/rightmost return the first/last index of a run of duplicate values (manual: 'the index of the value')", () => {
+  it("binary_search_leftmost/rightmost answer the first/last index of a run of duplicates, binary_search the one the halving lands on", () => {
+    // pine2py answered bisect_left / bisect_right (1 and 4, the slot after the run) and bisect_left + ==
+    // for binary_search (1). The oracle's TradingView probe notes (test_014_binary_search_bounds) read
+    // [10, 20, 20, 20, 30, 40] at 20 as search 2, leftmost 1, rightmost 3.
     const arr = [1, 3, 3, 3, 7];
     expect(parray.binary_search_leftmost(arr, 3)).toBe(1);
     expect(parray.binary_search_rightmost(arr, 3)).toBe(3);
-    expect(parray.binary_search(arr, 3)).toBe(1);
+    expect(parray.binary_search(arr, 3)).toBe(2);
   });
 
   it("binary_search_leftmost/rightmost of an absent value: the closest element to the left / right of the insertion point (TradingView log, h2h array_002)", () => {
     const arr = [1, 2, 4, 5, 6];
     expect(parray.binary_search_leftmost(arr, 3)).toBe(1);
     expect(parray.binary_search_rightmost(arr, 3)).toBe(2);
-    // outside the array: no element on the requested side
-    expect(parray.binary_search_leftmost(arr, 0)).toBe(-1);
+    // outside the array: leftmost clamps to slot 0 (TradingView probe notes, test_014_binary_search_bounds:
+    // 5 -> 0, never -1), rightmost points one past the end for a value above the whole array
+    expect(parray.binary_search_leftmost(arr, 0)).toBe(0);
     expect(parray.binary_search_rightmost(arr, 7)).toBe(5);
     expect(parray.binary_search_leftmost(arr, 7)).toBe(4);
     expect(parray.binary_search_rightmost(arr, 0)).toBe(0);

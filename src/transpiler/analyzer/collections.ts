@@ -501,6 +501,13 @@ export function analyzeArrayCall(
       prog.builtinBooleanConstants.set(orderArg, ORDER_CONSTANTS.get(orderArg.value)!);
     }
   }
+  // array.from(1, 2, 3) is an array<int>: when every argument is a proven int the array is marked
+  // (codegen emits rt.array.from_int), so it prints 1, 2, 3 and not 1.0, 2.0, 3.0. An argument the
+  // analyzer cannot prove int (anything but literals, for counters and top-level int vars) leaves
+  // the array an unmarked one, which prints as float.
+  if (method === "from" && receiverOffset === 0 && expr.args.length > 0 && expr.args.every((a) => isStaticIntExpr(a, prog, scope))) {
+    prog.arrayFromIntCalls.add(expr);
+  }
   prog.builtinCalls.set(expr, `array.${method}`);
 }
 
