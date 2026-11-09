@@ -2536,7 +2536,7 @@ describe("CodeGen", () => {
     expect(bars[0]!["var:__obs_reversed0"]).toBe(1);
   });
 
-  it("transpile() end-to-end: slice/concat/copy observe the expected new-array contents and leave the source array untouched", () => {
+  it("transpile() end-to-end: slice/concat/copy observe the expected array contents (concat appends in place; slice/copy leave the source untouched)", () => {
     const source = [
       "var a = array.new_float(0)",
       "array.push(a, 1.0)",
@@ -2571,12 +2571,13 @@ describe("CodeGen", () => {
     // slice(a,1) on [1,2,3] -> [2,3].
     expect(bars[0]!["var:__obs_slice0"]).toBe(2);
     expect(bars[0]!["var:__obs_slice_size"]).toBe(2);
-    // concat([1,2,3],[9]) -> size 4, last element 9.
+    // concat([1,2,3],[9]) appends to a in place and returns it -> size 4, last element 9.
     expect(bars[0]!["var:__obs_concat_size"]).toBe(4);
     expect(bars[0]!["var:__obs_concat_last"]).toBe(9);
-    // copy(a) then push 99 -> copy grows to 4, original a stays at 3 (independent reference).
-    expect(bars[0]!["var:__obs_copy_size"]).toBe(4);
-    expect(bars[0]!["var:__obs_src_size"]).toBe(3);
+    // copy(a) (a is now [1,2,3,9]) then push 99 -> copy grows to 5, original a stays at 4
+    // (independent reference).
+    expect(bars[0]!["var:__obs_copy_size"]).toBe(5);
+    expect(bars[0]!["var:__obs_src_size"]).toBe(4);
   });
 
   // ── na(null) 컨테이너 self 인자 codegen 수정(C217, C216 부수 발견 버그) — array/map/matrix.*
@@ -3271,13 +3272,15 @@ describe("CodeGen", () => {
       "__obs_fill_untouched := matrix.get(m, 0, 2)",
       "var float __obs_copy_independent = na",
       "__obs_copy_independent := matrix.get(mcopy, 0, 0)",
-      // reverse: row order flips.
+      // reverse: rows AND columns flip (180 degree rotation, TradingView).
       "matrix.reverse(m)",
       "var float __obs_reverse_top = na",
       "__obs_reverse_top := matrix.get(m, 0, 0)",
-      // concat rows: 2x3 + 1x3 -> 3x3.
+      // concat rows: 2x3 + 1x3 -> 3x3, appended IN PLACE to its first argument (here a copy, so m
+      // itself stays 2x3 for the reshape below) and returned.
       "mrow = matrix.new<float>(1, 3, 7.0)",
-      "mcat = matrix.concat(m, mrow)",
+      "mbase = matrix.copy(m)",
+      "mcat = matrix.concat(mbase, mrow)",
       "var float __obs_concat_rows = na",
       "__obs_concat_rows := matrix.rows(mcat)",
       "var float __obs_concat_last = na",
@@ -3288,12 +3291,16 @@ describe("CodeGen", () => {
       "__obs_submatrix_rows := matrix.rows(msub)",
       "var float __obs_submatrix_cols = na",
       "__obs_submatrix_cols := matrix.columns(msub)",
-      // reshape: 2x3 -> 3x2 (row-major flatten then re-slice).
-      "mreshape = matrix.reshape(m, 3, 2)",
+      // reshape: 2x3 -> 3x2 IN PLACE (row-major flatten then re-slice; TradingView returns void).
+      "matrix.reshape(m, 3, 2)",
       "var float __obs_reshape_00 = na",
-      "__obs_reshape_00 := matrix.get(mreshape, 0, 0)",
-      "var float __obs_reshape_12 = na",
-      "__obs_reshape_12 := matrix.get(mreshape, 1, 1)",
+      "__obs_reshape_00 := matrix.get(m, 0, 0)",
+      "var float __obs_reshape_11 = na",
+      "__obs_reshape_11 := matrix.get(m, 1, 1)",
+      "var float __obs_reshape_rows = na",
+      "__obs_reshape_rows := matrix.rows(m)",
+      "var float __obs_mbase_rows = na",
+      "__obs_mbase_rows := matrix.rows(mbase)",
       // sort: ascending by column 0.
       "matrix.sort(m, 0, order.ascending)",
       "var float __obs_sort_top = na",
@@ -3315,21 +3322,24 @@ describe("CodeGen", () => {
     expect(bars[0]!["var:__obs_fill_untouched"]).toBe(2);
     // copy taken before fill mutated m -> still holds the original (0,0)=3.
     expect(bars[0]!["var:__obs_copy_independent"]).toBe(3);
-    // after fill: [[9,9,2],[6,4,5]] -> reverse -> [[6,4,5],[9,9,2]] -> top(0,0)=6.
-    expect(bars[0]!["var:__obs_reverse_top"]).toBe(6);
-    // concat rows: [[6,4,5],[9,9,2]] + [[7,7,7]] -> 3 rows, last row first col = 7.
+    // after fill: [[9,9,2],[6,4,5]] -> reverse rows+columns -> [[5,4,6],[2,9,9]] -> top(0,0)=5.
+    expect(bars[0]!["var:__obs_reverse_top"]).toBe(5);
+    // concat rows: [[5,4,6],[2,9,9]] + [[7,7,7]] -> 3 rows, last row first col = 7; the first argument
+    // (the copy) grew in place and is the returned matrix.
     expect(bars[0]!["var:__obs_concat_rows"]).toBe(3);
+    expect(bars[0]!["var:__obs_mbase_rows"]).toBe(3);
     expect(bars[0]!["var:__obs_concat_last"]).toBe(7);
     // submatrix(mcat, 0, 1, 0, 2) -> 1x2 block.
     expect(bars[0]!["var:__obs_submatrix_rows"]).toBe(1);
     expect(bars[0]!["var:__obs_submatrix_cols"]).toBe(2);
-    // reshape [[6,4,5],[9,9,2]] (flat [6,4,5,9,9,2]) into 3x2 -> [[6,4],[5,9],[9,2]].
-    expect(bars[0]!["var:__obs_reshape_00"]).toBe(6);
-    expect(bars[0]!["var:__obs_reshape_12"]).toBe(9);
-    // sort m=[[6,4,5],[9,9,2]] ascending by column 0 -> [[6,4,5],[9,9,2]] already ascending, top stays 6.
-    expect(bars[0]!["var:__obs_sort_top"]).toBe(6);
-    // diff of sorted m: row1-row0 = [9-6,9-4,2-5] = [3,5,-3].
-    expect(bars[0]!["var:__obs_diff_00"]).toBe(3);
+    // reshape m [[5,4,6],[2,9,9]] (flat [5,4,6,2,9,9]) into 3x2 in place -> [[5,4],[6,2],[9,9]].
+    expect(bars[0]!["var:__obs_reshape_00"]).toBe(5);
+    expect(bars[0]!["var:__obs_reshape_11"]).toBe(2);
+    expect(bars[0]!["var:__obs_reshape_rows"]).toBe(3);
+    // sort m ascending by column 0 -> already ascending, top stays 5.
+    expect(bars[0]!["var:__obs_sort_top"]).toBe(5);
+    // 1-argument diff (adjacent rows, pre-existing extension): row1-row0 = [6-5,2-4] -> (0,0) = 1.
+    expect(bars[0]!["var:__obs_diff_00"]).toBe(1);
   });
 
   // ── matrix.is_square/is_symmetric/is_antisymmetric/is_diagonal/is_antidiagonal/is_identity/

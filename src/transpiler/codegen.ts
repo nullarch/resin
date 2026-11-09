@@ -1700,6 +1700,8 @@ const MUTATING_ARRAY_BUILTINS = new Set([
   "array.fill",
   "array.sort",
   "array.reverse",
+  // array.concat appends to its first argument in place (and returns it), so it is observable.
+  "array.concat",
   "map.put",
   "map.remove",
   "map.clear",
@@ -1721,6 +1723,9 @@ const MUTATING_ARRAY_BUILTINS = new Set([
   "matrix.fill",
   "matrix.reverse",
   "matrix.sort",
+  // matrix.reshape and matrix.concat rebuild / append to their first argument in place.
+  "matrix.reshape",
+  "matrix.concat",
 ]);
 
 function isMutatingArrayCall(expr: CallExpr, program: AnalyzedProgram): boolean {

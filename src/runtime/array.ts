@@ -159,14 +159,20 @@ function validNums(arr: PineArray): number[] {
   return arr.filter((v) => v === v);
 }
 
-// array.sum(id) — 유효 원소 합계. pine2py `builtins.sum(_valid_nums(arr))`는 빈 리스트에서도
-// 0.0을 주는 정의된 동작이라 유효값 0개(전부 na 또는 빈 배열)도 na가 아니라 0(avg/min/max와
-// 다른 지점 — literal port).
+// array.sum(id) — sum of the non-na elements. TradingView log (array_005): an array whose elements
+// are all na sums to na, not 0. An EMPTY array still sums to 0 (Python `sum([])`; no TradingView
+// evidence either way, kept as before). A null (na) array is na.
 export function sum(arr: PineArray | null): number {
   if (arr === null) return NaN;
   let total = 0;
-  for (const v of arr) if (v === v) total += v;
-  return total;
+  let valid = 0;
+  for (const v of arr) {
+    if (v === v) {
+      total += v;
+      valid++;
+    }
+  }
+  return valid === 0 && arr.length > 0 ? NaN : total;
 }
 
 // array.avg(id) — 유효 원소 평균. 유효값 0개면 na(math.avg C74와 동일한 na-skip 원칙).
@@ -262,27 +268,30 @@ export function mode(arr: PineArray | null): number {
   return bestVal;
 }
 
-// array.variance(id) — 모집단 분산. 두 패스 직접 계산(Σ(v-mean)²/n) — 배열 통계는 바 루프
-// incremental 상태가 아니라 호출마다 스냅샷 전체를 새로 훑는 stateless 연산이라, ta.variance
-// (C36)처럼 O(1) 유지를 위해 E[X²]-(E[X])² 항등식을 쓸 이유가 없다. 각 항이 제곱이라 음수
-// 캔슬레이션 자체가 불가능해(C36 클램프 불필요) 오히려 더 정확하다. 유효값 2개 미만이면 na.
-export function variance(arr: PineArray | null): number {
+// array.variance(id[, biased=true]) — two-pass Σ(v-mean)²/divisor over the non-na elements (each
+// term is a square, so no catastrophic cancellation and no clamp is needed, unlike the O(1)
+// incremental ta.variance). TradingView semantics: biased=true (the default) is the population
+// variance, divisor n; biased=false is the sample variance, divisor n-1. A single valid element
+// has variance 0 when biased (TradingView log, array_005) and na when unbiased (0/0); no valid
+// element (empty or all-na array) is na. A null (na) array is na.
+export function variance(arr: PineArray | null, biased: boolean = true): number {
   if (arr === null) return NaN;
   const vals = validNums(arr);
-  if (vals.length < 2) return NaN;
+  const n = vals.length;
+  if (n === 0) return NaN;
+  if (n === 1) return biased ? 0 : NaN;
   let total = 0;
   for (const v of vals) total += v;
-  const mean = total / vals.length;
+  const mean = total / n;
   let sq = 0;
   for (const v of vals) sq += (v - mean) * (v - mean);
-  return sq / vals.length;
+  return sq / (biased ? n : n - 1);
 }
 
-// array.stdev(id) — 모집단 표준편차 = sqrt(variance). variance가 이미 null/na-count 가드를
-// 전부 처리해 NaN을 반환하므로 그 위에 sqrt만 씌우면 그대로 na 전파(C36 stdev-calls-variance와
-// 동일한 "반환식만 다른 alias 불가 케이스"의 내부 함수 재사용 원칙).
-export function stdev(arr: PineArray | null): number {
-  return Math.sqrt(variance(arr));
+// array.stdev(id[, biased=true]) — sqrt(variance(id, biased)); variance already handles the null /
+// all-na / single-element cases, so na and the single-element 0 propagate through the sqrt.
+export function stdev(arr: PineArray | null, biased: boolean = true): number {
+  return Math.sqrt(variance(arr, biased));
 }
 
 // ── C82 검색: includes/indexof/lastindexof ──
@@ -537,11 +546,15 @@ export function slice(arr: PineArray | null, indexFrom: number = 0, indexTo: num
   return arr.slice(from, to);
 }
 
-// array.concat(id1, id2) — 두 배열을 이어붙인 새 배열(pine2py `arr1+arr2`). 둘 중 하나라도
-// null이면 Python `None+list`가 크래시(미정의) — slice와 동일하게 na(null) 전파.
+// array.concat(id1, id2) — appends the elements of id2 to id1 IN PLACE and returns id1 (TradingView
+// manual: "appends elements of one array to another"; the TradingView log of array_002 shows `a`
+// grown by the call). A null (na) array on either side is na (null) and mutates nothing. id2 may be
+// id1 itself (the elements are duplicated once).
 export function concat(arr1: PineArray | null, arr2: PineArray | null): PineArray | null {
   if (arr1 === null || arr2 === null) return null;
-  return arr1.concat(arr2);
+  const n = arr2.length;
+  for (let i = 0; i < n; i++) arr1.push(arr2[i]!);
+  return arr1;
 }
 
 // array.copy(id) — 얕은 복사(새 배열, 원본과 독립 — python 실측으로 뮤테이션 비전파 확인).
@@ -630,26 +643,33 @@ export function binary_search(arr: PineArray | null, value: number): number {
   return idx < arr.length && arr[idx] === value ? idx : -1;
 }
 
-// array.binary_search_leftmost(id, value) — 삽입 위치(왼쪽, 동률의 첫 인덱스).
+// array.binary_search_leftmost(id, value) — if the value is found, the index of its first occurrence;
+// otherwise the index of the closest element to the LEFT of where the value would be inserted (the
+// insertion point minus one, so -1 when the value is below every element). TradingView log
+// (array_002): leftmost([1,2,4,5,6], 3) == 1 (the old insertion point 2 was wrong).
 export function binary_search_leftmost(arr: PineArray | null, value: number): number {
   if (arr === null) return NaN;
-  return bisectLeft(arr, value);
+  const idx = bisectLeft(arr, value);
+  return idx < arr.length && arr[idx] === value ? idx : idx - 1;
 }
 
-// array.binary_search_rightmost(id, value) — 삽입 위치(오른쪽, 동률 다음 인덱스).
+// array.binary_search_rightmost(id, value) — if the value is found, the index of its last occurrence;
+// otherwise the index of the closest element to the RIGHT of where the value would be inserted (the
+// insertion point itself, which equals the array size when the value is above every element).
+// TradingView log (array_002): rightmost([1,2,4,5,6], 3) == 2. The found-value branch follows the
+// manual ("index of the value"); no TradingView log covers duplicates.
 export function binary_search_rightmost(arr: PineArray | null, value: number): number {
   if (arr === null) return NaN;
-  return bisectRight(arr, value);
+  const idx = bisectRight(arr, value);
+  return idx > 0 && arr[idx - 1] === value ? idx - 1 : idx;
 }
 
-// array.sort_indices(id, order=order.ascending) — 정렬된 인덱스 배열 반환(원본 비변형, 새 배열
-// 반환이라 ARRAY_CONSTRUCTOR_METHODS 등재). order 인자는 sort(C85)의 builtinBooleanConstants를
-// 재사용해 boolean 시그니처로 단순화(sort와 동일 이유). pine2py는 유효 원소만 정렬한 인덱스 뒤에
-// NaN 원소 인덱스를 원본 순서 그대로 이어붙인다. 동률 tie-break는 Python `list.sort(reverse=True)`
-// 가 "전체를 뒤집는 게 아니라 동률 원소의 상대 순서를 원본 그대로 유지"하는 stable 성질을
-// 가지는데, JS Array.prototype.sort(ES2019+ stable)도 comparator 안에 방향을 인코딩하면
-// (`ascending ? a-b : b-a`) 동률(comparator 0)에서 원본 상대 순서를 그대로 보존해 별도 보정 없이
-// 동치(python 교차 실측: 오름/내림 둘 다 동률 인덱스 순서 일치 확인).
+// array.sort_indices(id, order=order.ascending) — the indices that sort the array (the array itself is
+// untouched; returns a new array). The na elements' indices are appended at the end in their original
+// order. Tie-break: the ascending order is stable (equal values keep their original index order) and
+// the DESCENDING order is the exact reverse of the ascending one, so equal values come out in
+// REVERSED index order. TradingView log (array_002/003): for c = [10,9,8,7,6,5,0,0,1] ascending is
+// [6,7,8,5,...] and descending ends [...,8,7,6] (a stable descending sort would end 8,6,7).
 export function sort_indices(arr: PineArray | null, ascending: boolean = true): number[] | null {
   if (arr === null) return null;
   const validPairs: Array<[number, number]> = [];
@@ -659,14 +679,17 @@ export function sort_indices(arr: PineArray | null, ascending: boolean = true): 
     if (v === v) validPairs.push([i, v]);
     else nanIndices.push(i);
   }
-  validPairs.sort((a, b) => (ascending ? a[1] - b[1] : b[1] - a[1]));
+  validPairs.sort((a, b) => a[1] - b[1]);
+  if (!ascending) validPairs.reverse();
   return validPairs.map((p) => p[0]).concat(nanIndices);
 }
 
-// array.covariance(id1, id2) — 두 배열의 공분산(같은 인덱스끼리 짝, 둘 다 유효한 짝만). n=두 배열
-// 길이 중 작은 쪽(pine2py `min(len(arr1),len(arr2))`) — 짧은 쪽 밖의 원소는 애초에 순회 대상이
-// 아니므로 na 취급이 필요 없다. 유효한 짝이 2개 미만이면 na.
-export function covariance(arr1: PineArray | null, arr2: PineArray | null): number {
+// array.covariance(id1, id2[, biased=true]) — covariance of the index-paired elements. The pairing
+// runs over min(len(id1), len(id2)) indices and a pair is used only when both members are valid
+// (na dropped pairwise, TradingView log array_005). biased=true (the default) divides by the pair
+// count n, biased=false by n-1. A single valid pair gives 0 when biased and na when unbiased; no
+// valid pair, or a null (na) array, is na.
+export function covariance(arr1: PineArray | null, arr2: PineArray | null, biased: boolean = true): number {
   if (arr1 === null || arr2 === null) return NaN;
   const n = Math.min(arr1.length, arr2.length);
   const pairsA: number[] = [];
@@ -679,18 +702,20 @@ export function covariance(arr1: PineArray | null, arr2: PineArray | null): numb
       pairsB.push(b);
     }
   }
-  if (pairsA.length < 2) return NaN;
+  const count = pairsA.length;
+  if (count === 0) return NaN;
+  if (count === 1) return biased ? 0 : NaN;
   let sumA = 0;
   let sumB = 0;
-  for (let i = 0; i < pairsA.length; i++) {
+  for (let i = 0; i < count; i++) {
     sumA += pairsA[i]!;
     sumB += pairsB[i]!;
   }
-  const meanA = sumA / pairsA.length;
-  const meanB = sumB / pairsB.length;
+  const meanA = sumA / count;
+  const meanB = sumB / count;
   let total = 0;
-  for (let i = 0; i < pairsA.length; i++) total += (pairsA[i]! - meanA) * (pairsB[i]! - meanB);
-  return total / pairsA.length;
+  for (let i = 0; i < count; i++) total += (pairsA[i]! - meanA) * (pairsB[i]! - meanB);
+  return total / (biased ? count : count - 1);
 }
 
 // array.join(id, separator=" ") — pine2py `separator.join(str(x) for x in arr)`. 원소가 number/

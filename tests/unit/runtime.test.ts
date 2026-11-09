@@ -9345,9 +9345,9 @@ describe("array builtins — residual slice (rt.array, C80)", () => {
     expect(parray.sum([1.0, NaN, 2.0, 3.0])).toBe(6.0);
   });
 
-  it("sum() of an empty or all-na array is 0, not na (Python sum([])==0 — distinct from avg/min/max/median/stdev)", () => {
+  it("sum() of an all-na array is na (TradingView log, h2h array_005: z_sum NaN); an EMPTY array still sums to 0", () => {
+    expect(Number.isNaN(parray.sum([NaN, NaN]))).toBe(true);
     expect(parray.sum([])).toBe(0);
-    expect(parray.sum([NaN, NaN])).toBe(0);
   });
 
   it("sum() on a na (null) array returns na (NaN) — 'read' branch of the #19 principle", () => {
@@ -9469,10 +9469,35 @@ describe("array builtins — residual slice (rt.array, C80)", () => {
     expect(parray.variance([1.0, NaN, 3.0, 5.0])).toBeCloseTo(8 / 3, 9);
   });
 
-  it("variance()/stdev() with fewer than 2 valid elements is na (population stat needs >=2 points)", () => {
-    expect(Number.isNaN(parray.variance([5.0]))).toBe(true);
-    expect(Number.isNaN(parray.stdev([5.0]))).toBe(true);
+  it("variance()/stdev() of a single valid element are 0 when biased (default) and na when unbiased; no valid element is na", () => {
+    // TradingView log (h2h array_005): s_stdev 0 and s_variance 0 for array.from(na, 6.0, na).
+    expect(parray.variance([5.0])).toBe(0);
+    expect(parray.stdev([5.0])).toBe(0);
+    expect(parray.variance([NaN, 6.0, NaN])).toBe(0);
+    expect(Number.isNaN(parray.variance([5.0], false))).toBe(true);
+    expect(Number.isNaN(parray.stdev([5.0], false))).toBe(true);
     expect(Number.isNaN(parray.variance([]))).toBe(true);
+    expect(Number.isNaN(parray.variance([NaN, NaN]))).toBe(true);
+    expect(Number.isNaN(parray.stdev([], false))).toBe(true);
+  });
+
+  it("variance()/stdev() biased=true divides by n, biased=false by n-1 (TradingView logs, h2h array_002/003/005)", () => {
+    // array_005: real values [1, 3, 5] among na.
+    const a = [1.0, NaN, 3.0, NaN, 5.0];
+    expect(parray.variance(a)).toBeCloseTo(2.666666666667, 11);
+    expect(parray.variance(a, true)).toBeCloseTo(2.666666666667, 11);
+    expect(parray.variance(a, false)).toBeCloseTo(4, 12);
+    expect(parray.stdev(a)).toBeCloseTo(1.632993161855, 11);
+    expect(parray.stdev(a, false)).toBeCloseTo(2, 12);
+    // array_002: variance of [0,1,2,6,7,8,9,10,11] and stdev of [1,2,6,7,8,9,10,11].
+    expect(parray.variance([0, 1, 2, 6, 7, 8, 9, 10, 11])).toBeCloseTo(14.6666666666667, 12);
+    expect(parray.variance([0, 1, 2, 6, 7, 8, 9, 10, 11], false)).toBeCloseTo(16.5, 12);
+    expect(parray.stdev([1, 2, 6, 7, 8, 9, 10, 11])).toBeCloseTo(3.3819373146172, 12);
+    expect(parray.stdev([1, 2, 6, 7, 8, 9, 10, 11], false)).toBeCloseTo(3.6154430670982, 12);
+    // array_003 (floats).
+    const f = [0, 1.1, 2.2, 6.6, 7.7, 8.8, 9.9, 10.1, 11.2];
+    expect(parray.variance(f)).toBeCloseTo(15.9066666666667, 12);
+    expect(parray.variance(f, false)).toBeCloseTo(17.895, 12);
   });
 
   it("variance()/stdev() on a na (null) array return na", () => {
@@ -9538,10 +9563,25 @@ describe("array builtins — residual slice (rt.array, C80)", () => {
     expect(parray.covariance([1.0, 2.0, 3.0, 4.0, 5.0], [2.0, 4.0, 5.0])).toBeCloseTo(1.0, 9);
   });
 
-  it("covariance() returns na with fewer than 2 valid pairs, or on a na (null) array", () => {
-    expect(Number.isNaN(parray.covariance([1.0], [2.0]))).toBe(true);
+  it("covariance() of a single valid pair is 0 when biased (default) and na when unbiased; no valid pair or a na (null) array is na", () => {
+    expect(parray.covariance([1.0], [2.0])).toBe(0);
+    expect(Number.isNaN(parray.covariance([1.0], [2.0], false))).toBe(true);
+    expect(Number.isNaN(parray.covariance([NaN], [2.0]))).toBe(true);
     expect(Number.isNaN(parray.covariance(null, [1.0, 2.0]))).toBe(true);
     expect(Number.isNaN(parray.covariance([1.0, 2.0], null))).toBe(true);
+  });
+
+  it("covariance() biased=true divides by the pair count, biased=false by pairs-1 (TradingView logs, h2h array_002/005)", () => {
+    // array_005: na dropped pairwise -> pairs (1,2) and (5,6).
+    const c1 = [1.0, NaN, 3.0, 5.0];
+    const c2 = [2.0, 4.0, NaN, 6.0];
+    expect(parray.covariance(c1, c2)).toBeCloseTo(4, 12);
+    expect(parray.covariance(c1, c2, true)).toBeCloseTo(4, 12);
+    expect(parray.covariance(c1, c2, false)).toBeCloseTo(8, 12);
+    // array_002: covariance of an array with its own copy equals its variance.
+    const a = [1, 2, 4, 5, 6, 7, 8, 9, 10];
+    expect(parray.covariance(a, a.slice())).toBeCloseTo(8.39506172839506, 12);
+    expect(parray.covariance(a, a.slice(), false)).toBeCloseTo(9.444444444444443, 12);
   });
 
   it("percentile_nearest_rank() returns the value at the nearest-rank index (no interpolation)", () => {
@@ -9853,12 +9893,21 @@ describe("array builtins — sort/reverse/slice/concat/copy (rt.array, C85)", ()
     expect(parray.slice([1, 2, 3], 0, NaN)).toBeNull();
   });
 
-  it("concat(arr1, arr2) returns a new array with arr2 appended to arr1, without mutating either input", () => {
+  it("concat(arr1, arr2) appends arr2 to arr1 IN PLACE and returns arr1 itself; arr2 is untouched (TradingView log, h2h array_002)", () => {
     const a = [1, 2];
     const b = [3, 4];
-    expect(parray.concat(a, b)).toEqual([1, 2, 3, 4]);
-    expect(a).toEqual([1, 2]);
+    const r = parray.concat(a, b);
+    expect(r).toBe(a);
+    expect(a).toEqual([1, 2, 3, 4]);
     expect(b).toEqual([3, 4]);
+  });
+
+  it("concat(arr, arr) duplicates the elements once; a null argument mutates nothing", () => {
+    const a = [1, 2];
+    expect(parray.concat(a, a)).toEqual([1, 2, 1, 2]);
+    const b = [1, 2];
+    expect(parray.concat(b, null)).toBeNull();
+    expect(b).toEqual([1, 2]);
   });
 
   it("concat(null, arr) / concat(arr, null) return na(null) — pine2py `None + list` crashes (undefined)", () => {
@@ -10095,11 +10144,22 @@ describe("array builtins — abs/every/some/range/binary_search·leftmost·right
     expect(parray.binary_search(null, 5)).toBeNaN();
   });
 
-  it("binary_search_leftmost/rightmost bracket a run of duplicate values (bisect_left/bisect_right, matches Python cross-check: leftmost=1, rightmost=4)", () => {
+  it("binary_search_leftmost/rightmost return the first/last index of a run of duplicate values (manual: 'the index of the value')", () => {
     const arr = [1, 3, 3, 3, 7];
     expect(parray.binary_search_leftmost(arr, 3)).toBe(1);
-    expect(parray.binary_search_rightmost(arr, 3)).toBe(4);
+    expect(parray.binary_search_rightmost(arr, 3)).toBe(3);
     expect(parray.binary_search(arr, 3)).toBe(1);
+  });
+
+  it("binary_search_leftmost/rightmost of an absent value: the closest element to the left / right of the insertion point (TradingView log, h2h array_002)", () => {
+    const arr = [1, 2, 4, 5, 6];
+    expect(parray.binary_search_leftmost(arr, 3)).toBe(1);
+    expect(parray.binary_search_rightmost(arr, 3)).toBe(2);
+    // outside the array: no element on the requested side
+    expect(parray.binary_search_leftmost(arr, 0)).toBe(-1);
+    expect(parray.binary_search_rightmost(arr, 7)).toBe(5);
+    expect(parray.binary_search_leftmost(arr, 7)).toBe(4);
+    expect(parray.binary_search_rightmost(arr, 0)).toBe(0);
   });
 
   it("binary_search_leftmost/rightmost(null, value) return na(NaN)", () => {
@@ -10115,9 +10175,15 @@ describe("array builtins — abs/every/some/range/binary_search·leftmost·right
     expect(parray.sort_indices([3, 1, 2, NaN], false)).toEqual([0, 2, 1, 3]);
   });
 
-  it("sort_indices preserves the original relative order of tied elements in both directions (Python list.sort(reverse=True) does not reverse ties, matches cross-check)", () => {
+  it("sort_indices: ties keep their original order ascending and come out reversed descending (descending = reverse of ascending; TradingView log, h2h array_002/003)", () => {
     expect(parray.sort_indices([2, 1, 1, 3])).toEqual([1, 2, 0, 3]);
-    expect(parray.sort_indices([2, 1, 1, 3], false)).toEqual([3, 0, 1, 2]);
+    expect(parray.sort_indices([2, 1, 1, 3], false)).toEqual([3, 0, 2, 1]);
+    // TradingView: c = [10,9,8,7,6,5,0,0,1]
+    const c = [10, 9, 8, 7, 6, 5, 0, 0, 1];
+    expect(parray.sort_indices(c)).toEqual([6, 7, 8, 5, 4, 3, 2, 1, 0]);
+    expect(parray.sort_indices(c, false)).toEqual([0, 1, 2, 3, 4, 5, 8, 7, 6]);
+    // na indices stay last, in original order, in both directions
+    expect(parray.sort_indices([1, NaN, 1, NaN], false)).toEqual([2, 0, 1, 3]);
   });
 
   it("sort_indices does not mutate the source array", () => {
@@ -11017,12 +11083,24 @@ describe("matrix.concat (rt.matrix.concat, C93)", () => {
     expect(pmatrix.concat([[1]], null)).toBeNull();
   });
 
-  it("does not mutate either input matrix", () => {
+  it("appends id2 to id1 IN PLACE and returns id1 itself; id2 is untouched and its rows are copied (TradingView manual)", () => {
     const m1 = [[1, 2]];
     const m2 = [[3, 4]];
-    pmatrix.concat(m1, m2);
-    expect(m1).toEqual([[1, 2]]);
+    const r = pmatrix.concat(m1, m2);
+    expect(r).toBe(m1);
+    expect(m1).toEqual([[1, 2], [3, 4]]);
     expect(m2).toEqual([[3, 4]]);
+    (m1[1] as number[])[0] = 99;
+    expect(m2).toEqual([[3, 4]]);
+  });
+
+  it("dimension='columns' also extends id1 in place; a null argument mutates nothing", () => {
+    const m1 = [[1], [2]];
+    expect(pmatrix.concat(m1, [[3], [4]], "columns")).toBe(m1);
+    expect(m1).toEqual([[1, 3], [2, 4]]);
+    const m3 = [[1]];
+    expect(pmatrix.concat(m3, null)).toBeNull();
+    expect(m3).toEqual([[1]]);
   });
 });
 
@@ -11064,11 +11142,15 @@ describe("matrix.reshape (rt.matrix.reshape, C93)", () => {
       [1, 2, 3],
       [4, 5, 6],
     ];
-    expect(pmatrix.reshape(m, 3, 2)).toEqual([
+    const r = pmatrix.reshape(m, 3, 2);
+    expect(r).toEqual([
       [1, 2],
       [3, 4],
       [5, 6],
     ]);
+    // in place (TradingView log, h2h matrix_001: reshape(2x3 -> 3x2) changes the SAME matrix)
+    expect(r).toBe(m);
+    expect(m).toHaveLength(3);
   });
 
   it("leaves the last row short/empty when total elements < nr*nc (no padding, literal port)", () => {
@@ -11101,6 +11183,18 @@ describe("matrix.reverse (rt.matrix.reverse, C93)", () => {
     const m = [[1], [2], [3]];
     expect(pmatrix.reverse(m)).toBeUndefined();
     expect(m).toEqual([[3], [2], [1]]);
+  });
+
+  it("reverses the order of the rows AND of the columns (180 degree rotation; TradingView log, h2h matrix_001)", () => {
+    const m = [
+      [1, 2, 3],
+      [4, 5, 6],
+    ];
+    pmatrix.reverse(m);
+    expect(m).toEqual([
+      [6, 5, 4],
+      [3, 2, 1],
+    ]);
   });
 
   it("is a no-op on an empty matrix", () => {
@@ -11189,6 +11283,28 @@ describe("matrix.diff (rt.matrix.diff, C93)", () => {
 
   it("returns na(null) for a na(null) matrix", () => {
     expect(pmatrix.diff(null)).toBeNull();
+    expect(pmatrix.diff(null, [[1]])).toBeNull();
+    expect(pmatrix.diff([[1]], null)).toBeNull();
+  });
+
+  it("2-argument form: element-wise id1 - id2 as a NEW matrix (TradingView manual; h2h matrix_001 Test 23b)", () => {
+    const m1 = [[3, 3], [3, 3]];
+    const m2 = [[1, 1], [1, 1]];
+    const d = pmatrix.diff(m1, m2);
+    expect(d).toEqual([[2, 2], [2, 2]]);
+    expect(m1).toEqual([[3, 3], [3, 3]]);
+    expect(m2).toEqual([[1, 1], [1, 1]]);
+    expect(pmatrix.diff([[5, 1], [2, 8]], [[1, 2], [3, 4]])).toEqual([[4, -1], [-1, 4]]);
+  });
+
+  it("2-argument form with a scalar subtracts it from every element; NaN propagates", () => {
+    expect(pmatrix.diff([[5, 6], [7, 8]], 1)).toEqual([[4, 5], [6, 7]]);
+    expect(pmatrix.diff([[1, NaN]], [[1, 1]])).toEqual([[0, NaN]]);
+    expect(pmatrix.diff([[1, 2]], NaN)).toEqual([[NaN, NaN]]);
+  });
+
+  it("2-argument form: a smaller id2 falls back to NaN instead of crashing", () => {
+    expect(pmatrix.diff([[1, 2], [3, 4]], [[1, 1]])).toEqual([[0, 1], [NaN, NaN]]);
   });
 });
 

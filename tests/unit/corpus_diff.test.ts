@@ -633,8 +633,18 @@ describe("corpus diff: sample bar-by-bar replay against pine2py golden", () => {
     // resin-harness twin state/repros/stoch-wpr-na.json channels stoch_rsi/stoch_rsi_signal run
     // this script through the oracle. Floor moved to the observed matched 2303 / mismatch 612;
     // nothing else changed.
-    expect(matched.length).toBeGreaterThanOrEqual(2303);
-    expect(mismatched.length).toBeLessThanOrEqual(612);
+    // Array/matrix semantics taken from the TradingView logs instead of pine2py (resin-bench h2h
+    // cases array_002/003/005, matrix_001): array.sum of an all-na array is na, stdev/variance/
+    // covariance of ONE valid element/pair are 0 with the default biased=true, a found value's
+    // binary_search_rightmost is its index (not the insertion point after it) and an absent value's
+    // binary_search_leftmost is the element left of the insertion point. Exactly seven hashes went
+    // matched -> mismatch (one more mismatch changed its first differing bar only): 389ebb6179d6,
+    // 88ac6c2451f3, ab6d4b4a6c4f (single-element stdev/variance/covariance 0, pine2py na), 907767decaa9
+    // (all-na array.sum na, pine2py 0), 59b12f8f3aa5 and 80d8f003d63f (rightmost of a found value),
+    // c05a74af1be7 (leftmost of an absent value). Floor moved to the observed matched 2296 /
+    // mismatch 619; nothing else changed.
+    expect(matched.length).toBeGreaterThanOrEqual(2296);
+    expect(mismatched.length).toBeLessThanOrEqual(619);
     expect(transpileFailed.length).toBeLessThanOrEqual(86);
     expect(runtimeFailed.length, `runtime failures: ${runtimeFailed.map((o) => `${o.hash}: ${o.detail}`).join(" | ")}`).toBe(0);
     expect(noComparable.length, `no comparable key: ${noComparable.map((o) => o.hash).join(", ")}`).toBeLessThanOrEqual(2);

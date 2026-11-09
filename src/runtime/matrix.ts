@@ -319,20 +319,26 @@ export function fill(
   }
 }
 
-// matrix.concat(id1, id2, dimension="rows") — 두 행렬 결합(새 행렬 반환). dimension="columns"는
-// 짧은 쪽 행 수에 맞춰 잘리는 Python `zip()` 시맨틱(python 실측: 3행+1행 결합 시 1행만 반환) —
-// JS도 짧은 배열 기준으로 동일하게 잘라 literal port. 기본(rows)은 단순 행 이어붙이기, 열 개수가
-// 서로 달라도 검증 없이 그대로 이어붙임(ragged 결과 허용, python 실측 확인). m1/m2 둘 중 하나라도
-// null이면 Python `for r in None`이 크래시(미정의) — array.concat(C85)과 동일하게 na(null) 전파.
+// matrix.concat(id1, id2[, dimension="rows"]) — appends id2 to id1 IN PLACE and returns id1
+// (TradingView manual: "appends the id2 matrix to the id1 matrix"; PineTS-independent: same in-place
+// contract as array.concat, whose effect the TradingView log of array_002 shows). Default
+// (dimension="rows"): the rows of id2 are copied after the last row of id1; no column-count check
+// (ragged results allowed). dimension="columns" is a pre-existing extension, not a TradingView
+// argument: row i of id2 is appended to row i of id1 and, as in the old Python zip() semantics, the
+// result is cut to the shorter row count. Rows of id2 are COPIED, so the two matrices stay independent.
+// A null (na) matrix on either side is na (null) and mutates nothing; id2 may be id1 itself.
 export function concat(m1: PineMatrix | null, m2: PineMatrix | null, dimension: string = "rows"): PineMatrix | null {
   if (m1 === null || m2 === null) return null;
   if (dimension === "columns") {
     const n = Math.min(m1.length, m2.length);
-    const result: PineMatrix = new Array(n);
-    for (let i = 0; i < n; i++) result[i] = (m1[i] as unknown[]).concat(m2[i] as unknown[]);
-    return result;
+    const appended = m2.slice(0, n).map((r) => (r as unknown[]).slice());
+    m1.length = n;
+    for (let i = 0; i < n; i++) (m1[i] as unknown[]).push(...(appended[i] as unknown[]));
+    return m1;
   }
-  return m1.map((r) => (r as unknown[]).slice()).concat(m2.map((r) => (r as unknown[]).slice()));
+  const copies = m2.map((r) => (r as unknown[]).slice());
+  for (const r of copies) m1.push(r);
+  return m1;
 }
 
 // matrix.submatrix(id, from_row, to_row, from_column, to_column) — 부분 행렬(새 행렬 반환).
@@ -355,30 +361,31 @@ export function submatrix(
   return m.slice(Math.trunc(fromRow), Math.trunc(toRow)).map((r) => (r as unknown[]).slice(Math.trunc(fromColumn), Math.trunc(toColumn)));
 }
 
-// matrix.reshape(id, nr, nc) — 형태 변경(새 행렬 반환). pine2py `flat=[v for r in m for v in r]`
-// 후 `flat[i*nc:(i+1)*nc]`(i는 0..nr-1) — 원소 총수가 nr*nc와 달라도 검증 없이 그대로 자르거나
-// (모자라면 마지막 행이 짧아지거나 빈 배열) 남는 원소를 버림(python 실측 확인, 별도 보정 없음).
-// 이 슬라이스도 submatrix와 동일한 이유로 JS Array.prototype.slice에 그대로 위임 가능(nc<=0/
-// 음수 조합까지 포함해 Python 슬라이싱과 동치) — `for(i=0;i<nrInt;i++)`가 nrInt<=0이면 자연히
-// 0회 반복돼 range(음수/0)와 동치라 별도 클램프 불필요. NaN nr/nc 또는 null 행렬은 submatrix와
-// 동일하게 na(null) 전파.
+// matrix.reshape(id, rows, columns) — rebuilds the matrix IN PLACE to rows x columns, refilling the
+// row-major flattened elements (TradingView manual: returns void; TradingView log of matrix_001:
+// reshape(2x3 -> 3x2) leaves rows=3, cols=2 on the SAME matrix). Resin returns the matrix itself so
+// the call stays usable as a value (a harmless superset: TradingView rejects assigning the void
+// result). Pre-existing leniency kept: an element count that differs from rows*columns is not
+// validated — surplus elements are dropped, a shortfall leaves short or empty trailing rows (python
+// slicing semantics). NaN rows/columns or a null matrix is na (null), mutating nothing.
 export function reshape(m: PineMatrix | null, nr: number, nc: number): PineMatrix | null {
   if (m === null) return null;
   if (Number.isNaN(nr) || Number.isNaN(nc)) return null;
   const flat: unknown[] = ([] as unknown[]).concat(...(m as unknown[][]));
   const nrInt = Math.trunc(nr);
   const ncInt = Math.trunc(nc);
-  const result: PineMatrix = [];
-  for (let i = 0; i < nrInt; i++) result.push(flat.slice(i * ncInt, (i + 1) * ncInt));
-  return result;
+  m.length = 0;
+  for (let i = 0; i < nrInt; i++) m.push(flat.slice(i * ncInt, (i + 1) * ncInt));
+  return m;
 }
 
-// matrix.reverse(id) — 행 순서 반전(in-place, 반환값 없음). JS Array.prototype.reverse가 Python
-// list.reverse()와 동일한 "그 자리에서 뒤집기" 시맨틱이라 그대로 위임(array.reverse(C85)와 동일
-// 근거). null 행렬은 Python `None.reverse()`가 크래시(미정의) — "쓰기는 no-op" 원칙.
+// matrix.reverse(id) — reverses the order of the rows AND of the columns in place (TradingView
+// manual; TradingView log of matrix_001: [[1,2,3],[4,5,6]] -> [0,0]=6, [1,2]=1, i.e. a 180 degree
+// rotation: element (i, j) moves to (rows-1-i, cols-1-j)). A null (na) matrix is a no-op.
 export function reverse(m: PineMatrix | null): void {
   if (m === null) return;
   m.reverse();
+  for (const r of m) (r as unknown[]).reverse();
 }
 
 // matrix.sort(id, column=0, order=order.ascending) — 특정 열 값 기준 정렬(in-place, 반환값
@@ -417,21 +424,42 @@ export function sort(m: PineMatrix | null, column: number = 0, ascending: boolea
   });
 }
 
-// matrix.diff(id) — 인접 행 간 원소별 차이(새 행렬 반환, 행 수는 원본-1). pine2py
-// `m[i][j]-m[i-1][j]`(i=1..len(m)-1, j는 그 바 행의 길이 기준)를 그대로 이식 — NaN은 산술 뺄셈
-// 자체가 IEEE754 전파를 이미 보장해 별도 처리 불필요(rt.pineDiv류의 0-나눗셈 특수 케이스와 달리
-// 뺄셈은 안전 연산). null 행렬은 `len(None)`이 크래시(미정의) — na(null) 전파. 행이 1개 이하면
-// range(1,len(m))가 공집합이라 빈 배열([])을 반환(literal, 별도 분기 불필요 — JS for 루프도
-// m.length<2면 자연히 0회 반복).
-export function diff(m: PineMatrix | null): PineMatrix | null {
+// matrix.diff(id1, id2) — element-wise subtraction id1 - id2 as a NEW matrix (TradingView form).
+// id2 is either a matrix of the same dimensions or a scalar subtracted from every element. NaN
+// propagates through IEEE-754 subtraction. A null (na) id1 or id2 matrix is na (null). When id2 is a
+// matrix smaller than id1 the missing elements fall back to NaN instead of crashing (same safe
+// fallback as matrix.sum). matrix.diff(id) with ONE argument is a pre-existing extension, not part of
+// the TradingView API: adjacent-row difference (new matrix, one row fewer; pine2py
+// `m[i][j]-m[i-1][j]`, i=1..rows-1; fewer than two rows gives an empty matrix).
+export function diff(m: PineMatrix | null): PineMatrix | null;
+export function diff(m: PineMatrix | null, other: PineMatrix | number | null): PineMatrix | null;
+export function diff(m: PineMatrix | null, other?: PineMatrix | number | null): PineMatrix | null {
   if (m === null) return null;
-  const result: PineMatrix = [];
-  for (let i = 1; i < m.length; i++) {
-    const cur = m[i] as unknown[];
-    const prev = m[i - 1] as unknown[];
-    const row: unknown[] = new Array(cur.length);
-    for (let j = 0; j < cur.length; j++) row[j] = (cur[j] as number) - (prev[j] as number);
-    result.push(row);
+  if (other === undefined) {
+    const result: PineMatrix = [];
+    for (let i = 1; i < m.length; i++) {
+      const cur = m[i] as unknown[];
+      const prev = m[i - 1] as unknown[];
+      const row: unknown[] = new Array(cur.length);
+      for (let j = 0; j < cur.length; j++) row[j] = (cur[j] as number) - (prev[j] as number);
+      result.push(row);
+    }
+    return result;
+  }
+  if (other === null) return null;
+  const result: PineMatrix = new Array(m.length);
+  for (let i = 0; i < m.length; i++) {
+    const row = m[i] as unknown[];
+    const outRow: unknown[] = new Array(row.length);
+    if (typeof other === "number") {
+      for (let j = 0; j < row.length; j++) outRow[j] = (row[j] as number) - other;
+    } else {
+      const otherRow = other[i] as unknown[] | undefined;
+      for (let j = 0; j < row.length; j++) {
+        outRow[j] = (row[j] as number) - (otherRow !== undefined ? (otherRow[j] as number) : NaN);
+      }
+    }
+    result[i] = outRow;
   }
   return result;
 }

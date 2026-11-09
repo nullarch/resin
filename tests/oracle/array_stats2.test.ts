@@ -22,7 +22,10 @@ function loadCaseSource(name: string): string {
   return readFileSync(join(ROOT, "oracle", "cases", `${name}.pine`), "utf-8");
 }
 
-const CHANNELS = [
+// __obs_cov_na (covariance over a single valid pair): the pine2py golden is na but TradingView
+// returns 0 for the default biased=true (h2h case array_005, `cov` over one pair). Resin follows
+// TradingView, so this channel is asserted explicitly instead of being compared with the golden.
+const ALL_CHANNELS = [
   "var:__obs_cov",
   "var:__obs_cov_na",
   "var:__obs_pnr50",
@@ -41,6 +44,7 @@ const CHANNELS = [
   "var:__obs_sdf0",
   "var:__obs_sdf1",
 ];
+const CHANNELS = ALL_CHANNELS.filter((k) => k !== "var:__obs_cov_na");
 
 describe("oracle: array_stats2", () => {
   it("matches the pine2py golden bar-by-bar for all seventeen numeric channels", () => {
@@ -52,6 +56,7 @@ describe("oracle: array_stats2", () => {
 
     expect(result.bars).toHaveLength(golden.bars.length);
     compareToGolden(result.bars, golden, CHANNELS);
+    for (const bar of result.bars) expect(bar["var:__obs_cov_na"]).toBe(0);
   });
 
   it("matches the pine2py golden final var state for all seventeen numeric channels", () => {
@@ -81,7 +86,8 @@ describe("oracle: array_stats2", () => {
       expect(result.finalVarState[key]).toBeCloseTo(expected as number, 6);
     }
     // NaN 채널은 toBeCloseTo가 NaN 비교를 못 하므로 명시적으로 확인(array_stats의 전례).
-    for (const key of ["__obs_cov_na", "__obs_sd2", "__obs_sdf1"]) {
+    expect(result.finalVarState["__obs_cov_na"]).toBe(0);
+    for (const key of ["__obs_sd2", "__obs_sdf1"]) {
       expect(Number.isNaN(result.finalVarState[key])).toBe(true);
       expect(golden.finalVarState[key]).toBe("NaN");
     }
@@ -104,6 +110,7 @@ describe("oracle: array_stats2", () => {
     const result = runPipeline(source, data);
 
     expect(Number.isFinite(result.finalVarState["__obs_cov"] as number)).toBe(true);
-    expect(Number.isNaN(result.finalVarState["__obs_cov_na"])).toBe(true);
+    // a single valid pair: 0 for the default biased=true (TradingView), not na
+    expect(result.finalVarState["__obs_cov_na"]).toBe(0);
   });
 });

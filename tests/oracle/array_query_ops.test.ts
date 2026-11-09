@@ -21,7 +21,12 @@ function loadCaseSource(name: string): string {
   return readFileSync(join(ROOT, "oracle", "cases", `${name}.pine`), "utf-8");
 }
 
-const NUMERIC_CHANNELS = [
+// __obs_bsearch_right / __obs_dup_right (rightmost search of a FOUND value): the pine2py golden is
+// the insertion point after the value (idx+1); Resin returns the index of the value itself, the
+// last occurrence for a run (TradingView manual, "returns the index of the value"; the not-found
+// branch is unchanged and verified by the TradingView log of h2h case array_002). Asserted
+// explicitly instead of compared with the golden.
+const ALL_CHANNELS = [
   "var:__obs_abs0",
   "var:__obs_abs1",
   "var:__obs_abs2",
@@ -53,6 +58,7 @@ const NUMERIC_CHANNELS = [
   "var:__obs_tie_desc0",
   "var:__obs_tie_desc1",
 ];
+const NUMERIC_CHANNELS = ALL_CHANNELS.filter((k) => k !== "var:__obs_bsearch_right" && k !== "var:__obs_dup_right");
 
 describe("oracle: array_query_ops", () => {
   it("matches the pine2py golden bar-by-bar", () => {
@@ -64,6 +70,12 @@ describe("oracle: array_query_ops", () => {
 
     expect(result.bars).toHaveLength(golden.bars.length);
     compareToGolden(result.bars, golden, NUMERIC_CHANNELS);
+    for (const bar of result.bars) {
+      // arrSorted = [low, open, close, high], searching close: found at index 2 (golden: 3).
+      expect(bar["var:__obs_bsearch_right"]).toBe(2);
+      // arrDup = [1, 3, 3, 3, 7], searching 3: the last occurrence is index 3 (golden: 4).
+      expect(bar["var:__obs_dup_right"]).toBe(3);
+    }
   });
 
   it("matches the pine2py golden final var state", () => {
@@ -77,6 +89,7 @@ describe("oracle: array_query_ops", () => {
     // golden — a raw .toBe() fails (NaN !== "NaN"), so compare those explicitly (established
     // array_basic/residual/stats precedent) and use .toBe() for the rest.
     for (const key of Object.keys(golden.finalVarState)) {
+      if (key === "__obs_bsearch_right" || key === "__obs_dup_right") continue; // see ALL_CHANNELS note
       if (golden.finalVarState[key] === "NaN") {
         expect(Number.isNaN(result.finalVarState[key])).toBe(true);
         continue;
