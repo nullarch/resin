@@ -317,105 +317,141 @@ export function stdev(arr: PineArray | null): number {
   return Math.sqrt(variance(arr));
 }
 
-// ── C82 검색: includes/indexof/lastindexof ──
-// pine2py array.py L134-154: includes는 `value in arr`, indexof는 `arr.index(value)`(미발견 시
-// -1), lastindexof는 역방향 순회 + `==`. 셋 다 순수 읽기(뮤테이션 없음) — null 배열은 get/size
-// (#19)와 동일한 "읽기는 na(NaN)" 원칙(includes도 bool 반환이지만 str.contains류(C76)처럼
-// numeric-na로 통일).
+// ── C82 search: includes/indexof/lastindexof ──
+// Pine's tolerant equality, the one `==` applies (numeric.ts pineEq): two floats at most 1e-10
+// apart are equal at every magnitude, the boundary included; strings, bools, colors and handles
+// compare exactly. An na never equals anything, itself included (NaN - x is NaN, which fails the
+// band), so a search for na finds nothing.
+const SEARCH_EPS = 1e-10;
+
+function looseEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (typeof a !== "number" || typeof b !== "number") return false;
+  const d = a - b;
+  return -SEARCH_EPS <= d && d <= SEARCH_EPS;
+}
+
+// array.includes/indexof/lastindexof compare TOLERANTLY (tier 1 array_007_tolerant_search, read on
+// TradingView: indexof(from(100, 101, 100, 102), 100 + 1e-12) is 0, lastindexof is 2 and includes
+// is true, while 100 + 1e-8 is outside the band, so lastindexof gives -1). array.binary_search and
+// the percentile reductions are bit-exact on the same arrays (see binary_search below). All three
+// are pure reads; a null array reads na like get/size (#19).
 //
-// **NaN 검색값의 divergence(#22, python/node 교차 실측)**: Python `in`/`.index()`는 "identity
-// 우선, 그 다음 `==`" 순서로 비교한다(CPython list.__contains__/list.index 공통 구현) — 새
-// `float('nan')`끼리는 `==`가 항상 False라 못 찾지만, **배열에서 그대로 읽어온 것과 동일한 객체
-// 참조**(예: `array.includes(arr, array.get(arr,0))`)를 검색값으로 넘기면 identity가 매치돼
-// 찾아진다(python으로 `nan in [nan_같은_객체]`→True, `float('nan') in [...]`→False 직접 확인).
-// JS 숫자는 프리미티브라 이런 "동일 객체 재사용" 개념 자체가 없다 — `Array.prototype.includes`는
-// SameValueZero라 NaN을 항상 찾고(모든 NaN이 무조건 매치), `indexOf`/`lastIndexOf`는 strict
-// equality라 NaN을 항상 못 찾는다(node 실측). Python의 identity 예외는 CPython 객체 모델의
-// 구현 디테일이지 PineScript가 의도한 na 시맨틱이 아니라고 판단(GOAL.md "pine2py의 알려진
-// 버그는 따르지 않는다"에 준하는 근거 — 이 저장소의 na 비교 관례(DIVERGENCES #4류: 일반 `==`은
-// na를 찾지 못한다)와도 일관됨) — includes를 strict equality 기반으로 구현해 NaN이 항상
-// "못 찾음"으로 수렴하도록 결정(indexOf/lastIndexOf는 이미 strict equality라 그대로 매핑,
-// includes만 SameValueZero를 우회하는 커스텀 구현 필요).
+// **NaN search value (divergence #22, node/python cross-checked)**: Python's `in`/`.index()` find
+// a NaN only by object identity, a CPython detail rather than a Pine rule; Resin's NaN is never
+// found, in line with the rest of the repository's na comparisons (DIVERGENCES #4: a plain `==`
+// does not find na).
 export function includes(arr: PineArray | null, value: number): boolean | number {
   if (arr === null) return NaN;
-  return arr.indexOf(value) !== -1;
+  for (let i = 0; i < arr.length; i++) if (looseEqual(arr[i], value)) return true;
+  return false;
 }
 
-// array.indexof(id, value) — 미발견 시 -1(NaN 아님, pine2py `except ValueError: return -1`
-// literal port). JS Array.indexOf가 이미 strict equality라 그대로 매핑.
+// array.indexof(id, value) — the first tolerant match, -1 when there is none (not NaN).
 export function indexof(arr: PineArray | null, value: number): number {
   if (arr === null) return NaN;
-  return arr.indexOf(value);
+  for (let i = 0; i < arr.length; i++) if (looseEqual(arr[i], value)) return i;
+  return -1;
 }
 
-// array.lastindexof(id, value) — 마지막 일치 인덱스, 미발견 시 -1. JS Array.lastIndexOf도
-// strict equality라 그대로 매핑.
+// array.lastindexof(id, value) — the last tolerant match, -1 when there is none.
 export function lastindexof(arr: PineArray | null, value: number): number {
   if (arr === null) return NaN;
-  return arr.lastIndexOf(value);
+  for (let i = arr.length - 1; i >= 0; i--) if (looseEqual(arr[i], value)) return i;
+  return -1;
 }
 
-// ── C83: covariance/percentile_nearest_rank/percentile_linear_interpolation/percentrank/
-// standardize (pine2py array.py L314-370) ──
-// null 배열은 sum/avg류(C81, DIVERGENCES #21)와 동일한 "읽기는 na" 원칙 재적용 — 단
-// standardize만 참조형(배열) 반환이라 na가 NaN이 아니라 null(GOAL.md na 3분할, get(C79)의
-// "읽기 na"를 참조형 반환에 적용한 첫 사례).
+// ── C83: percentile_nearest_rank/percentile_linear_interpolation/percentrank (covariance and
+// standardize follow) ──
+// A null array reads na (the sum/avg family, DIVERGENCES #21).
 //
-// **percentage 클램프의 NaN 함정(python 직접 실행으로 확정)**: pine2py는
-// `max(0.0, min(100.0, percentage))`로 클램프하는데, Python 내장 min(100.0, percentage)은
-// "첫 인자를 기본값으로 두고 두 번째가 그보다 작을 때만 교체"하는 구현이라 percentage가 NaN이면
-// `NaN < 100.0`이 False라 100.0이 그대로 살아남는다(교체가 안 일어남) — 즉 pine2py는
-// percentile_nearest_rank(arr, na)를 크래시도 NaN 전파도 아니라 **100%로 조용히 클램프**한다
-// (python 실측: percentile_nearest_rank([1..5], nan) == 5.0). 이건 인자 순서에 따라 결과가
-// 달라지는 rt.max/min(C13)의 "순서-의존" 버그와 달라서(percentage는 항상 같은 위치에 고정) 그
-// 버그 판정 기준에 해당하지 않는다고 판단 — TV 실제 시맨틱을 확인할 WebSearch 권한이 없는 이
-// 세션에서는 MEMORY.md Pitfalls의 폴백 원칙(확신 없으면 pine2py 문자 그대로 포트)을 적용해
-// literal port. 단 **Math.min/Math.max로 그대로 옮기면 안 된다** — JS Math.min/max는 NaN이
-// 섞이면 무조건 NaN을 반환해(Python min/max와 반대 방향 함정) clampPercentage가 100 대신 NaN을
-// 내놓는 조용한 오답이 된다. 대신 Python의 원시 비교 흐름(대입 후 `<`/`>` 조건부 교체)을 그대로
-// 재현하면 JS `NaN < 100`도 False이므로 자연히 100이 살아남는다(node 교차 실측으로 python과
-// 바이트 단위 일치 확인 완료 — scratch/probe_array_stats2.mjs).
+// The percentiles sort the array with its na elements KEPT: they go to the end, as if they were
+// the largest values, and the FULL length (na included) drives the rank, so a rank that lands in
+// the na tail is na. That is what TradingView does (tier 1 array_006_array_na_percentile, the
+// array [10, na, 20, 30, na, 40]); it is also the rule the rolling ta.percentile_* machines
+// (runtime/ta.ts percentileStep) already follow, where ta_372_rolling_na_rank_order pins it.
+// Dropping the na elements first, as this file did, shifts every rank.
+
+// Clamp a percentage to 0..100. TradingView halts on a percentage outside the range
+// (RE10002); here it clamps, the lenient reading the other out-of-range arguments get (#19).
 function clampPercentage(percentage: number): number {
-  let minResult = 100;
-  if (percentage < 100) minResult = percentage;
-  let maxResult = 0;
-  if (minResult > 0) maxResult = minResult;
-  return maxResult;
+  return percentage < 0 ? 0 : percentage > 100 ? 100 : percentage;
 }
 
-// array.percentile_nearest_rank(id, percentage) — 가장 가까운 순위 백분위(보간 없음).
+// The numeric elements ascending. The na ones are not materialised: they sit after the last one.
+function sortedNumbers(arr: PineArray): number[] {
+  return validNums(arr).sort((a, b) => a - b);
+}
+
+// array.percentile_nearest_rank(id, percentage) — the element at rank ceil(percentage * n / 100),
+// 1-based, clamped to 1..n, n being the full length. A rank on an na element is na, an empty array
+// is na, and an na percentage counts as 0 (tier 1 ta_247_percentile_na_percentage pins the same
+// rule for ta.percentile_nearest_rank: "rank_na" equals "rank_zero"). The product is formed as
+// percentage * n / 100 and not (percentage / 100) * n, which rounds 70 * 10 / 100 = 7 up to
+// 7.000000000000001 and with it to rank 8 (tier 1 array_002_array_functions: rank 7 of 0..10 at
+// the 70th percentile).
 export function percentile_nearest_rank(arr: PineArray | null, percentage: number): number {
   if (arr === null) return NaN;
-  const vals = validNums(arr).sort((a, b) => a - b);
-  if (vals.length === 0) return NaN;
-  const p = clampPercentage(percentage);
-  const idx = Math.max(0, Math.ceil((p / 100) * vals.length) - 1);
-  return vals[idx]!;
+  const n = arr.length;
+  if (n === 0) return NaN;
+  const vals = sortedNumbers(arr);
+  const p = Number.isNaN(percentage) ? 0 : clampPercentage(percentage);
+  const rank = Math.max(1, Math.min(Math.ceil((p * n) / 100), n));
+  return rank <= vals.length ? vals[rank - 1]! : NaN;
 }
 
-// array.percentile_linear_interpolation(id, percentage) — 선형 보간 백분위.
+// array.percentile_linear_interpolation(id, percentage) — the 1-based position
+// pos = n * percentage / 100 + 0.5 over the full length n (tier 1 array_006_array_na_percentile:
+// [0, 1.1, 2.2, 4.4, 5.5, 6.6, 7.7, 8.8, 9.9, 10.1] reads 0.55 at 10, 1.1 at 15, 8.8 at 75 and 10 at
+// 90), clamped to the ends, interpolating between the two ranks around it. With no na the answer is
+// the interpolation. Once the array holds ANY na, only the low clamp (pos <= 1) and a pos on an
+// exact integer rank give a value; every fractional position is na even when both neighbours are
+// numeric, and so is an exact rank, or the high clamp, that lands in the na tail (the same
+// array: 10 at 0, 20 at 25, na at 10, 50, 75 and 100). An na percentage is na; an empty array is na.
+// A pos within 1e-9 of an integer snaps to it, and the two neighbours are weighed as
+// lower * (1 - frac) + upper * frac (runtime/ta.ts percentileLinearInterpolation: lo + frac *
+// (hi - lo) rounds differently and is not the one TradingView follows).
 export function percentile_linear_interpolation(arr: PineArray | null, percentage: number): number {
   if (arr === null) return NaN;
-  const vals = validNums(arr).sort((a, b) => a - b);
-  if (vals.length === 0) return NaN;
-  if (vals.length === 1) return vals[0]!;
-  const p = clampPercentage(percentage);
-  const rank = (p / 100) * (vals.length - 1);
-  const lower = Math.floor(rank);
-  const upper = Math.min(lower + 1, vals.length - 1);
-  const frac = rank - lower;
-  return vals[lower]! + frac * (vals[upper]! - vals[lower]!);
+  const n = arr.length;
+  if (n === 0 || Number.isNaN(percentage)) return NaN;
+  const vals = sortedNumbers(arr);
+  const m = vals.length;
+  let pos = (n * clampPercentage(percentage)) / 100 + 0.5;
+  const nearest = Math.round(pos);
+  if (Math.abs(pos - nearest) < 1e-9) pos = nearest;
+  if (pos <= 1) return m > 0 ? vals[0]! : NaN;
+  if (pos >= n) return m === n ? vals[n - 1]! : NaN;
+  const lower = Math.floor(pos);
+  const frac = pos - lower;
+  if (frac === 0) return lower <= m ? vals[lower - 1]! : NaN;
+  if (m < n) return NaN;
+  return vals[lower - 1]! * (1 - frac) + vals[lower]! * frac;
 }
 
-// array.percentrank(id, value) — value 미만인 유효 원소의 비율(%). value가 NaN이면 모든 `<`
-// 비교가 False라(Python도 동일) 자연히 0.0 — 별도 가드 불필요(literal port).
-export function percentrank(arr: PineArray | null, value: number): number {
+// array.percentrank(id, index) — the percentile rank of the ELEMENT AT `index` (not of a value):
+// "the percentage of how many elements in the array are less than or equal to the value at the
+// index" (Pine reference). It is (count - 1) * 100 / (n - 1), count being the elements within
+// Pine's tolerance at or below that value, the value itself included (tier 1
+// array_002_array_functions: index 4 of [0, 1, 2, 4, 5, 6, 7, 8, 9, 10] is 44.444 = 4 / 9, and
+// array_003_array_functions_float: index 1 of [0, 1.1, ...] is 11.111 = 1 / 9). The na elements
+// are not counted at or below the target but they stay in n (array_006_array_na_percentile, the
+// array [10, na, 20, 30, na, 40]: index 0 is 0, index 2 is 20, index 5 is 60); an na element at
+// the index is na. An na index reads as index 0 (array_008_array_na_index: percentrank of
+// [10, 20, 30, 40] at na is 0, the value at index 0 ranks 0), a float index is truncated. An
+// array of fewer than two elements has no denominator and is na, so is an empty one. An index
+// outside the array halts on TradingView; here it reads na (#19).
+export function percentrank(arr: PineArray | null, index: number): number {
   if (arr === null) return NaN;
-  const vals = validNums(arr);
-  if (vals.length === 0) return NaN;
-  let countBelow = 0;
-  for (const v of vals) if (v < value) countBelow++;
-  return (countBelow / vals.length) * 100;
+  const n = arr.length;
+  if (n < 2) return NaN;
+  const i = Number.isNaN(index) ? 0 : Math.trunc(index);
+  if (!(i >= 0 && i < n)) return NaN;
+  const target = arr[i]!;
+  if (Number.isNaN(target)) return NaN;
+  let count = 0;
+  for (const v of arr) if (v <= target || v - target <= SEARCH_EPS) count++;
+  return ((count - 1) * 100) / (n - 1);
 }
 
 // array.standardize(id) — Z-score 정규화, **새 배열을 반환**(지금까지의 통계류 8종(C81)과 달리
@@ -571,11 +607,16 @@ export function slice(arr: PineArray | null, indexFrom: number = 0, indexTo: num
   return arr.slice(from, to);
 }
 
-// array.concat(id1, id2) — 두 배열을 이어붙인 새 배열(pine2py `arr1+arr2`). 둘 중 하나라도
-// null이면 Python `None+list`가 크래시(미정의) — slice와 동일하게 na(null) 전파.
+// array.concat(id1, id2) — appends the elements of id2 to id1 IN PLACE and returns id1 itself, not
+// a new array: "The function merges the id2 array with the id1 array and returns the id1 array"
+// (Pine reference; tier 1 array_002_array_functions: after `c = array.concat(a, b)`, `c`, `a` and
+// the logged `a` are all the merged array while `b` is unchanged). concat(a, a) doubles a. Either
+// array null is na: the result is null and nothing is appended.
 export function concat(arr1: PineArray | null, arr2: PineArray | null): PineArray | null {
   if (arr1 === null || arr2 === null) return null;
-  return arr1.concat(arr2);
+  const n = arr2.length; // read once: arr2 may be arr1
+  for (let i = 0; i < n; i++) arr1.push(arr2[i]!);
+  return arr1;
 }
 
 // array.copy(id) — 얕은 복사(새 배열, 원본과 독립 — python 실측으로 뮤테이션 비전파 확인).
@@ -628,11 +669,8 @@ export function range(arr: PineArray | null): number {
   return max(arr) - min(arr);
 }
 
-// pine2py `bisect.bisect_left`/`bisect.bisect_right`(array.py binary_search류) 이식 — 둘 다
-// `<` 비교만 쓰는 알고리즘이라 NaN 비교가 항상 false인 IEEE754 규칙이 Python/JS 양쪽에서
-// 동일하게 적용돼(비교 연산자 자체의 언어별 차이가 없음), 배열/검색값에 NaN이 섞여도 알고리즘을
-// 특수 분기 없이 그대로 literal port할 수 있다(python 교차 실측으로 확인 — value=NaN/배열에
-// NaN 포함 두 경우 다 바이트 단위 일치).
+// The insertion points of a value in an ascending array, by `<` alone: NaN compares false both
+// ways, so a NaN value or element needs no special branch.
 function bisectLeft(arr: PineArray, value: number): number {
   let lo = 0;
   let hi = arr.length;
@@ -655,25 +693,51 @@ function bisectRight(arr: PineArray, value: number): number {
   return lo;
 }
 
-// array.binary_search(id, value) — 정렬된 배열 전제, 발견 인덱스 또는 -1(pine2py
-// `bisect_left`+동치 확인, 미발견은 -1). NaN 검색값은 bisectLeft가 항상 lo=0으로 수렴한 뒤
-// arr[0]===value가 false라 자연히 -1(별도 가드 불필요).
+// The three binary searches compare EXACTLY, unlike indexof/includes (tier 1
+// array_007_tolerant_search: binary_search([100, 101, 102], 100 + 1e-12) is -1 where
+// indexof finds 100 + 1e-12 in a copy of the same values). The array is assumed ascending.
+//
+// array.binary_search(id, value) — the index of the value, -1 when absent. Among duplicates it
+// answers the one the classic halving lands on, not the first: [10, 20, 20, 20, 30, 40] at 20 is
+// slot 2 (the oracle's TradingView probe notes, tests/t01_lib/t06_array/test_014: 10 -> 0, 15 -> -1,
+// 20 -> 2, 30 -> 4, 40 -> 5, 45 -> -1; no export of the h2h corpus covers a duplicate).
 export function binary_search(arr: PineArray | null, value: number): number {
   if (arr === null) return NaN;
-  const idx = bisectLeft(arr, value);
-  return idx < arr.length && arr[idx] === value ? idx : -1;
+  let lo = 0;
+  let hi = arr.length - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const v = arr[mid]!;
+    if (v === value) return mid;
+    if (value < v) hi = mid - 1;
+    else lo = mid + 1;
+  }
+  return -1;
 }
 
-// array.binary_search_leftmost(id, value) — 삽입 위치(왼쪽, 동률의 첫 인덱스).
+// array.binary_search_leftmost(id, value) — the FIRST index holding the value; for an absent value
+// "the index of the next smallest element to the left of where the value would lie" (Pine
+// reference), which is 0 for a value below the whole array, never -1. Tier 1
+// array_002_array_functions: on [1, 2, 4, 5, ...] the value 3 answers 1, the slot of 2 (it was the
+// insertion point, 2). The oracle's probe notes (test_014) add, on [10, 20, 20, 20, 30, 40]:
+// 5 -> 0, 10 -> 0, 15 -> 0, 20 -> 1, 25 -> 3, 45 -> 5.
 export function binary_search_leftmost(arr: PineArray | null, value: number): number {
   if (arr === null) return NaN;
-  return bisectLeft(arr, value);
+  const idx = bisectLeft(arr, value);
+  if (idx < arr.length && arr[idx] === value) return idx;
+  return idx > 0 ? idx - 1 : 0;
 }
 
-// array.binary_search_rightmost(id, value) — 삽입 위치(오른쪽, 동률 다음 인덱스).
+// array.binary_search_rightmost(id, value) — the LAST index holding the value; for an absent value
+// the index of the element to the right of where it would lie, the array size for a value above
+// the whole array. Tier 1 array_002_array_functions: on [1, 2, 4, 5, ...] the value 3 answers 2.
+// The oracle's probe notes (test_014), on [10, 20, 20, 20, 30, 40]: 5 -> 0, 10 -> 0, 15 -> 1,
+// 20 -> 3, 25 -> 4, 40 -> 5, 45 -> 6.
 export function binary_search_rightmost(arr: PineArray | null, value: number): number {
   if (arr === null) return NaN;
-  return bisectRight(arr, value);
+  const idx = bisectRight(arr, value);
+  if (idx > 0 && arr[idx - 1] === value) return idx - 1;
+  return idx;
 }
 
 // array.sort_indices(id, order=order.ascending) — 정렬된 인덱스 배열 반환(원본 비변형, 새 배열

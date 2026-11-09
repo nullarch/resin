@@ -1700,6 +1700,8 @@ const MUTATING_ARRAY_BUILTINS = new Set([
   "array.fill",
   "array.sort",
   "array.reverse",
+  // concat appends id2 to id1 in place (runtime/array.ts concat).
+  "array.concat",
   "map.put",
   "map.remove",
   "map.clear",

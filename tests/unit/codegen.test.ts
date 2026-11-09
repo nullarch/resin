@@ -2352,7 +2352,7 @@ describe("CodeGen", () => {
       "var float __obs_pli = na",
       "__obs_pli := array.percentile_linear_interpolation(a, 25.0)",
       "var float __obs_pr = na",
-      "__obs_pr := array.percentrank(a, 3.0)",
+      "__obs_pr := array.percentrank(a, 2)",
       "sdArr = array.standardize(a)",
       "var float __obs_sd1 = na",
       "__obs_sd1 := array.get(sdArr, 0)",
@@ -2367,9 +2367,11 @@ describe("CodeGen", () => {
     // a=[1,2,3,4,5], b=[2,4,5,4,6] — python(pine2py wa.covariance) 사전 검증: covariance=1.6.
     expect(bars[0]!["var:__obs_cov"]).toBeCloseTo(1.6, 9);
     expect(bars[0]!["var:__obs_pnr"]).toBe(3);
-    expect(bars[0]!["var:__obs_pli"]).toBe(2);
-    // percentrank(a, 3.0): a에서 3.0 미만인 원소는 [1,2] 2개 -> 2/5*100=40.
-    expect(bars[0]!["var:__obs_pr"]).toBe(40);
+    // The 1-based position is n * p / 100 + 0.5 = 1.75: three quarters of the way from 1 to 2.
+    expect(bars[0]!["var:__obs_pli"]).toBe(1.75);
+    // percentrank(a, 2) ranks the element at index 2 (value 3): three elements are <= 3, so
+    // (3 - 1) * 100 / (5 - 1) = 50.
+    expect(bars[0]!["var:__obs_pr"]).toBe(50);
     // standardize(a): mean=3, sd=sqrt(2) -> 첫 원소(1.0) z-score = (1-3)/sqrt(2).
     expect(bars[0]!["var:__obs_sd1"]).toBeCloseTo((1 - 3) / Math.sqrt(2), 9);
   });
@@ -2536,7 +2538,7 @@ describe("CodeGen", () => {
     expect(bars[0]!["var:__obs_reversed0"]).toBe(1);
   });
 
-  it("transpile() end-to-end: slice/concat/copy observe the expected new-array contents and leave the source array untouched", () => {
+  it("transpile() end-to-end: slice/copy observe new-array contents, concat grows its first array in place", () => {
     const source = [
       "var a = array.new_float(0)",
       "array.push(a, 1.0)",
@@ -2571,12 +2573,13 @@ describe("CodeGen", () => {
     // slice(a,1) on [1,2,3] -> [2,3].
     expect(bars[0]!["var:__obs_slice0"]).toBe(2);
     expect(bars[0]!["var:__obs_slice_size"]).toBe(2);
-    // concat([1,2,3],[9]) -> size 4, last element 9.
+    // concat([1,2,3],[9]) appends in place and returns the first array: size 4, last element 9, and
+    // `a` itself is now [1,2,3,9].
     expect(bars[0]!["var:__obs_concat_size"]).toBe(4);
     expect(bars[0]!["var:__obs_concat_last"]).toBe(9);
-    // copy(a) then push 99 -> copy grows to 4, original a stays at 3 (independent reference).
-    expect(bars[0]!["var:__obs_copy_size"]).toBe(4);
-    expect(bars[0]!["var:__obs_src_size"]).toBe(3);
+    // copy(a) then push 99 -> the copy grows to 5, the original a stays at 4 (independent reference).
+    expect(bars[0]!["var:__obs_copy_size"]).toBe(5);
+    expect(bars[0]!["var:__obs_src_size"]).toBe(4);
   });
 
   // ── na(null) 컨테이너 self 인자 codegen 수정(C217, C216 부수 발견 버그) — array/map/matrix.*

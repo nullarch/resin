@@ -639,8 +639,19 @@ describe("corpus diff: sample bar-by-bar replay against pine2py golden", () => {
     // array.get(win, -1) on a one-element array, which wraps to the last element where it used to
     // read na (v5 halts on a negative index, so the script cannot run on TradingView). Floor moved
     // to the observed matched 2302 / mismatch 613; nothing else changed.
-    expect(matched.length).toBeGreaterThanOrEqual(2302);
-    expect(mismatched.length).toBeLessThanOrEqual(613);
+    // 2026-11-09 the array searches and percentiles follow TradingView's exports instead of
+    // pine2py's (not ground truth): array.percentile_linear_interpolation reads the 1-based position
+    // n * p / 100 + 0.5, array.percentrank ranks the element AT an index (pine2py counted the
+    // elements below a value), array.binary_search_rightmost answers the last duplicate of a hit
+    // (pine2py: the slot after it) and array.binary_search_leftmost the next smaller element for a
+    // miss (pine2py: the insertion point) (tier 1 array_002_array_functions,
+    // array_006_array_na_percentile). Exactly nine hashes went matched -> mismatch: 8abe14d5a618,
+    // 89df7a6e602f and 931f2b126e88 (linear interpolation at fractional positions), 01afa7392785,
+    // 8e7db8d29dfb and 90fe5fd51b89 (percentrank of a price passed as the index: na now),
+    // 59b12f8f3aa5 and 80d8f003d63f (rightmost of a hit) and c05a74af1be7 (leftmost of a miss). Floor
+    // moved to the observed matched 2293 / mismatch 622; nothing else changed.
+    expect(matched.length).toBeGreaterThanOrEqual(2293);
+    expect(mismatched.length).toBeLessThanOrEqual(622);
     expect(transpileFailed.length).toBeLessThanOrEqual(86);
     expect(runtimeFailed.length, `runtime failures: ${runtimeFailed.map((o) => `${o.hash}: ${o.detail}`).join(" | ")}`).toBe(0);
     expect(noComparable.length, `no comparable key: ${noComparable.map((o) => o.hash).join(", ")}`).toBeLessThanOrEqual(2);
