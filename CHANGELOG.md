@@ -10,6 +10,21 @@ Every entry below names the commit that made it. Each of those commit messages s
 the rule, quotes its evidence (a TradingView export, the certified reference engine,
 or the Pine manual) and lists what moved.
 
+## [Unreleased]
+
+### Behaviour changes (outputs differ from 0.3.0)
+
+#### Arrays
+
+- `array.get`/`array.set`/`array.remove` take a negative index from the end of the array (-1 is the last element); `array.insert` takes -size..size. An index outside the array still reads na or does nothing. (fb5c000)
+- An na index: `array.insert` appends, `array.slice` takes it as the start (`index_from`) or the size (`index_to`), `array.fill` likewise, and an na rank of `array.min`/`array.max` is 0. (was: `insert` and `fill` did nothing, `slice` was na, `min`/`max` were na) (fb5c000)
+- `array.percentile_nearest_rank` and `array.percentile_linear_interpolation` keep na elements in the sort (at the end) and rank over the full length: a rank in the na tail is na, and with any na only the low clamp and an exact rank of the interpolation give a value. The interpolation reads the 1-based position `n * p / 100 + 0.5` (was `(p / 100) * (n - 1)`); an na percentage is rank 0 for the nearest rank (was 100) and na for the interpolation; the nearest rank no longer rounds the 70th percentile of ten values up to rank 8. (1231bb4)
+- `array.percentrank(id, index)` ranks the element at the index, `(count at or below it - 1) * 100 / (n - 1)` (was: the share of elements below a value); an na index is index 0 and an na element is na. (1231bb4)
+- `array.indexof`/`array.lastindexof`/`array.includes` compare within 1e-10 like `==`; `array.binary_search` stays exact. (1231bb4)
+- `array.binary_search_leftmost` answers the first duplicate of a hit and the next smaller element for a miss (was the insertion point); `array.binary_search_rightmost` answers the last duplicate of a hit (was the slot after it); `array.binary_search` is the classic halving. (1231bb4)
+- `array.concat(id1, id2)` appends `id2` to `id1` in place and returns `id1` (was a new array). (1231bb4)
+- `array.join` and a logged `array<int>` print `10` where an `array<float>` prints `10.0`; an array counts as int when it comes from `array.new_int`, `array.new<int>`, `array.from` of statically int arguments, or a copy/slice of one. (0aea77e)
+
 ## [0.3.0] - 2026-09-28
 
 0.3.0 is the first release measured against TradingView's own results instead of a
