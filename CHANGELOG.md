@@ -10,6 +10,18 @@ Every entry below names the commit that made it. Each of those commit messages s
 the rule, quotes its evidence (a TradingView export, the certified reference engine,
 or the Pine manual) and lists what moved.
 
+## [Unreleased]
+
+### Behaviour changes (outputs differ from 0.3.0)
+
+- `chart.point.now(price)` carries the current bar's index and time (both were na), as the manual describes it. (2ef370a)
+- `line.new(first_point, second_point, ...)`, `label.new(point, text, ...)` and `box.new(top_left, bottom_right, ...)` read their chart.point arguments: the drawing's coordinates are the points' index (or their time with `xloc.bar_time`) and price, and the parameters after the points (text, color, style, width, `border_color`, ...) keep their own meaning. They were read as numbers, so every coordinate was na, `label.new(p, "x")` lost its text, and keyword points (`first_point=`, `point=`, `top_left=`) were dropped. (2ef370a)
+- `line.set_first_point`/`set_second_point`, `box.set_top_left_point`/`set_bottom_right_point` and `label.set_point` follow the drawing's `xloc` (the point's time on `xloc.bar_time`); `label.set_point` was a no-op. (2ef370a)
+
+### Added
+
+- Keyword arguments for `chart.point.new`/`from_index`/`from_time`/`now`/`copy` (`time=`, `index=`, `price=`, `point=`) and for the setters that take a point (`point=`); an unknown or doubled name is a transpile error. (2ef370a)
+
 ## [0.3.0] - 2026-09-28
 
 0.3.0 is the first release measured against TradingView's own results instead of a
