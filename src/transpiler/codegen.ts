@@ -4328,6 +4328,13 @@ function genCallExpr(
       // prepass row in request.security. A series length gets it with the *VarLen suffix below.
       args.push(secCtx === null ? "$.idx" : secCtx.loopVar);
     }
+    if (!stateCall.seriesLength && stateCall.fn === "linreg") {
+      // A fixed-length ta.linreg runs the ta.highest ring, addressed by bar_index (runtime/ta.ts
+      // linreg): the optional offset is padded first, then the bar index goes last, as the series
+      // form's barCount/barIdx do.
+      if (args.length === 2) args.push("0");
+      args.push(secCtx === null ? "$.idx" : secCtx.loopVar);
+    }
     if (stateCall.fn === "wpr") {
       // ta.wpr(length) — Pine 문법에 close/high/low 인자가 없고 내장 bar series를 암묵 사용한다
       // (analyzer.ts TA_REGISTRY.wpr 주석 참조). 유일한 사용자 인자 length(index 0) 앞에 셋을 끼워
