@@ -28,6 +28,7 @@ import { ExchangeCalendar, calendarSpecOf, type CalendarSpec, type SymbolCalenda
 import type { TranspileOk } from "../transpiler/pipeline";
 import type { DrawingRecord } from "./drawing";
 import { BarState } from "./rollback";
+import type { LogEntry } from "./log";
 
 export interface OHLCVData {
   open: ArrayLike<number>;
@@ -53,6 +54,9 @@ export interface ContextOptions {
   // whose symbol is known at compile time and has a feed here reads the feed (security.ts
   // buildFromFeed); any other call reads the chart's own bars.
   security?: Readonly<Record<string, SecurityFeed>>;
+  // Receives what the script writes with log.info / log.warning / log.error, one call per log
+  // statement execution, in order. Without it those calls are no-ops, as before. See LogEntry.
+  onLog?: (entry: LogEntry) => void;
 }
 
 // One symbol's bars with their open times (required), the timeframe they have (taken to be the
@@ -65,7 +69,7 @@ export interface SecurityFeed extends OHLCVData {
 }
 
 // The ContextOptions keys this resin takes, for callers that detect support.
-export const CONTEXT_OPTION_KEYS: readonly (keyof ContextOptions)[] = ["inputs", "magnifier", "security"];
+export const CONTEXT_OPTION_KEYS: readonly (keyof ContextOptions)[] = ["inputs", "magnifier", "security", "onLog"];
 
 export class Context {
   vars: (number | string | number[] | null | undefined)[];
@@ -118,6 +122,10 @@ export class Context {
   // Generated code fills them with `$.plots[N].record(value)` each bar; once
   // the loop finishes, run() converts them to plain arrays.
   plots: Series[];
+  // The log sink (ContextOptions.onLog). compile() reads it when it instantiates the module on
+  // this context, so set it before compile(code)(ctx) when building the context by hand.
+  // request.security child contexts never have one: their log output is not the chart's.
+  onLog: ((entry: LogEntry) => void) | undefined = undefined;
   // Zero-based index of the current bar, for barstate.* and session.* (timeOfBar).
   // advance() moves it forward by one; barCount is the fixed total.
   idx: number;
@@ -196,6 +204,7 @@ export class Context {
       result.plotTitles.length, result.securityTfs, result.refHistorySlotCount,
       result.condCallHistorySlotCount, result.condCallRefHistorySlotCount,
     );
+    if (opts.onLog !== undefined) ctx.onLog = opts.onLog;
     if (opts.magnifier !== undefined) ctx.setMagnifier(opts.magnifier);
     if (opts.security !== undefined) {
       ctx.setSecurityFeeds(opts.security, result.securitySymbols ?? [], result.securityTfs, result.calendar);

@@ -70,7 +70,11 @@ function zonedWallClockMs(ms: number, timezone: string | null | undefined): numb
   const get = (type: string): number => Number(parts.find((p) => p.type === type)!.value);
   // hourCycle:"h23"는 0~23이 정상이지만 일부 ICU 빌드의 자정 렌더링 이슈(과거 알려진 브라우저
   // 버그) 방어로 %24를 유지 — 비용 0, 위험만 제거.
-  return Date.UTC(get("year"), get("month") - 1, get("day"), get("hour") % 24, get("minute"), get("second"));
+  // setUTCFullYear, not Date.UTC: Date.UTC reads a year of 0 to 99 as 1900 + year.
+  const wall = new Date(0);
+  wall.setUTCFullYear(get("year"), get("month") - 1, get("day"));
+  wall.setUTCHours(get("hour") % 24, get("minute"), get("second"), 0);
+  return wall.getTime();
 }
 
 // The offset of `timezone`'s wall clock from UTC at the instant `ms`, in milliseconds (0 where

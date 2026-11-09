@@ -11,6 +11,8 @@
 import { Context, type ContextOptions, type OHLCVData } from "./context";
 import { setDrawingContext } from "./drawing";
 import { rt } from "./rt";
+import { format } from "./str";
+import type { LogEntry } from "./log";
 // Type-only: erased at runtime, so no runtime cycle back into the transpiler.
 import type { TranspileOk } from "../transpiler/pipeline";
 
@@ -155,6 +157,10 @@ export function compile(code: string): (ctx: Context) => () => void {
     // gets a runtime whose log functions are silent (the oracle's security contexts log in
     // processes of their own).
     ctx.instantiate = (child) => instantiate(child, { ...runtime, logInfo: silent, logWarning: silent, logError: silent });
+    // log.info/warning/error reach the caller's sink (ContextOptions.onLog) through a runtime of
+    // this context's own; without a sink the shared one is used as is.
+    const sink = ctx.onLog;
+    if (sink !== undefined) runtime = withLogSink(runtime, ctx, sink);
     const barFn = factory(ctx, runtime);
     if (typeof barFn !== "function") {
       throw new Error("compiled module did not return a per-bar function (not two-layer output)");
@@ -175,6 +181,19 @@ export function compile(code: string): (ctx: Context) => () => void {
 
 function silent(): undefined {
   return undefined;
+}
+
+// A runtime whose log.* functions hand LogEntry records to `sink`: the message is
+// str.format(formatString, ...args), na (a null pattern) is "". The bar and time are read from the
+// context at call time, so a call from a function or a loop reports the bar it runs on.
+function withLogSink(runtime: typeof rt, ctx: Context, sink: (entry: LogEntry) => void): typeof rt {
+  const emit = (level: LogEntry["level"]) => (...args: unknown[]): undefined => {
+    const [template, ...rest] = args as [string | null, ...unknown[]];
+    const message = (format as (t: string | null, ...a: unknown[]) => string | null)(template, ...rest);
+    sink({ level, message: message ?? "", bar: ctx.idx, time: ctx.time?.[ctx.idx] });
+    return undefined;
+  };
+  return { ...runtime, logInfo: emit("info"), logWarning: emit("warning"), logError: emit("error") };
 }
 
 // Object form (viz S0): everything run() needs is already on TranspileOk, so take it

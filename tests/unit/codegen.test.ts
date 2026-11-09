@@ -827,14 +827,14 @@ describe("CodeGen", () => {
     expect(code).toBe("var x = rt.ta.rci($.taSlots[0], $.close.get(0), 9, $.idx);");
   });
 
-  it("emits ta.linreg call through $.taSlots[slot] (no codegen special-casing — 3 args pass through in order)", () => {
+  it("emits ta.linreg call through $.taSlots[slot]: the 3 args in order, then the bar index the fixed-length ring is addressed by", () => {
     const code = codegenSource("x = ta.linreg(close, 4, 0)");
-    expect(code).toBe("var x = rt.ta.linreg($.taSlots[0], $.close.get(0), 4, 0);");
+    expect(code).toBe("var x = rt.ta.linreg($.taSlots[0], $.close.get(0), 4, 0, $.idx);");
   });
 
-  it("emits ta.linreg(source, length) 2-argument form with no offset arg (JS default parameter fills 0, C252)", () => {
+  it("emits ta.linreg(source, length) 2-argument form with the offset padded to 0 before the bar index (C252)", () => {
     const code = codegenSource("x = ta.linreg(close, 4)");
-    expect(code).toBe("var x = rt.ta.linreg($.taSlots[0], $.close.get(0), 4);");
+    expect(code).toBe("var x = rt.ta.linreg($.taSlots[0], $.close.get(0), 4, 0, $.idx);");
   });
 
   it("emits ta.vwma call with the implicit volume arg spliced between source and length", () => {
@@ -3712,9 +3712,9 @@ describe("CodeGen", () => {
     expect(codegenSource("[m, u, l] = ta.bb(close, 4, 2)")).not.toContain("VarLen");
   });
 
-  it("keeps emitting the state-fixed rt.ta.linreg with the JS-default omitted offset for a literal length (C550 — 고정 경로 출력 바이트 불변)", () => {
+  it("emits the fixed-length rt.ta.linreg (not the VarLen one) for a literal length, offset padded, bar index last (C550)", () => {
     const code = codegenSource("x = ta.linreg(close, 4)");
-    expect(code).toBe("var x = rt.ta.linreg($.taSlots[0], $.close.get(0), 4);");
+    expect(code).toBe("var x = rt.ta.linreg($.taSlots[0], $.close.get(0), 4, 0, $.idx);");
   });
 
   it("emits math.sum through sumVarLen with trailing $.barCount, $.idx when length is a series expression (C551 — VARLEN_RT_PATHS 확장)", () => {
@@ -4121,7 +4121,7 @@ describe("CodeGen", () => {
         "var d = rt.ta.rma($.taSlots[3], $.close.get(0), 3);",
         "var e = rt.ta.wma($.taSlots[4], $.close.get(0), 3);",
         "var u = rt.ta.hma($.taSlots[5], $.close.get(0), 4);",
-        "var v = rt.ta.linreg($.taSlots[6], $.close.get(0), 4, 0);",
+        "var v = rt.ta.linreg($.taSlots[6], $.close.get(0), 4, 0, $.idx);",
         "var f = rt.ta.vwma($.taSlots[7], $.close.get(0), $.volume.get(0), 3);",
         "var g = rt.ta.swma($.taSlots[8], $.close.get(0));",
         "var h = rt.fixnan($.taSlots[9], $.open.get(0));",
@@ -20970,9 +20970,14 @@ describe("CodeGen timestamp() bare builtin (C210)", () => {
     expect(rt.timestamp(2024, 1, 15)).toBe(1705276800000);
   });
 
-  it("hand-verified: the timezone-string overload ignores tz entirely and always computes as UTC (matches pine2py exactly — tz_str is unpacked but never consumed)", () => {
-    expect(rt.timestamp("Asia/Seoul", 2024, 1, 15, 12, 30, 45)).toBe(rt.timestamp(2024, 1, 15, 12, 30, 45));
-    expect(rt.timestamp("America/New_York", 2024, 1, 15)).toBe(rt.timestamp(2024, 1, 15));
+  it("the timezone-string overload reads the components as that zone's wall clock (pine2py ignored the zone; TradingView does not: tier 1 base_001_time)", () => {
+    const utc = rt.timestamp(2024, 1, 15, 12, 30, 45);
+    expect(rt.timestamp("Asia/Seoul", 2024, 1, 15, 12, 30, 45)).toBe(utc - 9 * 3600000);
+    expect(rt.timestamp("America/New_York", 2024, 1, 15)).toBe(rt.timestamp(2024, 1, 15) + 5 * 3600000);
+    expect(rt.timestamp("GMT+6", 2016, 1, 19, 9, 30)).toBe(1453174200000);
+    expect(rt.timestamp("GMT+3", 2019, 6, 19, 9, 30, 15)).toBe(1560925815000);
+    expect(rt.timestamp("UTC-5:30", 2024, 1, 15, 12)).toBe(rt.timestamp(2024, 1, 15, 17, 30));
+    expect(rt.timestamp("UTC", 2024, 1, 15, 12)).toBe(rt.timestamp(2024, 1, 15, 12));
   });
 
   it("hand-verified: the tz-string overload defaults day to 1 when omitted, matching pine2py's asymmetric default (plain overload has no such default — day is required there)", () => {

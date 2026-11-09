@@ -42,6 +42,9 @@ export { rt } from "./runtime/rt";
 // purpose".
 export { PineRuntimeHaltError } from "./runtime/log";
 
+// What ContextOptions.onLog receives for each log.info / log.warning / log.error call.
+export type { LogEntry } from "./runtime/log";
+
 // Type-only: Context constructs these, a caller never does. They exist so
 // reads like ctx.close.get(0) and ctx.strategy.posSize type-check.
 export type { Series } from "./runtime/series";

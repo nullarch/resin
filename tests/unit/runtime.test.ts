@@ -1059,16 +1059,16 @@ describe("ta.linreg", () => {
     expect(resultDefault).toBeCloseTo(107.7, 9);
   });
 
-  it("cross-checked against a from-scratch least-squares fit over the last length non-na sources (embedded NaN gap)", () => {
-    // PyneCore lib/ta.py linreg (TradingView-measured): an na source stores nothing and holds the
-    // last full-window value, so the window is the last `length` NON-na sources; the line is read
-    // at x = length - 1 - offset with x = 0 on the oldest source (ref_v6_ta_math.txt "ta.linreg").
-    // The reference below fits the textbook normal equations on that window, independently of the
-    // runtime's arithmetic order (twin channel lr_na covers the same rule against the oracle).
+  it("cross-checked against a from-scratch least-squares fit over the last length BARS: an na is stored and blanks the window (embedded NaN gap)", () => {
+    // PyneCore lib/ta.py linreg (TradingView-measured, tier 1 ta_375_linreg_windows): a fixed length
+    // runs the ring addressed by the chart bar, an na source is stored like any value and a window
+    // holding one is na, so one na blanks the next `length` bars; the line is read at x = length - 1 -
+    // offset with x = 0 on the oldest bar (ref_v6_ta_math.txt "ta.linreg"). The reference below fits
+    // the textbook normal equations on that window, independently of the runtime's arithmetic order.
     function directLinreg(values: number[], length: number, offset: number): number {
-      const kept = values.filter((v) => !Number.isNaN(v));
-      if (kept.length < length) return NaN;
-      const window = kept.slice(kept.length - length);
+      if (values.length < length) return NaN;
+      const window = values.slice(values.length - length);
+      if (window.some((v) => Number.isNaN(v))) return NaN;
       const n = length;
       const meanX = (n - 1) / 2;
       const meanY = window.reduce((a, b) => a + b, 0) / n;
@@ -1082,20 +1082,30 @@ describe("ta.linreg", () => {
       return meanY + slope * (n - 1 - offset - meanX);
     }
 
-    const values = [10, 11, 12, 13, NaN, 14, 15, 17, 16, 18, NaN, NaN, 19, 21];
+    const values = [10, 11, 12, 13, NaN, 14, 15, 17, 16, 18, NaN, NaN, 19, 21, 22, 20];
     const state = {};
+    let finite = 0;
     for (let i = 0; i < values.length; i++) {
-      const got = linreg(state, values[i]!, 4, 1);
-      // An na bar reports the value of the last bar that had a source.
-      let last = i;
-      while (last >= 0 && Number.isNaN(values[last]!)) last--;
-      const want = last < 0 ? NaN : directLinreg(values.slice(0, last + 1), 4, 1);
+      const got = linreg(state, values[i]!, 4, 1, i);
+      const want = directLinreg(values.slice(0, i + 1), 4, 1);
       if (Number.isNaN(want)) {
         expect(got).toBeNaN();
       } else {
+        finite++;
         expect(got).toBeCloseTo(want, 9);
       }
     }
+    expect(finite).toBe(4); // bars 3, 8, 9 and 15: every other window holds one of the na bars 4, 10, 11
+  });
+
+  it("a gated call reads the chart-bar window: stale slots between its calls, 0 in a slot it never wrote (tier 1 ta_375_linreg_windows)", () => {
+    // length 3 called on bars 1 and 2 only (a skipped bar 0): bar 2's window is bars 0..2 = [0 (never
+    // written), 5, 7]; a window of the call's own executions would still be warming up.
+    const state = {};
+    expect(linreg(state, 5, 3, 0, 1)).toBeNaN(); // bar_index < length - 1
+    const got = linreg(state, 7, 3, 0, 2);
+    // the line through (0, 0), (1, 5), (2, 7): mean y 4, slope 3.5, 4 + 3.5 * (2 - 1) = 7.5 at x = 2
+    expect(got).toBeCloseTo(7.5, 9);
   });
 });
 
@@ -2021,13 +2031,15 @@ describe("ta.range", () => {
     expect(range(state, 3, 1, 2)).toBe(0);
   });
 
-  it("is na on an na bar and ignores it afterwards: the extremes do not run, so the window goes on over the valued bars (twin range-na-machine.json)", () => {
+  it("is na on an na bar and does not run the extremes: its slot is a never-written one, 0 (twin range-na-machine.json, slot value per tier 1 ta_376)", () => {
     const state = {};
     range(state, 5, 3, 0);
     range(state, 6, 3, 1);
     expect(range(state, NaN, 3, 2)).toBeNaN();
-    expect(range(state, 7, 3, 3)).toBe(1); // bars 1..3: 6, (na, never written), 7
-    expect(range(state, 8, 3, 4)).toBe(1); // 7, 8 (the na bar's slot holds nothing)
+    // The na bar's slot was never written, and a never-written slot holds 0 (tier 1
+    // ta_376_window_extreme_machines c_lo_g2), not na: it is in the window until its bar ages out.
+    expect(range(state, 7, 3, 3)).toBe(7); // bars 1..3: 6, (0), 7
+    expect(range(state, 8, 3, 4)).toBe(8); // bars 2..4: (0), 7, 8; the lowest 0 has not aged out
     expect(range(state, 9, 3, 5)).toBe(2); // 7, 8, 9
   });
 
@@ -3955,12 +3967,12 @@ describe("ta.highestbars/ta.lowestbars variable(series) length (highestbarsVarLe
       highestbarsVarLen(stateHb, values[i]!, 1, 10, i);
       lowestbarsVarLen(stateLb, values[i]!, 1, 10, i);
     }
-    // All tied, the length growing 1 -> 3 past the ring (capacity 2): the growth remaps the slot of
-    // bar 1 onto the current bar, so the rescan reaches bar 2 only and reports it, the older of the
-    // ties it sees (resin-harness twin state/repros/extreme-varlen-sample10.json hb3/lb3: the oracle
-    // gives -1 here, then -2 once the ring holds three bars; pine2py's newest-wins gave 0).
-    expect(highestbarsVarLen(stateHb, 7, 3, 10, 3)).toBe(-1);
-    expect(lowestbarsVarLen(stateLb, 7, 3, 10, 3)).toBe(-1);
+    // All tied, the length growing 1 -> 3: a series length reads one slot per chart bar and keeps
+    // the whole history (tier 1 ta_376 s_hb_alt), so the rescan on the growth reaches bars 1..3 and
+    // names the oldest of the ties, bar 1 (pine2py's newest-wins gave 0; the ring, whose growth lost
+    // a bar, gave -1).
+    expect(highestbarsVarLen(stateHb, 7, 3, 10, 3)).toBe(-2);
+    expect(lowestbarsVarLen(stateLb, 7, 3, 10, 3)).toBe(-2);
     // A length-1 window is the current bar alone: a plain +0, never -0.
     expect(Object.is(highestbarsVarLen(stateHb, 7, 1, 10, 4), 0)).toBe(true);
     expect(Object.is(lowestbarsVarLen(stateLb, 7, 1, 10, 4), 0)).toBe(true);
@@ -4133,9 +4145,12 @@ describe("ta.median/ta.linreg/ta.wma variable(series) length (medianVarLen/linre
     }
   });
 
-  it("linregVarLen: a length that grows past the counter is na until the counter catches up", () => {
+  it("linregVarLen: a length that grows reads the history it already passed (one slot per chart bar, tier 1 ta_375 m4)", () => {
     const vals = [10.0, 12.0, 11.0, 15.0, 13.0, 14.0, 16.0, 12.5];
-    const expected = [NaN, 12, 11, 15, NaN, 14.3, 15.1, 13.95]; // channel vgrow
+    // length 2 on bars 0..3, 4 from bar 4: bar 0 reaches before the first call (na); bar 4 reads bars
+    // 1..4 = [12, 11, 15, 13] at x = 4 (mean 12.75, slope 0.7: 12.75 + 0.7 * 1.5 = 13.8, where the old
+    // warm-up counter left it na); bars 5..7 are the oracle's old values, unchanged (channel vgrow).
+    const expected = [NaN, 12, 11, 15, 13.8, 14.3, 15.1, 13.95];
     const state = {};
     for (let i = 0; i < vals.length; i++) {
       const r = linregVarLen(state, vals[i]!, i < 4 ? 2 : 4, 0, 10, i);
@@ -4153,9 +4168,12 @@ describe("ta.median/ta.linreg/ta.wma variable(series) length (medianVarLen/linre
     expect(linregVarLen(state, 70, 2, 0, 10, 4)).toBeCloseTo(70, 9); // [50, 70]
   });
 
-  it("linregVarLen: an na source stores nothing and holds the last full value (fixed-length linreg parity)", () => {
+  it("linregVarLen: an na source is stored and blanks the windows that reach it (no skipping, no holding)", () => {
     const vals = [10.0, 12.0, 11.0, 15.0, 13.0, 14.0, 16.0, 12.5];
-    const expected = [NaN, NaN, NaN, 12.3333333333, 13.3333333333, 14, 14.3333333333, 14.1666666667]; // channel vna3
+    // length 3, offset 1, na on bar 2: bars 2, 3, 4 hold it, bar 5 is the first window past it:
+    // [15, 13, 14] read at x = 1 (mean 14, slope -0.5: 14 + (-0.5) * 0) = 14; bar 6 [13, 14, 16] at x = 1
+    // (14.3333, slope 1.5) = 14.3333; bar 7 [14, 16, 12.5] at x = 1 (14.1667, slope -0.75) = 14.1667.
+    const expected = [NaN, NaN, NaN, NaN, NaN, 14, 14.3333333333, 14.1666666667];
     const state = {};
     for (let i = 0; i < vals.length; i++) {
       const r = linregVarLen(state, i === 2 ? NaN : vals[i]!, 3, 1, 10, i);
@@ -4164,16 +4182,16 @@ describe("ta.median/ta.linreg/ta.wma variable(series) length (medianVarLen/linre
     }
   });
 
-  it("linregVarLen: same-bar repeated calls start again from the bar-start state (loop-body parity)", () => {
+  it("linregVarLen: same-bar repeated calls rewrite the bar's slot (loop-body parity)", () => {
     const state = {};
     linregVarLen(state, 10, 2, 0, 10, 0);
     linregVarLen(state, 90, 2, 0, 10, 1);
     linregVarLen(state, 70, 2, 0, 10, 1);
     expect(linregVarLen(state, 20, 2, 0, 10, 1)).toBeCloseTo(20, 9); // [10, 20]
     expect(linregVarLen(state, 40, 2, 0, 10, 2)).toBeCloseTo(40, 9); // [20, 40]
-    expect(linregVarLen(state, NaN, 2, 0, 10, 3)).toBeCloseTo(40, 9); // held
-    // bar 3 again, from its start (the na call undone): 10 is stored and the counter reaches 3.
-    expect(linregVarLen(state, 10, 3, 0, 10, 3)).toBeCloseTo(55 / 3, 9); // [20, 40, 10]
+    expect(linregVarLen(state, NaN, 2, 0, 10, 3)).toBeNaN(); // [40, na]
+    // bar 3 again: its slot is rewritten, so the window of 3 is [20, 40, 10].
+    expect(linregVarLen(state, 10, 3, 0, 10, 3)).toBeCloseTo(55 / 3, 9);
   });
 
   it("wmaVarLen: computes the linearly-weighted mean over the *current* length as it varies (TV semantics, hand-verified — pine2py 고정 윈도우 버그라 오라클 불가)", () => {
@@ -6793,11 +6811,11 @@ describe("ta.range variable(series) length (rangeVarLen)", () => {
     expect(rangeVarLen(state, 12, 2, 10, 2)).toBe(88); // window [100 (the rewritten slot), 12]
   });
 
-  it("an na bar is na and leaves the window to the valued bars", () => {
+  it("an na bar is na and does not run the extremes: its slot stays a never-written one, 0", () => {
     const state = {};
     rangeVarLen(state, 5, 2, 10, 0);
     expect(rangeVarLen(state, NaN, 2, 10, 1)).toBeNaN();
-    expect(rangeVarLen(state, 6, 2, 10, 2)).toBe(0); // bars 1..2: (na, never written), 6
+    expect(rangeVarLen(state, 6, 2, 10, 2)).toBe(6); // bars 1..2: (never written: 0), 6
     expect(rangeVarLen(state, 9, 2, 10, 3)).toBe(3); // 6, 9
   });
 });
@@ -8703,7 +8721,9 @@ describe("numeric helpers", () => {
   it("format() applies {idx,number,pattern} decimal formatting, counting digits after the dot", () => {
     expect(format("{0,number,#.##}", 3.14159)).toBe("3.14");
     expect(format("{0,number,0.000}", 3.14159)).toBe("3.142");
-    expect(format("{0,number,#,###.##}", 1234.5678)).toBe("1234.57");
+    // a ',' in the pattern groups (this once pinned "1234.57", which DecimalFormat does not print)
+    expect(format("{0,number,#,###.##}", 1234.5678)).toBe("1,234.57");
+    expect(format("{0,number,#.##}", 1234.5678)).toBe("1234.57");
   });
 
   it("format() rounds a number pattern half-to-even on the double's exact value (DecimalFormat)", () => {

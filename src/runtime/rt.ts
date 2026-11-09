@@ -4,7 +4,7 @@ import * as ta from "./ta";
 import * as array from "./array";
 import * as mapFns from "./map";
 import * as matrixFns from "./matrix";
-import { na, pineNot, pineLt, pineGt, pineLe, pineGe, pineAnd, pineOr, pineAndLazy, pineOrLazy, pineEq, pineNeq, pineDiv, pineMod, idiv, round, round_to_mintick, abs, max, min, clamp, avg, floor, ceil, sqrt, pow, log, log10, exp, sign, sin, cos, tan, asin, acos, atan, atan2, todegrees, toradians, nz, concat, udtCopy, int, float, bool, timestamp, barIndexHistory, histConst } from "./numeric";
+import { na, pineNot, pineLt, pineGt, pineLe, pineGe, pineAnd, pineOr, pineAndLazy, pineOrLazy, pineEq, pineNeq, pineDiv, pineMod, idiv, round, round_to_mintick, abs, max, min, clamp, avg, floor, ceil, sqrt, pow, log, log10, exp, sign, sin, cos, tan, asin, acos, atan, atan2, todegrees, toradians, nz, concat, udtCopy, int, float, bool, timestamp, timestampIn, barIndexHistory, histConst } from "./numeric";
 import { histGet, secHistGet, refHistGet } from "./series";
 import { length, contains, startswith, endswith, pos, lower, upper, trim, replace_all, replace, substring, repeat, tostring, tonumber, split, match, format, format_number, format_time } from "./str";
 import { rgb, colorNew, from_gradient, colorR, colorG, colorB, colorT, vizColor, vizFlag, vizNum } from "./color";
@@ -221,6 +221,7 @@ export const rt = {
   float,
   bool,
   timestamp,
+  timestampIn,
   length,
   contains,
   startswith,
