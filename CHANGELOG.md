@@ -10,6 +10,22 @@ Every entry below names the commit that made it. Each of those commit messages s
 the rule, quotes its evidence (a TradingView export, the certified reference engine,
 or the Pine manual) and lists what moved.
 
+## [Unreleased]
+
+### Added
+
+- `array.stdev(id, biased)`, `array.variance(id, biased)` and `array.covariance(id1, id2, biased)` accept the optional `biased` argument (default `true`: divide by n; `false`: n-1), positionally, as `biased=` or as method calls; they were rejected at compile time. (c2c2be5)
+- `matrix.diff(id1, id2)`, the element-wise subtraction with a matrix or a scalar `id2`; the 1-argument adjacent-row form is kept as an extension. (c2c2be5)
+
+### Behaviour changes (outputs differ from 0.3.0)
+
+- `array.stdev`/`variance`/`covariance` of one valid element or pair is 0 with the default `biased=true` (was na); unbiased it is na. (c2c2be5)
+- `array.sum` of an all-na array is na (was 0); an empty array still sums to 0. (c2c2be5)
+- `array.concat` and `matrix.concat` append to their first argument in place and return it (were: a new array/matrix). (c2c2be5)
+- `matrix.reshape` rebuilds its matrix in place (was: a new matrix), and `matrix.reverse` reverses the columns as well as the rows. (c2c2be5)
+- `array.binary_search_leftmost` of an absent value is the index left of the insertion point (was the insertion point), and `binary_search_rightmost` of a found value is the last index of that value (was the index after it). (c2c2be5)
+- `array.sort_indices(id, order.descending)` is the reverse of the ascending order, so tied elements come out in reversed index order (was: original order). (c2c2be5)
+
 ## [0.3.0] - 2026-09-28
 
 0.3.0 is the first release measured against TradingView's own results instead of a
