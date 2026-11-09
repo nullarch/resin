@@ -8703,7 +8703,9 @@ describe("numeric helpers", () => {
   it("format() applies {idx,number,pattern} decimal formatting, counting digits after the dot", () => {
     expect(format("{0,number,#.##}", 3.14159)).toBe("3.14");
     expect(format("{0,number,0.000}", 3.14159)).toBe("3.142");
-    expect(format("{0,number,#,###.##}", 1234.5678)).toBe("1234.57");
+    // a ',' in the pattern groups (this once pinned "1234.57", which DecimalFormat does not print)
+    expect(format("{0,number,#,###.##}", 1234.5678)).toBe("1,234.57");
+    expect(format("{0,number,#.##}", 1234.5678)).toBe("1234.57");
   });
 
   it("format() rounds a number pattern half-to-even on the double's exact value (DecimalFormat)", () => {

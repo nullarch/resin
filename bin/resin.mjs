@@ -32,8 +32,10 @@ const flag = (name, dflt = null) => {
   const eq = rest.find((a) => a.startsWith(`--${name}=`));
   return eq ? eq.slice(name.length + 3) : dflt;
 };
+const BOOLEAN_FLAGS = new Set(['--logs']); // flags that take no value
 const positional = rest.filter((a, i) =>
-  !a.startsWith('-') && !(rest[i - 1]?.startsWith('--') && !rest[i - 1].includes('=')));
+  !a.startsWith('-') &&
+  !(rest[i - 1]?.startsWith('--') && !rest[i - 1].includes('=') && !BOOLEAN_FLAGS.has(rest[i - 1])));
 
 const USAGE = `resin — run TradingView Pine Script outside TradingView
 
@@ -41,6 +43,8 @@ const USAGE = `resin — run TradingView Pine Script outside TradingView
   resin run   <file.pine> [--data f.json]  execute and print the plot output
                           [--bars N]       synthesize N bars instead (default 100)
                           [--viz out.json] also dump the visualization data (viz S5)
+                          [--logs]         print log.info/warning/error to stderr
+                                           as "[level] bar N: message"
   resin check <file|dir>                   compile-check; report what failed
 
   --chart-tf <tf>   chart timeframe the script should compile against ("D", "60", …)
@@ -97,13 +101,8 @@ function loadBars(path, bars) {
   };
 }
 
-function execute(result, data) {
-  const ctx = new Context(
-    data, result.varSlots.length, result.taSlotCount, result.fnVarSlotCount,
-    result.historySlotCount, result.taScratchSize, {},
-    result.plotTitles.length, result.securityTfs, result.refHistorySlotCount,
-    result.condCallHistorySlotCount, result.condCallRefHistorySlotCount,
-  );
+function execute(result, data, opts = {}) {
+  const ctx = Context.from(result, data, opts);
   const barFn = compile(result.code)(ctx);
   for (let i = 0; i < ctx.barCount; i++) {
     ctx.advance();
@@ -147,7 +146,11 @@ switch (cmd) {
     const data = loadBars(flag('data'), +flag('bars', '100'));
     let ctx;
     try {
-      ctx = execute(result, data);
+      // --logs: the script's log.* output, on stderr so the plot lines on stdout stay clean.
+      const onLog = rest.includes('--logs')
+        ? (e) => console.error(`[${e.level}] bar ${e.bar}: ${e.message}`)
+        : undefined;
+      ctx = execute(result, data, onLog ? { onLog } : {});
     } catch (e) {
       if (e instanceof PineRuntimeHaltError) {
         fail(`script halted itself: ${e.message}`);

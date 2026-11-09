@@ -10,6 +10,16 @@ Every entry below names the commit that made it. Each of those commit messages s
 the rule, quotes its evidence (a TradingView export, the certified reference engine,
 or the Pine manual) and lists what moved.
 
+## [Unreleased]
+
+### Added
+
+- `run(result, data, { onLog })` and `Context.from(result, data, { onLog })`: a sink for `log.info`/`log.warning`/`log.error`. It receives a `LogEntry` (`level`, `message`, `bar`, `time`) per executed statement; `message` is the text TradingView's Pine Logs pane shows. Without it the calls stay no-ops. New type export `LogEntry`. `resin run --logs` prints the entries to stderr. See API.md "Logs".
+
+### Behaviour changes (outputs differ from 0.3.0)
+
+- `str.format` (and so every `log.*` message) groups thousands the way MessageFormat does: `{0}` and `{0,number}` print `-18,189.894` (was `-18189.894`), `{0,number,integer}` and `{0,number,percent}` print `1,340,000` and `1,250%`, and a pattern with a `,` (`#,###.##`) groups. A pattern without one (`#.##`) and `str.tostring` do not group. TradingView's log text for `ta.variance`/`ta.stdev` of a 1e-16 residual is `-18,189.894`. Evidence: h2h case ta_243_variance_stdev_exact.
+
 ## [0.3.0] - 2026-09-28
 
 0.3.0 is the first release measured against TradingView's own results instead of a
@@ -192,7 +202,6 @@ compare across versions. The public exports are unchanged; `transpile()`,
 
 - A local declaration that shadows a variable its block already read ("Cannot access … before initialization"). (17aa4b7)
 - A UDT variable declared from another variable holding one (`a = p`, then `a.x := …`). (8170578)
-- `timestamp()` with later parts given by name, and `input.int`/`input.float` with an options list as the third argument. (a9f3df7)
 - A user-declared method's call has the UDT its body returns. (382ad71)
 - `array.from(...)` of drawings or UDT objects. (c55684f)
 - An untyped parameter passed on to another function. (2a7f4d1)

@@ -37,6 +37,7 @@ script stopped itself on purpose" from "the engine broke".
 |---|---|---|
 | `AnalyzeOptions` | `src/transpiler/analyzer` | options for `transpile()` (`chartTf?: string`; `syminfo?: { mintick?, pricescale?, minmove?, mincontract?, pointvalue?, timezone?, type?, opening_hours?, session_starts?, session_ends?, prefix?, ticker? }` — the chart symbol's tick and lot grids, default 0.01 / 100 / 1 / 1, `mintick` must equal `minmove / pricescale`; its point value, default 1; its exchange calendar: timezone (IANA name or `"UTC±h"`, default `"UTC"`), market type (default `"stock"`) and weekly session schedule (`opening_hours: [{ day, start, end }]`, `session_starts: [{ day, time }]`, `session_ends: [{ day, time }]`, day 0 = Monday, `"HH:MM[:SS]"` exchange time; default open around the clock, 00:00 to 23:59:59), read by `syminfo.timezone`/`syminfo.type`, `timeframe.change`, `session.*` and `str.format_time`'s default timezone (`hour`, `dayofweek` and the other time builtins still read UTC); its identity: exchange `prefix` and `ticker`, default `""`, read by `syminfo.prefix`/`syminfo.ticker` and `syminfo.tickerid` (`"PREFIX:TICKER"`), which names the chart symbol's own `request.security` feeds; `strategy?: { initial_capital?, default_qty_type?, default_qty_value?, pyramiding?, commission_type?, commission_value?, slippage?, process_orders_on_close?, calc_on_order_fills?, use_bar_magnifier?, margin_long?, margin_short? }` — TradingView's strategy Properties tab: each given key replaces the script's `strategy()` argument or its default, validated like it (a bad value or an unknown key is a transpile error); constants by name (`default_qty_type: "percent_of_equity"`, `commission_type: "cash_per_order"`); ignored for a script that is not a strategy) |
 | `BarSnapshot` | `src/runtime/engine` | `Record<string, number>`, keyed `var:<name>` |
+| `LogEntry` | `src/runtime/log` | what `opts.onLog` receives per `log.info`/`log.warning`/`log.error` call: `{ level: "info" \| "warning" \| "error", message: string, bar: number, time: number \| undefined }` (see "Logs") |
 | `OHLCVData` | `src/runtime/context` | `Context` input: `open/high/low/close/volume: ArrayLike<number>`, optional `time` |
 | `PlotResult` | `src/runtime/engine` | `{ title, values }` |
 | `RunResult` | `src/runtime/engine` | `run()` return: `bars` / `finalVarState` / `plots`, plus `viz` (plot styles and per-bar colors, markers, bgcolor/barcolor, hlines, fills, drawing creations) on the object form |
@@ -76,6 +77,31 @@ Both are supported, and both also accept the original positional spellings —
 `run(code, varSlots, taSlotCount, data, …)` with 13 arguments and
 `new Context(...)` with 12 — which remain exactly as they were. The README has
 a worked example of the streaming form.
+
+## Logs
+
+`log.info`, `log.warning` and `log.error` are no-ops unless the caller passes a
+sink: `run(result, data, { onLog })` or `Context.from(result, data, { onLog })`.
+`onLog(entry)` is called once per executed log statement, in execution order,
+with a `LogEntry`:
+
+| Field | Meaning |
+|---|---|
+| `level` | `"info"`, `"warning"` or `"error"` |
+| `message` | the text TradingView's Pine Logs pane shows: `str.format(formatString, ...args)`, so a number of 1000 or more is grouped (`log.info("{0}", 18189.894)` is `"18,189.894"`); a na format string is `""` |
+| `bar` | the zero-based bar index the statement ran on |
+| `time` | that bar's open time in unix milliseconds; `undefined` when the data has no `time` channel |
+
+A statement inside a function or loop reports each execution; under
+`calc_on_order_fills` the re-executions of a bar report too. The sink is read
+when `compile(code)(ctx)` instantiates the module, so a hand-built `Context`
+must have `ctx.onLog` set before that call (`Context.from` does it). A
+`request.security` expression evaluated in its requested context never logs.
+Without `onLog` nothing changes: the calls are no-ops, and results never depend
+on whether a sink is present. `resin run file.pine --logs` prints every entry to
+stderr as `[level] bar N: message`, leaving the plot lines on stdout alone.
+`runtime.warning` stays a no-op; `runtime.error` still halts the script
+(`PineRuntimeHaltError`).
 
 ## Rough edges, recorded rather than fixed
 

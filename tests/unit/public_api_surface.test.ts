@@ -19,6 +19,7 @@ import { ParseError, parse } from "../../src/transpiler/parser";
 import { transpile } from "../../src/transpiler/pipeline";
 import type { AnalyzeOptions } from "../../src/transpiler/analyzer";
 import type { BarSnapshot, PlotResult, RunResult } from "../../src/runtime/engine";
+import type { LogEntry } from "../../src/runtime/log";
 import type { OHLCVData } from "../../src/runtime/context";
 import type { Series } from "../../src/runtime/series";
 import type { StrategyState } from "../../src/runtime/strategy";
@@ -44,6 +45,7 @@ const FROZEN_VALUE_EXPORTS = [
 const FROZEN_TYPE_EXPORTS = [
   "AnalyzeOptions",
   "BarSnapshot",
+  "LogEntry",
   "OHLCVData",
   "PlotResult",
   "RunResult",
@@ -253,6 +255,18 @@ describe("(d) both execution paths work through the public surface alone", () =>
       r.taScratchSize, {}, r.plotTitles, r.securityTfs, r.refHistorySlotCount,
       r.condCallHistorySlotCount, r.condCallRefHistorySlotCount);
     expect(seen).toEqual(res.bars.map((b) => b["var:acc"]));
+  });
+
+  it("opts.onLog receives LogEntry records through run() and Context.from alone (API.md \"Logs\")", () => {
+    const r = transpileOk(`//@version=5
+indicator("logs")
+log.info("acc {0}", close)
+plot(close, "c")
+`);
+    const seen: LogEntry[] = [];
+    run(r, DATA, { onLog: (e: LogEntry) => seen.push(e) });
+    expect(seen.map((e) => e.message)).toEqual(["acc 1.5", "acc 2.5", "acc 3.5", "acc 4.5"]);
+    expect(seen[0]).toEqual({ level: "info", message: "acc 1.5", bar: 0, time: undefined });
   });
 
   it("transpile()의 options(AnalyzeOptions)가 공개면 타입으로 그대로 전달된다", () => {
