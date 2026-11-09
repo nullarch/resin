@@ -67,7 +67,7 @@ function closedTrades(pine: string, bars: OHLCVData): [number, string, number, n
   for (let k = s.closedTradesFirstIndex(); k < s.closedTrades; k++) {
     out.push([
       times.indexOf(s.closedTradeEntryTime(k)), s.closedTradeSize(k) > 0 ? "long" : "short", s.closedTradeEntryPrice(k),
-      times.indexOf(s.closedTradeExitTime(k)), s.closedTradeExitPrice(k), s.closedTradeExitComment(k) || s.closedTradeExitId(k),
+      times.indexOf(s.closedTradeExitTime(k)), s.closedTradeExitPrice(k), (s.closedTradeExitComment(k) || s.closedTradeExitId(k)) ?? "",
     ]);
   }
   return out;
