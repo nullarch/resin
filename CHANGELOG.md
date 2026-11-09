@@ -60,6 +60,11 @@ or the Pine manual) and lists what moved.
 - `line.new(first_point, second_point, ...)`, `label.new(point, text, ...)` and `box.new(top_left, bottom_right, ...)` read their chart.point arguments: the drawing's coordinates are the points' index (or their time with `xloc.bar_time`) and price, and the parameters after the points (text, color, style, width, `border_color`, ...) keep their own meaning. They were read as numbers, so every coordinate was na, `label.new(p, "x")` lost its text, and keyword points (`first_point=`, `point=`, `top_left=`) were dropped. (2ef370a)
 - `line.set_first_point`/`set_second_point`, `box.set_top_left_point`/`set_bottom_right_point` and `label.set_point` follow the drawing's `xloc` (the point's time on `xloc.bar_time`); `label.set_point` was a no-op. (2ef370a)
 
+### Documentation
+
+- README verification claims corrected. The 0.3.0 "Verification" entry below says resin reproduces "72/72 indicator scenarios, 46,482/46,482" TradingView records and the README said "in full". Re-measured against PyneCore `0fd57d7` with a neutral harness: all 20 strategy scenarios (16,259 records; the 19 that existed at 0.3.0 reproduce the 15,989 stated) and 75 of 77 indicator and library scenarios match, 93 of the 95 TradingView-export scenarios overall. The 72/46,482 figure could not be reconstructed from PyneCore's repository, and the 0.3.0 build also failed the `array.*`, `matrix.*` and `time`/`timestamp` exports that this release fixes. The remaining misses (`array.slice` as a view) are listed in the README. The 0.3.0 entry is left as published.
+- README test count 10,311 -> 10,431; the 0.3.0 entry's 10,305 does not match the 10,311 the README gave at the same release.
+
 ## [0.3.0] - 2026-09-28
 
 0.3.0 is the first release measured against TradingView's own results instead of a

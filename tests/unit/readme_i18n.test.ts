@@ -22,8 +22,8 @@ const LANGS = [
 // Every claim in the README that came from a measurement rather than prose.
 const FIGURES = [
   // Verification (0.3.0, resin-harness): TradingView's own exports.
-  "15,989", // strategy trade and statistic records matched
-  "46,482", // indicator records matched
+  "16,259", // strategy trade and statistic records matched
+  "0fd57d7", // PyneCore commit the exports come from
   // The certified reference engine and the fuzz corpus against it.
   "380", // of 402 published strategies, trade for trade (PyneCore's certification)
   "402",
@@ -70,8 +70,8 @@ const FIGURES = [
 const BOUNDED_FIGURES = [
   68 /* ta.* functions */,
   800 /* agent iterations; indicator scenarios */,
-  19 /* strategy scenarios */,
-  72 /* indicator scenarios */,
+  93 /* TradingView export scenarios matched */,
+  95 /* TradingView export scenarios */,
   117 /* of 118 probes */,
   118,
 ];
