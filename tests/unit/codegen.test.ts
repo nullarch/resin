@@ -20958,9 +20958,14 @@ describe("CodeGen timestamp() bare builtin (C210)", () => {
     expect(rt.timestamp(2024, 1, 15)).toBe(1705276800000);
   });
 
-  it("hand-verified: the timezone-string overload ignores tz entirely and always computes as UTC (matches pine2py exactly — tz_str is unpacked but never consumed)", () => {
-    expect(rt.timestamp("Asia/Seoul", 2024, 1, 15, 12, 30, 45)).toBe(rt.timestamp(2024, 1, 15, 12, 30, 45));
-    expect(rt.timestamp("America/New_York", 2024, 1, 15)).toBe(rt.timestamp(2024, 1, 15));
+  it("the timezone-string overload reads the components as that zone's wall clock (pine2py ignored the zone; TradingView does not: tier 1 base_001_time)", () => {
+    const utc = rt.timestamp(2024, 1, 15, 12, 30, 45);
+    expect(rt.timestamp("Asia/Seoul", 2024, 1, 15, 12, 30, 45)).toBe(utc - 9 * 3600000);
+    expect(rt.timestamp("America/New_York", 2024, 1, 15)).toBe(rt.timestamp(2024, 1, 15) + 5 * 3600000);
+    expect(rt.timestamp("GMT+6", 2016, 1, 19, 9, 30)).toBe(1453174200000);
+    expect(rt.timestamp("GMT+3", 2019, 6, 19, 9, 30, 15)).toBe(1560925815000);
+    expect(rt.timestamp("UTC-5:30", 2024, 1, 15, 12)).toBe(rt.timestamp(2024, 1, 15, 17, 30));
+    expect(rt.timestamp("UTC", 2024, 1, 15, 12)).toBe(rt.timestamp(2024, 1, 15, 12));
   });
 
   it("hand-verified: the tz-string overload defaults day to 1 when omitted, matching pine2py's asymmetric default (plain overload has no such default — day is required there)", () => {

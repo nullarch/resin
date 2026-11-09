@@ -19,6 +19,9 @@ or the Pine manual) and lists what moved.
 ### Behaviour changes (outputs differ from 0.3.0)
 
 - `str.format` (and so every `log.*` message) groups thousands the way MessageFormat does: `{0}` and `{0,number}` print `-18,189.894` (was `-18189.894`), `{0,number,integer}` and `{0,number,percent}` print `1,340,000` and `1,250%`, and a pattern with a `,` (`#,###.##`) groups. A pattern without one (`#.##`) and `str.tostring` do not group. TradingView's log text for `ta.variance`/`ta.stdev` of a 1e-16 residual is `-18,189.894`. Evidence: h2h case ta_243_variance_stdev_exact.
+- `timestamp(timezone, year, month, day, …)` reads the components as the wall clock of `timezone` (an IANA name, or `"GMT+6"`/`"UTC-5:30"`); it ignored the zone and computed UTC. A wall time that occurs twice takes its first occurrence, one that never occurs the offset in force before the change. Evidence: TradingView export base_001_time (`timestamp("GMT+6", 2016, 1, 19, 9, 30)` is 03:30 UTC).
+- `timestamp(year, month, day, …)` without a timezone is a time of the exchange timezone (`transpile(src, { syminfo: { timezone } })`, default UTC, so unchanged by default). A date string without a zone stays UTC.
+- `timestamp(dateString)` reads month-first dates with a month name (`"Feb 01 2020 22:10:05"`), `GMT+5`/`UTC-05:30`/RFC zone names after the time (`"04 Dec 1995 00:12:00 GMT+5"`), `"Jan 2025"`, numeric month-first dates (`"03/04/2023"`) and `"2025"`/`"2025-06"`; before, all of them were na. Evidence: base_001_time.
 
 ## [0.3.0] - 2026-09-28
 
@@ -202,6 +205,7 @@ compare across versions. The public exports are unchanged; `transpile()`,
 
 - A local declaration that shadows a variable its block already read ("Cannot access … before initialization"). (17aa4b7)
 - A UDT variable declared from another variable holding one (`a = p`, then `a.x := …`). (8170578)
+- `timestamp()` with later parts given by name, and `input.int`/`input.float` with an options list as the third argument. (a9f3df7)
 - A user-declared method's call has the UDT its body returns. (382ad71)
 - `array.from(...)` of drawings or UDT objects. (c55684f)
 - An untyped parameter passed on to another function. (2a7f4d1)

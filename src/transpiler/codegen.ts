@@ -5134,6 +5134,14 @@ function genCallExpr(
       }
       return `rt.nz(${args.join(", ")})`;
     }
+    // timestamp(year, month, day, ...) without a timezone is a time of the exchange timezone
+    // (syminfo.timezone, ref_v6_lang.txt timestamp); rt.timestamp's own default is UTC, resin's
+    // default symbol timezone, so only another chart timezone is passed (rt.timestampIn).
+    const timestampZone = builtinName === "timestamp" ? program.syminfoStrings.get("timezone")! : "UTC";
+    const timestampCall = timestampZone === "UTC" ? "rt.timestamp(" : `rt.timestampIn(${JSON.stringify(timestampZone)}, `;
+    if (builtinName === "timestamp" && expr.kwargs.length === 0 && timestampZone !== "UTC") {
+      return `${timestampCall}${expr.args.map((a) => genExpr(a, program, funcCtx)).join(", ")})`;
+    }
     if (builtinName === "timestamp" && expr.kwargs.length > 0) {
       // timestamp(...) kwargs(C406, analyzer/call-expr.ts resolveTimestampKwargSlots 참조) —
       // timezone 유무로 슬롯 표 자체가 동적으로 바뀌어(주석 참조) math.*/nz처럼 고정 표 하나를
@@ -5151,7 +5159,7 @@ function genCallExpr(
         while (args.length < slot) args.push("0");
         args[slot] = genExpr(kw.value, program, funcCtx);
       }
-      return `rt.timestamp(${args.join(", ")})`;
+      return `${timestampCall}${args.join(", ")})`;
     }
     if (builtinName === "timeframe.in_seconds") {
       // timeframe.in_seconds(timeframe=) kwarg(C405, analyzer/call-expr.ts
