@@ -633,8 +633,14 @@ describe("corpus diff: sample bar-by-bar replay against pine2py golden", () => {
     // resin-harness twin state/repros/stoch-wpr-na.json channels stoch_rsi/stoch_rsi_signal run
     // this script through the oracle. Floor moved to the observed matched 2303 / mismatch 612;
     // nothing else changed.
-    expect(matched.length).toBeGreaterThanOrEqual(2303);
-    expect(mismatched.length).toBeLessThanOrEqual(612);
+    // 2026-11-09 a negative array.get/set/remove index counts from the end of the array, as in Pine
+    // v6 (tier 1 array_001_array_basic: array.set(a, -2, v) on a 5-element array writes slot 3).
+    // Exactly one hash went matched -> mismatch: 9fbff5eff357, a //@version=5 loop that reads
+    // array.get(win, -1) on a one-element array, which wraps to the last element where it used to
+    // read na (v5 halts on a negative index, so the script cannot run on TradingView). Floor moved
+    // to the observed matched 2302 / mismatch 613; nothing else changed.
+    expect(matched.length).toBeGreaterThanOrEqual(2302);
+    expect(mismatched.length).toBeLessThanOrEqual(613);
     expect(transpileFailed.length).toBeLessThanOrEqual(86);
     expect(runtimeFailed.length, `runtime failures: ${runtimeFailed.map((o) => `${o.hash}: ${o.detail}`).join(" | ")}`).toBe(0);
     expect(noComparable.length, `no comparable key: ${noComparable.map((o) => o.hash).join(", ")}`).toBeLessThanOrEqual(2);

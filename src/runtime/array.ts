@@ -40,19 +40,33 @@ export function new_float(size: number = 0, initialValue: number = NaN): PineArr
   return new Array<number>(n).fill(initialValue);
 }
 
-// array.get(id, index) — 범위 밖은 pine2py 가드 그대로 nan(literal port).
-export function get(arr: PineArray | null, index: number): number {
-  if (arr === null) return NaN;
+// The slot an element index addresses, or -1 when it addresses none. A float index is truncated
+// and a negative one counts from the end of the array, so -size..-1 are the last element back to
+// the first ("Negative indices are a Pine v6 feature": tier 1 array_001_array_basic, where
+// array.set(a, -2, v) on a 5-element array writes slot 3 for float, int, string and color arrays;
+// the Pine manual, "Arrays": array.get/set/insert/remove "support negative indexing"). An na
+// index (NaN) addresses nothing. An index outside -size..size-1 halts the script on TradingView;
+// here it stays "reads give na, writes do nothing" (DIVERGENCES #19).
+function slotOf(arr: PineArray, index: number): number {
   const i = Math.trunc(index);
-  if (i >= 0 && i < arr.length) return arr[i]!;
-  return NaN;
+  const len = arr.length;
+  if (i >= 0 && i < len) return i;
+  if (i < 0 && i >= -len) return len + i;
+  return -1;
 }
 
-// array.set(id, index, value) — 범위 밖은 pine2py 가드 그대로 조용히 no-op(literal port).
+// array.get(id, index) — an index outside the array reads na.
+export function get(arr: PineArray | null, index: number): number {
+  if (arr === null) return NaN;
+  const i = slotOf(arr, index);
+  return i === -1 ? NaN : arr[i]!;
+}
+
+// array.set(id, index, value) — an index outside the array writes nothing.
 export function set(arr: PineArray | null, index: number, value: number): void {
   if (arr === null) return;
-  const i = Math.trunc(index);
-  if (i >= 0 && i < arr.length) arr[i] = value;
+  const i = slotOf(arr, index);
+  if (i !== -1) arr[i] = value;
 }
 
 // array.push(id, value) — 끝에 추가(in-place 뮤테이션).
@@ -118,18 +132,27 @@ export function unshift(arr: PineArray | null, value: number): void {
   arr.unshift(value);
 }
 
-// array.insert(id, index, value) — 지정 위치 삽입(in-place). null 배열/na 인덱스는 no-op.
+// array.insert(id, index, value) — insert in place. A negative index counts from the end like
+// get/set, and the array size itself is a valid index (it appends). An na index appends too: it
+// resolves to the array size, it is not clamped to 0 (tier 1 array_008_array_na_index:
+// insert([10, 20, 30, 40], na, 77) gives 10,20,30,40,77 and insert(array.new_int(), na, 77) gives
+// 77). A na (null) array is a no-op.
 export function insert(arr: PineArray | null, index: number, value: number): void {
-  if (arr === null || Number.isNaN(index)) return;
+  if (arr === null) return;
+  if (Number.isNaN(index)) {
+    arr.push(value);
+    return;
+  }
   arr.splice(Math.trunc(index), 0, value);
 }
 
-// array.remove(id, index) — 지정 위치 제거 & 반환. get과 동일한 명시적 범위 가드 literal port.
+// array.remove(id, index) — remove and return the element at a slot; the index rule is get's, so
+// a negative index counts from the end and an na or outside index removes nothing and returns na
+// (tier 1 array_008_array_na_index: remove([10, 20, 30, 40], na) is NaN and the array is intact).
 export function remove(arr: PineArray | null, index: number): number {
   if (arr === null) return NaN;
-  const i = Math.trunc(index);
-  if (i >= 0 && i < arr.length) return arr.splice(i, 1)[0]!;
-  return NaN;
+  const i = slotOf(arr, index);
+  return i === -1 ? NaN : arr.splice(i, 1)[0]!;
 }
 
 // array.clear(id) — 전부 제거(in-place). null 배열은 크래시하는 미정의 동작이라 no-op.
@@ -138,14 +161,17 @@ export function clear(arr: PineArray | null): void {
   arr.length = 0;
 }
 
-// array.fill(id, value, index_from=0, index_to=-1) — 범위 채우기(in-place). null 배열/na
-// index_from·index_to는 no-op. index_to<0(기본값 포함)은 배열 길이로 literal port. index_from이
-// 음수면 pine2py 자체가 크래시하는 latent 버그라 0으로 클램프(DIVERGENCES #20).
-export function fill(arr: PineArray | null, value: number, indexFrom: number = 0, indexTo: number = -1): void {
-  if (arr === null || Number.isNaN(indexFrom) || Number.isNaN(indexTo)) return;
-  let to = Math.trunc(indexTo);
+// array.fill(id, value, index_from=0, index_to=na) — 범위 채우기(in-place). null 배열은 no-op.
+// na index_from은 0, na index_to(기본값)는 배열 길이. index_to<0은 배열 길이로 literal port.
+// index_from이 음수면 pine2py 자체가 크래시하는 latent 버그라 0으로 클램프(DIVERGENCES #20).
+export function fill(arr: PineArray | null, value: number, indexFrom: number = 0, indexTo: number = NaN): void {
+  if (arr === null) return;
+  // An na index_from starts at the first element and an na index_to (the default) ends at the
+  // array size, instead of doing nothing (tier 1 array_008_array_na_index: fill([10, 20, 30, 40],
+  // 5, na, 2) gives 5,5,30,40 and fill(a, 5, 1, na) gives 10,5,5,5).
+  let to = Number.isNaN(indexTo) ? arr.length : Math.trunc(indexTo);
   if (to < 0) to = arr.length;
-  const from = Math.max(0, Math.trunc(indexFrom));
+  const from = Number.isNaN(indexFrom) ? 0 : Math.max(0, Math.trunc(indexFrom));
   const end = Math.min(to, arr.length);
   for (let i = from; i < end; i++) arr[i] = value;
 }
@@ -192,9 +218,15 @@ export function avg(arr: PineArray | null): number {
 // 그 경로만 O(n) 단일 스캔으로 처리 — sort()는 nth!==0(n번째 값 조회)일 때만 필요(C586, wild
 // 실측: for-loop 안에서 매 바/매 반복 array.max(id)를 호출하는 관용구가 O(n) 배열에 O(n log n)
 // sort+할당을 반복시켜 5000바 실데이터에서만 timeout 발현 — 500바 합성에선 안 드러남).
+// The rank array.min/array.max read: truncated, and an na rank is 0, the smallest/largest
+// (tier 1 array_008_array_na_index: max([10, 20, 30, 40], na) is 40 and min(.., na) is 10).
+function nthRank(nth: number): number {
+  return Number.isNaN(nth) ? 0 : Math.trunc(nth);
+}
+
 export function min(arr: PineArray | null, nth: number = 0): number {
   if (arr === null) return NaN;
-  const idx = Math.trunc(nth);
+  const idx = nthRank(nth);
   if (idx === 0) {
     let best = Infinity;
     let found = false;
@@ -213,7 +245,7 @@ export function min(arr: PineArray | null, nth: number = 0): number {
 
 export function max(arr: PineArray | null, nth: number = 0): number {
   if (arr === null) return NaN;
-  const idx = Math.trunc(nth);
+  const idx = nthRank(nth);
   if (idx === 0) {
     let best = -Infinity;
     let found = false;
@@ -530,9 +562,11 @@ export function reverse(arr: PineArray | null): void {
 // standardize(C83)와 동일하게 na(null) 전파로 결정.
 export function slice(arr: PineArray | null, indexFrom: number = 0, indexTo: number = -1): PineArray | null {
   if (arr === null) return null;
-  const from = Math.trunc(indexFrom);
-  let to = Math.trunc(indexTo);
-  if (Number.isNaN(from) || Number.isNaN(to)) return null;
+  // An na index_from starts at the beginning and an na index_to ends at the array size, instead
+  // of an na array (tier 1 array_008_array_na_index: slice([10, 20, 30, 40], na, 2) is 10,20,
+  // slice(a, 1, na) is 20,30,40 and slice(a, na, na) is the whole array).
+  const from = Number.isNaN(indexFrom) ? 0 : Math.trunc(indexFrom);
+  let to = Number.isNaN(indexTo) ? arr.length : Math.trunc(indexTo);
   if (to < 0) to = arr.length;
   return arr.slice(from, to);
 }

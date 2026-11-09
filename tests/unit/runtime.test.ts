@@ -9122,12 +9122,15 @@ describe("array builtins (rt.array, C79)", () => {
     expect(parray.new_float(2.9, 1.0)).toEqual([1.0, 1.0]);
   });
 
-  it("get() returns the element in range and NaN out of range / for negative indices (pine2py guard literal port)", () => {
+  it("get() returns the element in range, counts a negative index from the end, and is NaN outside -size..size-1", () => {
+    // A negative index is a v6 feature, tier 1 array_001_array_basic (set(a, -2, v) writes slot 3 of 5).
     const a = [10.0, 20.0];
     expect(parray.get(a, 0)).toBe(10.0);
     expect(parray.get(a, 1)).toBe(20.0);
     expect(Number.isNaN(parray.get(a, 2))).toBe(true);
-    expect(Number.isNaN(parray.get(a, -1))).toBe(true);
+    expect(parray.get(a, -1)).toBe(20.0);
+    expect(parray.get(a, -2)).toBe(10.0);
+    expect(Number.isNaN(parray.get(a, -3))).toBe(true);
   });
 
   it("get() with a NaN index returns NaN without crashing (same path as pine2py's chained comparison being False)", () => {
@@ -9263,10 +9266,10 @@ describe("array builtins — residual slice (rt.array, C80)", () => {
     expect(a).toEqual([1.0, 9.0, 2.0, 3.0]);
   });
 
-  it("insert() with a NaN index is a silent no-op — pine2py's list.insert(nan,...) crashes (TypeError), JS Array.splice(NaN,...) would silently default to index 0 instead (DIVERGENCES #20)", () => {
+  it("insert() with a NaN index appends (tier 1 array_008_array_na_index: the na resolves to the array size, it is not clamped to 0 as Array.splice(NaN, ...) would)", () => {
     const a = [1.0, 2.0, 3.0];
     parray.insert(a, NaN, 9.0);
-    expect(a).toEqual([1.0, 2.0, 3.0]);
+    expect(a).toEqual([1.0, 2.0, 3.0, 9.0]);
   });
 
   it("insert() on a na (null) array is a silent no-op (pine2py crashes — DIVERGENCES #20)", () => {
@@ -9279,12 +9282,14 @@ describe("array builtins — residual slice (rt.array, C80)", () => {
     expect(a).toEqual([1.0, 3.0]);
   });
 
-  it("remove() returns NaN without mutating for an out-of-range or NaN index (pine2py's `0<=index<len(arr)` guard literal port)", () => {
+  it("remove() returns NaN without mutating for an outside or NaN index; a negative index in -size..-1 counts from the end", () => {
     const a = [1.0, 2.0];
     expect(Number.isNaN(parray.remove(a, 5))).toBe(true);
-    expect(Number.isNaN(parray.remove(a, -1))).toBe(true);
+    expect(Number.isNaN(parray.remove(a, -3))).toBe(true);
     expect(Number.isNaN(parray.remove(a, NaN))).toBe(true);
     expect(a).toEqual([1.0, 2.0]);
+    expect(parray.remove(a, -1)).toBe(2.0);
+    expect(a).toEqual([1.0]);
   });
 
   it("remove() on a na (null) array returns NaN (pine2py crashes — DIVERGENCES #20)", () => {
@@ -9325,12 +9330,13 @@ describe("array builtins — residual slice (rt.array, C80)", () => {
     expect(a).toEqual([9.0, 9.0, 9.0, 9.0, 9.0]);
   });
 
-  it("fill() with a NaN index_from or index_to is a silent no-op — pine2py's range(nan,...) crashes (TypeError, DIVERGENCES #20)", () => {
+  it("fill() with a NaN index_from starts at the first element and a NaN index_to ends at the array size (tier 1 array_008_array_na_index)", () => {
     const a = [1.0, 2.0, 3.0];
-    parray.fill(a, 9.0, NaN);
-    expect(a).toEqual([1.0, 2.0, 3.0]);
-    parray.fill(a, 9.0, 0, NaN);
-    expect(a).toEqual([1.0, 2.0, 3.0]);
+    parray.fill(a, 9.0, NaN, 1);
+    expect(a).toEqual([9.0, 2.0, 3.0]);
+    const b = [1.0, 2.0, 3.0];
+    parray.fill(b, 9.0, 1, NaN);
+    expect(b).toEqual([1.0, 9.0, 9.0]);
   });
 
   it("fill() on a na (null) array is a silent no-op (pine2py crashes — DIVERGENCES #20)", () => {
@@ -9848,9 +9854,10 @@ describe("array builtins — sort/reverse/slice/concat/copy (rt.array, C85)", ()
     expect(parray.slice(null)).toBeNull();
   });
 
-  it("slice(arr, NaN index_from/index_to) returns na(null) — pine2py crashes on NaN slice indices (undefined), JS would otherwise silently coerce NaN to 0", () => {
-    expect(parray.slice([1, 2, 3], NaN)).toBeNull();
-    expect(parray.slice([1, 2, 3], 0, NaN)).toBeNull();
+  it("slice(arr, NaN index_from/index_to) starts at the beginning / ends at the array size (tier 1 array_008_array_na_index)", () => {
+    expect(parray.slice([1, 2, 3], NaN, 2)).toEqual([1, 2]);
+    expect(parray.slice([1, 2, 3], 1, NaN)).toEqual([2, 3]);
+    expect(parray.slice([1, 2, 3], NaN, NaN)).toEqual([1, 2, 3]);
   });
 
   it("concat(arr1, arr2) returns a new array with arr2 appended to arr1, without mutating either input", () => {
