@@ -28,6 +28,7 @@
 //   동일 경로로 literal port(별도 분기 불필요).
 
 import { pyFloatStr } from "./str";
+import { inheritIntKind, isIntArray, markIntArray } from "./array-kind";
 
 export type PineArray = number[];
 
@@ -488,8 +489,8 @@ export function standardize(arr: PineArray | null): PineArray | null {
 export function new_int(size: number = 0, initialValue: number = 0): number[] | null {
   if (Number.isNaN(size)) return null;
   const n = Math.trunc(size);
-  if (n <= 0) return [];
-  return new Array<number>(n).fill(initialValue);
+  if (n <= 0) return markIntArray([]);
+  return markIntArray(new Array<number>(n).fill(initialValue));
 }
 
 export function new_bool(size: number = 0, initialValue: boolean = false): boolean[] | null {
@@ -552,6 +553,13 @@ export function from<T>(...items: T[]): T[] {
   return items;
 }
 
+// array.from(...) whose arguments the analyzer proved int (literals, for counters): the same
+// array, marked as holding ints so that join and log print 10 where an array<float> prints 10.0
+// (array-kind.ts).
+export function from_int(...items: number[]): number[] {
+  return markIntArray(items);
+}
+
 // ── C85: sort/reverse/slice/concat/copy (pine2py array.py L159-195) ──
 // sort/reverse는 in-place 뮤테이터(MUTATING_ARRAY_BUILTINS 등재), slice/concat/copy는 새 배열을
 // 반환하는 constructor류(ARRAY_CONSTRUCTOR_METHODS 등재, standardize(C83)와 동일 원칙). 전부 null
@@ -604,7 +612,7 @@ export function slice(arr: PineArray | null, indexFrom: number = 0, indexTo: num
   const from = Number.isNaN(indexFrom) ? 0 : Math.trunc(indexFrom);
   let to = Number.isNaN(indexTo) ? arr.length : Math.trunc(indexTo);
   if (to < 0) to = arr.length;
-  return arr.slice(from, to);
+  return inheritIntKind(arr, arr.slice(from, to));
 }
 
 // array.concat(id1, id2) — appends the elements of id2 to id1 IN PLACE and returns id1 itself, not
@@ -623,7 +631,7 @@ export function concat(arr1: PineArray | null, arr2: PineArray | null): PineArra
 // null이면 Python `None[:]`가 크래시(미정의) — na(null) 전파.
 export function copy(arr: PineArray | null): PineArray | null {
   if (arr === null) return null;
-  return arr.slice();
+  return inheritIntKind(arr, arr.slice());
 }
 
 // ── C86: abs/every/some/range/binary_search·leftmost·rightmost/sort_indices
@@ -639,7 +647,7 @@ export function copy(arr: PineArray | null): PineArray | null {
 // 실측: abs(-0.0)==0.0(양의 0)도 Math.abs(-0)===+0으로 일치).
 export function abs(arr: PineArray | null): PineArray | null {
   if (arr === null) return null;
-  return arr.map(Math.abs);
+  return inheritIntKind(arr, arr.map(Math.abs));
 }
 
 // array.every(id) — 모든 원소가 truthy. pine2py는 Python `nan`이 truthy라 별도 isnan 분기로
@@ -758,7 +766,7 @@ export function sort_indices(arr: PineArray | null, ascending: boolean = true): 
     else nanIndices.push(i);
   }
   validPairs.sort((a, b) => (ascending ? a[1] - b[1] : b[1] - a[1]));
-  return validPairs.map((p) => p[0]).concat(nanIndices);
+  return markIntArray(validPairs.map((p) => p[0]).concat(nanIndices));
 }
 
 // array.covariance(id1, id2) — 두 배열의 공분산(같은 인덱스끼리 짝, 둘 다 유효한 짝만). n=두 배열
@@ -828,15 +836,18 @@ export function covariance(arr1: PineArray | null, arr2: PineArray | null): numb
 //   보강에 대비해 방어적으로 NaN과 동일하게 "nan"을 반환한다.
 type JoinElement = number | string | boolean | null;
 
-function joinElement(x: JoinElement): string {
+function joinElement(x: JoinElement, intKind: boolean): string {
   if (x === null) return "nan";
   if (typeof x === "string") return x;
   if (typeof x === "boolean") return x ? "True" : "False";
   if (Number.isNaN(x)) return "nan";
+  // An int array prints its elements without a fraction, an array<float> with one (array-kind.ts).
+  if (intKind && Number.isInteger(x)) return String(x);
   return pyFloatStr(x);
 }
 
 export function join(arr: JoinElement[] | null, separator: string | null = " "): string | null {
   if (arr === null || separator === null) return null;
-  return arr.map(joinElement).join(separator);
+  const intKind = isIntArray(arr);
+  return arr.map((x) => joinElement(x, intKind)).join(separator);
 }
