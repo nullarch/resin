@@ -45,6 +45,7 @@ import {
 } from "../analyzer";
 import { literalOffsetValue } from "./index-access";
 import { isUdtConstructorCall } from "./constructors";
+import { CHART_POINT_FIELD_TYPE } from "./udt-types";
 import { acceptsRepeatedArg } from "./arg-dup";
 import {
   allowsDynamicRequests,
@@ -264,12 +265,11 @@ const DRAWING_METHODS: Readonly<Record<string, ReadonlySet<string>>> = {
 //   line.set_x2 x/id, line.set_xy1·2 x/y, box.set_rightbottom right/bottom 등)와 전부 일치한다.
 // - table/polyline/linefill은 runtime에 state가 아예 없어(rt.ts 참조: newTable은 빈 핸들, 나머지는
 //   전부 drawingNoop) 등재 대상이 없다. label.new(point=)/line.new(first_point=)/box.new(top_left=)
-//   같은 chart.point 오버로드도 제외 — runtime이 ChartPoint 객체를 숫자 필드로 읽을 수 없어
-//   낮춰봐야 NaN이라 이득이 없다(현행 유지).
+//   같은 chart.point 오버로드는 이 표가 아니라 아래 DRAWING_POINT_PARAM_NAMES가 슬롯을 정한다
+//   (매개변수가 한 칸씩 당겨지는 별개 시그니처이고, runtime/drawing.ts가 이제 ChartPoint를 읽는다).
 // viz S4 — .new 행들은 C813 당시 "state 파라미터만"에서 표시용 파라미터(TV 공식 시그니처
 // 순서)까지 확장됐다: 드로잉이 더 이상 순수 no-op이 아니라 생성 로그로 캡처되므로 색/스타일도
-// 이제 state다. chart.point 오버로드(label.new(point, ...))는 여전히 제외 — 위치가 한 칸씩
-// 밀려 best-effort 캡처가 어긋날 수 있으나 기존(수치 NaN)과 동급의 열화라 현행 유지.
+// 이제 state다. chart.point 오버로드(label.new(point, ...))의 슬롯은 DRAWING_POINT_PARAM_NAMES.
 export const DRAWING_STATE_PARAM_NAMES: Readonly<Record<string, readonly string[]>> = {
   "label.new": ["x", "y", "text", "xloc", "yloc", "color", "style", "textcolor", "size", "textalign", "tooltip"],
   "label.set_x": ["id", "x"],
@@ -279,6 +279,7 @@ export const DRAWING_STATE_PARAM_NAMES: Readonly<Record<string, readonly string[
   "label.get_x": ["id"],
   "label.get_y": ["id"],
   "label.get_text": ["id"],
+  "label.set_point": ["id", "point"],
   "line.new": ["x1", "y1", "x2", "y2", "xloc", "extend", "color", "style", "width"],
   "line.set_x1": ["id", "x"],
   "line.set_y1": ["id", "y"],
@@ -291,6 +292,8 @@ export const DRAWING_STATE_PARAM_NAMES: Readonly<Record<string, readonly string[
   "line.get_x2": ["id"],
   "line.get_y2": ["id"],
   "line.get_price": ["id", "x"],
+  "line.set_first_point": ["id", "point"],
+  "line.set_second_point": ["id", "point"],
   "box.new": ["left", "top", "right", "bottom", "border_color", "border_width", "border_style", "extend", "xloc", "bgcolor", "text"],
   "table.new": ["position", "columns", "rows", "bgcolor", "frame_color", "frame_width", "border_color", "border_width"],
   "box.set_left": ["id", "left"],
@@ -303,6 +306,47 @@ export const DRAWING_STATE_PARAM_NAMES: Readonly<Record<string, readonly string[
   "box.get_right": ["id"],
   "box.get_top": ["id"],
   "box.get_bottom": ["id"],
+  "box.set_top_left_point": ["id", "point"],
+  "box.set_bottom_right_point": ["id", "point"],
+};
+
+// The chart.point overloads of the three drawing constructors (Pine manual: line.new(first_point,
+// second_point, xloc, extend, color, style, width); label.new(point, text, xloc, yloc, color, style,
+// textcolor, size, textalign, tooltip); box.new(top_left, bottom_right, border_color, border_width,
+// border_style, extend, xloc, bgcolor, text, ...)). The point(s) take the place of the coordinate
+// pair(s), so every later parameter sits further left than in DRAWING_STATE_PARAM_NAMES; codegen
+// lowers a keyword argument of a call in AnalyzedProgram.drawingPointOverloads by this list.
+export const DRAWING_POINT_PARAM_NAMES: Readonly<Record<string, readonly string[]>> = {
+  "label.new": ["point", "text", "xloc", "yloc", "color", "style", "textcolor", "size", "textalign", "tooltip"],
+  "line.new": ["first_point", "second_point", "xloc", "extend", "color", "style", "width"],
+  "box.new": ["top_left", "bottom_right", "border_color", "border_width", "border_style", "extend", "xloc", "bgcolor", "text"],
+};
+const DRAWING_POINT_ONLY_KWARGS: ReadonlySet<string> = new Set(["point", "first_point", "second_point", "top_left", "bottom_right"]);
+
+// Whether `namespace.method(...)` is a line/label/box constructor call that takes chart.point
+// arguments: it names one of the overload's own parameters (first_point=, point=, ...), or its first
+// positional argument is a chart.point (a chart.point.* call or a variable, parameter or field of
+// that type). An untyped value (a UDF parameter) is told apart at run time by runtime/drawing.ts.
+function isDrawingPointOverloadCall(expr: CallExpr, namespace: string, method: string, prog: AnalyzedProgram, scope: LexScope): boolean {
+  if (method !== "new" || !Object.prototype.hasOwnProperty.call(DRAWING_POINT_PARAM_NAMES, `${namespace}.new`)) return false;
+  if (expr.kwargs.some((kw) => DRAWING_POINT_ONLY_KWARGS.has(kw.name))) return true;
+  const first = expr.args[0];
+  if (first === undefined) return false;
+  return (
+    isUdtConstructorCall(first, prog, scope) === CHART_POINT_FIELD_TYPE ||
+    resolveUdtObjectType(first, prog, scope) === CHART_POINT_FIELD_TYPE
+  );
+}
+
+// chart.point.new/from_index/from_time/now/copy parameter names (Pine manual), in order. Codegen
+// lowers a keyword argument to its slot like a UDF call's, padding the skipped slots with undefined
+// (the runtime defaults apply).
+export const CHART_POINT_KWARG_PARAM_NAMES: Readonly<Record<string, readonly string[]>> = {
+  new: ["time", "index", "price"],
+  from_index: ["index", "price"],
+  from_time: ["time", "price"],
+  now: ["price"],
+  copy: ["point"],
 };
 
 // method-call 스타일 drawing 콜 판별(C232, `lbl.set_text(x)` == `label.set_text(lbl, x)`) —
@@ -5211,6 +5255,17 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     callee.kind === "DotAccess" &&
     (callee.obj.kind === "Identifier" || callee.obj.kind === "CallExpr" || callee.obj.kind === "DotAccess") &&
     resolveUdtMethodReceiverType(callee.obj, prog, scope) !== undefined;
+  // `chart.point.new(time=, index=, price=)` and the other chart.point constructors (their names are
+  // CHART_POINT_KWARG_PARAM_NAMES); the names, duplicates and clashes with positional arguments are
+  // checked by the chart.point branch below. The receiver `chart.point` is a 3-level chain that no
+  // other gate matches.
+  const isChartPointKwargCall =
+    callee.kind === "DotAccess" &&
+    callee.obj.kind === "DotAccess" &&
+    callee.obj.obj.kind === "Identifier" &&
+    callee.obj.obj.name === "chart" &&
+    callee.obj.attr === "point" &&
+    Object.prototype.hasOwnProperty.call(CHART_POINT_KWARG_PARAM_NAMES, callee.attr);
   if (
     expr.kwargs.length > 0 &&
     !isUdtConstructorCall &&
@@ -5245,7 +5300,8 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     !isTimeframeInSecondsKwargCall &&
     !isTimestampKwargCall &&
     !isRuntimeErrorKwargCall &&
-    !isUdtMethodKwargCall
+    !isUdtMethodKwargCall &&
+    !isChartPointKwargCall
   ) {
     prog.errors.push(
       `keyword arguments ('${expr.kwargs[0]!.name}=...') are only supported in 'TypeName.new(...)' UDT constructor calls, user-defined function calls, 'obj.method(...)' UDT method calls, 'input.*'/bare 'input(...)' calls, 'plot(...)' calls, 'indicator(...)'/'strategy(...)'/'study(...)' calls, 'strategy.entry/order/exit/close/close_all/cancel/cancel_all(...)' calls, 'request.security(...)'/'request.security_lower_tf(...)'/'request.financial(...)'/'request.earnings(...)'/'request.dividends(...)'/'request.splits(...)' calls, hline/bgcolor/barcolor/plotshape/plotchar/plotarrow/plotcandle/plotbar/alert/alertcondition/max_bars_back/fill calls, 'array.*(id=...)' calls (size/get/set/push/pop/... — see analyzer/collections.ts ARRAY_KWARG_PARAM_NAMES), 'ticker.new/modify/renko(...)' calls, 'ta.sma/ema/rsi/highest/lowest/crossover/crossunder/change/cum/alma/pivotlow/atr/pivothigh(...)' calls, 'str.tostring(...)' calls, 'math.abs/round/sign(...)' calls, 'nz(...)' calls, 'fixnan(...)' calls, 'timeframe.in_seconds(...)' calls, 'timestamp(...)' calls, 'runtime.error/warning(...)' calls, 'time(...)'/'time_close(...)' calls, 'color.from_gradient(...)' calls, or label/line/box/table/polyline/linefill calls (L${expr.line}:${expr.col})`,
@@ -7564,10 +7620,9 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     // chart.point.new/from_index/from_time/copy/now(corpus 10개 파일 실측, closedtrades와 동일한
     // 3-level 체이닝이라 위 namespace(Identifier 전제)로는 못 잡아 별도 분기가 필요) — pine2py
     // wavealgo chart_point_new 등은 전부 인자 전부 선택(기본값 존재)인 순수 함수라(runtime/drawing.ts
-    // ChartPoint 주석 참조) input.*처럼 kwargs 이름 매핑까지는 하지 않고(corpus 전량 위치 인자만
-    // 사용, 실측 0건) 위치 인자 개수 상한만 검증한다 — kwargs 사용은 함수 상단의 공용 blanket
-    // 거부(이 콜 모양을 예외 목록에 안 넣었으므로 자동으로 걸림)에 맡기고 여기서 다시 검증하지
-    // 않는다. "chart.point"는 이 3-level 콜 체인 밖에서는 값으로 쓰이지 않으므로(순수 타입 표기
+    // ChartPoint 주석 참조). Keyword arguments (the Pine manual's parameter names,
+    // CHART_POINT_KWARG_PARAM_NAMES) are let through the blanket rejection above by
+    // isChartPointKwargCall and checked here; codegen lowers them to positional slots. "chart.point"는 이 3-level 콜 체인 밖에서는 값으로 쓰이지 않으므로(순수 타입 표기
     // 용도) 아래 공용 꼬리의 `analyzeExpr(callee.obj, ...)` 재귀(strategy.closedtrades처럼 그 부분이
     // 별도로 유효한 값 표현식이 아님)를 타면 "네임스페이스 접근은 호출식만 지원" 에러가 되므로,
     // 여기서 인자만 분석하고 즉시 return한다.
@@ -7577,8 +7632,24 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         `'chart.point.${method}' call argument count mismatch: at most ${maxArgs}, got ${expr.args.length} (L${expr.line}:${expr.col})`,
       );
     }
+    // Keyword arguments (time=, index=, price=, point=): a known name, once, not on a slot a positional
+    // argument already fills.
+    const pointParams = CHART_POINT_KWARG_PARAM_NAMES[method]!;
+    const seenPointKwargs = new Set<string>();
+    for (const kw of expr.kwargs) {
+      const slot = pointParams.indexOf(kw.name);
+      if (slot === -1) {
+        prog.errors.push(
+          `'chart.point.${method}' has no parameter named '${kw.name}' (parameters: ${pointParams.join(", ")}) (L${expr.line}:${expr.col})`,
+        );
+      } else if (slot < expr.args.length || seenPointKwargs.has(kw.name)) {
+        prog.errors.push(`'chart.point.${method}' parameter '${kw.name}' is given twice (L${expr.line}:${expr.col})`);
+      }
+      seenPointKwargs.add(kw.name);
+    }
     prog.builtinCalls.set(expr, `chart.point.${method}`);
     for (const arg of expr.args) analyzeExpr(arg, prog, scope, false);
+    for (const kw of expr.kwargs) analyzeExpr(kw.value, prog, scope, false);
     return;
   } else if (
     namespace === "input" &&
@@ -7758,6 +7829,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
     // 함수 끝의 공용 부작용 재귀(`for (const arg of expr.args) analyzeExpr(...)`, 이 분기 아래)가
     // 처리하고 kwargs 값도 이미 위(함수 상단)에서 공통 분석됐다 — 이 분기는 등록만 하면 된다.
     prog.builtinCalls.set(expr, `${namespace}.${method}`);
+    if (isDrawingPointOverloadCall(expr, namespace, method, prog, scope)) prog.drawingPointOverloads.add(expr);
   } else if (
     (namespace !== null || callee.obj.kind === "DotAccess" || callee.obj.kind === "CallExpr" || callee.obj.kind === "IndexAccess") &&
     isDrawingMethodSugarCall(callee.obj, method, prog, scope)

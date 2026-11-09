@@ -26409,9 +26409,9 @@ describe("CodeGen chart.point.* (C229)", () => {
     expect(code).toBe("var p = rt.chart.point.from_time($.idx, $.close.get(0));");
   });
 
-  it("codegens chart.point.now(price) as rt.chart.point.now(...)", () => {
+  it("codegens chart.point.now(price) as rt.chart.point.now(...) and hands it the bar's index and time", () => {
     const code = codegenSource("p = chart.point.now(close)");
-    expect(code).toBe("var p = rt.chart.point.now($.close.get(0));");
+    expect(code).toBe("var p = rt.chart.point.now($.close.get(0), $.idx, $.barTimeMs);");
   });
 
   it("codegens chart.point.copy(point) as rt.chart.point.copy(...)", () => {

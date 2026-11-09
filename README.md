@@ -40,7 +40,7 @@ let a script leave the platform; this is how you get it out.
 - **99.7%** of 2,979 real-world scripts transpile and **99.5%** run
   ([measured, method below](#coverage-and-where-the-numbers-come-from)) — that
   they run, not that their values are right
-- **10,311 tests**, plus 5,000 generated scenarios compared bar by bar with a
+- **10,431 tests**, plus 5,000 generated scenarios compared bar by bar with a
   reference engine certified against TradingView
 - **Zero runtime dependencies** — the CLI runs straight from a clone, no
   install step, no build step
@@ -193,7 +193,7 @@ Every rule changed for 0.3.0 was found and fixed this way, one per commit, with
 its evidence in the commit message; [CHANGELOG.md](CHANGELOG.md) lists them,
 and the divergences still open.
 
-Resin's own suite, 10,311 tests, pins those rules down; on its own it is not
+Resin's own suite, 10,431 tests, pins those rules down; on its own it is not
 evidence. The older differential suite is still in the repository: 263 cases in
 `oracle/` and a 3,000-script replay of `corpus/`, compared at 1e-9 against the
 sibling implementation's goldens. Where TradingView's evidence contradicted a
