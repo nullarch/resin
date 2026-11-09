@@ -38,6 +38,8 @@ import {
   DAYOFWEEK_CONSTANTS,
   DEFAULT_CHART_TF,
   DRAWING_STATE_PARAM_NAMES,
+  DRAWING_POINT_PARAM_NAMES,
+  CHART_POINT_KWARG_PARAM_NAMES,
   TA_REGISTRY,
   taCallReturnArity,
   TICKER_KWARG_PARAM_NAMES,
@@ -5185,7 +5187,30 @@ function genCallExpr(
       }
       return `rt.${builtinName}(${args.join(", ")})`;
     }
-    const drawingStateParamNames = expr.kwargs.length > 0 ? DRAWING_STATE_PARAM_NAMES[builtinName] : undefined;
+    if (builtinName.startsWith("chart.point.")) {
+      // chart.point.new/from_index/from_time/now/copy: keyword arguments land on their parameter's slot
+      // (CHART_POINT_KWARG_PARAM_NAMES; the skipped slots are undefined, so the runtime defaults apply),
+      // and chart.point.now also gets the running context's bar index and bar time after its price,
+      // the "current bar" the point names (runtime/drawing.ts chartPointNow).
+      const method = builtinName.slice("chart.point.".length);
+      const paramNames = CHART_POINT_KWARG_PARAM_NAMES[method] ?? [];
+      const args = expr.args.map((a) => genExpr(a, program, funcCtx, secCtx));
+      for (const kw of expr.kwargs) {
+        const slot = paramNames.indexOf(kw.name);
+        if (slot === -1) continue; // defensive: the analyzer only lets these names through
+        while (args.length < slot) args.push("undefined");
+        args[slot] = genExpr(kw.value, program, funcCtx, secCtx);
+      }
+      if (method === "now") {
+        while (args.length < 1) args.push("undefined");
+        args.push("$.idx", "$.barTimeMs");
+      }
+      return `rt.${builtinName}(${args.join(", ")})`;
+    }
+    const drawingStateParamNames =
+      expr.kwargs.length > 0
+        ? (program.drawingPointOverloads.has(expr) ? DRAWING_POINT_PARAM_NAMES : DRAWING_STATE_PARAM_NAMES)[builtinName]
+        : undefined;
     if (drawingStateParamNames !== undefined) {
       // drawing.* state kwarg 낮추기(C813, LIMITATIONS C572 수정 — analyzer/call-expr.ts
       // DRAWING_STATE_PARAM_NAMES 주석 참조). 아래 범용 폴백이 expr.kwargs를 통째로 버려

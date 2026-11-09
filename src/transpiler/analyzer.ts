@@ -110,6 +110,8 @@ export {
   inputParamNames,
   TICKER_KWARG_PARAM_NAMES,
   DRAWING_STATE_PARAM_NAMES,
+  DRAWING_POINT_PARAM_NAMES,
+  CHART_POINT_KWARG_PARAM_NAMES,
   MATH_KWARG_PARAM_NAMES,
   COLOR_KWARG_PARAM_NAMES,
   NZ_KWARG_PARAM_NAMES,
@@ -2337,6 +2339,11 @@ export interface AnalyzedProgram {
   // 달리 이번엔 args 배열 자체를 건드리면 analyzeArrayCall/analyzeMapCall의 기존 인자개수 검증이
   // receiver를 이중 계산하게 되므로 별도 병렬 맵으로 분리).
   methodCallReceivers: Map<CallExpr, Expr>;
+  // line.new/label.new/box.new calls that take chart.point arguments (first_point/second_point, point,
+  // top_left/bottom_right), found by a point-only keyword or a chart.point first argument. Their
+  // parameters sit one place apart from the coordinate overload's (DRAWING_POINT_PARAM_NAMES), which
+  // decides where a keyword argument lands in the lowered positional list.
+  drawingPointOverloads: Set<CallExpr>;
   // for-in 루프(C216)의 이터러블 컨테이너 종류 -- analyzeForInStmt가 정적으로 판별해 한 번만
   // 채우고 codegen(genForInStmt)이 그대로 소비한다(builtinCalls와 동일한 "analyzer가 결정,
   // codegen은 재판별하지 않는다" 원칙). array/map/matrix(C709, TV가 행 단위 array로 순회 —
@@ -4039,6 +4046,7 @@ export function analyze(script: Script, options?: AnalyzeOptions): AnalyzedProgr
     taScratchSize: 0,
     builtinCalls: new Map(),
     methodCallReceivers: new Map(),
+    drawingPointOverloads: new Set(),
     forInKinds: new Map(),
     builtinConstants: new Map(),
     builtinStringConstants: new Map(),
