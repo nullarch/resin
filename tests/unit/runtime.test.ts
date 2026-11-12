@@ -7737,19 +7737,22 @@ describe("numeric helpers", () => {
     expect(pineMod(10, 3)).toBe(1);
   });
 
-  // language_operators.txt: "The % operator calculates the modulo by rounding down the quotient",
-  // i.e. a - b * math.floor(a/b); the manual's own example modulo(-1, 100) is 99. Harness repro
-  // state/repros/lang.division-seed-4.json: (bar_index - 5) % 3 on bar 0 is 1, not JS's -2.
-  it("pineMod floors the quotient, so the result takes the divisor's sign", () => {
-    expect(pineMod(-1, 100)).toBe(99);
-    expect(pineMod(-5, 3)).toBe(1);
-    expect(pineMod(-7, 3)).toBe(2);
-    expect(pineMod(7, -3)).toBe(-2);
+  // Measured on TradingView by the oracle (pynecore tests/t01_lib/t04_math/test_023_pine_remainder.py):
+  // the remainder is truncated and takes the dividend's sign. resin had the floored modulo here
+  // (99, 1, 2, -2, -1, 1.5, 0.5, -2.5) from the operators manual's wording.
+  it("pineMod is the truncated remainder, so the result takes the dividend's sign", () => {
+    expect(pineMod(-1, 100)).toBe(-1);
+    expect(pineMod(-5, 3)).toBe(-2);
+    expect(pineMod(-7, 3)).toBe(-1);
+    expect(pineMod(7, -3)).toBe(1);
     expect(pineMod(-7, -3)).toBe(-1);
     expect(pineMod(5.5, 2)).toBe(1.5);
-    expect(pineMod(-5.5, 2)).toBe(0.5);
-    expect(pineMod(5.5, -4)).toBe(-2.5);
-    expect(Object.is(pineMod(-6, 3), 0)).toBe(true);
+    expect(pineMod(-7.5, 2)).toBe(-1.5);
+    expect(pineMod(5.5, -4)).toBe(1.5);
+    expect(pineMod(7, 3.5)).toBe(0);
+    expect(pineMod(1e17, 3)).toBe(1);
+    expect(pineMod(-5.25, 0.5)).toBe(-0.25);
+    expect(Object.is(pineMod(-6, 3), -0)).toBe(true);
     expect(pineMod(NaN, 3)).toBeNaN();
   });
 

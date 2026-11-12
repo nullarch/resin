@@ -152,6 +152,10 @@ hashes are added when this is committed.
 - `strategy(calc_on_order_fills=true)` walks a bar one fill at a time, as TradingView does (it re-runs the body after every fill): a pass walks only the legs after the node it stands at; the bar's first pass, and any pass whose own market orders filled at its node, walk at most the next leg; otherwise the walk stops at the end of the first leg that fills anything. A `strategy.exit()` limit/stop is judged against the price of the node the pass stands at, not the bar open: an exit marketable at the high fills at the high, one whose entry filled at the low rests until later (it filled at the open price). Evidence: TradingView export, h2h strat_140_coof_stepwise_walk (173/270 trades -> 270/270).
 - `strategy.exit()` called while a `strategy.order()` of its `from_entry` id is pending places a leg that waits on the order and binds when it fills, as it does for `strategy.entry()`; the leg was dropped, so the order's trade had no exit until the next call.
 
+##### Language
+
+- `%` is the truncated remainder and takes the sign of the dividend: `-7 % 3` is `-1` (was `2`), `7 % -3` is `1` (was `-2`), `-7.5 % 2` is `-1.5` (was `0.5`). Measured on TradingView by the reference engine's `test_023_pine_remainder` (`(z - 7) % 3` is -1 on CAPITALCOM:EURUSD 60); resin had read the operators manual's "rounding down the quotient" as the floored modulo. A zero divisor is still na. Only a `%` with a negative operand changes.
+
 ##### Strings and time
 
 - `str.format` (and so every `log.*` message) groups thousands the way MessageFormat does: `{0}` and `{0,number}` print `-18,189.894` (was `-18189.894`), `{0,number,integer}` and `{0,number,percent}` print `1,340,000` and `1,250%`, and a pattern with a `,` (`#,###.##`) groups. A pattern without one (`#.##`) and `str.tostring` do not group. TradingView's log text for `ta.variance`/`ta.stdev` of a 1e-16 residual is `-18,189.894`. Evidence: h2h case ta_243_variance_stdev_exact.

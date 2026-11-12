@@ -65,7 +65,7 @@ import { in_seconds as timeframeInSeconds } from "../../runtime/timeframe";
 // C730: str.tostring도 동일 원칙 — 컴파일타임 2-인자 포맷 폴딩('###M' 접미사 관용구)이 런타임
 // 분기(str.ts suffixMatch)와 같은 출력을 내도록 보장한다.
 import { tonumber as strTonumber, tostring as strTostring } from "../../runtime/str";
-// A folded `%` must equal the runtime's floored modulo, so the fold calls it rather than JS `%`.
+// A folded `%` must equal the runtime's `%` (rt.pineMod: na on a zero divisor), so the fold calls it.
 import { pineMod } from "../../runtime/numeric";
 
 // hline/bgcolor/barcolor/plotshape/plotchar/plotarrow/plotcandle/plotbar/alertcondition/max_bars_back
