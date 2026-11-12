@@ -4372,7 +4372,8 @@ describe("math.sum variable(series) length (sumVarLen)", () => {
   // A series length runs the fixed-length rolling compensated machine, not a plain sum of the
   // window (pynecore lib/_math_stateful.py sum; resin-harness state/repros/ta.serieslen-seed-14.json,
   // where the plain sum's exact flat-window mean made ta.cci 0/0 instead of the oracle's -66.67).
-  // Bars 7, 8 and 11 are where the plain oldest-first sum lands one ulp away.
+  // Bars 8 and 11 are where the plain oldest-first sum lands one ulp away from the Neumaier machine
+  // (TradingView's engine since 2026-10; under the fused-Kahan machine it had before, bar 7 did too).
   it("runs the same rolling compensated sum as a literal length, bit for bit", () => {
     const vals = [100.1, 100.2, 99.7, 100.3, 100.05, 99.95, 100.15, 100.25, 99.85, 100.35, 100.45, 99.65, 100.1, 100.2];
     const fixed = {};
@@ -4383,7 +4384,7 @@ describe("math.sum variable(series) length (sumVarLen)", () => {
     const plain = (i: number) => vals[i - 3]! + vals[i - 2]! + vals[i - 1]! + vals[i]!;
     const again = {};
     const got = vals.map((v, i) => sumVarLen(again, v, 4, vals.length, i));
-    expect([7, 8, 11].map((i) => got[i] === plain(i))).toEqual([false, false, false]);
+    expect([7, 8, 11].map((i) => got[i] === plain(i))).toEqual([true, false, false]);
   });
 
   it("a same-bar re-execution starts again from the bar-start machine (loop call site)", () => {

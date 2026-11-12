@@ -92,9 +92,11 @@ describe("tier 1 math_004_sum_flat_exact", () => {
     expect(bars.slice(16).map((b) => b["var:__se"])).toEqual(tvSe);
   });
 
-  it("the window of zeros keeps the machine's rounding dust, which `==` does not see", () => {
+  // Under TradingView's previous rolling-sum machine (fused Kahan with a re-baseline rule) this
+  // window of zeros kept rounding dust that only `==`'s tolerance hid. The Neumaier machine it has
+  // run since 2026-10 (oracle pynecore core/rolling_sum.py) reports fl(s + c), and here that is 0.
+  it("the window of zeros sums to 0 on the Neumaier machine", () => {
     const s = runPipeline(source, data).bars[22]!["var:__s"] as number;
-    expect(s).not.toBe(0);
-    expect(Math.abs(s)).toBeLessThan(1e-10);
+    expect(s).toBe(0);
   });
 });
