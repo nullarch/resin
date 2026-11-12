@@ -177,6 +177,10 @@ hashes are added when this is committed.
 
 - `ta.alma` takes a series length: the reference's `pine_alma`, read with the bar's own length. Its offset, sigma and floor stay `simple`.
 
+##### Arrays, again
+
+- `array.slice` returns a view over its array, not a copy: writing through the slice changes the array and the other way round; a push lands at the slice's end, a pop takes its last element, clearing it cuts those elements out of the array (the Pine reference; measured on TradingView by the reference engine; tier 1 `array_002`, `array_003`).
+
 ##### Language
 
 - `%` is the truncated remainder and takes the sign of the dividend: `-7 % 3` is `-1` (was `2`), `7 % -3` is `1` (was `-2`), `-7.5 % 2` is `-1.5` (was `0.5`). Measured on TradingView by the reference engine's `test_023_pine_remainder` (`(z - 7) % 3` is -1 on CAPITALCOM:EURUSD 60); resin had read the operators manual's "rounding down the quotient" as the floored modulo. A zero divisor is still na. Only a `%` with a negative operand changes.

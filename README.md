@@ -34,10 +34,10 @@ Resin compiles Pine Script v5/v6 to a plain JavaScript module and runs it —
 same indicators, same series semantics, your own machine. TradingView will not
 let a script leave the platform; this is how you get it out.
 
-- **Matches TradingView's own exports** in 93 of 95 scenarios: all 20 strategy
-  scenarios (16,259 trades and statistics) and 73 of 75 indicator and library
-  scenarios, measured against PyneCore `0fd57d7`; the two misses and what is
-  not covered are listed — [how it is verified](#how-it-is-verified)
+- **Matches TradingView's own exports** in all 95 scenarios: 20 strategy
+  scenarios (16,259 trades and statistics, two trades of one export set aside)
+  and 75 indicator and library scenarios, measured against PyneCore `0fd57d7`;
+  what is not covered is listed — [how it is verified](#how-it-is-verified)
 - **99.7%** of 2,979 real-world scripts transpile and **99.5%** run
   ([measured, method below](#coverage-and-where-the-numbers-come-from)) — that
   they run, not that their values are right
@@ -169,8 +169,8 @@ harness measures resin against ground truth, in this order of authority:
    PyneCore commit `0fd57d7` (2026-11-09). PyneCore's own scripts are Python, so
    the Pine for every scenario is reconstructed by us from them; it is not
    PyneSys's Pine. Of the 97 scenarios there, 95 are TradingView exports and 2
-   are hand-built fixtures (`sess_002`, `draw_001`); resin matches 95 of the 97
-   in full, 93 of the 95 exports:
+   are hand-built fixtures (`sess_002`, `draw_001`); resin matches all 97
+   in full, all 95 exports among them:
    - **Strategy, 20 scenarios.** 14 List of Trades exports — TradingView's
      built-in strategies, and runs with commission, slippage, pyramiding, a
      futures point value, the bar magnifier and a stepwise
@@ -184,11 +184,11 @@ harness measures resin against ground truth, in this order of authority:
      `matrix.*`, `time`/`timestamp`, `chart.point`): chart exports and Pine Logs
      output. A series matches at 1e-6 (PyneCore's own tolerance is looser,
      relative 1e-5 and absolute 1e-8, and changes no verdict), `na` matches only
-     `na`, and log lines match exactly after trimming. 75 match; the two that
-     do not are `array.slice` (below).
-   - **Not matched.** `array_002` and `array_003`: TradingView's `array.slice`
-     is a view that writes through to the source array, resin's is a copy, and
-     every line that depends on the write differs.
+     `na`, and log lines match exactly after trimming. All 77 match.
+   - **Set aside.** Two trades of the futures export (`strat_050`). They hinge
+     on a moving-average cross that is an exact tie on TradingView's current
+     rolling sum and was not on the one the export was recorded with, so the
+     export no longer says what TradingView does on that bar.
    - **Not a user-visible feature, yet.** The log-line results are captured
      with the `onLog` option; before it existed the harness had to replace
      internal functions to see them.
@@ -230,8 +230,6 @@ What is **not** verified:
   runs; its numbers are as verified as the rules it shares with the scenarios
   above;
 - drawings (`label`, `line`, `box`, `table`) and the rest of the `viz` capture;
-- `array.slice` as a view: resin returns a copy, so a write to the slice does
-  not reach the source array;
 - anything outside the 97 scenarios above, `time`/`timestamp` with a timezone
   and a non-UTC exchange included — no export covers it;
 - v5-only rules — integer division of constants, strict `and`/`or`, na

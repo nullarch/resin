@@ -30,6 +30,7 @@
 import { pyFloatStr } from "./str";
 import { allocArray } from "./limits";
 import { inheritIntKind, isIntArray, markIntArray } from "./array-kind";
+import { sliceView } from "./array-view";
 
 export type PineArray = number[];
 
@@ -605,15 +606,10 @@ export function reverse(arr: PineArray | null): void {
   arr.reverse();
 }
 
-// array.slice(id, index_from=0, index_to=-1) — 부분 배열(새 배열 반환). pine2py는 index_to<0을
-// "index_to=len(arr)"의 **부호와 무관한 센티널**로 취급한다(-1뿐 아니라 -5 등 어떤 음수든 전체
-// 길이로 대체 — 진짜 "끝에서 5번째"가 아님, python 실측: slice([10..50],0,-2)가 여전히 전체
-// 배열을 반환). 그 뒤 `arr[index_from:index_to]`는 Python 슬라이싱 시맨틱인데, JS
-// `Array.prototype.slice(start,end)`의 ECMA-262 알고리즘(음수는 length+start로 클램프, 범위
-// 밖은 조용히 클램프)이 Python list slicing과 완전히 동치라 index_from은 그대로 전달 가능(node/
-// python 교차 실측: slice(-2)/slice(-100,3)/slice(10,20) 전부 바이트 단위 일치). index_from/
-// index_to가 na(NaN)면 Python이 크래시하는 미정의 지점 — get/size(#19)를 참조형 반환에 적용한
-// standardize(C83)와 동일하게 na(null) 전파로 결정.
+// array.slice(id, index_from, index_to): a VIEW of the elements index_from (inclusive) to index_to
+// (exclusive), not a copy: writing through it changes `id`, and the other way round (array-view.ts
+// has the measured rules). A negative index_to stands for the array's size, the reading resin
+// inherited from pine2py and no measurement has contradicted yet.
 export function slice(arr: PineArray | null, indexFrom: number = 0, indexTo: number = -1): PineArray | null {
   if (arr === null) return null;
   // An na index_from starts at the beginning and an na index_to ends at the array size, instead
@@ -622,7 +618,7 @@ export function slice(arr: PineArray | null, indexFrom: number = 0, indexTo: num
   const from = Number.isNaN(indexFrom) ? 0 : Math.trunc(indexFrom);
   let to = Number.isNaN(indexTo) ? arr.length : Math.trunc(indexTo);
   if (to < 0) to = arr.length;
-  return inheritIntKind(arr, arr.slice(from, to));
+  return inheritIntKind(arr, sliceView(arr as unknown[], from, to) as PineArray);
 }
 
 // array.concat(id1, id2) — appends the elements of id2 to id1 IN PLACE and returns id1 itself, not

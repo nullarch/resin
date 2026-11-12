@@ -70,7 +70,6 @@ const FIGURES = [
 const BOUNDED_FIGURES = [
   68 /* ta.* functions */,
   800 /* agent iterations; indicator scenarios */,
-  93 /* TradingView export scenarios matched */,
   95 /* TradingView export scenarios */,
   117 /* of 118 probes */,
   118,

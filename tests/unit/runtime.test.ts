@@ -9897,11 +9897,63 @@ describe("array builtins — sort/reverse/slice/concat/copy (rt.array, C85)", ()
     expect(parray.slice([10, 20, 30, 40, 50], -100, 3)).toEqual([10, 20, 30]);
   });
 
-  it("slice(arr) does not mutate the original array (new array reference)", () => {
-    const arr = [1, 2, 3];
-    const s = parray.slice(arr)!;
-    s.push(99);
-    expect(arr).toEqual([1, 2, 3]);
+  // array.slice is a view (runtime/array-view.ts). The facts are TradingView's, measured by the
+  // oracle on array.slice(a, 0, 2) of [10, 20, 30, 40] (pynecore utils/sequence_view.py) and shown
+  // by tier 1 array_002_array_functions. This replaced a test that pinned pine2py's copy.
+  describe("slice is a view over the parent", () => {
+    const fresh = (): [number[], number[]] => {
+      const a = [10, 20, 30, 40];
+      return [a, parray.slice(a, 0, 2)!];
+    };
+
+    it("reads the parent's elements and writes through", () => {
+      const [a, v] = fresh();
+      expect([...v]).toEqual([10, 20]);
+      expect(v.length).toBe(2);
+      parray.set(v, 1, 99);
+      expect(a).toEqual([10, 99, 30, 40]);
+      a[0] = 7;
+      expect([...v]).toEqual([7, 99]);
+    });
+
+    it("a push lands at the slice end, a pop takes the slice's last element", () => {
+      const [a, v] = fresh();
+      v.push(99);
+      expect(a).toEqual([10, 20, 99, 30, 40]);
+      expect([...v]).toEqual([10, 20, 99]);
+      expect(v.pop()).toBe(99);
+      expect(v.pop()).toBe(20);
+      expect(a).toEqual([10, 30, 40]);
+    });
+
+    it("clear cuts the sliced elements out of the parent", () => {
+      const [a, v] = fresh();
+      v.length = 0;
+      expect(a).toEqual([30, 40]);
+      expect([...v]).toEqual([]);
+    });
+
+    it("the range does not follow the parent's content, and is clipped to its length", () => {
+      const [a, v] = fresh();
+      a.shift();
+      expect([...v]).toEqual([20, 30]);
+      a.length = 1;
+      expect([...v]).toEqual([20]);
+      a.push(1, 2, 3);
+      expect([...v]).toEqual([20, 1]);
+    });
+
+    it("sort, reverse and fill on the view reorder the parent inside the range only", () => {
+      const a = [5, 3, 9, 1, 7];
+      const v = parray.slice(a, 1, 4)!;
+      v.sort((x, y) => x - y);
+      expect(a).toEqual([5, 1, 3, 9, 7]);
+      v.reverse();
+      expect(a).toEqual([5, 9, 3, 1, 7]);
+      v.fill(0);
+      expect(a).toEqual([5, 0, 0, 0, 7]);
+      expect(Array.isArray(v)).toBe(true);
+    });
   });
 
   it("slice(null) returns na(null) — reference-type read na (same class as standardize C83)", () => {
