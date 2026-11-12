@@ -10,6 +10,106 @@ Every entry below names the commit that made it. Each of those commit messages s
 the rule, quotes its evidence (a TradingView export, the certified reference engine,
 or the Pine manual) and lists what moved.
 
+## [Unreleased]
+
+A verification pass over the converter: what it accepts, what it silently changes, and what it
+does to the host that runs it. Outside "Fixed", nothing here changes a value a valid, in-limits script
+computes (the 10,189-script snapshot of `corpus/` and `oracle/` is identical before and after). Commit
+hashes are added when this is committed.
+
+### Added
+
+- `import` links a library: `transpile(source, { libraries })`, `resin run|check --libs <dir>`. It used to
+  be discarded by the parser, so every name read through an alias was an "unsupported call". See
+  [API.md](API.md#libraries). With no source, the error now names the library.
+- A function that returns a matrix is a matrix receiver and initializer (`kernel_matrix(a, b).sum(s)`),
+  as a function returning an array or a map already was.
+
+### Fixed
+
+- `timestamp(dateString)` returned na for `GMT+10`, `UTC-5`, a month written first, a day with no space
+  after it, and a leading zone, with no warning. A date window built on one was never open, so the script
+  ran to the end doing nothing. Of the 887 date literals in the 4,167 scripts measured, 57 are newly read,
+  none already read changed, and all 821 that `Date.parse` reads as well agree with it. A string that still
+  cannot be read gives a run warning.
+- `matrix.pinv` of an invertible square matrix is its inverse. The previous formula squared the condition
+  number: on a regularized kernel matrix (cond ~ 6e5) it was off by up to 4e-4 in the result, where the
+  inverse agrees with an independent solve to 1e-11. The `matrix_pinv` golden's square channels moved to
+  values 5e-13 from the exact rational inverse (they were 1.2e-8 from it). **TradingView's own value has not
+  been compared.**
+
+### Behaviour changes
+
+- A character outside Pine's alphabet, a string or `/* */` comment that is never closed, and a
+  token left on a statement's line after the statement ended are transpile errors. They used to be
+  skipped or read as a new statement: `x = close open + 1` compiled as `x = close`, and an
+  unclosed quote swallowed the rest of the file. BOM, no-break and other Unicode spaces and
+  zero-width characters are still ignored, and CRLF and a lone CR are line breaks.
+- An `if`/`else`/`for`/`while` header with nothing indented under it, a color literal that is not
+  `#RRGGBB` or `#RRGGBBAA`, and an exponent with no digits (`1e`, `2e-`) are transpile errors. The
+  first let the next line become a separate top-level statement; the last compiled to JavaScript that
+  does not parse.
+- `str.replace` and `str.replace_all` insert the replacement literally. `str.replace_all("a-b", "-",
+  "$&")` was `"a-b"` (JavaScript's replacement patterns), and `str.replace` with an occurrence
+  already gave `"a$&b"`.
+- A loop no longer stops silently after 10,000 iterations. Every iteration of every loop (`for`,
+  `while`, `for … in`, and their value-position forms) spends a step of one budget per bar,
+  `limits.maxStepsPerBar` (default 10,000,000), and running out throws `ResinLimitError`. A
+  20,000-iteration loop now sums to 20,000, and three nested loops stop instead of running 10^12
+  iterations.
+- Array, matrix (rows × columns), `str.repeat` and `ta.*` window sizes above
+  `limits.maxCollectionLength` (default 10,000,000), and sizes that are not whole numbers, throw
+  `ResinLimitError`. `array.new_float(1e9)` used to abort the process with a V8 out-of-memory.
+- `transpile()` never throws: an internal failure, or a script too deep for the stack, comes back as
+  `{ ok: false, internal: true }`, and `ok: true` now means the generated module parses.
+- Run options with unequal OHLCV array lengths throw a `TypeError`; the other data and option
+  problems below are warnings.
+- A variable, parameter, loop variable or function named like a JavaScript word or global the
+  generated code relies on (`let`, `static`, `Math`, `Number`, anything starting `__`) is renamed in
+  the output. Before, such a name produced a crash or, for `__forLimit`, a wrong value.
+
+### Added
+
+- `TranspileOk.warnings`: every use of a name that compiles but is not faithful — `stub`
+  (`request.dividends`, `request.security_lower_tf`, …), `passthrough` (`ticker.heikinashi`, …),
+  `approximated`, `hypothesis`, `noop` — plus ignored option keys, a `//@version` outside 5–6, and
+  `strategy()` parameters that are accepted and never read. `transpile(source, { strict: true })`
+  turns the stub, pass-through, option and version ones into errors. (`src/transpiler/surface.ts`)
+- `RunResult.warnings`: bars that are not the compiled `chartTf` or whose `time` is in seconds, out of
+  order, or has `high < low`; an `inputs` override that matched no input title or has the wrong type;
+  a `request.security` symbol with no feed in `security`; an option key resin does not read.
+- Run options `limits: { maxStepsPerBar, maxCollectionLength, deadlineMs }` and the exported
+  `ResinLimitError` and `RunLimits`; transpile option `maxSourceBytes`.
+
+### Verification harness (in-repo)
+
+`HARNESS.md` says what each layer proves and does not.
+
+- `corpus/diff/status.json`: the `corpus_diff` gate is a per-script ledger, not a count. 562 of the
+  2,303 "matches" compare nothing (every compared channel is constant or all-NaN) and are counted
+  apart as `matched_vacuous`.
+- `oracle/golden/PROVENANCE.json`: which goldens are raw pine2py output and which were corrected by
+  hand after the 0.1.0 import (25 of 263).
+- `known-gaps.json`: 26 known gaps, each with a repro; closing one fails its `it.fails` test until the
+  entry is removed.
+- `tests/negative/`: 411 scripts that must be refused, 81 valid near-misses, and 68 invalid scripts
+  resin still accepts (each an `it.fails`).
+- `tests/property/`: independent brute-force references for 26 ta/math specs on 500 bars, and
+  no-lookahead, determinism, formatting, scale and strategy-accounting properties.
+- `tests/robustness/` and `scripts/fuzz.mjs`: seeded mutation fuzz in child processes, data shapes and
+  string injection. Its first runs found, among others, `str.replace`/`replace_all` reading `$&` in the
+  replacement (fixed above) and `ta.percentile_*` ignoring the size limit (fixed; its window top-up is
+  now linear, bit-identical to the old output on 768 generated runs).
+- `scripts/mutate.mjs` and `mutation/`: 130 mutants of the code that decides numbers, 118 killed, the
+  12 survivors listed.
+- `scripts/package-smoke.mjs`, `scripts/verify-evidence.mjs`, `scripts/corpus-manifest.mjs`,
+  `tests/unit/version_consistency.test.ts`, and the `nightly.yml` / `release.yml` workflows (the release
+  one verifies and does not publish). `ci.yml` now covers Node 22.18 and 24, macOS, a clean-tree check
+  and the package smoke test.
+- `package-lock.json`'s root metadata (`pine2js 0.0.1`, `node >=20`) now matches `package.json`.
+- New unit suites: `surface`, `limits`, `run_diagnostics`, `identifier_hygiene`, `known_gaps`,
+  `golden_provenance`, `negative_corpus`; lexer and parser strictness cases.
+
 ## [0.3.0] - 2026-09-28
 
 0.3.0 is the first release measured against TradingView's own results instead of a
