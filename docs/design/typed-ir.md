@@ -1,6 +1,6 @@
 # Design: types on every expression, one place that knows them
 
-Status: proposal, nothing here is implemented. It describes the next structural step after the
+Status: partly implemented. `src/transpiler/types/infer.ts` is the record for the types that need no analyzer (step 1 in that reduced form) and `types/check.ts` is the checker on it as warnings (step 4), both behind the zero-findings gate of resin-harness. Steps 2, 3 and 6, which move the analyzer onto the record, are not started. It describes the next structural step after the
 built-in signature table (`src/transpiler/builtins/`), and the order in which to take it so that no
 value a valid script computes changes on the way.
 

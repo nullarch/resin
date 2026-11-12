@@ -1,11 +1,9 @@
-// A type check on what is certain: the types of literals, of declared variables, and of built-in
-// parameters whose type the signature table states plainly. Everything else is "unknown", and an
-// unknown never produces a finding. So this refuses nothing that needs inference to judge; it
-// catches a string where the language takes a number or a bool, and the reverse, when the string
-// or the number is written out.
+// A type check on what is certain: the type record of types/infer.ts (literals, built-in variables,
+// operators, built-in calls with a plain return, once-introduced variables). Everything else is
+// "unknown", and an unknown never produces a finding, so nothing here needs a guess: it catches a
+// string where the language takes a number or a bool, and the reverse.
 //
-// It is the first slice of docs/design/typed-ir.md (step 4, on the types that need no analyzer):
-// when expressions carry inferred types, the same rules read them instead of `literalType`.
+// docs/design/typed-ir.md, step 4. It began on literals alone; `literalType` is now the record.
 //
 // Rules, each from the manual's type system and operators pages (language_type-system.txt,
 // language_operators.txt):
@@ -21,6 +19,7 @@
 // where a bool is expected is not reported: v5 casts it.
 import type { Script } from "../ast";
 import { BUILTIN_SIGNATURES } from "../builtins/signatures";
+import { annotatedType, declaredType, dottedName, inferTypes, type ExprType } from "./infer";
 
 export interface TypeFinding {
   name: string; // what the finding is about: a variable, an operator, a function
@@ -28,29 +27,7 @@ export interface TypeFinding {
   message: string;
 }
 
-type Known = "number" | "string" | "bool" | "color";
-type T = Known | "unknown";
-
-const QUALIFIERS = /^(?:const|input|simple|series)\s+/;
-
-function declaredType(hint: string | null): T {
-  if (hint === null) return "unknown";
-  const base = hint.trim().replace(QUALIFIERS, "");
-  if (base === "int" || base === "float") return "number";
-  if (base === "string" || base === "bool" || base === "color") return base;
-  return "unknown";
-}
-
-// The oracle's annotation for a parameter, when it leaves no doubt.
-function annotatedType(annotation: string): T {
-  const parts = annotation.split("|").map((p) => p.trim()).filter((p) => p !== "" && p !== "None" && !/^NA\b/.test(p));
-  if (parts.length === 0) return "unknown";
-  const one = (p: string): T =>
-    /^(int|float|PyneInt|PyneFloat|Series\[(int|float)\]|Series\[int \| float\])$/.test(p) ? "number" : /^(str|PyneStr|Series\[str\])$/.test(p) ? "string" : "unknown";
-  const kinds = new Set(parts.map(one));
-  return kinds.size === 1 ? [...kinds][0]! : "unknown";
-}
-
+type T = ExprType;
 type Node = Record<string, unknown> & { kind?: string; line?: number };
 
 export function checkTypes(script: Script): TypeFinding[] {
@@ -58,76 +35,12 @@ export function checkTypes(script: Script): TypeFinding[] {
   const report = (name: string, line: number | undefined, message: string): void => {
     out.push({ name, line: line ?? 0, message });
   };
-
-  // A variable's type is known only when the whole script introduces its name exactly once and
-  // that one declaration settles it (a declared type, or a literal initializer). Scopes are not
-  // modelled; a name introduced twice anywhere is unknown.
-  const introduced = new Map<string, number>();
-  const settled = new Map<string, Known>();
-  const collect = (node: unknown): void => {
-    if (node === null || typeof node !== "object") return;
-    if (Array.isArray(node)) {
-      for (const child of node) collect(child);
-      return;
-    }
-    const n = node as Node;
-    const introduce = (name: unknown): void => {
-      if (typeof name === "string") introduced.set(name, (introduced.get(name) ?? 0) + 1);
-    };
-    switch (n.kind) {
-      case "VarDecl":
-        introduce(n.name);
-        break;
-      case "Assignment":
-        if (n.operator === "=") introduce(n.name);
-        break;
-      case "FuncDecl":
-      case "MethodDecl":
-      case "TypeDecl":
-      case "EnumDecl":
-      case "FuncParam":
-        introduce(n.name);
-        break;
-      case "ImportDecl":
-        introduce(n.alias);
-        break;
-      case "ForStmt":
-        introduce(n.varName);
-        break;
-      case "ForInStmt":
-        introduce(n.varName);
-        introduce(n.indexName);
-        break;
-      case "TupleDestructure":
-        if (Array.isArray(n.names)) for (const name of n.names) introduce(name);
-        break;
-    }
-    for (const [key, child] of Object.entries(n)) {
-      if (key !== "line" && key !== "col" && key !== "kind") collect(child);
-    }
-  };
-  collect(script.body);
-
-  const literalType = (e: unknown): T => {
-    const n = e as Node | null;
-    if (n === null || typeof n !== "object") return "unknown";
-    switch (n.kind) {
-      case "NumberLiteral":
-        return "number";
-      case "StringLiteral":
-        return "string";
-      case "BoolLiteral":
-        return "bool";
-      case "ColorLiteral":
-        return "color";
-      case "Identifier": {
-        const name = n.name as string;
-        return introduced.get(name) === 1 ? settled.get(name) ?? "unknown" : "unknown";
-      }
-      default:
-        return "unknown";
-    }
-  };
+  // The type record (types/infer.ts): literals, built-in variables, operators, built-in calls and
+  // once-introduced variables. `literalType` keeps its name from the first slice, when it read
+  // literals only.
+  const types = inferTypes(script);
+  const introduced = types.introduced;
+  const literalType = (e: unknown): T => types.typeOf(e);
 
   const expectBool = (e: unknown, what: string, line: number | undefined): void => {
     if (literalType(e) === "string") report(what, line, `${what} takes a bool, not a string`);
@@ -138,10 +51,7 @@ export function checkTypes(script: Script): TypeFinding[] {
   };
 
   const checkCall = (n: Node): void => {
-    const callee = n.callee as Node;
-    const dotted = (e: Node | null): string | null =>
-      e === null || typeof e !== "object" ? null : e.kind === "Identifier" ? (e.name as string) : e.kind === "DotAccess" ? ((h) => (h === null ? null : `${h}.${e.attr as string}`))(dotted(e.obj as Node)) : null;
-    const name = dotted(callee);
+    const name = dottedName(n.callee);
     if (name === null || introduced.has(name.split(".")[0]!)) return;
     const overloads = BUILTIN_SIGNATURES[name];
     if (overloads === undefined || overloads.some((o) => o.open === true || o.variadic !== undefined)) return;
@@ -185,11 +95,10 @@ export function checkTypes(script: Script): TypeFinding[] {
           if (declared !== "unknown" && value !== "unknown" && declared !== value && !(declared === "bool" && value === "number")) {
             report(name, n.line, `'${name}' is declared ${String(n.typeHint).trim()} and initialized with a ${value}`);
           }
-          const known = declared !== "unknown" ? declared : value;
-          if (known !== "unknown" && introduced.get(name) === 1) settled.set(name, known);
+          types.settle(name, declared !== "unknown" ? declared : value);
         } else {
-          const has = introduced.get(name) === 1 ? settled.get(name) : undefined;
-          if (has !== undefined && value !== "unknown" && has !== value && !(has === "bool" && value === "number")) {
+          const has = types.variable(name);
+          if (has !== "unknown" && value !== "unknown" && has !== value && !(has === "bool" && value === "number")) {
             report(name, n.line, `':=' cannot give '${name}', a ${has}, a ${value}`);
           }
         }

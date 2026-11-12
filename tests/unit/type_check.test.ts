@@ -47,6 +47,18 @@ describe("literal type check", () => {
     expect(messages("x = str.length(1)")).toEqual(["'str.length' takes a string for 'string', not a number"]);
   });
 
+  // The type record (types/infer.ts) gives the same rules more to read than literals.
+  it("reads inferred types: built-in variables, operators, built-in calls and settled variables", () => {
+    expect(messages('s = str.tostring(close)\nx = s * 2')).toEqual(["`*` takes a number, not a string"]);
+    expect(messages('msg = "Price: " + close')).toEqual(["`+` adds two numbers or joins two strings, not a number and a string"]);
+    expect(messages("up = close > open\nx = up * 2")).toEqual(["`*` takes a number, not a bool"]);
+    expect(messages("var bool m = na\nm := syminfo.ticker")).toEqual(["':=' cannot give 'm', a bool, a string"]);
+    expect(messages("x = ta.sma(close, syminfo.ticker)")).toEqual(["'ta.sma' takes a number for 'length', not a string"]);
+    expect(messages("if syminfo.ticker\n    x = 1")).toEqual(["an `if` condition takes a bool, not a string"]);
+    // Well-typed uses of the same things stay silent.
+    expect(messages('s = str.tostring(close) + " USD"\nn = close * 2 + ta.sma(close, 14)\nb = close > open and barstate.islast\nc = b ? color.red : color.green')).toEqual([]);
+  });
+
   it("is a transpile warning, and an error under strict", () => {
     const src = '//@version=6\nindicator("t")\nx = 1\nx := "a"\nplot(1)\n';
     const strict = transpile(src, { strict: true });
@@ -79,9 +91,17 @@ describe("literal type check against the recorded false accepts", () => {
 });
 
 describe("literal type check on resin's own cases", () => {
-  // One case assigns a color literal to a `var string` (a pine2py mirror of a color as its hex
-  // text). TradingView refuses that; the case keeps replaying, with the warning.
-  const EXTENSIONS: Record<string, number> = { "color_literal.pine": 2 };
+  // Cases written against pine2py, which kept a color as its hex text and str.match as a bool: they
+  // assign a color to a `var string` (color_*) or the string str.match returns to a `var bool`
+  // (str_match). TradingView refuses both; the cases keep replaying, with the warning. The counts
+  // may only fall.
+  const EXTENSIONS: Record<string, number> = {
+    "color_basic.pine": 27,
+    "color_from_gradient_kwargs.pine": 3,
+    "color_literal.pine": 3,
+    "color_new_kwarg.pine": 3,
+    "str_match.pine": 14,
+  };
 
   it("finds nothing in oracle/cases beyond the recorded extension", () => {
     const dir = join(__dirname, "..", "..", "oracle", "cases");

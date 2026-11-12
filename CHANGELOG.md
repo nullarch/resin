@@ -120,9 +120,9 @@ hashes are added when this is committed.
 - One table of built-in signatures, `src/transpiler/builtins/signatures.ts` (444 functions), generated from the reference engine's library, and a check of every built-in call against it. A call the table does not allow (`ticker.new()`, `ta.sma(close, len=14)`, `label.set_text(l)`) is a `signature` warning and an error under `strict`. A v5 script may still pass `when=` and `transp=`. Nothing a script computes changes.
 - `ta.alma` takes its first argument by the keyword `series`, as the reference and the reference engine name it (was `source`).
 
-### Type check, first slice
+### Type record and type check
 
-- `src/transpiler/types/check.ts`: type errors that need no inference (`int x = "a"`, `x = 1` then `x := "a"`, `if "a"`, `"a" * 2`, `close["a"]`, `ta.sma(close, "5")`) are a `type` warning and an error under `strict`. Nothing a script computes changes; nothing whose type has to be inferred is judged.
+- `src/transpiler/types/infer.ts` records the evident type of every expression (literals, built-in variables, operators, built-in calls whose return the signature table states plainly, variables introduced once); `types/check.ts` reports what the manual forbids on it: `int x = "a"`, `x = 1` then `x := "a"`, `if "a"`, `s = str.tostring(close)` then `s * 2`, `"Price: " + close`, `ta.sma(close, "5")`. A `type` warning, an error under `strict`. Nothing a script computes changes, and an expression whose type is not evident is never judged.
 
 ### Measured against TradingView exports (head-to-head)
 

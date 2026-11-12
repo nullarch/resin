@@ -53,7 +53,7 @@ const FIGURES = [
   "10,618", // denominator
   "10,100", // compiles
   // The test suites.
-  "11,559", // tests
+  "11,560", // tests
   "9,883", // tests that hid the first loop's mistakes
   "263", // oracle/ regression cases
   // Quick start output.

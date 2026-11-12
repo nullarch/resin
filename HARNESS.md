@@ -38,11 +38,14 @@ error under `strict`. `tests/unit/builtin_call_check.test.ts` pins the calls res
 that the table does not allow (13 kinds, taken over from pine2py; the list may only shrink) and the
 one place resin's keyword names differ from the oracle's. On 2,987 valid real-world scripts the check
 reports nothing (resin-harness, 2026-11-12).
-A first type check (`src/transpiler/types/check.ts`) reports what needs no inference to see: a string
-literal where the language takes a number or a bool, a declared type against its literal initializer,
-`:=` changing a settled variable's type, a built-in argument of the other kind. A `type` warning, an
-error under `strict`. It sees 16 of the 19 `static-type` false accepts; the other three, and anything
-whose type has to be inferred, wait for docs/design/typed-ir.md. Both checkers are held to one gate
+A type record (`src/transpiler/types/infer.ts`) gives every expression its evident type: literals,
+built-in variables, operators, built-in calls with a plain return in the signature table, and variables
+the script introduces once; everything else is unknown and never judged. The type check on it
+(`types/check.ts`) reports a string where the language takes a number or a bool (and the reverse), a
+declared type against its initializer, `:=` changing a variable's type, a built-in argument of the other
+kind. A `type` warning, an error under `strict`. It sees 16 of the 19 `static-type` false accepts; the
+other three need signatures the table does not have (`plot`, `input.int`) or a parameter the oracle
+leaves untyped. The analyzer's own inference is not on the record yet (docs/design/typed-ir.md, step 2). Both checkers are held to one gate
 outside this repository: resin-harness fails its scoreboard when an accepted real-world script carries
 a `signature` or `type` warning (`realworld.checker_clean`).
 A name that is wrong and unregistered still compiles silently: an empty `warnings` is not a certificate.
