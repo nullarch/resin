@@ -4913,14 +4913,13 @@ describe("CodeGen", () => {
 
   // ── WhileStmt codegen: 안전 제한 카운터 + break/continue ─────
 
-  it("emits a JS while loop wrapped in its own block with a 10,000-iteration safety counter", () => {
+  it("emits a JS while loop wrapped in its own block whose body spends a step of the bar's shared loop budget", () => {
     const code = codegenSource(["i = 0", "while i < 5", "    i := i + 1"].join("\n"));
     expect(code).toBe(
       "var i = 0;\n" +
         "{\n" +
-        "let __whileLimit = 10000;\n" +
-        "while (rt.pineLt(i, 5) && __whileLimit > 0) {\n" +
-        "__whileLimit -= 1;\n" +
+        "while (rt.pineLt(i, 5)) {\n" +
+        "if (--$.stepsLeft < 0) rt.stepsExceeded($);\n" +
         "i = (i + 1);\n" +
         "}\n" +
         "}",
@@ -4932,9 +4931,9 @@ describe("CodeGen", () => {
     expect(codegenSource("while close > open\n    continue")).toContain("continue;");
   });
 
-  it("decrements the safety counter before body statements even when the loop breaks/continues early", () => {
+  it("spends the loop-budget step before body statements even when the loop breaks/continues early", () => {
     const code = codegenSource(["i = 0", "while i < 5", "    i := i + 1", "    break"].join("\n"));
-    const bodyStart = code.indexOf("__whileLimit -= 1;");
+    const bodyStart = code.indexOf("if (--$.stepsLeft < 0) rt.stepsExceeded($);");
     const breakIdx = code.indexOf("break;");
     expect(bodyStart).toBeGreaterThan(-1);
     expect(breakIdx).toBeGreaterThan(bodyStart);
@@ -4970,9 +4969,8 @@ describe("CodeGen", () => {
         "let __forStep = 1;\n" +
         "let __forFwd = __forStart <= __forEnd;\n" +
         "let __forDelta = __forFwd ? Math.abs(__forStep) : -Math.abs(__forStep);\n" +
-        "let __forLimit = 10000;\n" +
-        "for (let i = __forStart; (__forFwd ? i <= __forEnd : i >= __forEnd) && __forLimit > 0; i += __forDelta) {\n" +
-        "__forLimit -= 1;\n" +
+        "for (let i = __forStart; (__forFwd ? i <= __forEnd : i >= __forEnd); i += __forDelta) {\n" +
+        "if (--$.stepsLeft < 0) rt.stepsExceeded($);\n" +
         "sum = (sum + i);\n" +
         "}\n" +
         "}",
@@ -4987,7 +4985,7 @@ describe("CodeGen", () => {
   it("forces a fixed descending direction (no runtime __forFwd detection) when step is a negative literal", () => {
     const code = codegenSource(["prod = 1", "for i = 5 to 1 by -1", "    prod := prod * i"].join("\n"));
     expect(code).not.toContain("__forFwd");
-    expect(code).toContain("i >= __forEnd && __forLimit > 0; i += ((-1))");
+    expect(code).toContain("i >= __forEnd; i += ((-1))");
   });
 
   it("uses runtime __forFwd/__forDelta direction detection when step is a non-literal expression", () => {
@@ -5002,9 +5000,9 @@ describe("CodeGen", () => {
     expect(code).toContain("let __forStep = 1;");
   });
 
-  it("decrements the safety counter before body statements even when the loop breaks/continues early", () => {
+  it("spends the loop-budget step before body statements even when the loop breaks/continues early", () => {
     const code = codegenSource(["for i = 1 to 5", "    break"].join("\n"));
-    const bodyStart = code.indexOf("__forLimit -= 1;");
+    const bodyStart = code.indexOf("if (--$.stepsLeft < 0) rt.stepsExceeded($);");
     const breakIdx = code.indexOf("break;");
     expect(bodyStart).toBeGreaterThan(-1);
     expect(breakIdx).toBeGreaterThan(bodyStart);
@@ -5047,9 +5045,8 @@ describe("CodeGen", () => {
         "let __forStep = 1;\n" +
         "let __forFwd = __forStart <= __forEnd;\n" +
         "let __forDelta = __forFwd ? Math.abs(__forStep) : -Math.abs(__forStep);\n" +
-        "let __forLimit = 10000;\n" +
-        "for (let i = __forStart; (__forFwd ? i <= __forEnd : i >= __forEnd) && __forLimit > 0; i += __forDelta) {\n" +
-        "__forLimit -= 1;\n" +
+        "for (let i = __forStart; (__forFwd ? i <= __forEnd : i >= __forEnd); i += __forDelta) {\n" +
+        "if (--$.stepsLeft < 0) rt.stepsExceeded($);\n" +
         "s = rt.ta.ema(rt.ta.loopState($.taSlots[0], $.idx), $.close.get(0), 3);\n" +
         "}\n" +
         "}",
@@ -5165,9 +5162,9 @@ describe("CodeGen", () => {
     const code = codegenSource("while ta.sma(close, 3) > 0\n    break");
     expect(code).not.toContain("__lazy");
     expect(code).toBe(
-      "{\nlet __whileLimit = 10000;\n" +
-        "while (rt.pineGt(rt.ta.sma($.taSlots[0], $.close.get(0), 3), 0) && __whileLimit > 0) {\n" +
-        "__whileLimit -= 1;\nbreak;\n}\n}",
+      "{\n" +
+        "while (rt.pineGt(rt.ta.sma($.taSlots[0], $.close.get(0), 3), 0)) {\n" +
+        "if (--$.stepsLeft < 0) rt.stepsExceeded($);\nbreak;\n}\n}",
     );
   });
 
@@ -8968,10 +8965,11 @@ describe("CodeGen", () => {
     expect(code).toContain("var x = __cfr0;");
   });
 
-  it("emits a while-expr ('=' new local) with the __whileLimit safety counter and the __cfr temp result (C266)", () => {
+  it("emits a while-expr ('=' new local) with the shared loop-budget step and the __cfr temp result (C266)", () => {
     const code = codegenSource(["n = 0.0", "x = while n < 2.0", "    n := n + 1.0", "    n"].join("\n"));
     expect(code).toContain("let __cfr0 = NaN;");
-    expect(code).toContain("let __whileLimit = 10000;");
+    expect(code).toContain("if (--$.stepsLeft < 0) rt.stepsExceeded($);");
+    expect(code).not.toContain("__whileLimit");
     expect(code).toContain("__cfr0 = n;");
     expect(code).toContain("var x = __cfr0;");
   });
@@ -11644,7 +11642,7 @@ describe("CodeGen JS-reserved-word local names (C271)", () => {
   it("renames a for-loop variable named 'in' throughout the header and body", () => {
     const code = codegenSource(["sum = 0.0", "for in = 0 to 3", "    sum := sum + in", "x = sum"].join("\n"));
     expect(code).toContain(
-      "for (let in_ = __forStart; (__forFwd ? in_ <= __forEnd : in_ >= __forEnd) && __forLimit > 0; in_ += __forDelta) {",
+      "for (let in_ = __forStart; (__forFwd ? in_ <= __forEnd : in_ >= __forEnd); in_ += __forDelta) {",
     );
     expect(code).toContain("sum = (sum + in_);");
   });
@@ -26249,7 +26247,7 @@ describe("CodeGen for-in loop over label.all/line.all/box.all/table.all/polyline
 
   it("emits rt.box.delete(bx) for `for bx in box.all` (exact-string, wild da5f67e3f15c.pine/b15b037bdd63.pine pattern)", () => {
     const code = codegenSource(["for bx in box.all", "    bx.delete()"].join("\n"));
-    expect(code).toBe("{\nlet __forInArr = [];\nfor (let __forInIdx = 0; __forInArr !== null && __forInIdx < __forInArr.length; __forInIdx++) {\nlet bx = __forInArr[__forInIdx];\nrt.box.delete(bx);\n}\n}");
+    expect(code).toBe("{\nlet __forInArr = [];\nfor (let __forInIdx = 0; __forInArr !== null && __forInIdx < __forInArr.length; __forInIdx++) {\nif (--$.stepsLeft < 0) rt.stepsExceeded($);\nlet bx = __forInArr[__forInIdx];\nrt.box.delete(bx);\n}\n}");
   });
 
   it("also tags the index-name form (`for [i, bx] in line.all`) without error", () => {
@@ -26648,6 +26646,7 @@ describe("CodeGen for-in loop (C216)", () => {
         "{",
         "let __forInArr = $.vars[0];",
         "for (let __forInIdx = 0; __forInArr !== null && __forInIdx < __forInArr.length; __forInIdx++) {",
+        "if (--$.stepsLeft < 0) rt.stepsExceeded($);",
         "let x = __forInArr[__forInIdx];",
         "let y = x;",
         "}",
@@ -26664,6 +26663,7 @@ describe("CodeGen for-in loop (C216)", () => {
         "{",
         "let __forInArr = $.vars[0];",
         "for (let i = 0; __forInArr !== null && i < __forInArr.length; i++) {",
+        "if (--$.stepsLeft < 0) rt.stepsExceeded($);",
         "let v = __forInArr[i];",
         "let y = (v + i);",
         "}",
@@ -26681,6 +26681,7 @@ describe("CodeGen for-in loop (C216)", () => {
         "let __forInMap = $.vars[0];",
         "if (__forInMap !== null) {",
         "for (const [k, v] of __forInMap.entries()) {",
+        "if (--$.stepsLeft < 0) rt.stepsExceeded($);",
         "let y = v;",
         "}",
         "}",
@@ -26698,6 +26699,7 @@ describe("CodeGen for-in loop (C216)", () => {
         "let __forInMap = $.vars[0];",
         "if (__forInMap !== null) {",
         "for (const k of __forInMap.keys()) {",
+        "if (--$.stepsLeft < 0) rt.stepsExceeded($);",
         "let y = k;",
         "}",
         "}",
@@ -26878,6 +26880,7 @@ describe("CodeGen for-in loop (C216)", () => {
         "{",
         "let __forInArr = rt.array.from(1.0, 2.0);",
         "for (let __forInIdx = 0; __forInArr !== null && __forInIdx < __forInArr.length; __forInIdx++) {",
+        "if (--$.stepsLeft < 0) rt.stepsExceeded($);",
         "let x = __forInArr[__forInIdx];",
         "let y = x;",
         "}",

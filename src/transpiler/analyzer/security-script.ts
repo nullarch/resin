@@ -622,6 +622,7 @@ class SliceAnalysis {
               info.tupleArity !== null ||
               info.returnUdtType !== null ||
               info.returnContainerKind !== null ||
+              info.returnsMatrix ||
               info.returnArrayElemUdtType !== null ||
               info.returnArrayElemDrawingKind !== null;
             return returnsObject ? "object" : info.returnIsScalarSafe ? "number" : "unknown";

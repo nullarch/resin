@@ -66,8 +66,9 @@ __obs_b11 := matrix.get(rbB, 1, 1)
 var float __obs_b12 = na
 __obs_b12 := matrix.get(rbB, 1, 2)
 
-// C: 2x2 square(bar-derived, invertible) — formula1 성공(정사각은 A^-1과 사실상 동치), 결과 2x2
-// 전부 관측.
+// C: 2x2 square(bar-derived, invertible) — an invertible square goes straight to inv(). The golden's
+// C and E channels were replaced: pine2py's formula was off by up to 1.2e-8 against the exact rational
+// inverse of these bars, this is off by 5.4e-13.
 mcC = matrix.new<float>(2, 2, 0.0)
 matrix.set(mcC, 0, 0, open + 0.0)
 matrix.set(mcC, 0, 1, high + 0.0)

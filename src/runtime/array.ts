@@ -28,6 +28,7 @@
 //   동일 경로로 literal port(별도 분기 불필요).
 
 import { pyFloatStr } from "./str";
+import { allocArray } from "./limits";
 
 export type PineArray = number[];
 
@@ -37,7 +38,7 @@ export function new_float(size: number = 0, initialValue: number = NaN): PineArr
   if (Number.isNaN(size)) return null;
   const n = Math.trunc(size);
   if (n <= 0) return [];
-  return new Array<number>(n).fill(initialValue);
+  return allocArray<number>(n, "array.new_float").fill(initialValue);
 }
 
 // array.get(id, index) — 범위 밖은 pine2py 가드 그대로 nan(literal port).
@@ -421,28 +422,28 @@ export function new_int(size: number = 0, initialValue: number = 0): number[] | 
   if (Number.isNaN(size)) return null;
   const n = Math.trunc(size);
   if (n <= 0) return [];
-  return new Array<number>(n).fill(initialValue);
+  return allocArray<number>(n, "array.new_*").fill(initialValue);
 }
 
 export function new_bool(size: number = 0, initialValue: boolean = false): boolean[] | null {
   if (Number.isNaN(size)) return null;
   const n = Math.trunc(size);
   if (n <= 0) return [];
-  return new Array<boolean>(n).fill(initialValue);
+  return allocArray<boolean>(n, "array.new_*").fill(initialValue);
 }
 
 export function new_string(size: number = 0, initialValue: string = ""): string[] | null {
   if (Number.isNaN(size)) return null;
   const n = Math.trunc(size);
   if (n <= 0) return [];
-  return new Array<string>(n).fill(initialValue);
+  return allocArray<string>(n, "array.new_*").fill(initialValue);
 }
 
 export function new_color(size: number = 0, initialValue: string = ""): string[] | null {
   if (Number.isNaN(size)) return null;
   const n = Math.trunc(size);
   if (n <= 0) return [];
-  return new Array<string>(n).fill(initialValue);
+  return allocArray<string>(n, "array.new_*").fill(initialValue);
 }
 
 // array.new<T>(size, initial_value) — T가 5종 원시 타입 밖(사용자 UDT 타입명 또는 label/
@@ -459,7 +460,7 @@ export function new_generic(size: number = 0, initialValue: unknown = null): unk
   if (Number.isNaN(size)) return null;
   const n = Math.trunc(size);
   if (n <= 0) return [];
-  return new Array(n).fill(initialValue);
+  return allocArray<unknown>(n, "array.new").fill(initialValue);
 }
 
 // array.new_label/new_line/new_box/new_table/new_linefill(size, initial_value) — v4식 명명

@@ -14,7 +14,7 @@ export const VERSION = "0.3.0";
 
 // --- Transpile: Pine source -> JavaScript module code ---
 export { transpile } from "./transpiler/pipeline";
-export type { TranspileErr, TranspileOk, TranspileResult } from "./transpiler/pipeline";
+export type { TranspileErr, TranspileOk, TranspileResult, TranspileWarning } from "./transpiler/pipeline";
 export type { AnalyzeOptions } from "./transpiler/analyzer";
 
 // parse() is the lower entry point, useful for telling a parse failure apart
@@ -41,6 +41,11 @@ export { rt } from "./runtime/rt";
 // caller has to tell "the engine broke" apart from "the script stopped on
 // purpose".
 export { PineRuntimeHaltError } from "./runtime/log";
+
+// Thrown when a run hits a host limit (loop steps per bar, the size of one allocation, a deadline;
+// RunLimits). Deliberately not a PineRuntimeHaltError: the script did not choose to stop.
+export { ResinLimitError } from "./runtime/limits";
+export type { RunLimits } from "./runtime/limits";
 
 // Type-only: Context constructs these, a caller never does. They exist so
 // reads like ctx.close.get(0) and ctx.strategy.posSize type-check.

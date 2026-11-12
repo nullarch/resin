@@ -1,5 +1,6 @@
 // 안전 수치 연산. GOAL.md 아키텍처 불변 원칙: `/`->pineDiv, `%`->pineMod (0-나눗셈 -> NaN).
 
+import { warnRuntime } from "./diagnostics";
 import { MINTICK } from "./syminfo";
 
 export function pineDiv(a: number, b: number): number {
@@ -476,55 +477,61 @@ export function nz(value: number, replacement: number = 0): number {
   return na(value) ? replacement : value;
 }
 
-// dateString 1-인자 오버로드(C289, wild 최다빈도 클러스터 259건) 전용 파서 — pine2py가 이 오버로드를
-// 구조적으로 지원하지 않아(LIMITATIONS.md C269) 오라클 대조 불가, wild corpus 실측 포맷 분포(259건
-// 전수, scratch/timestamp_dateformats.mjs)로 두 계열만 지원: (A) ISO류 "yyyy-MM-dd[THH:mm[:ss]]"
-// (B) RFC류 "d MMM yyyy[ HH:mm[:ss]]"(월 이름은 영문 축약 3자로 대소문자 무관 매칭 — full 이름도
-// 앞 3자가 표준 축약과 항상 일치해 별도 표 불필요). 두 계열 모두 트레일링 오프셋 "Z"/"UTC"/"+HH:mm"/
-// "+HHMM"을 허용 — 오프셋 없으면 UTC로 간주(TV 문서 통설). 두 계열 모두 매칭 실패 시 NaN(na) 반환
-// — "월-일 순서 모호"(01-02-2024류) 등 코퍼스 소수 아티팩트는 의도적으로 미지원(범위 밖).
+// The dateString overload. The Pine manual (Time, "timestamp()") shows "20 Aug 2024", "2021-01-01",
+// "20 Aug 2024 00:00:00 UTC+0" and "1 May 2022 00:00 -0400": no time of day means 00:00, no time zone
+// means GMT+0. It gives examples, not a grammar, so what is read here is those forms plus the ones
+// real scripts write: a month first ("Jan 05 2021 09:00:00"), no space after the day ("01Jan 2020 00:00
+// +0000"), a full month name, a leading weekday or zone, and "GMT+10" beside "UTC-5". A string outside them is
+// na with a run warning: a date that silently became na turns `time >= start and time <= stop` false on
+// every bar, and the script runs to the end doing nothing.
 const MONTH_ABBR: Record<string, number> = {
   jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
   jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
 };
 
-const ISO_DATE_STRING_RE =
-  /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{1,2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?)?\s*(Z|UTC|[+-]\d{2}:?\d{2})?$/i;
-const RFC_DATE_STRING_RE =
-  /^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?\s*(UTC|[+-]\d{2}:?\d{2})?$/i;
+const DATE_ZONE = String.raw`(Z|(?:UTC|GMT)(?:\s*[+-]\d{1,2}(?::?\d{2})?)?|[+-]\d{1,2}(?::?\d{2})?)?`;
+const DATE_TIME = String.raw`(?:(?:[T ]|,\s*|\s+)(\d{1,2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?)?`;
+const ISO_DATE_STRING_RE = new RegExp(String.raw`^(\d{4})-(\d{1,2})-(\d{1,2})${DATE_TIME}\s*${DATE_ZONE}$`, "i");
+const DAY_FIRST_DATE_STRING_RE = new RegExp(String.raw`^(\d{1,2})\s*([A-Za-z]{3,9})\.?,?\s*(\d{4})${DATE_TIME}\s*${DATE_ZONE}$`, "i");
+const MONTH_FIRST_DATE_STRING_RE = new RegExp(String.raw`^([A-Za-z]{3,9})\.?\s*(\d{1,2}),?\s*(\d{4})${DATE_TIME}\s*${DATE_ZONE}$`, "i");
+const LEADING_ZONE_RE = /^(UTC|GMT)\s+(\S.*)$/i;
+const LEADING_WEEKDAY_RE = /^(?:sun|mon|tue|wed|thu|fri|sat)[a-z]*,?\s+(?=\d|[a-z]{3})/i;
 
 function parseUtcOffsetMinutes(raw: string | undefined): number {
   if (raw === undefined) return 0;
-  const upper = raw.toUpperCase();
-  if (upper === "Z" || upper === "UTC") return 0;
-  const m = /^([+-])(\d{2}):?(\d{2})$/.exec(raw);
-  if (!m) return 0;
+  const m = /([+-])(\d{1,2})(?::?(\d{2}))?$/.exec(raw);
+  if (m === null) return 0;
+  // "+10" and "+1000" are the same zone: one or two digits are hours, more are hours and minutes.
   const sign = m[1] === "-" ? -1 : 1;
-  return sign * (Number(m[2]) * 60 + Number(m[3]));
+  return sign * (Number(m[2]) * 60 + (m[3] === undefined ? 0 : Number(m[3])));
+}
+
+function monthNumber(name: string): number | undefined {
+  return MONTH_ABBR[name.slice(0, 3).toLowerCase()];
 }
 
 function parseDateString(raw: string): number {
-  const s = raw.trim();
+  const s = raw.trim().replace(LEADING_WEEKDAY_RE, "").replace(LEADING_ZONE_RE, "$2 $1");
+  const at = (y: string, mo: number, d: string, h?: string, mi?: string, sec?: string, off?: string): number =>
+    Date.UTC(Number(y), mo - 1, Number(d), h ? Number(h) : 0, mi ? Number(mi) : 0, sec ? Number(sec) : 0) - parseUtcOffsetMinutes(off) * 60000;
   const iso = ISO_DATE_STRING_RE.exec(s);
   if (iso) {
     const [, y, mo, d, h, mi, sec, off] = iso;
-    const offsetMin = parseUtcOffsetMinutes(off);
-    return (
-      Date.UTC(Number(y), Number(mo) - 1, Number(d), h ? Number(h) : 0, mi ? Number(mi) : 0, sec ? Number(sec) : 0) -
-      offsetMin * 60000
-    );
+    return at(y!, Number(mo), d!, h, mi, sec, off);
   }
-  const rfc = RFC_DATE_STRING_RE.exec(s);
-  if (rfc) {
-    const [, d, monName, y, h, mi, sec, off] = rfc;
-    const mo = MONTH_ABBR[monName!.slice(0, 3).toLowerCase()];
-    if (mo === undefined) return NaN;
-    const offsetMin = parseUtcOffsetMinutes(off);
-    return (
-      Date.UTC(Number(y), mo - 1, Number(d), h ? Number(h) : 0, mi ? Number(mi) : 0, sec ? Number(sec) : 0) -
-      offsetMin * 60000
-    );
+  const dayFirst = DAY_FIRST_DATE_STRING_RE.exec(s);
+  if (dayFirst) {
+    const [, d, monName, y, h, mi, sec, off] = dayFirst;
+    const mo = monthNumber(monName!);
+    if (mo !== undefined) return at(y!, mo, d!, h, mi, sec, off);
   }
+  const monthFirst = MONTH_FIRST_DATE_STRING_RE.exec(s);
+  if (monthFirst) {
+    const [, monName, d, y, h, mi, sec, off] = monthFirst;
+    const mo = monthNumber(monName!);
+    if (mo !== undefined) return at(y!, mo, d!, h, mi, sec, off);
+  }
+  warnRuntime(`timestamp-date:${raw}`, `timestamp('${raw}') is not a date string resin can read, so it is na; a date window built on it is never open`);
   return NaN;
 }
 

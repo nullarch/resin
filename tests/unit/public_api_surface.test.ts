@@ -14,6 +14,7 @@ import * as api from "../../src/index";
 import { Context } from "../../src/runtime/context";
 import { compile, run } from "../../src/runtime/engine";
 import { PineRuntimeHaltError } from "../../src/runtime/log";
+import { ResinLimitError } from "../../src/runtime/limits";
 import { rt } from "../../src/runtime/rt";
 import { ParseError, parse } from "../../src/transpiler/parser";
 import { transpile } from "../../src/transpiler/pipeline";
@@ -33,6 +34,7 @@ const FROZEN_VALUE_EXPORTS = [
   "Context",
   "ParseError",
   "PineRuntimeHaltError",
+  "ResinLimitError",
   "VERSION",
   "compile",
   "parse",
@@ -46,12 +48,14 @@ const FROZEN_TYPE_EXPORTS = [
   "BarSnapshot",
   "OHLCVData",
   "PlotResult",
+  "RunLimits",
   "RunResult",
   "Series",
   "StrategyState",
   "TranspileErr",
   "TranspileOk",
   "TranspileResult",
+  "TranspileWarning",
 ];
 
 // Pull the backticked names out of the first column of an API.md table
@@ -125,6 +129,7 @@ describe("(a) the set of public value exports is frozen", () => {
     expect(api.Context).toBe(Context);
     expect(api.rt).toBe(rt);
     expect(api.PineRuntimeHaltError).toBe(PineRuntimeHaltError);
+    expect(api.ResinLimitError).toBe(ResinLimitError);
   });
 
   it("공개 값의 종류(typeof)가 API.md 표의 서술과 일치한다", () => {
@@ -133,6 +138,7 @@ describe("(a) the set of public value exports is frozen", () => {
       Context: "function",
       ParseError: "function",
       PineRuntimeHaltError: "function",
+      ResinLimitError: "function",
       VERSION: "string",
       compile: "function",
       parse: "function",

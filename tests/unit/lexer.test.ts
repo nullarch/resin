@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { tokenize } from "../../src/transpiler/lexer";
+import { LexError, tokenize } from "../../src/transpiler/lexer";
 
 function types(source: string): string[] {
   return tokenize(source).map((t) => t.type);
@@ -661,14 +661,58 @@ describe("Lexer - multi-line strings", () => {
     expect(toks.some((t) => t.type === "IDENTIFIER" && t.value === "plot")).toBe(true);
   });
 
-  it("still terminates cleanly (no hang) when a string never finds a closing quote before EOF", () => {
-    const toks = tokenize('x = "abc\nplot(close)');
-    expect(toks[toks.length - 1]!.type).toBe("EOF");
+  it("refuses a string that never finds a closing quote before EOF instead of swallowing the rest of the file", () => {
+    // It used to return the tokens up to EOF with the string eating `plot(close)`: the script
+    // compiled with one plot fewer and no diagnostic.
+    expect(() => tokenize('x = "abc\nplot(close)')).toThrow(LexError);
+    try {
+      tokenize('x = 1\ny = "abc\nplot(close)');
+    } catch (e) {
+      expect((e as LexError).line).toBe(2);
+      expect((e as LexError).col).toBe(5);
+    }
   });
 
   it("keeps single-line strings byte-identical to prior behavior (regression guard)", () => {
     const toks = tokenize('indicator("smoke", overlay=true)\nx = "abc" + "def"');
     const strs = toks.filter((t) => t.type === "STRING").map((t) => t.value);
     expect(strs).toEqual(["smoke", "abc", "def"]);
+  });
+});
+
+describe("Lexer - input that is not Pine is refused, not skipped", () => {
+  it("refuses a character outside Pine's alphabet, naming it and where", () => {
+    expect(() => tokenize("x = close @ open")).toThrow(/unrecognized character '@' \(U\+0040\)/);
+    expect(() => tokenize("x = close $ 1")).toThrow(LexError);
+    expect(() => tokenize("x = `1`")).toThrow(LexError);
+  });
+
+  it("still ignores the invisible characters copying a script from a web page leaves behind", () => {
+    const clean = tokenize("x = close + 1").map((t) => `${t.type}:${t.value}`);
+    for (const junk of ["\uFEFF", "\u00A0", "\u200B", "\u2060", "\u3000"]) {
+      expect(tokenize(`${junk}x =${junk}close + 1${junk}`).map((t) => `${t.type}:${t.value}`), JSON.stringify(junk)).toEqual(clean);
+    }
+  });
+
+  it("treats CRLF and a lone CR as line breaks", () => {
+    const lf = tokenize("a = 1\nb = 2\n").map((t) => `${t.type}:${t.value}`);
+    expect(tokenize("a = 1\r\nb = 2\r\n").map((t) => `${t.type}:${t.value}`)).toEqual(lf);
+    expect(tokenize("a = 1\rb = 2\r").map((t) => `${t.type}:${t.value}`)).toEqual(lf);
+  });
+
+  it("refuses a block comment that is never closed instead of dropping the rest of the file", () => {
+    expect(() => tokenize("a = 1\n/* never closed\nplot(a)")).toThrow(/unterminated block comment/);
+  });
+
+  it("does not mistake a character inside a string or a comment for stray input", () => {
+    expect(() => tokenize('a = "x @ y $ `z`" // @ $ `')).not.toThrow();
+  });
+});
+
+describe("Lexer - indentation copied from a web page", () => {
+  it("reads no-break spaces as indentation, so an if body stays inside its if", () => {
+    const clean = tokenize("if c\n    x = 1\ny = 2\n").map((t) => `${t.type}:${t.value}`);
+    const nbsp = "\u00A0\u00A0\u00A0\u00A0";
+    expect(tokenize(`if\u00A0c\n${nbsp}x\u00A0=\u00A01\ny\u00A0=\u00A02\n`).map((t) => `${t.type}:${t.value}`)).toEqual(clean);
   });
 });

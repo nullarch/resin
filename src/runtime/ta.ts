@@ -4,6 +4,7 @@
 // 재사용하므로(analyzer.ts TA_REGISTRY.fixnan이 stateCallSlots+taSlotCount 풀을 sma와 공유) 이 파일에 둔다.
 
 import { runtimeError } from "./log";
+import { allocArray, allocFloat64, checkedLength } from "./limits";
 
 export interface SmaState {
   buffer?: number[]; // ring of the last `length` non-na values, raw
@@ -51,8 +52,8 @@ function naSkipSum(state: SmaState, value: number, length: number): number {
   length = Math.trunc(length);
   if (!(length >= 1)) return NaN;
   if (state.buffer === undefined) {
-    state.buffer = new Array(length).fill(0);
-    state.entries = new Array(length).fill(0);
+    state.buffer = allocArray(length, "ta.* window").fill(0);
+    state.entries = allocArray(length, "ta.* window").fill(0);
     state.writeIdx = 0;
     state.count = 0;
     state.sum = 0;
@@ -355,7 +356,7 @@ export function wma(state: WmaState, value: number, length: number): number {
   length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조)
   if (!(length >= 1)) return NaN; // the oracle asserts length > 0: no answer to follow
   if (state.buffer === undefined) {
-    state.buffer = new Array(length).fill(NaN);
+    state.buffer = allocArray(length, "ta.* window").fill(NaN);
     state.writeIdx = 0;
     state.count = 0;
     state.last = NaN;
@@ -413,11 +414,11 @@ export interface AlmaState {
 export function alma(state: AlmaState, value: number, length: number, offsetMult: number, sigma: number, floor: boolean = false): number {
   length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조). offsetMult/sigma는 TV 자체가 simple float라 대상 아님
   if (state.buffer === undefined) {
-    state.buffer = new Array(length).fill(NaN);
+    state.buffer = allocArray(length, "ta.* window").fill(NaN);
     state.writeIdx = 0;
     const m = floor ? Math.floor(offsetMult * (length - 1)) : offsetMult * (length - 1);
     const s = length / sigma;
-    const weights = new Array(length);
+    const weights = allocArray(length, "ta.* window");
     let weightSum = 0;
     for (let i = 0; i < length; i++) {
       const w = Math.exp(-((i - m) ** 2) / (2 * s * s));
@@ -466,7 +467,7 @@ export interface CogState {
 export function cog(state: CogState, value: number, length: number): number {
   length = Math.trunc(length);
   if (state.buffer === undefined) {
-    state.buffer = new Array(length).fill(NaN);
+    state.buffer = allocArray(length, "ta.* window").fill(NaN);
     state.writeIdx = 0;
     state.count = 0;
     state.sum = 0;
@@ -628,7 +629,7 @@ export function linreg(state: LinregState, value: number, length: number, offset
   const len = Math.trunc(length);
   if (state.buf === undefined) {
     if (!(len >= 1)) return NaN;
-    state.buf = new Float64Array(len);
+    state.buf = allocFloat64(len, "ta.* window");
     state.size = 0;
     state.count = 0;
     state.val = NaN;
@@ -636,7 +637,7 @@ export function linreg(state: LinregState, value: number, length: number, offset
     // A longer length than the ring holds (a fixed-length call site never does this): keep the
     // stored sources, oldest first, in a ring of the new size.
     const old = state.buf;
-    const grown = new Float64Array(len);
+    const grown = allocFloat64(len, "ta.* window");
     const kept = Math.min(state.size!, old.length);
     for (let k = 0; k < kept; k++) grown[k] = old[(state.size! - kept + k) % old.length]!;
     state.buf = grown;
@@ -777,7 +778,7 @@ export interface ChangeState {
 export function change(state: ChangeState, value: number, length: number = 1): number {
   length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조)
   if (state.buffer === undefined) {
-    state.buffer = new Array(length).fill(NaN);
+    state.buffer = allocArray(length, "ta.* window").fill(NaN);
     state.writeIdx = 0;
   }
   const buffer = state.buffer;
@@ -804,7 +805,7 @@ export interface RocState {
 export function roc(state: RocState, value: number, length: number): number {
   length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조)
   if (state.buffer === undefined) {
-    state.buffer = new Array(length).fill(NaN);
+    state.buffer = allocArray(length, "ta.* window").fill(NaN);
     state.writeIdx = 0;
   }
   const buffer = state.buffer;
@@ -1027,7 +1028,7 @@ export function valuewhen(state: ValueWhenState, condition: boolean, value: numb
   occurrence = Math.trunc(occurrence); // C569: occurrence int 복원(상세는 sma() 주석 참조 — 동일 클래스, size가 버퍼 크기를 결정)
   const size = occurrence + 1;
   if (state.buffer === undefined) {
-    state.buffer = new Array(size).fill(NaN);
+    state.buffer = allocArray(size, "ta.* window").fill(NaN);
     state.writeIdx = 0;
     state.filled = 0;
   }
@@ -1787,7 +1788,7 @@ function extremeRing(state: ExtremeRingState, value: number, len: number, bi: nu
   let capacity = state.capacity;
   if (len >= capacity) {
     const grown = len + 1;
-    const next: number[] = new Array(grown).fill(NaN);
+    const next: number[] = allocArray(grown, "ta.* window").fill(NaN);
     for (let j = 0; j < capacity; j++) {
       const b = bi - floorMod(bi - j, capacity);
       next[floorMod(b, grown)] = state.window![j]!;
@@ -2250,7 +2251,7 @@ export function median(state: MedianState, value: number, length: number): numbe
   if (Number.isNaN(value)) return (state.count ?? 0) < length ? NaN : medianOf(state.buffer!, 0, length);
   if (length === 1) return value;
   if (state.buffer === undefined) {
-    state.buffer = new Array(length).fill(NaN);
+    state.buffer = allocArray(length, "ta.* window").fill(NaN);
     state.writeIdx = 0;
     state.count = 0;
   }
@@ -2312,7 +2313,7 @@ export function mode(state: ModeState, value: number, length: number): number {
   // percentile_linear_interpolation, median and mode all export an all-na plot").
   if (!(length >= 1)) return NaN;
   if (state.buffer === undefined) {
-    state.buffer = new Array(length).fill(NaN);
+    state.buffer = allocArray(length, "ta.* window").fill(NaN);
     state.writeIdx = 0;
     state.count = 0;
   }
@@ -2366,19 +2367,37 @@ function percentileStep(state: PercentileState, value: number, length: number, b
   const w = recordVarLen(state.hist, value, barCount, barIdx);
   const len = Math.trunc(length);
   if (!(len >= 1)) return null;
-  const window = state.window!;
-  const ranks = state.ranks!;
+  // The top-up below fills the window with len entries one by one; a length of 1e10 never returned.
+  checkedLength(len, "ta.percentile_* window");
+  let window = state.window!;
+  let ranks = state.ranks!;
   window.push(value);
   ranks.splice(rankInsertPos(ranks, value), 0, value);
   if (window.length < len) {
+    // Top the window up with `source[i]` for i = window.length .. len - 1, each older than everything
+    // before it: an entry the call site's history holds (i <= w) and, past the start of the history,
+    // na. Done entry by entry (unshift + splice) this was quadratic and a length of 1e6 took minutes.
+    // The history entries still go through the rank search one at a time, since Pine's tolerant
+    // tie rule is not transitive and only the sequential order is known to be right; they number at
+    // most the bars seen. The na entries past the history each take the front of both orders, so they
+    // are prepended in one go.
     const history = state.hist.buffer!;
-    for (let i = window.length; i < len; i++) {
-      const v = i <= w ? history[w - i]! : NaN;
-      window.unshift(v);
+    const have = window.length;
+    const lastHistory = Math.min(len - 1, w);
+    const older: number[] = [];
+    for (let i = have; i <= lastHistory; i++) {
+      const v = history[w - i]!;
+      older.push(v);
       // A top-up entry is older than everything in the window, so an na one takes the front of the
       // rank order, the slot a warm-up na holds.
       ranks.splice(Number.isNaN(v) ? 0 : rankInsertPos(ranks, v), 0, v);
     }
+    const beyond = len - 1 - Math.max(lastHistory, have - 1);
+    const lead = new Array<number>(Math.max(0, beyond)).fill(NaN);
+    window = lead.concat(older.reverse(), window);
+    ranks = lead.concat(ranks);
+    state.window = window;
+    state.ranks = ranks;
   }
   while (window.length > len) {
     ranks.splice(rankRemovePos(ranks, window.shift()!), 1);
@@ -2507,7 +2526,7 @@ export interface DevState {
 // full of na: a bar before the first one reads na, as `source[i]` does.
 function recordLastBars(state: DevState, value: number, length: number): void {
   if (state.buffer === undefined) {
-    state.buffer = new Array(length).fill(NaN);
+    state.buffer = allocArray(length, "ta.* window").fill(NaN);
     state.writeIdx = 0;
   }
   const at = state.writeIdx!;
@@ -2571,7 +2590,7 @@ export interface RciState {
 export function rci(state: RciState, value: number, length: number, barIdx: number): number {
   length = Math.trunc(length); // C569: length int 복원(상세는 sma() 주석 참조)
   if (state.buffer === undefined) {
-    state.buffer = new Array(length).fill(NaN);
+    state.buffer = allocArray(length, "ta.* window").fill(NaN);
     state.writeIdx = 0;
   }
   const buffer = state.buffer;

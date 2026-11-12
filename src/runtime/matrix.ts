@@ -38,6 +38,8 @@
 //   있다. pine2js는 GOAL.md 아키텍처 불변 원칙(함수 인자 위치의 Series는 codegen이 항상 먼저
 //   .get(0)으로 스칼라 해소)상 이 버그 클래스를 구조적으로 재현할 수 없다(map.put과 동일 근거).
 
+import { checkedLength } from "./limits";
+
 export type PineMatrix = unknown[][];
 
 // matrix.new<T>(rows=0, columns=0, initial_value=na) — pine2py
@@ -49,6 +51,9 @@ export function newMatrix(rows: number = 0, columns: number = 0, initialValue: u
   if (nr <= 0) return [];
   const nc = Math.trunc(columns);
   const ncClamped = nc <= 0 ? 0 : nc;
+  // rows x columns cells, not rows and columns separately, are what the allocation costs.
+  checkedLength(nr, "matrix.new rows");
+  checkedLength(nr * ncClamped, "matrix.new rows x columns");
   const m: PineMatrix = new Array(nr);
   for (let i = 0; i < nr; i++) m[i] = new Array(ncClamped).fill(initialValue);
   return m;
@@ -1141,7 +1146,16 @@ export function kron(m1: PineMatrix | null, m2: PineMatrix | null): PineMatrix |
 // 미정의 지점 — na 흡수, 오라클 트리거 불가(runtime.test.ts hand-verified 대체). 정의상 비정사각도
 // 다루는 함수라 inv/pow(C100/C102)와 반대로 isSquareMatrix 가드는 불필요(python 직접 실행으로
 // rows!=columns 케이스가 크래시가 아니라 정상 계산됨을 확인).
+//
+// An invertible square matrix has its inverse as its only pseudoinverse, so that is computed directly.
+// The formula below multiplies m by its transpose first, which squares the condition number: on the
+// regularized kernel matrix of a Gaussian process (cond ~ 6e5) it lost the answer in the fourth digit
+// where the inverse keeps eleven.
 export function pinv(m: PineMatrix | null): PineMatrix | null {
+  if (m !== null && m.length > 0 && isSquareMatrix(m)) {
+    const direct = inv(m);
+    if (direct !== null) return direct;
+  }
   const mt = transpose(m);
   const c1 = mult(mt, inv(mult(m, mt) as PineMatrix | null)) as PineMatrix | null;
   if (c1 !== null) return c1;

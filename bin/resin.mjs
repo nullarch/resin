@@ -24,6 +24,7 @@ const { transpile } = await import('../src/transpiler/pipeline.ts');
 const { compile, run } = await import('../src/runtime/engine.ts');
 const { Context } = await import('../src/runtime/context.ts');
 const { PineRuntimeHaltError } = await import('../src/runtime/log.ts');
+const { ResinLimitError } = await import('../src/runtime/limits.ts');
 
 const [cmd, ...rest] = process.argv.slice(2);
 const flag = (name, dflt = null) => {
@@ -44,6 +45,9 @@ const USAGE = `resin — run TradingView Pine Script outside TradingView
   resin check <file|dir>                   compile-check; report what failed
 
   --chart-tf <tf>   chart timeframe the script should compile against ("D", "60", …)
+  --libs <dir>      library sources: import user/name/1 reads <dir>/user/name/1.pine
+  --strict          refuse what compiles but is not faithful (stub and pass-through builtins,
+                    ignored options); without it these are printed as warnings
 `;
 
 function fail(msg) {
@@ -51,12 +55,25 @@ function fail(msg) {
   process.exit(1);
 }
 
+const strict = rest.includes('--strict');
+// --libs <dir>: the source of `import user/name/1` is <dir>/user/name/1.pine.
+const libsDir = flag('libs');
+const libraries = libsDir === null ? undefined : (path) => {
+  try {
+    return readFileSync(join(libsDir, `${path}.pine`), 'utf-8');
+  } catch {
+    return undefined;
+  }
+};
+
 function compileOrDie(file) {
   const src = readFileSync(file, 'utf-8');
-  const result = transpile(src, { chartTf: flag('chart-tf', 'D') });
+  const result = transpile(src, { chartTf: flag('chart-tf', 'D'), strict, ...(libraries === undefined ? {} : { libraries }) });
   if (!result.ok) {
     fail(`${basename(file)}: ${result.errors.join('\n  ')}`);
   }
+  // Compiled, but not everything in it is faithful: say so where the user will see it.
+  for (const w of result.warnings) console.error(`warning: ${w.message}${w.line ? ` (L${w.line})` : ''}`);
   return result;
 }
 
@@ -152,8 +169,12 @@ switch (cmd) {
       if (e instanceof PineRuntimeHaltError) {
         fail(`script halted itself: ${e.message}`);
       }
+      if (e instanceof ResinLimitError) {
+        fail(`script stopped by a limit: ${e.message}`);
+      }
       throw e;
     }
+    for (const w of ctx.diagnostics.messages) console.error(`warning: ${w}`);
     const plots = result.plotTitles.map((title, i) => ({
       title, values: ctx.plots[i].toArray(),
     }));
@@ -186,15 +207,21 @@ switch (cmd) {
     const target = positional[0] ?? fail(USAGE);
     const files = pineFilesUnder(target);
     const failures = [];
+    let warned = 0;
+    const byKind = {};
     for (const f of files) {
       let r;
       try {
-        r = transpile(readFileSync(f, 'utf-8'), { chartTf: flag('chart-tf', 'D') });
+        r = transpile(readFileSync(f, 'utf-8'), { chartTf: flag('chart-tf', 'D'), strict, ...(libraries === undefined ? {} : { libraries }) });
       } catch (e) {
         failures.push([f, `crashed: ${e?.message ?? e}`]);
         continue;
       }
       if (!r.ok) failures.push([f, r.errors[0] ?? 'unknown']);
+      else if (r.warnings.length) {
+        warned += 1;
+        for (const w of r.warnings) byKind[w.kind] = (byKind[w.kind] ?? 0) + 1;
+      }
     }
     const ok = files.length - failures.length;
     for (const [f, why] of failures.slice(0, 40)) {
@@ -203,6 +230,11 @@ switch (cmd) {
     if (failures.length > 40) console.log(`… and ${failures.length - 40} more`);
     console.log(`\n${ok}/${files.length} compiled` +
       (files.length ? ` (${((ok / files.length) * 100).toFixed(1)}%)` : ''));
+    if (warned) {
+      // Compiled does not mean faithful: these scripts use something resin accepts but only approximates.
+      const kinds = Object.entries(byKind).map(([k, n]) => `${k} ${n}`).join(', ');
+      console.log(`${warned} of the compiled scripts carry warnings (${kinds}); run \`resin run\` on one to read them, or pass --strict to refuse them`);
+    }
     process.exit(failures.length ? 1 : 0);
   }
 

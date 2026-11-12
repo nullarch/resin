@@ -5,6 +5,23 @@ import { KEYWORDS, ONE_CHAR_OPS, TWO_CHAR_OPS, type Token, type TokenType } from
 
 const TAB_WIDTH = 4;
 
+// A character or construct the lexer cannot turn into tokens. Parser.parse() reports it as a
+// ParseError; it is its own class only because lexer.ts cannot import parser.ts.
+export class LexError extends Error {
+  line: number;
+  col: number;
+  constructor(message: string, line: number, col: number) {
+    super(message);
+    this.line = line;
+    this.col = col;
+  }
+}
+
+// Characters that carry no meaning outside a string or comment and are skipped like a space: the
+// byte-order mark, no-break and other Unicode spaces, and zero-width format characters. Copying a
+// script from a web page puts them in; refusing the script for them would refuse valid Pine.
+const IGNORABLE_CHAR = /[\p{Zs}\p{Cf}]/u;
+
 const CONTINUATION_OPS: ReadonlySet<TokenType> = new Set([
   "QUESTION",
   "COLON",
@@ -113,6 +130,7 @@ export class Lexer {
   private parenDepth = 0;
   private bracketDepth = 0;
   private inBlockComment = false;
+  private blockCommentLine = 1;
   private lineContinuation = false;
   // C755: 파일의 첫 실질 문장 줄 앞에는 정의상 블록을 여는 헤더가 존재할 수 없다 — 그 줄의
   // 선행 공백(복붙 아티팩트)은 INDENT를 유발하면 안 된다. wild2 corpus tv_verdict 실측(accept)로
@@ -128,10 +146,15 @@ export class Lexer {
   }
 
   tokenize(): Token[] {
-    this.lines = this.source.split("\n");
+    // CRLF and a lone CR (old Mac files) are line breaks too. Splitting on "\n" alone leaves the
+    // "\r" of a CRLF in every line and folds a CR-only file into one line.
+    this.lines = this.source.replace(/\r\n?/g, "\n").split("\n");
     for (this.lineIdx = 0; this.lineIdx < this.lines.length; this.lineIdx++) {
       this.line = this.lineIdx + 1;
       this.tokenizeLine(this.lines[this.lineIdx]!);
+    }
+    if (this.inBlockComment) {
+      throw new LexError("unterminated block comment: '/*' is never closed by '*/'", this.blockCommentLine, 1);
     }
     while (this.indentStack.length > 1) {
       this.indentStack.pop();
@@ -288,7 +311,9 @@ export class Lexer {
     let width = 0;
     let rawOffset = 0;
     for (const ch of line) {
-      if (ch === " ") {
+      // A no-break space is what copying a script from a web page turns indentation into. Counted
+      // as nothing, an `if` body indented with it became a top-level statement that ran on every bar.
+      if (ch === " " || ch === "\u00A0") {
         width += 1;
         rawOffset += 1;
       } else if (ch === "\t") {
@@ -351,6 +376,7 @@ export class Lexer {
           this.col = this.pos + 1;
         } else {
           this.inBlockComment = true;
+          this.blockCommentLine = this.line;
           break;
         }
         continue;
@@ -396,7 +422,12 @@ export class Lexer {
         continue;
       }
 
-      // 인식할 수 없는 문자 → 스킵
+      // Whitespace-like characters copied in from a web page are skipped; any other character is not
+      // Pine. Skipping it would let `x = close @ open` compile as `x = close open`.
+      if (!IGNORABLE_CHAR.test(ch)) {
+        const code = ch.codePointAt(0)!.toString(16).toUpperCase().padStart(4, "0");
+        throw new LexError(`unrecognized character '${ch}' (U+${code})`, this.line, this.col);
+      }
       this.pos += 1;
       this.col += 1;
     }
@@ -428,16 +459,15 @@ export class Lexer {
       }
     }
 
+    // An exponent needs digits: `1e` or `2e-` is the number followed by something else, which the
+    // parser then refuses. Consuming the bare `e` made the token "1e", which JavaScript cannot parse.
     if (this.pos < line.length && (line[this.pos] === "e" || line[this.pos] === "E")) {
-      this.pos += 1;
-      this.col += 1;
-      if (this.pos < line.length && (line[this.pos] === "+" || line[this.pos] === "-")) {
-        this.pos += 1;
-        this.col += 1;
-      }
-      while (this.pos < line.length && /[0-9]/.test(line[this.pos]!)) {
-        this.pos += 1;
-        this.col += 1;
+      let end = this.pos + 1;
+      if (line[end] === "+" || line[end] === "-") end += 1;
+      if (/[0-9]/.test(line[end] ?? "")) {
+        while (end < line.length && /[0-9]/.test(line[end]!)) end += 1;
+        this.col += end - this.pos;
+        this.pos = end;
       }
     }
 
@@ -486,10 +516,11 @@ export class Lexer {
       this.col += 1;
     }
 
-    if (closed) {
-      this.pos += 1;
-      this.col += 1;
+    if (!closed) {
+      throw new LexError(`unterminated string: the ${quote} opened here is never closed`, startLine, startCol);
     }
+    this.pos += 1;
+    this.col += 1;
     this.tokens.push({ type: "STRING", value: decodePineStringEscapes(value), line: startLine, col: startCol });
     return curLine;
   }
@@ -518,6 +549,10 @@ export class Lexer {
       this.col += 1;
     }
     const value = line.slice(start, this.pos);
+    // A color literal is #RRGGBB or #RRGGBBAA (the generator documents exactly these two).
+    if (value.length !== 7 && value.length !== 9) {
+      throw new LexError(`invalid color literal '${value}': expected #RRGGBB or #RRGGBBAA`, this.line, startCol);
+    }
     this.tokens.push({ type: "COLOR", value, line: this.line, col: startCol });
   }
 }

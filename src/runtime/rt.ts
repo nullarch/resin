@@ -60,6 +60,7 @@ import {
   boxSetBottomRightPoint,
 } from "./drawing";
 import { logInfo, logWarning, logError, runtimeWarning, runtimeError } from "./log";
+import { stepsExceeded } from "./limits";
 import * as datetimeFns from "./datetime";
 import * as chartTypeFns from "./chart";
 import * as timeFns from "./time";
@@ -256,6 +257,8 @@ export const rt = {
   // `log: { info, warning, error }` 중첩 네임스페이스를 쓰면 math.log의 콜러블 rt.log(x) 자체가
   // 깨지기 때문이다(log.ts 주석 참조) — analyzer/call-expr.ts가 builtinCalls에 이 flat 이름을
   // 그대로 등록해 codegen의 범용 `rt.${name}(...)` 방출이 무변경으로 통한다.
+  // Called by generated loops when the bar's step budget (limits.maxStepsPerBar) is spent.
+  stepsExceeded: (ctx: { idx: number }) => stepsExceeded(ctx.idx),
   logInfo,
   logWarning,
   logError,

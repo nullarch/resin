@@ -25,6 +25,10 @@ export interface RunResult {
   bars: BarSnapshot[];
   finalVarState: BarSnapshot;
   plots: PlotResult[];
+  // What the data and options did that a caller should know before trusting the run: bars that do
+  // not match the compiled chartTf, an input override that matched no input, a security request
+  // for a symbol with no feed. Empty for a clean run. Never an error.
+  warnings: string[];
   // viz S1/S2 — present only when run() was given the TranspileOk object form; the
   // positional spelling has no access to the metadata and leaves this undefined.
   viz?: {
@@ -335,5 +339,6 @@ function collect(code: string, varSlots: string[], plotTitles: string[], ctx: Co
 
   const plots: PlotResult[] = plotTitles.map((title, i) => ({ title, values: ctx.plots[i]!.toArray() }));
 
-  return { bars, finalVarState, plots };
+  ctx.reportUnusedInputs();
+  return { bars, finalVarState, plots, warnings: ctx.diagnostics.messages.slice() };
 }

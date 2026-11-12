@@ -77,7 +77,11 @@ import type {
 
 // GOAL.md: while/for 루프 안전 제한 10,000회/bar (무한루프 방지 — pine2py _gen_while과 동일 규칙,
 // for도 매 바 반복되므로 동일 캡을 공유한다)
-const LOOP_LIMIT = 10000;
+// Every loop iteration spends one step of the bar's shared budget (Context.stepsLeft, refilled from
+// limits.maxStepsPerBar before each bar). The budget is per bar and spans all loops and nesting
+// levels, so three nested loops cannot multiply a per-loop cap into a hang; running out is a
+// ResinLimitError, not a silently truncated loop.
+const LOOP_STEP = "if (--$.stepsLeft < 0) rt.stepsExceeded($);";
 
 // JS ReservedWord(ECMA-262) 중 Pine 키워드(tokens.ts KEYWORDS)가 아닌 것만 — 즉 Pine 렉서가
 // IDENTIFIER로 토큰화해 사용자가 var/method-param/for-loop-var/'=' 로컬/튜플 대상 이름으로 그대로
@@ -97,13 +101,35 @@ const JS_RESERVED_LOCAL_NAMES: ReadonlySet<string> = new Set([
   "try", "typeof", "void", "with",
 ]);
 
+// Names a Pine identifier may take that the generated JavaScript cannot give to a binding:
+//  - the ES words that are reserved only in some positions or modes (`let`, `static`, `yield`, ...),
+//    which JS_RESERVED_LOCAL_NAMES above leaves out because they are fine in sloppy mode as a
+//    variable but not as a `let` binding or a function name, which is where a local ends up;
+//  - the globals the output reads (`Math.abs`, `Number.isNaN`, ...): a local named `Math` hides them
+//    from the rest of its scope. tests/unit/identifier_hygiene.test.ts collects every free
+//    identifier of the code generated for the oracle cases and corpus and fails if one is missing here.
+// A name that starts with "__" is the generator's own namespace (`__forStart`, `__cfr0`, `__slotBase`)
+// and is renamed wholesale in safeLocalName.
+const JS_OUTPUT_NAMES: ReadonlySet<string> = new Set([
+  "let", "static", "yield", "await", "implements", "interface", "package", "private", "protected", "public",
+  "arguments", "eval",
+  "Math", "Number", "String", "Boolean", "Array", "Object", "Map", "Set", "Symbol", "JSON", "Date", "Error",
+  "Float64Array", "Float32Array", "Int32Array", "Infinity", "NaN", "undefined", "isNaN", "isFinite",
+  "parseFloat", "parseInt", "globalThis",
+]);
+
 // program.locals(=' 로컬/UDF·method 매개변수/for·for-in 루프 변수/튜플 디스트럭처링 대상)에 속하는
 // Pine 이름을 JS 바인딩 식별자 위치(선언/참조 양쪽)에 안전하게 내리는 단일 변환점 — Set 멤버십
 // 검사(program.locals/funcCtx.localVarIndex/promoted 등)는 원래 Pine 이름 그대로 쓰고, 최종
 // 출력 문자열에 꽂는 이 지점에서만 치환한다(pine2py의 `open_` 접미 관행과 동일 원칙, MEMORY.md
 // Pitfalls 참조).
 function safeLocalName(name: string): string {
-  return JS_RESERVED_LOCAL_NAMES.has(name) ? `${name}_` : name;
+  if (JS_RESERVED_LOCAL_NAMES.has(name)) return `${name}_`;
+  // Names the generator itself introduces, and the JS words and globals its output relies on, can
+  // not be told from a user's by looking at one script. A '$' suffix cannot clash with any Pine
+  // identifier (the lexer's identifiers are [A-Za-z0-9_]) or with another renamed name.
+  if (JS_OUTPUT_NAMES.has(name) || name.startsWith("__")) return `${name}$`;
+  return name;
 }
 
 // 순수 UDF(mangle 없이 raw 이름을 그대로 JS 함수 선언명으로 쓰는 것)의 JS 바인딩 이름을 계산하는
@@ -2482,10 +2508,10 @@ function genIfStmt(stmt: IfStmt, program: AnalyzedProgram, funcCtx: FuncGenConte
 
 function genWhileStmt(stmt: WhileStmt, program: AnalyzedProgram, funcCtx: FuncGenContext | null): string {
   const condCode = genExpr(stmt.condition, program, funcCtx);
-  // __whileLimit은 while문마다 자신만의 `{ }` 래핑 블록 안에 선언되므로, 중첩/형제 while 모두
-  // 같은 이름을 재사용해도 JS 블록 스코프가 서로 분리해준다 (충돌 없음).
-  const loopBody = genBlock(stmt.body, program, ["__whileLimit -= 1;"], funcCtx);
-  return `{\nlet __whileLimit = ${LOOP_LIMIT};\nwhile (${condCode} && __whileLimit > 0) ${loopBody}\n}`;
+  // Each iteration spends a step of the bar's shared budget (LOOP_STEP); the braces keep sibling
+  // loops' generated names apart.
+  const loopBody = genBlock(stmt.body, program, [LOOP_STEP], funcCtx);
+  return `{\nwhile (${condCode}) ${loopBody}\n}`;
 }
 
 // Whether a `for` loop re-evaluates its `to` bound before every iteration: from Pine v6 on
@@ -2518,8 +2544,8 @@ function forUpdateCode(v: string, stepCode: string, endCode: string, program: An
 //    실제 값과 무관 — start<end이면 자연히 0회 반복됨. pine2py의 range(start, end-1, step) 분기와 동치)
 //  - 그 외(step 없음/양수 리터럴/런타임 expr)는 진입 시 start<=end로 방향을 감지하고
 //    |step|을 그 방향의 크기로 사용한다(step 없으면 1)
-// while과 동일하게 자신만의 `{ }` 블록에 안전 카운터(__forLimit)를 선언해 step이 0이 되는
-// 런타임 상황에서도 무한루프를 막는다(GOAL.md 10,000회/bar 제한, ForStmt도 동일 적용).
+// Like while, each iteration spends a step of the bar's shared budget (LOOP_STEP), so a step that
+// is 0 at run time cannot loop forever either.
 function genForStmt(stmt: ForStmt, program: AnalyzedProgram, funcCtx: FuncGenContext | null): string {
   // start/end/step은 for 헤더 표현식(조건식이 아니라 stateful 콜 허용 위치, analyzeForStmt 주석
   // 참조) — 그 안의 lazy 위치는 래핑 블록 선두로 호이스팅한다. A dynamic `to` (v6) re-reads the
@@ -2533,14 +2559,14 @@ function genForStmt(stmt: ForStmt, program: AnalyzedProgram, funcCtx: FuncGenCon
   const startCode = genExpr(stmt.start, program, funcCtx);
   const endCode = genExpr(stmt.end, program, funcCtx);
   const v = safeLocalName(stmt.varName);
-  const loopBody = genBlock(stmt.body, program, ["__forLimit -= 1;"], funcCtx);
+  const loopBody = genBlock(stmt.body, program, [LOOP_STEP], funcCtx);
   const literalStep = stmt.step ? literalStepValue(stmt.step) : null;
 
   if (stmt.step !== null && literalStep !== null && literalStep < 0) {
     const stepCode = genExpr(stmt.step, program, funcCtx);
     return (
-      `{\n${preCode}let __forStart = ${startCode};\nlet __forEnd = ${endCode};\nlet __forLimit = ${LOOP_LIMIT};\n` +
-      `for (let ${v} = __forStart; ${v} >= __forEnd && __forLimit > 0; ${forUpdateCode(v, `(${stepCode})`, endCode, program)}) ${loopBody}\n}`
+      `{\n${preCode}let __forStart = ${startCode};\nlet __forEnd = ${endCode};\n` +
+      `for (let ${v} = __forStart; ${v} >= __forEnd; ${forUpdateCode(v, `(${stepCode})`, endCode, program)}) ${loopBody}\n}`
     );
   }
 
@@ -2549,8 +2575,8 @@ function genForStmt(stmt: ForStmt, program: AnalyzedProgram, funcCtx: FuncGenCon
     `{\n${preCode}let __forStart = ${startCode};\nlet __forEnd = ${endCode};\nlet __forStep = ${stepCode};\n` +
     `let __forFwd = __forStart <= __forEnd;\n` +
     `let __forDelta = __forFwd ? Math.abs(__forStep) : -Math.abs(__forStep);\n` +
-    `let __forLimit = ${LOOP_LIMIT};\n` +
-    `for (let ${v} = __forStart; (__forFwd ? ${v} <= __forEnd : ${v} >= __forEnd) && __forLimit > 0; ${forUpdateCode(v, "__forDelta", endCode, program)}) ${loopBody}\n}`
+    `` +
+    `for (let ${v} = __forStart; (__forFwd ? ${v} <= __forEnd : ${v} >= __forEnd); ${forUpdateCode(v, "__forDelta", endCode, program)}) ${loopBody}\n}`
   );
 }
 
@@ -2589,7 +2615,7 @@ function genForInStmt(stmt: ForInStmt, program: AnalyzedProgram, funcCtx: FuncGe
     const idx = stmt.indexName !== null ? safeLocalName(stmt.indexName) : "__forInIdx";
     // seedNames=varName(C599): 본문 직속 '='가 루프 변수를 재선언하는 wild 관용구(`tf = str.trim(tf)`)
     // 가 같은 블록 `let` 이중 선언 SyntaxError를 내던 것을 맨몸 재대입으로 내린다(genBlock 주석 참조).
-    const loopBody = genBlock(stmt.body, program, [`let ${safeLocalName(stmt.varName)} = __forInArr[${idx}];`], funcCtx, new Set([stmt.varName]));
+    const loopBody = genBlock(stmt.body, program, [LOOP_STEP, `let ${safeLocalName(stmt.varName)} = __forInArr[${idx}];`], funcCtx, new Set([stmt.varName]));
     return (
       `{\n${preCode}let __forInArr = ${iterCode};\n` +
       `for (let ${idx} = 0; __forInArr !== null && ${idx} < __forInArr.length; ${idx}++) ${loopBody}\n}`
@@ -2602,7 +2628,7 @@ function genForInStmt(stmt: ForInStmt, program: AnalyzedProgram, funcCtx: FuncGe
   const safeVarName = safeLocalName(stmt.varName);
   const bindings = stmt.indexName !== null ? `[${safeLocalName(stmt.indexName)}, ${safeVarName}]` : safeVarName;
   const source = stmt.indexName !== null ? "entries" : "keys";
-  const loopBody = genBlock(stmt.body, program, [], funcCtx);
+  const loopBody = genBlock(stmt.body, program, [LOOP_STEP], funcCtx);
   return (
     `{\n${preCode}let __forInMap = ${iterCode};\n` +
     `if (__forInMap !== null) {\nfor (const ${bindings} of __forInMap.${source}()) ${loopBody}\n}\n}`
@@ -2890,12 +2916,12 @@ function genIfWithResult(target: string, stmt: IfStmt, program: AnalyzedProgram,
   return withLazyPrelude(pre, branches.join(" "));
 }
 
-// genWhileStmt와 동일한 __whileLimit 안전 카운터 패턴이나 본문이 genBodyWithResult를 거친다 —
+// genWhileStmt와 동일한 LOOP_STEP 예산 패턴이나 본문이 genBodyWithResult를 거친다 —
 // 마지막으로 실행된 반복의 마지막 표현식이 결과(반복이 한 번도 안 돌면 target은 NaN 그대로).
 function genWhileWithResult(target: string, stmt: WhileStmt, program: AnalyzedProgram, funcCtx: FuncGenContext | null): string {
   const condCode = genExpr(stmt.condition, program, funcCtx);
-  const loopBody = genBodyWithResult(target, stmt.body, ["__whileLimit -= 1;"], program, funcCtx);
-  return `{\nlet __whileLimit = ${LOOP_LIMIT};\nwhile (${condCode} && __whileLimit > 0) ${loopBody}\n}`;
+  const loopBody = genBodyWithResult(target, stmt.body, [LOOP_STEP], program, funcCtx);
+  return `{\nwhile (${condCode}) ${loopBody}\n}`;
 }
 
 // genForStmt와 동일한 3-분기 방향 시맨틱이나 본문이 genBodyWithResult를 거친다 — 마지막 반복의
@@ -2910,14 +2936,14 @@ function genForWithResult(target: string, stmt: ForStmt, program: AnalyzedProgra
   const startCode = genExpr(stmt.start, program, funcCtx);
   const endCode = genExpr(stmt.end, program, funcCtx);
   const v = safeLocalName(stmt.varName);
-  const loopBody = genBodyWithResult(target, stmt.body, ["__forLimit -= 1;"], program, funcCtx);
+  const loopBody = genBodyWithResult(target, stmt.body, [LOOP_STEP], program, funcCtx);
   const literalStep = stmt.step ? literalStepValue(stmt.step) : null;
 
   if (stmt.step !== null && literalStep !== null && literalStep < 0) {
     const stepCode = genExpr(stmt.step, program, funcCtx);
     return (
-      `{\n${preCode}let __forStart = ${startCode};\nlet __forEnd = ${endCode};\nlet __forLimit = ${LOOP_LIMIT};\n` +
-      `for (let ${v} = __forStart; ${v} >= __forEnd && __forLimit > 0; ${forUpdateCode(v, `(${stepCode})`, endCode, program)}) ${loopBody}\n}`
+      `{\n${preCode}let __forStart = ${startCode};\nlet __forEnd = ${endCode};\n` +
+      `for (let ${v} = __forStart; ${v} >= __forEnd; ${forUpdateCode(v, `(${stepCode})`, endCode, program)}) ${loopBody}\n}`
     );
   }
 
@@ -2926,8 +2952,8 @@ function genForWithResult(target: string, stmt: ForStmt, program: AnalyzedProgra
     `{\n${preCode}let __forStart = ${startCode};\nlet __forEnd = ${endCode};\nlet __forStep = ${stepCode};\n` +
     `let __forFwd = __forStart <= __forEnd;\n` +
     `let __forDelta = __forFwd ? Math.abs(__forStep) : -Math.abs(__forStep);\n` +
-    `let __forLimit = ${LOOP_LIMIT};\n` +
-    `for (let ${v} = __forStart; (__forFwd ? ${v} <= __forEnd : ${v} >= __forEnd) && __forLimit > 0; ${forUpdateCode(v, "__forDelta", endCode, program)}) ${loopBody}\n}`
+    `` +
+    `for (let ${v} = __forStart; (__forFwd ? ${v} <= __forEnd : ${v} >= __forEnd); ${forUpdateCode(v, "__forDelta", endCode, program)}) ${loopBody}\n}`
   );
 }
 

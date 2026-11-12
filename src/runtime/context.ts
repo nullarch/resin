@@ -28,6 +28,10 @@ import { ExchangeCalendar, calendarSpecOf, type CalendarSpec, type SymbolCalenda
 import type { TranspileOk } from "../transpiler/pipeline";
 import type { DrawingRecord } from "./drawing";
 import { BarState } from "./rollback";
+import { checkDeadline, resolveLimits, setActiveLimits, type ResolvedLimits, type RunLimits } from "./limits";
+import { Diagnostics, setActiveDiagnostics } from "./diagnostics";
+import { unusedOverrides } from "./input";
+import { in_seconds } from "./timeframe";
 
 export interface OHLCVData {
   open: ArrayLike<number>;
@@ -53,6 +57,9 @@ export interface ContextOptions {
   // whose symbol is known at compile time and has a feed here reads the feed (security.ts
   // buildFromFeed); any other call reads the chart's own bars.
   security?: Readonly<Record<string, SecurityFeed>>;
+  // What stops a runaway script: loop steps per bar, the size of one allocation, a deadline
+  // (src/runtime/limits.ts). Defaults apply for any key left out.
+  limits?: RunLimits;
 }
 
 // One symbol's bars with their open times (required), the timeframe they have (taken to be the
@@ -65,7 +72,11 @@ export interface SecurityFeed extends OHLCVData {
 }
 
 // The ContextOptions keys this resin takes, for callers that detect support.
-export const CONTEXT_OPTION_KEYS: readonly (keyof ContextOptions)[] = ["inputs", "magnifier", "security"];
+export const CONTEXT_OPTION_KEYS: readonly (keyof ContextOptions)[] = ["inputs", "magnifier", "security", "limits"];
+
+// The oldest believable bar open time in unix milliseconds (1973). A first time below it is almost
+// certainly unix seconds, which TradingView's `time` is not.
+const MIN_PLAUSIBLE_MS = 1e11;
 
 export class Context {
   vars: (number | string | number[] | null | undefined)[];
@@ -121,6 +132,13 @@ export class Context {
   // Zero-based index of the current bar, for barstate.* and session.* (timeOfBar).
   // advance() moves it forward by one; barCount is the fixed total.
   idx: number;
+  // Loop iterations the current bar may still take (advance() refills it from limits.maxStepsPerBar);
+  // generated code decrements it on every loop back-edge and calls rt.stepsExceeded when it runs out.
+  stepsLeft: number;
+  limits: ResolvedLimits;
+  // What the data and options did that a caller should know (src/runtime/diagnostics.ts); run()
+  // returns it as RunResult.warnings.
+  diagnostics: Diagnostics = new Diagnostics();
   // Broker state for strategy.*. Always constructed, whether or not the script
   // declares a strategy: with no order calls, processFills costs two boolean
   // checks a bar. Generated code reaches it directly as `$.strategy.entry(...)`
@@ -196,10 +214,25 @@ export class Context {
       result.plotTitles.length, result.securityTfs, result.refHistorySlotCount,
       result.condCallHistorySlotCount, result.condCallRefHistorySlotCount,
     );
+    ctx.setLimits(opts.limits);
+    ctx.checkOptions(opts);
+    ctx.checkData(data, result.calendar.chartTf);
     if (opts.magnifier !== undefined) ctx.setMagnifier(opts.magnifier);
     if (opts.security !== undefined) {
       ctx.setSecurityFeeds(opts.security, result.securitySymbols ?? [], result.securityTfs, result.calendar);
     }
+    // A request for a named symbol with no feed does not fail: it reads the chart's own bars, so a
+    // cross-asset script quietly computes on the wrong asset.
+    (result.securitySymbols ?? []).forEach((symbol, slot) => {
+      if (symbol === null) return;
+      const feeds = opts.security ?? {};
+      const tf = result.securityTfs[slot];
+      if (Object.prototype.hasOwnProperty.call(feeds, symbol) || Object.prototype.hasOwnProperty.call(feeds, `${symbol}:${tf}`)) return;
+      ctx.diagnostics.warn(
+        `security-feed:${symbol}`,
+        `request.security reads '${symbol}' but the run option 'security' has no feed for it: the chart's own bars are used instead`,
+      );
+    });
     return ctx;
   }
 
@@ -383,6 +416,8 @@ export class Context {
     this.inputs = inputs;
     this.plots = Array.from({ length: plotSlotCount }, () => Series.preallocate(data.close.length));
     this.idx = -1;
+    this.limits = resolveLimits(undefined);
+    this.stepsLeft = this.limits.maxStepsPerBar;
     this.strategy = new StrategyState();
     this.time = data.time;
     this.rawData = data;
@@ -484,6 +519,9 @@ export class Context {
       this.condCallHistSlots.length,
       this.condCallRefHistSlots.length,
     );
+    child.limits = this.limits;
+    child.diagnostics = this.diagnostics;
+    child.stepsLeft = this.limits.maxStepsPerBar;
     child.barCloseTimes = cache.timeClose;
     this.securityCache.forEach((inner, s) => {
       if (s === slot || inner === undefined) return;
@@ -612,8 +650,92 @@ export class Context {
     return this.lastBarTimeMs;
   }
 
+  // Keys of ContextOptions resin does not read: a typo (`inptus`) otherwise leaves a default in place
+  // and the run looks normal.
+  checkOptions(opts: ContextOptions): void {
+    for (const key of Object.keys(opts)) {
+      if (!(CONTEXT_OPTION_KEYS as readonly string[]).includes(key)) {
+        this.diagnostics.warn(`option:${key}`, `option '${key}' is not read by resin and was ignored`);
+      }
+    }
+  }
+
+  // Bars that are not what the script was compiled for do not stop a run, they change its meaning:
+  // hourly bars on a chart the script believes is daily compute every timeframe.* value wrongly
+  // and nothing complains. Unequal array lengths are the one thing refused, since the run would
+  // read past the shorter series.
+  checkData(data: OHLCVData, chartTf: string): void {
+    const n = data.close.length;
+    for (const key of ["open", "high", "low", "volume"] as const) {
+      if (data[key].length !== n) {
+        throw new TypeError(`OHLCV arrays differ in length: close has ${n} bars, ${key} has ${data[key].length}`);
+      }
+    }
+    if (data.time !== undefined && data.time.length !== n) {
+      throw new TypeError(`OHLCV arrays differ in length: close has ${n} bars, time has ${data.time.length}`);
+    }
+    let inverted = -1;
+    for (let i = 0; i < n; i++) {
+      if (data.high[i]! < data.low[i]!) {
+        inverted = i;
+        break;
+      }
+    }
+    if (inverted >= 0) this.diagnostics.warn("data:high<low", `bar ${inverted} has high < low; the data is not OHLC as TradingView draws it`);
+    const time = data.time;
+    if (time === undefined || n < 2) return;
+    if (time[0]! > 0 && time[0]! < MIN_PLAUSIBLE_MS) {
+      this.diagnostics.warn("data:time-unit", `time[0] is ${time[0]}: resin reads bar open times in unix milliseconds, and this looks like seconds`);
+    }
+    let backwards = -1;
+    const gaps: number[] = [];
+    for (let i = 1; i < n; i++) {
+      const d = time[i]! - time[i - 1]!;
+      if (!(d > 0)) {
+        backwards = i;
+        break;
+      }
+      gaps.push(d);
+    }
+    if (backwards >= 0) {
+      this.diagnostics.warn("data:time-order", `time is not strictly increasing at bar ${backwards}; sessions, security requests and timeframe.* assume it is`);
+      return;
+    }
+    // Compare the bars' own spacing with the timeframe the script was compiled for. Intraday and
+    // daily only: a week or a month is not a fixed length, and weekend gaps are why the median is used.
+    const tfMs = in_seconds(chartTf, chartTf) * 1000;
+    if (tfMs > 0 && tfMs <= 86_400_000) {
+      gaps.sort((a, b) => a - b);
+      const median = gaps[gaps.length >> 1]!;
+      if (median !== tfMs) {
+        this.diagnostics.warn(
+          "data:timeframe",
+          `the bars are ${median / 1000} s apart but the script was compiled for chartTf '${chartTf}' (${tfMs / 1000} s); pass transpile(source, { chartTf }) for the data's timeframe`,
+        );
+      }
+    }
+  }
+
+  // Overrides in ContextOptions.inputs that no input.* call asked for, once the run is over.
+  reportUnusedInputs(): void {
+    for (const title of unusedOverrides(this.inputs)) {
+      this.diagnostics.warn(`input-unused:${title}`, `input override '${title}' matched no input; it is keyed by the input's title`);
+    }
+  }
+
+  setLimits(given: RunLimits | undefined): void {
+    this.limits = resolveLimits(given);
+    this.stepsLeft = this.limits.maxStepsPerBar;
+  }
+
   advance(): void {
     this.idx += 1;
+    // A run is synchronous, but a caller may interleave contexts; each points the allocation guards
+    // at its own limits before it does anything a script controls.
+    setActiveLimits(this.limits);
+    setActiveDiagnostics(this.diagnostics);
+    this.stepsLeft = this.limits.maxStepsPerBar;
+    checkDeadline(this.limits, this.idx);
     this.open.advance();
     this.high.advance();
     this.low.advance();

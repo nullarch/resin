@@ -11,12 +11,32 @@
 // minval/maxval/step은 pine2py와 동일하게 그대로 받되 로직에서 쓰지 않는다(literal port,
 // pine2py도 검증/클램프를 전혀 안 함 — UI 없는 헤드리스 실행이라 값 자체는 TV 클램프 UI가 하는
 // 일이라 우리 쪽 책임이 아님).
+import { warnRuntime } from "./diagnostics";
+
 export interface InputOverrides {
   [title: string]: unknown;
 }
 
-function lookup(overrides: InputOverrides, title: string, defval: unknown): unknown {
-  if (title !== "" && Object.prototype.hasOwnProperty.call(overrides, title)) return overrides[title];
+// Titles each overrides object was asked about, so a run can report the overrides that matched no
+// input (a misspelled title silently left the input at its default).
+const queried = new WeakMap<object, Set<string>>();
+
+export function unusedOverrides(overrides: InputOverrides): string[] {
+  const asked = queried.get(overrides);
+  return Object.keys(overrides).filter((k) => asked === undefined || !asked.has(k));
+}
+
+function lookup(overrides: InputOverrides, title: string, defval: unknown, kind?: "number" | "boolean" | "string"): unknown {
+  let asked = queried.get(overrides);
+  if (asked === undefined) queried.set(overrides, (asked = new Set()));
+  asked.add(title);
+  if (title !== "" && Object.prototype.hasOwnProperty.call(overrides, title)) {
+    const v = overrides[title];
+    if (kind !== undefined && typeof v !== kind) {
+      warnRuntime(`input-type:${title}`, `input override '${title}' is a ${typeof v}, but this input takes a ${kind}; it is used as given`);
+    }
+    return v;
+  }
   return defval;
 }
 
@@ -28,7 +48,7 @@ export function int(
   _maxval: number | null = null,
   _step: number = 1,
 ): number {
-  return lookup(overrides, title, defval) as number;
+  return lookup(overrides, title, defval, "number") as number;
 }
 
 export function float(
@@ -39,11 +59,11 @@ export function float(
   _maxval: number | null = null,
   _step: number = 1.0,
 ): number {
-  return lookup(overrides, title, defval) as number;
+  return lookup(overrides, title, defval, "number") as number;
 }
 
 export function bool(overrides: InputOverrides, defval: boolean = false, title: string = ""): boolean {
-  return lookup(overrides, title, defval) as boolean;
+  return lookup(overrides, title, defval, "boolean") as boolean;
 }
 
 // options(C258) — enumInput과 동일하게 pine2py string_input(defval, title, **kwargs)이 값을 전혀
@@ -56,7 +76,7 @@ export function string(
   title: string = "",
   _options: unknown[] | null = null,
 ): string {
-  return lookup(overrides, title, defval) as string;
+  return lookup(overrides, title, defval, "string") as string;
 }
 
 // 세 번째 슬라이스(C133) -- 나머지 9종 중 시그니처가 (defval, title)뿐인 8종 + bare input().
@@ -66,7 +86,7 @@ export function string(
 // input.enum만 options 리스트 인자가 추가로 필요해 이번 슬라이스 범위 밖(ROADMAP 참조).
 
 export function color(overrides: InputOverrides, defval: string = "", title: string = ""): string {
-  return lookup(overrides, title, defval) as string;
+  return lookup(overrides, title, defval, "string") as string;
 }
 
 // source: pine2py `source_input(defval: Any = None, ...)` -- bar series(close 등)도 받을 수
@@ -78,27 +98,27 @@ export function source(overrides: InputOverrides, defval: unknown = null, title:
 }
 
 export function symbol(overrides: InputOverrides, defval: string = "", title: string = ""): string {
-  return lookup(overrides, title, defval) as string;
+  return lookup(overrides, title, defval, "string") as string;
 }
 
 export function timeframe(overrides: InputOverrides, defval: string = "", title: string = ""): string {
-  return lookup(overrides, title, defval) as string;
+  return lookup(overrides, title, defval, "string") as string;
 }
 
 export function session(overrides: InputOverrides, defval: string = "", title: string = ""): string {
-  return lookup(overrides, title, defval) as string;
+  return lookup(overrides, title, defval, "string") as string;
 }
 
 export function price(overrides: InputOverrides, defval: number = 0.0, title: string = ""): number {
-  return lookup(overrides, title, defval) as number;
+  return lookup(overrides, title, defval, "number") as number;
 }
 
 export function text_area(overrides: InputOverrides, defval: string = "", title: string = ""): string {
-  return lookup(overrides, title, defval) as string;
+  return lookup(overrides, title, defval, "string") as string;
 }
 
 export function time(overrides: InputOverrides, defval: number = 0, title: string = ""): number {
-  return lookup(overrides, title, defval) as number;
+  return lookup(overrides, title, defval, "number") as number;
 }
 
 // bare `input()` -- pine2py any_input(defval: Any = None, title: str = ""). 타입 미지정이라

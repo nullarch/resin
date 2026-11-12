@@ -3137,7 +3137,7 @@ function stripPos(node: unknown): unknown {
   if (node !== null && typeof node === "object") {
     const out: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(node)) {
-      if (k === "line" || k === "col") continue;
+      if (k === "line" || k === "col" || k === "exported") continue;
       out[k] = stripPos(v);
     }
     return out;
@@ -3145,7 +3145,7 @@ function stripPos(node: unknown): unknown {
   return node;
 }
 
-describe("Parser library()/export/import (no-op parse-through, C274)", () => {
+describe("Parser library()/export/import (C274)", () => {
   it("parses 'library(\"MyLib\")' as an ordinary CallExpr (same mechanism as indicator()/strategy())", () => {
     const script = parse('library("MyLib")');
     expect(script.body).toHaveLength(1);
@@ -3164,7 +3164,18 @@ describe("Parser library()/export/import (no-op parse-through, C274)", () => {
     expect(call.kwargs[0]!.name).toBe("overlay");
   });
 
-  it("parses 'export f(x) => x' identically to 'f(x) => x' (export is a pure no-op prefix)", () => {
+  it("marks what export marks, and only that (passes/libraries.ts reads it)", () => {
+    const script = parse("export f(x) => x\ng(x) => x\nexport type T\n    float v\n");
+    expect(script.body.map((d) => (d as { exported?: true }).exported)).toEqual([true, undefined, true]);
+  });
+
+  it("records each import's path and alias, hyphens included, and no field when there are none", () => {
+    const script = parse("import RVD-Projects/My-Lib/3 as m\nimport TradingView/ta/7\nplot(close)\n");
+    expect(script.imports?.map((i) => [i.path, i.alias])).toEqual([["RVD-Projects/My-Lib/3", "m"], ["TradingView/ta/7", "ta"]]);
+    expect(parse("plot(close)\n").imports).toBeUndefined();
+  });
+
+  it("parses 'export f(x) => x' identically to 'f(x) => x' apart from the mark", () => {
     const exported = parse("export f(x) => x");
     const plain = parse("f(x) => x");
     expect(stripPos(exported.body)).toEqual(stripPos(plain.body));
@@ -3555,5 +3566,27 @@ describe("A keyword argument named twice in one call", () => {
 
   it("keeps every repeat from v6 on, for the analyzer to reject", () => {
     expect(lastCall("//@version=6\nplot(close, color=color.blue, color=color.red)").kwargs).toHaveLength(2);
+  });
+});
+
+describe("Parser - a statement must end where the line does", () => {
+  it("refuses a token left over after a complete statement instead of reading it as a new statement", () => {
+    // `x = close open + 1` used to compile as `x = close` followed by the statement `open + 1`.
+    expect(() => parse('//@version=6\nindicator("t")\nx = close open + 1\nplot(x)\n')).toThrow(/unexpected IDENTIFIER 'open' after the end of a statement/);
+    expect(() => parse('//@version=6\nindicator("t")\nplot(close) plot(open)\n')).toThrow(/after the end of a statement/);
+  });
+
+  it("refuses a leftover token inside a block too", () => {
+    expect(() => parse('//@version=6\nindicator("t")\nif close > open\n    x = 1 2\nplot(close)\n')).toThrow(/after the end of a statement/);
+  });
+
+  it("still accepts every statement shape that ends without a NEWLINE token", () => {
+    const ok = [
+      "f(x) => x * 2\ng(x) => x * 3\nplot(g(f(close)))\n", // one-line functions consume their own line break
+      "if close > open\n    a = 1\nb = 2\nplot(b)\n", // a block ends on its DEDENT
+      "a = 1, b = 2\nplot(a + b)\n", // comma-chained statements
+      "x = close\n//@description trailing annotation\nplot(x)\n",
+    ];
+    for (const body of ok) expect(() => parse(`//@version=6\nindicator("t")\n${body}`), body).not.toThrow();
   });
 });

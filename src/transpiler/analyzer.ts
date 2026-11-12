@@ -38,6 +38,7 @@ import type {
   VarDecl,
   WhileStmt,
 } from "./ast";
+import type { LibrarySources } from "./passes/libraries";
 import {
   ARRAY_REGISTRY,
   MAP_REGISTRY,
@@ -1122,6 +1123,10 @@ export interface FuncInfo {
   // inferFuncBodyReturnContainerKind가 채우고, resolveContainerExprKind의 CallExpr 분기(bare UDF
   // 콜을 컨테이너 수신자로 직접 체이닝하는 형태)가 조회한다.
   returnContainerKind: "array" | "map" | null;
+  // The same for matrix, which has one kind and so a boolean: the last statement yields a matrix
+  // (`kernel_matrix(a, b).sum(s)`, where the receiver is a bare UDF call). resolveMatrixExprKind's
+  // CallExpr branch reads it, as resolveContainerExprKind's reads returnContainerKind.
+  returnsMatrix: boolean;
   // 이 함수/method의 반환값이 Float64Array 히스토리 슬롯에 안전하게 담을 수 있는 순수 스칼라로
   // 확정되면 true(C520, wild "히스토리 인덱스는 stateful TA 콜에만 지원" 클러스터 — UDF 콜 결과
   // f()[N] 확장). tupleArity!==null(튜플 반환)이면 즉시 false. 마지막 문장이 ExprStmt/Assignment
@@ -3717,6 +3722,17 @@ export interface AnalyzeOptions {
   chartTf?: string;
   syminfo?: SymbolGridOptions;
   strategy?: StrategyPropertyOptions;
+  // Refuse, instead of warn about, what resin cannot do faithfully: a stub or pass-through builtin
+  // (request.dividends, ticker.heikinashi, ...), a version annotation below 5, an option key resin
+  // ignores. Read by transpile(); the analyzer itself does not look at it.
+  strict?: boolean;
+  // Source longer than this many UTF-16 code units is refused before it is parsed. Default 1,000,000
+  // (TradingView's own limit is far lower). A library is held to the same limit on its own.
+  maxSourceBytes?: number;
+  // The source of each library the script imports, by its path as the import writes it
+  // ("jdehorty/MLExtensions/2"), or a function that returns it. Read by transpile(); see
+  // passes/libraries.ts. resin fetches nothing itself.
+  libraries?: LibrarySources;
 }
 
 // A strategy's properties as TradingView's strategy "Properties" tab sets them: each given key
@@ -4972,6 +4988,7 @@ function registerFuncSignature(stmt: FuncDecl, prog: AnalyzedProgram): void {
     returnArrayElemUdtType: null,
     returnArrayElemDrawingKind: null,
     returnContainerKind: null,
+    returnsMatrix: false,
     returnIsScalarSafe: false,
     bodyAnalyzed: false,
     calls: new Set(),
@@ -6069,6 +6086,7 @@ function analyzeFuncDecl(stmt: FuncDecl, prog: AnalyzedProgram, scope: LexScope)
   info.returnArrayElemUdtType = inferFuncBodyReturnArrayElemUdtType(stmt.body[lastIdx]!, info, prog, bodyScope);
   info.returnArrayElemDrawingKind = inferFuncBodyReturnArrayElemDrawingKind(stmt.body[lastIdx]!, info, prog, bodyScope);
   info.returnContainerKind = inferFuncBodyReturnContainerKind(stmt.body[lastIdx]!, info, prog, bodyScope);
+  info.returnsMatrix = info.tupleArity === null && inferReturnStmtIsMatrix(stmt.body[lastIdx]!, prog, bodyScope);
   info.returnIsScalarSafe = inferFuncBodyReturnIsScalarSafe(stmt.body[lastIdx]!, info, prog, bodyScope);
   checkHistShadowConflicts(stmt.name, stmt.line, stmt.col, info, prog);
   info.bodyAnalyzed = true;
@@ -6308,6 +6326,7 @@ function analyzeMethodDecl(stmt: MethodDecl, prog: AnalyzedProgram, scope: LexSc
     returnArrayElemUdtType: null,
     returnArrayElemDrawingKind: null,
     returnContainerKind: null,
+    returnsMatrix: false,
     returnIsScalarSafe: false,
     // method는 forward-reference 대상이 아니다(prepass 없이 이 함수 안에서 한 번에 등록/분석) —
     // 항상 완전히 분석된 상태로 만들어지므로 생성 시점에 바로 true.
@@ -6554,6 +6573,7 @@ function analyzeMethodDecl(stmt: MethodDecl, prog: AnalyzedProgram, scope: LexSc
   info.returnArrayElemUdtType = inferFuncBodyReturnArrayElemUdtType(stmt.body[lastIdx]!, info, prog, bodyScope);
   info.returnArrayElemDrawingKind = inferFuncBodyReturnArrayElemDrawingKind(stmt.body[lastIdx]!, info, prog, bodyScope);
   info.returnContainerKind = inferFuncBodyReturnContainerKind(stmt.body[lastIdx]!, info, prog, bodyScope);
+  info.returnsMatrix = info.tupleArity === null && inferReturnStmtIsMatrix(stmt.body[lastIdx]!, prog, bodyScope);
   info.returnIsScalarSafe = inferFuncBodyReturnIsScalarSafe(stmt.body[lastIdx]!, info, prog, bodyScope);
   checkHistShadowConflicts(stmt.name, stmt.line, stmt.col, info, prog);
 }
@@ -6778,6 +6798,19 @@ function inferReturnStmtContainerKind(stmt: Stmt, prog: AnalyzedProgram, scope: 
   return null;
 }
 
+// inferReturnStmtContainerKind for matrix (FuncInfo.returnsMatrix). resolveMatrixExprKind already
+// covers what a tail can be: a constructor, a local, a chained method, another UDF's call.
+function inferReturnStmtIsMatrix(stmt: Stmt, prog: AnalyzedProgram, scope: LexScope): boolean {
+  if (stmt.kind === "ExprStmt") return resolveMatrixExprKind(stmt.expr, prog, scope);
+  if (stmt.kind === "Assignment" && stmt.operator === "=") return resolveMatrixExprKind(stmt.value, prog, scope);
+  if (stmt.kind === "IfStmt") {
+    const tail = (body: Stmt[]): boolean => body.length > 0 && inferReturnStmtIsMatrix(body[body.length - 1]!, prog, scope);
+    if (!tail(stmt.thenBody) || stmt.elifClauses.some((c) => !tail(c.body))) return false;
+    return stmt.elseBody === null || stmt.elseBody.length === 0 || tail(stmt.elseBody);
+  }
+  return false;
+}
+
 // FuncInfo.returnIsScalarSafe(C520, index-access.ts "히스토리 인덱스는 stateful TA 콜에만 지원"
 // 클러스터 — UDF 콜 결과 f()[N] 확장)를 채운다. tupleArity!==null이면 즉시 false(튜플 반환은
 // f()[N] 문법 자체가 성립 안 함). 마지막 문장이 단일 ExprStmt일 때만 classifyTupleElemNonNumericKind
@@ -6930,7 +6963,7 @@ function analyzeVarDecl(stmt: VarDecl, prog: AnalyzedProgram, scope: LexScope): 
         const funcLocalMapValueDrawingKind =
           (stmt.typeHint !== null ? mapValueDrawingElemType(stmt.typeHint) : null) ?? mapDrawingConstructorValueKind(stmt.value);
         if (funcLocalMapValueDrawingKind !== null) func.localVarMapValueDrawingKinds.set(stmt.name, funcLocalMapValueDrawingKind);
-      } else if (isMatrixConstructorCall(stmt.value) || isMatrixMultCall(stmt.value)) func.localVarValueKinds.set(stmt.name, "matrix");
+      } else if (isMatrixConstructorCall(stmt.value) || isMatrixMultCall(stmt.value) || resolveMatrixExprKind(stmt.value, prog, scope)) func.localVarValueKinds.set(stmt.name, "matrix");
       else {
         // func-local var의 실제 UDT 타입명 추적(C392, drawingKind 바로 위와 동일 원칙의 UDT 축 —
         // top-level analyzeVarDecl의 explicitUdtType/inferredUdtType(L2503 부근)과 완전히 대칭):
@@ -7024,6 +7057,8 @@ function analyzeVarDecl(stmt: VarDecl, prog: AnalyzedProgram, scope: LexScope): 
     else if (declaredContainerKind === "map") prog.mapVars.add(stmt.name);
     // 초기값이 matrix.new 콜이면 matrix를 담는 var로 표시(C90, arrayVars/mapVars와 동일 원칙).
     if (isMatrixConstructorCall(stmt.value)) prog.matrixVars.add(stmt.name);
+    // A UDF that returns a matrix, or a method chained on one. matrix.mult is decided just below.
+    else if (!isMatrixMultCall(stmt.value) && resolveMatrixExprKind(stmt.value, prog, scope)) prog.matrixVars.add(stmt.name);
     // matrix<drawing/UDT> 원소 타입 추적(C618, 바로 위 arrayElemUdtType/arrayElemDrawingKind 등록
     // (L4356 부근)과 동일 원칙 -- matrix.new<T>() 제네릭 생성자 콜의 T만 신호로 본다).
     const matrixElemDrawing = matrixDrawingConstructorElemKind(stmt.value);
@@ -8283,7 +8318,8 @@ export function resolveMatrixExprKind(target: Expr, prog: AnalyzedProgram, scope
       isMatrixConstructorCall(target) ||
       isMatrixMultCall(target) ||
       isMatrixSumCall(target) ||
-      isMatrixReturningMethodSugarCall(target, prog, scope)
+      isMatrixReturningMethodSugarCall(target, prog, scope) ||
+      (target.callee.kind === "Identifier" && prog.funcs.get(target.callee.name)?.returnsMatrix === true)
     );
   }
   if (target.kind === "Identifier") {

@@ -12,6 +12,14 @@ export interface Script extends Pos {
   // The Pine version the `//@version=N` annotation declares (undefined when there is none). Some
   // defaults depend on it, e.g. strategy()'s margin_long/margin_short (mig6.txt: 100 in v6, 0 in v5).
   version?: number;
+  // The `import` statements, when there are any. passes/libraries.ts resolves them.
+  imports?: ImportDecl[];
+}
+
+// `import user/name/version [as alias]`. The alias defaults to the library's name.
+export interface ImportDecl extends Pos {
+  path: string;
+  alias: string;
 }
 
 export type Stmt =
@@ -48,6 +56,7 @@ export interface TypeField extends Pos {
 // CallExpr의 DotAccess callee를 이 타입명으로 인식해 처리한다(별도 AST 노드 불필요).
 export interface TypeDecl extends Pos {
   kind: "TypeDecl";
+  exported?: true; // written with `export` (passes/libraries.ts)
   name: string;
   fields: TypeField[];
 }
@@ -78,12 +87,14 @@ export interface EnumMember extends Pos {
 
 export interface EnumDecl extends Pos {
   kind: "EnumDecl";
+  exported?: true; // written with `export` (passes/libraries.ts)
   name: string;
   members: EnumMember[];
 }
 
 export interface VarDecl extends Pos {
   kind: "VarDecl";
+  exported?: true; // written with `export` (passes/libraries.ts)
   name: string;
   persistent: boolean; // var/varip 키워드 존재 여부
   // Declared with varip: not rolled back when a run of the body is discarded (a calc_on_order_fills
@@ -95,6 +106,7 @@ export interface VarDecl extends Pos {
 
 export interface Assignment extends Pos {
   kind: "Assignment";
+  exported?: true; // written with `export` (passes/libraries.ts)
   name: string;
   operator: "=" | ":=";
   value: Expr;
@@ -190,6 +202,7 @@ export interface FuncParam extends Pos {
 
 export interface FuncDecl extends Pos {
   kind: "FuncDecl";
+  exported?: true; // written with `export` (passes/libraries.ts)
   name: string;
   params: FuncParam[];
   body: Stmt[];
@@ -204,6 +217,7 @@ export interface FuncDecl extends Pos {
 // TypeName.methodName(obj,args) 형태는 이번 슬라이스 범위 밖).
 export interface MethodDecl extends Pos {
   kind: "MethodDecl";
+  exported?: true; // written with `export` (passes/libraries.ts)
   name: string;
   params: FuncParam[];
   body: Stmt[];

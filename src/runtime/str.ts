@@ -9,6 +9,7 @@
 // 동작은 그대로 유지한다.
 
 import { runtimeError } from "./log";
+import { checkedLength } from "./limits";
 import { zoneOffsetMs } from "./datetime";
 
 // str.length — pine2py wavealgo.builtins.str_funcs.length는 `len(source) if source else 0`로
@@ -70,7 +71,10 @@ export function trim(source: string | null): string | null {
 
 export function replace_all(source: string | null, target: string | null, replacement: string | null): string | null {
   if (typeof source !== "string" || typeof target !== "string" || typeof replacement !== "string") return null;
-  return source.replaceAll(target, replacement);
+  // The replacement is literal text. A string replacement would read "$&", "$$", "$`" and "$'" as
+  // patterns, so str.replace_all("a-b", "-", "$&") gave "a-b" (and the occurrence-counting form of
+  // str.replace, which splices the text in, gave "a$&b" for the same call).
+  return source.replaceAll(target, () => replacement);
 }
 
 // str.substring — pine2py: `source[begin_pos:] if end_pos<0 else source[begin_pos:end_pos]`. JS
@@ -90,6 +94,8 @@ export function repeat(source: string | null, count: number, separator: string |
   if (typeof source !== "string" || Number.isNaN(count) || typeof separator !== "string") return null;
   const c = Math.trunc(count);
   if (c <= 0) return "";
+  // The result is c copies of source and c - 1 separators: size the string, not the array of copies.
+  checkedLength(c * Math.max(1, source.length + separator.length), "str.repeat");
   return Array(c).fill(source).join(separator);
 }
 
@@ -394,7 +400,7 @@ export function replace(
   occurrence: number = 0,
 ): string | null {
   if (typeof source !== "string" || typeof target !== "string" || typeof replacement !== "string") return null;
-  if (occurrence === 0) return source.replace(target, replacement);
+  if (occurrence === 0) return source.replace(target, () => replacement);
   if (target === "") {
     if (Number.isInteger(occurrence) && occurrence >= 1) return replacement + source;
     return source;

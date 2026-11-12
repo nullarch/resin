@@ -3,7 +3,7 @@
 // UDF 선언(name(params) => body)과 튜플 destructure([a,b] = expr) 파싱.
 
 import type { Token, TokenType } from "./tokens";
-import { tokenize } from "./lexer";
+import { LexError, tokenize } from "./lexer";
 import type {
   Assignment,
   BinOp,
@@ -28,6 +28,7 @@ import type {
   MethodDecl,
   NaLiteral,
   NumberLiteral,
+  ImportDecl,
   Script,
   Stmt,
   StringLiteral,
@@ -122,7 +123,27 @@ export class Parser {
   }
 
   static parse(source: string): Script {
-    return new Parser(tokenize(source)).parseScript();
+    let tokens: Token[];
+    try {
+      tokens = tokenize(source);
+    } catch (e) {
+      if (e instanceof LexError) throw new ParseError(e.message, e.line, e.col);
+      throw e;
+    }
+    return new Parser(tokens).parseScript();
+  }
+
+  // A statement ends at a line break, at the end of its block or at the end of the file. A token
+  // still on the same line means the parser stopped short of what was written (`x = close open + 1`
+  // used to compile as `x = close` followed by a separate statement `open + 1`). A statement that
+  // owns a block ends on the DEDENT that closed it, and a one-line function declaration consumes
+  // its own line break; the next statement starts right after either.
+  private expectStatementEnd(): void {
+    const prev = this.pos > 0 ? this.tokens[this.pos - 1]!.type : null;
+    if (prev === "DEDENT" || prev === "NEWLINE") return;
+    const t = this.peek();
+    if (t.type === "NEWLINE" || t.type === "DEDENT" || t.type === "EOF" || t.type === "ANNOTATION") return;
+    throw new ParseError(`unexpected ${t.type}${t.value ? ` '${t.value}'` : ""} after the end of a statement`, t.line, t.col);
   }
 
   private peek(offset = 0): Token {
@@ -169,6 +190,7 @@ export class Parser {
 
   parseScript(): Script {
     const body: Stmt[] = [];
+    const imports: ImportDecl[] = [];
     let version: number | undefined;
     this.skipNewlines();
     while (!this.check("EOF")) {
@@ -179,16 +201,9 @@ export class Parser {
         this.skipNewlines();
         continue;
       }
-      // import 선언(pine2py parser.py _parse_import 그대로 이식, C274) — `import user/lib/1 as
-      // alias`. pine2py도 이 노드를 파스만 하고 codegen에서 주석 한 줄로 버릴 뿐 실제 라이브러리
-      // 소스를 로드/해석하는 기능이 전혀 없다(단일 소스 문자열만 다루는 아키텍처라 원천적으로 불가,
-      // docs/pinescript/09-edge-cases.md도 "Phase 1 미지원"으로 명시) — corpus 실측 7건 전수가
-      // import한 별칭을 본문에서 단 한 번도 참조하지 않는 죽은 선언이라(등록만 하고 아무도 안 쓰는
-      // 패턴, gen_oracle.py 검증으로 재확인) ANNOTATION과 동일하게 완전히 스킵해도 실행 결과에
-      // 영향이 없다 — AST 노드조차 만들지 않고 토큰만 소비(alias를 쓰는 실사용 코드가 나타나면 그때
-      // "알 수 없는 식별자" 에러로 자연히 드러남, 침묵 오답 아님).
+      // `import user/lib/1 as alias`: recorded for passes/libraries.ts, not part of the body.
       if (this.check("IMPORT")) {
-        this.skipImportStmt();
+        imports.push(this.parseImportStmt());
         this.skipNewlines();
         continue;
       }
@@ -197,10 +212,18 @@ export class Parser {
         throw new ParseError("unexpected indented block", t.line, t.col);
       }
       body.push(...this.parseStatementWithCommas());
+      this.expectStatementEnd();
       this.skipNewlines();
     }
     if ((version ?? 1) < 6) this.dropRepeatedKwargs();
-    return version === undefined ? { kind: "Script", line: 1, col: 1, body } : { kind: "Script", line: 1, col: 1, body, version };
+    return {
+      kind: "Script",
+      line: 1,
+      col: 1,
+      body,
+      ...(version === undefined ? {} : { version }),
+      ...(imports.length === 0 ? {} : { imports }),
+    };
   }
 
   // Before v6 a call may name the same keyword argument more than once and the first value
@@ -220,35 +243,31 @@ export class Parser {
     }
   }
 
-  // import user/library/version [as alias] — 경로/별칭 전부 버린다(위 parseScript 주석 참조).
-  // pine2py parser.py _parse_import과 동일한 토큰 소비 구조(SLASH 구분 경로 + "as"는 예약어가
-  // 아니라 IDENTIFIER 값으로 판별 — pine2js 렉서도 "as"를 키워드로 토큰화하지 않음).
-  private skipImportStmt(): void {
-    this.advance(); // IMPORT
-    this.expect("IDENTIFIER", "in import path");
-    this.skipHyphenChain();
+  // import user/library/version [as alias]. "as" is not reserved, so it arrives as an IDENTIFIER.
+  private parseImportStmt(): ImportDecl {
+    const kw = this.advance(); // IMPORT
+    const segments = [this.expect("IDENTIFIER", "in import path").value + this.hyphenChain()];
     while (this.check("SLASH")) {
       this.advance();
-      if (this.check("IDENTIFIER") || this.check("NUMBER")) {
-        this.advance();
-        this.skipHyphenChain();
-      }
+      if (this.check("IDENTIFIER") || this.check("NUMBER")) segments.push(this.advance().value + this.hyphenChain());
     }
+    let alias = segments[1] ?? segments[0]!;
     if (this.check("IDENTIFIER") && this.peek().value === "as") {
       this.advance();
-      this.expect("IDENTIFIER", "in import alias");
+      alias = this.expect("IDENTIFIER", "in import alias").value;
     }
+    return { path: segments.join("/"), alias, line: kw.line, col: kw.col };
   }
 
-  // 하이픈 포함 사용자명/라이브러리명(예: `RVD-Projects`) 대응(C460, wild 실측) — 렉서는
-  // `-`를 MINUS로 별도 토큰화하므로 그대로 두면 경로 세그먼트가 여기서 끊겨 나머지
-  // (`-Projects/Types/3`)가 다음 문장으로 새어나가 "알 수 없는 식별자"를 낸다. 경로 값 자체는
-  // 어차피 전부 버려지므로(위 skipImportStmt 주석 참조) 토큰 소비만 정확히 맞추면 된다.
-  private skipHyphenChain(): void {
+  // A user name or library name can hold hyphens (`RVD-Projects`). The lexer makes `-` its own token,
+  // so the segment is put back together here.
+  private hyphenChain(): string {
+    let rest = "";
     while (this.check("MINUS") && this.peek(1).type === "IDENTIFIER") {
       this.advance(); // MINUS
-      this.advance(); // IDENTIFIER
+      rest += `-${this.advance().value}`;
     }
+    return rest;
   }
 
   // 쉼표로 구분된 다중 문장: `a = 1, b = 2` (pine2py parser.py _parse_statement_with_commas
@@ -272,15 +291,12 @@ export class Parser {
   }
 
   private parseStatement(): Stmt {
-    // export 접두어(pine2py parser.py _parse_export 그대로 이식, C274) — library() 스크립트가
-    // 외부 공개용으로 표시하는 문법적 장식일 뿐 pine2py도 이 플래그를 어디서도 읽지 않는다(exported
-    // 필드를 설정만 하고 소비하는 codegen 분기가 없음, python 소스 grep으로 확인) — pine2js는
-    // 애초에 단일 파일만 다뤄 "외부 공개"라는 개념 자체가 없으므로 토큰만 소비하고 다음 선언을
-    // 그대로 재귀 파싱하면 충분(FuncDecl/TypeDecl/EnumDecl/MethodDecl/VarDecl 전부 자동 커버,
-    // pine2py의 export-종류별 개별 분기보다 이 재귀 fallback이 더 단순하고 동등).
+    // `export` marks what a library offers (passes/libraries.ts). In a script it changes nothing.
     if (this.check("EXPORT")) {
       this.advance();
-      return this.parseStatement();
+      const decl = this.parseStatement();
+      (decl as { exported?: true }).exported = true;
+      return decl;
     }
     if (this.check("VAR") || this.check("VARIP")) {
       return this.parseVarDecl();
@@ -766,10 +782,16 @@ export class Parser {
       this.skipNewlines();
       while (!this.check("DEDENT") && !this.check("EOF")) {
         body.push(...this.parseStatementWithCommas());
+        this.expectStatementEnd();
         this.skipNewlines();
         this.skipAnnotations();
       }
       if (this.check("DEDENT")) this.advance();
+    } else {
+      // Pine has no empty block and no `pass`: a header with nothing indented under it is an error.
+      // Without this the next line became a separate top-level statement and the script compiled.
+      const t = this.peek();
+      throw new ParseError(`expected an indented block under this header, got ${t.type}${t.value ? ` '${t.value}'` : ""}`, t.line, t.col);
     }
     return body;
   }
