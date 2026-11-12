@@ -220,16 +220,6 @@
       "repro": "external",
       "where": "tests/robustness/fuzz_cli.test.ts",
       "marker": "KD11"
-    },
-    {
-      "id": "KG-ROC-VARLEN-NA",
-      "kind": "candidate",
-      "title": "ta.roc with a series length takes its numerator over the non-na bars only, so across an na gap it differs from the same call with a literal length",
-      "expectation": "Found by tests/property: close = [10, 11, na, 13, 14], ta.roc(close, 2) is 18.18 at bar 3 but ta.roc(close, 2 + bar_index * 0) is 27.27. src/runtime/ta.ts rocVarLen says that is 'as the oracle runs it', so it may be TradingView's behaviour; the two literal/series forms agreeing is the property that fails.",
-      "documented": {},
-      "repro": "external",
-      "where": "tests/property/reference_ta.test.ts",
-      "marker": "it.fails"
     }
   ]
 }

@@ -696,10 +696,10 @@ describe("self-consistency: (f) a literal length and the same value as a series 
       return failures;
     };
     if (isRoc) {
-      // SUSPECTED DEFECT, same as reference_ta.test.ts: rocVarLen takes its numerator over the non-na
-      // bars only. Repro: close = [10, 11, na, 13, 14, ...], ta.roc(close, 2) is 18.18 on bar 3 and
-      // ta.roc(close, 2 + bar_index * 0) is 27.27.
-      it.fails(`ta.${e.name}: literal and series length agree (SUSPECTED DEFECT: rocVarLen on na gaps)`, () => {
+      // Was an it.fails: rocVarLen took its numerator over the non-na bars only (ta.roc(close, 2) 18.18
+      // on bar 3 of [10, 11, na, 13, 14, ...] against 27.27 for the series spelling). Fixed with
+      // resin-harness dispute D12, settled for the manual's formula.
+      it(`ta.${e.name}: literal and series length agree, na gaps included`, () => {
         expect(run1(), head(run1(), 2)).toEqual([]);
       });
     } else {

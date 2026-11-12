@@ -82,7 +82,7 @@ accounting identities and mirror symmetry. `RESIN_PROP_RUNS=20` is the nightly s
   60000 --seed 1`. Its defects are in `tests/robustness/README.md`.
 
 ### L4 — known gaps (`known-gaps.json`)
-26 entries. An `it.fails` repro asserts the *correct* behaviour, so closing the gap turns its test red
+25 entries. An `it.fails` repro asserts the *correct* behaviour, so closing the gap turns its test red
 until the entry is deleted. Other entries are pinned as reported (`warned`), as refused (`pinned`), as a
 count of the false accepts above (`negative`), or in the suite that owns the repro (`external`). Each
 entry says which document mentions it; that phrase is checked. The number of `hypothesis` marker lines in

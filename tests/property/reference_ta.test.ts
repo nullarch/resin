@@ -811,10 +811,6 @@ const varSpecs: VarSpec[] = [
   {
     name: "ta.roc",
     exprAt: (l) => `ta.roc(close, ${l})`,
-    // FINDING (see the it.fails below): on data with na gaps rocVarLen compacts the numerator's
-    // window over the non-na bars (its inner ta.change only sees them, rocVarLen's own comment) while
-    // the divisor and the fixed-length ta.roc use bars; the two forms of one function disagree.
-    exclude: (kind) => (kind === "na-close" || kind === "na-bars" ? "finding: series-length roc compacts its numerator window over na gaps" : null),
     ref: (d, Lf) => ({
       values: mapNa(N, (i) => {
         if (i < Lf(i)) return NaN;
@@ -941,7 +937,8 @@ describe("reference (independent implementation in this test): series-length for
   // rocVarLen's comment says this is "as the oracle runs it", but TradingView evaluates one function for
   // both spellings of the length. This test states the consistency and fails today (checked by hand:
   // fixed 18.1818 vs series 27.2727 on bar 3).
-  it.fails("ta.roc: a literal length and the same length as a series agree across an na gap (SUSPECTED DEFECT: rocVarLen)", () => {
+  // Fixed in rocVarLen (resin-harness dispute D12, settled for the manual): this was an it.fails.
+  it("ta.roc: a literal length and the same length as a series agree across an na gap", () => {
     const close = [10, 11, NaN, 13, 14, 15, 16, 17];
     const d: Bars = { open: close, high: close, low: close, close, volume: close.map(() => 1), time: close.map((_, i) => Date.UTC(2020, 0, 1) + i * 3_600_000) };
     const src = ["//@version=5", 'indicator("roc gap")', 'plot(ta.roc(close, 2), "fixed")', 'plot(ta.roc(close, 2 + bar_index * 0), "series")', 'plot(100 * ta.change(close, 2) / close[2], "manual")'].join("\n");

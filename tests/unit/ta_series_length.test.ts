@@ -72,13 +72,22 @@ describe("series-length machines (oracle twin serieslen-machines)", () => {
     ]);
   });
 
-  it("ta.roc divides by src[length] while its inner ta.change only sees the non-na bars", () => {
-    // bar 3 (length 2): 100 * (12.5 - 10) / 11 — the change skips the na bar 2 and reaches bar 0,
-    // the divisor src[2] is bar 1.
+  // The manual's formula with one past value in both places: 100 * (src - src[length]) / src[length],
+  // na when either is na (ref_v6_ta_math.txt ta.roc; resin-harness dispute D12, settled for the
+  // manual). The oracle's own roc takes the difference over non-na bars only, which this test
+  // pinned before: bar 3 (length 2) was 100 * (12.5 - 10) / 11, the difference reaching past the na
+  // bar 2 to bar 0, and is now 100 * (12.5 - 11) / 11.
+  it("ta.roc is 100 * (src - src[length]) / src[length], na values included", () => {
     const s = {};
-    expectSeries(run((i) => rocVarLen(s, sna(i), B(i), N, i)), [
-      null, null, null, 22.727272727272727, 10.909090909090903, 17.272727272727277, 20.535714285714292, 8.928571428571429, 2.678571428571435, -14.75409836065573,
-    ]);
+    const expected = Array.from({ length: N }, (_, i) => {
+      const len = B(i);
+      if (i < len) return null;
+      const cur = sna(i);
+      const old = sna(i - len);
+      return Number.isNaN(cur) || Number.isNaN(old) ? null : (100 * (cur - old)) / old;
+    });
+    expect(expected[3]).toBeCloseTo(13.636363636363637, 12);
+    expectSeries(run((i) => rocVarLen(s, sna(i), B(i), N, i)), expected);
   });
 
   it("ta.cmo sums the rising and falling momenta over windows that follow the length", () => {

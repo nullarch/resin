@@ -1533,25 +1533,23 @@ export function changeVarLen(state: ExtremeVarLenState, value: number, length: n
 
 export interface RocVarLenState {
   src?: ExtremeVarLenState;
-  chg?: ExtremeVarLenState;
 }
 
-// ta.roc(source, length) with a series length: "100 * change(src, length) / src[length]"
-// (ref_v6_ta_math.txt ta.roc), as the oracle runs it (lib/ta.py roc): an na source returns first,
-// so the inner ta.change call site only sees the non-na bars and its `src[length]` counts those,
-// while the divisor src[length] is roc's own history of every bar. A zero divisor gives a
-// non-finite value, na on a plot, as the oracle's safe division does.
+// ta.roc(source, length) with a series length: "100 * change(src, length) / src[length]", where
+// "`na` values in the `source` series are included in calculations and will produce an `na` result"
+// (ref_v6_ta_math.txt ta.roc). One past value, the one `length` bars ago, in the difference and in
+// the divisor, exactly as the literal-length ta.roc reads it. resin used to follow the oracle's
+// composition here (its roc returns on an na source before its inner ta.change runs, so the
+// difference counted non-na bars and the divisor every bar); resin-harness dispute D12 settled that
+// for the manual, and the two forms of the call now agree (state/repros/ta.osc-seed-27.json). A zero
+// divisor gives a non-finite value, na on a plot.
 export function rocVarLen(state: RocVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
-  if (state.src === undefined) {
-    state.src = {};
-    state.chg = {};
-  }
+  if (state.src === undefined) state.src = {};
   const w = recordVarLen(state.src, value, barCount, barIdx);
   const len = Math.trunc(length);
-  if (!(len >= 1) || Number.isNaN(value)) return NaN;
-  const prev = len > w ? NaN : state.src.buffer![w - len]!;
-  const chg = changeVarLen(state.chg!, value, len, barCount, barIdx);
-  return (100 * chg) / prev;
+  if (!(len >= 1) || Number.isNaN(value) || len > w) return NaN;
+  const prev = state.src.buffer![w - len]!;
+  return (100 * (value - prev)) / prev;
 }
 
 export interface CmoVarLenState {
