@@ -649,6 +649,24 @@ describe("corpus diff: sample bar-by-bar replay against pine2py golden", () => {
     // resin-harness twin state/repros/stoch-wpr-na.json channels stoch_rsi/stoch_rsi_signal run
     // this script through the oracle. Floor moved to the observed matched 2303 / mismatch 612;
     // nothing else changed.
+    // Array/matrix semantics taken from the TradingView logs instead of pine2py (resin-bench h2h
+    // cases array_001/002/003/005/006/007/008, matrix_001): array.sum of an all-na array is na,
+    // stdev/variance/covariance of ONE valid element/pair are 0 with the default biased=true, a
+    // negative array.get/set/remove index counts from the end, array.percentile_linear_interpolation
+    // reads the 1-based position n * p / 100 + 0.5, array.percentrank ranks the element AT an index
+    // (pine2py counted the elements below a value), binary_search_rightmost answers the last
+    // duplicate of a hit (pine2py: the slot after it) and binary_search_leftmost the next smaller
+    // element of a miss (pine2py: the insertion point). Exactly fourteen hashes went matched ->
+    // mismatch (one more mismatch changed its first differing bar only):
+    //  - 389ebb6179d6, 88ac6c2451f3, ab6d4b4a6c4f: single-element stdev/variance/covariance 0 (pine2py na);
+    //  - 907767decaa9: all-na array.sum na (pine2py 0);
+    //  - 9fbff5eff357: a //@version=5 loop reading array.get(win, -1) on a one-element array, which
+    //    wraps to the last element where it used to read na (v5 halts on a negative index, so the
+    //    script cannot run on TradingView);
+    //  - 8abe14d5a618, 89df7a6e602f, 931f2b126e88: linear interpolation at fractional positions;
+    //  - 01afa7392785, 8e7db8d29dfb, 90fe5fd51b89: percentrank of a price passed as the index (na now);
+    //  - 59b12f8f3aa5, 80d8f003d63f: rightmost of a hit; c05a74af1be7: leftmost of a miss.
+    // (Those moves are recorded in the ledger below.)
     // The gate is the per-hash ledger (corpus/diff/status.json), not a count: a hash that moves in
     // either direction is a diff line someone has to read and justify, and a regression in one
     // script can no longer hide behind an improvement in another. The counts the comments above

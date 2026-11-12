@@ -121,10 +121,48 @@ function captureOpt(h: DrawingHandle, args: readonly unknown[], fields: Readonly
   }
 }
 
+// A chart.point value, as chart.point.new/from_index/from_time/now/copy build it. The drawing
+// constructors take one in place of the x/y coordinate pair(s) (the `first_point`/`second_point`,
+// `point` and `top_left`/`bottom_right` overloads of line.new/label.new/box.new), so they tell the
+// overloads apart by the first argument: a drawing handle never has a `price` field, a coordinate is
+// a number, and na is NaN or null.
+function isChartPoint(v: unknown): v is ChartPoint {
+  return typeof v === "object" && v !== null && !isDrawingHandle(v) && "price" in v;
+}
+
+// The x coordinate a chart.point gives a drawing: its index on xloc.bar_index (the default), its
+// time on xloc.bar_time (Pine manual, line.new/label.new/box.new `xloc`: "Determines whether the
+// first point's x coordinate is a bar index or a time"). A point that lacks the coordinate the xloc
+// names (chart.point.from_time on the default xloc, say) falls back to the one it has, and a point
+// with neither gives NaN (GOAL.md na convention).
+function chartPointX(point: ChartPoint | null | undefined, xloc: unknown): number {
+  if (point == null) return NaN;
+  const primary = xloc === "bar_time" ? point.time : point.index;
+  if (primary !== null && primary !== undefined) return primary;
+  const other = xloc === "bar_time" ? point.index : point.time;
+  return other !== null && other !== undefined ? other : NaN;
+}
+function chartPointY(point: ChartPoint | null | undefined): number {
+  return point != null && point.price !== null && point.price !== undefined ? point.price : NaN;
+}
+
 // label.new(x, y, text, ...) — x/y series int/float(필수), text series string(기본 "").
+// label.new(point, text, ...) takes a chart.point for x and y; every later parameter moves one
+// place to the left (Pine manual, label.new overloads).
 // viz S4: 표시용 파라미터(DRAWING_STATE_PARAM_NAMES "label.new" 순서)도 캡처한다.
 export function newLabel(...args: unknown[]): DrawingHandle {
   const h = newHandle("label");
+  if (isChartPoint(args[0])) {
+    const xloc = args[2];
+    h.state.x = chartPointX(args[0], xloc);
+    h.state.y = chartPointY(args[0]);
+    h.state.text = args.length > 1 ? strArg(args, 1) : "";
+    captureOpt(h, args, [
+      ["xloc", 2, "str"], ["yloc", 3, "str"], ["color", 4, "str"], ["style", 5, "str"],
+      ["textcolor", 6, "str"], ["size", 7, "str"], ["textalign", 8, "str"], ["tooltip", 9, "str"],
+    ]);
+    return h;
+  }
   h.state.x = numArg(args, 0);
   h.state.y = numArg(args, 1);
   h.state.text = args.length > 2 ? strArg(args, 2) : "";
@@ -135,8 +173,22 @@ export function newLabel(...args: unknown[]): DrawingHandle {
   return h;
 }
 // line.new(x1, y1, x2, y2, ...) — 전부 series int/float 필수(기본값 없음).
+// line.new(first_point, second_point, xloc, extend, color, style, width) takes two chart.points.
 export function newLine(...args: unknown[]): DrawingHandle {
   const h = newHandle("line");
+  if (isChartPoint(args[0]) || isChartPoint(args[1])) {
+    const xloc = args[2];
+    const first = isChartPoint(args[0]) ? args[0] : null;
+    const second = isChartPoint(args[1]) ? args[1] : null;
+    h.state.x1 = chartPointX(first, xloc);
+    h.state.y1 = chartPointY(first);
+    h.state.x2 = chartPointX(second, xloc);
+    h.state.y2 = chartPointY(second);
+    captureOpt(h, args, [
+      ["xloc", 2, "str"], ["extend", 3, "str"], ["color", 4, "str"], ["style", 5, "str"], ["width", 6, "num"],
+    ]);
+    return h;
+  }
   h.state.x1 = numArg(args, 0);
   h.state.y1 = numArg(args, 1);
   h.state.x2 = numArg(args, 2);
@@ -147,8 +199,24 @@ export function newLine(...args: unknown[]): DrawingHandle {
   return h;
 }
 // box.new(left, top, right, bottom, ...) — 전부 series int/float 필수(기본값 없음).
+// box.new(top_left, bottom_right, border_color, ...) takes two chart.points: the first gives left
+// and top, the second right and bottom.
 export function newBox(...args: unknown[]): DrawingHandle {
   const h = newHandle("box");
+  if (isChartPoint(args[0]) || isChartPoint(args[1])) {
+    const xloc = args[6];
+    const topLeft = isChartPoint(args[0]) ? args[0] : null;
+    const bottomRight = isChartPoint(args[1]) ? args[1] : null;
+    h.state.left = chartPointX(topLeft, xloc);
+    h.state.top = chartPointY(topLeft);
+    h.state.right = chartPointX(bottomRight, xloc);
+    h.state.bottom = chartPointY(bottomRight);
+    captureOpt(h, args, [
+      ["border_color", 2, "str"], ["border_width", 3, "num"], ["border_style", 4, "str"],
+      ["extend", 5, "str"], ["xloc", 6, "str"], ["bgcolor", 7, "str"], ["text", 8, "str"],
+    ]);
+    return h;
+  }
   h.state.left = numArg(args, 0);
   h.state.top = numArg(args, 1);
   h.state.right = numArg(args, 2);
@@ -231,6 +299,11 @@ export function labelSetXy(h: unknown, x: number, y: number): undefined {
 export function labelSetText(h: unknown, text: string | null): undefined {
   return setStrField(h, "text", text);
 }
+// label.set_point(id, point) — x from the point's index or time by the label's xloc, y from its price.
+export function labelSetPoint(h: unknown, point: ChartPoint | null | undefined): undefined {
+  setNumField(h, "x", chartPointX(point, strField(h, "xloc")));
+  return setNumField(h, "y", chartPointY(point));
+}
 
 export function lineGetX1(h: unknown): number {
   return numField(h, "x1");
@@ -274,24 +347,14 @@ export function lineSetXy2(h: unknown, x2: number, y2: number): undefined {
   setNumField(h, "x2", x2);
   return setNumField(h, "y2", y2);
 }
-// set_first_point/set_second_point(id, point) — point는 ChartPoint({time,index,price}). xloc이
-// bar_index/bar_time 어느 쪽이든 실사용 wild는 index 축이 절대다수라 index를 우선하고, index가
-// 없을 때만 time으로 폴백(둘 다 없으면 NaN — GOAL.md na 규약).
-function chartPointX(point: ChartPoint | null | undefined): number {
-  if (point == null) return NaN;
-  if (point.index !== null) return point.index;
-  if (point.time !== null) return point.time;
-  return NaN;
-}
-function chartPointY(point: ChartPoint | null | undefined): number {
-  return point != null && point.price !== null ? point.price : NaN;
-}
+// set_first_point/set_second_point(id, point) — the point's index or time by the line's xloc
+// (chartPointX); a line made without one is on xloc.bar_index.
 export function lineSetFirstPoint(h: unknown, point: ChartPoint | null | undefined): undefined {
-  setNumField(h, "x1", chartPointX(point));
+  setNumField(h, "x1", chartPointX(point, strField(h, "xloc")));
   return setNumField(h, "y1", chartPointY(point));
 }
 export function lineSetSecondPoint(h: unknown, point: ChartPoint | null | undefined): undefined {
-  setNumField(h, "x2", chartPointX(point));
+  setNumField(h, "x2", chartPointX(point, strField(h, "xloc")));
   return setNumField(h, "y2", chartPointY(point));
 }
 
@@ -332,11 +395,11 @@ export function boxSetRightbottom(h: unknown, right: number, bottom: number): un
 // 헬퍼를 그대로 재사용한 hand-verified 이식: point의 x축(index 우선, time 폴백)을 left/right에,
 // price를 top/bottom에 쓴다.
 export function boxSetTopLeftPoint(h: unknown, point: ChartPoint | null | undefined): undefined {
-  setNumField(h, "left", chartPointX(point));
+  setNumField(h, "left", chartPointX(point, strField(h, "xloc")));
   return setNumField(h, "top", chartPointY(point));
 }
 export function boxSetBottomRightPoint(h: unknown, point: ChartPoint | null | undefined): undefined {
-  setNumField(h, "right", chartPointX(point));
+  setNumField(h, "right", chartPointX(point, strField(h, "xloc")));
   return setNumField(h, "bottom", chartPointY(point));
 }
 
@@ -364,8 +427,11 @@ export function chartPointFromTime(time = 0, price = 0.0): ChartPoint {
   return { time, index: null, price };
 }
 
-export function chartPointNow(price = 0.0): ChartPoint {
-  return { time: null, index: null, price };
+// chart.point.now(price): "the current bar's time and index" (Pine manual). The compiled call passes
+// the running context's bar index and bar time (codegen genCallExpr); a direct call without them (a
+// runtime unit test) has no bar to name and leaves both na.
+export function chartPointNow(price = 0.0, index?: number, time?: number): ChartPoint {
+  return { time: time ?? null, index: index ?? null, price };
 }
 
 export function chartPointCopy(point?: ChartPoint | null): ChartPoint {

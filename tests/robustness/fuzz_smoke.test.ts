@@ -258,7 +258,9 @@ const HOSTILE: Hostile[] = [
   { name: "matrix.new 1e5 x 1e5", src: () => H + "m = matrix.new<float>(100000, 100000, 0.0)\nplot(matrix.rows(m))\n", expect: { kind: "limit", limit: "size" } },
   { name: "str.repeat 2e9", src: () => H + 'plot(str.length(str.repeat("ab", 2000000000)))\n', expect: { kind: "limit", limit: "size" } },
   { name: "ta.sma window 1e8", src: () => H + "plot(ta.sma(close, 100000000))\n", expect: { kind: "limit", limit: "size" } },
-  { name: "ta.highest window that grows with bar_index", src: () => H + "plot(ta.highest(close, bar_index * 100000000))\n", expect: { kind: "limit", limit: "size" } },
+  // A series length reads the per-bar history (one slot per bar of the run), so a length far past
+  // the data allocates nothing of its own size: the run completes.
+  { name: "ta.highest window that grows with bar_index", src: () => H + "plot(ta.highest(close, bar_index * 100000000))\n", expect: { kind: "accept" } },
 ];
 
 const STACK = /Maximum call stack size exceeded/;

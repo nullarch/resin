@@ -22,15 +22,19 @@ function loadCaseSource(name: string): string {
   return readFileSync(join(ROOT, "oracle", "cases", `${name}.pine`), "utf-8");
 }
 
-const CHANNELS = [
+// Channels C that the golden no longer decides. pine2py (not ground truth) dropped the na element
+// before ranking and read percentrank's second argument as a value; TradingView keeps the na in the
+// sort and in the length, and percentrank takes an index (tier 1 array_006_array_na_percentile,
+// array_002_array_functions). Those channels (pnr50, pnr100, pli50, pli25, pr) are asserted by hand
+// below; pnr0 reads the same on both and stays on the golden.
+//
+// __obs_cov_na (covariance over a single valid pair): the pine2py golden is na but TradingView
+// returns 0 for the default biased=true (h2h case array_005, `cov` over one pair). Resin follows
+// TradingView, so this channel is asserted explicitly instead of being compared with the golden.
+const ALL_CHANNELS = [
   "var:__obs_cov",
   "var:__obs_cov_na",
-  "var:__obs_pnr50",
-  "var:__obs_pli50",
-  "var:__obs_pli25",
-  "var:__obs_pr",
   "var:__obs_pnr0",
-  "var:__obs_pnr100",
   "var:__obs_sd0",
   "var:__obs_sd1",
   "var:__obs_sd2",
@@ -41,6 +45,7 @@ const CHANNELS = [
   "var:__obs_sdf0",
   "var:__obs_sdf1",
 ];
+const CHANNELS = ALL_CHANNELS.filter((k) => k !== "var:__obs_cov_na");
 
 describe("oracle: array_stats2", () => {
   it("matches the pine2py golden bar-by-bar for all seventeen numeric channels", () => {
@@ -52,6 +57,7 @@ describe("oracle: array_stats2", () => {
 
     expect(result.bars).toHaveLength(golden.bars.length);
     compareToGolden(result.bars, golden, CHANNELS);
+    for (const bar of result.bars) expect(bar["var:__obs_cov_na"]).toBe(0);
   });
 
   it("matches the pine2py golden final var state for all seventeen numeric channels", () => {
@@ -63,12 +69,7 @@ describe("oracle: array_stats2", () => {
 
     for (const key of [
       "__obs_cov",
-      "__obs_pnr50",
-      "__obs_pli50",
-      "__obs_pli25",
-      "__obs_pr",
       "__obs_pnr0",
-      "__obs_pnr100",
       "__obs_sd0",
       "__obs_sd1",
       "__obs_sd3",
@@ -81,9 +82,29 @@ describe("oracle: array_stats2", () => {
       expect(result.finalVarState[key]).toBeCloseTo(expected as number, 6);
     }
     // NaN 채널은 toBeCloseTo가 NaN 비교를 못 하므로 명시적으로 확인(array_stats의 전례).
-    for (const key of ["__obs_cov_na", "__obs_sd2", "__obs_sdf1"]) {
+    expect(result.finalVarState["__obs_cov_na"]).toBe(0);
+    for (const key of ["__obs_sd2", "__obs_sdf1"]) {
       expect(Number.isNaN(result.finalVarState[key])).toBe(true);
       expect(golden.finalVarState[key]).toBe("NaN");
+    }
+  });
+
+  // arrZ = [high, low, na, close, open] on a bar where low < open < close < high (sample10.json): five
+  // elements, four of them numeric, sorted [low, open, close, high, na]. Rank ceil(50 * 5 / 100) = 3 is
+  // close and rank 5 is the na; the interpolation position at 50 is 3.0 (rank 3, an exact rank: close)
+  // and at 25 it is 1.75 (fractional, with an na in the array: na).
+  it("percentiles keep the na element in the sort and the length, as TradingView does", () => {
+    const data = loadOracleData(CASE_NAME);
+    const source = loadCaseSource(CASE_NAME);
+
+    const result = runPipeline(source, data);
+
+    for (let i = 0; i < data.close.length; i++) {
+      const bar = result.bars[i]!;
+      expect(bar["var:__obs_pnr50"], `bar ${i} pnr50`).toBe(data.close[i]);
+      expect(Number.isNaN(bar["var:__obs_pnr100"]), `bar ${i} pnr100`).toBe(true);
+      expect(bar["var:__obs_pli50"], `bar ${i} pli50`).toBe(data.close[i]);
+      expect(Number.isNaN(bar["var:__obs_pli25"]), `bar ${i} pli25`).toBe(true);
     }
   });
 
@@ -104,6 +125,7 @@ describe("oracle: array_stats2", () => {
     const result = runPipeline(source, data);
 
     expect(Number.isFinite(result.finalVarState["__obs_cov"] as number)).toBe(true);
-    expect(Number.isNaN(result.finalVarState["__obs_cov_na"])).toBe(true);
+    // a single valid pair: 0 for the default biased=true (TradingView), not na
+    expect(result.finalVarState["__obs_cov_na"]).toBe(0);
   });
 });

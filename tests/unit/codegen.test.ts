@@ -827,14 +827,14 @@ describe("CodeGen", () => {
     expect(code).toBe("var x = rt.ta.rci($.taSlots[0], $.close.get(0), 9, $.idx);");
   });
 
-  it("emits ta.linreg call through $.taSlots[slot] (no codegen special-casing — 3 args pass through in order)", () => {
+  it("emits ta.linreg call through $.taSlots[slot]: the 3 args in order, then the bar index the fixed-length ring is addressed by", () => {
     const code = codegenSource("x = ta.linreg(close, 4, 0)");
-    expect(code).toBe("var x = rt.ta.linreg($.taSlots[0], $.close.get(0), 4, 0);");
+    expect(code).toBe("var x = rt.ta.linreg($.taSlots[0], $.close.get(0), 4, 0, $.idx);");
   });
 
-  it("emits ta.linreg(source, length) 2-argument form with no offset arg (JS default parameter fills 0, C252)", () => {
+  it("emits ta.linreg(source, length) 2-argument form with the offset padded to 0 before the bar index (C252)", () => {
     const code = codegenSource("x = ta.linreg(close, 4)");
-    expect(code).toBe("var x = rt.ta.linreg($.taSlots[0], $.close.get(0), 4);");
+    expect(code).toBe("var x = rt.ta.linreg($.taSlots[0], $.close.get(0), 4, 0, $.idx);");
   });
 
   it("emits ta.vwma call with the implicit volume arg spliced between source and length", () => {
@@ -2352,7 +2352,7 @@ describe("CodeGen", () => {
       "var float __obs_pli = na",
       "__obs_pli := array.percentile_linear_interpolation(a, 25.0)",
       "var float __obs_pr = na",
-      "__obs_pr := array.percentrank(a, 3.0)",
+      "__obs_pr := array.percentrank(a, 2)",
       "sdArr = array.standardize(a)",
       "var float __obs_sd1 = na",
       "__obs_sd1 := array.get(sdArr, 0)",
@@ -2367,9 +2367,11 @@ describe("CodeGen", () => {
     // a=[1,2,3,4,5], b=[2,4,5,4,6] — python(pine2py wa.covariance) 사전 검증: covariance=1.6.
     expect(bars[0]!["var:__obs_cov"]).toBeCloseTo(1.6, 9);
     expect(bars[0]!["var:__obs_pnr"]).toBe(3);
-    expect(bars[0]!["var:__obs_pli"]).toBe(2);
-    // percentrank(a, 3.0): a에서 3.0 미만인 원소는 [1,2] 2개 -> 2/5*100=40.
-    expect(bars[0]!["var:__obs_pr"]).toBe(40);
+    // The 1-based position is n * p / 100 + 0.5 = 1.75: three quarters of the way from 1 to 2.
+    expect(bars[0]!["var:__obs_pli"]).toBe(1.75);
+    // percentrank(a, 2) ranks the element at index 2 (value 3): three elements are <= 3, so
+    // (3 - 1) * 100 / (5 - 1) = 50.
+    expect(bars[0]!["var:__obs_pr"]).toBe(50);
     // standardize(a): mean=3, sd=sqrt(2) -> 첫 원소(1.0) z-score = (1-3)/sqrt(2).
     expect(bars[0]!["var:__obs_sd1"]).toBeCloseTo((1 - 3) / Math.sqrt(2), 9);
   });
@@ -2536,7 +2538,7 @@ describe("CodeGen", () => {
     expect(bars[0]!["var:__obs_reversed0"]).toBe(1);
   });
 
-  it("transpile() end-to-end: slice/concat/copy observe the expected new-array contents and leave the source array untouched", () => {
+  it("transpile() end-to-end: slice/copy observe new-array contents, concat grows its first array in place", () => {
     const source = [
       "var a = array.new_float(0)",
       "array.push(a, 1.0)",
@@ -2571,12 +2573,13 @@ describe("CodeGen", () => {
     // slice(a,1) on [1,2,3] -> [2,3].
     expect(bars[0]!["var:__obs_slice0"]).toBe(2);
     expect(bars[0]!["var:__obs_slice_size"]).toBe(2);
-    // concat([1,2,3],[9]) -> size 4, last element 9.
+    // concat([1,2,3],[9]) appends in place and returns the first array: size 4, last element 9, and
+    // `a` itself is now [1,2,3,9].
     expect(bars[0]!["var:__obs_concat_size"]).toBe(4);
     expect(bars[0]!["var:__obs_concat_last"]).toBe(9);
-    // copy(a) then push 99 -> copy grows to 4, original a stays at 3 (independent reference).
-    expect(bars[0]!["var:__obs_copy_size"]).toBe(4);
-    expect(bars[0]!["var:__obs_src_size"]).toBe(3);
+    // copy(a) then push 99 -> the copy grows to 5, the original a stays at 4 (independent reference).
+    expect(bars[0]!["var:__obs_copy_size"]).toBe(5);
+    expect(bars[0]!["var:__obs_src_size"]).toBe(4);
   });
 
   // ── na(null) 컨테이너 self 인자 codegen 수정(C217, C216 부수 발견 버그) — array/map/matrix.*
@@ -3271,13 +3274,15 @@ describe("CodeGen", () => {
       "__obs_fill_untouched := matrix.get(m, 0, 2)",
       "var float __obs_copy_independent = na",
       "__obs_copy_independent := matrix.get(mcopy, 0, 0)",
-      // reverse: row order flips.
+      // reverse: rows AND columns flip (180 degree rotation, TradingView).
       "matrix.reverse(m)",
       "var float __obs_reverse_top = na",
       "__obs_reverse_top := matrix.get(m, 0, 0)",
-      // concat rows: 2x3 + 1x3 -> 3x3.
+      // concat rows: 2x3 + 1x3 -> 3x3, appended IN PLACE to its first argument (here a copy, so m
+      // itself stays 2x3 for the reshape below) and returned.
       "mrow = matrix.new<float>(1, 3, 7.0)",
-      "mcat = matrix.concat(m, mrow)",
+      "mbase = matrix.copy(m)",
+      "mcat = matrix.concat(mbase, mrow)",
       "var float __obs_concat_rows = na",
       "__obs_concat_rows := matrix.rows(mcat)",
       "var float __obs_concat_last = na",
@@ -3288,12 +3293,16 @@ describe("CodeGen", () => {
       "__obs_submatrix_rows := matrix.rows(msub)",
       "var float __obs_submatrix_cols = na",
       "__obs_submatrix_cols := matrix.columns(msub)",
-      // reshape: 2x3 -> 3x2 (row-major flatten then re-slice).
-      "mreshape = matrix.reshape(m, 3, 2)",
+      // reshape: 2x3 -> 3x2 IN PLACE (row-major flatten then re-slice; TradingView returns void).
+      "matrix.reshape(m, 3, 2)",
       "var float __obs_reshape_00 = na",
-      "__obs_reshape_00 := matrix.get(mreshape, 0, 0)",
-      "var float __obs_reshape_12 = na",
-      "__obs_reshape_12 := matrix.get(mreshape, 1, 1)",
+      "__obs_reshape_00 := matrix.get(m, 0, 0)",
+      "var float __obs_reshape_11 = na",
+      "__obs_reshape_11 := matrix.get(m, 1, 1)",
+      "var float __obs_reshape_rows = na",
+      "__obs_reshape_rows := matrix.rows(m)",
+      "var float __obs_mbase_rows = na",
+      "__obs_mbase_rows := matrix.rows(mbase)",
       // sort: ascending by column 0.
       "matrix.sort(m, 0, order.ascending)",
       "var float __obs_sort_top = na",
@@ -3315,21 +3324,24 @@ describe("CodeGen", () => {
     expect(bars[0]!["var:__obs_fill_untouched"]).toBe(2);
     // copy taken before fill mutated m -> still holds the original (0,0)=3.
     expect(bars[0]!["var:__obs_copy_independent"]).toBe(3);
-    // after fill: [[9,9,2],[6,4,5]] -> reverse -> [[6,4,5],[9,9,2]] -> top(0,0)=6.
-    expect(bars[0]!["var:__obs_reverse_top"]).toBe(6);
-    // concat rows: [[6,4,5],[9,9,2]] + [[7,7,7]] -> 3 rows, last row first col = 7.
+    // after fill: [[9,9,2],[6,4,5]] -> reverse rows+columns -> [[5,4,6],[2,9,9]] -> top(0,0)=5.
+    expect(bars[0]!["var:__obs_reverse_top"]).toBe(5);
+    // concat rows: [[5,4,6],[2,9,9]] + [[7,7,7]] -> 3 rows, last row first col = 7; the first argument
+    // (the copy) grew in place and is the returned matrix.
     expect(bars[0]!["var:__obs_concat_rows"]).toBe(3);
+    expect(bars[0]!["var:__obs_mbase_rows"]).toBe(3);
     expect(bars[0]!["var:__obs_concat_last"]).toBe(7);
     // submatrix(mcat, 0, 1, 0, 2) -> 1x2 block.
     expect(bars[0]!["var:__obs_submatrix_rows"]).toBe(1);
     expect(bars[0]!["var:__obs_submatrix_cols"]).toBe(2);
-    // reshape [[6,4,5],[9,9,2]] (flat [6,4,5,9,9,2]) into 3x2 -> [[6,4],[5,9],[9,2]].
-    expect(bars[0]!["var:__obs_reshape_00"]).toBe(6);
-    expect(bars[0]!["var:__obs_reshape_12"]).toBe(9);
-    // sort m=[[6,4,5],[9,9,2]] ascending by column 0 -> [[6,4,5],[9,9,2]] already ascending, top stays 6.
-    expect(bars[0]!["var:__obs_sort_top"]).toBe(6);
-    // diff of sorted m: row1-row0 = [9-6,9-4,2-5] = [3,5,-3].
-    expect(bars[0]!["var:__obs_diff_00"]).toBe(3);
+    // reshape m [[5,4,6],[2,9,9]] (flat [5,4,6,2,9,9]) into 3x2 in place -> [[5,4],[6,2],[9,9]].
+    expect(bars[0]!["var:__obs_reshape_00"]).toBe(5);
+    expect(bars[0]!["var:__obs_reshape_11"]).toBe(2);
+    expect(bars[0]!["var:__obs_reshape_rows"]).toBe(3);
+    // sort m ascending by column 0 -> already ascending, top stays 5.
+    expect(bars[0]!["var:__obs_sort_top"]).toBe(5);
+    // 1-argument diff (adjacent rows, pre-existing extension): row1-row0 = [6-5,2-4] -> (0,0) = 1.
+    expect(bars[0]!["var:__obs_diff_00"]).toBe(1);
   });
 
   // ── matrix.is_square/is_symmetric/is_antisymmetric/is_diagonal/is_antidiagonal/is_identity/
@@ -3700,9 +3712,9 @@ describe("CodeGen", () => {
     expect(codegenSource("[m, u, l] = ta.bb(close, 4, 2)")).not.toContain("VarLen");
   });
 
-  it("keeps emitting the state-fixed rt.ta.linreg with the JS-default omitted offset for a literal length (C550 — 고정 경로 출력 바이트 불변)", () => {
+  it("emits the fixed-length rt.ta.linreg (not the VarLen one) for a literal length, offset padded, bar index last (C550)", () => {
     const code = codegenSource("x = ta.linreg(close, 4)");
-    expect(code).toBe("var x = rt.ta.linreg($.taSlots[0], $.close.get(0), 4);");
+    expect(code).toBe("var x = rt.ta.linreg($.taSlots[0], $.close.get(0), 4, 0, $.idx);");
   });
 
   it("emits math.sum through sumVarLen with trailing $.barCount, $.idx when length is a series expression (C551 — VARLEN_RT_PATHS 확장)", () => {
@@ -4109,7 +4121,7 @@ describe("CodeGen", () => {
         "var d = rt.ta.rma($.taSlots[3], $.close.get(0), 3);",
         "var e = rt.ta.wma($.taSlots[4], $.close.get(0), 3);",
         "var u = rt.ta.hma($.taSlots[5], $.close.get(0), 4);",
-        "var v = rt.ta.linreg($.taSlots[6], $.close.get(0), 4, 0);",
+        "var v = rt.ta.linreg($.taSlots[6], $.close.get(0), 4, 0, $.idx);",
         "var f = rt.ta.vwma($.taSlots[7], $.close.get(0), $.volume.get(0), 3);",
         "var g = rt.ta.swma($.taSlots[8], $.close.get(0));",
         "var h = rt.fixnan($.taSlots[9], $.open.get(0));",
@@ -20956,9 +20968,14 @@ describe("CodeGen timestamp() bare builtin (C210)", () => {
     expect(rt.timestamp(2024, 1, 15)).toBe(1705276800000);
   });
 
-  it("hand-verified: the timezone-string overload ignores tz entirely and always computes as UTC (matches pine2py exactly — tz_str is unpacked but never consumed)", () => {
-    expect(rt.timestamp("Asia/Seoul", 2024, 1, 15, 12, 30, 45)).toBe(rt.timestamp(2024, 1, 15, 12, 30, 45));
-    expect(rt.timestamp("America/New_York", 2024, 1, 15)).toBe(rt.timestamp(2024, 1, 15));
+  it("the timezone-string overload reads the components as that zone's wall clock (pine2py ignored the zone; TradingView does not: tier 1 base_001_time)", () => {
+    const utc = rt.timestamp(2024, 1, 15, 12, 30, 45);
+    expect(rt.timestamp("Asia/Seoul", 2024, 1, 15, 12, 30, 45)).toBe(utc - 9 * 3600000);
+    expect(rt.timestamp("America/New_York", 2024, 1, 15)).toBe(rt.timestamp(2024, 1, 15) + 5 * 3600000);
+    expect(rt.timestamp("GMT+6", 2016, 1, 19, 9, 30)).toBe(1453174200000);
+    expect(rt.timestamp("GMT+3", 2019, 6, 19, 9, 30, 15)).toBe(1560925815000);
+    expect(rt.timestamp("UTC-5:30", 2024, 1, 15, 12)).toBe(rt.timestamp(2024, 1, 15, 17, 30));
+    expect(rt.timestamp("UTC", 2024, 1, 15, 12)).toBe(rt.timestamp(2024, 1, 15, 12));
   });
 
   it("hand-verified: the tz-string overload defaults day to 1 when omitted, matching pine2py's asymmetric default (plain overload has no such default — day is required there)", () => {
@@ -26390,9 +26407,9 @@ describe("CodeGen chart.point.* (C229)", () => {
     expect(code).toBe("var p = rt.chart.point.from_time($.idx, $.close.get(0));");
   });
 
-  it("codegens chart.point.now(price) as rt.chart.point.now(...)", () => {
+  it("codegens chart.point.now(price) as rt.chart.point.now(...) and hands it the bar's index and time", () => {
     const code = codegenSource("p = chart.point.now(close)");
-    expect(code).toBe("var p = rt.chart.point.now($.close.get(0));");
+    expect(code).toBe("var p = rt.chart.point.now($.close.get(0), $.idx, $.barTimeMs);");
   });
 
   it("codegens chart.point.copy(point) as rt.chart.point.copy(...)", () => {

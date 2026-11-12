@@ -11,6 +11,7 @@
 import { runtimeError } from "./log";
 import { checkedLength } from "./limits";
 import { zoneOffsetMs } from "./datetime";
+import { isIntArray } from "./array-kind";
 
 // str.length — pine2py wavealgo.builtins.str_funcs.length는 `len(source) if source else 0`로
 // None(na)/빈 문자열을 동일하게 0으로 처리하는 명시적 가드를 갖고 있다(다른 str.* 함수와 달리
@@ -256,6 +257,22 @@ function countChar(s: string, ch: string): number {
   return n;
 }
 
+// A DecimalFormat integer pattern's grouping size: the digits after its last ',' ("#,##0" is 3,
+// "#,##,##0" is 3, "#,##0.###" is read on the part before the point), 0 when it has no ','.
+function groupingSize(intPattern: string): number {
+  const comma = intPattern.lastIndexOf(",");
+  return comma < 0 ? 0 : intPattern.length - comma - 1;
+}
+
+// Integer digits with ',' between groups of `size` (the oracle's _group_digits).
+function groupDigits(digits: string, size: number): string {
+  if (size <= 0 || digits.length <= size) return digits;
+  const head = digits.length % size || size;
+  const parts = [digits.slice(0, head)];
+  for (let i = head; i < digits.length; i += size) parts.push(digits.slice(i, i + size));
+  return parts.join(",");
+}
+
 function stripTrailing(s: string, ch: string): string {
   let end = s.length;
   while (end > 0 && s[end - 1] === ch) end--;
@@ -314,11 +331,19 @@ function formatMask(value: number, pattern: string, decimalFormat: boolean): str
   } else if (requiredDecimals > 0 && result.startsWith("0.")) {
     result = result.slice(1);
   }
+  const group = groupingSize(before);
+  if (group > 0) {
+    const dot = result.indexOf(".");
+    result = dot < 0 ? groupDigits(result, group) : groupDigits(result.slice(0, dot), group) + result.slice(dot);
+  }
   return prefix + result + suffix;
 }
 
 const TOSTRING_DEFAULT_FORMAT = "#.##########";
-const DECIMAL_FORMAT_DEFAULT = "#.###";
+// MessageFormat's number style ({0} and {0,number}): NumberFormat.getInstance, '#,##0.###', so a
+// value of 1000 or more is grouped ("-18,189.894"; tier 1 ta_243_variance_stdev_exact, TradingView's
+// own log text). A pattern the script writes itself ('#.###', '#,###.##') groups only if it has a ','.
+const DECIMAL_FORMAT_DEFAULT = "#,##0.###";
 
 // str.tostring(value, format): the chart number formatter above on the mask (default
 // '#.##########', so 1.0 is "1" and 1.23456789012 is "1.2345678901"), "true"/"false" for a bool
@@ -604,7 +629,8 @@ const NUMBER_STYLES = new Set(["integer", "currency", "percent", "mintick", "vol
 
 // A `number` placeholder with a keyword style, DecimalFormat's renderings (the oracle's
 // _format_number_general with decimal_format): integer rounds half-even, currency and price are
-// "$" with grouping and two places rounded half-up on the shortest digits, percent multiplies by
+// "$" with grouping and two places rounded half-up on the shortest digits, integer and percent are
+// '#,##0' and '#,##0%' (grouped from 1000: 1340000 is "1,340,000"), percent multiplying by
 // 100 without places (tier 1 str_010_format: 1.34 "1", 1.52 "2", 1.34 "$1.34", 1340000
 // "$1,340,000.00", 0.5 "50%"). An infinity keeps the style's affixes around "∞".
 // Not covered: mintick and inherit need the symbol's tick and the script precision, which do not
@@ -623,10 +649,15 @@ function formatNumberStyle(value: number, keyword: string): string {
     return String(Math.trunc(value));
   }
   if (keyword === "integer") {
-    const r = roundDecimal(exactDecimal(Math.abs(value)), 0, true);
+    const r = groupDigits(roundDecimal(exactDecimal(Math.abs(value)), 0, true), 3);
     return value < 0 && r !== "0" ? "-" + r : r;
   }
-  if (keyword === "percent") return fixedExact(value * 100, 0) + "%";
+  if (keyword === "percent") {
+    // DecimalFormat '#,##0%'
+    const r = fixedExact(value * 100, 0);
+    const negative = r.startsWith("-");
+    return (negative ? "-" : "") + groupDigits(negative ? r.slice(1) : r, 3) + "%";
+  }
   if (keyword === "price" || keyword === "currency") {
     const [intText, decimalPart] = roundDecimal(shortestDecimal(Math.abs(value)), 2, false).split(".") as [string, string];
     const grouped = intText.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -651,8 +682,8 @@ function formatDecimal(value: number, pattern: string): string {
 type FormatArg = number | string | boolean | null | undefined | unknown[];
 
 // An argument of a placeholder without the `number` type (the oracle's _format_value): a string
-// as is, a number through DecimalFormat's default pattern '#.###' (`str.format("{0}", 1.23456789)`
-// is "1.235", tier 1 str_010_format), a bool "true"/"false", na "NaN", an array "[a, b]" (tier 1
+// as is, a number through MessageFormat's default pattern '#,##0.###' (`str.format("{0}", 1.23456789)`
+// is "1.235", tier 1 str_010_format; 18189.894 is "18,189.894"), a bool "true"/"false", na "NaN", an array "[a, b]" (tier 1
 // str_001_functions: `str.split("Hello World!", " ")` prints "[Hello, World!]"; the oracle prints
 // the numbers of a list with Python's str()).
 function formatValue(value: FormatArg): string {
@@ -661,11 +692,13 @@ function formatValue(value: FormatArg): string {
   if (typeof value === "boolean") return value ? "true" : "false";
   if (typeof value === "number") return formatDecimal(value, DECIMAL_FORMAT_DEFAULT);
   if (Array.isArray(value)) {
+    // An array<int> prints "[1, 0]" and an array<float> "[1.0, 0.0]" (array-kind.ts).
+    const intKind = isIntArray(value);
     return "[" + value.map((x) => {
       if (x === null || x === undefined || (typeof x === "number" && Number.isNaN(x))) return "NaN";
       if (typeof x === "string") return x;
       if (typeof x === "boolean") return x ? "true" : "false";
-      if (typeof x === "number") return pyFloatStr(x);
+      if (typeof x === "number") return intKind && Number.isInteger(x) ? String(x) : pyFloatStr(x);
       return String(x);
     }).join(", ") + "]";
   }

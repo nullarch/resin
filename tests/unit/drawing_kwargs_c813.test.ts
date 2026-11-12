@@ -199,7 +199,8 @@ describe("C813 회귀 가드 — 표에 없는 kwarg는 기존과 동일하게 �
     expect(obs(t)).toEqual([3, 3, 3, 3, 3]);
   });
 
-  it("chart.point 오버로드 kwarg(first_point=/second_point=)는 범위 밖이라 현행 유지(na)", () => {
+  it("chart.point 오버로드 kwarg(first_point=/second_point=)도 이제 살아남는다(DRAWING_POINT_PARAM_NAMES)", () => {
+    // Pinned NaN before the chart.point overloads were implemented (tests/unit/chart_point_drawings.test.ts).
     const s = src(
       "var float __obs = na",
       "p1 = chart.point.from_index(0, 1.0)",
@@ -207,7 +208,7 @@ describe("C813 회귀 가드 — 표에 없는 kwarg는 기존과 동일하게 �
       "ln = line.new(first_point=p1, second_point=p2)",
       "__obs := line.get_y2(ln)",
     );
-    expect(obs(s).every((v) => Number.isNaN(v))).toBe(true);
+    expect(obs(s)).toEqual([5, 5, 5, 5, 5]);
   });
 });
 

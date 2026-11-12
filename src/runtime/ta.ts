@@ -554,47 +554,46 @@ export function ao(state: AoState, hl2: number): number {
 }
 
 export interface LinregState {
-  buf?: Float64Array; // the non-na sources in arrival order, read modulo buf.length
-  size?: number; // non-na sources stored so far
-  count?: number; // warm-up counter: one more per stored source while it is below the length
-  val?: number; // the last full-window value, held while the source is na
+  // The fixed-length ring (linreg): `capacity` slots addressed by the chart bar, a slot no call has
+  // written holding 0.
+  capacity?: number;
+  window?: number[];
+  calls?: number; // the bar clock of a caller that gives no bar index (every call a new bar)
   constLen?: number; // the length sumX/denom were accumulated for
   sumX?: number;
   denom?: number;
+  // The series-length history (linregVarLen): one slot per chart bar, `firstBar` the bar of the first call.
+  history?: Float64Array;
+  firstBar?: number;
+  lastBar?: number;
 }
 
 // ta.linreg - TradingView's least-squares line. ref_v6_ta_math.txt "ta.linreg": "linreg = intercept +
 // slope * (length - 1 - offset), where intercept and slope are the values calculated with the least
-// squares method on `source` series" — the line is evaluated `offset` bars BACK from the newest bar
+// squares method on `source` series" - the line is evaluated `offset` bars BACK from the newest bar
 // (resin had pine2py's `n - 1 + offset`, projecting forward; tier 1 resin-harness
 // suites/indicators/tv/ta_181_linreg: linreg(close, 20, 10) is 1.06784563158 on bar 19, resin had
-// 1.06596036842). The rest is the oracle's TradingView-measured machine (PyneCore lib/ta.py linreg):
+// 1.06596036842). The rest is the oracle's TradingView-measured machine (PyneCore lib/ta.py linreg,
+// linregFit, _series_linreg), probed bit-exact over 30657 bars:
 // - length (and offset) are truncated to ints; length 1 returns the source as is and stores nothing;
-// - an na source is skipped: nothing is stored and the last full-window value is held (na while
-//   warming up), so the window is the last `length` NON-na sources;
-// - the value is na until `length` sources have been stored;
+// - a length known before the first bar (a literal, an input, a simple value: this function) runs the
+//   `ta.highest` ring: `length + 1` slots addressed by the CHART BAR and written only on the bars the
+//   call runs, a never-written slot holding 0. A conditional call therefore regresses over the stale
+//   values a skipped bar left in its slot (tier 1 ta_375_linreg_windows: `linreg(close, 8, 0)` on two
+//   bars of every three has a value on bar 7, the chart-bar window, where a window of the call's own
+//   last 8 executions has none until bar 11). An na is stored like any value and a window holding one
+//   answers na: the window is bar-counted, so a single na blanks the next `length` bars rather than
+//   being skipped. The warm-up gate is the chart bar too: na while bar_index < length - 1. The buffer
+//   only grows, remapped onto the bar each slot was written on (the `highest` ring's growth);
+// - a series length (linregVarLen) reads one slot per chart bar instead, see there;
 // - TradingView recomputes the window every bar, oldest first with x = 1..length ("its distance from
 //   the exact rational result stays flat over 22k bars ... while a rolling update of the two sums
 //   drifts"), and anchors the line one step short: intercept = sumY / length - slope * sumX / length
 //   + slope ("the algebraically equal intercept + slope * (length - offset) rounds differently and
 //   misses TradingView on a quarter to a half of the bars"). The arithmetic below is in that order.
-// A length below 1 is na here (the oracle rejects it with an assertion).
-function linregStep(state: LinregState, value: number, length: number, offset: number): number {
-  length = Math.trunc(length);
-  offset = Math.trunc(offset);
-  if (!(length >= 1)) return NaN;
-  if (length === 1) return value;
-  if (Number.isNaN(value)) return state.count! < length ? NaN : state.val!;
-
-  const buf = state.buf!;
-  const cap = buf.length;
-  buf[state.size! % cap] = value;
-  state.size = state.size! + 1;
-  if (state.count! < length) {
-    state.count = state.count! + 1;
-    if (state.count < length) return NaN;
-  }
-
+// A length below 1 is na here (the oracle rejects it with an assertion). `barIdx` is the chart bar; a
+// caller without one (a unit test driving the function bar by bar) gets the call count.
+function linregFit(read: (k: number) => number, length: number, offset: number, state: LinregState): number {
   if (state.constLen !== length) {
     let sx = 0;
     let sx2 = 0;
@@ -607,12 +606,12 @@ function linregStep(state: LinregState, value: number, length: number, offset: n
     state.denom = length * sx2 - sx * sx;
   }
   const sumX = state.sumX!;
-
   let sumY = 0;
   let sumXY = 0;
   let per = 0;
-  for (let i = state.size - length; i < state.size; i++) {
-    const y = buf[i % cap]!;
+  for (let k = 0; k < length; k++) {
+    const y = read(k);
+    if (Number.isNaN(y)) return NaN;
     per = per + 1;
     sumY = sumY + y;
     sumXY = sumXY + y * per;
@@ -620,30 +619,34 @@ function linregStep(state: LinregState, value: number, length: number, offset: n
   const slope = (length * sumXY - sumX * sumY) / state.denom!;
   const average = sumY / length;
   const intercept = average - (slope * sumX) / length + slope;
-  state.val = intercept + slope * (length - 1 - offset);
-  return state.val;
+  return intercept + slope * (length - 1 - offset);
 }
 
-// Fixed length: a ring of `length` slots holds the window. offset defaults to 0 (C252 2-arg form).
-export function linreg(state: LinregState, value: number, length: number, offset: number = 0): number {
-  const len = Math.trunc(length);
-  if (state.buf === undefined) {
-    if (!(len >= 1)) return NaN;
-    state.buf = allocFloat64(len, "ta.* window");
-    state.size = 0;
-    state.count = 0;
-    state.val = NaN;
-  } else if (len > state.buf.length) {
-    // A longer length than the ring holds (a fixed-length call site never does this): keep the
-    // stored sources, oldest first, in a ring of the new size.
-    const old = state.buf;
-    const grown = allocFloat64(len, "ta.* window");
-    const kept = Math.min(state.size!, old.length);
-    for (let k = 0; k < kept; k++) grown[k] = old[(state.size! - kept + k) % old.length]!;
-    state.buf = grown;
-    state.size = kept;
+export function linreg(state: LinregState, value: number, length: number, offset: number = 0, barIdx?: number): number {
+  length = Math.trunc(length);
+  offset = Math.trunc(offset);
+  if (!(length >= 1)) return NaN;
+  if (length === 1) return value;
+  const bi = barIdx ?? (state.calls = (state.calls ?? -1) + 1);
+  let capacity = state.capacity ?? 0;
+  if (state.window === undefined) state.window = [];
+  if (length >= capacity) {
+    // The resize runs before this bar's write, so every slot still holds a bar BEFORE bi: the one
+    // sharing bi's slot is bi - capacity.
+    const grown = length + 1;
+    const next: number[] = allocArray(grown, "ta.* window").fill(0);
+    for (let j = 0; j < capacity; j++) {
+      const b = bi - 1 - floorMod(bi - 1 - j, capacity);
+      next[floorMod(b, grown)] = state.window[j]!;
+    }
+    state.window = next;
+    state.capacity = capacity = grown;
   }
-  return linregStep(state, value, length, offset);
+  const window = state.window;
+  window[floorMod(bi, capacity)] = value;
+  if (bi < length - 1) return NaN;
+  const start = floorMod(bi - length + 1, capacity);
+  return linregFit((k) => window[(start + k) % capacity]!, length, offset, state);
 }
 
 export interface VwmaState {
@@ -1101,21 +1104,87 @@ export function lowestbars(state: ExtremeRingState, value: number, length: numbe
 }
 
 // The series-length entry points (codegen VARLEN_RT_PATHS, which appends the bar count and index to
-// every series-length call): the same machine; the ring sizes itself, so the bar count is unused.
-export function highestVarLen(state: ExtremeRingState, value: number, length: number, _barCount: number, barIdx: number): number {
-  return highest(state, value, length, barIdx);
+// every series-length call): the oracle's `_series_window_extreme`, a machine of its own.
+// MEASURED LAW (BINANCE:BTCUSDT 30m, probes over 30657 bars, every value matched): TradingView sizes
+// the `length + 1` ring only when the length is known before the first bar (a const, input or simple
+// value). A `series` length takes the generic series path instead: one slot per chart bar, a bar that
+// skips the call FORWARD-FILLS the value of the last call, and the whole history stays readable, so a
+// length growing from 10 to 10000 on bar 25000 answers over the true 10000 bars. The qualifier is the
+// switch, not the value: a series length that is 8 on every bar still forward-fills (tier 1
+// ta_376_window_extreme_machines s_lo_g1/s_hi_alt/s_hb_alt/s_hna). An na input resets the window
+// exactly like the ring does; the kept extreme ages in bars and is rescanned when it leaves the window
+// or the length grows; of equal extremes the offset names the oldest.
+export interface SeriesExtremeState extends SeriesHistoryState {
+  resetBar?: number;
+  kept?: number;
+  keptBar?: number;
+  prevLength?: number;
 }
 
-export function lowestVarLen(state: ExtremeRingState, value: number, length: number, _barCount: number, barIdx: number): number {
-  return lowest(state, value, length, barIdx);
+function seriesExtreme(
+  state: SeriesExtremeState, value: number, length: number, barCount: number, bi: number, low: boolean, bars: boolean,
+): number {
+  length = Math.trunc(length);
+  if (Number.isNaN(length)) return NaN;
+  if (state.history === undefined) {
+    state.resetBar = -1;
+    state.kept = NaN;
+    state.keptBar = -1;
+    state.prevLength = 0;
+  }
+  forwardFillHistory(state, value, barCount, bi);
+  if (Number.isNaN(value)) {
+    state.resetBar = bi;
+    state.kept = NaN;
+    state.keptBar = -1;
+    if (bi < length - 1) return NaN;
+    return bars ? 0 : NaN;
+  }
+  let kept = state.kept!;
+  let keptBar = state.keptBar!;
+  if (Number.isNaN(kept) || (low ? value < kept : value > kept)) {
+    kept = value;
+    keptBar = bi;
+  }
+  let oldest = bi - length + 1;
+  if (oldest <= state.resetBar!) oldest = state.resetBar! + 1;
+  if (oldest < state.firstBar!) oldest = state.firstBar!;
+  const grown = length > state.prevLength!;
+  state.prevLength = length;
+  if (keptBar < oldest || grown) {
+    kept = value;
+    keptBar = bi;
+    const history = state.history!;
+    for (let b = bi - 1; b >= oldest; b--) {
+      const s = history[b]!;
+      if (low ? s < kept : s > kept) {
+        kept = s;
+        keptBar = b;
+      } else if (s === kept) {
+        keptBar = b;
+      }
+    }
+  }
+  state.kept = kept;
+  state.keptBar = keptBar;
+  if (bi < length - 1) return NaN;
+  return bars ? keptBar - bi : kept;
 }
 
-export function highestbarsVarLen(state: ExtremeRingState, value: number, length: number, _barCount: number, barIdx: number): number {
-  return highestbars(state, value, length, barIdx);
+export function highestVarLen(state: SeriesExtremeState, value: number, length: number, barCount: number, barIdx: number): number {
+  return seriesExtreme(state, value, length, barCount, barIdx, false, false);
 }
 
-export function lowestbarsVarLen(state: ExtremeRingState, value: number, length: number, _barCount: number, barIdx: number): number {
-  return lowestbars(state, value, length, barIdx);
+export function lowestVarLen(state: SeriesExtremeState, value: number, length: number, barCount: number, barIdx: number): number {
+  return seriesExtreme(state, value, length, barCount, barIdx, true, false);
+}
+
+export function highestbarsVarLen(state: SeriesExtremeState, value: number, length: number, barCount: number, barIdx: number): number {
+  return seriesExtreme(state, value, length, barCount, barIdx, false, true);
+}
+
+export function lowestbarsVarLen(state: SeriesExtremeState, value: number, length: number, barCount: number, barIdx: number): number {
+  return seriesExtreme(state, value, length, barCount, barIdx, true, true);
 }
 
 // ta.sma(source, length) - length가 series인 변형(배치25 (4) 두 번째, C548). 버퍼/writeIdx/barIdx
@@ -1381,38 +1450,47 @@ export function medianVarLen(state: MedianVarLenState, value: number, length: nu
   return result;
 }
 
-interface LinregVarLenState extends LinregState {
-  lastBar?: number;
-  barSize?: number; // size/count/val as the bar began
-  barCount?: number;
-  barVal?: number;
+// ta.linreg with a series length: the oracle's `_series_linreg`. MEASURED LAW (BINANCE:BTCUSDT 30m,
+// probes lrna/lrnb over 30657 bars, every value bit-exact): the ring above is sized only when the
+// length is known before the first bar, so a `series` length takes the generic series path instead.
+// It reads one slot per CHART BAR, a bar that skips the call FORWARD-FILLS the value of the last call,
+// a bar before the first call is na, and the whole history stays readable, so a length that grows
+// reads the true bars it reaches (tier 1 ta_375_linreg_windows: `linreg(close, lsg, 0)` with lsg 5 and
+// then 20 has a value on the first bar of the window of 20). The qualifier is the switch, not the
+// value. A window holding an na answers na. A second execution on the same bar (a loop call site)
+// rewrites the bar's slot.
+export function linregVarLen(state: LinregState, value: number, length: number, offset: number, barCount: number, barIdx: number): number {
+  length = Math.trunc(length);
+  offset = Math.trunc(offset);
+  if (!(length >= 1)) return NaN;
+  if (length === 1) return value;
+  forwardFillHistory(state, value, barCount, barIdx);
+  const oldest = barIdx - length + 1;
+  if (oldest < state.firstBar!) return NaN;
+  const history = state.history!;
+  return linregFit((k) => history[oldest + k]!, length, offset, state);
 }
 
-// ta.linreg with a series length: the same machine as linreg() above (linregStep), over every non-na
-// source stored so far, so a length that grows reads the sources it already skipped past. The warm-up
-// counter only steps while it is below the CURRENT length, one stored source at a time (PyneCore
-// lib/ta.py linreg `count`), so a length that grows past it is na again until it catches up, and a
-// length-1 bar stores nothing. The machine is bar-keyed like the other *VarLen variants: a second
-// execution on the same bar (a loop call site) starts again from the bar-start size/count/val.
-export function linregVarLen(state: LinregVarLenState, value: number, length: number, offset: number, barCount: number, barIdx: number): number {
-  if (state.buf === undefined) {
-    state.buf = new Float64Array(Math.max(1, barCount));
-    state.size = 0;
-    state.count = 0;
-    state.val = NaN;
+// The per-bar history of a series-length call site: slot `bi` is this call's value, the bars since the
+// last call carry that call's value, `firstBar` is the bar of the first call. Shared by the
+// series-length linreg and extreme machines.
+interface SeriesHistoryState {
+  history?: Float64Array;
+  firstBar?: number;
+  lastBar?: number;
+}
+
+function forwardFillHistory(state: SeriesHistoryState, value: number, barCount: number, bi: number): void {
+  if (state.history === undefined) {
+    state.history = allocFloat64(Math.max(barCount, bi + 1), "ta.* history");
+    state.firstBar = bi;
     state.lastBar = -1;
   }
-  if (barIdx !== state.lastBar) {
-    state.lastBar = barIdx;
-    state.barSize = state.size;
-    state.barCount = state.count;
-    state.barVal = state.val;
-  } else {
-    state.size = state.barSize;
-    state.count = state.barCount;
-    state.val = state.barVal;
-  }
-  return linregStep(state, value, length, offset);
+  const history = state.history;
+  const last = state.lastBar!;
+  if (last >= 0 && bi > last + 1) history.fill(history[last]!, last + 1, bi);
+  history[bi] = value;
+  state.lastBar = bi;
 }
 
 export interface WmaVarLenState {
@@ -1787,10 +1865,14 @@ function extremeRing(state: ExtremeRingState, value: number, len: number, bi: nu
   }
   let capacity = state.capacity;
   if (len >= capacity) {
+    // A slot no call has written holds 0, not na (a `ta.lowest(low, 6)` called on 5 bars out of every
+    // 37 returns 0 on the calls whose window still reaches such a slot, tier 1
+    // ta_376_window_extreme_machines c_lo_g2). The resize runs before this bar's write, so every slot
+    // still holds a bar BEFORE bi: the one sharing bi's slot is bi - capacity.
     const grown = len + 1;
-    const next: number[] = allocArray(grown, "ta.* window").fill(NaN);
+    const next: number[] = allocArray(grown, "ta.* window").fill(0);
     for (let j = 0; j < capacity; j++) {
-      const b = bi - floorMod(bi - j, capacity);
+      const b = bi - 1 - floorMod(bi - 1 - j, capacity);
       next[floorMod(b, grown)] = state.window![j]!;
     }
     state.window = next;
@@ -1808,6 +1890,9 @@ function extremeRing(state: ExtremeRingState, value: number, len: number, bi: nu
     state.extreme = NaN;
     state.extremeIndex = 0;
     state.avail = 0;
+    // The na call still takes its length: a site whose first call is na must not read the next call
+    // as a growth from 0 and rescan the never-written slots (probe `late`).
+    state.prevLength = len;
     return NaN;
   }
   let extreme = state.extreme!;
@@ -1824,6 +1909,11 @@ function extremeRing(state: ExtremeRingState, value: number, len: number, bi: nu
     const end = state.avail! >= len ? len : state.avail! + 1;
     for (let i = 1; i < end; i++) {
       const s = window[floorMod(bi - i, capacity)]!;
+      // The rescan stops at the slot an na call wrote: that is where the reset started the window. A
+      // skipped bar can leave that slot INSIDE the bar-counted reach, and walking past it reads
+      // values from before the reset (probe `qual`: a `ta.highest(na-or-high, 7)` called on two bars
+      // of every three).
+      if (Number.isNaN(s)) break;
       if (low ? s < extreme : s > extreme) {
         extreme = s;
         extremeIndex = i;

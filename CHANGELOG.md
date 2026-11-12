@@ -12,12 +12,17 @@ or the Pine manual) and lists what moved.
 
 ## [Unreleased]
 
+Two bodies of work, merged: a verification pass over the converter, and fixes measured against the
+TradingView exports of a head-to-head harness.
+
+### Verification pass
+
 A verification pass over the converter: what it accepts, what it silently changes, and what it
 does to the host that runs it. Outside "Fixed", nothing here changes a value a valid, in-limits script
 computes (the 10,189-script snapshot of `corpus/` and `oracle/` is identical before and after). Commit
 hashes are added when this is committed.
 
-### Added
+#### Added
 
 - `import` links a library: `transpile(source, { libraries })`, `resin run|check --libs <dir>`. It used to
   be discarded by the parser, so every name read through an alias was an "unsupported call". See
@@ -25,7 +30,7 @@ hashes are added when this is committed.
 - A function that returns a matrix is a matrix receiver and initializer (`kernel_matrix(a, b).sum(s)`),
   as a function returning an array or a map already was.
 
-### Fixed
+#### Fixed
 
 - `timestamp(dateString)` returned na for `GMT+10`, `UTC-5`, a month written first, a day with no space
   after it, and a leading zone, with no warning. A date window built on one was never open, so the script
@@ -38,7 +43,7 @@ hashes are added when this is committed.
   values 5e-13 from the exact rational inverse (they were 1.2e-8 from it). **TradingView's own value has not
   been compared.**
 
-### Behaviour changes
+#### Behaviour changes
 
 - A character outside Pine's alphabet, a string or `/* */` comment that is never closed, and a
   token left on a statement's line after the statement ended are transpile errors. They used to be
@@ -68,7 +73,7 @@ hashes are added when this is committed.
   generated code relies on (`let`, `static`, `Math`, `Number`, anything starting `__`) is renamed in
   the output. Before, such a name produced a crash or, for `__forLimit`, a wrong value.
 
-### Added
+#### Added
 
 - `TranspileOk.warnings`: every use of a name that compiles but is not faithful — `stub`
   (`request.dividends`, `request.security_lower_tf`, …), `passthrough` (`ticker.heikinashi`, …),
@@ -81,7 +86,7 @@ hashes are added when this is committed.
 - Run options `limits: { maxStepsPerBar, maxCollectionLength, deadlineMs }` and the exported
   `ResinLimitError` and `RunLimits`; transpile option `maxSourceBytes`.
 
-### Verification harness (in-repo)
+#### Verification harness (in-repo)
 
 `HARNESS.md` says what each layer proves and does not.
 
@@ -109,6 +114,61 @@ hashes are added when this is committed.
 - `package-lock.json`'s root metadata (`pine2js 0.0.1`, `node >=20`) now matches `package.json`.
 - New unit suites: `surface`, `limits`, `run_diagnostics`, `identifier_hygiene`, `known_gaps`,
   `golden_provenance`, `negative_corpus`; lexer and parser strictness cases.
+
+### Measured against TradingView exports (head-to-head)
+
+#### Added
+
+- `array.stdev(id, biased)`, `array.variance(id, biased)` and `array.covariance(id1, id2, biased)` accept the optional `biased` argument (default `true`: divide by n; `false`: n-1), positionally, as `biased=` or as method calls; they were rejected at compile time. (c2c2be5)
+- `matrix.diff(id1, id2)`, the element-wise subtraction with a matrix or a scalar `id2`; the 1-argument adjacent-row form is kept as an extension. (c2c2be5)
+- `run(result, data, { onLog })` and `Context.from(result, data, { onLog })`: a sink for `log.info`/`log.warning`/`log.error`. It receives a `LogEntry` (`level`, `message`, `bar`, `time`) per executed statement; `message` is the text TradingView's Pine Logs pane shows. Without it the calls stay no-ops. New type export `LogEntry`. `resin run --logs` prints the entries to stderr. See API.md "Logs".
+- Keyword arguments for `chart.point.new`/`from_index`/`from_time`/`now`/`copy` (`time=`, `index=`, `price=`, `point=`) and for the setters that take a point (`point=`); an unknown or doubled name is a transpile error. (2ef370a)
+
+#### Behaviour changes (outputs differ from 0.3.0)
+
+##### Arrays and matrices
+
+- `array.stdev`/`variance`/`covariance` of one valid element or pair is 0 with the default `biased=true` (was na); unbiased it is na. (c2c2be5)
+- `array.sum` of an all-na array is na (was 0); an empty array still sums to 0. (c2c2be5)
+- `array.get`/`array.set`/`array.remove` take a negative index from the end of the array (-1 is the last element); `array.insert` takes -size..size. An index outside the array still reads na or does nothing. (fb5c000)
+- An na index: `array.insert` appends, `array.slice` takes it as the start (`index_from`) or the size (`index_to`), `array.fill` likewise, and an na rank of `array.min`/`array.max` is 0. (was: `insert` and `fill` did nothing, `slice` was na, `min`/`max` were na) (fb5c000)
+- `array.percentile_nearest_rank` and `array.percentile_linear_interpolation` keep na elements in the sort (at the end) and rank over the full length: a rank in the na tail is na, and with any na only the low clamp and an exact rank of the interpolation give a value. The interpolation reads the 1-based position `n * p / 100 + 0.5` (was `(p / 100) * (n - 1)`); an na percentage is rank 0 for the nearest rank (was 100) and na for the interpolation; the nearest rank no longer rounds the 70th percentile of ten values up to rank 8. (1231bb4)
+- `array.percentrank(id, index)` ranks the element at the index, `(count at or below it - 1) * 100 / (n - 1)` (was: the share of elements below a value); an na index is index 0 and an na element is na. (1231bb4)
+- `array.indexof`/`array.lastindexof`/`array.includes` compare within 1e-10 like `==`; `array.binary_search` stays exact. (1231bb4)
+- `array.binary_search_leftmost` answers the first duplicate of a hit and, for a miss, the next smaller element (0 for a value below the whole array, never -1; was the insertion point); `array.binary_search_rightmost` answers the last duplicate of a hit (was the slot after it) and, for a miss, the element to the right of where the value would lie (the array size above the whole array); `array.binary_search` is the classic halving. (c2c2be5, 1231bb4)
+- `array.sort_indices(id, order.descending)` is the reverse of the ascending order, so tied elements come out in reversed index order (was: original order). (c2c2be5)
+- `array.concat` and `matrix.concat` append to their first argument in place and return it (were: a new array/matrix). (c2c2be5, 1231bb4)
+- `array.join` and a logged `array<int>` print `10` where an `array<float>` prints `10.0`; an array counts as int when it comes from `array.new_int`, `array.new<int>`, `array.from` of statically int arguments, or a copy/slice of one. (0aea77e)
+- `matrix.reshape` rebuilds its matrix in place (was: a new matrix), and `matrix.reverse` reverses the columns as well as the rows. (c2c2be5)
+
+##### Indicators (`ta.*`)
+
+- `ta.linreg` with a length known before the first bar (a literal, an input) runs TradingView's ring: `length + 1` slots addressed by the chart bar, written only on the bars the call runs, a never-written slot holding 0. An na source is stored like any value and a window holding one is na (it was skipped, the window being the last `length` non-na sources); a conditional call regresses over the stale values its skipped bars left; the warm-up is na while `bar_index < length - 1`. Evidence: TradingView export, h2h ta_375_linreg_windows.
+- `ta.linreg`, `ta.highest`, `ta.lowest`, `ta.highestbars`, `ta.lowestbars` with a series length (a length that is an expression of the bar, even one that is always 8) read one slot per chart bar and forward-fill the bars a conditional call skipped, keeping the whole history, so a length that grows reads the true window (before: the ring, and for linreg a warm-up counter that was na again after a growth). Evidence: TradingView export, h2h ta_375_linreg_windows (m2-m4) and ta_376_window_extreme_machines (s_lo_g1, s_hi_alt, s_hb_alt, s_hna).
+- The fixed-length `ta.highest`/`ta.lowest` ring holds 0, not na, in a slot no call has written; its growth keeps the slot sharing the current bar's index at the bar a ring earlier; an na call takes its length; the rescan stops at the slot an na call wrote. `ta.range`, `ta.stoch`, `ta.wpr` and the pivots, built on that ring, follow. Evidence: h2h ta_376_window_extreme_machines (c_lo_g2, c_hna, lo_na5).
+
+##### Strategy engine
+
+- `strategy(calc_on_order_fills=true)` walks a bar one fill at a time, as TradingView does (it re-runs the body after every fill): a pass walks only the legs after the node it stands at; the bar's first pass, and any pass whose own market orders filled at its node, walk at most the next leg; otherwise the walk stops at the end of the first leg that fills anything. A `strategy.exit()` limit/stop is judged against the price of the node the pass stands at, not the bar open: an exit marketable at the high fills at the high, one whose entry filled at the low rests until later (it filled at the open price). Evidence: TradingView export, h2h strat_140_coof_stepwise_walk (173/270 trades -> 270/270).
+- `strategy.exit()` called while a `strategy.order()` of its `from_entry` id is pending places a leg that waits on the order and binds when it fills, as it does for `strategy.entry()`; the leg was dropped, so the order's trade had no exit until the next call.
+
+##### Strings and time
+
+- `str.format` (and so every `log.*` message) groups thousands the way MessageFormat does: `{0}` and `{0,number}` print `-18,189.894` (was `-18189.894`), `{0,number,integer}` and `{0,number,percent}` print `1,340,000` and `1,250%`, and a pattern with a `,` (`#,###.##`) groups. A pattern without one (`#.##`) and `str.tostring` do not group. TradingView's log text for `ta.variance`/`ta.stdev` of a 1e-16 residual is `-18,189.894`. Evidence: h2h case ta_243_variance_stdev_exact.
+- `timestamp(timezone, year, month, day, …)` reads the components as the wall clock of `timezone` (an IANA name, or `"GMT+6"`/`"UTC-5:30"`); it ignored the zone and computed UTC. A wall time that occurs twice takes its first occurrence, one that never occurs the offset in force before the change. Evidence: TradingView export base_001_time (`timestamp("GMT+6", 2016, 1, 19, 9, 30)` is 03:30 UTC).
+- `timestamp(year, month, day, …)` without a timezone is a time of the exchange timezone (`transpile(src, { syminfo: { timezone } })`, default UTC, so unchanged by default). A date string without a zone stays UTC.
+- `timestamp(dateString)` reads month-first dates with a month name (`"Feb 01 2020 22:10:05"`), `GMT+5`/`UTC-05:30`/RFC zone names after the time (`"04 Dec 1995 00:12:00 GMT+5"`), `"Jan 2025"`, numeric month-first dates (`"03/04/2023"`) and `"2025"`/`"2025-06"`; before, all of them were na. Evidence: base_001_time.
+
+##### Drawings
+
+- `chart.point.now(price)` carries the current bar's index and time (both were na), as the manual describes it. (2ef370a)
+- `line.new(first_point, second_point, ...)`, `label.new(point, text, ...)` and `box.new(top_left, bottom_right, ...)` read their chart.point arguments: the drawing's coordinates are the points' index (or their time with `xloc.bar_time`) and price, and the parameters after the points (text, color, style, width, `border_color`, ...) keep their own meaning. They were read as numbers, so every coordinate was na, `label.new(p, "x")` lost its text, and keyword points (`first_point=`, `point=`, `top_left=`) were dropped. (2ef370a)
+- `line.set_first_point`/`set_second_point`, `box.set_top_left_point`/`set_bottom_right_point` and `label.set_point` follow the drawing's `xloc` (the point's time on `xloc.bar_time`); `label.set_point` was a no-op. (2ef370a)
+
+#### Documentation
+
+- README verification claims corrected. The 0.3.0 "Verification" entry below says resin reproduces "72/72 indicator scenarios, 46,482/46,482" TradingView records and the README said "in full". Re-measured against PyneCore `0fd57d7` with a neutral harness: all 20 strategy scenarios (16,259 records; the 19 that existed at 0.3.0 reproduce the 15,989 stated) and 75 of 77 indicator and library scenarios match, 93 of the 95 TradingView-export scenarios overall. The 72/46,482 figure could not be reconstructed from PyneCore's repository, and the 0.3.0 build also failed the `array.*`, `matrix.*` and `time`/`timestamp` exports that this release fixes. The remaining misses (`array.slice` as a view) are listed in the README. The 0.3.0 entry is left as published.
+- README test count 10,311 -> 10,431; the 0.3.0 entry's 10,305 does not match the 10,311 the README gave at the same release.
 
 ## [0.3.0] - 2026-09-28
 

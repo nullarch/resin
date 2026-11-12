@@ -34,13 +34,14 @@ Resin compiles Pine Script v5/v6 to a plain JavaScript module and runs it —
 same indicators, same series semantics, your own machine. TradingView will not
 let a script leave the platform; this is how you get it out.
 
-- **Matches TradingView's own exports** in full: 19 strategy scenarios (15,989
-  trades and statistics) and 72 indicator scenarios (46,482 values and log
-  lines) — [how it is verified](#how-it-is-verified)
+- **Matches TradingView's own exports** in 93 of 95 scenarios: all 20 strategy
+  scenarios (16,259 trades and statistics) and 73 of 75 indicator and library
+  scenarios, measured against PyneCore `0fd57d7`; the two misses and what is
+  not covered are listed — [how it is verified](#how-it-is-verified)
 - **99.7%** of 2,979 real-world scripts transpile and **99.5%** run
   ([measured, method below](#coverage-and-where-the-numbers-come-from)) — that
   they run, not that their values are right
-- **10,311 tests**, plus 5,000 generated scenarios compared bar by bar with a
+- **10,431 tests**, plus 5,000 generated scenarios compared bar by bar with a
   reference engine certified against TradingView
 - **Zero runtime dependencies** — the CLI runs straight from a clone, no
   install step, no build step
@@ -164,19 +165,42 @@ that the hard way ([below](#how-this-was-built)). Since 0.3.0 a separate
 harness measures resin against ground truth, in this order of authority:
 
 1. **TradingView's own results.** PyneSys recorded TradingView exports and
-   published them in PyneCore's repository (Apache-2.0): List of Trades exports
-   of 19 strategy scenarios — TradingView's built-in strategies, and runs with
-   commission, slippage, pyramiding, a futures point value and the bar
-   magnifier — and chart exports, Pine Logs output and measured values of 72
-   indicator scenarios covering `ta.*`, `math.*`, `str.*`, `timeframe.*`,
-   `session.*` and `request.security`. Resin reproduces every one of them in
-   full: 15,989 of 15,989 trade and statistic records, fills within half a
-   tick, and 46,482 of 46,482 indicator records at the tolerance of PyneCore's
-   own tests (log lines exactly). 0.2.2 matched 2 of the 19 strategy scenarios.
+   published them in PyneCore's repository (Apache-2.0). We measure against
+   PyneCore commit `0fd57d7` (2026-11-09). PyneCore's own scripts are Python, so
+   the Pine for every scenario is reconstructed by us from them; it is not
+   PyneSys's Pine. Of the 97 scenarios there, 95 are TradingView exports and 2
+   are hand-built fixtures (`sess_002`, `draw_001`); resin matches 95 of the 97
+   in full, 93 of the 95 exports:
+   - **Strategy, 20 scenarios.** 14 List of Trades exports — TradingView's
+     built-in strategies, and runs with commission, slippage, pyramiding, a
+     futures point value, the bar magnifier and a stepwise
+     `calc_on_order_fills` walk (15,139 closed trades, each matched on side,
+     entry and exit bar, price within half a tick and quantity within 1e-6
+     relative, with no extra trade) — plus 6 scenarios from 3 chart exports of
+     plotted `strategy.*` values (1,120 bars, each matched on every plotted
+     value).
+   - **Indicators and library, 77 scenarios** (`ta.*`, `math.*`, `str.*`,
+     `timeframe.*`, `session.*`, `request.security`, `map.*`, `array.*`,
+     `matrix.*`, `time`/`timestamp`, `chart.point`): chart exports and Pine Logs
+     output. A series matches at 1e-6 (PyneCore's own tolerance is looser,
+     relative 1e-5 and absolute 1e-8, and changes no verdict), `na` matches only
+     `na`, and log lines match exactly after trimming. 75 match; the two that
+     do not are `array.slice` (below).
+   - **Not matched.** `array_002` and `array_003`: TradingView's `array.slice`
+     is a view that writes through to the source array, resin's is a copy, and
+     every line that depends on the write differs.
+   - **Not a user-visible feature, yet.** The log-line results are captured
+     with the `onLog` option; before it existed the harness had to replace
+     internal functions to see them.
+   - **Not published yet.** The harness that produced these figures — case
+     manifest, the Pine files, the counting rules — is not in this repository.
+     Until it is, the figures can be checked only by repeating the method.
+   0.2.2 matched 2 of the 19 strategy scenarios that existed then.
 2. **A reference engine certified against TradingView, and fuzzing against
-   it.** PyneCore, pinned, matches TradingView trade for trade on 380 of 402
-   published strategies and bit for bit on 99.64% of 61.8M bars, and passes
-   every scenario above. The harness writes each generated scenario twice —
+   it.** PyneSys reports that PyneCore matches TradingView trade for trade on
+   380 of 402 published strategies and bit for bit on 99.64% of 61.8M bars
+   (their figures, not re-measured here; PyneCore's test suite contains the
+   scenarios above). The harness writes each generated scenario twice —
    Pine for resin, Python for PyneCore — and compares every trade and every bar
    at 1e-9. Of 5,000 generated scenarios 4,937 match: all 3,600 strategy
    scenarios, all 600 language scenarios (var/varip, function call sites,
@@ -193,7 +217,7 @@ Every rule changed for 0.3.0 was found and fixed this way, one per commit, with
 its evidence in the commit message; [CHANGELOG.md](CHANGELOG.md) lists them,
 and the divergences still open.
 
-Resin's own suite, 10,311 tests, pins those rules down; on its own it is not
+Resin's own suite, 10,431 tests, pins those rules down; on its own it is not
 evidence. The older differential suite is still in the repository: 263 cases in
 `oracle/` and a 3,000-script replay of `corpus/`, compared at 1e-9 against the
 sibling implementation's goldens. Where TradingView's evidence contradicted a
@@ -206,6 +230,10 @@ What is **not** verified:
   runs; its numbers are as verified as the rules it shares with the scenarios
   above;
 - drawings (`label`, `line`, `box`, `table`) and the rest of the `viz` capture;
+- `array.slice` as a view: resin returns a copy, so a write to the slice does
+  not reach the source array;
+- anything outside the 97 scenarios above, `time`/`timestamp` with a timezone
+  and a non-UTC exchange included — no export covers it;
 - v5-only rules — integer division of constants, strict `and`/`or`, na
   booleans, v5 overloads and defaults — against anything but the manual, since
   the reference engine implements v6.
@@ -280,7 +308,7 @@ node --import @nullarch/resin/register your-script.mjs
   `linefill`, `alert` and `alertcondition` remain no-ops.
 - **Strategy results are confirmed against TradingView for the scenarios
   above, not for every script.** The broker emulator reproduces TradingView's
-  List of Trades on the 19 exported scenarios and the certified engine on 3,600
+  List of Trades on the 14 exported scenarios and the certified engine on 3,600
   generated ones. A script that combines features in a way none of them
   exercises can still meet a rule that has not been measured.
 - **Intrabar fills are TradingView's assumption, not the market's path.** OHLC

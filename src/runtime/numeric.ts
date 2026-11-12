@@ -2,6 +2,7 @@
 
 import { warnRuntime } from "./diagnostics";
 import { MINTICK } from "./syminfo";
+import { zoneOffsetMs } from "./datetime";
 
 export function pineDiv(a: number, b: number): number {
   if (b === 0) return NaN;
@@ -477,86 +478,188 @@ export function nz(value: number, replacement: number = 0): number {
   return na(value) ? replacement : value;
 }
 
-// The dateString overload. The Pine manual (Time, "timestamp()") shows "20 Aug 2024", "2021-01-01",
-// "20 Aug 2024 00:00:00 UTC+0" and "1 May 2022 00:00 -0400": no time of day means 00:00, no time zone
-// means GMT+0. It gives examples, not a grammar, so what is read here is those forms plus the ones
-// real scripts write: a month first ("Jan 05 2021 09:00:00"), no space after the day ("01Jan 2020 00:00
-// +0000"), a full month name, a leading weekday or zone, and "GMT+10" beside "UTC-5". A string outside them is
-// na with a run warning: a date that silently became na turns `time >= start and time <= stop` false on
-// every bar, and the script runs to the end doing nothing.
-const MONTH_ABBR: Record<string, number> = {
-  jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
-  jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
+// UTC epoch milliseconds of a calendar date and clock time. Month, day and clock components roll
+// over as Pine's do (hour 26 is the next day's 02:00, month 13 the next January), and a year of 0 to
+// 99 is that year (Date.UTC would read it as 1900 + year). A NaN component gives NaN.
+function utcMs(y: number, m: number, d: number, h: number, mi: number, s: number): number {
+  const t = new Date(0);
+  t.setUTCFullYear(y, m - 1, d);
+  t.setUTCHours(h, mi, s, 0);
+  return t.getTime();
+}
+
+const DAY_MS = 86400000;
+
+// The UTC instant at which `timezone`'s wall clock reads `wallMs` (the wall clock written as if it
+// were UTC). A fixed UTC/GMT offset subtracts itself. A named zone is resolved the way Python's
+// datetime(..., tzinfo=ZoneInfo) with fold=0 does, which is what the oracle measured against
+// TradingView: a wall time that occurs twice (clocks going back) is its first occurrence, one that
+// never occurs (clocks going forward) is read with the offset in force before the change. An empty,
+// na or unrecognised timezone is UTC, like the time-component functions.
+function zonedToUtcMs(wallMs: number, timezone: string | null | undefined): number {
+  if (!Number.isFinite(wallMs) || !timezone || timezone === "UTC" || timezone === "GMT") return wallMs;
+  const before = zoneOffsetMs(wallMs - DAY_MS, timezone);
+  const after = zoneOffsetMs(wallMs + DAY_MS, timezone);
+  if (before === after) return wallMs - before;
+  for (const offset of [before, after]) {
+    const instant = wallMs - offset;
+    if (zoneOffsetMs(instant, timezone) === offset) return instant;
+  }
+  return wallMs - before;
+}
+
+// Month names a date string may carry: the English abbreviation or the full name, any letter case.
+const MONTH_NAMES: Record<string, number> = {};
+["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"].forEach((name, i) => {
+  MONTH_NAMES[name] = i + 1;
+  MONTH_NAMES[name.slice(0, 3)] = i + 1;
+});
+
+// A date string's trailing zone as UTC offset minutes: RFC 2822 zone names and "Z", or an offset with
+// an optional UTC/GMT prefix ("GMT+5", "UTC-05:30", "+0200", "-6"). `named` is true for a zone with a
+// name or a UTC/GMT prefix, false for a bare offset (the two differ on a date without a time, see
+// parseDateString). Anything else is not a zone.
+const ZONE_NAME_OFFSETS: Record<string, number> = {
+  UT: 0, UTC: 0, GMT: 0, Z: 0,
+  EST: -300, EDT: -240, CST: -360, CDT: -300, MST: -420, MDT: -360, PST: -480, PDT: -420,
 };
+const ZONE_OFFSET_RE = /^(UTC|GMT)?([+-])(\d{1,2})(?::?(\d{2}))?$/i;
 
-const DATE_ZONE = String.raw`(Z|(?:UTC|GMT)(?:\s*[+-]\d{1,2}(?::?\d{2})?)?|[+-]\d{1,2}(?::?\d{2})?)?`;
-const DATE_TIME = String.raw`(?:(?:[T ]|,\s*|\s+)(\d{1,2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?)?`;
-const ISO_DATE_STRING_RE = new RegExp(String.raw`^(\d{4})-(\d{1,2})-(\d{1,2})${DATE_TIME}\s*${DATE_ZONE}$`, "i");
-const DAY_FIRST_DATE_STRING_RE = new RegExp(String.raw`^(\d{1,2})\s*([A-Za-z]{3,9})\.?,?\s*(\d{4})${DATE_TIME}\s*${DATE_ZONE}$`, "i");
-const MONTH_FIRST_DATE_STRING_RE = new RegExp(String.raw`^([A-Za-z]{3,9})\.?\s*(\d{1,2}),?\s*(\d{4})${DATE_TIME}\s*${DATE_ZONE}$`, "i");
-const LEADING_ZONE_RE = /^(UTC|GMT)\s+(\S.*)$/i;
-const LEADING_WEEKDAY_RE = /^(?:sun|mon|tue|wed|thu|fri|sat)[a-z]*,?\s+(?=\d|[a-z]{3})/i;
-
-function parseUtcOffsetMinutes(raw: string | undefined): number {
-  if (raw === undefined) return 0;
-  const m = /([+-])(\d{1,2})(?::?(\d{2}))?$/.exec(raw);
-  if (m === null) return 0;
-  // "+10" and "+1000" are the same zone: one or two digits are hours, more are hours and minutes.
-  const sign = m[1] === "-" ? -1 : 1;
-  return sign * (Number(m[2]) * 60 + (m[3] === undefined ? 0 : Number(m[3])));
+function parseZone(token: string): { minutes: number; named: boolean } | null {
+  const upper = token.toUpperCase();
+  if (Object.prototype.hasOwnProperty.call(ZONE_NAME_OFFSETS, upper)) return { minutes: ZONE_NAME_OFFSETS[upper]!, named: true };
+  const m = ZONE_OFFSET_RE.exec(token);
+  if (m === null) return null;
+  const minutes = Number(m[3]) * 60 + (m[4] === undefined ? 0 : Number(m[4]));
+  return { minutes: m[2] === "-" ? -minutes : minutes, named: m[1] !== undefined };
 }
 
-function monthNumber(name: string): number | undefined {
-  return MONTH_ABBR[name.slice(0, 3).toLowerCase()];
+// ISO-style "yyyy-MM-dd[THH:mm[:ss]]" with an optional trailing offset.
+const ISO_DATE_STRING_RE =
+  /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{1,2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?)?\s*(Z|UTC|[+-]\d{2}:?\d{2})?$/i;
+// A date spelled with a month name, either order: "Feb 01 2020 22:10:05", "04 Dec 1995 00:12:00 GMT+5".
+const NAMED_MONTH_FIRST_RE = /^([A-Za-z]{3,9})\.?\s+(\d{1,2}),?\s+(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?(?:\s+(\S+))?$/;
+// The day may touch the month name ("15Aug 2022 20:00 +0000": written by published scripts, not
+// measured on TradingView).
+const NAMED_DAY_FIRST_RE = /^(\d{1,2})\s*([A-Za-z]{3,9})\.?,?\s+(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?(?:\s+(\S+))?$/;
+const NAMED_MONTH_YEAR_RE = /^([A-Za-z]{3,9})\.?\s+(\d{4})$/;
+// Numeric dates are MONTH-first ("03-04-2023" is March 4th) with '-', '/', '.' or ' ' between the
+// parts; a day-first one such as "13-04-2023" is not a date.
+const NUMERIC_MONTH_FIRST_RE = /^(\d{1,2})[ /.-](\d{1,2})[ /.-](\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?(?:\s+(\S+))?$/;
+const YEAR_MONTH_RE = /^(\d{4})(?:[-/.](\d{1,2}))?$/;
+
+// UTC milliseconds of a calendar date and clock time, or NaN when the date does not exist (February
+// 30th) or the clock is out of range.
+function validUtcMs(y: number, mo: number, d: number, h: number, mi: number, sec: number, offsetMin: number): number {
+  if (!(mo >= 1 && mo <= 12 && d >= 1 && h <= 23 && mi <= 59 && sec <= 59)) return NaN;
+  const t = utcMs(y, mo, d, h, mi, sec);
+  const check = new Date(t);
+  if (check.getUTCMonth() !== mo - 1 || check.getUTCDate() !== d) return NaN;
+  return t - offsetMin * 60000;
 }
 
+// timestamp(dateString): the date a string spells, in UTC unless the string carries a zone ("No
+// timezone means UTC, not the exchange timezone", measured on TradingView by the oracle's
+// core/datetime.py parse_datestring). Not a date: NaN (na).
+//   - ISO "yyyy-MM-dd[THH:mm[:ss]]" and a trailing "Z"/"UTC"/"+HH:mm"/"+HHMM";
+//   - a month NAME in either order, "Feb 01 2020 22:10:05" / "04 Dec 1995 00:12:00 GMT+5" / "Jan 2025",
+//     with the zone names of RFC 2822 or an offset ("GMT+5", "+0200") after the time. A name-month date
+//     WITHOUT a time ignores a named zone ("01 Jan 2022 GMT+3" is midnight UTC) and refuses a bare
+//     offset ("01 Jan 2022 +0300"): measured on TradingView;
+//   - numeric month-first "03-04-2023", "03/04/2023", "03.04.2023", "3 4 2023" (their zone counts);
+//   - "2025" and "2025-06" (the first of the month).
+// Not covered: the "yyyy-MM-dd:HH:mm" spelling.
 function parseDateString(raw: string): number {
-  const s = raw.trim().replace(LEADING_WEEKDAY_RE, "").replace(LEADING_ZONE_RE, "$2 $1");
-  const at = (y: string, mo: number, d: string, h?: string, mi?: string, sec?: string, off?: string): number =>
-    Date.UTC(Number(y), mo - 1, Number(d), h ? Number(h) : 0, mi ? Number(mi) : 0, sec ? Number(sec) : 0) - parseUtcOffsetMinutes(off) * 60000;
+  // Words in front of the date carry no meaning: a weekday, a zone name, anything digit-free that is
+  // not a month name ("UTC 01 Jan 2022 00:00", "Sat, 01 Jan 2022" and "Foo 01 Jan 2022" are all
+  // 2022-01-01 00:00 UTC; measured on TradingView by the oracle, core/datetime.py parse_datestring).
+  // After such a word the ISO date-and-time form is refused while a bare ISO date is not.
+  let s = raw.trim();
+  let words = 0;
+  for (;;) {
+    const lead = /^([^\s\d+-]\S*)\s+/.exec(s);
+    if (lead === null || MONTH_NAMES[lead[1]!.toLowerCase().replace(/[.,]$/, "")] !== undefined) break;
+    s = s.slice(lead[0].length);
+    words++;
+  }
+  const ms = words > 0 && /^\d{4}-\d{2}-\d{2}[T ]/.test(s) ? NaN : readDateString(s);
+  // A date that silently became na turns `time >= start and time <= stop` false on every bar, and
+  // the script runs to the end doing nothing: say so.
+  if (Number.isNaN(ms)) {
+    warnRuntime(`timestamp-date:${raw}`, `timestamp('${raw}') is not a date string resin can read, so it is na; a date window built on it is never open`);
+  }
+  return ms;
+}
+
+function readDateString(s: string): number {
   const iso = ISO_DATE_STRING_RE.exec(s);
   if (iso) {
     const [, y, mo, d, h, mi, sec, off] = iso;
-    return at(y!, Number(mo), d!, h, mi, sec, off);
+    const zone = off === undefined ? null : parseZone(off);
+    return validUtcMs(Number(y), Number(mo), Number(d), h ? Number(h) : 0, mi ? Number(mi) : 0, sec ? Number(sec) : 0, zone?.minutes ?? 0);
   }
-  const dayFirst = DAY_FIRST_DATE_STRING_RE.exec(s);
-  if (dayFirst) {
-    const [, d, monName, y, h, mi, sec, off] = dayFirst;
-    const mo = monthNumber(monName!);
-    if (mo !== undefined) return at(y!, mo, d!, h, mi, sec, off);
+  const named = NAMED_MONTH_FIRST_RE.exec(s) ?? NAMED_DAY_FIRST_RE.exec(s);
+  if (named) {
+    const monthFirst = /^[A-Za-z]/.test(s);
+    const monName = (monthFirst ? named[1] : named[2])!.toLowerCase();
+    const day = Number(monthFirst ? named[2] : named[1]);
+    const mo = MONTH_NAMES[monName];
+    if (mo === undefined) return NaN;
+    // groups 3..7 are year, hour, minute, second and zone in both spellings
+    const [h, mi, sec, zoneToken] = [named[4], named[5], named[6], named[7]];
+    let offsetMin = 0;
+    if (zoneToken !== undefined) {
+      const zone = parseZone(zoneToken);
+      if (zone === null) return NaN;
+      if (h === undefined) {
+        // no clock time: a named zone is ignored, a bare offset is refused
+        if (!zone.named) return NaN;
+      } else {
+        offsetMin = zone.minutes;
+      }
+    }
+    return validUtcMs(Number(named[3]), mo, day, h ? Number(h) : 0, mi ? Number(mi) : 0, sec ? Number(sec) : 0, offsetMin);
   }
-  const monthFirst = MONTH_FIRST_DATE_STRING_RE.exec(s);
-  if (monthFirst) {
-    const [, monName, d, y, h, mi, sec, off] = monthFirst;
-    const mo = monthNumber(monName!);
-    if (mo !== undefined) return at(y!, mo, d!, h, mi, sec, off);
+  const monthYear = NAMED_MONTH_YEAR_RE.exec(s);
+  if (monthYear) {
+    const mo = MONTH_NAMES[monthYear[1]!.toLowerCase()];
+    return mo === undefined ? NaN : validUtcMs(Number(monthYear[2]), mo, 1, 0, 0, 0, 0);
   }
-  warnRuntime(`timestamp-date:${raw}`, `timestamp('${raw}') is not a date string resin can read, so it is na; a date window built on it is never open`);
+  const numeric = NUMERIC_MONTH_FIRST_RE.exec(s);
+  if (numeric) {
+    const [, mo, d, y, h, mi, sec, zoneToken] = numeric;
+    let offsetMin = 0;
+    if (zoneToken !== undefined) {
+      const zone = parseZone(zoneToken);
+      if (zone === null) return NaN;
+      offsetMin = zone.minutes;
+    }
+    return validUtcMs(Number(y), Number(mo), Number(d), h ? Number(h) : 0, mi ? Number(mi) : 0, sec ? Number(sec) : 0, offsetMin);
+  }
+  const yearMonth = YEAR_MONTH_RE.exec(s);
+  if (yearMonth) return validUtcMs(Number(yearMonth[1]), yearMonth[2] === undefined ? 1 : Number(yearMonth[2]), 1, 0, 0, 0, 0);
   return NaN;
 }
 
-// timestamp(...) — pine2py wavealgo/__init__.py timestamp(*args)의 literal port(C210, python 직접
-// 실행으로 실측: timestamp(2024,1,15)/timestamp(2024,1,15,12,30,45)/timestamp("America/New_York",
-// 2024,1,15,12,30,45) 세 콜을 실행해 oracle/cases/timestamp_basic.pine 골든으로 고정). 2-오버로드
-// 모두 순수 *args(kwargs 없음): (a) `timestamp(year,month,day[,hour,minute,second])` (b)
-// `timestamp(tz_str,year,month,day[,hour,minute,second])` — tz_str은 pine2py가 언패킹만 하고 실제로
-// 전혀 안 씀(두 오버로드 다 tzinfo=UTC로 계산, 실측 확인: tz_str을 바꿔도 같은 y/m/d/h/mi/s면 같은
-// 값). tz_str 유무는 런타임에 args[0] 타입으로 판별(컴파일타임엔 알 수 없음 — analyzer는 인자
-// 개수만 검증). (b)만 day 생략 시 1로 기본값(pine2py 원본 자체의 비대칭, 근거 불명이나 그대로 포트).
-// 유효 인자가 3개 미만(연/월/일 셋 다 안 채워짐)이면 pine2py는 0을 반환 — 동일하게 포트(현재 구현
-// 범위인 두 오버로드에서는 도달 불가: analyzer가 최소 3개를 강제한다). pine2py는 args가 정수가 아닌
-// float(NaN 포함)이면 Python `datetime()` 생성자가 TypeError로 크래시하지만, 이는 CPython
-// int-vs-float 타입 시스템의 부작용이지 TV 시맨틱이 아니다(C112/C113과 동급 "플랫폼/언어 아티팩트는
-// literal port 대상 아님" 판단) — JS Date.UTC는 NaN 인자에서 크래시 없이 NaN을 자연 반환하므로 그대로
-// 둔다. tz_str 실제 타임존 처리 여부를 포함해 이 함수 전체가 VERIFIED_SEMANTICS.md에 근거 없는 "TV
-// 미검증(가설)"이다(DIVERGENCES.md 참조) — 되돌릴 근거가 생기면 그쪽을 우선할 것. dateString 1-인자
-// 오버로드(C289)는 위 parseDateString으로 분리 위임.
-export function timestamp(...args: (number | string)[]): number {
+// timestamp(...), three overloads:
+//   timestamp(dateString)                                         parseDateString above;
+//   timestamp(timezone, year, month, day[, hour, minute, second])  the wall clock of `timezone` (an IANA
+//                                                                  name or "GMT+6"/"UTC-5:30");
+//   timestamp(year, month, day[, hour, minute, second])            the wall clock of the exchange
+//                                                                  timezone, `defaultTimezone`.
+// (ref_v6_lang.txt timestamp: "timezone ... Optional. The default is syminfo.timezone"; tier 1
+// base_001_time: timestamp("GMT+6", 2016, 1, 19, 9, 30) is 2016-01-19 03:30 UTC on TradingView.)
+// The overload is told by the first argument's type at run time (a timezone may be a variable). An
+// omitted day is 1 in the timezone overload only (the oracle's own asymmetry, kept). Fewer than 3
+// arguments of either kind is 0. A NaN component is NaN.
+export function timestampIn(defaultTimezone: string, ...args: (number | string)[]): number {
   if (args.length === 1 && typeof args[0] === "string") {
     return parseDateString(args[0]);
   }
+  let timezone: string = defaultTimezone;
   let y: number, m: number, d: number, h: number, mi: number, s: number;
   if (args.length >= 3 && typeof args[0] === "string") {
+    timezone = args[0];
     y = args[1] as number;
     m = args[2] as number;
     d = args.length > 3 ? (args[3] as number) : 1;
@@ -573,7 +676,13 @@ export function timestamp(...args: (number | string)[]): number {
   } else {
     return 0;
   }
-  return Date.UTC(y, m - 1, d, h, mi, s);
+  return zonedToUtcMs(utcMs(y, m, d, h, mi, s), timezone);
+}
+
+// timestamp(...) with the default symbol timezone, UTC; a script on another chart timezone calls
+// timestampIn with it (codegen).
+export function timestamp(...args: (number | string)[]): number {
+  return timestampIn("UTC", ...args);
 }
 
 // '+' 문자열 연결(analyzer.ts isStringExpr가 판별한 concatBinOps 대상, "na/수치 2c-ii") — JS

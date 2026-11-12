@@ -1059,16 +1059,16 @@ describe("ta.linreg", () => {
     expect(resultDefault).toBeCloseTo(107.7, 9);
   });
 
-  it("cross-checked against a from-scratch least-squares fit over the last length non-na sources (embedded NaN gap)", () => {
-    // PyneCore lib/ta.py linreg (TradingView-measured): an na source stores nothing and holds the
-    // last full-window value, so the window is the last `length` NON-na sources; the line is read
-    // at x = length - 1 - offset with x = 0 on the oldest source (ref_v6_ta_math.txt "ta.linreg").
-    // The reference below fits the textbook normal equations on that window, independently of the
-    // runtime's arithmetic order (twin channel lr_na covers the same rule against the oracle).
+  it("cross-checked against a from-scratch least-squares fit over the last length BARS: an na is stored and blanks the window (embedded NaN gap)", () => {
+    // PyneCore lib/ta.py linreg (TradingView-measured, tier 1 ta_375_linreg_windows): a fixed length
+    // runs the ring addressed by the chart bar, an na source is stored like any value and a window
+    // holding one is na, so one na blanks the next `length` bars; the line is read at x = length - 1 -
+    // offset with x = 0 on the oldest bar (ref_v6_ta_math.txt "ta.linreg"). The reference below fits
+    // the textbook normal equations on that window, independently of the runtime's arithmetic order.
     function directLinreg(values: number[], length: number, offset: number): number {
-      const kept = values.filter((v) => !Number.isNaN(v));
-      if (kept.length < length) return NaN;
-      const window = kept.slice(kept.length - length);
+      if (values.length < length) return NaN;
+      const window = values.slice(values.length - length);
+      if (window.some((v) => Number.isNaN(v))) return NaN;
       const n = length;
       const meanX = (n - 1) / 2;
       const meanY = window.reduce((a, b) => a + b, 0) / n;
@@ -1082,20 +1082,30 @@ describe("ta.linreg", () => {
       return meanY + slope * (n - 1 - offset - meanX);
     }
 
-    const values = [10, 11, 12, 13, NaN, 14, 15, 17, 16, 18, NaN, NaN, 19, 21];
+    const values = [10, 11, 12, 13, NaN, 14, 15, 17, 16, 18, NaN, NaN, 19, 21, 22, 20];
     const state = {};
+    let finite = 0;
     for (let i = 0; i < values.length; i++) {
-      const got = linreg(state, values[i]!, 4, 1);
-      // An na bar reports the value of the last bar that had a source.
-      let last = i;
-      while (last >= 0 && Number.isNaN(values[last]!)) last--;
-      const want = last < 0 ? NaN : directLinreg(values.slice(0, last + 1), 4, 1);
+      const got = linreg(state, values[i]!, 4, 1, i);
+      const want = directLinreg(values.slice(0, i + 1), 4, 1);
       if (Number.isNaN(want)) {
         expect(got).toBeNaN();
       } else {
+        finite++;
         expect(got).toBeCloseTo(want, 9);
       }
     }
+    expect(finite).toBe(4); // bars 3, 8, 9 and 15: every other window holds one of the na bars 4, 10, 11
+  });
+
+  it("a gated call reads the chart-bar window: stale slots between its calls, 0 in a slot it never wrote (tier 1 ta_375_linreg_windows)", () => {
+    // length 3 called on bars 1 and 2 only (a skipped bar 0): bar 2's window is bars 0..2 = [0 (never
+    // written), 5, 7]; a window of the call's own executions would still be warming up.
+    const state = {};
+    expect(linreg(state, 5, 3, 0, 1)).toBeNaN(); // bar_index < length - 1
+    const got = linreg(state, 7, 3, 0, 2);
+    // the line through (0, 0), (1, 5), (2, 7): mean y 4, slope 3.5, 4 + 3.5 * (2 - 1) = 7.5 at x = 2
+    expect(got).toBeCloseTo(7.5, 9);
   });
 });
 
@@ -2021,13 +2031,15 @@ describe("ta.range", () => {
     expect(range(state, 3, 1, 2)).toBe(0);
   });
 
-  it("is na on an na bar and ignores it afterwards: the extremes do not run, so the window goes on over the valued bars (twin range-na-machine.json)", () => {
+  it("is na on an na bar and does not run the extremes: its slot is a never-written one, 0 (twin range-na-machine.json, slot value per tier 1 ta_376)", () => {
     const state = {};
     range(state, 5, 3, 0);
     range(state, 6, 3, 1);
     expect(range(state, NaN, 3, 2)).toBeNaN();
-    expect(range(state, 7, 3, 3)).toBe(1); // bars 1..3: 6, (na, never written), 7
-    expect(range(state, 8, 3, 4)).toBe(1); // 7, 8 (the na bar's slot holds nothing)
+    // The na bar's slot was never written, and a never-written slot holds 0 (tier 1
+    // ta_376_window_extreme_machines c_lo_g2), not na: it is in the window until its bar ages out.
+    expect(range(state, 7, 3, 3)).toBe(7); // bars 1..3: 6, (0), 7
+    expect(range(state, 8, 3, 4)).toBe(8); // bars 2..4: (0), 7, 8; the lowest 0 has not aged out
     expect(range(state, 9, 3, 5)).toBe(2); // 7, 8, 9
   });
 
@@ -3955,12 +3967,12 @@ describe("ta.highestbars/ta.lowestbars variable(series) length (highestbarsVarLe
       highestbarsVarLen(stateHb, values[i]!, 1, 10, i);
       lowestbarsVarLen(stateLb, values[i]!, 1, 10, i);
     }
-    // All tied, the length growing 1 -> 3 past the ring (capacity 2): the growth remaps the slot of
-    // bar 1 onto the current bar, so the rescan reaches bar 2 only and reports it, the older of the
-    // ties it sees (resin-harness twin state/repros/extreme-varlen-sample10.json hb3/lb3: the oracle
-    // gives -1 here, then -2 once the ring holds three bars; pine2py's newest-wins gave 0).
-    expect(highestbarsVarLen(stateHb, 7, 3, 10, 3)).toBe(-1);
-    expect(lowestbarsVarLen(stateLb, 7, 3, 10, 3)).toBe(-1);
+    // All tied, the length growing 1 -> 3: a series length reads one slot per chart bar and keeps
+    // the whole history (tier 1 ta_376 s_hb_alt), so the rescan on the growth reaches bars 1..3 and
+    // names the oldest of the ties, bar 1 (pine2py's newest-wins gave 0; the ring, whose growth lost
+    // a bar, gave -1).
+    expect(highestbarsVarLen(stateHb, 7, 3, 10, 3)).toBe(-2);
+    expect(lowestbarsVarLen(stateLb, 7, 3, 10, 3)).toBe(-2);
     // A length-1 window is the current bar alone: a plain +0, never -0.
     expect(Object.is(highestbarsVarLen(stateHb, 7, 1, 10, 4), 0)).toBe(true);
     expect(Object.is(lowestbarsVarLen(stateLb, 7, 1, 10, 4), 0)).toBe(true);
@@ -4133,9 +4145,12 @@ describe("ta.median/ta.linreg/ta.wma variable(series) length (medianVarLen/linre
     }
   });
 
-  it("linregVarLen: a length that grows past the counter is na until the counter catches up", () => {
+  it("linregVarLen: a length that grows reads the history it already passed (one slot per chart bar, tier 1 ta_375 m4)", () => {
     const vals = [10.0, 12.0, 11.0, 15.0, 13.0, 14.0, 16.0, 12.5];
-    const expected = [NaN, 12, 11, 15, NaN, 14.3, 15.1, 13.95]; // channel vgrow
+    // length 2 on bars 0..3, 4 from bar 4: bar 0 reaches before the first call (na); bar 4 reads bars
+    // 1..4 = [12, 11, 15, 13] at x = 4 (mean 12.75, slope 0.7: 12.75 + 0.7 * 1.5 = 13.8, where the old
+    // warm-up counter left it na); bars 5..7 are the oracle's old values, unchanged (channel vgrow).
+    const expected = [NaN, 12, 11, 15, 13.8, 14.3, 15.1, 13.95];
     const state = {};
     for (let i = 0; i < vals.length; i++) {
       const r = linregVarLen(state, vals[i]!, i < 4 ? 2 : 4, 0, 10, i);
@@ -4153,9 +4168,12 @@ describe("ta.median/ta.linreg/ta.wma variable(series) length (medianVarLen/linre
     expect(linregVarLen(state, 70, 2, 0, 10, 4)).toBeCloseTo(70, 9); // [50, 70]
   });
 
-  it("linregVarLen: an na source stores nothing and holds the last full value (fixed-length linreg parity)", () => {
+  it("linregVarLen: an na source is stored and blanks the windows that reach it (no skipping, no holding)", () => {
     const vals = [10.0, 12.0, 11.0, 15.0, 13.0, 14.0, 16.0, 12.5];
-    const expected = [NaN, NaN, NaN, 12.3333333333, 13.3333333333, 14, 14.3333333333, 14.1666666667]; // channel vna3
+    // length 3, offset 1, na on bar 2: bars 2, 3, 4 hold it, bar 5 is the first window past it:
+    // [15, 13, 14] read at x = 1 (mean 14, slope -0.5: 14 + (-0.5) * 0) = 14; bar 6 [13, 14, 16] at x = 1
+    // (14.3333, slope 1.5) = 14.3333; bar 7 [14, 16, 12.5] at x = 1 (14.1667, slope -0.75) = 14.1667.
+    const expected = [NaN, NaN, NaN, NaN, NaN, 14, 14.3333333333, 14.1666666667];
     const state = {};
     for (let i = 0; i < vals.length; i++) {
       const r = linregVarLen(state, i === 2 ? NaN : vals[i]!, 3, 1, 10, i);
@@ -4164,16 +4182,16 @@ describe("ta.median/ta.linreg/ta.wma variable(series) length (medianVarLen/linre
     }
   });
 
-  it("linregVarLen: same-bar repeated calls start again from the bar-start state (loop-body parity)", () => {
+  it("linregVarLen: same-bar repeated calls rewrite the bar's slot (loop-body parity)", () => {
     const state = {};
     linregVarLen(state, 10, 2, 0, 10, 0);
     linregVarLen(state, 90, 2, 0, 10, 1);
     linregVarLen(state, 70, 2, 0, 10, 1);
     expect(linregVarLen(state, 20, 2, 0, 10, 1)).toBeCloseTo(20, 9); // [10, 20]
     expect(linregVarLen(state, 40, 2, 0, 10, 2)).toBeCloseTo(40, 9); // [20, 40]
-    expect(linregVarLen(state, NaN, 2, 0, 10, 3)).toBeCloseTo(40, 9); // held
-    // bar 3 again, from its start (the na call undone): 10 is stored and the counter reaches 3.
-    expect(linregVarLen(state, 10, 3, 0, 10, 3)).toBeCloseTo(55 / 3, 9); // [20, 40, 10]
+    expect(linregVarLen(state, NaN, 2, 0, 10, 3)).toBeNaN(); // [40, na]
+    // bar 3 again: its slot is rewritten, so the window of 3 is [20, 40, 10].
+    expect(linregVarLen(state, 10, 3, 0, 10, 3)).toBeCloseTo(55 / 3, 9);
   });
 
   it("wmaVarLen: computes the linearly-weighted mean over the *current* length as it varies (TV semantics, hand-verified — pine2py 고정 윈도우 버그라 오라클 불가)", () => {
@@ -6793,11 +6811,11 @@ describe("ta.range variable(series) length (rangeVarLen)", () => {
     expect(rangeVarLen(state, 12, 2, 10, 2)).toBe(88); // window [100 (the rewritten slot), 12]
   });
 
-  it("an na bar is na and leaves the window to the valued bars", () => {
+  it("an na bar is na and does not run the extremes: its slot stays a never-written one, 0", () => {
     const state = {};
     rangeVarLen(state, 5, 2, 10, 0);
     expect(rangeVarLen(state, NaN, 2, 10, 1)).toBeNaN();
-    expect(rangeVarLen(state, 6, 2, 10, 2)).toBe(0); // bars 1..2: (na, never written), 6
+    expect(rangeVarLen(state, 6, 2, 10, 2)).toBe(6); // bars 1..2: (never written: 0), 6
     expect(rangeVarLen(state, 9, 2, 10, 3)).toBe(3); // 6, 9
   });
 });
@@ -8703,7 +8721,9 @@ describe("numeric helpers", () => {
   it("format() applies {idx,number,pattern} decimal formatting, counting digits after the dot", () => {
     expect(format("{0,number,#.##}", 3.14159)).toBe("3.14");
     expect(format("{0,number,0.000}", 3.14159)).toBe("3.142");
-    expect(format("{0,number,#,###.##}", 1234.5678)).toBe("1234.57");
+    // a ',' in the pattern groups (this once pinned "1234.57", which DecimalFormat does not print)
+    expect(format("{0,number,#,###.##}", 1234.5678)).toBe("1,234.57");
+    expect(format("{0,number,#.##}", 1234.5678)).toBe("1234.57");
   });
 
   it("format() rounds a number pattern half-to-even on the double's exact value (DecimalFormat)", () => {
@@ -9122,12 +9142,15 @@ describe("array builtins (rt.array, C79)", () => {
     expect(parray.new_float(2.9, 1.0)).toEqual([1.0, 1.0]);
   });
 
-  it("get() returns the element in range and NaN out of range / for negative indices (pine2py guard literal port)", () => {
+  it("get() returns the element in range, counts a negative index from the end, and is NaN outside -size..size-1", () => {
+    // A negative index is a v6 feature, tier 1 array_001_array_basic (set(a, -2, v) writes slot 3 of 5).
     const a = [10.0, 20.0];
     expect(parray.get(a, 0)).toBe(10.0);
     expect(parray.get(a, 1)).toBe(20.0);
     expect(Number.isNaN(parray.get(a, 2))).toBe(true);
-    expect(Number.isNaN(parray.get(a, -1))).toBe(true);
+    expect(parray.get(a, -1)).toBe(20.0);
+    expect(parray.get(a, -2)).toBe(10.0);
+    expect(Number.isNaN(parray.get(a, -3))).toBe(true);
   });
 
   it("get() with a NaN index returns NaN without crashing (same path as pine2py's chained comparison being False)", () => {
@@ -9263,10 +9286,10 @@ describe("array builtins — residual slice (rt.array, C80)", () => {
     expect(a).toEqual([1.0, 9.0, 2.0, 3.0]);
   });
 
-  it("insert() with a NaN index is a silent no-op — pine2py's list.insert(nan,...) crashes (TypeError), JS Array.splice(NaN,...) would silently default to index 0 instead (DIVERGENCES #20)", () => {
+  it("insert() with a NaN index appends (tier 1 array_008_array_na_index: the na resolves to the array size, it is not clamped to 0 as Array.splice(NaN, ...) would)", () => {
     const a = [1.0, 2.0, 3.0];
     parray.insert(a, NaN, 9.0);
-    expect(a).toEqual([1.0, 2.0, 3.0]);
+    expect(a).toEqual([1.0, 2.0, 3.0, 9.0]);
   });
 
   it("insert() on a na (null) array is a silent no-op (pine2py crashes — DIVERGENCES #20)", () => {
@@ -9279,12 +9302,14 @@ describe("array builtins — residual slice (rt.array, C80)", () => {
     expect(a).toEqual([1.0, 3.0]);
   });
 
-  it("remove() returns NaN without mutating for an out-of-range or NaN index (pine2py's `0<=index<len(arr)` guard literal port)", () => {
+  it("remove() returns NaN without mutating for an outside or NaN index; a negative index in -size..-1 counts from the end", () => {
     const a = [1.0, 2.0];
     expect(Number.isNaN(parray.remove(a, 5))).toBe(true);
-    expect(Number.isNaN(parray.remove(a, -1))).toBe(true);
+    expect(Number.isNaN(parray.remove(a, -3))).toBe(true);
     expect(Number.isNaN(parray.remove(a, NaN))).toBe(true);
     expect(a).toEqual([1.0, 2.0]);
+    expect(parray.remove(a, -1)).toBe(2.0);
+    expect(a).toEqual([1.0]);
   });
 
   it("remove() on a na (null) array returns NaN (pine2py crashes — DIVERGENCES #20)", () => {
@@ -9325,12 +9350,13 @@ describe("array builtins — residual slice (rt.array, C80)", () => {
     expect(a).toEqual([9.0, 9.0, 9.0, 9.0, 9.0]);
   });
 
-  it("fill() with a NaN index_from or index_to is a silent no-op — pine2py's range(nan,...) crashes (TypeError, DIVERGENCES #20)", () => {
+  it("fill() with a NaN index_from starts at the first element and a NaN index_to ends at the array size (tier 1 array_008_array_na_index)", () => {
     const a = [1.0, 2.0, 3.0];
-    parray.fill(a, 9.0, NaN);
-    expect(a).toEqual([1.0, 2.0, 3.0]);
-    parray.fill(a, 9.0, 0, NaN);
-    expect(a).toEqual([1.0, 2.0, 3.0]);
+    parray.fill(a, 9.0, NaN, 1);
+    expect(a).toEqual([9.0, 2.0, 3.0]);
+    const b = [1.0, 2.0, 3.0];
+    parray.fill(b, 9.0, 1, NaN);
+    expect(b).toEqual([1.0, 9.0, 9.0]);
   });
 
   it("fill() on a na (null) array is a silent no-op (pine2py crashes — DIVERGENCES #20)", () => {
@@ -9345,9 +9371,9 @@ describe("array builtins — residual slice (rt.array, C80)", () => {
     expect(parray.sum([1.0, NaN, 2.0, 3.0])).toBe(6.0);
   });
 
-  it("sum() of an empty or all-na array is 0, not na (Python sum([])==0 — distinct from avg/min/max/median/stdev)", () => {
+  it("sum() of an all-na array is na (TradingView log, h2h array_005: z_sum NaN); an EMPTY array still sums to 0", () => {
+    expect(Number.isNaN(parray.sum([NaN, NaN]))).toBe(true);
     expect(parray.sum([])).toBe(0);
-    expect(parray.sum([NaN, NaN])).toBe(0);
   });
 
   it("sum() on a na (null) array returns na (NaN) — 'read' branch of the #19 principle", () => {
@@ -9469,10 +9495,35 @@ describe("array builtins — residual slice (rt.array, C80)", () => {
     expect(parray.variance([1.0, NaN, 3.0, 5.0])).toBeCloseTo(8 / 3, 9);
   });
 
-  it("variance()/stdev() with fewer than 2 valid elements is na (population stat needs >=2 points)", () => {
-    expect(Number.isNaN(parray.variance([5.0]))).toBe(true);
-    expect(Number.isNaN(parray.stdev([5.0]))).toBe(true);
+  it("variance()/stdev() of a single valid element are 0 when biased (default) and na when unbiased; no valid element is na", () => {
+    // TradingView log (h2h array_005): s_stdev 0 and s_variance 0 for array.from(na, 6.0, na).
+    expect(parray.variance([5.0])).toBe(0);
+    expect(parray.stdev([5.0])).toBe(0);
+    expect(parray.variance([NaN, 6.0, NaN])).toBe(0);
+    expect(Number.isNaN(parray.variance([5.0], false))).toBe(true);
+    expect(Number.isNaN(parray.stdev([5.0], false))).toBe(true);
     expect(Number.isNaN(parray.variance([]))).toBe(true);
+    expect(Number.isNaN(parray.variance([NaN, NaN]))).toBe(true);
+    expect(Number.isNaN(parray.stdev([], false))).toBe(true);
+  });
+
+  it("variance()/stdev() biased=true divides by n, biased=false by n-1 (TradingView logs, h2h array_002/003/005)", () => {
+    // array_005: real values [1, 3, 5] among na.
+    const a = [1.0, NaN, 3.0, NaN, 5.0];
+    expect(parray.variance(a)).toBeCloseTo(2.666666666667, 11);
+    expect(parray.variance(a, true)).toBeCloseTo(2.666666666667, 11);
+    expect(parray.variance(a, false)).toBeCloseTo(4, 12);
+    expect(parray.stdev(a)).toBeCloseTo(1.632993161855, 11);
+    expect(parray.stdev(a, false)).toBeCloseTo(2, 12);
+    // array_002: variance of [0,1,2,6,7,8,9,10,11] and stdev of [1,2,6,7,8,9,10,11].
+    expect(parray.variance([0, 1, 2, 6, 7, 8, 9, 10, 11])).toBeCloseTo(14.6666666666667, 12);
+    expect(parray.variance([0, 1, 2, 6, 7, 8, 9, 10, 11], false)).toBeCloseTo(16.5, 12);
+    expect(parray.stdev([1, 2, 6, 7, 8, 9, 10, 11])).toBeCloseTo(3.3819373146172, 12);
+    expect(parray.stdev([1, 2, 6, 7, 8, 9, 10, 11], false)).toBeCloseTo(3.6154430670982, 12);
+    // array_003 (floats).
+    const f = [0, 1.1, 2.2, 6.6, 7.7, 8.8, 9.9, 10.1, 11.2];
+    expect(parray.variance(f)).toBeCloseTo(15.9066666666667, 12);
+    expect(parray.variance(f, false)).toBeCloseTo(17.895, 12);
   });
 
   it("variance()/stdev() on a na (null) array return na", () => {
@@ -9538,10 +9589,25 @@ describe("array builtins — residual slice (rt.array, C80)", () => {
     expect(parray.covariance([1.0, 2.0, 3.0, 4.0, 5.0], [2.0, 4.0, 5.0])).toBeCloseTo(1.0, 9);
   });
 
-  it("covariance() returns na with fewer than 2 valid pairs, or on a na (null) array", () => {
-    expect(Number.isNaN(parray.covariance([1.0], [2.0]))).toBe(true);
+  it("covariance() of a single valid pair is 0 when biased (default) and na when unbiased; no valid pair or a na (null) array is na", () => {
+    expect(parray.covariance([1.0], [2.0])).toBe(0);
+    expect(Number.isNaN(parray.covariance([1.0], [2.0], false))).toBe(true);
+    expect(Number.isNaN(parray.covariance([NaN], [2.0]))).toBe(true);
     expect(Number.isNaN(parray.covariance(null, [1.0, 2.0]))).toBe(true);
     expect(Number.isNaN(parray.covariance([1.0, 2.0], null))).toBe(true);
+  });
+
+  it("covariance() biased=true divides by the pair count, biased=false by pairs-1 (TradingView logs, h2h array_002/005)", () => {
+    // array_005: na dropped pairwise -> pairs (1,2) and (5,6).
+    const c1 = [1.0, NaN, 3.0, 5.0];
+    const c2 = [2.0, 4.0, NaN, 6.0];
+    expect(parray.covariance(c1, c2)).toBeCloseTo(4, 12);
+    expect(parray.covariance(c1, c2, true)).toBeCloseTo(4, 12);
+    expect(parray.covariance(c1, c2, false)).toBeCloseTo(8, 12);
+    // array_002: covariance of an array with its own copy equals its variance.
+    const a = [1, 2, 4, 5, 6, 7, 8, 9, 10];
+    expect(parray.covariance(a, a.slice())).toBeCloseTo(8.39506172839506, 12);
+    expect(parray.covariance(a, a.slice(), false)).toBeCloseTo(9.444444444444443, 12);
   });
 
   it("percentile_nearest_rank() returns the value at the nearest-rank index (no interpolation)", () => {
@@ -9557,18 +9623,15 @@ describe("array builtins — residual slice (rt.array, C80)", () => {
     expect(parray.percentile_nearest_rank(vals, 200.0)).toBe(5);
   });
 
-  it("percentile_nearest_rank()/percentile_linear_interpolation() clamp a NaN percentage to 100 (literal port of pine2py's `max(0, min(100, p))` quirk, NOT a divergence)", () => {
-    // Python's builtin min(100.0, percentage) keeps 100.0 when percentage is nan (`nan < 100.0`
-    // is False, so no replacement happens) — pine2py itself resolves this to 100%, not a crash
-    // and not na (python 실측: percentile_nearest_rank([1..5], nan) == 5.0). This is deterministic
-    // per fixed argument order (not the order-dependent rt.max/min bug, C13) and unverifiable
-    // against real TV without WebSearch in this session, so it's literal-ported as-is (MEMORY.md
-    // Pitfalls fallback). The JS implementation must NOT use Math.min/Math.max here — those
-    // propagate NaN (opposite direction from Python's) and would silently produce NaN instead of
-    // 100.
+  it("an na percentage counts as 0 for percentile_nearest_rank() and is na for percentile_linear_interpolation()", () => {
+    // pine2py clamped it to 100 (Python's min(100.0, nan) keeps 100.0). TradingView's measurement,
+    // which runtime/ta.ts already follows for ta.percentile_* (tier 1 ta_247_percentile_na_percentage:
+    // "rank_na" equals "rank_zero"), is the rank of 0 for the nearest-rank form and na for the
+    // interpolating one.
     const vals = [1.0, 2.0, 3.0, 4.0, 5.0];
-    expect(parray.percentile_nearest_rank(vals, NaN)).toBe(5);
-    expect(parray.percentile_linear_interpolation(vals, NaN)).toBe(5);
+    expect(parray.percentile_nearest_rank(vals, NaN)).toBe(1);
+    expect(parray.percentile_nearest_rank([4.0, 3.0, 2.0, 1.0], NaN)).toBe(1);
+    expect(Number.isNaN(parray.percentile_linear_interpolation(vals, NaN))).toBe(true);
   });
 
   it("percentile_nearest_rank() returns na on an empty/all-na array or a na (null) array", () => {
@@ -9577,10 +9640,12 @@ describe("array builtins — residual slice (rt.array, C80)", () => {
     expect(Number.isNaN(parray.percentile_nearest_rank(null, 50.0))).toBe(true);
   });
 
-  it("percentile_linear_interpolation() interpolates between the two bracketing ranks", () => {
+  it("percentile_linear_interpolation() interpolates between the two bracketing ranks at the 1-based position n * p / 100 + 0.5", () => {
+    // n = 5: p50 is position 3.0 (rank 3); p25 is position 1.75, three quarters of the way from
+    // rank 1 to rank 2, where pine2py's (p / 100) * (n - 1) read rank 2 exactly.
     const vals = [1.0, 2.0, 3.0, 4.0, 5.0];
     expect(parray.percentile_linear_interpolation(vals, 50.0)).toBe(3);
-    expect(parray.percentile_linear_interpolation(vals, 25.0)).toBe(2);
+    expect(parray.percentile_linear_interpolation(vals, 25.0)).toBe(1.75);
   });
 
   it("percentile_linear_interpolation() returns the single element for a 1-valid array without dividing by zero, and na for empty/null", () => {
@@ -9589,13 +9654,17 @@ describe("array builtins — residual slice (rt.array, C80)", () => {
     expect(Number.isNaN(parray.percentile_linear_interpolation(null, 50.0))).toBe(true);
   });
 
-  it("percentrank() reports the percentage of valid elements strictly below value (ties do not count)", () => {
-    expect(parray.percentrank([1.0, 2.0, 2.0, 3.0], 2.0)).toBe(25);
-    expect(parray.percentrank([1.0, 2.0, 3.0, 4.0, 5.0], 3.0)).toBe(40);
+  it("percentrank() ranks the element AT the index: (count at or below it - 1) * 100 / (n - 1), ties counted", () => {
+    // pine2py read the second argument as a value and counted the elements strictly below it.
+    // [1, 2, 2, 3] at index 1 (value 2): three elements are <= 2, so (3 - 1) * 100 / 3.
+    expect(parray.percentrank([1.0, 2.0, 2.0, 3.0], 1)).toBeCloseTo(66.66666666666667, 12);
+    expect(parray.percentrank([1.0, 2.0, 3.0, 4.0, 5.0], 2)).toBe(50);
+    expect(parray.percentrank([1.0, 2.0, 3.0, 4.0, 5.0], 4)).toBe(100);
   });
 
-  it("percentrank() with a NaN value naturally reports 0 (every '<' comparison is false, no special-case needed — literal port)", () => {
+  it("percentrank() with a NaN index reads index 0 (tier 1 array_008_array_na_index)", () => {
     expect(parray.percentrank([1.0, 2.0, 3.0, 4.0, 5.0], NaN)).toBe(0);
+    expect(parray.percentrank([5.0, 4.0, 3.0, 2.0, 1.0], NaN)).toBe(100);
   });
 
   it("percentrank() returns na on an empty array or a na (null) array", () => {
@@ -9848,17 +9917,27 @@ describe("array builtins — sort/reverse/slice/concat/copy (rt.array, C85)", ()
     expect(parray.slice(null)).toBeNull();
   });
 
-  it("slice(arr, NaN index_from/index_to) returns na(null) — pine2py crashes on NaN slice indices (undefined), JS would otherwise silently coerce NaN to 0", () => {
-    expect(parray.slice([1, 2, 3], NaN)).toBeNull();
-    expect(parray.slice([1, 2, 3], 0, NaN)).toBeNull();
+  it("slice(arr, NaN index_from/index_to) starts at the beginning / ends at the array size (tier 1 array_008_array_na_index)", () => {
+    expect(parray.slice([1, 2, 3], NaN, 2)).toEqual([1, 2]);
+    expect(parray.slice([1, 2, 3], 1, NaN)).toEqual([2, 3]);
+    expect(parray.slice([1, 2, 3], NaN, NaN)).toEqual([1, 2, 3]);
   });
 
-  it("concat(arr1, arr2) returns a new array with arr2 appended to arr1, without mutating either input", () => {
+  it("concat(arr1, arr2) appends arr2 to arr1 IN PLACE and returns arr1 itself (tier 1 array_002_array_functions); arr2 is untouched", () => {
     const a = [1, 2];
     const b = [3, 4];
-    expect(parray.concat(a, b)).toEqual([1, 2, 3, 4]);
-    expect(a).toEqual([1, 2]);
+    const c = parray.concat(a, b);
+    expect(c).toBe(a);
+    expect(a).toEqual([1, 2, 3, 4]);
     expect(b).toEqual([3, 4]);
+  });
+
+  it("concat(arr, arr) duplicates the elements once; a null argument mutates nothing", () => {
+    const a = [1, 2];
+    expect(parray.concat(a, a)).toEqual([1, 2, 1, 2]);
+    const b = [1, 2];
+    expect(parray.concat(b, null)).toBeNull();
+    expect(b).toEqual([1, 2]);
   });
 
   it("concat(null, arr) / concat(arr, null) return na(null) — pine2py `None + list` crashes (undefined)", () => {
@@ -10095,11 +10174,26 @@ describe("array builtins — abs/every/some/range/binary_search·leftmost·right
     expect(parray.binary_search(null, 5)).toBeNaN();
   });
 
-  it("binary_search_leftmost/rightmost bracket a run of duplicate values (bisect_left/bisect_right, matches Python cross-check: leftmost=1, rightmost=4)", () => {
+  it("binary_search_leftmost/rightmost answer the first/last index of a run of duplicates, binary_search the one the halving lands on", () => {
+    // pine2py answered bisect_left / bisect_right (1 and 4, the slot after the run) and bisect_left + ==
+    // for binary_search (1). The oracle's TradingView probe notes (test_014_binary_search_bounds) read
+    // [10, 20, 20, 20, 30, 40] at 20 as search 2, leftmost 1, rightmost 3.
     const arr = [1, 3, 3, 3, 7];
     expect(parray.binary_search_leftmost(arr, 3)).toBe(1);
-    expect(parray.binary_search_rightmost(arr, 3)).toBe(4);
-    expect(parray.binary_search(arr, 3)).toBe(1);
+    expect(parray.binary_search_rightmost(arr, 3)).toBe(3);
+    expect(parray.binary_search(arr, 3)).toBe(2);
+  });
+
+  it("binary_search_leftmost/rightmost of an absent value: the closest element to the left / right of the insertion point (TradingView log, h2h array_002)", () => {
+    const arr = [1, 2, 4, 5, 6];
+    expect(parray.binary_search_leftmost(arr, 3)).toBe(1);
+    expect(parray.binary_search_rightmost(arr, 3)).toBe(2);
+    // outside the array: leftmost clamps to slot 0 (TradingView probe notes, test_014_binary_search_bounds:
+    // 5 -> 0, never -1), rightmost points one past the end for a value above the whole array
+    expect(parray.binary_search_leftmost(arr, 0)).toBe(0);
+    expect(parray.binary_search_rightmost(arr, 7)).toBe(5);
+    expect(parray.binary_search_leftmost(arr, 7)).toBe(4);
+    expect(parray.binary_search_rightmost(arr, 0)).toBe(0);
   });
 
   it("binary_search_leftmost/rightmost(null, value) return na(NaN)", () => {
@@ -10115,9 +10209,15 @@ describe("array builtins — abs/every/some/range/binary_search·leftmost·right
     expect(parray.sort_indices([3, 1, 2, NaN], false)).toEqual([0, 2, 1, 3]);
   });
 
-  it("sort_indices preserves the original relative order of tied elements in both directions (Python list.sort(reverse=True) does not reverse ties, matches cross-check)", () => {
+  it("sort_indices: ties keep their original order ascending and come out reversed descending (descending = reverse of ascending; TradingView log, h2h array_002/003)", () => {
     expect(parray.sort_indices([2, 1, 1, 3])).toEqual([1, 2, 0, 3]);
-    expect(parray.sort_indices([2, 1, 1, 3], false)).toEqual([3, 0, 1, 2]);
+    expect(parray.sort_indices([2, 1, 1, 3], false)).toEqual([3, 0, 2, 1]);
+    // TradingView: c = [10,9,8,7,6,5,0,0,1]
+    const c = [10, 9, 8, 7, 6, 5, 0, 0, 1];
+    expect(parray.sort_indices(c)).toEqual([6, 7, 8, 5, 4, 3, 2, 1, 0]);
+    expect(parray.sort_indices(c, false)).toEqual([0, 1, 2, 3, 4, 5, 8, 7, 6]);
+    // na indices stay last, in original order, in both directions
+    expect(parray.sort_indices([1, NaN, 1, NaN], false)).toEqual([2, 0, 1, 3]);
   });
 
   it("sort_indices does not mutate the source array", () => {
@@ -11017,12 +11117,24 @@ describe("matrix.concat (rt.matrix.concat, C93)", () => {
     expect(pmatrix.concat([[1]], null)).toBeNull();
   });
 
-  it("does not mutate either input matrix", () => {
+  it("appends id2 to id1 IN PLACE and returns id1 itself; id2 is untouched and its rows are copied (TradingView manual)", () => {
     const m1 = [[1, 2]];
     const m2 = [[3, 4]];
-    pmatrix.concat(m1, m2);
-    expect(m1).toEqual([[1, 2]]);
+    const r = pmatrix.concat(m1, m2);
+    expect(r).toBe(m1);
+    expect(m1).toEqual([[1, 2], [3, 4]]);
     expect(m2).toEqual([[3, 4]]);
+    (m1[1] as number[])[0] = 99;
+    expect(m2).toEqual([[3, 4]]);
+  });
+
+  it("dimension='columns' also extends id1 in place; a null argument mutates nothing", () => {
+    const m1 = [[1], [2]];
+    expect(pmatrix.concat(m1, [[3], [4]], "columns")).toBe(m1);
+    expect(m1).toEqual([[1, 3], [2, 4]]);
+    const m3 = [[1]];
+    expect(pmatrix.concat(m3, null)).toBeNull();
+    expect(m3).toEqual([[1]]);
   });
 });
 
@@ -11064,11 +11176,15 @@ describe("matrix.reshape (rt.matrix.reshape, C93)", () => {
       [1, 2, 3],
       [4, 5, 6],
     ];
-    expect(pmatrix.reshape(m, 3, 2)).toEqual([
+    const r = pmatrix.reshape(m, 3, 2);
+    expect(r).toEqual([
       [1, 2],
       [3, 4],
       [5, 6],
     ]);
+    // in place (TradingView log, h2h matrix_001: reshape(2x3 -> 3x2) changes the SAME matrix)
+    expect(r).toBe(m);
+    expect(m).toHaveLength(3);
   });
 
   it("leaves the last row short/empty when total elements < nr*nc (no padding, literal port)", () => {
@@ -11101,6 +11217,18 @@ describe("matrix.reverse (rt.matrix.reverse, C93)", () => {
     const m = [[1], [2], [3]];
     expect(pmatrix.reverse(m)).toBeUndefined();
     expect(m).toEqual([[3], [2], [1]]);
+  });
+
+  it("reverses the order of the rows AND of the columns (180 degree rotation; TradingView log, h2h matrix_001)", () => {
+    const m = [
+      [1, 2, 3],
+      [4, 5, 6],
+    ];
+    pmatrix.reverse(m);
+    expect(m).toEqual([
+      [6, 5, 4],
+      [3, 2, 1],
+    ]);
   });
 
   it("is a no-op on an empty matrix", () => {
@@ -11189,6 +11317,28 @@ describe("matrix.diff (rt.matrix.diff, C93)", () => {
 
   it("returns na(null) for a na(null) matrix", () => {
     expect(pmatrix.diff(null)).toBeNull();
+    expect(pmatrix.diff(null, [[1]])).toBeNull();
+    expect(pmatrix.diff([[1]], null)).toBeNull();
+  });
+
+  it("2-argument form: element-wise id1 - id2 as a NEW matrix (TradingView manual; h2h matrix_001 Test 23b)", () => {
+    const m1 = [[3, 3], [3, 3]];
+    const m2 = [[1, 1], [1, 1]];
+    const d = pmatrix.diff(m1, m2);
+    expect(d).toEqual([[2, 2], [2, 2]]);
+    expect(m1).toEqual([[3, 3], [3, 3]]);
+    expect(m2).toEqual([[1, 1], [1, 1]]);
+    expect(pmatrix.diff([[5, 1], [2, 8]], [[1, 2], [3, 4]])).toEqual([[4, -1], [-1, 4]]);
+  });
+
+  it("2-argument form with a scalar subtracts it from every element; NaN propagates", () => {
+    expect(pmatrix.diff([[5, 6], [7, 8]], 1)).toEqual([[4, 5], [6, 7]]);
+    expect(pmatrix.diff([[1, NaN]], [[1, 1]])).toEqual([[0, NaN]]);
+    expect(pmatrix.diff([[1, 2]], NaN)).toEqual([[NaN, NaN]]);
+  });
+
+  it("2-argument form: a smaller id2 falls back to NaN instead of crashing", () => {
+    expect(pmatrix.diff([[1, 2], [3, 4]], [[1, 1]])).toEqual([[0, 1], [NaN, NaN]]);
   });
 });
 

@@ -1,6 +1,6 @@
 {
   "about": "Behaviour resin is known to get wrong, approximate or refuse. Each entry has a repro in tests/unit/known_gaps.test.ts. 'it.fails' repros assert the CORRECT behaviour and are expected to fail today: when a gap is closed its test starts passing, which fails the suite and forces the entry to be removed. 'warned' repros assert that transpile() reports it. 'pinned' repros assert today's (loud) refusal. tvVerified is false everywhere: this file's expectations come from arithmetic, the repo's own documentation or the Pine reference's definitions, not from a TradingView run, and an entry says so in 'expectation'.",
-  "hypothesisMarkerLines": 92,
+  "hypothesisMarkerLines": 91,
   "gaps": [
     {
       "id": "KG-SEC-HTF-LAG",

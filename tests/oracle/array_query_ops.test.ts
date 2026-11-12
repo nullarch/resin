@@ -21,6 +21,14 @@ function loadCaseSource(name: string): string {
   return readFileSync(join(ROOT, "oracle", "cases", `${name}.pine`), "utf-8");
 }
 
+// Three channels (bsearch_right, dup_search, dup_right) are not decided by the golden any more:
+// pine2py (not ground truth) answered bisect_right for a hit (the slot AFTER the value) and
+// bisect_left for the plain search of a run of duplicates. TradingView answers the last duplicate
+// for rightmost and the slot the halving lands on for binary_search (tier 1 array_002_array_functions
+// for the miss; the oracle's TradingView probe notes, test_014_binary_search_bounds, for a hit). They
+// are asserted by hand below.
+const HAND_VERIFIED = new Set(["__obs_bsearch_right", "__obs_dup_search", "__obs_dup_right"]);
+
 const NUMERIC_CHANNELS = [
   "var:__obs_abs0",
   "var:__obs_abs1",
@@ -38,10 +46,7 @@ const NUMERIC_CHANNELS = [
   "var:__obs_bsearch_found",
   "var:__obs_bsearch_missing",
   "var:__obs_bsearch_left",
-  "var:__obs_bsearch_right",
-  "var:__obs_dup_search",
   "var:__obs_dup_left",
-  "var:__obs_dup_right",
   "var:__obs_si_asc0",
   "var:__obs_si_asc1",
   "var:__obs_si_asc2",
@@ -77,11 +82,28 @@ describe("oracle: array_query_ops", () => {
     // golden — a raw .toBe() fails (NaN !== "NaN"), so compare those explicitly (established
     // array_basic/residual/stats precedent) and use .toBe() for the rest.
     for (const key of Object.keys(golden.finalVarState)) {
+      if (HAND_VERIFIED.has(key)) continue;
       if (golden.finalVarState[key] === "NaN") {
         expect(Number.isNaN(result.finalVarState[key])).toBe(true);
         continue;
       }
       expect(result.finalVarState[key]).toBe(golden.finalVarState[key]);
+    }
+  });
+  // arrSorted = [low, open, close, high], searched for close (slot 2, no duplicate): a hit answers
+  // its own index for all three searches. arrDup = [1, 3, 3, 3, 7] searched for 3: the halving lands
+  // on slot 2, leftmost is the first duplicate (1) and rightmost the last (3).
+  it("binary searches answer the index of a hit, the last duplicate for rightmost (hand-verified)", () => {
+    const data = loadOracleData(CASE_NAME);
+    const source = loadCaseSource(CASE_NAME);
+
+    const result = runPipeline(source, data);
+
+    for (let i = 0; i < data.close.length; i++) {
+      const bar = result.bars[i]!;
+      expect(bar["var:__obs_bsearch_right"], `bar ${i} bsearch_right`).toBe(2);
+      expect(bar["var:__obs_dup_search"], `bar ${i} dup_search`).toBe(2);
+      expect(bar["var:__obs_dup_right"], `bar ${i} dup_right`).toBe(3);
     }
   });
 });

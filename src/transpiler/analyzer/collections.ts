@@ -114,7 +114,9 @@ export const ARRAY_REGISTRY: Readonly<Record<string, ArrayMethodEntry>> = {
   includes: { argCount: 2 },
   indexof: { argCount: 2 },
   lastindexof: { argCount: 2 },
-  covariance: { argCount: 2 },
+  // covariance(id1, id2[, biased]) / stdev(id[, biased]) / variance(id[, biased]) — biased defaults to true
+  // (population statistic, divide by n); false divides by n-1 (TradingView manual).
+  covariance: { argCount: 3, minArgCount: 2 },
   percentile_nearest_rank: { argCount: 2 },
   percentile_linear_interpolation: { argCount: 2 },
   percentrank: { argCount: 2 },
@@ -145,8 +147,8 @@ export const ARRAY_REGISTRY: Readonly<Record<string, ArrayMethodEntry>> = {
   max: { argCount: 2, minArgCount: 1 },
   median: { argCount: 1 },
   mode: { argCount: 1 },
-  stdev: { argCount: 1 },
-  variance: { argCount: 1 },
+  stdev: { argCount: 2, minArgCount: 1 },
+  variance: { argCount: 2, minArgCount: 1 },
   standardize: { argCount: 1 },
   reverse: { argCount: 1 },
   copy: { argCount: 1 },
@@ -198,7 +200,9 @@ export const MATRIX_REGISTRY: Readonly<Record<string, MatrixMethodEntry>> = {
   elements_count: { argCount: 1 },
   copy: { argCount: 1 },
   reverse: { argCount: 1 },
-  diff: { argCount: 1 },
+  // diff(id1[, id2]) — the TradingView form is the 2-argument element-wise subtraction (id2 is a matrix
+  // or a scalar); the 1-argument adjacent-row difference is a pre-existing extension kept for compatibility.
+  diff: { argCount: 2, minArgCount: 1 },
   is_square: { argCount: 1 },
   is_symmetric: { argCount: 1 },
   is_antisymmetric: { argCount: 1 },
@@ -415,14 +419,15 @@ export const ARRAY_KWARG_PARAM_NAMES: Readonly<Record<string, readonly string[]>
   copy: ["id"],
   sum: ["id"],
   avg: ["id"],
-  stdev: ["id"],
+  stdev: ["id", "biased"],
+  variance: ["id", "biased"],
   shift: ["id"],
   reverse: ["id"],
   slice: ["id", "index_from", "index_to"],
   insert: ["id", "index", "value"],
   max: ["id"],
   min: ["id"],
-  covariance: ["id1", "id2"],
+  covariance: ["id1", "id2", "biased"],
   indexof: ["id", "value"],
   remove: ["id", "index"],
 };
@@ -495,6 +500,13 @@ export function analyzeArrayCall(
     if (orderArg.kind === "StringLiteral" && ORDER_CONSTANTS.has(orderArg.value)) {
       prog.builtinBooleanConstants.set(orderArg, ORDER_CONSTANTS.get(orderArg.value)!);
     }
+  }
+  // array.from(1, 2, 3) is an array<int>: when every argument is a proven int the array is marked
+  // (codegen emits rt.array.from_int), so it prints 1, 2, 3 and not 1.0, 2.0, 3.0. An argument the
+  // analyzer cannot prove int (anything but literals, for counters and top-level int vars) leaves
+  // the array an unmarked one, which prints as float.
+  if (method === "from" && receiverOffset === 0 && expr.args.length > 0 && expr.args.every((a) => isStaticIntExpr(a, prog, scope))) {
+    prog.arrayFromIntCalls.add(expr);
   }
   prog.builtinCalls.set(expr, `array.${method}`);
 }

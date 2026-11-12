@@ -39,7 +39,7 @@ A name that is wrong and unregistered still compiles silently: an empty `warning
   sibling implementation resin was first built against) is **not ground truth**: a script going
   `matched → mismatch` can be resin getting closer to TradingView. Read why, then
   `UPDATE_CORPUS_LEDGER=1 npx vitest run tests/unit/corpus_diff.test.ts`. `matched_vacuous` counts matches in
-  which no compared channel ever varies (562 of 2,303 today). `node scripts/corpus-ledger.mjs --summary`.
+  which no compared channel ever varies (558 of 2,289 today). `node scripts/corpus-ledger.mjs --summary`.
 - `oracle/golden/PROVENANCE.json` — which of the 263 goldens were corrected by hand after the 0.1.0
   import (25). `node scripts/golden-provenance.mjs` regenerates it from git history.
 - Both replays use 10 near-integer bars, so a window of 10 or more bars is NaN on both sides. The

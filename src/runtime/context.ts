@@ -32,6 +32,7 @@ import { checkDeadline, resolveLimits, setActiveLimits, type ResolvedLimits, typ
 import { Diagnostics, setActiveDiagnostics } from "./diagnostics";
 import { unusedOverrides } from "./input";
 import { in_seconds } from "./timeframe";
+import type { LogEntry } from "./log";
 
 export interface OHLCVData {
   open: ArrayLike<number>;
@@ -60,6 +61,9 @@ export interface ContextOptions {
   // What stops a runaway script: loop steps per bar, the size of one allocation, a deadline
   // (src/runtime/limits.ts). Defaults apply for any key left out.
   limits?: RunLimits;
+  // Receives what the script writes with log.info / log.warning / log.error, one call per log
+  // statement execution, in order. Without it those calls are no-ops, as before. See LogEntry.
+  onLog?: (entry: LogEntry) => void;
 }
 
 // One symbol's bars with their open times (required), the timeframe they have (taken to be the
@@ -72,7 +76,7 @@ export interface SecurityFeed extends OHLCVData {
 }
 
 // The ContextOptions keys this resin takes, for callers that detect support.
-export const CONTEXT_OPTION_KEYS: readonly (keyof ContextOptions)[] = ["inputs", "magnifier", "security", "limits"];
+export const CONTEXT_OPTION_KEYS: readonly (keyof ContextOptions)[] = ["inputs", "magnifier", "security", "limits", "onLog"];
 
 // The oldest believable bar open time in unix milliseconds (1973). A first time below it is almost
 // certainly unix seconds, which TradingView's `time` is not.
@@ -129,6 +133,10 @@ export class Context {
   // Generated code fills them with `$.plots[N].record(value)` each bar; once
   // the loop finishes, run() converts them to plain arrays.
   plots: Series[];
+  // The log sink (ContextOptions.onLog). compile() reads it when it instantiates the module on
+  // this context, so set it before compile(code)(ctx) when building the context by hand.
+  // request.security child contexts never have one: their log output is not the chart's.
+  onLog: ((entry: LogEntry) => void) | undefined = undefined;
   // Zero-based index of the current bar, for barstate.* and session.* (timeOfBar).
   // advance() moves it forward by one; barCount is the fixed total.
   idx: number;
@@ -217,6 +225,7 @@ export class Context {
     ctx.setLimits(opts.limits);
     ctx.checkOptions(opts);
     ctx.checkData(data, result.calendar.chartTf);
+    if (opts.onLog !== undefined) ctx.onLog = opts.onLog;
     if (opts.magnifier !== undefined) ctx.setMagnifier(opts.magnifier);
     if (opts.security !== undefined) {
       ctx.setSecurityFeeds(opts.security, result.securitySymbols ?? [], result.securityTfs, result.calendar);

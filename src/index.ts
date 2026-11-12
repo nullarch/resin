@@ -46,6 +46,8 @@ export { PineRuntimeHaltError } from "./runtime/log";
 // RunLimits). Deliberately not a PineRuntimeHaltError: the script did not choose to stop.
 export { ResinLimitError } from "./runtime/limits";
 export type { RunLimits } from "./runtime/limits";
+// What ContextOptions.onLog receives for each log.info / log.warning / log.error call.
+export type { LogEntry } from "./runtime/log";
 
 // Type-only: Context constructs these, a caller never does. They exist so
 // reads like ctx.close.get(0) and ctx.strategy.posSize type-check.

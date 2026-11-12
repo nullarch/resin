@@ -38,6 +38,8 @@ import {
   DAYOFWEEK_CONSTANTS,
   DEFAULT_CHART_TF,
   DRAWING_STATE_PARAM_NAMES,
+  DRAWING_POINT_PARAM_NAMES,
+  CHART_POINT_KWARG_PARAM_NAMES,
   TA_REGISTRY,
   taCallReturnArity,
   TICKER_KWARG_PARAM_NAMES,
@@ -1726,6 +1728,8 @@ const MUTATING_ARRAY_BUILTINS = new Set([
   "array.fill",
   "array.sort",
   "array.reverse",
+  // array.concat appends to its first argument in place (and returns it), so it is observable.
+  "array.concat",
   "map.put",
   "map.remove",
   "map.clear",
@@ -1747,6 +1751,9 @@ const MUTATING_ARRAY_BUILTINS = new Set([
   "matrix.fill",
   "matrix.reverse",
   "matrix.sort",
+  // matrix.reshape and matrix.concat rebuild / append to their first argument in place.
+  "matrix.reshape",
+  "matrix.concat",
 ]);
 
 function isMutatingArrayCall(expr: CallExpr, program: AnalyzedProgram): boolean {
@@ -4354,6 +4361,13 @@ function genCallExpr(
       // prepass row in request.security. A series length gets it with the *VarLen suffix below.
       args.push(secCtx === null ? "$.idx" : secCtx.loopVar);
     }
+    if (!stateCall.seriesLength && stateCall.fn === "linreg") {
+      // A fixed-length ta.linreg runs the ta.highest ring, addressed by bar_index (runtime/ta.ts
+      // linreg): the optional offset is padded first, then the bar index goes last, as the series
+      // form's barCount/barIdx do.
+      if (args.length === 2) args.push("0");
+      args.push(secCtx === null ? "$.idx" : secCtx.loopVar);
+    }
     if (stateCall.fn === "wpr") {
       // ta.wpr(length) — Pine 문법에 close/high/low 인자가 없고 내장 bar series를 암묵 사용한다
       // (analyzer.ts TA_REGISTRY.wpr 주석 참조). 유일한 사용자 인자 length(index 0) 앞에 셋을 끼워
@@ -5160,6 +5174,14 @@ function genCallExpr(
       }
       return `rt.nz(${args.join(", ")})`;
     }
+    // timestamp(year, month, day, ...) without a timezone is a time of the exchange timezone
+    // (syminfo.timezone, ref_v6_lang.txt timestamp); rt.timestamp's own default is UTC, resin's
+    // default symbol timezone, so only another chart timezone is passed (rt.timestampIn).
+    const timestampZone = builtinName === "timestamp" ? program.syminfoStrings.get("timezone")! : "UTC";
+    const timestampCall = timestampZone === "UTC" ? "rt.timestamp(" : `rt.timestampIn(${JSON.stringify(timestampZone)}, `;
+    if (builtinName === "timestamp" && expr.kwargs.length === 0 && timestampZone !== "UTC") {
+      return `${timestampCall}${expr.args.map((a) => genExpr(a, program, funcCtx)).join(", ")})`;
+    }
     if (builtinName === "timestamp" && expr.kwargs.length > 0) {
       // timestamp(...) kwargs(C406, analyzer/call-expr.ts resolveTimestampKwargSlots 참조) —
       // timezone 유무로 슬롯 표 자체가 동적으로 바뀌어(주석 참조) math.*/nz처럼 고정 표 하나를
@@ -5177,7 +5199,7 @@ function genCallExpr(
         while (args.length < slot) args.push("0");
         args[slot] = genExpr(kw.value, program, funcCtx);
       }
-      return `rt.timestamp(${args.join(", ")})`;
+      return `${timestampCall}${args.join(", ")})`;
     }
     if (builtinName === "timeframe.in_seconds") {
       // timeframe.in_seconds(timeframe=) kwarg(C405, analyzer/call-expr.ts
@@ -5211,7 +5233,30 @@ function genCallExpr(
       }
       return `rt.${builtinName}(${args.join(", ")})`;
     }
-    const drawingStateParamNames = expr.kwargs.length > 0 ? DRAWING_STATE_PARAM_NAMES[builtinName] : undefined;
+    if (builtinName.startsWith("chart.point.")) {
+      // chart.point.new/from_index/from_time/now/copy: keyword arguments land on their parameter's slot
+      // (CHART_POINT_KWARG_PARAM_NAMES; the skipped slots are undefined, so the runtime defaults apply),
+      // and chart.point.now also gets the running context's bar index and bar time after its price,
+      // the "current bar" the point names (runtime/drawing.ts chartPointNow).
+      const method = builtinName.slice("chart.point.".length);
+      const paramNames = CHART_POINT_KWARG_PARAM_NAMES[method] ?? [];
+      const args = expr.args.map((a) => genExpr(a, program, funcCtx, secCtx));
+      for (const kw of expr.kwargs) {
+        const slot = paramNames.indexOf(kw.name);
+        if (slot === -1) continue; // defensive: the analyzer only lets these names through
+        while (args.length < slot) args.push("undefined");
+        args[slot] = genExpr(kw.value, program, funcCtx, secCtx);
+      }
+      if (method === "now") {
+        while (args.length < 1) args.push("undefined");
+        args.push("$.idx", "$.barTimeMs");
+      }
+      return `rt.${builtinName}(${args.join(", ")})`;
+    }
+    const drawingStateParamNames =
+      expr.kwargs.length > 0
+        ? (program.drawingPointOverloads.has(expr) ? DRAWING_POINT_PARAM_NAMES : DRAWING_STATE_PARAM_NAMES)[builtinName]
+        : undefined;
     if (drawingStateParamNames !== undefined) {
       // drawing.* state kwarg 낮추기(C813, LIMITATIONS C572 수정 — analyzer/call-expr.ts
       // DRAWING_STATE_PARAM_NAMES 주석 참조). 아래 범용 폴백이 expr.kwargs를 통째로 버려
@@ -5276,6 +5321,9 @@ function genCallExpr(
       grid.some((k) => program.syminfoNumbers.get(k) !== SYMINFO_NUMBER_PROPS.get(k))
     ) {
       args.push(...grid.map((k) => String(program.syminfoNumbers.get(k)!)));
+    }
+    if (builtinName === "array.from" && program.arrayFromIntCalls.has(expr)) {
+      return `rt.array.from_int(${args.join(", ")})`;
     }
     return `rt.${builtinName}(${args.join(", ")})`;
   }

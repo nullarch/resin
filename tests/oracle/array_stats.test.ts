@@ -20,7 +20,13 @@ function loadCaseSource(name: string): string {
   return readFileSync(join(ROOT, "oracle", "cases", `${name}.pine`), "utf-8");
 }
 
-const CHANNELS = [
+// Channels where the pine2py golden is NOT ground truth and Resin follows the TradingView logs
+// instead (h2h case array_005): the sum of an all-na array is na (golden: 0), and stdev/variance of
+// a single valid element are 0 with the default biased=true (golden: na). They are asserted
+// explicitly below instead of being compared with the golden.
+const TV_OVERRIDDEN = ["var:__obs_c_sum", "var:__obs_d_stdev", "var:__obs_d_variance"];
+
+const ALL_CHANNELS = [
   "var:__obs_a_sum",
   "var:__obs_a_avg",
   "var:__obs_a_min",
@@ -47,6 +53,7 @@ const CHANNELS = [
   "var:__obs_e_mode",
   "var:__obs_f_mode",
 ];
+const CHANNELS = ALL_CHANNELS.filter((k) => !TV_OVERRIDDEN.includes(k));
 
 describe("oracle: array_stats", () => {
   it("matches the pine2py golden bar-by-bar for all twenty-five numeric channels", () => {
@@ -58,6 +65,11 @@ describe("oracle: array_stats", () => {
 
     expect(result.bars).toHaveLength(golden.bars.length);
     compareToGolden(result.bars, golden, CHANNELS);
+    for (const bar of result.bars) {
+      expect(Number.isNaN(bar["var:__obs_c_sum"]!)).toBe(true);
+      expect(bar["var:__obs_d_stdev"]).toBe(0);
+      expect(bar["var:__obs_d_variance"]).toBe(0);
+    }
   });
 
   it("matches the pine2py golden final var state for all twenty-five numeric channels", () => {
@@ -82,7 +94,6 @@ describe("oracle: array_stats", () => {
       "__obs_b_median",
       "__obs_b_stdev",
       "__obs_b_variance",
-      "__obs_c_sum",
       "__obs_d_sum",
       "__obs_d_avg",
       "__obs_e_mode",
@@ -92,19 +103,21 @@ describe("oracle: array_stats", () => {
       expect(result.finalVarState[key]).toBeCloseTo(expected as number, 6);
     }
     // NaN 채널은 toBeCloseTo가 NaN 비교를 못 하므로 명시적으로 확인(array_basic/residual의 전례).
-    for (const key of ["__obs_c_avg", "__obs_c_min", "__obs_c_median", "__obs_c_stdev", "__obs_d_stdev", "__obs_d_variance"]) {
+    for (const key of ["__obs_c_avg", "__obs_c_min", "__obs_c_median", "__obs_c_stdev"]) {
       expect(Number.isNaN(result.finalVarState[key])).toBe(true);
       expect(golden.finalVarState[key]).toBe("NaN");
     }
   });
 
-  it("array.sum returns 0 (not na) for an all-na array, unlike avg/min/max/median/stdev", () => {
+  it("array.sum of an all-na array is na like avg/min/max/median/stdev (TradingView log, h2h array_005); single-element stdev/variance are 0", () => {
     const data = loadOracleData(CASE_NAME);
     const source = loadCaseSource(CASE_NAME);
 
     const result = runPipeline(source, data);
 
-    expect(result.finalVarState["__obs_c_sum"]).toBe(0);
+    expect(Number.isNaN(result.finalVarState["__obs_c_sum"])).toBe(true);
     expect(Number.isNaN(result.finalVarState["__obs_c_avg"])).toBe(true);
+    expect(result.finalVarState["__obs_d_stdev"]).toBe(0);
+    expect(result.finalVarState["__obs_d_variance"]).toBe(0);
   });
 });
