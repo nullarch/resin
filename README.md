@@ -337,7 +337,7 @@ node --import @nullarch/resin/register your-script.mjs
   sit in a comment at the call site, marked as a hypothesis rather than a
   measurement.
 - **Known gaps are recorded where they bite.** The long tail is things like a
-  `ta.alma` or `ta.cog` length that changes from bar to bar, or
+  `ta.ema` or `ta.rsi` length that changes from bar to bar, or
   `request.security` returning an object with an array field. Each is commented
   at the point where it is refused, with a workaround when one exists.
 

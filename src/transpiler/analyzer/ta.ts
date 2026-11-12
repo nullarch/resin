@@ -111,15 +111,18 @@ export interface TaRegistryEntry {
   // true면 lengthArgIndex 위치가 series여도 하드 에러를 내지 않고 대신 codegen이 다른 rtPath(state에
   // 고정폭 버퍼를 굳히지 않는 변형, 예: highestVarLen)로 분기한다(배치25 (4), wild "length
   // 인자는 series일 수 없음" 클러스터 대상 — runtime/ta.ts highestVarLen 주석 참조). Every
-  // builtin whose length the v6 reference types `series int` has one, except ta.alma and ta.cog: the
-  // oracle's machines for those keep what the first length built (alma's weights, cog's running
-  // weighted sum), where the manual's Pine equivalents recompute with each bar's length — an open
-  // dispute, so they still reject a series length — 다른 함수에 true를 놓으면
+  // builtin whose length the v6 reference types `series int` has one. ta.alma and ta.cog got theirs
+  // last: the manual's Pine equivalents recompute with each bar's length (resin-harness dispute D6,
+  // settled for the manual; the oracle's cog now does the same, its alma still keeps the first
+  // call's weights) — 다른 함수에 true를 놓으면
   // codegen의 VARLEN_RT_PATHS(codegen.ts genCallExpr)에
   // 대응 항목이 없어 컴파일 산출물이 존재하지 않는 런타임 함수를 참조하게 되니 반드시 그 표와
   // 런타임 변형 함수를 함께 추가할 것(linreg처럼 length 뒤에 선택 인자가 있으면 genCallExpr의
   // varlen 패딩 분기도 함께 — 뒤에 붙는 barCount/barIdx가 그 자리를 침범하지 않도록).
   seriesLengthOk?: boolean;
+  // With several lengthArgIndex positions, the only one a series is accepted at (ta.alma: the
+  // length; its offset, sigma and floor are `simple` in the reference and still refuse a series).
+  seriesLengthOnlyAt?: number;
   // true면 조건부 위치에서의 호출을 제한한다(전 항목 true). C64/C65/C66/C161/C162를 거치며
   // cond-body/lazy-expr/loop-body/udf-body가 차례로 허용돼 남은 거부 위치는 조건식(condition)
   // 하나다 — firstForbiddenKind/ScopePushKind 주석 참조.
@@ -184,7 +187,7 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // The fifth argument `floor` is optional (ref_v6_ta_math.txt "SYNTAX: ta.alma(series, length,
   // offset, sigma, floor)", "ARG floor [simple bool]: An optional parameter ... Default value is
   // false"); it shapes the weights too, so a series value is rejected like the other three.
-  alma: { dispatch: "ta", displayName: "ta.alma", argCount: 5, minArgCount: 4, lengthArgIndex: [1, 2, 3, 4], conditionalForbidden: true, rtPath: "rt.ta.alma", kwargParamNames: ["series", "length", "offset", "sigma", "floor"] },
+  alma: { dispatch: "ta", displayName: "ta.alma", argCount: 5, minArgCount: 4, lengthArgIndex: [1, 2, 3, 4], seriesLengthOk: true, seriesLengthOnlyAt: 1, conditionalForbidden: true, rtPath: "rt.ta.alma", kwargParamNames: ["series", "length", "offset", "sigma", "floor"] },
   // ta.hma(source, length) — pine2py wavealgo/ta/hma.py 소스 대조 결과 HMA = WMA(2*WMA(src,half_len)
   // - WMA(src,length), sqrt_len)(half_len/sqrt_len는 length의 순수 파생값). runtime/ta.ts hma()가
   // rt.ta.wma를 half/full/outer 세 벌 독립 상태로 내부 재호출하므로 codegen 특수 분기 불필요 —
@@ -1010,7 +1013,7 @@ export function analyzeStatefulCall(
     // resolvedArgs[idx]가 undefined(구멍)면 위 이름/구멍 검증이 이미 에러를 냈으므로 여기서는
     // 조용히 건너뛴다(series 하드 에러까지 중복 보고할 필요 없음).
     if (resolvedArgs.length > idx && resolvedArgs[idx] !== undefined && inferQualifier(resolvedArgs[idx]!, prog, scope) === "series") {
-      if (entry.seriesLengthOk) {
+      if (entry.seriesLengthOk && (entry.seriesLengthOnlyAt === undefined || entry.seriesLengthOnlyAt === idx + omittedLeadingArgs)) {
         // seriesLengthOk 함수 전용 — 하드 에러 대신 codegen이 state-fixed rtPath를 우회하도록 표시만 한다(genCallExpr의
         // stateCall.seriesLength 분기, runtime/ta.ts highestVarLen/smaVarLen 참조).
         prog.stateCallSlots.get(expr)!.seriesLength = true;

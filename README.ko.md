@@ -301,7 +301,7 @@ node --import @nullarch/resin/register your-script.mjs
   말이 없는 곳에서 Resin은 매뉴얼을 따릅니다. 매뉴얼조차 침묵하는 곳에서는 그 추론과 근거가
   호출 지점 주석에 있고, 실측이 아니라 가설이라고 표시되어 있습니다.
 - **알려진 공백은 그것이 실제로 걸리는 자리에 기록되어 있습니다.** 롱테일에는 바마다 바뀌는
-  `ta.alma`·`ta.cog`의 길이, 또는 배열 필드를 가진 객체를 반환하는 `request.security` 같은
+  `ta.ema`·`ta.rsi`의 길이, 또는 배열 필드를 가진 객체를 반환하는 `request.security` 같은
   것들이 있습니다. 각각 거부되는 지점에 주석이 있고, 우회 방법이 있으면 함께 적어두었습니다.
 
 <a id="how-this-was-built"></a>

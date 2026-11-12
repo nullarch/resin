@@ -2233,9 +2233,11 @@ describe("Analyzer", () => {
     expect(prog.taSlotCount).toBe(1);
   });
 
-  it("errors when ta.alma's length argument is a bar series identifier directly", () => {
-    const prog = analyzeSource("x = ta.alma(close, close, 0.85, 6)");
-    expect(prog.errors.some((e) => e.includes("'ta.alma'") && e.includes("length"))).toBe(true);
+  // The length is `series int` in the reference and read per bar (runtime/ta.ts almaVarLen;
+  // resin-harness dispute D6, settled for the manual). offset, sigma and floor stay `simple`.
+  it("accepts a series length for ta.alma", () => {
+    const prog = analyzeSource("x = ta.alma(close, math.min(bar_index + 1, 9), 0.85, 6)");
+    expect(prog.errors).toEqual([]);
   });
 
   it("errors when ta.alma's offset argument is a bar series identifier directly", () => {

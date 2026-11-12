@@ -422,6 +422,37 @@ export function alma(state: AlmaState, value: number, length: number, offsetMult
   return weightedTotal / state.weightSum!;
 }
 
+// ta.alma with a series length (or a series offset, sigma or floor): the reference's Pine
+// equivalent, read with the bar's own arguments (ref_v6_ta_math.txt ta.alma, "// same on pine, but
+// much less efficient"):
+//   m = offset * (windowsize - 1)   (math.floor of it when `floor`)
+//   s = windowsize / sigma
+//   norm += weight, sum += series[windowsize - i - 1] * weight, weight = exp(-(i - m)^2 / (2 s^2))
+//   sum / norm
+// The window is the last `windowsize` bars the call site ran on, na included (an na in it is na, as
+// in the literal-length form). resin-harness dispute D6, settled for the manual: the oracle keeps
+// the weights of the FIRST call's length (on bar 8 of its twin, where the length reaches 9 and
+// stays, it answers close[8]), while "once a series length holds still, the manual's definitions
+// give exactly the fixed-length value". No TradingView export decides it yet.
+export function almaVarLen(
+  state: ExtremeVarLenState, value: number, length: number, offsetMult: number, sigma: number, floor: boolean, barCount: number, barIdx: number,
+): number {
+  const w = recordVarLen(state, value, barCount, barIdx);
+  const len = Math.trunc(length);
+  if (!(len >= 1) || len - 1 > w) return NaN;
+  const buffer = state.buffer!;
+  const m = floor ? Math.floor(offsetMult * (len - 1)) : offsetMult * (len - 1);
+  const s = len / sigma;
+  let norm = 0;
+  let sum = 0;
+  for (let i = 0; i < len; i++) {
+    const weight = Math.exp(-((i - m) ** 2) / (2 * s * s));
+    norm += weight;
+    sum += buffer[w - (len - i - 1)]! * weight;
+  }
+  return norm === 0 ? NaN : sum / norm;
+}
+
 export interface CogState {
   sumState?: SmaState; // the denominator: math.sum(source, length)
   buffer?: number[]; // ring of the last `length` non-na values

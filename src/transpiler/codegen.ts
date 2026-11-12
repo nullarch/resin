@@ -4203,6 +4203,7 @@ const VARLEN_RT_PATHS: Readonly<Record<string, string>> = {
   mode: "rt.ta.modeVarLen",
   correlation: "rt.ta.correlationVarLen",
   cog: "rt.ta.cogVarLen",
+  alma: "rt.ta.almaVarLen",
 };
 
 // The builtins whose machine TradingView advances once per EXECUTION of a loop call site, instead
@@ -4571,6 +4572,10 @@ function genCallExpr(
       // (state, value, length, biased, barCount, barIdx)를 맞춘다.
       if ((stateCall.fn === "stdev" || stateCall.fn === "variance") && args.length === 2) {
         args.push("true");
+      }
+      // ta.alma: the optional `floor` (default false) is padded for the same reason.
+      if (stateCall.fn === "alma" && args.length === 4) {
+        args.push("false");
       }
       args.push("$.barCount", secCtx === null ? "$.idx" : secCtx.loopVar);
     }
