@@ -175,6 +175,9 @@ interface PendingEntry {
   // order the size its budget buys at the price it would fill at when placed. The margin the order
   // needs while it rests is judged on it (cancelUnaffordableEntries).
   size: number;
+  // A default-sized stop or stop-limit order: the price it would have executed at when placed
+  // (defaultOrderQty); NaN otherwise.
+  budgetPrice: number;
   limit: number; // NaN = none; limit and stop both NaN = a market order
   stop: number; // NaN = none; both given = a stop-limit order
   comment: string;
@@ -1676,7 +1679,7 @@ export class StrategyState {
   // judged on until it fills).
   private defaultOrderQty(
     sign: number, limit: number, stop: number, reverses: boolean,
-  ): { qty: number; auto: boolean; size: number } | null {
+  ): { qty: number; auto: boolean; size: number; budgetPrice: number } | null {
     const moneyBased = this.qtyIsPercent || this.qtyIsCash;
     const priceBased = !Number.isNaN(limit) || !Number.isNaN(stop);
     let qty: number;
@@ -1694,7 +1697,16 @@ export class StrategyState {
       qty = this.defaultQty > 0 ? this.defaultQty : NaN;
     }
     if (Number.isNaN(qty) || (qty === 0 && !reverses)) return null;
-    return moneyBased && priceBased ? { qty: money, auto: true, size: qty } : { qty, auto: false, size: qty };
+    // The price a stop or stop-limit order would have executed at when placed (the oracle's
+    // Order.budget_price: "the level, or the close past it", a stop-limit's capped by its limit).
+    // Two fills are sized at it instead of at their fill price (fillPendingEntry).
+    let budgetPrice = NaN;
+    if (moneyBased && !Number.isNaN(stop)) {
+      const c = this.barClose;
+      budgetPrice = sign > 0 ? Math.max(stop, c) : Math.min(stop, c);
+      if (!Number.isNaN(limit)) budgetPrice = sign > 0 ? Math.min(budgetPrice, limit) : Math.max(budgetPrice, limit);
+    }
+    return moneyBased && priceBased ? { qty: money, auto: true, size: qty, budgetPrice } : { qty, auto: false, size: qty, budgetPrice };
   }
 
   // strategy.default_entry_qty(price): the size an entry/order that omits qty would get if it filled
@@ -1987,6 +1999,7 @@ export class StrategyState {
     const reissued = existing !== undefined && existing.placedThisBar;
     let qtyAuto = false;
     let size: number;
+    let budgetPrice = NaN;
     if (qty === undefined || Number.isNaN(qty)) {
       const reverses = !reissued && this.posSize !== 0 && this.posSize > 0 !== sign > 0;
       const sized = this.defaultOrderQty(sign, limit ?? NaN, stop ?? NaN, reverses);
@@ -1994,6 +2007,7 @@ export class StrategyState {
       qty = sized.qty;
       qtyAuto = sized.auto;
       size = sized.size;
+      budgetPrice = sized.budgetPrice;
     } else if (!(qty > 0)) {
       return;
     } else {
@@ -2085,6 +2099,7 @@ export class StrategyState {
       existing.direction = direction;
       existing.qty = qty;
       existing.qtyAuto = qtyAuto;
+      existing.budgetPrice = budgetPrice;
       existing.size = size;
       existing.limit = limit ?? NaN;
       existing.stop = stop ?? NaN;
@@ -2096,7 +2111,7 @@ export class StrategyState {
       return;
     }
     this.pendingEntries.push({
-      id, direction, qty, qtyAuto, size, limit: limit ?? NaN, stop: stop ?? NaN, comment: cmt,
+      id, direction, qty, qtyAuto, size, budgetPrice, limit: limit ?? NaN, stop: stop ?? NaN, comment: cmt,
       ocaName: ocaGroup, ocaType: oca, flip,
       seq: ++this.orderSeq, placedThisBar: true, fillPrice: NaN, pathLeg: 0, pathDist: 0,
     });
@@ -3192,13 +3207,27 @@ export class StrategyState {
     // A market or stop entry fills slipped against it, the reversal's closing leg included (one
     // order, one price); a limit entry, and a stop-limit (a limit order once its stop triggers),
     // keeps its price.
+    const rawFill = fillPrice;
     if (Number.isNaN(e.limit)) fillPrice = this.slipped(fillPrice, sign);
     // A default-sized limit/stop entry divides its frozen budget by the actual fill price now (see
     // defaultOrderQty). Nothing sizable consumes the order unfilled, reversal included. Zero lots
     // still close an opposite position and open nothing (the oracle keeps the reversal leg).
+    // Two fills are sized at the price the order would have executed at when it was placed, not at
+    // the fill (the oracle's process_orders, measured on TradingView):
+    //   - a stop the open gapped through: that price plus slippage ("CAPITALCOM:BTCUSD 60,
+    //     slippage 3, ~7800 trades per probe ... gapped fills -> stop+slip in every case"; repro
+    //     resin-harness state/repros/mixed-seed-308.json, a 104.47 buy stop filled at a 105.52
+    //     open buys 95, the budget over 104.47, not 94);
+    //   - a stop-limit, wherever it fills, with no slippage ("Probe sl8 (BINANCE:BTCUSDT 30m,
+    //     slippage 5): 2775/2775 entries exact, gapped fills at the open included").
     let qty = e.qty;
     if (e.qtyAuto) {
-      qty = this.moneyQtyAt(e.qty, fillPrice);
+      let sizingPrice = fillPrice;
+      if (!Number.isNaN(e.budgetPrice)) {
+        if (!Number.isNaN(e.limit)) sizingPrice = e.budgetPrice;
+        else if (sign > 0 ? rawFill > e.stop : rawFill < e.stop) sizingPrice = this.slipped(e.budgetPrice, sign);
+      }
+      qty = this.moneyQtyAt(e.qty, sizingPrice);
       if (Number.isNaN(qty)) return;
     }
     // strategy.risk.allow_entry_in(C309) — 금지된 방향의 entry는 아래 리버스-청산(있었다면)

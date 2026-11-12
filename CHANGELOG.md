@@ -183,6 +183,8 @@ hashes are added when this is committed.
 
 - With `process_orders_on_close`, margin is judged at the bar's close before the on-close orders fill, so a position opened at the close is first checked at the next open (it could be liquidated on its own entry bar).
 
+- A default-sized (`percent_of_equity` / `cash`) stop entry that the open gaps through is sized at the price it would have executed at when placed, plus slippage, not at the gapped fill; a default-sized stop-limit is sized at that placement price wherever it fills (both measured on TradingView by the reference engine).
+
 ##### Language
 
 - `%` is the truncated remainder and takes the sign of the dividend: `-7 % 3` is `-1` (was `2`), `7 % -3` is `1` (was `-2`), `-7.5 % 2` is `-1.5` (was `0.5`). Measured on TradingView by the reference engine's `test_023_pine_remainder` (`(z - 7) % 3` is -1 on CAPITALCOM:EURUSD 60); resin had read the operators manual's "rounding down the quotient" as the floored modulo. A zero divisor is still na. Only a `%` with a negative operand changes.
