@@ -165,6 +165,8 @@ hashes are added when this is committed.
 
 - `math.sum`, and with it `ta.sma` and everything built on them (`ta.stdev`, `ta.variance`, `ta.bb`, `ta.bbw`, `ta.cci`, `ta.correlation`, ...), run TradingView's current rolling-sum machine: a Neumaier-compensated sum that evicts the raw value leaving the window and adds the new one, reporting `s + c`. The reference engine measured that TradingView switched to it between 2026-07-31 and 2026-10-29; resin had the previous machine (fused Kahan with a re-baseline rule). Values move in the last bits; where a window is flat, a `ta.stdev` that was rounding dust is now exactly 0 (or the reverse), which is visible through anything that divides by it.
 
+- `ta.sar` follows the Pine manual's reference implementation, which the reference engine measured TradingView's builtin against bit for bit, warm-up included: the trend starts on bar 1 by `close > close[1]` (a tie starts short; was `high[1] > high`), the full step runs on bar 1 (was the bare start value), and the reversal and extreme-point tests use Pine's 1e-10 tolerance. First bars and near-tie reversals change.
+
 ##### Language
 
 - `%` is the truncated remainder and takes the sign of the dividend: `-7 % 3` is `-1` (was `2`), `7 % -3` is `1` (was `-2`), `-7.5 % 2` is `-1.5` (was `0.5`). Measured on TradingView by the reference engine's `test_023_pine_remainder` (`(z - 7) % 3` is -1 on CAPITALCOM:EURUSD 60); resin had read the operators manual's "rounding down the quotient" as the floored modulo. A zero divisor is still na. Only a `%` with a negative operand changes.

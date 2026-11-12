@@ -3215,13 +3215,13 @@ export function supertrend(
 }
 
 export interface SarState {
-  // The call site's own window of high/low, one and two calls back.
+  // The call site's own window of high/low (one and two calls back) and close (one back).
   high1?: number;
   high2?: number;
   low1?: number;
   low2?: number;
-  // The recurrence, seeded by the first call made after bar 0.
-  seeded?: boolean;
+  close1?: number;
+  // The recurrence: na until bar_index 1 starts a trend.
   posLong?: boolean;
   af?: number;
   sar?: number;
@@ -3247,35 +3247,37 @@ function pyMin(a: number, b: number, c = NaN, d = NaN): number {
   return m;
 }
 
-// ta.sar(start, inc, maxAf) - Parabolic SAR (Wilder). The manual gives no formula
-// (ref_v6_ta_math.txt "ta.sar": "Parabolic SAR (parabolic stop and reverse) is a method devised by
-// J. Welles Wilder, Jr., to find potential reversals in the market price direction of traded
-// goods."), so the rule is the PyneCore oracle's, certified against TradingView (pynecore lib/ta.py
-// sar; tier 1 ta_261_sar, ta_366_conditional_sar):
-//   - bar_index 0 is na;
-//   - bar_index 1 starts the trend: short from high[1] with the bar's low as the extreme point when
-//     high[1] > high, otherwise long from low[1] with the bar's high as the extreme point; that
-//     start is the bar's value;
-//   - later bars project sar + af * (ep - sar); a long reverses when low < the projection (strict:
-//     "a bar whose ... low equals the long stop does NOT reverse", measured there), restarting at
-//     max(ep, high, high[1], high[2]) with af = start and ep = low; otherwise the projection is
-//     clipped to min(low[1], low[2]) and a new high raises ep and af by inc up to maxAf. A short
-//     mirrors it. high[2]/low[2] fall back to high[1]/low[1] when na.
-// bar_index is the global one, and high[1]/high[2] come from the call site's own window, which
-// advances per call (oracle: "a ta.sar() inside an `if` is na on TradingView for the whole run,
-// even when only every 100th bar is skipped ... The first gated call has no history yet, so
-// high[1] is na and the recurrence below carries that na forward for good"; tier 1
-// ta_366_conditional_sar). A call first made after bar 1 never starts a trend and stays na too.
-// af is seeded with start by the first call made after bar 0 (the oracle's lazy Persistent
-// initializer). None of start/inc/maxAf is validated: "TradingView validates NONE of the three
-// arguments -- it runs the recurrence with whatever it is given" (oracle, measured).
+// ta.sar(start, inc, maxAf) - Parabolic SAR (Wilder). The rule is the reference implementation
+// published in the Pine manual, which the oracle measured the builtin against "bit for bit --
+// including its warmup" (pynecore lib/ta.py sar, probes sar/p1, sar/p2, sar/scan, sar/scan2,
+// 2026-10-29: ten parameter sets on five charts and 70 different first bars):
+//   - bar_index 1 starts the trend by `close > close[1]` (tolerant; a tie starts short): long from
+//     low[1] with the bar's high as the extreme point, short from high[1] with its low. "It is not
+//     decided by high[1] > high: that rule picks the other trend on 21 of the 70 first bars";
+//   - bar 1 is not returned as the bare start value: the full step runs on it, with the
+//     acceleration factor left unchanged on a trend's first bar;
+//   - every bar projects sar + af * (ep - sar); a long reverses when the projection is above the
+//     low by more than Pine's tolerance, restarting at max(high, ep) with ep = low and af = start
+//     (a short mirrors it); otherwise a new extreme raises ep and af by inc up to maxAf;
+//   - the result is clipped to low[1] (long) or high[1] (short), and from bar 2 on also to
+//     low[2] / high[2].
+// The comparisons are Pine's tolerant ones: "a projected stop within EPSILON of the bar's extreme
+// does not reverse. Exact tests miss TradingView on 8 of those 50 series".
+// bar_index is the global one, and close[1], high[1], high[2] come from the call site's own window,
+// which advances per call ("a ta.sar() inside an `if` is na on TradingView for the whole run, even
+// when only every 100th bar is skipped"; tier 1 ta_366_conditional_sar). None of start/inc/maxAf is
+// validated ("TradingView validates NONE of the three arguments").
+// resin had the oracle's earlier rule (trend by high[1] > high, bar 1 returned as the start value,
+// exact comparisons) until resin-harness moved its pin (state/repros/ta.volatility-seed-32.json:
+// bar 1 is 102.34 on the oracle, 98.9 before).
 //
-// Pine syntax takes only (start, inc, maxAf); codegen injects the bar's high and low ahead of them
-// and bar_index after (analyzer TA_REGISTRY.sar).
+// Pine syntax takes only (start, inc, maxAf); codegen injects the bar's high, low and close ahead
+// of them and bar_index after (analyzer TA_REGISTRY.sar).
 export function sar(
   state: SarState,
   high: number,
   low: number,
+  close: number,
   start: number,
   inc: number,
   maxAf: number,
@@ -3285,69 +3287,76 @@ export function sar(
   const high2 = state.high2 ?? NaN;
   const low1 = state.low1 ?? NaN;
   const low2 = state.low2 ?? NaN;
+  const close1 = state.close1 ?? NaN;
   state.high2 = high1;
   state.high1 = high;
   state.low2 = low1;
   state.low1 = low;
+  state.close1 = close;
 
-  if (barIdx === 0) return NaN;
-
-  if (state.seeded !== true) {
-    state.seeded = true;
-    state.posLong = true;
-    state.af = start;
-    state.sar = NaN;
-    state.ep = NaN;
-  }
+  let result = state.sar ?? NaN;
+  let ep = state.ep ?? NaN;
+  let af = state.af ?? NaN;
+  let long = state.posLong ?? false;
+  let firstTrendBar = false;
 
   if (barIdx === 1) {
-    if (high1 > high) {
-      state.posLong = false;
-      state.sar = high1;
-      state.ep = low;
+    if (close - close1 > PINE_EPS) {
+      long = true;
+      ep = high;
+      result = low1;
     } else {
-      state.posLong = true;
-      state.sar = low1;
-      state.ep = high;
+      long = false;
+      ep = low;
+      result = high1;
     }
-    return state.sar;
+    firstTrendBar = true;
+    af = start;
   }
 
-  const prev = state.sar!;
-  let ep = state.ep!;
-  let af = state.af!;
-  let next = prev + af * (ep - prev);
-  if (state.posLong) {
-    if (low < next) {
-      state.posLong = false;
-      af = start;
-      next = pyMax(ep, high, high1, high2 === high2 ? high2 : high1);
+  result = result + af * (ep - result);
+
+  if (long) {
+    if (result - low > PINE_EPS) {
+      firstTrendBar = true;
+      long = false;
+      result = pyMax(high, ep);
       ep = low;
-    } else {
-      next = pyMin(next, low1, low2 === low2 ? low2 : low1);
-      if (high > ep) {
+      af = start;
+    }
+  } else if (result - high < -PINE_EPS) {
+    firstTrendBar = true;
+    long = true;
+    result = pyMin(low, ep);
+    ep = high;
+    af = start;
+  }
+
+  if (!firstTrendBar) {
+    if (long) {
+      if (high - ep > PINE_EPS) {
         ep = high;
         af = pyMin(af + inc, maxAf);
       }
-    }
-  } else {
-    if (high > next) {
-      state.posLong = true;
-      af = start;
-      next = pyMin(ep, low, low1, low2 === low2 ? low2 : low1);
-      ep = high;
-    } else {
-      next = pyMax(next, high1, high2 === high2 ? high2 : high1);
-      if (low < ep) {
-        ep = low;
-        af = pyMin(af + inc, maxAf);
-      }
+    } else if (low - ep < -PINE_EPS) {
+      ep = low;
+      af = pyMin(af + inc, maxAf);
     }
   }
-  state.sar = next;
+
+  if (long) {
+    result = pyMin(result, low1);
+    if (barIdx > 1) result = pyMin(result, low2);
+  } else {
+    result = pyMax(result, high1);
+    if (barIdx > 1) result = pyMax(result, high2);
+  }
+
+  state.sar = result;
   state.ep = ep;
   state.af = af;
-  return next;
+  state.posLong = long;
+  return result;
 }
 
 export interface DmiState {

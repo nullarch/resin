@@ -4474,8 +4474,8 @@ function genCallExpr(
     if (stateCall.fn === "sar") {
       // ta.sar(start, inc, maxAf) reads the bar's high and low (its own per-call window keeps the
       // previous ones) and the global bar_index, which starts the trend on bar 1 (runtime/ta.ts sar):
-      // runtime signature (state, high, low, start, inc, maxAf, barIdx).
-      args.unshift(genBarRef("high", 0, secCtx), genBarRef("low", 0, secCtx));
+      // runtime signature (state, high, low, close, start, inc, maxAf, barIdx).
+      args.unshift(genBarRef("high", 0, secCtx), genBarRef("low", 0, secCtx), genBarRef("close", 0, secCtx));
       args.push(secCtx === null ? "$.idx" : secCtx.loopVar);
     }
     if (stateCall.fn === "dmi") {

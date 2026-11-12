@@ -7120,201 +7120,188 @@ describe("ta.supertrend", () => {
   });
 });
 
-// ta.sar(start, inc, maxAf) — Parabolic SAR (runtime/ta.ts sar comment: PyneCore lib/ta.py sar,
-// tier 1 resin-harness suites/indicators/tv/ta_261_sar and ta_366_conditional_sar). The expected
-// values are the oracle's on the crafted bars of resin-harness state/repros/sar-rules.json. These
-// tests replaced pine2py's port, which started the trend from close vs the previous close, re-ran
-// the recurrence on the start bar, counted its own calls instead of bar_index and skipped na bars.
+// ta.sar(start, inc, maxAf) — Parabolic SAR. The rule is the Pine manual's reference implementation,
+// which the oracle measured the builtin against bit for bit, warm-up included (runtime/ta.ts sar
+// comment; pynecore lib/ta.py sar, probes sar/p1, sar/p2, sar/scan, sar/scan2, 2026-10-29). TradingView's
+// own values are tier 1 in resin-harness (suites/indicators/tv/ta_261_sar, ta_366_conditional_sar,
+// and its ta.volatility fuzz family against the oracle); here the rule's stated facts are pinned and
+// the function is held to a transcription of the oracle's code. These tests replaced the ones for
+// the oracle's earlier rule (trend by high[1] > high, bar 1 returned as the bare start, exact
+// comparisons), which TradingView's first bars contradict.
 describe("ta.sar", () => {
-  // sar-rules.json bars; bar i is called with bar_index i.
   const high = [105, 104, 96, 106, 108, 110, 112, 111.5, 103, 101, 99, 102, 107, 109, 108.5, 106, 104, 110, 111, 110.5];
   const low = [95, 96, 93, 93.5, 104, 106, 108, 100, 99, 97, 95, 95.5, 100, 105, 104, 103, 104, 103, 108, 102];
-  const open = [100, 100, 95, 94, 105, 107, 109, 111, 101, 100, 98, 96, 101, 106, 108, 105, 104, 104, 109, 110];
   const close = [100, 98, 94, 105, 107, 109, 111, 101, 100, 98, 96, 101, 106, 108, 105, 104, 104, 109, 110, 103];
+  const EPS = 1e-10;
+  // Python's builtins.max/min as the oracle calls them: the first argument stays unless the second
+  // compares greater (less), so an na first argument stays na.
+  const pmax = (a: number, b: number): number => (b > a ? b : a);
+  const pmin = (a: number, b: number): number => (b < a ? b : a);
 
-  function run(args: (i: number) => [number, number, number], bars: number[] = high.map((_, i) => i)): number[] {
+  // pynecore lib/ta.py sar, statement by statement. `calls` are the bar indices on which the call
+  // site runs; its close[1], high[1], high[2] windows advance per call.
+  function oracleRun(h: number[], l: number[], c: number[], calls: number[], start: number, inc: number, max: number): number[] {
+    let result = NaN;
+    let maxMin = NaN;
+    let acceleration = NaN;
+    let isBelow = false;
+    const hs: number[] = [];
+    const ls: number[] = [];
+    const cs: number[] = [];
+    const out: number[] = [];
+    for (const i of calls) {
+      hs.push(h[i]!);
+      ls.push(l[i]!);
+      cs.push(c[i]!);
+      const at = (w: number[], back: number): number => (w.length > back ? w[w.length - 1 - back]! : NaN);
+      let isFirstTrendBar = false;
+      if (i === 1) {
+        if (c[i]! - at(cs, 1) > EPS) {
+          isBelow = true;
+          maxMin = h[i]!;
+          result = at(ls, 1);
+        } else {
+          isBelow = false;
+          maxMin = l[i]!;
+          result = at(hs, 1);
+        }
+        isFirstTrendBar = true;
+        acceleration = start;
+      }
+      result = result + acceleration * (maxMin - result);
+      if (isBelow) {
+        if (result - l[i]! > EPS) {
+          isFirstTrendBar = true;
+          isBelow = false;
+          result = pmax(h[i]!, maxMin);
+          maxMin = l[i]!;
+          acceleration = start;
+        }
+      } else if (result - h[i]! < -EPS) {
+        isFirstTrendBar = true;
+        isBelow = true;
+        result = pmin(l[i]!, maxMin);
+        maxMin = h[i]!;
+        acceleration = start;
+      }
+      if (!isFirstTrendBar) {
+        if (isBelow) {
+          if (h[i]! - maxMin > EPS) {
+            maxMin = h[i]!;
+            acceleration = pmin(acceleration + inc, max);
+          }
+        } else if (l[i]! - maxMin < -EPS) {
+          maxMin = l[i]!;
+          acceleration = pmin(acceleration + inc, max);
+        }
+      }
+      if (isBelow) {
+        result = pmin(result, at(ls, 1));
+        if (i > 1) result = pmin(result, at(ls, 2));
+      } else {
+        result = pmax(result, at(hs, 1));
+        if (i > 1) result = pmax(result, at(hs, 2));
+      }
+      out.push(result);
+    }
+    return out;
+  }
+
+  function run(h: number[], l: number[], c: number[], calls: number[], start: number, inc: number, max: number): number[] {
     const state: Parameters<typeof sar>[0] = {};
-    return bars.map((i) => sar(state, high[i]!, low[i]!, ...args(i), i));
+    return calls.map((i) => sar(state, h[i]!, l[i]!, c[i]!, start, inc, max, i));
+  }
+  const all = high.map((_, i) => i);
+  function mulberry32(seed: number): () => number {
+    let a = seed >>> 0;
+    return () => {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
   }
 
-  function expectSeries(actual: number[], expected: number[]): void {
-    expect(actual).toHaveLength(expected.length);
-    actual.forEach((v, i) => {
-      if (Number.isNaN(expected[i]!)) expect(v).toBeNaN();
-      else expect(v).toBeCloseTo(expected[i]!, 9);
-    });
-  }
-
-  it("follows the oracle's recurrence (sar-rules.json every/fast/over)", () => {
-    expectSeries(run(() => [0.02, 0.02, 0.2]), [
-      NaN, 105, 105, 93, 93, 93.5, 94.49, 95.8908, 97.179536, 112, 111.7, 111.032, 110.39072, 109.7750912,
-      109.184087552, 109, 108.5, 95, 95.3, 95.928,
-    ]);
-    expectSeries(run(() => [0.5, 0.5, 0.9]), [
-      NaN, 105, 105, 93, 93, 110, 104, 112, 112, 97, 103, 95, 95, 109, 100, 109, 108.5, 103, 103, 111,
-    ]);
-    // start above max is not clamped: "TradingView validates NONE of the three arguments" (oracle)
-    expectSeries(run(() => [0.3, 0.1, 0.2]), [
-      NaN, 105, 105, 93, 93, 93.5, 96.8, 99.84, 112, 111.5, 108.6, 105.88, 95, 95.5, 98.2, 100.36, 102.088, 110, 103, 111,
-    ]);
+  it("is na on bar 0", () => {
+    expect(run(high, low, close, [0], 0.02, 0.02, 0.2)[0]).toBeNaN();
   });
 
-  it("starts the trend on bar_index 1: short from high[1] when high[1] > high, else long from low[1]", () => {
-    const short: Parameters<typeof sar>[0] = {};
-    expect(sar(short, 105, 95, 0.02, 0.02, 0.2, 0)).toBeNaN();
-    expect(sar(short, 104, 96, 0.02, 0.02, 0.2, 1)).toBe(105);
-    expect(short.posLong).toBe(false);
-    expect(short.ep).toBe(96);
-    const long: Parameters<typeof sar>[0] = {};
-    sar(long, 100, 90, 0.02, 0.02, 0.2, 0);
-    expect(sar(long, 100, 95, 0.02, 0.02, 0.2, 1)).toBe(90); // an equal high starts long
-    expect(long.posLong).toBe(true);
-    expect(long.ep).toBe(100);
+  it("starts the trend on bar 1 by close against the previous close, not by the highs", () => {
+    // close falls 100 -> 98: short, from high[1] = 105, extreme point low = 96. The full step runs:
+    // 105 + 0.02 * (96 - 105) = 104.82, clipped up to high[1] = 105.
+    expect(run(high, low, close, [0, 1], 0.02, 0.02, 0.2)[1]).toBe(105);
+    // The same bars with a rising close start long from low[1] = 95 although high[1] > high:
+    // 95 + 0.02 * (104 - 95) = 95.18, clipped down to low[1] = 95.
+    expect(run(high, low, [100, 101], [0, 1], 0.02, 0.02, 0.2)[1]).toBe(95);
   });
 
-  it("reverses only when the bar crosses the stop strictly (sar-rules.json tie: bar 2's high equals the stop)", () => {
-    // ta.sar(1, 0, 1) projects the extreme point itself: bar 2 projects 96 (bar 1's low) and its high
-    // is 96, so the short holds and is clipped to max(96, high[1], high[2]) = 105; bar 3 reverses.
-    expectSeries(run(() => [1, 0, 1]), [
-      NaN, 105, 105, 93, 108, 93.5, 112, 100, 112, 97, 103, 95, 107, 95.5, 109, 103, 108.5, 103, 111, 102,
-    ]);
+  it("starts short on a tie of the first two closes", () => {
+    expect(run(high, low, [100, 100], [0, 1], 0.02, 0.02, 0.2)[1]).toBe(105);
   });
 
-  it("seeds af with the start of the first call after bar 0 and reads series arguments per call (sar-rules.json ser)", () => {
-    expectSeries(run((i) => [close[i]! > open[i]! ? 0.02 : 0.1, i % 2 === 0 ? 0.02 : 0.05, 0.2]), [
-      NaN, 105, 105, 93, 93, 93.5, 94.985, 96.85665, 98.5224185, 112, 110.5, 108.64, 107.0032, 95, 95.28, 95.5544,
-      95.823312, 96.08684576, 97.0607665568, 98.3152975667,
-    ]);
+  it("can reverse already on bar 1 when the factor is large enough", () => {
+    // Long from low[1] = 95 with ep = 104: 95 + 0.9 * 9 = 103.1 is above the bar's low 96, so the
+    // long reverses on its first bar: max(high, ep) = 104, then the short clip to high[1] = 105.
+    expect(run(high, low, [100, 101], [0, 1], 0.9, 0.5, 0.9)[1]).toBe(105);
   });
 
-  it("stays na for good when first called on bar_index 1 or later (tier 1 ta_366_conditional_sar; sar-rules.json g1/g3)", () => {
-    const all = high.map((_, i) => i);
-    for (const v of run(() => [0.02, 0.02, 0.2], all.slice(1))) expect(v).toBeNaN();
-    for (const v of run(() => [0.02, 0.02, 0.2], all.slice(3))) expect(v).toBeNaN();
+  it("does not reverse when the projection is within Pine's tolerance of the bar's extreme", () => {
+    // Short from high[1] = 105, ep = low = 96, factor 1: bar 1 projects 96 and is clipped to 105.
+    // Bar 2 projects 105 + 1 * (96 - 105) = 96; a high of 96 + 5e-11 is above it by less than 1e-10,
+    // so the short stays (an exact test would reverse it), and the clip to high[1] holds 104.
+    const h = [105, 104, 96 + 5e-11];
+    const l = [95, 96, 93];
+    const got = run(h, l, [100, 98, 94], [0, 1, 2], 1, 0, 1);
+    expect(got[2]).toBe(oracleRun(h, l, [100, 98, 94], [0, 1, 2], 1, 0, 1)[2]);
+    expect(got[2]).toBe(105);
   });
 
-  it("reads high[1]/low[1] from its own window, which advances per call (sar-rules.json gskip: bar 5 skipped)", () => {
-    const bars = high.map((_, i) => i).filter((i) => i !== 5);
-    expectSeries(run(() => [0.1, 0.1, 0.3], bars), [
-      NaN, 105, 105, 93, 93, 93.5, 99.05, 112, 111.5, 108.6, 104.52, 95, 95.5, 98.2, 100.36, 102.088, 110, 103, 111,
-    ]);
+  it("is na for a call site that misses bar 1, for the whole run", () => {
+    const calls = all.filter((i) => i !== 1);
+    for (const v of run(high, low, close, calls, 0.02, 0.02, 0.2)) expect(v).toBeNaN();
+  });
+
+  it("reads its own window: a skipped call shifts close[1], high[1] and high[2]", () => {
+    const calls = all.filter((i) => i !== 5);
+    expect(run(high, low, close, calls, 0.02, 0.02, 0.2)).toEqual(oracleRun(high, low, close, calls, 0.02, 0.02, 0.2));
+    expect(run(high, low, close, calls, 0.02, 0.02, 0.2)).not.toEqual(run(high, low, close, all, 0.02, 0.02, 0.2).filter((_, i) => i !== 5));
   });
 
   it("keeps independent state across two call sites", () => {
-    const stateA: Parameters<typeof sar>[0] = {};
-    const stateB: Parameters<typeof sar>[0] = {};
-    sar(stateA, 105, 95, 0.02, 0.02, 0.2, 0);
-    sar(stateA, 104, 96, 0.02, 0.02, 0.2, 1);
-    expect(sar(stateB, 104, 96, 0.02, 0.02, 0.2, 1)).toBeNaN(); // stateB has no previous call
-    expect(sar(stateA, 96, 93, 0.02, 0.02, 0.2, 2)).toBe(105);
+    const a: Parameters<typeof sar>[0] = {};
+    const b: Parameters<typeof sar>[0] = {};
+    const got = all.map((i) => [sar(a, high[i]!, low[i]!, close[i]!, 0.02, 0.02, 0.2, i), sar(b, high[i]!, low[i]!, close[i]!, 0.5, 0.5, 0.9, i)]);
+    expect(got.map((g) => g[0])).toEqual(run(high, low, close, all, 0.02, 0.02, 0.2));
+    expect(got.map((g) => g[1])).toEqual(run(high, low, close, all, 0.5, 0.5, 0.9));
   });
 
-  it("matches a literal port of the oracle's lib/ta.py sar across na prices, skipped calls, degenerate arguments and a 5,000-bar fuzz", () => {
-    function mulberry32(seed: number) {
-      return function () {
-        seed |= 0;
-        seed = (seed + 0x6d2b79f5) | 0;
-        let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-      };
-    }
-    // Python's builtins.max/min over (first, *rest): a later item replaces the kept one only when it
-    // compares greater (less); na compares false both ways.
-    const pyMaxOf = (xs: number[]) => xs.reduce((m, x) => (x > m ? x : m));
-    const pyMinOf = (xs: number[]) => xs.reduce((m, x) => (x < m ? x : m));
-    // Literal port of the oracle's lib/ta.py sar, line for line: `bar_index` is the global index,
-    // `high[k]`/`low[k]` read the function's own window (one entry per call), the Persistent
-    // variables start at pos_long = True, sar/ep = na and af = start on the first call to reach them.
-    function oracleRun(highs: number[], lows: number[], calls: number[], start: number, inc: number, max: number) {
-      const hw: number[] = [];
-      const lw: number[] = [];
-      let persist: { pos_long: boolean; af: number; sar_val: number; ep: number } | null = null;
-      return calls.map((bar_index) => {
-        hw.unshift(highs[bar_index]!);
-        lw.unshift(lows[bar_index]!);
-        const high = (k: number) => hw[k] ?? NaN;
-        const low = (k: number) => lw[k] ?? NaN;
-        if (bar_index === 0) return NaN;
-        persist ??= { pos_long: true, af: start, sar_val: NaN, ep: NaN };
-        const p = persist;
-        if (bar_index === 1) {
-          if (high(1) > high(0)) {
-            p.pos_long = false;
-            p.sar_val = high(1);
-            p.ep = low(0);
-          } else {
-            p.pos_long = true;
-            p.sar_val = low(1);
-            p.ep = high(0);
-          }
-          return p.sar_val;
-        }
-        let next_sar = p.sar_val + p.af * (p.ep - p.sar_val);
-        if (p.pos_long) {
-          if (low(0) < next_sar) {
-            p.pos_long = false;
-            p.af = start;
-            next_sar = p.ep;
-            next_sar = pyMaxOf([next_sar, high(0), high(1), high(2) === high(2) ? high(2) : high(1)]);
-            p.ep = low(0);
-          } else {
-            next_sar = pyMinOf([next_sar, low(1), low(2) === low(2) ? low(2) : low(1)]);
-            if (high(0) > p.ep) {
-              p.ep = high(0);
-              p.af = pyMinOf([p.af + inc, max]);
-            }
-          }
-        } else {
-          if (high(0) > next_sar) {
-            p.pos_long = true;
-            p.af = start;
-            next_sar = p.ep;
-            next_sar = pyMinOf([next_sar, low(0), low(1), low(2) === low(2) ? low(2) : low(1)]);
-            p.ep = high(0);
-          } else {
-            next_sar = pyMaxOf([next_sar, high(1), high(2) === high(2) ? high(2) : high(1)]);
-            if (low(0) < p.ep) {
-              p.ep = low(0);
-              p.af = pyMinOf([p.af + inc, max]);
-            }
-          }
-        }
-        p.sar_val = next_sar;
-        return p.sar_val;
-      });
-    }
-    for (const [start, inc, maxAf, seed] of [
-      [0.02, 0.02, 0.2, 7001],
-      [0.01, 0.01, 0.1, 7002],
-      [0.1, 0.1, 0.5, 7003],
-      [0.05, 0.05, 0.05, 7004], // maxAf === start: acceleration is capped immediately
-      [0.3, 0.1, 0.2, 7005], // start above maxAf: neither is clamped
-      [0, -0.01, 0.2, 7006], // zero start, negative increment
-      [0.02, 0.02, NaN, 7007], // na maxAf: Python's min keeps af + inc
-    ] as const) {
-      const rng = mulberry32(seed);
+  it("matches the transcription of the oracle's code across na prices, skipped calls, unvalidated arguments and a 5,000-bar fuzz", () => {
+    const sets: [number, number, number][] = [[0.02, 0.02, 0.2], [0.5, 0.5, 0.9], [0.25, 0.25, 0.13], [0, 0.02, 0.2], [-0.02, 0.02, 0.2], [0.02, 0, 0.2], [0.3, 0.1, 0.05]];
+    for (const [seedIdx, [start, inc, maxAf]] of sets.entries()) {
+      const rng = mulberry32(1234 + seedIdx);
       const n = 5000;
       const highs: number[] = [];
       const lows: number[] = [];
+      const closes: number[] = [];
       let base = 100;
       for (let i = 0; i < n; i++) {
         base += (rng() - 0.5) * 8;
         const c = base + (rng() - 0.5) * 3;
+        closes.push(rng() < 0.01 ? NaN : c);
         highs.push(rng() < 0.01 ? NaN : Math.max(c, base) + rng() * 4);
         lows.push(rng() < 0.01 ? NaN : Math.min(c, base) - rng() * 4);
       }
-      // Every bar, and a call site that skips a bar now and then (its window advances per call).
       const every = highs.map((_, i) => i);
       const gated = every.filter((i) => i < 2 || rng() >= 0.05);
       for (const calls of [every, gated]) {
-        const expected = oracleRun(highs, lows, calls, start, inc, maxAf);
-        const state: Parameters<typeof sar>[0] = {};
-        calls.forEach((i, k) => {
-          const v = sar(state, highs[i]!, lows[i]!, start, inc, maxAf, i);
-          if (Number.isNaN(expected[k]!)) expect(v).toBeNaN();
-          else expect(v).toBe(expected[k]!);
-        });
+        const expected = oracleRun(highs, lows, closes, calls, start, inc, maxAf);
+        const got = run(highs, lows, closes, calls, start, inc, maxAf);
+        expect(got.length).toBe(expected.length);
+        for (let k = 0; k < got.length; k++) {
+          if (Number.isNaN(expected[k]!)) expect(got[k]).toBeNaN();
+          else expect(got[k]).toBe(expected[k]!);
+        }
       }
     }
   });

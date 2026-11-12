@@ -4092,9 +4092,9 @@ describe("CodeGen", () => {
     );
   });
 
-  it("emits ta.sar call with the bar's high/low ahead of the user args and bar_index after them (runtime/ta.ts sar)", () => {
+  it("emits ta.sar call with the bar's high/low/close ahead of the user args and bar_index after them (runtime/ta.ts sar)", () => {
     const code = codegenSource("x = ta.sar(0.02, 0.02, 0.2)");
-    expect(code).toBe("var x = rt.ta.sar($.taSlots[0], $.high.get(0), $.low.get(0), 0.02, 0.02, 0.2, $.idx);");
+    expect(code).toBe("var x = rt.ta.sar($.taSlots[0], $.high.get(0), $.low.get(0), $.close.get(0), 0.02, 0.02, 0.2, $.idx);");
   });
 
   it("emits ta.dmi call with six implicit high/low/close(+prev) args unshifted and the tuple destructure reading $.taScratch[0..2] (arity 3)", () => {
@@ -4170,7 +4170,7 @@ describe("CodeGen", () => {
         "var x25 = rt.ta.pivotlow($.taSlots[49], $.close.get(0), 1, 1, $.idx);",
         "rt.ta.supertrend($.taSlots[50], $.high.get(0), $.low.get(0), $.close.get(0), $.close.get(1), 2.0, 10, $.taScratch);",
         "var x26v = $.taScratch[0], x26d = $.taScratch[1];",
-        "var x27 = rt.ta.sar($.taSlots[51], $.high.get(0), $.low.get(0), 0.02, 0.02, 0.2, $.idx);",
+        "var x27 = rt.ta.sar($.taSlots[51], $.high.get(0), $.low.get(0), $.close.get(0), 0.02, 0.02, 0.2, $.idx);",
         "rt.ta.dmi($.taSlots[52], $.high.get(0), $.low.get(0), $.close.get(0), $.high.get(1), $.low.get(1), $.close.get(1), 3, 2, $.taScratch);",
         "var x28p = $.taScratch[0], x28m = $.taScratch[1], x28a = $.taScratch[2];",
         "var x29 = rt.ta.sum($.taSlots[53], $.close.get(0), 3);",
