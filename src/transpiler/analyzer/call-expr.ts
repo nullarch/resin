@@ -296,6 +296,12 @@ export const DRAWING_STATE_PARAM_NAMES: Readonly<Record<string, readonly string[
   "line.set_second_point": ["id", "point"],
   "box.new": ["left", "top", "right", "bottom", "border_color", "border_width", "border_style", "extend", "xloc", "bgcolor", "text"],
   "table.new": ["position", "columns", "rows", "bgcolor", "frame_color", "frame_width", "border_color", "border_width"],
+  // The reference's order, as the signature table has it (builtins/signatures.ts "table.cell").
+  "table.cell": ["table_id", "column", "row", "text", "width", "height", "text_color", "text_halign", "text_valign", "text_size", "bgcolor", "tooltip", "text_font_family", "text_formatting"],
+  "label.delete": ["id"],
+  "line.delete": ["id"],
+  "box.delete": ["id"],
+  "table.delete": ["table_id"],
   "box.set_left": ["id", "left"],
   "box.set_right": ["id", "right"],
   "box.set_top": ["id", "top"],

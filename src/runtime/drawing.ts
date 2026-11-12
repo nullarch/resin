@@ -240,6 +240,30 @@ export function drawingNoop(..._args: unknown[]): undefined {
   return undefined;
 }
 
+// label.delete / line.delete / box.delete / table.delete: the object leaves the chart ("Labels
+// persist on bars until your script deletes them using label.delete()", Pine manual, Text and
+// shapes). The record stays in the creation log, marked, so the run's viz can say which objects
+// are still there; a na handle (the first bar's `lbl[1]`) deletes nothing.
+export function drawingDelete(h: unknown): undefined {
+  if (typeof h === "object" && h !== null && handles.has(h)) writeField(h as DrawingHandle, "deleted", 1);
+  return undefined;
+}
+
+// table.cell(table_id, column, row, text, width, height, text_color, text_halign, text_valign,
+// text_size, bgcolor, tooltip, ...): the cell's text and colors, kept in the table's state under
+// "cell:<column>:<row>:<field>" (a state holds scalars). "The table will not be displayed until its
+// cells are populated" (Pine reference, table.new), so the cells are what there is to draw.
+export function tableCell(h: unknown, column?: unknown, row?: unknown, text?: unknown, _width?: unknown, _height?: unknown, textColor?: unknown, _halign?: unknown, _valign?: unknown, _size?: unknown, bgcolor?: unknown): undefined {
+  if (typeof h !== "object" || h === null || !handles.has(h)) return undefined;
+  if (typeof column !== "number" || typeof row !== "number" || column !== column || row !== row) return undefined;
+  const key = `cell:${Math.trunc(column)}:${Math.trunc(row)}`;
+  const handle = h as DrawingHandle;
+  writeField(handle, `${key}:text`, typeof text === "string" ? text : "");
+  if (typeof textColor === "string") writeField(handle, `${key}:text_color`, textColor);
+  if (typeof bgcolor === "string") writeField(handle, `${key}:bgcolor`, bgcolor);
+  return undefined;
+}
+
 // --- label/line/box get_*/set_* 실 accessor (C572) ---
 // handle이 na일 수 있다 — (a) null(삭제된 뒤 참조, 조건부로 생성 안 된 채 사용) (b) NaN(array.get()
 // 범위밖 접근이 numeric/generic 배열 공용 rt.array.get을 그대로 재사용해 항상 NaN을 반환, array.ts

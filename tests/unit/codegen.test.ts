@@ -23655,11 +23655,13 @@ describe("CodeGen method-call style drawing objects: kwargs on the sugar receive
     expect(prog.errors.some((e) => e.includes("keyword arguments ('key=...') are"))).toBe(true);
   });
 
-  it("emits t.cell(...) with the kwargs fully discarded (only positional args reach the generated call, same as the literal namespace form)", () => {
+  // table.cell keeps its keyword arguments since its cells are recorded for the viz (runtime
+  // drawing.ts tableCell): they are lowered to the reference's positions, holes as undefined.
+  it("emits t.cell(...) with its kwargs lowered to table.cell's positions", () => {
     const code = codegenSource(
       ["var t = table.new(position.top_right, 2, 2)", 't.cell(0, 0, "x", text_color=color.gray, text_size=size.small)'].join("\n"),
     );
-    expect(code).toContain('rt.table.cell($.vars[0], 0, 0, "x");');
+    expect(code).toContain('rt.table.cell($.vars[0], 0, 0, "x", undefined, undefined, "#787B86", undefined, undefined, "small");');
   });
 
   it("emits lbl.set_xy(...) with a trailing kwarg discarded, receiver still prepended", () => {
@@ -23816,7 +23818,7 @@ describe("CodeGen method-call style drawing objects: func-local var receiver (C3
 // 아니라 함수 인자로 그대로 codegen되므로(파라미터 자체가 이미 로컬 바인딩) $.fnVars 경유가
 // 필요 없다는 점만 C358과 다르다. ──
 describe("CodeGen method-call style drawing objects: UDF parameter receiver with explicit typeHint (C476)", () => {
-  it("emits rt.table.cell for a 'table t_able' parameter receiver (exact wild idiom, kwargs discarded per C211)", () => {
+  it("emits rt.table.cell for a 'table t_able' parameter receiver (exact wild idiom, text_color lowered to its position)", () => {
     const code = codegenSource(
       [
         "cell(table t_able, int column, int row, string data, color textColor) =>",
@@ -23825,7 +23827,7 @@ describe("CodeGen method-call style drawing objects: UDF parameter receiver with
         'cell(tb, 0, 0, "x", color.white)',
       ].join("\n"),
     );
-    expect(code).toContain("rt.table.cell(t_able, column, row, data);");
+    expect(code).toContain("rt.table.cell(t_able, column, row, data, undefined, undefined, textColor);");
   });
 
   it("kind-checks method sugar on a parameter receiver: a box parameter cannot call a label-only method (still 'unsupported')", () => {

@@ -127,6 +127,7 @@ hashes are added when this is committed.
 ### Visualization data (`RunResult.viz`), additive
 
 - `viz.plots[].display` (`"all"` or `"none"`), a negative `offset` (it was reported as 0), the `steplinebr` style (it was reported as `line`); `viz.shapes[].values` and `viz.chars[].values`, the series of a `location.absolute` shape; `viz.hlines[].price` for a level that is not a literal (an input, with the run's overrides). No existing field changes.
+- `viz.drawings` leaves out objects the script deleted (`label.delete`, `line.delete`, `box.delete`, `table.delete` were no-ops, so every object ever created was listed), and a table's state carries its cells (`cell:<column>:<row>:text`, `:text_color`, `:bgcolor`; `table.cell` was a no-op and dropped its keyword arguments).
 
 ### Measured against TradingView exports (head-to-head)
 

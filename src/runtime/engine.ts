@@ -333,7 +333,8 @@ export function run(
         open: ctx.vizSeries[m.openSlot]!, high: ctx.vizSeries[m.highSlot]!,
         low: ctx.vizSeries[m.lowSlot]!, close: ctx.vizSeries[m.closeSlot]!,
       })),
-      drawings: ctx.drawingLog.map((d) => ({ kind: d.kind, id: d.id, bar: d.bar, state: { ...d.state } })),
+      // Deleted objects are not on the chart at the end of the run, so they are not in the list.
+      drawings: ctx.drawingLog.filter((d) => d.state.deleted !== 1).map((d) => ({ kind: d.kind, id: d.id, bar: d.bar, state: { ...d.state } })),
     };
     return base;
   }

@@ -177,6 +177,24 @@ describe("viz: what the chart adapter needs beyond the first slices", () => {
     expect(res.viz!.shapes[1]!.values).toBeNull();
   });
 
+  it("leaves deleted drawings out and records a table's cells", () => {
+    const src = [
+      "//@version=6",
+      'indicator("m", overlay=true)',
+      "lbl = label.new(bar_index, high, str.tostring(bar_index))",
+      "label.delete(lbl[1])",
+      "var t = table.new(position.top_right, 2, 1, bgcolor=#EEEEEE)",
+      "if barstate.islast",
+      '    table.cell(t, 0, 0, "A", text_color=#FF0000)',
+      '    table.cell(t, 1, 0, "B")',
+    ].join("\n");
+    const drawings = run(ok(src), DATA).viz!.drawings;
+    const last = DATA.close.length - 1;
+    expect(drawings.filter((d) => d.kind === "label").map((d) => d.state.text)).toEqual([String(last)]);
+    const table = drawings.find((d) => d.kind === "table")!;
+    expect(table.state).toMatchObject({ position: "top_right", columns: 2, rows: 1, bgcolor: "#EEEEEE", "cell:0:0:text": "A", "cell:0:0:text_color": "#FF0000", "cell:1:0:text": "B" });
+  });
+
   it("reads a level that is not a literal at run time, inputs overridden or not", () => {
     const src = '//@version=6\nindicator("m")\nlvl = input.int(104, "Mid")\nhline(lvl, "Mid")\nhline(70)\nplot(close)';
     const t = ok(src);
@@ -184,4 +202,3 @@ describe("viz: what the chart adapter needs beyond the first slices", () => {
     expect(run(t, DATA, { inputs: { Mid: 90 } }).viz!.hlines.map((h) => h.price)).toEqual([90, 70]);
   });
 });
-

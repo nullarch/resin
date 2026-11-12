@@ -228,7 +228,8 @@ describe("C813 DRAWING_STATE_PARAM_NAMES 표 자체의 정합성", () => {
         expect(names[0]).not.toBe("id");
         continue;
       }
-      expect(names[0]).toBe("id");
+      // The receiver: `id`, or `table_id` as the reference names it for tables.
+      expect(["id", "table_id"]).toContain(names[0]);
     }
   });
 

@@ -21,6 +21,8 @@ import {
   newBox,
   newTable,
   drawingNoop,
+  drawingDelete,
+  tableCell,
   chartPointNew,
   chartPointFromIndex,
   chartPointFromTime,
@@ -376,7 +378,7 @@ export const rt = {
   // 메서드별 구현을 따로 둘 이유가 없다 — pine2py도 이 전부를 단일 drawing_noop 함수로 묶었다).
   label: {
     new: newLabel,
-    delete: drawingNoop,
+    delete: drawingDelete,
     copy: drawingNoop,
     set_x: labelSetX,
     set_y: labelSetY,
@@ -399,7 +401,7 @@ export const rt = {
   },
   line: {
     new: newLine,
-    delete: drawingNoop,
+    delete: drawingDelete,
     copy: drawingNoop,
     set_x1: lineSetX1,
     set_y1: lineSetY1,
@@ -423,7 +425,7 @@ export const rt = {
   },
   box: {
     new: newBox,
-    delete: drawingNoop,
+    delete: drawingDelete,
     copy: drawingNoop,
     set_left: boxSetLeft,
     set_right: boxSetRight,
@@ -453,8 +455,8 @@ export const rt = {
   },
   table: {
     new: newTable,
-    cell: drawingNoop,
-    delete: drawingNoop,
+    cell: tableCell,
+    delete: drawingDelete,
     set_bgcolor: drawingNoop,
     set_border_color: drawingNoop,
     set_border_width: drawingNoop,
