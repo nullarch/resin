@@ -138,7 +138,7 @@
     {
       "id": "KG-SERIES-LENGTH",
       "kind": "loud",
-      "title": "16 ta.* functions (ema, rsi, rma, atr, alma, hma, dema, cog, ...) refuse a length that changes from bar to bar",
+      "title": "15 ta.* functions (ema, rsi, rma, atr, alma, hma, dema, ...) refuse a length that changes from bar to bar",
       "expectation": "Today's refusal. When a function learns to take a series length its entry here must be edited, not deleted.",
       "documented": {
         "README.md": "ta.alma"

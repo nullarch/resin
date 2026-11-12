@@ -528,7 +528,7 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // injected — unlike mfi/vwma/wpr). The reference types the length `series int`; a
   // series length stays rejected while the oracle's machine for it is disputed (its running weighted
   // sum assumes the length never changes, where the manual's pine_cog recomputes each bar).
-  cog: { dispatch: "ta", displayName: "ta.cog", argCount: 2, lengthArgIndex: 1, conditionalForbidden: true, rtPath: "rt.ta.cog" },
+  cog: { dispatch: "ta", displayName: "ta.cog", argCount: 2, lengthArgIndex: 1, seriesLengthOk: true, conditionalForbidden: true, rtPath: "rt.ta.cog" },
   // ta.correlation(source1, source2, length) — five math.sum windows (both sources, their product
   // and their squares; runtime/ta.ts correlation(), the oracle's lib/ta.py correlation), with no
   // codegen special case. length가 합계 창의 고정폭 순환 버퍼 크기를 결정하므로 sma와 동일하게

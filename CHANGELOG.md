@@ -167,6 +167,8 @@ hashes are added when this is committed.
 
 - `ta.sar` follows the Pine manual's reference implementation, which the reference engine measured TradingView's builtin against bit for bit, warm-up included: the trend starts on bar 1 by `close > close[1]` (a tie starts short; was `high[1] > high`), the full step runs on bar 1 (was the bare start value), and the reversal and extreme-point tests use Pine's 1e-10 tolerance. First bars and near-tie reversals change.
 
+- `ta.cog` is the reference implementation the reference engine measured TradingView against: the denominator is the rolling `math.sum`, the numerator a newest-first loop over the window (was a rolling recurrence, one ulp away on most bars). It now takes a series length, read per bar.
+
 ##### Language
 
 - `%` is the truncated remainder and takes the sign of the dividend: `-7 % 3` is `-1` (was `2`), `7 % -3` is `1` (was `-2`), `-7.5 % 2` is `-1.5` (was `0.5`). Measured on TradingView by the reference engine's `test_023_pine_remainder` (`(z - 7) % 3` is -1 on CAPITALCOM:EURUSD 60); resin had read the operators manual's "rounding down the quotient" as the floored modulo. A zero divisor is still na. Only a `%` with a negative operand changes.

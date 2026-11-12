@@ -4202,6 +4202,7 @@ const VARLEN_RT_PATHS: Readonly<Record<string, string>> = {
   percentrank: "rt.ta.percentrankVarLen",
   mode: "rt.ta.modeVarLen",
   correlation: "rt.ta.correlationVarLen",
+  cog: "rt.ta.cogVarLen",
 };
 
 // The builtins whose machine TradingView advances once per EXECUTION of a loop call site, instead

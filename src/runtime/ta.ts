@@ -423,11 +423,10 @@ export function alma(state: AlmaState, value: number, length: number, offsetMult
 }
 
 export interface CogState {
-  buffer?: number[];
+  sumState?: SmaState; // the denominator: math.sum(source, length)
+  buffer?: number[]; // ring of the last `length` non-na values
   writeIdx?: number;
   count?: number;
-  sum?: number;
-  weightedSum?: number;
   value?: number;
 }
 
@@ -435,41 +434,71 @@ export interface CogState {
 // newest value (ref_v6_ta_math.txt pine_cog: `num := num + price * (i + 1)`, `-num / sum`).
 // The window is the last `length` NON-na values: "`na` values in the `source` series are ignored"
 // (ref_v6_ta_math.txt ta.cog). An na bar stores nothing and answers the value the window held; the
-// warm-up lasts until `length` non-na values exist (state/repros/cog-na-window.json, oracle lib/ta.py
-// cog "NA values are NOT stored in the buffer, only skipped"). The ring holds those values, so the one
-// leaving is the one `length` non-na values back. Running sums in the oracle's arithmetic:
-// weightedSum = Σ source[i] * i, and each new value shifts every weight up by one, i.e.
-// weightedSum += sum - length * leaving; the result is -weightedSum / sum - 1. A zero sum gives na.
+// warm-up lasts until `length` non-na values exist.
+// The arithmetic is TradingView's as the oracle measured it (pynecore lib/ta.py cog, "MEASURED
+// (2026-10-29, CAPITALCOM:BTCUSD 5m, 20871 bars bit-exact): the denominator is the rolling math.sum
+// machine and the numerator is a plain newest-first loop sum(source[i] * (i + 1)) over the window,
+// the reference implementation of the Pine documentation; carrying the numerator as a rolling
+// recurrence instead lands one ulp away on nearly every bar"). resin carried it as a recurrence.
+// The sum machine advances on every bar, na bars included. A zero sum gives na.
 export function cog(state: CogState, value: number, length: number): number {
   length = Math.trunc(length);
   if (state.buffer === undefined) {
+    state.sumState = {};
     state.buffer = allocArray(length, "ta.* window").fill(NaN);
     state.writeIdx = 0;
     state.count = 0;
-    state.sum = 0;
-    state.weightedSum = 0;
     state.value = NaN;
   }
+  const sum = naSkipSum(state.sumState!, value, length);
   if (Number.isNaN(value)) return state.count! < length ? NaN : state.value!;
   const buffer = state.buffer;
-  const writeIdx = state.writeIdx!;
+  const at = state.writeIdx!;
+  buffer[at] = value;
+  state.writeIdx = at + 1 === length ? 0 : at + 1;
   if (state.count! < length) {
     state.count! += 1;
-    state.sum! += value;
-    state.weightedSum! += value * (length - state.count!);
-    buffer[writeIdx] = value;
-    state.writeIdx = (writeIdx + 1) % length;
     if (state.count! < length) return NaN;
-  } else {
-    const leaving = buffer[writeIdx]!;
-    const sum = state.sum!;
-    state.weightedSum = state.weightedSum! + sum - length * leaving;
-    state.sum = sum + value - leaving;
-    buffer[writeIdx] = value;
-    state.writeIdx = (writeIdx + 1) % length;
   }
-  const sum = state.sum!;
-  state.value = sum === 0 ? NaN : -state.weightedSum! / sum - 1;
+  let num = 0;
+  let k = at;
+  for (let i = 0; i < length; i++) {
+    num += buffer[k]! * (i + 1);
+    k = k === 0 ? length - 1 : k - 1;
+  }
+  state.value = sum === 0 ? NaN : -num / sum;
+  return state.value;
+}
+
+export interface CogVarLenState extends NaSkipVarLenState {
+  value?: number;
+  warm?: number; // the warm-up counter
+}
+
+// ta.cog with a series length: the same definition read with the bar's own length, which is what
+// the reference's pine_cog does ("// the same on pine") and what the oracle's cog now does too (the
+// sum machine follows the length, the numerator loops over the last `length` stored values). Until
+// resin-harness pinned that oracle, resin refused a series length here (dispute D6).
+export function cogVarLen(state: CogVarLenState, value: number, length: number, barCount: number, barIdx: number): number {
+  const len = Math.trunc(length);
+  const sum = naSkipSumVarLen(state, value, len, barCount, barIdx);
+  if (!(len >= 1)) return NaN;
+  // The oracle's warm-up counter: it grows by one per stored value while it is below the bar's
+  // length, so after a length jumps up the result is na until the counter has caught up, although
+  // the history is there (`if count < length: count += 1; if count < length: return na`).
+  let warm = state.warm ?? 0;
+  if (Number.isNaN(value)) return warm < len ? NaN : state.value ?? NaN;
+  if (warm < len) {
+    warm += 1;
+    state.warm = warm;
+    if (warm < len) return NaN;
+  }
+  const n = state.count!;
+  if (n < len) return NaN;
+  const buffer = state.buffer!;
+  let num = 0;
+  for (let i = 0; i < len; i++) num += buffer[n - 1 - i]! * (i + 1);
+  state.value = sum === 0 ? NaN : -num / sum;
   return state.value;
 }
 

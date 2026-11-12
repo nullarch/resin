@@ -2040,9 +2040,11 @@ describe("Analyzer", () => {
     expect(prog.taSlotCount).toBe(1);
   });
 
-  it("errors when ta.cog's length argument is a bar series identifier directly (series lengths under dispute: the oracle keeps the first length's running weighted sum)", () => {
-    const prog = analyzeSource("x = ta.cog(close, close)");
-    expect(prog.errors.some((e) => e.includes("'ta.cog'") && e.includes("length"))).toBe(true);
+  // ta.cog reads the bar's own length, as the reference's pine_cog does and the oracle now measures
+  // (runtime/ta.ts cogVarLen; resin-harness dispute D6, dissolved for cog by pynecore@d69f5ef).
+  it("accepts a series length for ta.cog", () => {
+    const prog = analyzeSource("x = ta.cog(close, math.min(bar_index + 1, 9))");
+    expect(prog.errors).toEqual([]);
   });
 
   it("accepts a literal length argument for ta.cog (regression guard)", () => {
