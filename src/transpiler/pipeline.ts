@@ -27,6 +27,7 @@ import { renameShadowingDecls } from "./passes/shadowing";
 import { ParseError, parse } from "./parser";
 import { STRICT_REFUSED_TIERS, collectSurfaceWarnings, type TranspileWarning } from "./surface";
 import { checkBuiltinCalls } from "./builtins/check";
+import { checkTypes } from "./types/check";
 
 export type { TranspileWarning } from "./surface";
 
@@ -179,8 +180,15 @@ function transpileUnguarded(source: string, options?: AnalyzeOptions): Transpile
     const at = libraryLocation(f.line, link.linked);
     warnings.push({ kind: "signature", name: f.name, line: at === null ? f.line : at.line, message: `${at === null ? "" : `library ${at.path}: `}${f.message} [signature]` });
   }
+  // A type error visible without inference: a string literal where the language takes a number or
+  // a bool, a declared type against its literal initializer (types/check.ts). Same standing as a
+  // signature finding: TradingView refuses it, resin warns, `strict` refuses.
+  for (const f of checkTypes(script)) {
+    const at = libraryLocation(f.line, link.linked);
+    warnings.push({ kind: "type", name: f.name, line: at === null ? f.line : at.line, message: `${at === null ? "" : `library ${at.path}: `}${f.message} [type]` });
+  }
   if (options?.strict === true) {
-    const refused = warnings.filter((w) => w.kind === "option" || w.kind === "version" || w.kind === "import" || w.kind === "signature" || (STRICT_REFUSED_TIERS as readonly string[]).includes(w.kind));
+    const refused = warnings.filter((w) => w.kind === "option" || w.kind === "version" || w.kind === "import" || w.kind === "signature" || w.kind === "type" || (STRICT_REFUSED_TIERS as readonly string[]).includes(w.kind));
     if (refused.length > 0) {
       return { ok: false, errors: refused.map((w) => (w.line > 0 ? `${w.message} (L${w.line}, strict)` : `${w.message} (strict)`)) };
     }

@@ -128,9 +128,10 @@ order, as `{ kind, name, line, message }`:
 | `option` | a `transpile()` option key resin does not read, ignored | a typo such as `chartTF`, or `syminfo.currency` |
 | `version` | a `//@version` below 5 or above 6 | `//@version=4` |
 | `signature` | a built-in call its signature does not allow: a keyword the function does not have, too many arguments, a required one left out | `ticker.new()`, `map.get(m, key, fallback)` |
+| `type` | a type error visible without inference: a string where the language takes a number or a bool, a declared type against its literal initializer, `:=` changing a variable's type | `x = 1` then `x := "a"`, `ta.sma(close, "5")` |
 
 `transpile(source, { strict: true })` turns `stub`, `passthrough`, `import`, `option`,
-`version` and `signature` warnings into errors, so a service that must not score a script on
+`version`, `signature` and `type` warnings into errors, so a service that must not score a script on
 made-up numbers can refuse it up front. The registry is
 `src/transpiler/surface.ts`; a name that is wrong in a way nobody has noticed is
 not in it, so an empty `warnings` is not a certificate.

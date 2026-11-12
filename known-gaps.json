@@ -168,8 +168,8 @@
     {
       "id": "KG-NO-TYPECHECK",
       "kind": "missing",
-      "title": "There is no static type checker: ill-typed scripts compile and misbehave at run time",
-      "expectation": "`int x = \"a\"`, `\"a\" * 2`, `plot(\"a\")`, `ta.sma(close, \"5\")` are refused (category static-type). A checker has to be validated against the Pine reference before it may refuse real scripts, which is why it is not built.",
+      "title": "There is no static type checker beyond literals: ill-typed scripts compile and misbehave at run time",
+      "expectation": "`int x = \"a\"`, `\"a\" * 2`, `plot(\"a\")`, `ta.sma(close, \"5\")` are refused (category static-type). A checker has to be validated against the Pine reference before it may refuse real scripts. Since src/transpiler/types/check.ts the errors visible on literals (16 of the 19) are a `type` warning and refused under `strict`; by default they are still accepted, and anything whose type must be inferred is not judged.",
       "documented": {},
       "repro": "negative",
       "category": "static-type",

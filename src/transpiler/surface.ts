@@ -106,7 +106,8 @@ export interface TranspileWarning {
   // A SurfaceTier, or "option" for an option key resin ignores, "version" for a version annotation
   // resin does not implement, or "import" for a library with no source whose alias reads builtins.
   // "signature": a built-in call the signature table does not allow (src/transpiler/builtins).
-  kind: SurfaceTier | "option" | "version" | "import" | "signature";
+  // "type": a type error that needs no inference to see (src/transpiler/types/check.ts).
+  kind: SurfaceTier | "option" | "version" | "import" | "signature" | "type";
   // The Pine name, or the option key.
   name: string;
   // 1-based source line; 0 when the warning is about an option rather than the source.
