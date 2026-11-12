@@ -2051,7 +2051,14 @@ export class StrategyState {
     let flip = NaN;
     if (!reissued) {
       const pos = this.positionAfterPlacedMarketOrders();
-      if (pos !== 0 && pos > 0 === sign > 0 && this.entryCount >= this.pyramiding) return;
+      if (pos !== 0 && pos > 0 === sign > 0 && this.entryCount >= this.pyramiding) {
+        // A rejected call still modifies the pending order of its id: that order is gone, not left
+        // resting (the oracle's entry(), measured on CAPITALCOM:EURUSD 30m, pyramiding=1, probe "PYR
+        // fill probe": a long stop B "never fills once the same strategy.entry("B") call is
+        // repeated on A's fill bar (0/529)").
+        if (existing !== undefined) this.removePendingEntry(existing);
+        return;
+      }
       if (priceBased) flip = this.posSize !== 0 && pos !== 0 && pos > 0 !== sign > 0 ? Math.abs(pos) : 0;
     } else {
       flip = 0;
@@ -3267,7 +3274,14 @@ export class StrategyState {
     } else if (this.posSize === 0) {
       this.openTradeAt(e.id, e.comment, fillPrice, sign * qty, barIndex, barTimeMs);
       this.intradayFilledCount += 1;
-    } else if (this.entryCount < this.pyramiding) {
+    } else if (this.entryCount < this.pyramiding || StrategyState.isPriceBased(e)) {
+      // A limit/stop entry passed its only pyramiding gate when it was placed: "one placed while
+      // the limit still had room fills whenever it triggers, even after a sibling has opened the
+      // position" (the oracle's entry(), MEASURED on CAPITALCOM:EURUSD 30m, pyramiding=1, probe
+      // "PYR fill probe", 1191 cycles: "of two long stops A and B placed together while flat, B
+      // fills when it triggers on a later bar with A open (529/529)"). A market entry is judged
+      // again here ("Market orders are re-checked at processing time as well"). Repro
+      // resin-harness state/repros/mixed-seed-62.json.
       // A pyramiding add opens its own trade beside the earlier ones (it is not merged into
       // them): "Pyramiding specifies the maximum number of open trades, from the orders created
       // by strategy.entry() calls, that a strategy allows for a single position"

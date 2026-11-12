@@ -171,6 +171,10 @@ hashes are added when this is committed.
 
 - `ta.roc` with a series length is the manual's formula, `100 * change(src, length) / src[length]`, with one past value in both places, as the literal-length call already was (it took the difference over non-na bars only, so the two spellings of one call disagreed across an na gap).
 
+##### Strategy engine, again
+
+- A limit/stop `strategy.entry` is held to the `pyramiding` limit when it is placed, not when it fills: placed while there was room, it fills whenever it triggers, even after another entry has opened the position (measured on TradingView by the reference engine, 529 of 529 cycles). A market entry is still judged again at its fill. A call the limit rejects also removes the unfilled order of the same id.
+
 ##### Language
 
 - `%` is the truncated remainder and takes the sign of the dividend: `-7 % 3` is `-1` (was `2`), `7 % -3` is `1` (was `-2`), `-7.5 % 2` is `-1.5` (was `0.5`). Measured on TradingView by the reference engine's `test_023_pine_remainder` (`(z - 7) % 3` is -1 on CAPITALCOM:EURUSD 60); resin had read the operators manual's "rounding down the quotient" as the floored modulo. A zero divisor is still na. Only a `%` with a negative operand changes.
