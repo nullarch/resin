@@ -8444,15 +8444,17 @@ describe("numeric helpers", () => {
     expect(pos("hello world", "")).toBe(0);
   });
 
-  it("contains()/startswith()/endswith()/pos() propagate na (NaN) when source or target is a null string", () => {
+  it("startswith()/endswith()/pos() propagate na (NaN) for a null string; contains() reads it as the empty string", () => {
     // pine2py str_funcs.contains/startswith/endswith/pos have no None-guard and would crash
     // (AttributeError/TypeError) on na input — unlike length()'s deliberate `if source else 0`
     // fallback, there is no pine2py-defined behavior here to literal-port. GOAL.md na-safety
     // principle applied instead: any reference-type na (null) argument propagates to na (NaN,
     // since these return bool/int — same numeric-na convention as pineAnd/pineLt). Not oracle-
     // verifiable (pine2py itself can't produce a golden for this path) — hand-verified only.
-    expect(contains(null, "x")).toBeNaN();
-    expect(contains("x", null)).toBeNaN();
+    // str.contains is measured: a na string is the empty string, so contains(na, "x") is false and
+    // contains("x", na) is true (oracle test_001_str, "MEASURED on TradingView, v5 and v6").
+    expect(contains(null, "x")).toBe(false);
+    expect(contains("x", null)).toBe(true);
     expect(startswith(null, "x")).toBeNaN();
     expect(startswith("x", null)).toBeNaN();
     expect(endswith(null, "x")).toBeNaN();
@@ -8937,7 +8939,7 @@ describe("numeric helpers", () => {
   it("str.* functions treat a NaN sentinel (not just null) as na, matching each function's existing null-na return convention", () => {
     const NAN = NaN as unknown as string;
     expect(length(NAN)).toBe(0); // length() has the 0-fallback, not na
-    expect(contains(NAN, "x")).toBeNaN();
+    expect(contains(NAN, "x")).toBe(false);
     expect(startswith("x", NAN)).toBeNaN();
     expect(endswith(NAN, "x")).toBeNaN();
     expect(pos("x", NAN)).toBeNaN();

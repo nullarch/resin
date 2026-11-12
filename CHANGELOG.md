@@ -187,6 +187,8 @@ hashes are added when this is committed.
 
 ##### Language
 
+- `na("")` is true: the empty string is the string na (measured on TradingView by the reference engine). `str.contains(na, "a")` is false and `str.contains("abc", na)` is true (both were na).
+
 - `%` is the truncated remainder and takes the sign of the dividend: `-7 % 3` is `-1` (was `2`), `7 % -3` is `1` (was `-2`), `-7.5 % 2` is `-1.5` (was `0.5`). Measured on TradingView by the reference engine's `test_023_pine_remainder` (`(z - 7) % 3` is -1 on CAPITALCOM:EURUSD 60); resin had read the operators manual's "rounding down the quotient" as the floored modulo. A zero divisor is still na. Only a `%` with a negative operand changes.
 
 ##### Strings and time

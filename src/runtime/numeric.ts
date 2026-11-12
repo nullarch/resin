@@ -29,8 +29,12 @@ export function idiv(a: number, b: number): number {
   return Math.trunc(a / b);
 }
 
+// na(x). The empty string is the string na: "TradingView answers na(\"\") true" (the oracle's
+// lib is_na; its tests/t01_lib/t05_string/test_001_str.py: "A na string is the empty string ...
+// MEASURED on TradingView, v5 and v6"). A request.security of a string the requested context has
+// not set yet reads as na for that reason (resin-harness probe L42).
 export function na(x: unknown): boolean {
-  return typeof x === "number" ? x !== x : x === null;
+  return typeof x === "number" ? x !== x : x === null || x === "";
 }
 
 // bar_index[n]의 동적(런타임) 오프셋 전용(C305, ROADMAP P4 next_hint 3위 "동적 히스토리 오프셋"

@@ -21,15 +21,13 @@ export function length(source: string | null): number {
   return source.length;
 }
 
-// str.contains/startswith/endswith/pos — pine2py 소스(source.find/startswith/endswith, `target in
-// source`)는 source가 None이면 가드 없이 크래시한다(AttributeError/TypeError) — length와 달리
-// na 입력에 대한 정의된 동작이 없다. length의 "0 폴백"은 pine2py의 의도된 가드를 literal port한
-// 것이지만, 이 넷은 그런 가드 자체가 없어 GOAL.md na 안전성 원칙에 따라 source/target 중 하나라도
-// na(null)면 na를 전파하기로 결정(둘 다 bool/int 반환이라 na는 pineAnd/pineLt류와 동일하게 NaN —
-// DIVERGENCES.md 신규 등재, pine2py 오라클로는 이 na 채널을 검증할 수 없다).
+// str.contains(source, str). A na string is the empty string, so str.contains(na, "a") is false
+// and str.contains("abc", na) is true ("MEASURED on TradingView, v5 and v6, in both bool modes",
+// oracle tests/t01_lib/t05_string/test_001_str.py). resin answered na for either.
+// startswith/endswith/pos below keep resin's own choice for a na operand, na: nothing measured
+// says otherwise for them yet.
 export function contains(source: string | null, target: string | null): boolean | number {
-  if (typeof source !== "string" || typeof target !== "string") return NaN;
-  return source.includes(target);
+  return (typeof source === "string" ? source : "").includes(typeof target === "string" ? target : "");
 }
 
 export function startswith(source: string | null, target: string | null): boolean | number {
