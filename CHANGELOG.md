@@ -181,6 +181,8 @@ hashes are added when this is committed.
 
 - `array.slice` returns a view over its array, not a copy: writing through the slice changes the array and the other way round; a push lands at the slice's end, a pop takes its last element, clearing it cuts those elements out of the array (the Pine reference; measured on TradingView by the reference engine; tier 1 `array_002`, `array_003`).
 
+- With `process_orders_on_close`, margin is judged at the bar's close before the on-close orders fill, so a position opened at the close is first checked at the next open (it could be liquidated on its own entry bar).
+
 ##### Language
 
 - `%` is the truncated remainder and takes the sign of the dividend: `-7 % 3` is `-1` (was `2`), `7 % -3` is `1` (was `-2`), `-7.5 % 2` is `-1.5` (was `0.5`). Measured on TradingView by the reference engine's `test_023_pine_remainder` (`(z - 7) % 3` is -1 on CAPITALCOM:EURUSD 60); resin had read the operators manual's "rounding down the quotient" as the floored modulo. A zero divisor is still na. Only a `%` with a negative operand changes.

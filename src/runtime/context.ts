@@ -787,7 +787,11 @@ export class Context {
   // no margin set skips them).
   finishBar(): void {
     this.strategy.settleImmediateCloses(this.close.get(0), this.idx, this.barTimeMs);
-    this.strategy.processFillsAtClose(this.close.get(0), this.idx, this.barTimeMs);
+    // Margin is judged at the close before the process_orders_on_close fills: "a position opened
+    // at the close is first checked at the next open" (the oracle's end-of-bar order, pynecore
+    // core/script_runner.py; repro resin-harness state/repros/mixed-seed-274.json, where a 100% of
+    // equity short filled at the close with slippage is liquidated on the next bar, not on its own).
     this.strategy.settleMargin(this.close.get(0), this.idx, this.barTimeMs);
+    this.strategy.processFillsAtClose(this.close.get(0), this.idx, this.barTimeMs);
   }
 }

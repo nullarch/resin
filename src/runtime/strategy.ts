@@ -3432,8 +3432,8 @@ export class StrategyState {
     return false;
   }
 
-  // The margin calls judged at the bar's close, after the script body and the process_orders_on_close
-  // pass (Context.finishBar): a margin call deferred there from an extreme (marginCall), then the
+  // The margin calls judged at the bar's close, after the script body and before the
+  // process_orders_on_close pass (Context.finishBar): a margin call deferred there from an extreme (marginCall), then the
   // close itself, where a shortfall is covered in whole contracts. The oracle's
   // `process_deferred_margin_call` (tier 2, measured on TradingView: "TV trims 1.0 contract at
   // C=80898.0 on the 02:00 bar while the O/H/L walk points all pass the margin comparison").
