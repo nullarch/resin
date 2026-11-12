@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+x<U+00A0>=<U+00A0>close<U+00A0>+<U+00A0>open<U+00A0>
+plot(x)

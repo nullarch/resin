@@ -1,0 +1,912 @@
+[
+  {
+    "id": "ta-sma-divisor",
+    "file": "src/runtime/ta.ts",
+    "find": "return naSkipSum(state, value, length) / Math.trunc(length);",
+    "replace": "return naSkipSum(state, value, length) / (Math.trunc(length) + 1);",
+    "why": "ta.sma divides the window sum by length + 1"
+  },
+  {
+    "id": "ta-sma-window-full",
+    "file": "src/runtime/ta.ts",
+    "find": "const full = prevW >= length;",
+    "replace": "const full = prevW > length;",
+    "why": "the rolling sum keeps one extra value before it starts evicting (window length + 1 for a bar)"
+  },
+  {
+    "id": "ta-ema-alpha",
+    "file": "src/runtime/ta.ts",
+    "find": "const alpha = 2 / (length + 1);",
+    "replace": "const alpha = 2 / length;",
+    "why": "ta.ema smoothing factor 2 / length instead of 2 / (length + 1)"
+  },
+  {
+    "id": "ta-ema-seed-divisor",
+    "file": "src/runtime/ta.ts",
+    "find": "state.prevEma = state.initSum! / length;",
+    "replace": "state.prevEma = state.initSum! / (length + 1);",
+    "why": "ta.ema seeds with the sum of the first length values over length + 1"
+  },
+  {
+    "id": "ta-rma-divisor",
+    "file": "src/runtime/ta.ts",
+    "find": "const rmaVal = (state.prevRma! * (length - 1) + value) / length;",
+    "replace": "const rmaVal = (state.prevRma! * (length - 1) + value) / (length - 1);",
+    "why": "ta.rma (Wilder) divides by length - 1"
+  },
+  {
+    "id": "ta-wma-divisor",
+    "file": "src/runtime/ta.ts",
+    "find": "return summ / ((length * (length + 1)) / 2);",
+    "replace": "return summ / ((length * length) / 2);",
+    "why": "ta.wma weight total length * length / 2 instead of length * (length + 1) / 2"
+  },
+  {
+    "id": "ta-vwma-weights",
+    "file": "src/runtime/ta.ts",
+    "find": "return sma(state.pv, price * volume, length) / sma(state.v!, volume, length);",
+    "replace": "return sma(state.pv, price, length) / sma(state.v!, volume, length);",
+    "why": "ta.vwma forgets to weight price by volume in the numerator"
+  },
+  {
+    "id": "ta-alma-sigma",
+    "file": "src/runtime/ta.ts",
+    "find": "const s = length / sigma;",
+    "replace": "const s = sigma / length;",
+    "why": "ta.alma Gaussian width sigma / length instead of length / sigma"
+  },
+  {
+    "id": "ta-linreg-offset",
+    "file": "src/runtime/ta.ts",
+    "find": "state.val = intercept + slope * (length - 1 - offset);",
+    "replace": "state.val = intercept + slope * (length - 1 + offset);",
+    "why": "ta.linreg offset shifts the fitted point the wrong way"
+  },
+  {
+    "id": "ta-linreg-intercept",
+    "file": "src/runtime/ta.ts",
+    "find": "const intercept = average - (slope * sumX) / length + slope;",
+    "replace": "const intercept = average - (slope * sumX) / length;",
+    "why": "ta.linreg intercept loses its + slope term"
+  },
+  {
+    "id": "ta-rsi-loss-sign",
+    "file": "src/runtime/ta.ts",
+    "find": "const loss = Math.max(-change, 0);",
+    "replace": "const loss = Math.max(change, 0);",
+    "why": "ta.rsi counts rises as losses too (loss = max(change, 0))"
+  },
+  {
+    "id": "ta-rsi-wilder-loss",
+    "file": "src/runtime/ta.ts",
+    "find": "state.avgLoss! * (length - 1) + loss",
+    "replace": "state.avgLoss! * length + loss",
+    "why": "ta.rsi smooths the average loss with length instead of length - 1 (gain side untouched)"
+  },
+  {
+    "id": "ta-rsi-saturation-order",
+    "file": "src/runtime/ta.ts",
+    "find": "if (state.avgLoss <= PINE_EPS) return 100;",
+    "replace": "if (state.avgGain <= PINE_EPS) return 0;\n  if (state.avgLoss <= PINE_EPS) return 100;",
+    "why": "ta.rsi tests the gain side first: both sides dormant gives 0 instead of 100"
+  },
+  {
+    "id": "ta-cmo-zero-total",
+    "file": "src/runtime/ta.ts",
+    "find": "const sum2 = naSkipSum(state.down!, rising ? 0 : -mom, length);\n  const total = sum1 + sum2;\n  if (total === 0) return NaN;",
+    "replace": "const sum2 = naSkipSum(state.down!, rising ? 0 : -mom, length);\n  const total = sum1 + sum2;\n  if (total === 0) return 0;",
+    "why": "ta.cmo returns 0 instead of na when both momentum sums are zero"
+  },
+  {
+    "id": "ta-cmo-tolerance",
+    "file": "src/runtime/ta.ts",
+    "find": "const rising = mom >= -PINE_EPS;\n  const sum1 = naSkipSum(state.up, rising ? mom : 0, length);",
+    "replace": "const rising = mom >= 0;\n  const sum1 = naSkipSum(state.up, rising ? mom : 0, length);",
+    "why": "ta.cmo drops Pine's tolerance on the sign of the momentum"
+  },
+  {
+    "id": "ta-mfi-zero-lower",
+    "file": "src/runtime/ta.ts",
+    "find": "  let upper = naSkipSum(state.up, volume * (change <= PINE_EPS ? 0 : source), length);\n  let lower = naSkipSum(state.down!, volume * (change >= -PINE_EPS ? 0 : source), length);\n  if (Number.isNaN(upper) || Number.isNaN(lower)) return NaN;\n  if (Math.abs(upper) <= PINE_EPS) upper = 0;\n  if (Math.abs(lower) <= PINE_EPS) lower = 0;\n  if (lower === 0) return 100.0;",
+    "replace": "  let upper = naSkipSum(state.up, volume * (change <= PINE_EPS ? 0 : source), length);\n  let lower = naSkipSum(state.down!, volume * (change >= -PINE_EPS ? 0 : source), length);\n  if (Number.isNaN(upper) || Number.isNaN(lower)) return NaN;\n  if (Math.abs(upper) <= PINE_EPS) upper = 0;\n  if (Math.abs(lower) <= PINE_EPS) lower = 0;\n  if (lower === 0) return 0.0;",
+    "why": "ta.mfi with no negative money flow returns 0 instead of 100"
+  },
+  {
+    "id": "ta-cci-constant",
+    "file": "src/runtime/ta.ts",
+    "find": "const mdev = length === 1 ? 0 : Number.isNaN(mean) ? NaN : lastBarsMeanAbsDev(state, length, mean);\n  if (Number.isNaN(mdev)) return NaN;\n  return (value - mean) / (0.015 * mdev);",
+    "replace": "const mdev = length === 1 ? 0 : Number.isNaN(mean) ? NaN : lastBarsMeanAbsDev(state, length, mean);\n  if (Number.isNaN(mdev)) return NaN;\n  return (value - mean) / (0.15 * mdev);",
+    "why": "ta.cci scaling constant 0.15 instead of 0.015"
+  },
+  {
+    "id": "ta-dev-abs",
+    "file": "src/runtime/ta.ts",
+    "find": "i = i === 0 ? length - 1 : i - 1;\n    sum += Math.abs(buffer[i]! - mean);",
+    "replace": "i = i === 0 ? length - 1 : i - 1;\n    sum += buffer[i]! - mean;",
+    "why": "ta.dev / ta.cci mean absolute deviation loses its abs (fixed-length path)"
+  },
+  {
+    "id": "ta-dev-varlen-divisor",
+    "file": "src/runtime/ta.ts",
+    "find": "  for (let i = w; i > w - len; i--) sum += Math.abs(buffer[i]! - mean);\n  return sum / len;",
+    "replace": "  for (let i = w; i > w - len; i--) sum += Math.abs(buffer[i]! - mean);\n  return sum / (len - 1);",
+    "why": "series-length ta.dev / ta.cci divides the absolute deviations by len - 1"
+  },
+  {
+    "id": "ta-stoch-numerator",
+    "file": "src/runtime/ta.ts",
+    "find": "return (100 * (source - ll)) / (hh - ll);",
+    "replace": "return (100 * (source - hh)) / (hh - ll);",
+    "why": "ta.stoch measures from the highest instead of the lowest"
+  },
+  {
+    "id": "ta-wpr-numerator",
+    "file": "src/runtime/ta.ts",
+    "find": "return (100 * (close - hh)) / (hh - ll);",
+    "replace": "return (100 * (close - ll)) / (hh - ll);",
+    "why": "ta.wpr measures from the lowest instead of the highest"
+  },
+  {
+    "id": "ta-percentrank-tolerance",
+    "file": "src/runtime/ta.ts",
+    "find": "if (x <= value || x - value <= PINE_EPS) count++;",
+    "replace": "if (x <= value) count++;",
+    "why": "ta.percentrank drops the tolerance when counting values at or below the current one"
+  },
+  {
+    "id": "ta-change-sign",
+    "file": "src/runtime/ta.ts",
+    "find": "  return value - oldVal;\n}",
+    "replace": "  return oldVal - value;\n}",
+    "why": "ta.change / ta.mom subtract in the wrong order"
+  },
+  {
+    "id": "ta-roc-denominator",
+    "file": "src/runtime/ta.ts",
+    "find": "return (100 * (value - oldVal)) / oldVal;",
+    "replace": "return (100 * (value - oldVal)) / value;",
+    "why": "ta.roc divides by the current value instead of the old one"
+  },
+  {
+    "id": "ta-obv-flat-bar",
+    "file": "src/runtime/ta.ts",
+    "find": "if (chg > 0) state.prevObv += volume;",
+    "replace": "if (chg >= 0) state.prevObv += volume;",
+    "why": "ta.obv adds the volume of an unchanged close"
+  },
+  {
+    "id": "ta-valuewhen-occurrence",
+    "file": "src/runtime/ta.ts",
+    "find": "const idx = (mostRecentIdx - occurrence + size) % size;",
+    "replace": "const idx = (mostRecentIdx - occurrence + 1 + size) % size;",
+    "why": "ta.valuewhen reads the wrong occurrence slot"
+  },
+  {
+    "id": "ta-tr-low-prevclose",
+    "file": "src/runtime/ta.ts",
+    "find": "return Math.max(hl, Math.abs(high - prevClose), Math.abs(low - prevClose));",
+    "replace": "return Math.max(hl, Math.abs(high - prevClose));",
+    "why": "ta.tr drops the |low - prevClose| term (the audit's example: no golden flipped)"
+  },
+  {
+    "id": "ta-tr-high-prevclose",
+    "file": "src/runtime/ta.ts",
+    "find": "return Math.max(hl, Math.abs(high - prevClose), Math.abs(low - prevClose));",
+    "replace": "return Math.max(hl, Math.abs(low - prevClose));",
+    "why": "ta.tr drops the |high - prevClose| term"
+  },
+  {
+    "id": "ta-tr-handle-na",
+    "file": "src/runtime/ta.ts",
+    "find": "if (Number.isNaN(prevClose)) return handleNa ? hl : NaN;",
+    "replace": "if (Number.isNaN(prevClose)) return handleNa ? NaN : hl;",
+    "why": "ta.tr(handle_na) is inverted on the first bar"
+  },
+  {
+    "id": "ta-atr-first-bar",
+    "file": "src/runtime/ta.ts",
+    "find": "const trVal = tr(undefined, high, low, prevClose, true);",
+    "replace": "const trVal = tr(undefined, high, low, prevClose, false);",
+    "why": "ta.atr stops feeding high - low on the first bar (tr(false) is na there)"
+  },
+  {
+    "id": "ta-variance-square",
+    "file": "src/runtime/ta.ts",
+    "find": "const q = naSkipSum(state.q!, value * value, len);",
+    "replace": "const q = naSkipSum(state.q!, value, len);",
+    "why": "ta.variance / ta.stdev / ta.bb sum the values instead of their squares in q (fixed-length path)"
+  },
+  {
+    "id": "ta-variance-varlen-square",
+    "file": "src/runtime/ta.ts",
+    "find": "const q = naSkipSumVarLen(state.q!, value * value, len, barCount, barIdx);",
+    "replace": "const q = naSkipSumVarLen(state.q!, value, len, barCount, barIdx);",
+    "why": "series-length ta.variance / ta.stdev sum the values instead of their squares"
+  },
+  {
+    "id": "ta-variance-biased-divisor",
+    "file": "src/runtime/ta.ts",
+    "find": "const q = naSkipSum(state.q!, value * value, len);\n  state.sum = p;\n  if (!(len >= 1) || Number.isNaN(p) || Number.isNaN(q)) return NaN;\n  if (!biased && len === 1) return NaN;\n  const m = p / len;\n  const v = biased ? q / len - m * m :",
+    "replace": "const q = naSkipSum(state.q!, value * value, len);\n  state.sum = p;\n  if (!(len >= 1) || Number.isNaN(p) || Number.isNaN(q)) return NaN;\n  if (!biased && len === 1) return NaN;\n  const m = p / len;\n  const v = biased ? q / (len - 1) - m * m :",
+    "why": "biased ta.stdev / ta.variance divide the squares by len - 1"
+  },
+  {
+    "id": "ta-variance-unbiased-divisor",
+    "file": "src/runtime/ta.ts",
+    "find": "const q = naSkipSum(state.q!, value * value, len);\n  state.sum = p;\n  if (!(len >= 1) || Number.isNaN(p) || Number.isNaN(q)) return NaN;\n  if (!biased && len === 1) return NaN;\n  const m = p / len;\n  const v = biased ? q / len - m * m : q / (len - 1) - (p * m) / (len - 1);",
+    "replace": "const q = naSkipSum(state.q!, value * value, len);\n  state.sum = p;\n  if (!(len >= 1) || Number.isNaN(p) || Number.isNaN(q)) return NaN;\n  if (!biased && len === 1) return NaN;\n  const m = p / len;\n  const v = biased ? q / len - m * m : q / (len - 1) - (p * m) / len;",
+    "why": "unbiased ta.stdev / ta.variance (biased=false) subtract the mean term over len instead of len - 1"
+  },
+  {
+    "id": "ta-variance-clamp",
+    "file": "src/runtime/ta.ts",
+    "find": "  const v = biased ? q / len - m * m : q / (len - 1) - (p * m) / (len - 1);\n  // Python's max(0.0, var): the clamp keeps 0.0 unless var is greater.\n  return v > 0 ? v : 0;\n}\n\n// ta.stdev(source, length[, biased]) = sqrt(ta.variance)",
+    "replace": "  const v = biased ? q / len - m * m : q / (len - 1) - (p * m) / (len - 1);\n  // Python's max(0.0, var): the clamp keeps 0.0 unless var is greater.\n  return v;\n}\n\n// ta.stdev(source, length[, biased]) = sqrt(ta.variance)",
+    "why": "ta.variance loses the max(0, var) clamp, so rounding dust below zero becomes a NaN stdev"
+  },
+  {
+    "id": "ta-bb-basis-divisor",
+    "file": "src/runtime/ta.ts",
+    "find": "const middle = len >= 1 ? state.inner.sum! / len : NaN;",
+    "replace": "const middle = len >= 1 ? state.inner.sum! / (len + 1) : NaN;",
+    "why": "ta.bb basis (the sma) divides the window sum by len + 1 (fixed-length path)"
+  },
+  {
+    "id": "ta-bb-varlen-basis-divisor",
+    "file": "src/runtime/ta.ts",
+    "find": "const middle = len >= 1 ? state.sum! / len : NaN;",
+    "replace": "const middle = len >= 1 ? state.sum! / (len + 1) : NaN;",
+    "why": "ta.bb basis (the sma) divides the window sum by len + 1 (series-length path)"
+  },
+  {
+    "id": "ta-extreme-tie-newest",
+    "file": "src/runtime/ta.ts",
+    "find": "(low ? value < extreme : value > extreme)",
+    "replace": "(low ? value < extreme : value >= extreme)",
+    "why": "ta.highest/highestbars: a later equal value takes the extreme's index (offset names the newest, not the oldest)"
+  },
+  {
+    "id": "ta-extreme-window-edge",
+    "file": "src/runtime/ta.ts",
+    "find": "if (extremeIndex >= len || grownLength) {",
+    "replace": "if (extremeIndex > len || grownLength) {",
+    "why": "ta.highest/lowest keep the extreme one bar too long (window length + 1)"
+  },
+  {
+    "id": "ta-extreme-warmup",
+    "file": "src/runtime/ta.ts",
+    "find": "return bi < len - 1 ? NaN : extreme;",
+    "replace": "return bi < len ? NaN : extreme;",
+    "why": "ta.highest/lowest warm up one bar too long"
+  },
+  {
+    "id": "ta-extreme-na-reset",
+    "file": "src/runtime/ta.ts",
+    "find": "    state.extremeIndex = 0;\n    state.avail = 0;\n    return NaN;",
+    "replace": "    state.extremeIndex = 0;\n    return NaN;",
+    "why": "an na source no longer limits how far back the extreme's rescan may read"
+  },
+  {
+    "id": "ta-extreme-rescan-pivot",
+    "file": "src/runtime/ta.ts",
+    "find": "if (low ? s < extreme : s > extreme) {",
+    "replace": "if (low ? s <= extreme : s >= extreme) {",
+    "why": "the extreme's rescan moves to an equal older value even when checkEq (pivots) keeps the newest"
+  },
+  {
+    "id": "ta-crossover-strict",
+    "file": "src/runtime/ta.ts",
+    "find": "const res = a > b && state.was === true;",
+    "replace": "const res = a >= b && state.was === true;",
+    "why": "ta.crossover fires on a touch (a == b) as well as on a strict cross"
+  },
+  {
+    "id": "ta-crossunder-was",
+    "file": "src/runtime/ta.ts",
+    "find": "state.was = a >= b;",
+    "replace": "state.was = a > b;",
+    "why": "ta.crossunder does not remember an equal previous bar as 'at or above'"
+  },
+  {
+    "id": "ta-cross-tolerance",
+    "file": "src/runtime/ta.ts",
+    "find": "if (diff < -CROSS_EPS) state.armed = -1;",
+    "replace": "if (diff < 0) state.armed = -1;",
+    "why": "ta.cross arms its below-relation without Pine's tolerance"
+  },
+  {
+    "id": "ta-rising-tolerance",
+    "file": "src/runtime/ta.ts",
+    "find": "state.streak = value - prev > PINE_EPS ? state.streak! + 1 : 0;",
+    "replace": "state.streak = value - prev > 0 ? state.streak! + 1 : 0;",
+    "why": "ta.rising counts a rise of 1e-12 as a rise"
+  },
+  {
+    "id": "ta-rising-length",
+    "file": "src/runtime/ta.ts",
+    "find": "state.streak = value - prev > PINE_EPS ? state.streak! + 1 : 0;\n  return state.streak >= length;",
+    "replace": "state.streak = value - prev > PINE_EPS ? state.streak! + 1 : 0;\n  return state.streak > length;",
+    "why": "ta.rising needs length + 1 rises"
+  },
+  {
+    "id": "ta-falling-direction",
+    "file": "src/runtime/ta.ts",
+    "find": "state.streak = prev - value > PINE_EPS ? state.streak! + 1 : 0;",
+    "replace": "state.streak = value - prev > PINE_EPS ? state.streak! + 1 : 0;",
+    "why": "ta.falling counts rises"
+  },
+  {
+    "id": "ta-eps-magnitude",
+    "file": "src/runtime/ta.ts",
+    "find": "const PINE_EPS = 1e-10;",
+    "replace": "const PINE_EPS = 1e-9;",
+    "why": "the tolerance of ta.rsi/mfi/cmo/rising/falling/percentrank is 1e-9 instead of 1e-10"
+  },
+  {
+    "id": "ta-cross-eps-magnitude",
+    "file": "src/runtime/ta.ts",
+    "find": "const CROSS_EPS = 1e-10;",
+    "replace": "const CROSS_EPS = 1e-9;",
+    "why": "the equality band of ta.cross is 1e-9 instead of 1e-10"
+  },
+  {
+    "id": "numeric-mod-floor",
+    "file": "src/runtime/numeric.ts",
+    "find": "return r < 0 !== b < 0 ? r + b : r;",
+    "replace": "return r;",
+    "why": "% is the truncated remainder, not Pine's floored modulo ((-1) % 100 = -1)"
+  },
+  {
+    "id": "numeric-mod-zero",
+    "file": "src/runtime/numeric.ts",
+    "find": "export function pineMod(a: number, b: number): number {\n  if (b === 0) return NaN;",
+    "replace": "export function pineMod(a: number, b: number): number {\n  if (b === 0) return 0;",
+    "why": "x % 0 is 0 instead of na"
+  },
+  {
+    "id": "numeric-idiv-floor",
+    "file": "src/runtime/numeric.ts",
+    "find": "return Math.trunc(a / b);",
+    "replace": "return Math.floor(a / b);",
+    "why": "pre-v6 int / int rounds toward minus infinity instead of toward zero (-7 / 2 = -4)"
+  },
+  {
+    "id": "numeric-lt-tolerance",
+    "file": "src/runtime/numeric.ts",
+    "find": "return -CMP_EPS > a - b;",
+    "replace": "return 0 > a - b;",
+    "why": "< loses Pine's 1e-10 tolerance"
+  },
+  {
+    "id": "numeric-le-infinity",
+    "file": "src/runtime/numeric.ts",
+    "find": "return a <= b || CMP_EPS >= a - b;",
+    "replace": "return a < b || CMP_EPS >= a - b;",
+    "why": "<= loses its raw test, so inf <= inf is false (the difference is NaN)"
+  },
+  {
+    "id": "numeric-ge-tolerance",
+    "file": "src/runtime/numeric.ts",
+    "find": "return a >= b || -CMP_EPS <= a - b;",
+    "replace": "return a >= b;",
+    "why": ">= loses Pine's 1e-10 tolerance"
+  },
+  {
+    "id": "numeric-eq-tolerance",
+    "file": "src/runtime/numeric.ts",
+    "find": "return -CMP_EPS <= d && d <= CMP_EPS;",
+    "replace": "return false;",
+    "why": "== is exact equality only (a === b), no 1e-10 band"
+  },
+  {
+    "id": "numeric-cmp-eps-magnitude",
+    "file": "src/runtime/numeric.ts",
+    "find": "const CMP_EPS = 1e-10;",
+    "replace": "const CMP_EPS = 1e-9;",
+    "why": "the comparison band of < > <= >= == is 1e-9 instead of 1e-10"
+  },
+  {
+    "id": "numeric-neq-na",
+    "file": "src/runtime/numeric.ts",
+    "find": "if (a !== a || b !== b || a === null || b === null) return false;",
+    "replace": "if (a === null || b === null) return false;",
+    "why": "na != x is true instead of false"
+  },
+  {
+    "id": "numeric-and-lazy-na",
+    "file": "src/runtime/numeric.ts",
+    "find": "if (a === false || a === 0 || a !== a) return false;",
+    "replace": "if (a === false || a === 0) return false;",
+    "why": "v6 `na and x` evaluates x and can be na instead of false"
+  },
+  {
+    "id": "numeric-and-lazy-shortcircuit",
+    "file": "src/runtime/numeric.ts",
+    "find": "if (a === false || a === 0 || a !== a) return false;\n  return pineAnd(a, b());",
+    "replace": "return pineAnd(a, b());",
+    "why": "v6 `and` always evaluates its right operand (short-circuit dropped)"
+  },
+  {
+    "id": "numeric-or-lazy-shortcircuit",
+    "file": "src/runtime/numeric.ts",
+    "find": "if (a === true || a === 1) return true;\n  return pineOr(a, b());",
+    "replace": "return pineOr(a, b());",
+    "why": "v6 `or` always evaluates its right operand (short-circuit dropped)"
+  },
+  {
+    "id": "numeric-round-tie-tolerance",
+    "file": "src/runtime/numeric.ts",
+    "find": "const ROUND_TIE_HALF = 5n * 10n ** 9n - 1n;",
+    "replace": "const ROUND_TIE_HALF = 5n * 10n ** 9n;",
+    "why": "math.round(x, precision) loses the 1e-10 tie tolerance (math.round(1.005, 2) gives 1)"
+  },
+  {
+    "id": "numeric-mintick-sign",
+    "file": "src/runtime/numeric.ts",
+    "find": "return ((negative ? 0 - units : units) * minmove) / pricescale;",
+    "replace": "return (units * minmove) / pricescale;",
+    "why": "math.round_to_mintick drops the sign of a negative value"
+  },
+  {
+    "id": "numeric-bar-index-offset",
+    "file": "src/runtime/numeric.ts",
+    "find": "if (!(t >= 0) || idx < t) return NaN;\n  return idx - t;",
+    "replace": "if (!(t >= 0) || idx <= t) return NaN;\n  return idx - t;",
+    "why": "bar_index[n] is na on the bar where it should be 0 (idx == n)"
+  },
+  {
+    "id": "strategy-slippage-direction",
+    "file": "src/runtime/strategy.ts",
+    "find": "return this.slippage > 0 ? price + side * (this.mintick * this.slippage) : price;",
+    "replace": "return this.slippage > 0 ? price - side * (this.mintick * this.slippage) : price;",
+    "why": "slippage moves a fill in the favourable direction"
+  },
+  {
+    "id": "strategy-slippage-limit-entry",
+    "file": "src/runtime/strategy.ts",
+    "find": "if (Number.isNaN(e.limit)) fillPrice = this.slipped(fillPrice, sign);",
+    "replace": "if (!Number.isNaN(e.limit)) fillPrice = this.slipped(fillPrice, sign);",
+    "why": "slippage moves limit entries and spares market entries"
+  },
+  {
+    "id": "strategy-pyramiding-fill",
+    "file": "src/runtime/strategy.ts",
+    "find": "} else if (this.entryCount < this.pyramiding) {",
+    "replace": "} else if (this.entryCount <= this.pyramiding) {",
+    "why": "one more same-direction entry than strategy(pyramiding=) allows fills"
+  },
+  {
+    "id": "strategy-pyramiding-call",
+    "file": "src/runtime/strategy.ts",
+    "find": "if (pos !== 0 && pos > 0 === sign > 0 && this.entryCount >= this.pyramiding) return;",
+    "replace": "if (pos !== 0 && pos > 0 === sign > 0 && this.entryCount > this.pyramiding) return;",
+    "why": "the call-time pyramiding gate lets one more entry order through"
+  },
+  {
+    "id": "strategy-close-lifo",
+    "file": "src/runtime/strategy.ts",
+    "find": "      const t = this.openTrades[0]!;\n      const tradeQty",
+    "replace": "      const t = this.openTrades[this.openTrades.length - 1]!;\n      const tradeQty",
+    "why": "a closing fill consumes the newest open trade first instead of the oldest (FIFO broken)"
+  },
+  {
+    "id": "strategy-exit-fee-profit",
+    "file": "src/runtime/strategy.ts",
+    "find": "        profit -= exitFee;",
+    "replace": "        profit -= 0;",
+    "why": "the exit commission is not charged to the closed trade's profit"
+  },
+  {
+    "id": "strategy-entry-fee-profit",
+    "file": "src/runtime/strategy.ts",
+    "find": "        profit -= entryFee;",
+    "replace": "        profit -= 0;",
+    "why": "the entry commission is not charged to the closed trade's profit"
+  },
+  {
+    "id": "strategy-commission-per-contract",
+    "file": "src/runtime/strategy.ts",
+    "find": "roundCash(this.commissionValue * qtyTotal)",
+    "replace": "roundCash(this.commissionValue)",
+    "why": "cash_per_contract commission charged once per order instead of per contract"
+  },
+  {
+    "id": "strategy-commission-pointvalue",
+    "file": "src/runtime/strategy.ts",
+    "find": "roundCash(percentRate(price, this.commissionValue) * this.pointvalue * qtyTotal)",
+    "replace": "roundCash(percentRate(price, this.commissionValue) * qtyTotal)",
+    "why": "percent commission ignores the point value"
+  },
+  {
+    "id": "strategy-profit-pointvalue",
+    "file": "src/runtime/strategy.ts",
+    "find": "let profit = (fillPrice - t.entryPrice) * sign * take * this.pointvalue;",
+    "replace": "let profit = (fillPrice - t.entryPrice) * sign * take;",
+    "why": "a closed trade's profit ignores the point value"
+  },
+  {
+    "id": "strategy-limit-touch-long",
+    "file": "src/runtime/strategy.ts",
+    "find": "if (low <= limit) return limit;",
+    "replace": "if (low < limit) return limit;",
+    "why": "a long limit entry does not fill when the bar's low only touches the limit"
+  },
+  {
+    "id": "strategy-stop-touch-long",
+    "file": "src/runtime/strategy.ts",
+    "find": "if (high >= stop) return stop;",
+    "replace": "if (high > stop) return stop;",
+    "why": "a long stop entry does not fill when the bar's high only touches the stop"
+  },
+  {
+    "id": "strategy-limit-gap-fill",
+    "file": "src/runtime/strategy.ts",
+    "find": "if (openPrice <= limit) return openPrice;",
+    "replace": "if (openPrice <= limit) return limit;",
+    "why": "a long limit entry gapped through at the open fills at the limit instead of the better open"
+  },
+  {
+    "id": "strategy-stoplimit-price",
+    "file": "src/runtime/strategy.ts",
+    "find": "if (high >= stop && low <= limit) return limit;",
+    "replace": "if (high >= stop && low <= limit) return stop;",
+    "why": "a long stop-limit entry fills at its stop instead of its limit"
+  },
+  {
+    "id": "strategy-closed-size-sign",
+    "file": "src/runtime/strategy.ts",
+    "find": "size: longFirst ? take : sign * take,",
+    "replace": "size: take,",
+    "why": "strategy.closedtrades.size is positive for a short trade"
+  },
+  {
+    "id": "strategy-netprofit-open-commission",
+    "file": "src/runtime/strategy.ts",
+    "find": "this.realizedPnl = this.grossProfit - (-this.grossLoss + this.openCommission);",
+    "replace": "this.realizedPnl = this.grossProfit - (-this.grossLoss);",
+    "why": "strategy.netprofit forgets the entry commission still pending on open trades"
+  },
+  {
+    "id": "strategy-breakeven-is-win",
+    "file": "src/runtime/strategy.ts",
+    "find": "    if (rec.profit > 0) {",
+    "replace": "    if (rec.profit >= 0) {",
+    "why": "a trade that closes at exactly zero profit counts as a win"
+  },
+  {
+    "id": "strategy-lots-floor",
+    "file": "src/runtime/strategy.ts",
+    "find": "const lots = Math.trunc(Math.abs(qty) * this.lotsPerContract);",
+    "replace": "const lots = Math.round(Math.abs(qty) * this.lotsPerContract);",
+    "why": "a money-sized order rounds to the nearest lot instead of flooring (49.86 contracts become 50)"
+  },
+  {
+    "id": "strategy-percent-equity-base",
+    "file": "src/runtime/strategy.ts",
+    "find": "const money = this.equity(this.barClose) * this.defaultQty * 0.01;",
+    "replace": "const money = this.initialCapital * this.defaultQty * 0.01;",
+    "why": "percent_of_equity sizes from the initial capital instead of the current equity"
+  },
+  {
+    "id": "strategy-snap-tolerance",
+    "file": "src/runtime/strategy.ts",
+    "find": "return ((up ? Math.ceil(ticks - 1e-4) : Math.floor(ticks + 1e-4)) * this.minmove) / this.pricescale;",
+    "replace": "return ((up ? Math.ceil(ticks) : Math.floor(ticks)) * this.minmove) / this.pricescale;",
+    "why": "order price levels lose the 1e-4 tick tolerance when snapped to the tick grid"
+  },
+  {
+    "id": "strategy-openprofit-pointvalue",
+    "file": "src/runtime/strategy.ts",
+    "find": "return (closePrice - this.posAvgPrice) * this.posSize * this.pointvalue;",
+    "replace": "return (closePrice - this.posAvgPrice) * this.posSize;",
+    "why": "strategy.openprofit (and the equity built on it) ignores the point value"
+  },
+  {
+    "id": "strategy-margin-cover",
+    "file": "src/runtime/strategy.ts",
+    "find": "mcLots = Math.max(1, cover * 4);",
+    "replace": "mcLots = Math.max(1, cover * 2);",
+    "why": "a margin call liquidates twice, not four times, the contracts needed to cover the loss"
+  },
+  {
+    "id": "strategy-margin-available",
+    "file": "src/runtime/strategy.ts",
+    "find": "} else if (available >= 0) {",
+    "replace": "} else if (available > 0) {",
+    "why": "a position whose available funds are exactly zero gets a margin call"
+  },
+  {
+    "id": "strategy-margin-short-profit",
+    "file": "src/runtime/strategy.ts",
+    "find": "const openProfit = short ? -(mvs - moneySpent) : mvs - moneySpent;",
+    "replace": "const openProfit = short ? mvs - moneySpent : -(mvs - moneySpent);",
+    "why": "margin calls value a short's open profit as a long's (and the reverse)"
+  },
+  {
+    "id": "strategy-exit-profit-snap",
+    "file": "src/runtime/strategy.ts",
+    "find": "? this.snapToTick(base + l.profitPoints * this.mintick, true)",
+    "replace": "? this.snapToTick(base + l.profitPoints * this.mintick, false)",
+    "why": "a long exit's profit= level (in ticks) rounds down instead of up onto the tick grid"
+  },
+  {
+    "id": "strategy-exit-stop-pair",
+    "file": "src/runtime/strategy.ts",
+    "find": "return isLong ? Math.max(abs, rel) : Math.min(abs, rel);",
+    "replace": "return isLong ? Math.min(abs, rel) : Math.max(abs, rel);",
+    "why": "v6 strategy.exit with both stop= and loss= uses the farther level instead of the nearer one"
+  },
+  {
+    "id": "strategy-walk-gap-stop",
+    "file": "src/runtime/strategy.ts",
+    "find": "    if (x <= stp) {",
+    "replace": "    if (x < stp) {",
+    "why": "an exit whose stop-loss level equals the bar's open is not filled at the open"
+  },
+  {
+    "id": "strategy-walk-touch-profit",
+    "file": "src/runtime/strategy.ts",
+    "find": "if (nxt >= limS && !(offset <= 0 && armsAt <= limS)) {",
+    "replace": "if (nxt > limS && !(offset <= 0 && armsAt <= limS)) {",
+    "why": "a take-profit that the bar's path only touches does not fill"
+  },
+  {
+    "id": "security-lookahead-off",
+    "file": "src/runtime/security.ts",
+    "find": "htfIdx = rawHtfIdx - 1;",
+    "replace": "htfIdx = rawHtfIdx;",
+    "why": "request.security with lookahead off reads the bar still in progress (lookahead bias)"
+  },
+  {
+    "id": "security-offset-direction",
+    "file": "src/runtime/security.ts",
+    "find": "const h = htfIdx - off;",
+    "replace": "const h = htfIdx + off;",
+    "why": "a history offset on a requested series reads the future row"
+  },
+  {
+    "id": "security-feed-confirmed",
+    "file": "src/runtime/security.ts",
+    "find": "while (c + 1 < n && timeClose[c + 1]! <= asof) c++;",
+    "replace": "while (c + 1 < n && timeClose[c + 1]! < asof) c++;",
+    "why": "a feed bar that closes exactly with the chart bar is not yet confirmed"
+  },
+  {
+    "id": "security-feed-opened",
+    "file": "src/runtime/security.ts",
+    "find": "while (o + 1 < n && bars.timeOpen[o + 1]! < asof) o++;",
+    "replace": "while (o + 1 < n && bars.timeOpen[o + 1]! <= asof) o++;",
+    "why": "with lookahead on, a feed bar that opens exactly at the chart bar's close is read too"
+  },
+  {
+    "id": "security-feed-lookahead-map",
+    "file": "src/runtime/security.ts",
+    "find": "const map = lookahead ? cache.opened! : cache.confirmed;",
+    "replace": "const map = lookahead ? cache.confirmed : cache.opened!;",
+    "why": "lookahead on and off swap meaning for another symbol's feed"
+  },
+  {
+    "id": "security-gaps-prev",
+    "file": "src/runtime/security.ts",
+    "find": "const prevRawHtfIdx = cache.barMap[idx - 1]!;",
+    "replace": "const prevRawHtfIdx = cache.barMap[idx]!;",
+    "why": "gaps_on compares a bar with itself instead of the previous one"
+  },
+  {
+    "id": "security-nested-confirmed",
+    "file": "src/runtime/security.ts",
+    "find": "while (k + 1 < n && inner.timeClose[k + 1]! <= asof) k++;",
+    "replace": "while (k + 1 < n && inner.timeClose[k + 1]! < asof) k++;",
+    "why": "a nested request's inner bar that closes with the outer bar is not yet confirmed"
+  },
+  {
+    "id": "calendar-month-seconds",
+    "file": "src/runtime/calendar.ts",
+    "find": "(86_400 * (365 / 12) + 3)",
+    "replace": "(86_400 * (365 / 12))",
+    "why": "a month is 2628000 seconds instead of TradingView's 2628003"
+  },
+  {
+    "id": "str-tostring-integer",
+    "file": "src/runtime/str.ts",
+    "find": "if (format_str === \"integer\") return String(Math.trunc(value));",
+    "replace": "if (format_str === \"integer\") return String(Math.round(value));",
+    "why": "str.tostring(x, format.integer) rounds instead of truncating"
+  },
+  {
+    "id": "str-tostring-percent",
+    "file": "src/runtime/str.ts",
+    "find": "return value.toFixed(2) + \"%\";",
+    "replace": "return value.toFixed(1) + \"%\";",
+    "why": "str.tostring(x, format.percent) prints one decimal instead of two"
+  },
+  {
+    "id": "str-volume-million",
+    "file": "src/runtime/str.ts",
+    "find": "if (absVal >= 1e6) return (value / 1e6).toFixed(2) + \"M\";",
+    "replace": "if (absVal >= 1e7) return (value / 1e6).toFixed(2) + \"M\";",
+    "why": "format.volume switches to M at 10 million instead of 1 million"
+  },
+  {
+    "id": "str-round-half-even",
+    "file": "src/runtime/str.ts",
+    "find": "else up = (keep.charCodeAt(keep.length - 1) - 48) % 2 === 1;",
+    "replace": "else up = (keep.charCodeAt(keep.length - 1) - 48) % 2 === 0;",
+    "why": "str.format rounds an exact tie to the odd digit instead of the even one"
+  },
+  {
+    "id": "str-substring-end",
+    "file": "src/runtime/str.ts",
+    "find": "return source.slice(b, Math.trunc(end_pos));",
+    "replace": "return source.slice(b, Math.trunc(end_pos) + 1);",
+    "why": "str.substring includes the character at end_pos"
+  },
+  {
+    "id": "str-pyfloat-exponent",
+    "file": "src/runtime/str.ts",
+    "find": "if (decpt > -4 && decpt <= 16) {",
+    "replace": "if (decpt > -4 && decpt <= 15) {",
+    "why": "array.join / str.format print 1e15 in exponent form (Python switches at 1e16)"
+  },
+  {
+    "id": "str-pos-last",
+    "file": "src/runtime/str.ts",
+    "find": "return source.indexOf(target);",
+    "replace": "return source.lastIndexOf(target);",
+    "why": "str.pos returns the last occurrence instead of the first"
+  },
+  {
+    "id": "array-get-bound",
+    "file": "src/runtime/array.ts",
+    "find": "if (i >= 0 && i < arr.length) return arr[i]!;",
+    "replace": "if (i >= 0 && i <= arr.length) return arr[i]!;",
+    "why": "array.get(arr, size) reads past the end (undefined instead of na)"
+  },
+  {
+    "id": "array-set-bound",
+    "file": "src/runtime/array.ts",
+    "find": "if (i >= 0 && i < arr.length) arr[i] = value;",
+    "replace": "if (i >= 0 && i <= arr.length) arr[i] = value;",
+    "why": "array.set(arr, size, v) appends instead of doing nothing"
+  },
+  {
+    "id": "array-remove-bound",
+    "file": "src/runtime/array.ts",
+    "find": "if (i >= 0 && i < arr.length) return arr.splice(i, 1)[0]!;",
+    "replace": "if (i >= 0 && i <= arr.length) return arr.splice(i, 1)[0]!;",
+    "why": "array.remove(arr, size) is accepted"
+  },
+  {
+    "id": "array-last-index",
+    "file": "src/runtime/array.ts",
+    "find": "return arr[arr.length - 1]!;",
+    "replace": "return arr[arr.length - 2]!;",
+    "why": "array.last returns the second to last element"
+  },
+  {
+    "id": "array-fill-default-end",
+    "file": "src/runtime/array.ts",
+    "find": "if (to < 0) to = arr.length;\n  const from = Math.max(0, Math.trunc(indexFrom));",
+    "replace": "if (to < 0) to = arr.length - 1;\n  const from = Math.max(0, Math.trunc(indexFrom));",
+    "why": "array.fill without index_to leaves the last element"
+  },
+  {
+    "id": "array-min-nth",
+    "file": "src/runtime/array.ts",
+    "find": "const vals = validNums(arr).sort((a, b) => a - b);\n  if (idx < 0 || idx >= vals.length) return NaN;",
+    "replace": "const vals = validNums(arr).sort((a, b) => a - b);\n  if (idx < 0 || idx > vals.length) return NaN;",
+    "why": "array.min(arr, nth) with nth == number of valid values returns undefined instead of na"
+  },
+  {
+    "id": "array-percentile-rank",
+    "file": "src/runtime/array.ts",
+    "find": "const idx = Math.max(0, Math.ceil((p / 100) * vals.length) - 1);",
+    "replace": "const idx = Math.max(0, Math.ceil((p / 100) * vals.length));",
+    "why": "array.percentile_nearest_rank picks the element after the nearest rank"
+  },
+  {
+    "id": "array-percentile-upper",
+    "file": "src/runtime/array.ts",
+    "find": "const upper = Math.min(lower + 1, vals.length - 1);",
+    "replace": "const upper = lower;",
+    "why": "array.percentile_linear_interpolation interpolates towards itself (no interpolation)"
+  },
+  {
+    "id": "array-percentrank-strict",
+    "file": "src/runtime/array.ts",
+    "find": "for (const v of vals) if (v < value) countBelow++;",
+    "replace": "for (const v of vals) if (v <= value) countBelow++;",
+    "why": "array.percentrank counts values equal to the target as below it"
+  },
+  {
+    "id": "limits-size-boundary",
+    "file": "src/runtime/limits.ts",
+    "find": "if (n > active.maxCollectionLength) {",
+    "replace": "if (n >= active.maxCollectionLength) {",
+    "why": "an allocation of exactly maxCollectionLength elements is refused"
+  },
+  {
+    "id": "limits-size-zero",
+    "file": "src/runtime/limits.ts",
+    "find": "if (!Number.isInteger(n) || n < 0) {",
+    "replace": "if (!Number.isInteger(n) || n < 1) {",
+    "why": "an allocation of zero elements is refused as an invalid size"
+  },
+  {
+    "id": "limits-resolve-minimum",
+    "file": "src/runtime/limits.ts",
+    "find": "if (typeof v !== \"number\" || !(v >= 1)) throw",
+    "replace": "if (typeof v !== \"number\" || !(v > 1)) throw",
+    "why": "limits.maxStepsPerBar = 1 / maxCollectionLength = 1 is rejected as invalid"
+  },
+  {
+    "id": "limits-deadline-direction",
+    "file": "src/runtime/limits.ts",
+    "find": "Date.now() > limits.deadlineMs",
+    "replace": "Date.now() < limits.deadlineMs",
+    "why": "the deadline fires before it is reached and never after"
+  },
+  {
+    "id": "limits-steps-budget",
+    "file": "src/transpiler/codegen.ts",
+    "find": "const LOOP_STEP = \"if (--$.stepsLeft < 0) rt.stepsExceeded($);\";",
+    "replace": "const LOOP_STEP = \"if (--$.stepsLeft <= 0) rt.stepsExceeded($);\";",
+    "why": "a bar may run maxStepsPerBar - 1 loop iterations instead of maxStepsPerBar"
+  },
+  {
+    "id": "limits-steps-refill",
+    "file": "src/runtime/context.ts",
+    "find": "    this.stepsLeft = this.limits.maxStepsPerBar;\n    checkDeadline(this.limits, this.idx);",
+    "replace": "    checkDeadline(this.limits, this.idx);",
+    "why": "the loop-step budget is no longer refilled per bar, so it spans the whole run"
+  },
+  {
+    "id": "codegen-le-emits-lt",
+    "file": "src/transpiler/codegen.ts",
+    "find": "return `rt.pineLe(${l}, ${r})`;",
+    "replace": "return `rt.pineLt(${l}, ${r})`;",
+    "why": "<= is emitted as <"
+  },
+  {
+    "id": "codegen-v6-lazy",
+    "file": "src/transpiler/codegen.ts",
+    "find": "function lazyBoolOps(program: AnalyzedProgram): boolean {\n  return (program.script.version ?? 1) >= 6;",
+    "replace": "function lazyBoolOps(program: AnalyzedProgram): boolean {\n  return (program.script.version ?? 1) >= 7;",
+    "why": "v6 `and`/`or` are emitted eagerly (short-circuit dropped at code generation)"
+  },
+  {
+    "id": "analyzer-int-division-v6",
+    "file": "src/transpiler/analyzer.ts",
+    "find": "(prog.script.version ?? 1) < 6 &&\n    isConstIntExpr(expr.left, prog, scope)",
+    "replace": "(prog.script.version ?? 1) < 7 &&\n    isConstIntExpr(expr.left, prog, scope)",
+    "why": "v6 divides two const ints as integers (5 / 2 = 2)"
+  },
+  {
+    "id": "analyzer-const-int-exponent",
+    "file": "src/transpiler/analyzer.ts",
+    "find": "return !/[.eE]/.test(expr.raw);",
+    "replace": "return !/[.]/.test(expr.raw);",
+    "why": "a literal such as 1e1 counts as an int in pre-v6 integer division"
+  },
+  {
+    "id": "analyzer-repeated-arg-version",
+    "file": "src/transpiler/analyzer/arg-dup.ts",
+    "find": "if (posArg !== undefined && (prog.script.version ?? 1) < 6) {",
+    "replace": "if (posArg !== undefined && (prog.script.version ?? 1) < 7) {",
+    "why": "v6 accepts a parameter given both positionally and by keyword (a compile error from v6 on)"
+  },
+  {
+    "id": "lexer-exponent-negative",
+    "file": "src/transpiler/lexer.ts",
+    "find": "if (line[end] === \"+\" || line[end] === \"-\") end += 1;",
+    "replace": "if (line[end] === \"+\") end += 1;",
+    "why": "a literal such as 1e-5 no longer lexes as one number"
+  },
+  {
+    "id": "series-nan-offset",
+    "file": "src/runtime/series.ts",
+    "find": "const truncated = Math.trunc(offset);\n    if (!(truncated >= 0)) return NaN;",
+    "replace": "const truncated = Math.trunc(offset);\n    if (truncated < 0) return NaN;",
+    "why": "a history offset that is itself na reads data[NaN] (undefined) instead of na"
+  }
+]

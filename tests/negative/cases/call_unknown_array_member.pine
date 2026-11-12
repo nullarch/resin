@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+x = array.nothing()
+plot(1)

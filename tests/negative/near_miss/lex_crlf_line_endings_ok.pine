@@ -1,0 +1,10 @@
+//@version=5
+indicator("t")
+//@version=5<CR>
+indicator("t")<CR>
+// comment<CR>
+x = math.max(1,<CR>
+     2)<CR>
+if close > open<CR>
+    x := 3<CR>
+plot(x)<CR>

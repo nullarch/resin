@@ -1,0 +1,6 @@
+//@version=6
+indicator("t")
+[m, s, h] = ta.macd(close, 12, 26, 9)
+plot(m)
+plot(s)
+plot(h)

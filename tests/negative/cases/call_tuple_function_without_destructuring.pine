@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+x = ta.macd(close, 12, 26, 9)
+plot(1)

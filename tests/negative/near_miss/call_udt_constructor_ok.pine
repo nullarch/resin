@@ -1,0 +1,8 @@
+//@version=6
+indicator("t")
+type A
+    int a
+    float b = 1.0
+var A x = A.new(1)
+var A y = A.new(1, 2.0)
+plot(x.a + y.b)

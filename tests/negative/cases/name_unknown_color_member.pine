@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+x = color.nothing
+plot(1, color=x)

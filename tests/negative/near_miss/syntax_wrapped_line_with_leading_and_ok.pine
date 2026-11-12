@@ -1,0 +1,5 @@
+//@version=6
+indicator("t")
+c = close > open
+  and high > low
+plot(c ? 1 : 0)

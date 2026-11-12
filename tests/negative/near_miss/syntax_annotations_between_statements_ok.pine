@@ -1,0 +1,10 @@
+//@version=6
+indicator("t")
+//@description a helper
+//@param x the input
+//@returns twice x
+f(x) => x * 2
+//@variable the doubled close
+y = f(close)
+//@description trailing
+plot(y)

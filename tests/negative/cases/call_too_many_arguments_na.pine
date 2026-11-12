@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+x = na(1, 2)
+plot(1)

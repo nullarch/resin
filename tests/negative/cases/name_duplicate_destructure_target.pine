@@ -1,0 +1,5 @@
+//@version=6
+indicator("t")
+f() => [1, 2]
+[a, a] = f()
+plot(a)

@@ -1,0 +1,3 @@
+//@version=5
+indicator("t")
+//@version=5<CR>indicator("t")<CR>x = close<CR>plot(x)<CR>

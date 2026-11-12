@@ -1,0 +1,14 @@
+//@version=6
+indicator("t")
+ifx = 1
+formal = 2
+android = 3
+orange = 4
+notify = 5
+index = 6
+tox = 7
+byte = 8
+forx = 9
+elsewhere = 10
+truex = 11
+plot(ifx + formal + android + orange + notify + index + tox + byte + forx + elsewhere + truex)

@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+plot(close, color=#FF0000)
+plot(open, color=#00ff0080)

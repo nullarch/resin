@@ -1,0 +1,30 @@
+# What `npm pack` may put in the @nullarch/resin tarball. scripts/package-smoke.mjs fails when a
+# packed file matches no line here, and when a line here matches no packed file.
+#
+# One path per line; `#` starts a comment. `*` matches within a path segment, `**` across segments.
+# Regenerate the full list for review with:  node scripts/package-smoke.mjs --list
+#
+# Anything new that ships is a decision: add it here in the same change that adds it to the
+# "files" array of package.json. Tests, corpus, oracle, coverage, docs and examples must never ship
+# (package-smoke also refuses them whatever this file says).
+
+# package.json "files" plus what npm always includes (package.json, LICENSE, README.md)
+package.json
+LICENSE
+README.md
+README.zh-CN.md
+README.ja.md
+README.ko.md
+API.md
+CHANGELOG.md
+
+# the CLI and the plain-Node loader hook (`node --import @nullarch/resin/register`)
+bin/resin.mjs
+register.mjs
+scripts/ts-esm-loader-hook.mjs
+
+# The product: TypeScript source, shipped as is. Pattern rather than 48 lines because the
+# modules under src/ come and go with every feature; the .ts restriction still catches a stray
+# fixture, JSON dump, snapshot or backup file in there. Today: src/index.ts, src/runtime/*.ts,
+# src/transpiler/*.ts, src/transpiler/analyzer/*.ts, src/transpiler/passes/*.ts.
+src/**/*.ts

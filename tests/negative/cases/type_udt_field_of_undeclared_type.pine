@@ -1,0 +1,5 @@
+//@version=6
+indicator("t")
+type A
+    foo a
+plot(1)

@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+close := 1
+plot(1)

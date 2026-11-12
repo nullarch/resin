@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+while = 1
+plot(1)

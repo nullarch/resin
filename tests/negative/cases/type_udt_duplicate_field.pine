@@ -1,0 +1,6 @@
+//@version=6
+indicator("t")
+type A
+    int a
+    int a
+plot(1)

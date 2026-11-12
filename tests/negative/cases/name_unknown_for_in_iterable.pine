@@ -1,0 +1,5 @@
+//@version=6
+indicator("t")
+for v in nothing
+    x = 1
+plot(1)

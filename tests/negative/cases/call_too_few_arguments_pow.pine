@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+x = math.pow(2)
+plot(x)

@@ -1,0 +1,11 @@
+//@version=6
+indicator("t")
+type A
+    int a
+type B
+    int b
+method size(A this) => this.a
+method size(B this) => this.b
+var A x = A.new(1)
+var B y = B.new(2)
+plot(x.size() + y.size())

@@ -1,0 +1,6 @@
+//@version=6
+indicator("t")
+f(x) =>
+    break
+    x
+plot(f(1))

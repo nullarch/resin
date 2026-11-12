@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+f(a, b) => a + b
+plot(f(a=1, 2))

@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+x = #GGGGGG
+plot(close, color=x)

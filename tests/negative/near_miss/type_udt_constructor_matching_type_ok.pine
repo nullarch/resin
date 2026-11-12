@@ -1,0 +1,9 @@
+//@version=6
+indicator("t")
+type A
+    int a
+type B
+    int b
+A x = A.new(1)
+B y = B.new(2)
+plot(x.a + y.b)

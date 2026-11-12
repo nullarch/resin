@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+x = str.length("abc") + math.abs(-1) + array.size(array.new_float(2))
+plot(x + math.pi + syminfo.mintick)

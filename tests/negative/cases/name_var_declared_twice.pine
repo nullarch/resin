@@ -1,0 +1,5 @@
+//@version=6
+indicator("t")
+var x = 1
+var x = 2
+plot(x)

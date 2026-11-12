@@ -1,0 +1,5 @@
+//@version=6
+indicator("t")
+type = input.string("a")
+method = 1
+plot(method)

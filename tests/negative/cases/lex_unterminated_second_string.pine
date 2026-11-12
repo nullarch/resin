@@ -1,0 +1,5 @@
+//@version=6
+indicator("t")
+a = "ok"
+b = "oops
+plot(close)

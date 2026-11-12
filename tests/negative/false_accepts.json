@@ -1,0 +1,485 @@
+[
+ {
+  "id": "fa_declaration_with_undeclared_type_let",
+  "category": "undeclared-type",
+  "source": "//@version=6\nindicator(\"t\")\nlet x = 1\nplot(x)\n",
+  "why": "`let x = 1` reads as a typed declaration of x with a type called `let`, which no declaration defines",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_declaration_with_undeclared_type_foo",
+  "category": "undeclared-type",
+  "source": "//@version=6\nindicator(\"t\")\nfoo x = 1\nplot(x)\n",
+  "why": "a typed declaration whose type `foo` is not a built-in type, a UDT or an enum",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_declaration_with_misspelled_builtin_type",
+  "category": "undeclared-type",
+  "source": "//@version=6\nindicator(\"t\")\nflaot x = 1.0\nplot(x)\n",
+  "why": "`flaot` is a misspelling of `float`, not a type",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_declaration_with_misspelled_string_type",
+  "category": "undeclared-type",
+  "source": "//@version=6\nindicator(\"t\")\nstrng s = \"a\"\nplot(1)\n",
+  "why": "`strng` is a misspelling of `string`, not a type",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_bare_declaration_with_undeclared_type",
+  "category": "undeclared-type",
+  "source": "//@version=6\nindicator(\"t\")\nfoo x\nplot(1)\n",
+  "why": "`foo x`: a declaration of x with an undeclared type",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_var_declaration_with_undeclared_type",
+  "category": "undeclared-type",
+  "source": "//@version=6\nindicator(\"t\")\nvar foo x = na\nplot(1)\n",
+  "why": "`var foo x`: undeclared type",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_qualified_declaration_with_undeclared_type",
+  "category": "undeclared-type",
+  "source": "//@version=6\nindicator(\"t\")\nsimple foo x = 1\nplot(1)\n",
+  "why": "`simple foo x`: undeclared type",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_generic_declaration_with_undeclared_element_type",
+  "category": "undeclared-type",
+  "source": "//@version=6\nindicator(\"t\")\narray<foo> a = na\nplot(1)\n",
+  "why": "`array<foo>`: undeclared element type",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_function_parameter_with_undeclared_type",
+  "category": "undeclared-type",
+  "source": "//@version=6\nindicator(\"t\")\nf(foo x) => x\nplot(f(1))\n",
+  "why": "a function parameter of an undeclared type",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_for_loop_variable_with_undeclared_type",
+  "category": "undeclared-type",
+  "source": "//@version=6\nindicator(\"t\")\nfor foo i = 0 to 3\n    x = 1\nplot(1)\n",
+  "why": "a typed loop counter of an undeclared type",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_return_statement",
+  "category": "undeclared-type",
+  "source": "//@version=6\nindicator(\"t\")\nf(x) =>\n    return x\nplot(f(1))\n",
+  "why": "Pine has no `return`; `return x` reads as a declaration of x with the undeclared type `return`",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_two_names_in_a_row_as_statement",
+  "category": "undeclared-type",
+  "source": "//@version=6\nindicator(\"t\")\nf(x) => x y\nplot(f(1))\n",
+  "why": "`x y` after `=>`: a declaration of y with the type `x`, which is a function parameter, not a type",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_var_named_if",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\nvar if = 1\nplot(1)\n",
+  "why": "`if` is reserved; parseVarDecl accepts the keyword tokens in KEYWORD_AS_ATTR as a variable name",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_var_named_for",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\nvar for = 1\nplot(1)\n",
+  "why": "`for` is reserved (same cause as fa_var_named_if)",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_var_named_while",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\nvar while = 1\nplot(1)\n",
+  "why": "`while` is reserved (same cause as fa_var_named_if)",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_var_named_switch",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\nvar switch = 1\nplot(1)\n",
+  "why": "`switch` is reserved (same cause as fa_var_named_if)",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_varip_named_if",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\nvarip if = 1\nplot(1)\n",
+  "why": "`varip` takes the keyword `if` as a variable name, like `var if`",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_method_named_for",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\nmethod for(float this) => 1\nplot(1)\n",
+  "why": "`for` as a method name",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_method_named_if",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\nmethod if(float this) => 1\nplot(1)\n",
+  "why": "`if` as a method name",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_udt_field_named_if",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\ntype A\n    int if\nplot(1)\n",
+  "why": "`if` as a UDT field name",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_udt_field_named_for",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\ntype A\n    int for\nplot(1)\n",
+  "why": "`for` as a UDT field name",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_function_parameter_named_for",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\nf(for) => 1\nplot(1)\n",
+  "why": "`for` as a parameter name: the parser accepts it and the generated JavaScript is invalid (internal error)",
+  "kind": "internal"
+ },
+ {
+  "id": "fa_function_parameter_named_while",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\nf(while) => 1\nplot(1)\n",
+  "why": "`while` as a parameter name (internal error, as for `for`)",
+  "kind": "internal"
+ },
+ {
+  "id": "fa_function_parameter_named_var",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\nf(var) => 1\nplot(1)\n",
+  "why": "`var` as a parameter name (internal error, as for `for`)",
+  "kind": "internal"
+ },
+ {
+  "id": "fa_typed_function_parameter_named_if",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\nf(int if) => 1\nplot(1)\n",
+  "why": "`if` as a typed parameter name (internal error, as for `for`)",
+  "kind": "internal"
+ },
+ {
+  "id": "fa_parameters_without_comma_between_defaults",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\nf(a = 1 b = 2) => a + b\nplot(f())\n",
+  "why": "no comma between two parameters; parseParamsAndBody only advances over a comma `if` there is one",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_typed_parameters_without_comma",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\nf(int a int b) => a\nplot(1)\n",
+  "why": "no comma between two typed parameters",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_destructure_targets_without_comma",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\nf() => [1, 2]\n[a b] = f()\nplot(a)\n",
+  "why": "no comma between destructuring targets",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_tuple_return_without_comma_numbers",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\nf() => [1 2]\n[a, b] = f()\nplot(a)\n",
+  "why": "no comma between tuple elements",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_tuple_return_without_comma_names",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\nf() => [close open]\n[a, b] = f()\nplot(a)\n",
+  "why": "no comma between tuple elements",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_for_in_targets_without_comma",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\na = array.new_float(0)\nfor [i v] in a\n    x = 1\nplot(1)\n",
+  "why": "no comma between the two for-in targets",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_for_in_empty_target_list",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\na = array.new_float(0)\nfor [] in a\n    x = 1\nplot(1)\n",
+  "why": "`for [] in a` has no loop variables",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_for_in_three_targets",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\na = array.new_float(0)\nfor [i, j, v] in a\n    x = 1\nplot(1)\n",
+  "why": "for-in destructures an index and an element, two names",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_array_generic_two_types_without_comma",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\na = array.new<int float>(0)\nplot(1)\n",
+  "why": "`array.new<int float>`: two type arguments, no comma",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_array_generic_trailing_comma",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\na = array.new<int,>(0)\nplot(1)\n",
+  "why": "`array.new<int,>`: a trailing comma in the type arguments",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_map_generic_without_comma",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\nm = map.new<string float>()\nplot(1)\n",
+  "why": "`map.new<string float>`: no comma between key and value types",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_map_generic_one_type",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\nm = map.new<string>()\nplot(1)\n",
+  "why": "a map needs a key type and a value type",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_map_generic_three_types",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\nm = map.new<string, float, int>()\nplot(1)\n",
+  "why": "a map has exactly two type arguments",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_map_declaration_one_type",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\nmap<string> m = na\nplot(1)\n",
+  "why": "`map<string>` has one type argument",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_enum_two_members_on_one_line",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\nenum E\n    a b\nplot(1)\n",
+  "why": "two enum members on one line, no separator",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_import_with_trailing_number",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\nimport a/b/1 2\nplot(1)\n",
+  "why": "a token left on the `import` line; parseScript never checks the end of an import statement",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_import_with_trailing_names",
+  "category": "grammar",
+  "source": "//@version=6\nindicator(\"t\")\nimport a/b/1 foo bar\nplot(1)\n",
+  "why": "junk left on the `import` line (reads on as a declaration of bar with type foo)",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_int_declared_from_string",
+  "category": "static-type",
+  "source": "//@version=6\nindicator(\"t\")\nint x = \"a\"\nplot(1)\n",
+  "why": "a string literal cannot initialise an int",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_string_declared_from_number",
+  "category": "static-type",
+  "source": "//@version=6\nindicator(\"t\")\nstring s = 1\nplot(1)\n",
+  "why": "a number cannot initialise a string",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_bool_declared_from_string",
+  "category": "static-type",
+  "source": "//@version=6\nindicator(\"t\")\nbool b = \"a\"\nplot(1)\n",
+  "why": "a string cannot initialise a bool",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_float_declared_from_string",
+  "category": "static-type",
+  "source": "//@version=6\nindicator(\"t\")\nfloat f = \"a\"\nplot(f)\n",
+  "why": "a string cannot initialise a float",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_reassign_number_with_string",
+  "category": "static-type",
+  "source": "//@version=6\nindicator(\"t\")\nx = 1\nx := \"a\"\nplot(1)\n",
+  "why": "':=' cannot change a variable's type from number to string",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_reassign_string_with_number",
+  "category": "static-type",
+  "source": "//@version=6\nindicator(\"t\")\nx = \"a\"\nx := 1\nplot(1)\n",
+  "why": "':=' cannot change a variable's type from string to number",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_if_condition_is_string",
+  "category": "static-type",
+  "source": "//@version=6\nindicator(\"t\")\nif \"a\"\n    x = 1\nplot(1)\n",
+  "why": "an `if` condition must be a bool, a string is not",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_ternary_condition_is_string",
+  "category": "static-type",
+  "source": "//@version=6\nindicator(\"t\")\nx = \"a\" ? 1 : 2\nplot(x)\n",
+  "why": "a ternary condition must be a bool",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_not_of_string",
+  "category": "static-type",
+  "source": "//@version=6\nindicator(\"t\")\nx = not \"a\"\nplot(1)\n",
+  "why": "`not` takes a bool",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_and_with_string_operand",
+  "category": "static-type",
+  "source": "//@version=6\nindicator(\"t\")\nx = \"a\" and true\nplot(1)\n",
+  "why": "`and` takes bools",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_string_minus_string",
+  "category": "static-type",
+  "source": "//@version=6\nindicator(\"t\")\nx = \"a\" - \"b\"\nplot(1)\n",
+  "why": "strings have no '-' operator",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_string_times_number",
+  "category": "static-type",
+  "source": "//@version=6\nindicator(\"t\")\nx = \"a\" * 2\nplot(1)\n",
+  "why": "strings have no '*' operator",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_history_offset_is_string",
+  "category": "static-type",
+  "source": "//@version=6\nindicator(\"t\")\nx = close[\"a\"]\nplot(x)\n",
+  "why": "a history offset is an integer",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_for_bound_is_string",
+  "category": "static-type",
+  "source": "//@version=6\nindicator(\"t\")\nfor i = \"a\" to 5\n    x = 1\nplot(1)\n",
+  "why": "a loop bound is a number",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_plot_series_is_string",
+  "category": "static-type",
+  "source": "//@version=6\nindicator(\"t\")\nplot(\"a\")\n",
+  "why": "plot takes a numeric series, not a string",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_sma_length_is_string",
+  "category": "static-type",
+  "source": "//@version=6\nindicator(\"t\")\nx = ta.sma(close, \"5\")\nplot(x)\n",
+  "why": "a length is an integer, not a string",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_input_int_default_is_string",
+  "category": "static-type",
+  "source": "//@version=6\nindicator(\"t\")\nx = input.int(\"a\")\nplot(x)\n",
+  "why": "input.int's default is an integer",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_array_size_is_string",
+  "category": "static-type",
+  "source": "//@version=6\nindicator(\"t\")\na = array.new_float(\"a\")\nplot(1)\n",
+  "why": "an array size is an integer",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_str_format_pattern_is_number",
+  "category": "static-type",
+  "source": "//@version=6\nindicator(\"t\")\nx = str.format(1)\nplot(1)\n",
+  "why": "str.format's pattern is a string",
+  "kind": "accepted"
+ },
+ {
+  "id": "fa_label_new_without_arguments",
+  "category": "builtin-arity",
+  "source": "//@version=6\nindicator(\"t\")\nlabel.new()\nplot(1)\n",
+  "why": "label.new needs at least x and y",
+  "kind": "accepted",
+  "evidence": "the signature is from memory of the Pine reference; this repo does not document it (the analyzer has no argument-count registry entry for it)"
+ },
+ {
+  "id": "fa_label_new_with_one_argument",
+  "category": "builtin-arity",
+  "source": "//@version=6\nindicator(\"t\")\nlabel.new(1)\nplot(1)\n",
+  "why": "label.new needs at least x and y",
+  "kind": "accepted",
+  "evidence": "the signature is from memory of the Pine reference; this repo does not document it (the analyzer has no argument-count registry entry for it)"
+ },
+ {
+  "id": "fa_label_set_text_without_text",
+  "category": "builtin-arity",
+  "source": "//@version=6\nindicator(\"t\")\nl = label.new(bar_index, close)\nlabel.set_text(l)\nplot(1)\n",
+  "why": "label.set_text needs the text",
+  "kind": "accepted",
+  "evidence": "the signature is from memory of the Pine reference; this repo does not document it (the analyzer has no argument-count registry entry for it)"
+ },
+ {
+  "id": "fa_line_new_with_one_argument",
+  "category": "builtin-arity",
+  "source": "//@version=6\nindicator(\"t\")\nline.new(1)\nplot(1)\n",
+  "why": "line.new needs four coordinates or two points",
+  "kind": "accepted",
+  "evidence": "the signature is from memory of the Pine reference; this repo does not document it (the analyzer has no argument-count registry entry for it)"
+ },
+ {
+  "id": "fa_alert_without_message",
+  "category": "builtin-arity",
+  "source": "//@version=6\nindicator(\"t\")\nalert()\nplot(1)\n",
+  "why": "alert needs a message",
+  "kind": "accepted",
+  "evidence": "the signature is from memory of the Pine reference; this repo does not document it (the analyzer has no argument-count registry entry for it)"
+ },
+ {
+  "id": "fa_ticker_new_without_arguments",
+  "category": "builtin-arity",
+  "source": "//@version=6\nindicator(\"t\")\nx = ticker.new()\nplot(1)\n",
+  "why": "ticker.new needs a prefix and a ticker",
+  "kind": "accepted",
+  "evidence": "the signature is from memory of the Pine reference; this repo does not document it (the analyzer has no argument-count registry entry for it)"
+ },
+ {
+  "id": "fa_timeframe_change_without_argument",
+  "category": "builtin-arity",
+  "source": "//@version=6\nindicator(\"t\")\nx = timeframe.change()\nplot(1)\n",
+  "why": "timeframe.change needs a timeframe",
+  "kind": "accepted",
+  "evidence": "the signature is from memory of the Pine reference; this repo does not document it (the analyzer has no argument-count registry entry for it)"
+ }
+]

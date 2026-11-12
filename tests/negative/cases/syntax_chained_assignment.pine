@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+x = y = 1
+plot(x)

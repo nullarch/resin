@@ -9,7 +9,7 @@
 // 조사한 결과 8개 파일 176개 조각이 순수 codegen 문자열 검사 테스트(Runtime()/.execute()/
 // run_pipeline() 실행 경로 자체가 파일 전체에 0건)라 실행 기반 값 대조 오라클로 편입 불가로 결론
 // (LIMITATIONS.md 참조) -- 여전히 범위 밖.
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -22,6 +22,7 @@ const ROOT = join(HERE, "..", "..");
 const DIFF_DIR = join(ROOT, "corpus", "diff");
 const INSTR_DIR = join(DIFF_DIR, "instrumented");
 const GOLDEN_DIR = join(DIFF_DIR, "golden");
+const LEDGER_PATH = join(DIFF_DIR, "status.json");
 
 interface DiffEntry {
   hash: string;
@@ -64,6 +65,9 @@ interface ReplayOutcome {
   hash: string;
   status: "matched" | "mismatch" | "transpile_fail" | "runtime_fail" | "no_comparable_key";
   detail?: string;
+  // matched only: no compared channel ever varies (all NaN, or constant). Such a script agrees with
+  // the golden but its agreement carries no information, so the ledger counts it apart.
+  vacuous?: boolean;
 }
 
 function replayOne(entry: DiffEntry, data: OHLCVData): ReplayOutcome {
@@ -107,7 +111,19 @@ function replayOne(entry: DiffEntry, data: OHLCVData): ReplayOutcome {
       }
     }
   }
-  return { hash: entry.hash, status: "matched" };
+  return { hash: entry.hash, status: "matched", vacuous: !comparableKeys.some((k) => channelVaries(golden, k)) };
+}
+
+// Whether the golden channel takes two different finite values somewhere in the run.
+function channelVaries(golden: CorpusGolden, key: string): boolean {
+  let first: number | undefined;
+  for (const bar of golden.bars) {
+    const v = decodeSentinel(bar[key] as number | string);
+    if (typeof v !== "number" || !Number.isFinite(v)) continue;
+    if (first === undefined) first = v;
+    else if (v !== first) return true;
+  }
+  return false;
 }
 
 describe("corpus diff: sample bar-by-bar replay against pine2py golden", () => {
@@ -633,10 +649,30 @@ describe("corpus diff: sample bar-by-bar replay against pine2py golden", () => {
     // resin-harness twin state/repros/stoch-wpr-na.json channels stoch_rsi/stoch_rsi_signal run
     // this script through the oracle. Floor moved to the observed matched 2303 / mismatch 612;
     // nothing else changed.
-    expect(matched.length).toBeGreaterThanOrEqual(2303);
-    expect(mismatched.length).toBeLessThanOrEqual(612);
-    expect(transpileFailed.length).toBeLessThanOrEqual(86);
+    // The gate is the per-hash ledger (corpus/diff/status.json), not a count: a hash that moves in
+    // either direction is a diff line someone has to read and justify, and a regression in one
+    // script can no longer hide behind an improvement in another. The counts the comments above
+    // track are derived from it (`node scripts/corpus-ledger.mjs --summary`).
+    // The golden is pine2py's, which is not ground truth: a hash that goes matched -> mismatch can be
+    // resin getting closer to TradingView. Update the ledger only after reading why it moved, and
+    // put the reason in the commit message:
+    //   UPDATE_CORPUS_LEDGER=1 npx vitest run tests/unit/corpus_diff.test.ts
+    const actual: Record<string, string> = {};
+    for (const o of outcomes) actual[o.hash] = o.status === "matched" && o.vacuous ? "matched_vacuous" : o.status;
+    const sorted = Object.fromEntries(Object.entries(actual).sort(([a], [b]) => (a < b ? -1 : 1)));
+    if (process.env.UPDATE_CORPUS_LEDGER === "1") {
+      writeFileSync(LEDGER_PATH, JSON.stringify(sorted, null, 1) + "\n");
+    }
+    const ledger: Record<string, string> = JSON.parse(readFileSync(LEDGER_PATH, "utf-8"));
+    const moved: string[] = [];
+    for (const hash of new Set([...Object.keys(ledger), ...Object.keys(sorted)])) {
+      if (ledger[hash] !== sorted[hash]) moved.push(`${hash}: ${ledger[hash] ?? "(absent)"} -> ${sorted[hash] ?? "(absent)"}`);
+    }
+    expect(
+      moved,
+      `${moved.length} hash(es) changed status against corpus/diff/status.json:\n${moved.slice(0, 40).join("\n")}`,
+    ).toEqual([]);
     expect(runtimeFailed.length, `runtime failures: ${runtimeFailed.map((o) => `${o.hash}: ${o.detail}`).join(" | ")}`).toBe(0);
-    expect(noComparable.length, `no comparable key: ${noComparable.map((o) => o.hash).join(", ")}`).toBeLessThanOrEqual(2);
+    expect(matched.length + mismatched.length + transpileFailed.length + runtimeFailed.length + noComparable.length).toBe(manifest.entries.length);
   });
 });

@@ -1,0 +1,10 @@
+//@version=6
+indicator("t")
+var x = 0.0
+if close > open
+    if high > high[1]
+        x := 2.0
+    else
+        x := 1.0
+x := x + 1
+plot(x)

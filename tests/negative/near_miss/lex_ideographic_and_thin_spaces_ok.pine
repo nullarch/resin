@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+x<U+3000>=<U+2009>close<U+2003>+<U+2002>open
+plot(x)

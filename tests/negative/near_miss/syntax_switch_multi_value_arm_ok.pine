@@ -1,0 +1,7 @@
+//@version=6
+indicator("t")
+x = switch int(close) % 3
+    0, 1 => 10
+    2 => 20
+    => 0
+plot(x)

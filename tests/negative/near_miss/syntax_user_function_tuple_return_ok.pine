@@ -1,0 +1,5 @@
+//@version=6
+indicator("t")
+f(x) => [x, x * 2, x * 3]
+[a, b, c] = f(close)
+plot(a + b + c)

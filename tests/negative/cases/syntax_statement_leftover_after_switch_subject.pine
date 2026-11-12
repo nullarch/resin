@@ -1,0 +1,5 @@
+//@version=6
+indicator("t")
+x = switch close foo
+    1 => 2
+plot(x)

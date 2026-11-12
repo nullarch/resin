@@ -1,0 +1,6 @@
+//@version=6
+indicator("t")
+f(x) => x * 2
+g(x) => f(x) + 1
+h(a, b) => g(a) + g(b)
+plot(h(close, open))

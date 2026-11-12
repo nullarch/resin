@@ -1,0 +1,3 @@
+<U+FEFF>//@version=6
+indicator("t")
+plot(close)

@@ -1,0 +1,235 @@
+{
+  "about": "Behaviour resin is known to get wrong, approximate or refuse. Each entry has a repro in tests/unit/known_gaps.test.ts. 'it.fails' repros assert the CORRECT behaviour and are expected to fail today: when a gap is closed its test starts passing, which fails the suite and forces the entry to be removed. 'warned' repros assert that transpile() reports it. 'pinned' repros assert today's (loud) refusal. tvVerified is false everywhere: this file's expectations come from arithmetic, the repo's own documentation or the Pine reference's definitions, not from a TradingView run, and an entry says so in 'expectation'.",
+  "hypothesisMarkerLines": 92,
+  "gaps": [
+    {
+      "id": "KG-SEC-HTF-LAG",
+      "kind": "silent",
+      "title": "request.security on the chart's own bars delivers a higher-timeframe value one chart bar late",
+      "expectation": "The same bars passed as a feed (run option `security`) pair correctly; building the higher timeframe from the chart's bars must give the same values. README documents the lag.",
+      "documented": {
+        "README.md": "one chart bar later"
+      },
+      "repro": "it.fails"
+    },
+    {
+      "id": "KG-SEC-NOFEED",
+      "kind": "silent",
+      "title": "request.security on a named symbol with no feed reads the chart's own bars",
+      "expectation": "A run warning says so (RunResult.warnings); refusing is still open.",
+      "documented": {},
+      "repro": "warned"
+    },
+    {
+      "id": "KG-TZ-HOUR",
+      "kind": "silent",
+      "title": "hour, dayofweek and the other time builtins read UTC even when syminfo.timezone is set",
+      "expectation": "With timezone Asia/Seoul (UTC+9, no DST) `hour` is the UTC hour + 9. UNVERIFIED against TradingView: src/runtime/datetime.ts suspects it; README and API.md document the UTC reading.",
+      "documented": {
+        "API.md": "still read UTC",
+        "README.md": "still read UTC"
+      },
+      "repro": "it.fails"
+    },
+    {
+      "id": "KG-TZ-UNKNOWN",
+      "kind": "silent",
+      "title": "An unknown timezone string passed to a time builtin is read as UTC",
+      "expectation": "hour(time, \"Mars/Phobos\") is refused (at transpile time or by a typed runtime error).",
+      "documented": {},
+      "repro": "it.fails"
+    },
+    {
+      "id": "KG-TF-GARBAGE",
+      "kind": "silent",
+      "title": "An unparsable timeframe literal in request.security is read as the daily timeframe",
+      "expectation": "request.security(…, \"garbage\", …) is refused at transpile time.",
+      "documented": {},
+      "repro": "it.fails"
+    },
+    {
+      "id": "KG-TIME-CLOSE-GAP",
+      "kind": "silent",
+      "title": "time_close is the next bar's open time, so it is wrong across a gap in the data",
+      "expectation": "On a 60-minute chart time_close - time is one hour for every bar, including the bar before a gap.",
+      "documented": {},
+      "repro": "it.fails"
+    },
+    {
+      "id": "KG-EIGEN-N3",
+      "kind": "silent",
+      "title": "matrix.eigenvalues returns the diagonal for matrices larger than 2x2",
+      "expectation": "The eigenvalues of [[2,1,0],[1,3,1],[0,1,4]] are 3 - sqrt(3), 3, 3 + sqrt(3) (arithmetic).",
+      "documented": {},
+      "repro": "it.fails"
+    },
+    {
+      "id": "KG-CORR-SCALE",
+      "kind": "candidate",
+      "title": "ta.correlation returns exactly 0 for series at a very small price level",
+      "expectation": "Correlation is scale-invariant: the same data multiplied by 1e-6 gives the same coefficients. src/runtime/ta.ts treats a covariance under 1e-10 as zero, which may be a deliberate port of Pine's comparison tolerance.",
+      "documented": {},
+      "repro": "it.fails"
+    },
+    {
+      "id": "KG-BBW-X100",
+      "kind": "candidate",
+      "title": "ta.bbw is 100 times the width ratio, while ta.kcw (corrected against TradingView in 0.3.0) is the plain ratio",
+      "expectation": "ta.bbw(close, 20, 2) equals (upper - lower) / basis from ta.bb. UNVERIFIED against TradingView: the only evidence for the x100 is a pine2py golden that has not changed since 0.1.0.",
+      "documented": {},
+      "repro": "it.fails"
+    },
+    {
+      "id": "KG-DRAWING-ID",
+      "kind": "silent",
+      "title": "Drawing ids come from a process-global counter, so two runs in one process differ",
+      "expectation": "Running the same script twice gives an identical RunResult.viz.",
+      "documented": {},
+      "repro": "it.fails"
+    },
+    {
+      "id": "KG-DRAWING-ALL",
+      "kind": "silent",
+      "title": "line.all, label.all, box.all (and the other drawing collections) are always empty",
+      "expectation": "After creating two lines, array.size(line.all) is 2.",
+      "documented": {},
+      "repro": "it.fails"
+    },
+    {
+      "id": "KG-STUB-DATA",
+      "kind": "stub",
+      "title": "request.dividends, splits, earnings, quandl, financial, seed and currency_rate return placeholders",
+      "expectation": "Reported as `stub` warnings; refused under `strict`.",
+      "documented": {},
+      "repro": "warned"
+    },
+    {
+      "id": "KG-TICKER-PASSTHROUGH",
+      "kind": "stub",
+      "title": "ticker.heikinashi, renko, kagi, linebreak and pointfigure return their symbol unchanged",
+      "expectation": "Reported as `passthrough` warnings; refused under `strict`.",
+      "documented": {},
+      "repro": "warned"
+    },
+    {
+      "id": "KG-LOWER-TF",
+      "kind": "stub",
+      "title": "request.security_lower_tf returns a one-element array holding the chart bar's own value",
+      "expectation": "Reported as a `stub` warning; refused under `strict`.",
+      "documented": {},
+      "repro": "warned"
+    },
+    {
+      "id": "KG-RISK",
+      "kind": "approx",
+      "title": "strategy.risk.* rules are implemented from the function names and only block new entries",
+      "expectation": "Reported as a `hypothesis` warning.",
+      "documented": {},
+      "repro": "warned"
+    },
+    {
+      "id": "KG-STRATEGY-PARAMS",
+      "kind": "stub",
+      "title": "strategy() parameters close_entries_rule and backtest_fill_limits_assumption are accepted and never read",
+      "expectation": "A value other than the default that resin implements is reported as a `stub` warning; refused under `strict`.",
+      "documented": {},
+      "repro": "warned"
+    },
+    {
+      "id": "KG-SERIES-LENGTH",
+      "kind": "loud",
+      "title": "16 ta.* functions (ema, rsi, rma, atr, alma, hma, dema, cog, ...) refuse a length that changes from bar to bar",
+      "expectation": "Today's refusal. When a function learns to take a series length its entry here must be edited, not deleted.",
+      "documented": {
+        "README.md": "ta.alma"
+      },
+      "repro": "pinned"
+    },
+    {
+      "id": "KG-ACCEPTS-GRAMMAR",
+      "kind": "silent",
+      "title": "Grammar errors resin accepts: reserved words as names, missing commas in parameter/tuple/generic lists, junk after a declaration",
+      "expectation": "Each script in tests/negative/false_accepts.json (category grammar) is refused. They are invalid under any reading of the grammar; the parser is lenient where pine2py was.",
+      "documented": {},
+      "repro": "negative",
+      "category": "grammar",
+      "count": 30
+    },
+    {
+      "id": "KG-ACCEPTS-UNDECLARED-TYPE",
+      "kind": "silent",
+      "title": "A declaration with a type name that is declared nowhere is accepted",
+      "expectation": "`foo x = 1`, `flaot x = 1.0`, `let x = 1` are refused (category undeclared-type).",
+      "documented": {},
+      "repro": "negative",
+      "category": "undeclared-type",
+      "count": 12
+    },
+    {
+      "id": "KG-NO-TYPECHECK",
+      "kind": "missing",
+      "title": "There is no static type checker: ill-typed scripts compile and misbehave at run time",
+      "expectation": "`int x = \"a\"`, `\"a\" * 2`, `plot(\"a\")`, `ta.sma(close, \"5\")` are refused (category static-type). A checker has to be validated against the Pine reference before it may refuse real scripts, which is why it is not built.",
+      "documented": {},
+      "repro": "negative",
+      "category": "static-type",
+      "count": 19
+    },
+    {
+      "id": "KG-BUILTIN-ARITY",
+      "kind": "candidate",
+      "title": "Some builtins are accepted with fewer arguments than their Pine signature has required parameters",
+      "expectation": "`label.new()`, `line.new(1)`, `alert()` are refused (category builtin-arity). The argument counts come from the author of the test's memory of the Pine reference, not from a source in this repository.",
+      "documented": {},
+      "repro": "negative",
+      "category": "builtin-arity",
+      "count": 7
+    },
+    {
+      "id": "KG-BAD-TIME",
+      "kind": "loud",
+      "title": "One NaN, Infinity or out-of-range bar time makes any script that reads the exchange calendar throw a raw RangeError, and the run's warnings are lost with it",
+      "expectation": "The run completes and RunResult.warnings names the bad bar (found by scripts/fuzz.mjs, KD8 in tests/robustness/README.md).",
+      "documented": {},
+      "repro": "it.fails"
+    },
+    {
+      "id": "KG-NAN-FILL",
+      "kind": "loud",
+      "title": "A strategy with percent commission throws SyntaxError (a BigInt conversion of NaN) when the bar an order fills on has a NaN open",
+      "expectation": "The run completes (an order with no fill price is not filled, or the data hole is reported); KD9 in tests/robustness/README.md.",
+      "documented": {},
+      "repro": "it.fails"
+    },
+    {
+      "id": "KG-RAW-RANGEERROR",
+      "kind": "loud",
+      "title": "Extreme values reach the host as raw RangeErrors: str.format_time past JavaScript's Date range, a string that doubles every bar",
+      "expectation": "Today's behaviour: a RangeError, not a typed error and not an abort (KD4, KD7 in tests/robustness/README.md).",
+      "documented": {},
+      "repro": "pinned"
+    },
+    {
+      "id": "KG-REGEX-HANG",
+      "kind": "hang",
+      "title": "str.match runs the script's pattern as an unbounded JavaScript RegExp: nested quantifiers on a 45-character string never return",
+      "expectation": "Checked in a child process by tests/robustness/fuzz_cli.test.ts (KD11); no host limit covers it, a host that needs a hard bound runs the engine in a worker it can terminate.",
+      "documented": {
+        "API.md": "worker it can terminate"
+      },
+      "repro": "external",
+      "where": "tests/robustness/fuzz_cli.test.ts",
+      "marker": "KD11"
+    },
+    {
+      "id": "KG-ROC-VARLEN-NA",
+      "kind": "candidate",
+      "title": "ta.roc with a series length takes its numerator over the non-na bars only, so across an na gap it differs from the same call with a literal length",
+      "expectation": "Found by tests/property: close = [10, 11, na, 13, 14], ta.roc(close, 2) is 18.18 at bar 3 but ta.roc(close, 2 + bar_index * 0) is 27.27. src/runtime/ta.ts rocVarLen says that is 'as the oracle runs it', so it may be TradingView's behaviour; the two literal/series forms agreeing is the property that fails.",
+      "documented": {},
+      "repro": "external",
+      "where": "tests/property/reference_ta.test.ts",
+      "marker": "it.fails"
+    }
+  ]
+}

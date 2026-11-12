@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+x = close <U+2060>+ open <U+FEFF>
+plot(x)

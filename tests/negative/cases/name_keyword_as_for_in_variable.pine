@@ -1,0 +1,6 @@
+//@version=6
+indicator("t")
+a = array.new_float(0)
+for if in a
+    x = 1
+plot(1)

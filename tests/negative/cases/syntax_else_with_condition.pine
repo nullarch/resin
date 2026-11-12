@@ -1,0 +1,7 @@
+//@version=6
+indicator("t")
+if close > open
+    x = 1
+else close < open
+    y = 1
+plot(1)

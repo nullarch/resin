@@ -1,0 +1,8 @@
+//@version=6
+indicator("t")
+var x = 0
+if close > open
+    x := 1
+
+    x := 2
+plot(x)

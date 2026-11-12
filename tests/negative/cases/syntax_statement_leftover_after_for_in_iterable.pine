@@ -1,0 +1,6 @@
+//@version=6
+indicator("t")
+a = array.new_float(0)
+for v in a b
+    x = 1
+plot(1)

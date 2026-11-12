@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+plot(close, title="line one
+line two")

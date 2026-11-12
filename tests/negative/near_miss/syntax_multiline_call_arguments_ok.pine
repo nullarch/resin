@@ -1,0 +1,7 @@
+//@version=6
+indicator("t")
+plot(
+    close,
+  title = "a",
+        color = color.red
+)

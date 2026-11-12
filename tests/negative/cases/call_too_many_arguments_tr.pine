@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+x = ta.tr(1, 2, 3, 4)
+plot(x)

@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+x = close.sma(5)
+plot(x)

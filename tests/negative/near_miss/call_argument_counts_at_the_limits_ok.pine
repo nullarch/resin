@@ -1,0 +1,6 @@
+//@version=6
+indicator("t")
+a = ta.sma(close, 5) + ta.highest(5) + ta.highest(close, 5)
+b = math.max(1, 2) + math.max(1, 2, 3) + math.round(1.5) + math.round(1.5, 2)
+c = nz(close) + nz(close, 0) + ta.tr + ta.tr(true)
+plot(a + b + c)

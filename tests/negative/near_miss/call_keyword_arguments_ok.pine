@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+x = ta.sma(source=close, length=5)
+plot(x, title="a", color=color.red)

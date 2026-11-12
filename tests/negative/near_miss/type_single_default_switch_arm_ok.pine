@@ -1,0 +1,6 @@
+//@version=6
+indicator("t")
+x = switch close
+    1 => 1
+    => 2
+plot(x)

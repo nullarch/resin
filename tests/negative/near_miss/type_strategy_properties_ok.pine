@@ -1,0 +1,3 @@
+//@version=6
+strategy("t")
+plot(strategy.position_size + strategy.equity)

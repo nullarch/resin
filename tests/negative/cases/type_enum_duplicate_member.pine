@@ -1,0 +1,6 @@
+//@version=6
+indicator("t")
+enum E
+    a
+    a
+plot(1)

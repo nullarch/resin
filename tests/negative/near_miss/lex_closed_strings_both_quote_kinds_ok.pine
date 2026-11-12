@@ -1,0 +1,5 @@
+//@version=6
+indicator("t")
+a = "it's"
+b = 'say "hi"'
+plot(close, title=a + b)

@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+x = ta.barssince()
+plot(x)

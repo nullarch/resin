@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+x = request.nothing("a", "b", close)
+plot(1)

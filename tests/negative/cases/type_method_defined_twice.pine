@@ -1,0 +1,7 @@
+//@version=6
+indicator("t")
+type A
+    int a
+method m(A this) => 1
+method m(A this) => 2
+plot(1)

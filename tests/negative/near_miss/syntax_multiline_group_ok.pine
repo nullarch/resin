@@ -1,0 +1,6 @@
+//@version=6
+indicator("t")
+x = (close +
+    open +
+  high)
+plot(x)

@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+// 한글 주석 — “quotes” € ° …
+plot(close, title="€ ° … — “” 한글")

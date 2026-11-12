@@ -1,0 +1,10 @@
+//@version=6
+indicator("t")
+type Point
+    float x
+    float y = 0.0
+enum Mode
+    fast = "Fast"
+    slow = "Slow"
+p = Point.new(1.0)
+plot(p.x + p.y)

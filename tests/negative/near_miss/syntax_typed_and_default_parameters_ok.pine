@@ -1,0 +1,6 @@
+//@version=6
+indicator("t")
+f(float a, int b = 2, c = 3.0) => a * b + c
+plot(f(close))
+plot(f(close, 3))
+plot(f(close, 3, 4.0))

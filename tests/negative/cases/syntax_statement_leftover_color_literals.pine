@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+x = #FF0000 #00FF00
+plot(1)

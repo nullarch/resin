@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+x = strategy.nothing(1)
+plot(1)

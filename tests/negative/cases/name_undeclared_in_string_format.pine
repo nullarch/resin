@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+x = str.format("{0}", foo)
+plot(1)

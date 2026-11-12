@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+x = request.security(syminfo.tickerid, "D")
+plot(x)

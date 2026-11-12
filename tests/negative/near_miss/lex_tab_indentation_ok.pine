@@ -1,0 +1,8 @@
+//@version=6
+indicator("t")
+x = 0.0
+if close > open
+	x := 1.0
+	if close > high[1]
+		x := 2.0
+plot(x)

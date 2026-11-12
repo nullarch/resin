@@ -1,0 +1,12 @@
+//@version=6
+indicator("t")
+a = array.new<float>(0)
+array.push(a, 1.0)
+m = map.new<string, float>()
+m.put("k", 2.0)
+s = 0.0
+for v in a
+    s += v
+for [i, v] in a
+    s += v * i
+plot(s)

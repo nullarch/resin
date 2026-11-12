@@ -1,0 +1,3 @@
+//@version=6
+indicator("t")
+x = close > open ? 1 :

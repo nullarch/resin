@@ -1,0 +1,5 @@
+//@version=6
+indicator("t")
+while true false
+    break
+plot(1)

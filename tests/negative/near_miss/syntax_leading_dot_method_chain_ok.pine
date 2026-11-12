@@ -1,0 +1,6 @@
+//@version=6
+indicator("t")
+a = array.new_float(0)
+n = a
+  .size()
+plot(n)

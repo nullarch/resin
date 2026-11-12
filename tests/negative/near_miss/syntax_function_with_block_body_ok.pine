@@ -1,0 +1,7 @@
+//@version=6
+indicator("t")
+f(x) =>
+    y = x * 2
+    z = y + 1
+    z
+plot(f(close))

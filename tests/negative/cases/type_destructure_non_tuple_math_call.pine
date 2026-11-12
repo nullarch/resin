@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+[a, b] = math.max(1, 2)
+plot(a)

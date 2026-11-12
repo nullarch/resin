@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+x = math.sqrt(4, 4)
+plot(x)

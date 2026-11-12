@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+x = ta.ema(close, 5, 6, 7)
+plot(x)

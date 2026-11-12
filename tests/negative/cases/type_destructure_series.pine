@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+[a, b] = close
+plot(a)

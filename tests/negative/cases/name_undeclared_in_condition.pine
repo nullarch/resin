@@ -1,0 +1,5 @@
+//@version=6
+indicator("t")
+if foo > 1
+    x = 1
+plot(1)

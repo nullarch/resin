@@ -1,0 +1,1249 @@
+{
+ "note": "pine2py output is not ground truth; see scripts/golden-provenance.mjs",
+ "total": 263,
+ "edited": 25,
+ "goldens": {
+  "array_basic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "array_join.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "array_map_constructor_chain.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "array_map_keyvalues_chain.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "array_map_method_call.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "array_new_ctor_kwargs.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "array_new_generic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "array_new_generic_types.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "array_new_named_drawing.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "array_new_typed.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "array_query_ops.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "array_residual.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "array_search.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "array_slice_ops.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "array_stats.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "array_stats2.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "array_type_shorthand.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "bar_index_dynamic_offset.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "barstate_session.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "bool_literal.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "color_basic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "color_from_gradient_kwargs.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "color_literal.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "color_new_kwarg.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "compound_assign_modulo.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "cond_elif_switch_while_direct_ta.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "cond_if_condition_ta.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "cond_if_ta.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "cond_lazy_ta.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "cond_loop_ta.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "cond_switch_ta.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "cond_udf_ta.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ctrl_flow_expr.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ctrlflow_selfref_assign.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "derived_bar_vars_basic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "dynamic_history_offset.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "dynamic_offset_histslot.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "e2e_accdist.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "e2e_atr.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "e2e_bb.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "e2e_cci.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "e2e_cog.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "e2e_dmi.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "e2e_ichimoku.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "e2e_kc.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "e2e_kcw.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "e2e_macd.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "e2e_mfi.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "e2e_obv.json": {
+   "source": "edited",
+   "importedIn": "fef7cb3",
+   "edits": [
+    {
+     "commit": "b13f051",
+     "date": "2026-09-26",
+     "subject": "ta.cum of an na source is na; ta.obv and ta.pvt are na on the first bar"
+    }
+   ]
+  },
+  "e2e_regime_tracker.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "e2e_rsi.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "e2e_sar.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "e2e_squeeze.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "e2e_stoch.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "e2e_supertrend.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "e2e_vwap.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "e2e_wavetrend.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "e2e_wpr.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "e2e_zigzag.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "enum_basic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "enum_forward_ref.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "enum_titled.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "fill_basic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "fixnan_basic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "for_basic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "for_in_loop.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "for_in_matrix.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "func_local_shadows_var.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "generic_type_var_decl.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "history_basic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "if_basic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "input_basic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "input_enum.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "input_extra.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "input_kwargs.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "library_export_import.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "linefill_new.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "local_history_basic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "log_runtime_noop.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "map_basic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "map_get_default.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "math_avg.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "math_const.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "math_minmax.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "math_misc.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "math_round.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "math_round_to_mintick.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "math_sum.json": {
+   "source": "edited",
+   "importedIn": "fef7cb3",
+   "edits": [
+    {
+     "commit": "2cf7ce1",
+     "date": "2026-09-26",
+     "subject": "ta.sma and math.sum sum the last `length` non-na values"
+    }
+   ]
+  },
+  "math_trig.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "matrix_basic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "matrix_det.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "matrix_eigenvalues.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "matrix_eigenvectors.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "matrix_inv.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "matrix_kron.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "matrix_method_call.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "matrix_mult.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "matrix_mutate.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "matrix_pinv.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "matrix_pow.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "matrix_predicates.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "matrix_rank.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "matrix_row_col.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "matrix_stats.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "matrix_trace.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "matrix_transform.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "matrix_transpose.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "method_receiver_reserved_word.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "na_basic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "nz_basic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "nz_timeframe_kwargs.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "qualified_type_var_decl.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "request_dividends_splits.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "request_dividends_splits_kwargs.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "request_earnings.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "request_financial.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "request_financial_kwargs.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "request_security_bare_ta_multi_return.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "request_security_bare_udf_call.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "request_security_bare_udf_call_scalar.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "request_security_lower_tf.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "request_security_lower_tf_kwargs.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "request_security_na_ternary_tf.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "smoke_var_sma.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "str_basic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "str_convert.json": {
+   "source": "edited",
+   "importedIn": "fef7cb3",
+   "edits": [
+    {
+     "commit": "8e3ab54",
+     "date": "2026-09-26",
+     "subject": "str.tostring and str.format print TradingView's number text, not Python's str()"
+    }
+   ]
+  },
+  "str_format.json": {
+   "source": "edited",
+   "importedIn": "fef7cb3",
+   "edits": [
+    {
+     "commit": "8e3ab54",
+     "date": "2026-09-26",
+     "subject": "str.tostring and str.format print TradingView's number text, not Python's str()"
+    }
+   ]
+  },
+  "str_format_number.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "str_format_time.json": {
+   "source": "edited",
+   "importedIn": "fef7cb3",
+   "edits": [
+    {
+     "commit": "56a2a80",
+     "date": "2026-09-26",
+     "subject": "str.format_time renders in its timezone, by default syminfo.timezone"
+    }
+   ]
+  },
+  "str_format_time_kwargs.json": {
+   "source": "edited",
+   "importedIn": "fef7cb3",
+   "edits": [
+    {
+     "commit": "56a2a80",
+     "date": "2026-09-26",
+     "subject": "str.format_time renders in its timezone, by default syminfo.timezone"
+    }
+   ]
+  },
+  "str_match.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "str_replace.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "str_split.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "str_tostring_int.json": {
+   "source": "edited",
+   "importedIn": "fef7cb3",
+   "edits": [
+    {
+     "commit": "8e3ab54",
+     "date": "2026-09-26",
+     "subject": "str.tostring and str.format print TradingView's number text, not Python's str()"
+    }
+   ]
+  },
+  "str_tostring_int_local.json": {
+   "source": "edited",
+   "importedIn": "fef7cb3",
+   "edits": [
+    {
+     "commit": "8e3ab54",
+     "date": "2026-09-26",
+     "subject": "str.tostring and str.format print TradingView's number text, not Python's str()"
+    }
+   ]
+  },
+  "str_tostring_kwargs.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "str_transform.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "string_eq_local_hist.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "string_var_hist.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "switch_basic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "syminfo_basic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_alma.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_atr_tr.json": {
+   "source": "edited",
+   "importedIn": "fef7cb3",
+   "edits": [
+    {
+     "commit": "481cf09",
+     "date": "2026-09-26",
+     "subject": "ta.tr and bare ta.tr default handle_na to false: na on the first bar"
+    }
+   ]
+  },
+  "ta_bare_implicit_calls.json": {
+   "source": "edited",
+   "importedIn": "fef7cb3",
+   "edits": [
+    {
+     "commit": "481cf09",
+     "date": "2026-09-26",
+     "subject": "ta.tr and bare ta.tr default handle_na to false: na on the first bar"
+    },
+    {
+     "commit": "b13f051",
+     "date": "2026-09-26",
+     "subject": "ta.cum of an na source is na; ta.obv and ta.pvt are na on the first bar"
+    }
+   ]
+  },
+  "ta_barssince.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_bb.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_bbw.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_cci.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_cci_kwargs.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_change_default_length.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_change_mom.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_cmo.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_cog.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_correlation.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_cross.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_crossover_crossunder.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_cum.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_dev.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_dmi.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_ema_rsi.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_highest_lowest.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_highest_lowest_implicit.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_highest_lowest_varlen.json": {
+   "source": "edited",
+   "importedIn": "fef7cb3",
+   "edits": [
+    {
+     "commit": "f97acf4",
+     "date": "2026-09-26",
+     "subject": "ta.highest/lowest(bars) run the oracle's bar-addressed ring: an na source resets the window"
+    }
+   ]
+  },
+  "ta_highestbars_lowestbars.json": {
+   "source": "edited",
+   "importedIn": "fef7cb3",
+   "edits": [
+    {
+     "commit": "311c039",
+     "date": "2026-09-26",
+     "subject": "ta.highestbars/lowestbars report the oldest occurrence of a tied extreme"
+    }
+   ]
+  },
+  "ta_highestbars_lowestbars_varlen.json": {
+   "source": "edited",
+   "importedIn": "fef7cb3",
+   "edits": [
+    {
+     "commit": "311c039",
+     "date": "2026-09-26",
+     "subject": "ta.highestbars/lowestbars report the oldest occurrence of a tied extreme"
+    }
+   ]
+  },
+  "ta_hma.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_kc_kcw.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_kc_kcw_optional_truerange.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_kwargs.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_kwargs2.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_linreg.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_linreg_implicit.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_macd.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_median.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_median_linreg_varlen.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_mfi.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_mode.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_nvi_pvi.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_obv_accdist.json": {
+   "source": "edited",
+   "importedIn": "fef7cb3",
+   "edits": [
+    {
+     "commit": "b13f051",
+     "date": "2026-09-26",
+     "subject": "ta.cum of an na source is na; ta.obv and ta.pvt are na on the first bar"
+    }
+   ]
+  },
+  "ta_percentile.json": {
+   "source": "edited",
+   "importedIn": "fef7cb3",
+   "edits": [
+    {
+     "commit": "079e201",
+     "date": "2026-09-27",
+     "subject": "ta.percentile_nearest_rank/linear_interpolation run TradingView's rolling rank machine"
+    }
+   ]
+  },
+  "ta_percentrank.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_pivot.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_pivot_varlen.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_pvt_wad.json": {
+   "source": "edited",
+   "importedIn": "fef7cb3",
+   "edits": [
+    {
+     "commit": "b13f051",
+     "date": "2026-09-26",
+     "subject": "ta.cum of an na source is na; ta.obv and ta.pvt are na on the first bar"
+    }
+   ]
+  },
+  "ta_range.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_range_percentile_varlen.json": {
+   "source": "edited",
+   "importedIn": "fef7cb3",
+   "edits": [
+    {
+     "commit": "079e201",
+     "date": "2026-09-27",
+     "subject": "ta.percentile_nearest_rank/linear_interpolation run TradingView's rolling rank machine"
+    },
+    {
+     "commit": "da7cbec",
+     "date": "2026-09-27",
+     "subject": "ta.range is ta.highest - ta.lowest on their rings; an na source skips them"
+    }
+   ]
+  },
+  "ta_rising_falling.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_rma.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_roc.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_sar.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_sma_varlen.json": {
+   "source": "edited",
+   "importedIn": "fef7cb3",
+   "edits": [
+    {
+     "commit": "2cf7ce1",
+     "date": "2026-09-26",
+     "subject": "ta.sma and math.sum sum the last `length` non-na values"
+    }
+   ]
+  },
+  "ta_stdev_sum_varlen.json": {
+   "source": "edited",
+   "importedIn": "fef7cb3",
+   "edits": [
+    {
+     "commit": "2cf7ce1",
+     "date": "2026-09-26",
+     "subject": "ta.sma and math.sum sum the last `length` non-na values"
+    },
+    {
+     "commit": "bba2857",
+     "date": "2026-09-26",
+     "subject": "A series length runs the oracle's machine with each bar's length"
+    }
+   ]
+  },
+  "ta_stdev_variance.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_stoch.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_supertrend.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_swma.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_tsi.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_valuewhen.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_valuewhen_kwargs.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_vwap.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_vwap_kwargs.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_vwma.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_vwma_varlen.json": {
+   "source": "edited",
+   "importedIn": "fef7cb3",
+   "edits": [
+    {
+     "commit": "ed04c08",
+     "date": "2026-09-26",
+     "subject": "ta.vwma is sma(source * volume, length) / sma(volume, length), each over its own non-na window"
+    }
+   ]
+  },
+  "ta_wma.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_wma_varlen.json": {
+   "source": "edited",
+   "importedIn": "fef7cb3",
+   "edits": [
+    {
+     "commit": "0bdfc8d",
+     "date": "2026-09-26",
+     "subject": "ta.wma carries the last value forward through an na source; ta.hma skips it"
+    }
+   ]
+  },
+  "ta_wpr.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ta_wvad_iii.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ticker_kwargs.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "ticker_timeframe.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "time_channel_smoke.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "time_func_call.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "time_history_basic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "time_vars.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "time_vars_no_channel.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "time_weekofyear.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "timeframe_basic.json": {
+   "source": "edited",
+   "importedIn": "fef7cb3",
+   "edits": [
+    {
+     "commit": "6c1b553",
+     "date": "2026-09-26",
+     "subject": "timeframe.in_seconds reads the whole timeframe string, a month is 2628003 seconds"
+    }
+   ]
+  },
+  "timeframe_in_seconds_default.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "timestamp_basic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "tuple_branch_tail_return.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "tuple_discard_stmt.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "tuple_history_basic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "tuple_literal_destructure.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "tuple_string_hist.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "tuple_udf_tail_return.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "tuple_underscore_placeholder.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "type_cast_basic.json": {
+   "source": "edited",
+   "importedIn": "fef7cb3",
+   "edits": [
+    {
+     "commit": "8e3ab54",
+     "date": "2026-09-26",
+     "subject": "str.tostring and str.format print TradingView's number text, not Python's str()"
+    }
+   ]
+  },
+  "typed_local_decl.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udf_basic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udf_forward_ref.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udf_forward_ref_tuple.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udf_history_basic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udf_history_nested.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udf_nested_call.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udf_param_container_typehint.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udf_param_shadows_var.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udf_param_udt_field_hist.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udf_single_var.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udf_tuple_basic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udt_array_elem_field.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udt_bare_method_call.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udt_basic.json": {
+   "source": "edited",
+   "importedIn": "fef7cb3",
+   "edits": [
+    {
+     "commit": "f7406c5",
+     "date": "2026-09-27",
+     "subject": "UDT fields without a default are na, false for bool"
+    }
+   ]
+  },
+  "udt_constructor_method_chain.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udt_enum_field.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udt_field_compound_assign.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udt_field_container_method_call.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udt_field_ctrlflow_assign.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udt_forward_ref.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udt_generic_field.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udt_keyword_field.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udt_kwargs.json": {
+   "source": "edited",
+   "importedIn": "fef7cb3",
+   "edits": [
+    {
+     "commit": "f7406c5",
+     "date": "2026-09-27",
+     "subject": "UDT fields without a default are na, false for bool"
+    }
+   ]
+  },
+  "udt_local_var.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udt_matrix_field.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udt_method.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udt_method_tuple_destructure.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udt_nested.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udt_nested_field_container_method_call.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udt_nested_generic_field.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udt_tuple_destructure_return.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udt_tuple_destructure_return_inferred.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udt_typed_local_no_var.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udt_udf_if_else_return.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "udt_udf_return.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  },
+  "while_basic.json": {
+   "source": "pine2py",
+   "importedIn": "fef7cb3"
+  }
+ }
+}

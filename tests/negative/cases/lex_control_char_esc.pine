@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+x = <U+001B>[0m 1
+plot(x)

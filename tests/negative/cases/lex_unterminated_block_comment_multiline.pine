@@ -1,0 +1,6 @@
+//@version=6
+indicator("t")
+/* line one
+line two
+line three
+plot(close)

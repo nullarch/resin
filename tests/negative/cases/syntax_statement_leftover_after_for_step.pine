@@ -1,0 +1,5 @@
+//@version=6
+indicator("t")
+for i = 0 to 5 by 1 2
+    x = 1
+plot(1)

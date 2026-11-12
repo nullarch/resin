@@ -1,0 +1,7 @@
+//@version=6
+indicator("t")
+s = str.tostring(1) + str.format("{0}", 2)
+c = color.new(color.red, 50)
+m = timeframe.in_seconds("D") + syminfo.mintick
+plot(close, color=c)
+plot(m)

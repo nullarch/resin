@@ -1,0 +1,8 @@
+//@version=6
+indicator("t")
+type A
+    int a
+method twice(A this) => this.a * 2
+method add(A this, int n) => this.a + n
+var A x = A.new(3)
+plot(x.twice() + x.add(1))

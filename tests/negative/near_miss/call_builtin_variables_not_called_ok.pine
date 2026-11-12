@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+x = barstate.isfirst ? 1 : 0
+plot(x + math.pi)

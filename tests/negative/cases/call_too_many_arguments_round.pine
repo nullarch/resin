@@ -1,0 +1,4 @@
+//@version=6
+indicator("t")
+x = math.round(1.5, 2, 3)
+plot(x)

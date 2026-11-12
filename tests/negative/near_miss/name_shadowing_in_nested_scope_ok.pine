@@ -1,0 +1,8 @@
+//@version=6
+indicator("t")
+x = 1
+if close > open
+    x = 2
+    y = x
+f(x) => x + 1
+plot(x + f(x))

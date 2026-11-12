@@ -1,0 +1,9 @@
+//@version=6
+indicator("t")
+int a = 1
+float b = 2.5
+bool c = true
+string d = "s"
+color e = color.red
+plot(a + b, color=e)
+plot(c ? 1 : 0, title=d)

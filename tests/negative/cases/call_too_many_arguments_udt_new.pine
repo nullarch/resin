@@ -1,0 +1,6 @@
+//@version=6
+indicator("t")
+type A
+    int a
+var A x = A.new(1, 2)
+plot(1)

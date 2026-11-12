@@ -1,0 +1,8 @@
+//@version=6
+indicator("t")
+if close > open
+    //@variable inside the block
+    x = 1
+    //@variable another
+    y = 2
+plot(close)

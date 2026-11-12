@@ -1,0 +1,5 @@
+//@version=6
+indicator("t")
+enum if
+    a
+plot(1)

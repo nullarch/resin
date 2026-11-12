@@ -1,0 +1,2393 @@
+{
+ "call_argument_counts_at_the_limits_ok": {
+  "dir": "near_miss",
+  "why": "twin of call_too_few/too_many_*: arities at both ends of the documented ranges"
+ },
+ "call_argument_given_twice_title": {
+  "dir": "cases",
+  "match": "argument 'title' specified both positionally and as a keyword",
+  "why": "title given positionally and by keyword"
+ },
+ "call_argument_given_twice_user_function": {
+  "dir": "cases",
+  "match": "argument 'a' specified both positionally and as a keyword",
+  "why": "positional and keyword for the same parameter (v6 forbids repeating a parameter)"
+ },
+ "call_argument_given_twice_user_function_first": {
+  "dir": "cases",
+  "match": "argument 'a' specified both positionally and as a keyword",
+  "why": "a positional argument after a keyword one lands on a parameter already named"
+ },
+ "call_bare_ta_implicit_calls_ok": {
+  "dir": "near_miss",
+  "why": "twin of call_too_many_arguments_tr: ta.tr with and without call parentheses"
+ },
+ "call_bool_is_not_callable": {
+  "dir": "cases",
+  "match": "not a callable target",
+  "why": "calling a bool literal"
+ },
+ "call_builtin_variable_is_not_callable": {
+  "dir": "cases",
+  "match": "unsupported call: 'barstate\\.isfirst'",
+  "why": "barstate.isfirst is a variable, not a function"
+ },
+ "call_builtin_variables_not_called_ok": {
+  "dir": "near_miss",
+  "why": "twin of call_builtin_variable_is_not_callable"
+ },
+ "call_color_constant_is_not_callable": {
+  "dir": "cases",
+  "match": "unsupported call: 'color\\.red'",
+  "why": "color.red is a constant, not a function"
+ },
+ "call_constant_is_not_callable": {
+  "dir": "cases",
+  "match": "unsupported call: 'math\\.pi'",
+  "why": "math.pi is a constant, not a function"
+ },
+ "call_index_result_is_not_callable": {
+  "dir": "cases",
+  "match": "not a callable target",
+  "why": "calling the result of a history reference"
+ },
+ "call_keyword_arguments_ok": {
+  "dir": "near_miss",
+  "why": "twin of call_unknown_keyword_*: valid keyword names"
+ },
+ "call_keyword_repeated_v6_length": {
+  "dir": "cases",
+  "match": "duplicate keyword argument 'length'",
+  "why": "v6 forbids naming one keyword argument twice"
+ },
+ "call_keyword_repeated_v6_plot": {
+  "dir": "cases",
+  "match": "duplicate keyword argument 'color'",
+  "why": "v6 forbids naming one keyword argument twice"
+ },
+ "call_keyword_repeated_v6_ta": {
+  "dir": "cases",
+  "match": "duplicate keyword argument 'source'",
+  "why": "v6 forbids naming one keyword argument twice"
+ },
+ "call_method_syntax_on_arrays_ok": {
+  "dir": "near_miss",
+  "why": "twin of call_unknown_method_on_array: real array methods"
+ },
+ "call_namespace_access_not_a_call": {
+  "dir": "cases",
+  "match": "unsupported call: 'close\\.sma'",
+  "why": "a ta function written as a series method"
+ },
+ "call_number_is_not_callable": {
+  "dir": "cases",
+  "match": "not a callable target",
+  "why": "calling a number literal"
+ },
+ "call_positional_then_keyword_ok": {
+  "dir": "near_miss",
+  "why": "twin of call_argument_given_twice_*: positional first, the remaining by keyword"
+ },
+ "call_real_namespace_members_ok": {
+  "dir": "near_miss",
+  "why": "twin of call_unknown_*_member: real members of str, color, timeframe, syminfo"
+ },
+ "call_series_in_group_is_not_callable": {
+  "dir": "cases",
+  "match": "unknown function call: 'close'",
+  "why": "calling a parenthesized series"
+ },
+ "call_series_is_not_callable": {
+  "dir": "cases",
+  "match": "unknown function call: 'close'",
+  "why": "close is a series, not a function"
+ },
+ "call_string_is_not_callable": {
+  "dir": "cases",
+  "match": "not a callable target",
+  "why": "calling a string literal"
+ },
+ "call_too_few_arguments_abs": {
+  "dir": "cases",
+  "match": "'math\\.abs' call argument count mismatch: requires 1, got 0",
+  "why": "math.abs needs an argument"
+ },
+ "call_too_few_arguments_alertcondition": {
+  "dir": "cases",
+  "match": "'alertcondition' call argument count mismatch: requires 1~4, got 0",
+  "why": "alertcondition needs a condition"
+ },
+ "call_too_few_arguments_array_get": {
+  "dir": "cases",
+  "match": "'array\\.get' call argument count mismatch: 2 required, 1 passed",
+  "why": "array.get needs an index"
+ },
+ "call_too_few_arguments_array_push": {
+  "dir": "cases",
+  "match": "'array\\.push' call argument count mismatch: 2 required, 1 passed",
+  "why": "array.push needs a value"
+ },
+ "call_too_few_arguments_array_set": {
+  "dir": "cases",
+  "match": "'array\\.set' call argument count mismatch: 3 required, 2 passed",
+  "why": "array.set needs a value"
+ },
+ "call_too_few_arguments_atr": {
+  "dir": "cases",
+  "match": "'ta\\.atr' call argument count mismatch: requires 1, 0 passed",
+  "why": "ta.atr needs a length"
+ },
+ "call_too_few_arguments_bgcolor": {
+  "dir": "cases",
+  "match": "'bgcolor' call argument count mismatch: requires 1~6, got 0",
+  "why": "bgcolor needs a color"
+ },
+ "call_too_few_arguments_color_rgb": {
+  "dir": "cases",
+  "match": "'color\\.rgb' call argument count mismatch: requires 3~4, got 2",
+  "why": "color.rgb needs red, green and blue"
+ },
+ "call_too_few_arguments_crossover": {
+  "dir": "cases",
+  "match": "'ta\\.crossover' call argument count mismatch: requires 2, 1 passed",
+  "why": "ta.crossover needs two series"
+ },
+ "call_too_few_arguments_ema": {
+  "dir": "cases",
+  "match": "'ta\\.ema' call argument count mismatch: requires 2, 1 passed",
+  "why": "ta.ema has no default for length"
+ },
+ "call_too_few_arguments_fill": {
+  "dir": "cases",
+  "match": "'fill' call argument count mismatch: requires 2~8, got 1",
+  "why": "fill needs two plots"
+ },
+ "call_too_few_arguments_highest": {
+  "dir": "cases",
+  "match": "'ta\\.highest' call argument count mismatch: requires 1\\.\\.2, 0 passed",
+  "why": "ta.highest needs at least a length"
+ },
+ "call_too_few_arguments_hline": {
+  "dir": "cases",
+  "match": "'hline' call argument count mismatch: requires 1~7, got 0",
+  "why": "hline needs a price"
+ },
+ "call_too_few_arguments_log": {
+  "dir": "cases",
+  "match": "'math\\.log' call argument count mismatch: requires 1, got 0",
+  "why": "math.log needs an argument"
+ },
+ "call_too_few_arguments_macd": {
+  "dir": "cases",
+  "match": "'ta\\.macd' call argument count mismatch: requires 4, 3 passed",
+  "why": "ta.macd needs four arguments"
+ },
+ "call_too_few_arguments_map_put": {
+  "dir": "cases",
+  "match": "'map\\.put' call argument count mismatch: 3 required, 2 passed",
+  "why": "map.put needs a value"
+ },
+ "call_too_few_arguments_math_avg": {
+  "dir": "cases",
+  "match": "'math\\.avg' call argument count mismatch: requires at least 2, got 0",
+  "why": "math.avg needs arguments"
+ },
+ "call_too_few_arguments_max": {
+  "dir": "cases",
+  "match": "'math\\.max' call argument count mismatch: requires at least 2, got 0",
+  "why": "math.max needs arguments"
+ },
+ "call_too_few_arguments_nz": {
+  "dir": "cases",
+  "match": "'nz' call argument count mismatch: requires 1~2, got 0",
+  "why": "nz needs a source"
+ },
+ "call_too_few_arguments_pivothigh": {
+  "dir": "cases",
+  "match": "'ta\\.pivothigh' call argument count mismatch: requires 2\\.\\.3, 1 passed",
+  "why": "ta.pivothigh needs leftbars and rightbars"
+ },
+ "call_too_few_arguments_plot": {
+  "dir": "cases",
+  "match": "'plot' call argument count mismatch: requires 1~15, got 0",
+  "why": "plot needs a series"
+ },
+ "call_too_few_arguments_plotshape": {
+  "dir": "cases",
+  "match": "'plotshape' call argument count mismatch: requires 1~13, got 0",
+  "why": "plotshape needs a series"
+ },
+ "call_too_few_arguments_pow": {
+  "dir": "cases",
+  "match": "'math\\.pow' call argument count mismatch: requires 2, got 1",
+  "why": "math.pow needs base and exponent"
+ },
+ "call_too_few_arguments_request_security": {
+  "dir": "cases",
+  "match": "'request\\.security' call argument count mismatch: requires 3~5 \\(symbol, timeframe",
+  "why": "request.security needs an expression"
+ },
+ "call_too_few_arguments_round": {
+  "dir": "cases",
+  "match": "'math\\.round' call argument count mismatch: requires 1~2, got 0",
+  "why": "math.round needs a number"
+ },
+ "call_too_few_arguments_rsi": {
+  "dir": "cases",
+  "match": "'ta\\.rsi' call argument count mismatch: requires 2, 1 passed",
+  "why": "ta.rsi has no default for length"
+ },
+ "call_too_few_arguments_sma": {
+  "dir": "cases",
+  "match": "'ta\\.sma' call argument count mismatch: requires 2, 1 passed",
+  "why": "ta.sma has no default for length"
+ },
+ "call_too_few_arguments_sqrt": {
+  "dir": "cases",
+  "match": "'math\\.sqrt' call argument count mismatch: requires 1, got 0",
+  "why": "math.sqrt needs an argument"
+ },
+ "call_too_few_arguments_stdev": {
+  "dir": "cases",
+  "match": "'ta\\.stdev' call argument count mismatch: requires 2\\.\\.3, 1 passed",
+  "why": "ta.stdev has no default for length"
+ },
+ "call_too_few_arguments_str_substring": {
+  "dir": "cases",
+  "match": "'str\\.substring' call argument count mismatch: 2~3 required, 1 passed",
+  "why": "str.substring needs a start index"
+ },
+ "call_too_few_arguments_str_tostring": {
+  "dir": "cases",
+  "match": "'str\\.tostring' call argument count mismatch: 1~2 required, 0 passed",
+  "why": "str.tostring needs a value"
+ },
+ "call_too_few_arguments_strategy_entry": {
+  "dir": "cases",
+  "match": "'strategy\\.entry' call argument count mismatch: requires 0~3 \\(id, direction\\[, qty",
+  "why": "strategy.entry needs an id and a direction"
+ },
+ "call_too_few_arguments_ta_barssince": {
+  "dir": "cases",
+  "match": "'ta\\.barssince' call argument count mismatch: requires 1, 0 passed",
+  "why": "ta.barssince needs a condition"
+ },
+ "call_too_few_arguments_ta_change": {
+  "dir": "cases",
+  "match": "'ta\\.change' call argument count mismatch: requires 1\\.\\.2, 0 passed",
+  "why": "ta.change needs a source"
+ },
+ "call_too_few_arguments_ta_cum": {
+  "dir": "cases",
+  "match": "'ta\\.cum' call argument count mismatch: requires 1, 0 passed",
+  "why": "ta.cum needs a source"
+ },
+ "call_too_few_arguments_ta_wma": {
+  "dir": "cases",
+  "match": "'ta\\.wma' call argument count mismatch: requires 2, 1 passed",
+  "why": "ta.wma needs a length"
+ },
+ "call_too_few_arguments_timestamp": {
+  "dir": "cases",
+  "match": "'timestamp' call argument count mismatch: requires 1 \\(dateString literal\\) or 3~7",
+  "why": "timestamp needs arguments"
+ },
+ "call_too_few_arguments_user_function": {
+  "dir": "cases",
+  "match": "'f' call argument count mismatch: requires 2~2, got 1",
+  "why": "a two-parameter user function called with one argument"
+ },
+ "call_too_few_arguments_valuewhen": {
+  "dir": "cases",
+  "match": "'ta\\.valuewhen' call argument count mismatch: requires 3, 2 passed",
+  "why": "ta.valuewhen needs an occurrence"
+ },
+ "call_too_many_arguments_abs": {
+  "dir": "cases",
+  "match": "'math\\.abs' call argument count mismatch: requires 1, got 2",
+  "why": "math.abs takes one argument"
+ },
+ "call_too_many_arguments_array_new_float": {
+  "dir": "cases",
+  "match": "'array\\.new_float' call argument count mismatch: 0~2 required, 3 passed",
+  "why": "array.new_float(size, initial_value) takes at most two arguments"
+ },
+ "call_too_many_arguments_array_size": {
+  "dir": "cases",
+  "match": "'array\\.size' call argument count mismatch: 1 required, 2 passed",
+  "why": "array.size takes only the array"
+ },
+ "call_too_many_arguments_barssince": {
+  "dir": "cases",
+  "match": "'ta\\.barssince' call argument count mismatch: requires 1, 2 passed",
+  "why": "ta.barssince takes one argument"
+ },
+ "call_too_many_arguments_crossover": {
+  "dir": "cases",
+  "match": "'ta\\.crossover' call argument count mismatch: requires 2, 3 passed",
+  "why": "ta.crossover takes two arguments"
+ },
+ "call_too_many_arguments_ema": {
+  "dir": "cases",
+  "match": "'ta\\.ema' call argument count mismatch: requires 2, 4 passed",
+  "why": "ta.ema(source, length) takes two arguments"
+ },
+ "call_too_many_arguments_floor": {
+  "dir": "cases",
+  "match": "'math\\.floor' call argument count mismatch: requires 1, got 2",
+  "why": "math.floor takes one argument"
+ },
+ "call_too_many_arguments_int_cast": {
+  "dir": "cases",
+  "match": "'int' call argument count mismatch: requires 1, got 2",
+  "why": "int(x) takes one argument"
+ },
+ "call_too_many_arguments_na": {
+  "dir": "cases",
+  "match": "'na' call argument count mismatch: requires 1, got 2",
+  "why": "na(x) takes one argument"
+ },
+ "call_too_many_arguments_nz": {
+  "dir": "cases",
+  "match": "'nz' call argument count mismatch: requires 1~2, got 3",
+  "why": "nz(source, replacement) takes at most two arguments"
+ },
+ "call_too_many_arguments_round": {
+  "dir": "cases",
+  "match": "'math\\.round' call argument count mismatch: requires 1~2, got 3",
+  "why": "math.round(number, precision) takes at most two arguments"
+ },
+ "call_too_many_arguments_rsi": {
+  "dir": "cases",
+  "match": "'ta\\.rsi' call argument count mismatch: requires 2, 3 passed",
+  "why": "ta.rsi(source, length) takes two arguments"
+ },
+ "call_too_many_arguments_sma": {
+  "dir": "cases",
+  "match": "'ta\\.sma' call argument count mismatch: requires 2, 3 passed",
+  "why": "ta.sma(source, length) takes two arguments"
+ },
+ "call_too_many_arguments_sqrt": {
+  "dir": "cases",
+  "match": "'math\\.sqrt' call argument count mismatch: requires 1, got 2",
+  "why": "math.sqrt takes one argument"
+ },
+ "call_too_many_arguments_str_length": {
+  "dir": "cases",
+  "match": "'str\\.length' call argument count mismatch: 1 required, 2 passed",
+  "why": "str.length takes one argument"
+ },
+ "call_too_many_arguments_tr": {
+  "dir": "cases",
+  "match": "'ta\\.tr' call argument count mismatch: requires 0\\.\\.1, 4 passed",
+  "why": "ta.tr takes at most one argument"
+ },
+ "call_too_many_arguments_udt_new": {
+  "dir": "cases",
+  "match": "'A\\.new' call argument count mismatch: at most 1, got 2",
+  "why": "A.new takes one argument per field"
+ },
+ "call_too_many_arguments_user_function": {
+  "dir": "cases",
+  "match": "'f' call argument count mismatch: requires 1~1, got 2",
+  "why": "a one-parameter user function called with two arguments"
+ },
+ "call_tuple_function_without_destructuring": {
+  "dir": "cases",
+  "match": "'ta\\.macd' returns 3 values, so it can only be called as the value of a tuple des",
+  "why": "ta.macd returns three values and cannot be assigned to one name"
+ },
+ "call_udt_constructor_ok": {
+  "dir": "near_miss",
+  "why": "twin of call_too_many_arguments_udt_new: A.new with one or two (the field count) arguments"
+ },
+ "call_unknown_array_member": {
+  "dir": "cases",
+  "match": "unsupported call: 'array\\.nothing'",
+  "why": "array has no nothing"
+ },
+ "call_unknown_function": {
+  "dir": "cases",
+  "match": "unknown function call: 'foo'",
+  "why": "a function that is not declared anywhere"
+ },
+ "call_unknown_function_statement": {
+  "dir": "cases",
+  "match": "unknown function call: 'foo'",
+  "why": "an undeclared function called as a statement"
+ },
+ "call_unknown_input_member": {
+  "dir": "cases",
+  "match": "unsupported call: 'input\\.nothing'",
+  "why": "input has no nothing"
+ },
+ "call_unknown_keyword_indicator": {
+  "dir": "cases",
+  "match": "unknown argument name for 'indicator': 'bogus'",
+  "why": "indicator has no parameter `bogus`"
+ },
+ "call_unknown_keyword_math_max": {
+  "dir": "cases",
+  "match": "keyword arguments \\('foo=\\.\\.\\.'\\) are only supported in 'TypeName\\.new\\(\\.\\.\\.\\)' UDT cons",
+  "why": "math.max takes no keyword arguments named foo"
+ },
+ "call_unknown_keyword_plot": {
+  "dir": "cases",
+  "match": "unknown argument name for 'plot': 'bogus'",
+  "why": "plot has no parameter `bogus`"
+ },
+ "call_unknown_keyword_ta": {
+  "dir": "cases",
+  "match": "argument name not found in 'ta\\.sma': 'bogus='",
+  "why": "ta.sma has no parameter `bogus`"
+ },
+ "call_unknown_keyword_tr": {
+  "dir": "cases",
+  "match": "keyword arguments \\('bogus=\\.\\.\\.'\\) are only supported in 'TypeName\\.new\\(\\.\\.\\.\\)' UDT co",
+  "why": "ta.tr has no parameter `bogus`"
+ },
+ "call_unknown_keyword_user_function": {
+  "dir": "cases",
+  "match": "unknown parameter name for 'f': 'b'",
+  "why": "a user function called with a parameter name it does not have"
+ },
+ "call_unknown_keyword_user_function_extra": {
+  "dir": "cases",
+  "match": "unknown parameter name for 'f': 'b'",
+  "why": "a user function called with one valid and one invalid parameter name"
+ },
+ "call_unknown_map_member": {
+  "dir": "cases",
+  "match": "unsupported call: 'map\\.nothing'",
+  "why": "map has no nothing"
+ },
+ "call_unknown_math_member": {
+  "dir": "cases",
+  "match": "unsupported call: 'math\\.foo'",
+  "why": "math has no foo"
+ },
+ "call_unknown_method_on_array": {
+  "dir": "cases",
+  "match": "unsupported call: 'a\\.nothing'",
+  "why": "an array has no method `nothing`"
+ },
+ "call_unknown_namespace": {
+  "dir": "cases",
+  "match": "unsupported call: 'tb\\.sma'",
+  "why": "tb is not a namespace"
+ },
+ "call_unknown_request_member": {
+  "dir": "cases",
+  "match": "unsupported call: 'request\\.nothing'",
+  "why": "request has no nothing"
+ },
+ "call_unknown_str_member": {
+  "dir": "cases",
+  "match": "unsupported call: 'str\\.nothing'",
+  "why": "str has no nothing"
+ },
+ "call_unknown_strategy_member": {
+  "dir": "cases",
+  "match": "unsupported call: 'strategy\\.nothing'",
+  "why": "strategy has no nothing"
+ },
+ "call_unknown_ta_member": {
+  "dir": "cases",
+  "match": "unsupported call: 'ta\\.sma2'",
+  "why": "ta has no function called sma2"
+ },
+ "call_user_function_default_arguments_ok": {
+  "dir": "near_miss",
+  "why": "twin of call_too_few_arguments_user_function: a default makes the argument optional; keywords name parameters that exist"
+ },
+ "call_v5_repeated_keyword_ok": {
+  "dir": "near_miss",
+  "why": "twin of call_keyword_repeated_v6_*: before v6 a repeated keyword is allowed and the first value wins"
+ },
+ "call_variable_is_not_callable": {
+  "dir": "cases",
+  "match": "unknown function call: 'y'",
+  "why": "calling a variable"
+ },
+ "lex_at_dollar_backtick_in_double_quoted_string_ok": {
+  "dir": "near_miss",
+  "why": "twin of lex_stray_at/dollar/backtick: the same characters inside a string are text (with \\\\ and \\\" escapes)"
+ },
+ "lex_at_dollar_backtick_in_single_quoted_string_ok": {
+  "dir": "near_miss",
+  "why": "twin of lex_stray_at: stray characters inside a single-quoted string that holds a double quote"
+ },
+ "lex_bang_alone": {
+  "dir": "cases",
+  "match": "unrecognized character '!' \\(U\\+0021\\)",
+  "why": "'!' is only valid inside '!='; negation is `not`"
+ },
+ "lex_bang_split_from_equals": {
+  "dir": "cases",
+  "match": "unrecognized character '!' \\(U\\+0021\\)",
+  "why": "'!=' written with a space is '!' then '='"
+ },
+ "lex_blank_and_whitespace_only_lines_ok": {
+  "dir": "near_miss",
+  "why": "blank and whitespace-only lines between statements"
+ },
+ "lex_block_comment_closed_ok": {
+  "dir": "near_miss",
+  "why": "twin of lex_unterminated_block_comment_*: the same comment closed (resin's lexer treats /* */ as a comment; whether TradingView does is not established in this repo) [resin-pinned by lexer.test.ts, not verified against TradingView]"
+ },
+ "lex_block_comment_inline_between_tokens_ok": {
+  "dir": "near_miss",
+  "why": "twin of lex_unterminated_block_comment_inline: closed on the same line [resin-pinned by lexer.test.ts, not verified against TradingView]"
+ },
+ "lex_bom_prefix_ok": {
+  "dir": "near_miss",
+  "why": "a byte-order mark before //@version [resin-pinned by lexer.test.ts, not verified against TradingView]",
+  "source": "﻿//@version=6\nindicator(\"t\")\nplot(close)\n"
+ },
+ "lex_bom_with_crlf_ok": {
+  "dir": "near_miss",
+  "why": "BOM and CRLF together (a Windows editor's UTF-8 file) [resin-pinned by lexer.test.ts, not verified against TradingView]",
+  "source": "﻿//@version=6\r\nindicator(\"t\")\r\nplot(close)\r\n"
+ },
+ "lex_closed_string_with_escaped_backslash_ok": {
+  "dir": "near_miss",
+  "why": "twin of lex_unterminated_escaped_closing_quote: an escaped backslash does not escape the closing quote"
+ },
+ "lex_closed_strings_both_quote_kinds_ok": {
+  "dir": "near_miss",
+  "why": "twin of lex_unterminated_mixed_quotes: each quote kind closed by its own kind"
+ },
+ "lex_color_literal_five_digits": {
+  "dir": "cases",
+  "match": "invalid color literal '#12345': expected #RRGGBB or #RRGGBBAA",
+  "why": "five hex digits is neither #RRGGBB nor #RRGGBBAA"
+ },
+ "lex_color_literal_nine_digits": {
+  "dir": "cases",
+  "match": "invalid color literal '#123456789': expected #RRGGBB or #RRGGBBAA",
+  "why": "nine hex digits is neither #RRGGBB nor #RRGGBBAA"
+ },
+ "lex_color_literal_one_digit": {
+  "dir": "cases",
+  "match": "invalid color literal '#1': expected #RRGGBB or #RRGGBBAA",
+  "why": "a color literal is #RRGGBB or #RRGGBBAA (codegen.ts documents exactly that); the lexer takes any number of hex digits"
+ },
+ "lex_color_literal_seven_digits": {
+  "dir": "cases",
+  "match": "invalid color literal '#1234567': expected #RRGGBB or #RRGGBBAA",
+  "why": "seven hex digits is neither #RRGGBB nor #RRGGBBAA"
+ },
+ "lex_color_literal_three_digits": {
+  "dir": "cases",
+  "match": "invalid color literal '#fff': expected #RRGGBB or #RRGGBBAA",
+  "why": "CSS-style short hex is not a Pine color literal"
+ },
+ "lex_color_literals_six_and_eight_digits_ok": {
+  "dir": "near_miss",
+  "why": "twin of lex_hash_*: #RRGGBB and #RRGGBBAA, either case"
+ },
+ "lex_control_char_del": {
+  "dir": "cases",
+  "match": "unrecognized character '' \\(U\\+007F\\)",
+  "why": "DEL (U+007F) trailing a statement",
+  "source": "//@version=6\nindicator(\"t\")\nx = 1\nplot(x)\n"
+ },
+ "lex_control_char_esc": {
+  "dir": "cases",
+  "match": "unrecognized character '\u001b' \\(U\\+001B\\)",
+  "why": "an ANSI escape (U+001B) pasted from a terminal",
+  "source": "//@version=6\nindicator(\"t\")\nx = \u001b[0m 1\nplot(x)\n"
+ },
+ "lex_control_char_soh": {
+  "dir": "cases",
+  "match": "unrecognized character '\u0001' \\(U\\+0001\\)",
+  "why": "a C0 control character (U+0001) between tokens",
+  "source": "//@version=6\nindicator(\"t\")\nx = \u0001 1\nplot(x)\n"
+ },
+ "lex_crlf_line_endings_ok": {
+  "dir": "near_miss",
+  "why": "CRLF source with a comment, a multi-line call and an if block [resin-pinned by lexer.test.ts, not verified against TradingView]",
+  "source": "//@version=5\nindicator(\"t\")\n//@version=5\r\nindicator(\"t\")\r\n// comment\r\nx = math.max(1,\r\n     2)\r\nif close > open\r\n    x := 3\r\nplot(x)\r\n"
+ },
+ "lex_curly_double_quote": {
+  "dir": "cases",
+  "match": "unrecognized character '“' \\(U\\+201C\\)",
+  "why": "word-processor curly double quotes are not string delimiters"
+ },
+ "lex_curly_single_quote": {
+  "dir": "cases",
+  "match": "unrecognized character '‘' \\(U\\+2018\\)",
+  "why": "word-processor curly single quotes are not string delimiters"
+ },
+ "lex_degree_sign": {
+  "dir": "cases",
+  "match": "unrecognized character '°' \\(U\\+00B0\\)",
+  "why": "a degree sign glued to a number"
+ },
+ "lex_ellipsis_character": {
+  "dir": "cases",
+  "match": "unrecognized character '…' \\(U\\+2026\\)",
+  "why": "U+2026 outside a string or comment"
+ },
+ "lex_em_dash": {
+  "dir": "cases",
+  "match": "unrecognized character '—' \\(U\\+2014\\)",
+  "why": "an em dash pasted where '-' belongs"
+ },
+ "lex_euro_sign": {
+  "dir": "cases",
+  "match": "unrecognized character '€' \\(U\\+20AC\\)",
+  "why": "a currency symbol outside a string or comment"
+ },
+ "lex_exponent_sign_without_digits_minus": {
+  "dir": "cases",
+  "match": "unexpected IDENTIFIER 'e' after the end of a statement",
+  "why": "`2e-` has no exponent digits (internal error, as for `1e`)"
+ },
+ "lex_exponent_sign_without_digits_plus": {
+  "dir": "cases",
+  "match": "unexpected IDENTIFIER 'e' after the end of a statement",
+  "why": "`1e+` has no exponent digits (internal error, as for `1e`)"
+ },
+ "lex_exponent_without_digits": {
+  "dir": "cases",
+  "match": "unexpected IDENTIFIER 'e' after the end of a statement",
+  "why": "`1e` has an exponent marker and no exponent; readNumber consumes it and codegen emits the invalid JavaScript literal `1e` (caught only by the final new Function check, as an internal error)"
+ },
+ "lex_fullwidth_parenthesis": {
+  "dir": "cases",
+  "match": "unrecognized character '（' \\(U\\+FF08\\)",
+  "why": "fullwidth parentheses (CJK input method) are not '(' and ')'"
+ },
+ "lex_hash_alone": {
+  "dir": "cases",
+  "match": "unrecognized character '#' \\(U\\+0023\\)",
+  "why": "'#' not followed by a hex digit is not a color literal and not a token"
+ },
+ "lex_hash_non_hex_color": {
+  "dir": "cases",
+  "match": "unrecognized character '#' \\(U\\+0023\\)",
+  "why": "'#' followed by non-hex letters is not a color literal"
+ },
+ "lex_ideographic_and_thin_spaces_ok": {
+  "dir": "near_miss",
+  "why": "other Unicode space separators between tokens [resin-pinned by lexer.test.ts, not verified against TradingView]",
+  "source": "//@version=6\nindicator(\"t\")\nx　= close + open\nplot(x)\n"
+ },
+ "lex_lone_cr_line_endings_ok": {
+  "dir": "near_miss",
+  "why": "old-Mac CR-only line endings are line breaks [resin-pinned by lexer.test.ts, not verified against TradingView]",
+  "source": "//@version=5\nindicator(\"t\")\n//@version=5\rindicator(\"t\")\rx = close\rplot(x)\r"
+ },
+ "lex_multiline_string_closed_ok": {
+  "dir": "near_miss",
+  "why": "twin of lex_unterminated_dq_then_code: a string that continues onto the next line and is closed there (the wild-corpus tooltip idiom the lexer documents) [resin-pinned by lexer.test.ts, not verified against TradingView]"
+ },
+ "lex_nbsp_between_tokens_ok": {
+  "dir": "near_miss",
+  "why": "twin of lex_stray_*: no-break spaces copied from a web page between tokens and at the end of a line [resin-pinned by lexer.test.ts, not verified against TradingView]",
+  "source": "//@version=6\nindicator(\"t\")\nx = close + open \nplot(x)\n"
+ },
+ "lex_no_trailing_newline_ok": {
+  "dir": "near_miss",
+  "why": "the last line has no line break"
+ },
+ "lex_nul_outside_string": {
+  "dir": "cases",
+  "match": "unrecognized character '\u0000' \\(U\\+0000\\)",
+  "why": "a NUL byte between tokens",
+  "source": "//@version=6\nindicator(\"t\")\nx = 1\u0000\nplot(x)\n"
+ },
+ "lex_number_double_dot": {
+  "dir": "cases",
+  "match": "unexpected NUMBER '\\.2' after the end of a statement",
+  "why": "'1..2' (range syntax) is two number tokens with no operator between them"
+ },
+ "lex_number_followed_by_letters": {
+  "dir": "cases",
+  "match": "unexpected IDENTIFIER 'abc' after the end of a statement",
+  "why": "a number glued to an identifier"
+ },
+ "lex_number_forms_ok": {
+  "dir": "near_miss",
+  "why": "twin of lex_number_*: exponent and leading-dot literals, as the wild corpus writes them (1e6, 5e2, 1e-10, .5)"
+ },
+ "lex_number_two_decimal_points": {
+  "dir": "cases",
+  "match": "unexpected NUMBER '\\.3' after the end of a statement",
+  "why": "a number with two decimal points"
+ },
+ "lex_stray_ampersand": {
+  "dir": "cases",
+  "match": "unrecognized character '&' \\(U\\+0026\\)",
+  "why": "'&' is not an operator; Pine spells it `and`"
+ },
+ "lex_stray_at": {
+  "dir": "cases",
+  "match": "unrecognized character '@' \\(U\\+0040\\)",
+  "why": "'@' outside a string or comment is not a Pine token; it used to be skipped, compiling as `x = close open`"
+ },
+ "lex_stray_at_in_call_args": {
+  "dir": "cases",
+  "match": "unrecognized character '@' \\(U\\+0040\\)",
+  "why": "'@' glued to a string inside call arguments"
+ },
+ "lex_stray_at_line_start": {
+  "dir": "cases",
+  "match": "unrecognized character '@' \\(U\\+0040\\)",
+  "why": "'@' opening a statement line (a pasted decorator / mention)"
+ },
+ "lex_stray_backslash": {
+  "dir": "cases",
+  "match": "unrecognized character '\\\\' \\(U\\+005C\\)",
+  "why": "a backslash outside a string is not a Pine token (no backslash line continuation)"
+ },
+ "lex_stray_backtick": {
+  "dir": "cases",
+  "match": "unrecognized character '`' \\(U\\+0060\\)",
+  "why": "backtick quoting (Markdown paste) is not a Pine token"
+ },
+ "lex_stray_caret": {
+  "dir": "cases",
+  "match": "unrecognized character '\\^' \\(U\\+005E\\)",
+  "why": "'^' is not an operator in Pine (math.pow is)"
+ },
+ "lex_stray_characters_in_comments_ok": {
+  "dir": "near_miss",
+  "why": "twin of every lex_stray_*: the characters in a // comment, a trailing comment and a //@ comment"
+ },
+ "lex_stray_dollar": {
+  "dir": "cases",
+  "match": "unrecognized character '\\$' \\(U\\+0024\\)",
+  "why": "'$' outside a string or comment"
+ },
+ "lex_stray_dollar_line_end": {
+  "dir": "cases",
+  "match": "unrecognized character '\\$' \\(U\\+0024\\)",
+  "why": "'$' trailing a complete statement"
+ },
+ "lex_stray_double_ampersand": {
+  "dir": "cases",
+  "match": "unrecognized character '&' \\(U\\+0026\\)",
+  "why": "'&&' is a C-ism; Pine spells it `and`"
+ },
+ "lex_stray_double_pipe": {
+  "dir": "cases",
+  "match": "unrecognized character '\\|' \\(U\\+007C\\)",
+  "why": "'||' is a C-ism; Pine spells it `or`"
+ },
+ "lex_stray_left_brace": {
+  "dir": "cases",
+  "match": "unrecognized character '\\{' \\(U\\+007B\\)",
+  "why": "'{' is not a Pine token (no brace blocks or literals)"
+ },
+ "lex_stray_pipe": {
+  "dir": "cases",
+  "match": "unrecognized character '\\|' \\(U\\+007C\\)",
+  "why": "'|' is not an operator; Pine spells it `or`"
+ },
+ "lex_stray_right_brace": {
+  "dir": "cases",
+  "match": "unrecognized character '\\}' \\(U\\+007D\\)",
+  "why": "'}' is not a Pine token"
+ },
+ "lex_stray_semicolon": {
+  "dir": "cases",
+  "match": "unrecognized character ';' \\(U\\+003B\\)",
+  "why": "';' statement terminator does not exist in Pine"
+ },
+ "lex_stray_semicolon_between": {
+  "dir": "cases",
+  "match": "unrecognized character ';' \\(U\\+003B\\)",
+  "why": "';' used to put two statements on a line (Pine uses ',')"
+ },
+ "lex_stray_tilde": {
+  "dir": "cases",
+  "match": "unrecognized character '~' \\(U\\+007E\\)",
+  "why": "'~' (bitwise not) does not exist in Pine"
+ },
+ "lex_string_holding_comment_markers_ok": {
+  "dir": "near_miss",
+  "why": "a string holding // and /* */ is text, not a comment"
+ },
+ "lex_tab_between_tokens_ok": {
+  "dir": "near_miss",
+  "why": "tabs as separators between tokens"
+ },
+ "lex_tab_indentation_ok": {
+  "dir": "near_miss",
+  "why": "tab-indented blocks (tab = 4 columns)"
+ },
+ "lex_trailing_comment_without_newline_ok": {
+  "dir": "near_miss",
+  "why": "the file ends inside a // comment"
+ },
+ "lex_unicode_in_comments_and_strings_ok": {
+  "dir": "near_miss",
+  "why": "twin of lex_curly_*/lex_em_dash/lex_euro_sign: the same characters in a comment and a string"
+ },
+ "lex_unicode_minus_sign": {
+  "dir": "cases",
+  "match": "unrecognized character '−' \\(U\\+2212\\)",
+  "why": "U+2212 MINUS SIGN pasted where '-' belongs"
+ },
+ "lex_unterminated_block_comment_eof": {
+  "dir": "cases",
+  "match": "unterminated block comment: '\\/\\*' is never closed by '\\*\\/'",
+  "why": "a '/*' comment with no '*/' used to drop the rest of the file silently"
+ },
+ "lex_unterminated_block_comment_inline": {
+  "dir": "cases",
+  "match": "unterminated block comment: '\\/\\*' is never closed by '\\*\\/'",
+  "why": "block comment opened after code on a line, never closed"
+ },
+ "lex_unterminated_block_comment_multiline": {
+  "dir": "cases",
+  "match": "unterminated block comment: '\\/\\*' is never closed by '\\*\\/'",
+  "why": "a multi-line block comment with no terminator"
+ },
+ "lex_unterminated_dq_in_call": {
+  "dir": "cases",
+  "match": "unterminated string: the \" opened here is never closed",
+  "why": "the closing quote is missing and the parenthesis is inside the string"
+ },
+ "lex_unterminated_dq_then_code": {
+  "dir": "cases",
+  "match": "unterminated string: the \" opened here is never closed",
+  "why": "a string with no closing quote used to swallow the rest of the file, dropping the plot silently"
+ },
+ "lex_unterminated_escaped_closing_quote": {
+  "dir": "cases",
+  "match": "unterminated string: the \" opened here is never closed",
+  "why": "the backslash escapes the last quote, so the string never closes"
+ },
+ "lex_unterminated_mixed_quotes": {
+  "dir": "cases",
+  "match": "unterminated string: the \" opened here is never closed",
+  "why": "opened with a double quote, 'closed' with a single quote"
+ },
+ "lex_unterminated_second_string": {
+  "dir": "cases",
+  "match": "unterminated string: the \" opened here is never closed",
+  "why": "the first string is fine, the second is never closed"
+ },
+ "lex_unterminated_sq_then_code": {
+  "dir": "cases",
+  "match": "unterminated string: the ' opened here is never closed",
+  "why": "single-quoted string never closed"
+ },
+ "lex_word_joiner_and_bom_inside_line_ok": {
+  "dir": "near_miss",
+  "why": "a word joiner and an interior BOM, both format characters [resin-pinned by lexer.test.ts, not verified against TradingView]",
+  "source": "//@version=6\nindicator(\"t\")\nx = close ⁠+ open ﻿\nplot(x)\n"
+ },
+ "lex_zero_width_space_between_tokens_ok": {
+  "dir": "near_miss",
+  "why": "twin of lex_control_char_*: zero-width spaces (format characters) copied from a web page [resin-pinned by lexer.test.ts, not verified against TradingView]",
+  "source": "//@version=6\nindicator(\"t\")\nx = close​ + open​\nplot(x)\n"
+ },
+ "name_builtin_namespaces_as_call_targets_ok": {
+  "dir": "near_miss",
+  "why": "twin of name_unknown_*: real namespace members"
+ },
+ "name_declared_before_use_ok": {
+  "dir": "near_miss",
+  "why": "twin of name_used_before_declaration"
+ },
+ "name_divide_assign_undeclared": {
+  "dir": "cases",
+  "match": "':=' can only be used on an already-declared variable \\(declare first with var or",
+  "why": "'/=' on a name that was never declared"
+ },
+ "name_duplicate_destructure_target": {
+  "dir": "cases",
+  "match": "duplicate name in tuple destructure targets: 'a'",
+  "why": "the same name twice among destructuring targets"
+ },
+ "name_function_declared_twice": {
+  "dir": "cases",
+  "match": "name conflicts with an existing declaration: 'f'",
+  "why": "two functions with the same name"
+ },
+ "name_function_local_not_visible_outside": {
+  "dir": "cases",
+  "match": "unknown identifier: 'q'",
+  "why": "a function-body variable is not visible outside the function"
+ },
+ "name_function_parameter_not_visible_outside": {
+  "dir": "cases",
+  "match": "unknown identifier: 'p'",
+  "why": "a function parameter is not visible outside the function"
+ },
+ "name_function_parameters_visible_inside_ok": {
+  "dir": "near_miss",
+  "why": "twin of name_function_*_not_visible_outside"
+ },
+ "name_function_used_as_value": {
+  "dir": "cases",
+  "match": "namespace access supported only as a call expression \\(e\\.g\\. ta\\.sma\\(\\.\\.\\.\\)\\): 'ta\\.sma",
+  "why": "a function reference without a call"
+ },
+ "name_identifiers_starting_with_keywords_ok": {
+  "dir": "near_miss",
+  "why": "twin of name_keyword_*: names that merely begin with a keyword"
+ },
+ "name_keyword_and_as_variable": {
+  "dir": "cases",
+  "match": "unexpected token ASSIGN \\(=\\)",
+  "why": "`and` is reserved"
+ },
+ "name_keyword_and_in_var_decl": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in var declaration, got AND \\(and\\)",
+  "why": "`and` after `var`"
+ },
+ "name_keyword_as_destructure_target": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in tuple destructure target, got IF \\(if\\)",
+  "why": "`if` as a destructuring target"
+ },
+ "name_keyword_as_enum_member": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in enum member, got IF \\(if\\)",
+  "why": "`if` as an enum member"
+ },
+ "name_keyword_as_enum_name": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in enum declaration, got IF \\(if\\)",
+  "why": "`if` as an enum name"
+ },
+ "name_keyword_as_for_in_variable": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in for-loop variable, got IF \\(if\\)",
+  "why": "`if` as a for-in variable"
+ },
+ "name_keyword_as_for_variable": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in for-loop variable, got IF \\(if\\)",
+  "why": "`if` as a loop counter"
+ },
+ "name_keyword_as_function_name_true": {
+  "dir": "cases",
+  "match": "not a callable target",
+  "why": "`true` as a function name"
+ },
+ "name_keyword_as_function_name_while": {
+  "dir": "cases",
+  "match": "expected an indented block under this header",
+  "why": "`while` as a function name"
+ },
+ "name_keyword_as_function_parameter_and": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in function parameter, got AND \\(and\\)",
+  "why": "`and` as a parameter name"
+ },
+ "name_keyword_as_function_parameter_true": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in function parameter, got BOOL \\(true\\)",
+  "why": "`true` as a parameter name"
+ },
+ "name_keyword_as_function_parameter_typed": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in function parameter, got BOOL \\(true\\)",
+  "why": "`true` as a typed parameter name"
+ },
+ "name_keyword_as_udt_field": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in type field \\(expected field name\\), got BOOL \\(true\\)",
+  "why": "`true` as a UDT field name"
+ },
+ "name_keyword_as_udt_name": {
+  "dir": "cases",
+  "match": "unexpected IF 'if' after the end of a statement",
+  "why": "`if` as a UDT name"
+ },
+ "name_keyword_break_as_variable": {
+  "dir": "cases",
+  "match": "unexpected ASSIGN '=' after the end of a statement",
+  "why": "`break` is reserved"
+ },
+ "name_keyword_continue_as_variable": {
+  "dir": "cases",
+  "match": "unexpected ASSIGN '=' after the end of a statement",
+  "why": "`continue` is reserved"
+ },
+ "name_keyword_else_as_variable": {
+  "dir": "cases",
+  "match": "unexpected token ELSE \\(else\\)",
+  "why": "`else` is reserved"
+ },
+ "name_keyword_else_in_var_decl": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in var declaration, got ELSE \\(else\\)",
+  "why": "`else` after `var`"
+ },
+ "name_keyword_false_as_variable": {
+  "dir": "cases",
+  "match": "unexpected ASSIGN '=' after the end of a statement",
+  "why": "`false` is a literal, not a name"
+ },
+ "name_keyword_for_as_variable": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in for-loop variable, got ASSIGN \\(=\\)",
+  "why": "`for` is reserved"
+ },
+ "name_keyword_if_as_variable": {
+  "dir": "cases",
+  "match": "unexpected token ASSIGN \\(=\\)",
+  "why": "`if` is reserved"
+ },
+ "name_keyword_in_typed_decl": {
+  "dir": "cases",
+  "match": "unexpected IF 'if' after the end of a statement",
+  "why": "`if` as the name of a typed declaration"
+ },
+ "name_keyword_not_as_variable": {
+  "dir": "cases",
+  "match": "unexpected token ASSIGN \\(=\\)",
+  "why": "`not` is reserved"
+ },
+ "name_keyword_or_as_variable": {
+  "dir": "cases",
+  "match": "unexpected token ASSIGN \\(=\\)",
+  "why": "`or` is reserved"
+ },
+ "name_keyword_switch_as_variable": {
+  "dir": "cases",
+  "match": "unexpected token ASSIGN \\(=\\)",
+  "why": "`switch` is reserved"
+ },
+ "name_keyword_true_as_destructure_target": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in tuple destructure target, got BOOL \\(true\\)",
+  "why": "`true` as a destructuring target"
+ },
+ "name_keyword_true_as_for_in_variable": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in for-loop variable, got BOOL \\(true\\)",
+  "why": "`true` as a for-in variable"
+ },
+ "name_keyword_true_as_for_variable": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in for-loop variable, got BOOL \\(true\\)",
+  "why": "`true` as a loop counter"
+ },
+ "name_keyword_true_as_variable": {
+  "dir": "cases",
+  "match": "unexpected ASSIGN '=' after the end of a statement",
+  "why": "`true` is a literal, not a name"
+ },
+ "name_keyword_true_in_typed_decl": {
+  "dir": "cases",
+  "match": "unexpected BOOL 'true' after the end of a statement",
+  "why": "`true` as the name of a typed declaration"
+ },
+ "name_keyword_true_in_var_decl": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in var declaration, got BOOL \\(true\\)",
+  "why": "`true` after `var`"
+ },
+ "name_keyword_while_as_variable": {
+  "dir": "cases",
+  "match": "unexpected token ASSIGN \\(=\\)",
+  "why": "`while` is reserved"
+ },
+ "name_keywords_that_are_valid_names_ok": {
+  "dir": "near_miss",
+  "why": "twin of name_keyword_*: `type` and `method` are valid variable names (wild-corpus idiom)"
+ },
+ "name_loop_counter_not_visible_after_loop": {
+  "dir": "cases",
+  "match": "unknown identifier: 'i'",
+  "why": "the loop counter is not visible after the loop"
+ },
+ "name_loop_counter_used_inside_loop_ok": {
+  "dir": "near_miss",
+  "why": "twin of name_loop_*_not_visible_after_loop: counter and local used inside the loop"
+ },
+ "name_loop_local_not_visible_after_loop": {
+  "dir": "cases",
+  "match": "unknown identifier: 'k'",
+  "why": "a variable declared inside a loop body is not visible after it"
+ },
+ "name_minus_assign_undeclared": {
+  "dir": "cases",
+  "match": "':=' can only be used on an already-declared variable \\(declare first with var or",
+  "why": "'-=' on a name that was never declared"
+ },
+ "name_modulo_assign_undeclared": {
+  "dir": "cases",
+  "match": "':=' can only be used on an already-declared variable \\(declare first with var or",
+  "why": "'%=' on a name that was never declared"
+ },
+ "name_namespace_ta_used_as_value": {
+  "dir": "cases",
+  "match": "unknown identifier: 'ta'",
+  "why": "a namespace is not a value"
+ },
+ "name_namespace_used_as_value": {
+  "dir": "cases",
+  "match": "unknown identifier: 'math'",
+  "why": "a namespace is not a value"
+ },
+ "name_not_visible_after_if_block": {
+  "dir": "cases",
+  "match": "unknown identifier: 'a'",
+  "why": "a variable declared inside an `if` block is not visible after it"
+ },
+ "name_plus_assign_undeclared": {
+  "dir": "cases",
+  "match": "':=' can only be used on an already-declared variable \\(declare first with var or",
+  "why": "'+=' on a name that was never declared"
+ },
+ "name_reassign_after_declaration_ok": {
+  "dir": "near_miss",
+  "why": "twin of name_*_assign_undeclared: every compound operator on a declared name"
+ },
+ "name_reassign_builtin_close": {
+  "dir": "cases",
+  "match": "':=' can only be used on an already-declared variable \\(declare first with var or",
+  "why": "built-in series cannot be reassigned"
+ },
+ "name_reassign_name_declared_only_in_inner_scope": {
+  "dir": "cases",
+  "match": "':=' can only be used on an already-declared variable \\(declare first with var or",
+  "why": "':=' reaching a name that only exists inside a finished block"
+ },
+ "name_reassign_outer_variable_in_block_ok": {
+  "dir": "near_miss",
+  "why": "twin of name_reassign_name_declared_only_in_inner_scope: the name is declared in the outer scope"
+ },
+ "name_reassign_undeclared": {
+  "dir": "cases",
+  "match": "':=' can only be used on an already-declared variable \\(declare first with var or",
+  "why": "':=' on a name that was never declared"
+ },
+ "name_reassign_undeclared_in_block": {
+  "dir": "cases",
+  "match": "':=' can only be used on an already-declared variable \\(declare first with var or",
+  "why": "':=' on an undeclared name inside a block"
+ },
+ "name_shadowing_in_nested_scope_ok": {
+  "dir": "near_miss",
+  "why": "a nested scope and a function parameter may reuse a name"
+ },
+ "name_starts_with_digit": {
+  "dir": "cases",
+  "match": "unexpected IDENTIFIER 'x' after the end of a statement",
+  "why": "a name cannot start with a digit"
+ },
+ "name_times_assign_undeclared": {
+  "dir": "cases",
+  "match": "':=' can only be used on an already-declared variable \\(declare first with var or",
+  "why": "'*=' on a name that was never declared"
+ },
+ "name_undeclared_endif_keyword": {
+  "dir": "cases",
+  "match": "unknown identifier: 'endif'",
+  "why": "`endif` is not a Pine keyword, so it is an undeclared name"
+ },
+ "name_undeclared_in_call": {
+  "dir": "cases",
+  "match": "unknown identifier: 'foo'",
+  "why": "an identifier that was never declared"
+ },
+ "name_undeclared_in_condition": {
+  "dir": "cases",
+  "match": "unknown identifier: 'foo'",
+  "why": "an undeclared identifier in an `if` condition"
+ },
+ "name_undeclared_in_expression": {
+  "dir": "cases",
+  "match": "unknown identifier: 'foo'",
+  "why": "an undeclared identifier in an expression"
+ },
+ "name_undeclared_in_for_bound": {
+  "dir": "cases",
+  "match": "unknown identifier: 'foo'",
+  "why": "an undeclared identifier as a loop bound"
+ },
+ "name_undeclared_in_function_body": {
+  "dir": "cases",
+  "match": "unknown identifier: 'foo'",
+  "why": "an undeclared identifier inside a function body"
+ },
+ "name_undeclared_in_index": {
+  "dir": "cases",
+  "match": "unknown identifier: 'foo'",
+  "why": "an undeclared identifier as a history offset"
+ },
+ "name_undeclared_in_string_format": {
+  "dir": "cases",
+  "match": "unknown identifier: 'foo'",
+  "why": "an undeclared identifier as a format argument"
+ },
+ "name_undeclared_in_switch_subject": {
+  "dir": "cases",
+  "match": "unknown identifier: 'foo'",
+  "why": "an undeclared identifier as a switch subject"
+ },
+ "name_undeclared_in_ta_source": {
+  "dir": "cases",
+  "match": "unknown identifier: 'foo'",
+  "why": "an undeclared identifier as a ta.* source"
+ },
+ "name_undeclared_in_ternary": {
+  "dir": "cases",
+  "match": "unknown identifier: 'foo'",
+  "why": "an undeclared identifier as a ternary condition"
+ },
+ "name_undeclared_in_tuple_source": {
+  "dir": "cases",
+  "match": "unknown identifier: 'foo'",
+  "why": "an undeclared identifier as a tuple-returning call's source"
+ },
+ "name_unknown_barstate_member": {
+  "dir": "cases",
+  "match": "namespace access supported only as a call expression \\(e\\.g\\. ta\\.sma\\(\\.\\.\\.\\)\\): 'barsta",
+  "why": "barstate has no member `nothing`"
+ },
+ "name_unknown_color_member": {
+  "dir": "cases",
+  "match": "namespace access supported only as a call expression \\(e\\.g\\. ta\\.sma\\(\\.\\.\\.\\)\\): 'color\\.",
+  "why": "color has no member `nothing`"
+ },
+ "name_unknown_for_in_iterable": {
+  "dir": "cases",
+  "match": "unknown identifier: 'nothing'",
+  "why": "an undeclared name as a for-in iterable"
+ },
+ "name_unknown_math_member_value": {
+  "dir": "cases",
+  "match": "namespace access supported only as a call expression \\(e\\.g\\. ta\\.sma\\(\\.\\.\\.\\)\\): 'math\\.n",
+  "why": "math has no member `nothing`"
+ },
+ "name_unknown_namespace_member_value": {
+  "dir": "cases",
+  "match": "namespace access supported only as a call expression \\(e\\.g\\. ta\\.sma\\(\\.\\.\\.\\)\\): 'ta\\.not",
+  "why": "ta has no member `nothing`"
+ },
+ "name_unknown_series_field": {
+  "dir": "cases",
+  "match": "namespace access supported only as a call expression \\(e\\.g\\. ta\\.sma\\(\\.\\.\\.\\)\\): 'close\\.",
+  "why": "a float series has no fields"
+ },
+ "name_unknown_syminfo_member": {
+  "dir": "cases",
+  "match": "namespace access supported only as a call expression \\(e\\.g\\. ta\\.sma\\(\\.\\.\\.\\)\\): 'syminf",
+  "why": "syminfo has no member `nothing`"
+ },
+ "name_unknown_timeframe_member": {
+  "dir": "cases",
+  "match": "namespace access supported only as a call expression \\(e\\.g\\. ta\\.sma\\(\\.\\.\\.\\)\\): 'timefr",
+  "why": "timeframe has no member `nothing`"
+ },
+ "name_used_before_declaration": {
+  "dir": "cases",
+  "match": "unknown identifier: 'x'",
+  "why": "a name used one line before its declaration"
+ },
+ "name_var_declared_twice": {
+  "dir": "cases",
+  "match": "duplicate var declaration: 'x'",
+  "why": "the same `var` name declared twice in one scope"
+ },
+ "name_var_reassign_with_walrus_ok": {
+  "dir": "near_miss",
+  "why": "twin of name_var_reassigned_with_equals"
+ },
+ "name_var_reassigned_with_equals": {
+  "dir": "cases",
+  "match": "variable declared with var cannot be reassigned with '=', use ':=': 'x'",
+  "why": "a `var` variable redeclared with '=' instead of ':='"
+ },
+ "syntax_and_and": {
+  "dir": "cases",
+  "match": "unexpected token AND \\(and\\)",
+  "why": "`and` written twice in a row, so the second has no left operand"
+ },
+ "syntax_annotation_between_block_header_and_body_ok": {
+  "dir": "near_miss",
+  "why": "//@ annotations inside an indented block"
+ },
+ "syntax_annotations_between_statements_ok": {
+  "dir": "near_miss",
+  "why": "twin of lex_stray_at: //@ annotation lines between statements"
+ },
+ "syntax_assignment_to_call": {
+  "dir": "cases",
+  "match": "unexpected ASSIGN '=' after the end of a statement",
+  "why": "a call is not an assignment target"
+ },
+ "syntax_assignment_to_expression": {
+  "dir": "cases",
+  "match": "unexpected ASSIGN '=' after the end of a statement",
+  "why": "an arithmetic expression is not an assignment target"
+ },
+ "syntax_assignment_to_number": {
+  "dir": "cases",
+  "match": "unexpected ASSIGN '=' after the end of a statement",
+  "why": "a number literal is not an assignment target"
+ },
+ "syntax_assignment_without_target": {
+  "dir": "cases",
+  "match": "unexpected ASSIGN '=' after the end of a statement",
+  "why": "'=' with nothing on the left"
+ },
+ "syntax_assignment_without_value_eof": {
+  "dir": "cases",
+  "match": "unexpected token EOF \\(\\)",
+  "why": "'=' with nothing on the right, end of file"
+ },
+ "syntax_blank_line_inside_block_ok": {
+  "dir": "near_miss",
+  "why": "a blank line inside a block"
+ },
+ "syntax_block_comment_terminator_alone": {
+  "dir": "cases",
+  "match": "unexpected token SLASH \\(\\/\\)",
+  "why": "a stray '*/' (a comment terminator with no opener)"
+ },
+ "syntax_break_with_operand": {
+  "dir": "cases",
+  "match": "unexpected NUMBER '1' after the end of a statement",
+  "why": "`break` takes no operand"
+ },
+ "syntax_call_double_comma": {
+  "dir": "cases",
+  "match": "unexpected token COMMA \\(,\\)",
+  "why": "an empty argument between two commas"
+ },
+ "syntax_call_leading_comma": {
+  "dir": "cases",
+  "match": "unexpected token COMMA \\(,\\)",
+  "why": "a comma before the first argument"
+ },
+ "syntax_chained_assignment": {
+  "dir": "cases",
+  "match": "unexpected ASSIGN '=' after the end of a statement",
+  "why": "Pine has no chained assignment"
+ },
+ "syntax_comma_chain_continued_on_next_line_ok": {
+  "dir": "near_miss",
+  "why": "a ',' chain whose second statement is on the next line"
+ },
+ "syntax_comma_chained_statements_ok": {
+  "dir": "near_miss",
+  "why": "twin of lex_stray_semicolon_between: statements chained with ','"
+ },
+ "syntax_comment_only_line_inside_block_ok": {
+  "dir": "near_miss",
+  "why": "a comment-only line inside a block"
+ },
+ "syntax_compound_assign_to_call": {
+  "dir": "cases",
+  "match": "unexpected PLUS_ASSIGN '\\+=' after the end of a statement",
+  "why": "'+=' on a function call, which is not an assignable name"
+ },
+ "syntax_compound_assign_to_number": {
+  "dir": "cases",
+  "match": "unexpected PLUS_ASSIGN '\\+=' after the end of a statement",
+  "why": "'+=' needs a name on the left"
+ },
+ "syntax_continue_with_operand": {
+  "dir": "cases",
+  "match": "unexpected IDENTIFIER 'x' after the end of a statement",
+  "why": "`continue` takes no operand"
+ },
+ "syntax_dangling_and_eof": {
+  "dir": "cases",
+  "match": "unexpected token EOF \\(\\)",
+  "why": "`and` with no right operand, end of file"
+ },
+ "syntax_dangling_comparison_eof": {
+  "dir": "cases",
+  "match": "unexpected token EOF \\(\\)",
+  "why": "comparison with no right operand, end of file"
+ },
+ "syntax_dangling_or_eof": {
+  "dir": "cases",
+  "match": "unexpected token EOF \\(\\)",
+  "why": "`or` with no right operand, end of file"
+ },
+ "syntax_dangling_plus_eof": {
+  "dir": "cases",
+  "match": "unexpected token EOF \\(\\)",
+  "why": "binary operator with no right operand, end of file"
+ },
+ "syntax_decrement_operator": {
+  "dir": "cases",
+  "match": "unexpected token EOF \\(\\)",
+  "why": "'--' does not exist in Pine"
+ },
+ "syntax_destructure_nested_targets": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in tuple destructure target, got LBRACKET \\(\\[\\)",
+  "why": "nested destructuring targets"
+ },
+ "syntax_destructure_number_target": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in tuple destructure target, got NUMBER \\(1\\)",
+  "why": "a number among the destructuring targets"
+ },
+ "syntax_dot_without_member": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER after '\\.', got NEWLINE \\(\\\\n\\)",
+  "why": "'.' with no member name"
+ },
+ "syntax_double_dot": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER after '\\.', got DOT \\(\\.\\)",
+  "why": "two dots in a member access"
+ },
+ "syntax_double_equals_assignment": {
+  "dir": "cases",
+  "match": "unexpected token ASSIGN \\(=\\)",
+  "why": "'= =' (a mistyped '==')"
+ },
+ "syntax_double_fat_arrow": {
+  "dir": "cases",
+  "match": "unexpected token FAT_ARROW \\(=>\\)",
+  "why": "'=> =>' in a function declaration"
+ },
+ "syntax_double_operator_plus_star": {
+  "dir": "cases",
+  "match": "unexpected token STAR \\(\\*\\)",
+  "why": "two binary operators in a row"
+ },
+ "syntax_double_operator_star_slash": {
+  "dir": "cases",
+  "match": "unexpected token SLASH \\(\\/\\)",
+  "why": "two binary operators in a row"
+ },
+ "syntax_elif_keyword": {
+  "dir": "cases",
+  "match": "unexpected IDENTIFIER 'close' after the end of a statement",
+  "why": "`elif` is Python; Pine writes `else if`"
+ },
+ "syntax_else_after_plain_statement": {
+  "dir": "cases",
+  "match": "unexpected token ELSE \\(else\\)",
+  "why": "`else` after a statement that is not an `if`"
+ },
+ "syntax_else_if_without_body": {
+  "dir": "cases",
+  "match": "expected an indented block under this header, got IDENTIFIER 'plot'",
+  "why": "`else if` with no body"
+ },
+ "syntax_else_if_without_condition": {
+  "dir": "cases",
+  "match": "unexpected token NEWLINE \\(\\\\n\\)",
+  "why": "`else if` with no condition"
+ },
+ "syntax_else_twice": {
+  "dir": "cases",
+  "match": "unexpected token ELSE \\(else\\)",
+  "why": "two `else` branches on one `if`"
+ },
+ "syntax_else_with_condition": {
+  "dir": "cases",
+  "match": "expected an indented block under this header",
+  "why": "`else` followed by a condition (should be `else if`)"
+ },
+ "syntax_else_without_body": {
+  "dir": "cases",
+  "match": "expected an indented block under this header, got IDENTIFIER 'plot'",
+  "why": "`else` with no body"
+ },
+ "syntax_else_without_if": {
+  "dir": "cases",
+  "match": "unexpected token ELSE \\(else\\)",
+  "why": "`else` with no `if` before it"
+ },
+ "syntax_elvis_operator": {
+  "dir": "cases",
+  "match": "unexpected token COLON \\(:\\)",
+  "why": "'?:' does not exist in Pine"
+ },
+ "syntax_empty_group": {
+  "dir": "cases",
+  "match": "unexpected token RPAREN \\(\\)\\)",
+  "why": "'()' is not an expression"
+ },
+ "syntax_empty_index": {
+  "dir": "cases",
+  "match": "unexpected token RBRACKET \\(\\]\\)",
+  "why": "'[]' with no offset"
+ },
+ "syntax_extra_close_after_group": {
+  "dir": "cases",
+  "match": "unexpected RPAREN '\\)' after the end of a statement",
+  "why": "')' with nothing to close"
+ },
+ "syntax_extra_close_bracket": {
+  "dir": "cases",
+  "match": "unexpected RBRACKET '\\]' after the end of a statement",
+  "why": "']' with nothing to close"
+ },
+ "syntax_extra_close_paren": {
+  "dir": "cases",
+  "match": "unexpected RPAREN '\\)' after the end of a statement",
+  "why": "one ')' too many"
+ },
+ "syntax_fat_arrow_in_expression": {
+  "dir": "cases",
+  "match": "unexpected FAT_ARROW '=>' after the end of a statement",
+  "why": "'=>' inside an expression"
+ },
+ "syntax_for_by_and_while_ok": {
+  "dir": "near_miss",
+  "why": "twin of syntax_for_*/syntax_while_*: complete loops with by, break/continue"
+ },
+ "syntax_for_by_before_to": {
+  "dir": "cases",
+  "match": "expected TO in for-loop \\(expected 'to'\\), got BY \\(by\\)",
+  "why": "`by` before `to`"
+ },
+ "syntax_for_by_without_step": {
+  "dir": "cases",
+  "match": "unexpected token NEWLINE \\(\\\\n\\)",
+  "why": "`by` with no step"
+ },
+ "syntax_for_in_and_generics_ok": {
+  "dir": "near_miss",
+  "why": "twin of syntax_empty_array_generic: array.new<float> / map.new<string, float> and both for-in forms"
+ },
+ "syntax_for_in_without_body": {
+  "dir": "cases",
+  "match": "expected an indented block under this header, got IDENTIFIER 'plot'",
+  "why": "`for ... in` header with no body"
+ },
+ "syntax_for_to_twice": {
+  "dir": "cases",
+  "match": "expected an indented block under this header",
+  "why": "a second `to` in one header"
+ },
+ "syntax_for_without_assign": {
+  "dir": "cases",
+  "match": "expected ASSIGN in for-loop \\(expected '='\\), got NUMBER \\(0\\)",
+  "why": "`for` header missing '='"
+ },
+ "syntax_for_without_body": {
+  "dir": "cases",
+  "match": "expected an indented block under this header, got IDENTIFIER 'plot'",
+  "why": "`for` header with no body"
+ },
+ "syntax_for_without_end_value": {
+  "dir": "cases",
+  "match": "unexpected token NEWLINE \\(\\\\n\\)",
+  "why": "`for` header whose `to` has no value"
+ },
+ "syntax_for_without_to": {
+  "dir": "cases",
+  "match": "expected TO in for-loop \\(expected 'to'\\), got NEWLINE \\(\\\\n\\)",
+  "why": "`for` header with no `to`"
+ },
+ "syntax_for_without_variable": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in for-loop variable, got ASSIGN \\(=\\)",
+  "why": "`for` header with no loop variable"
+ },
+ "syntax_function_body_leftover_paren": {
+  "dir": "cases",
+  "match": "unexpected RPAREN '\\)' after the end of a statement",
+  "why": "a stray ')' after a one-line function body"
+ },
+ "syntax_function_empty_body_eof": {
+  "dir": "cases",
+  "match": "unexpected token EOF \\(\\)",
+  "why": "a function declaration with no body, end of file"
+ },
+ "syntax_function_numeric_parameter": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in function parameter, got NUMBER \\(1\\)",
+  "why": "a number where a parameter name belongs"
+ },
+ "syntax_function_unclosed_parameters": {
+  "dir": "cases",
+  "match": "expected RPAREN to close call arguments, got FAT_ARROW \\(=>\\)",
+  "why": "the parameter list is never closed"
+ },
+ "syntax_function_with_block_body_ok": {
+  "dir": "near_miss",
+  "why": "twin of syntax_function_*: a function with an indented body whose last expression is the value"
+ },
+ "syntax_function_with_equals_sign": {
+  "dir": "cases",
+  "match": "unexpected ASSIGN '=' after the end of a statement",
+  "why": "functions are declared with '=>', not '='"
+ },
+ "syntax_function_without_parameter_list": {
+  "dir": "cases",
+  "match": "unexpected FAT_ARROW '=>' after the end of a statement",
+  "why": "a function declaration with no parameter list"
+ },
+ "syntax_if_dangling_condition": {
+  "dir": "cases",
+  "match": "unexpected token EOF \\(\\)",
+  "why": "`if` whose condition ends in an operator, end of file"
+ },
+ "syntax_if_else_if_else_ok": {
+  "dir": "near_miss",
+  "why": "twin of syntax_else_*: a well-formed if / else if / else"
+ },
+ "syntax_if_with_only_a_comment_as_body": {
+  "dir": "cases",
+  "match": "expected an indented block under this header, got IDENTIFIER 'plot'",
+  "why": "a block that holds only a comment is an empty block"
+ },
+ "syntax_if_without_body_at_eof": {
+  "dir": "cases",
+  "match": "expected an indented block under this header, got EOF",
+  "why": "`if` header and nothing after it. Pine has no empty block."
+ },
+ "syntax_if_without_body_next_statement_at_same_indent": {
+  "dir": "cases",
+  "match": "expected an indented block under this header, got IDENTIFIER 'plot'",
+  "why": "the line after the `if` header is not indented, so the `if` has no body; the plot is silently a separate top-level statement"
+ },
+ "syntax_if_without_condition": {
+  "dir": "cases",
+  "match": "unexpected token NEWLINE \\(\\\\n\\)",
+  "why": "`if` with no condition"
+ },
+ "syntax_import_alias_without_name": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in import alias, got NEWLINE \\(\\\\n\\)",
+  "why": "`as` with no alias"
+ },
+ "syntax_import_without_path": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in import path, got NEWLINE \\(\\\\n\\)",
+  "why": "`import` with no library path"
+ },
+ "syntax_increment_operator": {
+  "dir": "cases",
+  "match": "unexpected token EOF \\(\\)",
+  "why": "'++' does not exist in Pine"
+ },
+ "syntax_index_dangling_operator": {
+  "dir": "cases",
+  "match": "unexpected token RBRACKET \\(\\]\\)",
+  "why": "history offset ends in an operator"
+ },
+ "syntax_index_range": {
+  "dir": "cases",
+  "match": "expected RBRACKET to close index expression, got NUMBER \\(\\.2\\)",
+  "why": "history index ranges do not exist"
+ },
+ "syntax_index_slice": {
+  "dir": "cases",
+  "match": "expected RBRACKET to close index expression, got COLON \\(:\\)",
+  "why": "slice syntax does not exist"
+ },
+ "syntax_index_two_offsets": {
+  "dir": "cases",
+  "match": "expected RBRACKET to close index expression, got COMMA \\(,\\)",
+  "why": "history index takes one offset"
+ },
+ "syntax_inline_python_ternary": {
+  "dir": "cases",
+  "match": "unexpected IF 'if' after the end of a statement",
+  "why": "`a if c else b` is Python; Pine uses `c ? a : b`"
+ },
+ "syntax_kwarg_dotted_name": {
+  "dir": "cases",
+  "match": "expected RPAREN to close call arguments, got ASSIGN \\(=\\)",
+  "why": "a dotted name as a keyword-argument name"
+ },
+ "syntax_kwarg_number_name": {
+  "dir": "cases",
+  "match": "expected RPAREN to close call arguments, got ASSIGN \\(=\\)",
+  "why": "a number as a keyword-argument name"
+ },
+ "syntax_kwarg_string_name": {
+  "dir": "cases",
+  "match": "expected RPAREN to close call arguments, got ASSIGN \\(=\\)",
+  "why": "a string as a keyword-argument name"
+ },
+ "syntax_kwarg_without_name": {
+  "dir": "cases",
+  "match": "unexpected token ASSIGN \\(=\\)",
+  "why": "a keyword argument with no name"
+ },
+ "syntax_kwarg_without_value": {
+  "dir": "cases",
+  "match": "unexpected token RPAREN \\(\\)\\)",
+  "why": "a keyword argument with no value"
+ },
+ "syntax_leading_and": {
+  "dir": "cases",
+  "match": "unexpected token AND \\(and\\)",
+  "why": "`and` with no left operand"
+ },
+ "syntax_leading_comma_continuation_ok": {
+  "dir": "near_miss",
+  "why": "a chained statement continued with a leading ','"
+ },
+ "syntax_leading_dot": {
+  "dir": "cases",
+  "match": "unexpected token DOT \\(\\.\\)",
+  "why": "a member access with no object"
+ },
+ "syntax_leading_dot_method_chain_ok": {
+  "dir": "near_miss",
+  "why": "a method call continued with a leading '.' on the next line"
+ },
+ "syntax_leading_fat_arrow": {
+  "dir": "cases",
+  "match": "unexpected token FAT_ARROW \\(=>\\)",
+  "why": "'=>' with no function header"
+ },
+ "syntax_leading_star": {
+  "dir": "cases",
+  "match": "unexpected token STAR \\(\\*\\)",
+  "why": "binary operator with no left operand"
+ },
+ "syntax_lone_colon": {
+  "dir": "cases",
+  "match": "unexpected token COLON \\(:\\)",
+  "why": "':' with nothing around it"
+ },
+ "syntax_missing_comma_args": {
+  "dir": "cases",
+  "match": "expected RPAREN to close call arguments, got IDENTIFIER \\(open\\)",
+  "why": "two arguments, no comma"
+ },
+ "syntax_missing_comma_before_keyword_arg": {
+  "dir": "cases",
+  "match": "expected RPAREN to close call arguments, got IDENTIFIER \\(color\\)",
+  "why": "no comma between two keyword arguments"
+ },
+ "syntax_missing_comma_math_max": {
+  "dir": "cases",
+  "match": "expected RPAREN to close call arguments, got NUMBER \\(2\\)",
+  "why": "no comma between positional arguments"
+ },
+ "syntax_missing_operator_after_call": {
+  "dir": "cases",
+  "match": "unexpected NUMBER '2' after the end of a statement",
+  "why": "a call then a number, no operator"
+ },
+ "syntax_missing_operator_after_index": {
+  "dir": "cases",
+  "match": "unexpected IDENTIFIER 'open' after the end of a statement",
+  "why": "operand after a history reference, no operator"
+ },
+ "syntax_missing_operator_booleans": {
+  "dir": "cases",
+  "match": "unexpected BOOL 'false' after the end of a statement",
+  "why": "two bool literals, no operator"
+ },
+ "syntax_missing_operator_ident_number": {
+  "dir": "cases",
+  "match": "unexpected NUMBER '1' after the end of a statement",
+  "why": "identifier then number, no operator"
+ },
+ "syntax_missing_operator_idents": {
+  "dir": "cases",
+  "match": "unexpected IDENTIFIER 'open' after the end of a statement",
+  "why": "two operands, no operator: used to compile as `x = close` plus a separate statement `open`"
+ },
+ "syntax_missing_operator_numbers": {
+  "dir": "cases",
+  "match": "unexpected NUMBER '2' after the end of a statement",
+  "why": "two number literals, no operator"
+ },
+ "syntax_missing_operator_strings": {
+  "dir": "cases",
+  "match": "unexpected STRING 'b' after the end of a statement",
+  "why": "two string literals, no operator (no implicit concatenation)"
+ },
+ "syntax_missing_operator_two_statements_one_line": {
+  "dir": "cases",
+  "match": "unexpected IDENTIFIER 'plot' after the end of a statement",
+  "why": "two statements on one line with no ',' between"
+ },
+ "syntax_multiline_call_arguments_ok": {
+  "dir": "near_miss",
+  "why": "twin of syntax_unclosed_paren_*: a call whose arguments sit on several oddly indented lines inside the parentheses"
+ },
+ "syntax_multiline_group_ok": {
+  "dir": "near_miss",
+  "why": "twin of syntax_unclosed_group: a grouped expression spanning lines"
+ },
+ "syntax_nested_blocks_dedent_ok": {
+  "dir": "near_miss",
+  "why": "nested blocks closing at different depths"
+ },
+ "syntax_not_as_binary_operator": {
+  "dir": "cases",
+  "match": "unexpected NOT 'not' after the end of a statement",
+  "why": "`not` used as a binary operator"
+ },
+ "syntax_not_equal_angle_brackets": {
+  "dir": "cases",
+  "match": "unexpected token GT \\(>\\)",
+  "why": "'<>' is not Pine's inequality ('!=')"
+ },
+ "syntax_not_without_operand": {
+  "dir": "cases",
+  "match": "unexpected token EOF \\(\\)",
+  "why": "`not` with nothing to negate, end of file"
+ },
+ "syntax_null_coalescing": {
+  "dir": "cases",
+  "match": "unexpected token QUESTION \\(\\?\\)",
+  "why": "'??' does not exist in Pine (nz / na do)"
+ },
+ "syntax_one_line_for": {
+  "dir": "cases",
+  "match": "expected an indented block under this header",
+  "why": "a `for` body on the header line"
+ },
+ "syntax_one_line_function_then_statement_ok": {
+  "dir": "near_miss",
+  "why": "a statement right after a one-line function"
+ },
+ "syntax_one_line_functions_chained_ok": {
+  "dir": "near_miss",
+  "why": "one-line functions end on their own line break; the next declaration follows directly"
+ },
+ "syntax_one_line_if": {
+  "dir": "cases",
+  "match": "expected an indented block under this header",
+  "why": "an `if` body on the header line (Pine needs an indented block)"
+ },
+ "syntax_one_line_while": {
+  "dir": "cases",
+  "match": "expected an indented block under this header",
+  "why": "a `while` body on the header line"
+ },
+ "syntax_param_default_missing_value": {
+  "dir": "cases",
+  "match": "unexpected token RPAREN \\(\\)\\)",
+  "why": "a parameter default with no value"
+ },
+ "syntax_param_double_comma": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in function parameter, got COMMA \\(,\\)",
+  "why": "an empty parameter between commas"
+ },
+ "syntax_param_leading_comma": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in function parameter, got COMMA \\(,\\)",
+  "why": "an empty first parameter"
+ },
+ "syntax_plus_assign_then_equals": {
+  "dir": "cases",
+  "match": "unexpected token ASSIGN \\(=\\)",
+  "why": "'+= =' is not an operator"
+ },
+ "syntax_power_operator": {
+  "dir": "cases",
+  "match": "unexpected token STAR \\(\\*\\)",
+  "why": "'**' does not exist in Pine (math.pow does)"
+ },
+ "syntax_python_colon": {
+  "dir": "cases",
+  "match": "expected an indented block under this header",
+  "why": "a Python-style ':' after the condition"
+ },
+ "syntax_python_def": {
+  "dir": "cases",
+  "match": "unexpected IDENTIFIER 'f' after the end of a statement",
+  "why": "`def f(x):` is Python"
+ },
+ "syntax_return_at_top_level_number": {
+  "dir": "cases",
+  "match": "unexpected NUMBER '1' after the end of a statement",
+  "why": "`return 1`: Pine has no return statement"
+ },
+ "syntax_reversed_greater_equal": {
+  "dir": "cases",
+  "match": "unexpected FAT_ARROW '=>' after the end of a statement",
+  "why": "'=>' is not '>='"
+ },
+ "syntax_reversed_less_equal": {
+  "dir": "cases",
+  "match": "unexpected ASSIGN '=' after the end of a statement",
+  "why": "'=<' is not '<='"
+ },
+ "syntax_shift_left": {
+  "dir": "cases",
+  "match": "unexpected token LT \\(<\\)",
+  "why": "'<<' does not exist in Pine"
+ },
+ "syntax_shift_right": {
+  "dir": "cases",
+  "match": "unexpected token GT \\(>\\)",
+  "why": "'>>' does not exist in Pine"
+ },
+ "syntax_statement_leftover_after_compound_assign": {
+  "dir": "cases",
+  "match": "unexpected NUMBER '3' after the end of a statement",
+  "why": "a number after a compound assignment"
+ },
+ "syntax_statement_leftover_after_destructure": {
+  "dir": "cases",
+  "match": "unexpected IDENTIFIER 'g' after the end of a statement",
+  "why": "a token after a destructuring statement"
+ },
+ "syntax_statement_leftover_after_double_group": {
+  "dir": "cases",
+  "match": "unexpected NUMBER '2' after the end of a statement",
+  "why": "a number after a grouped expression"
+ },
+ "syntax_statement_leftover_after_else": {
+  "dir": "cases",
+  "match": "expected an indented block under this header",
+  "why": "a token left on the `else` line"
+ },
+ "syntax_statement_leftover_after_for_in_iterable": {
+  "dir": "cases",
+  "match": "expected an indented block under this header",
+  "why": "a token left on the `for ... in` header line"
+ },
+ "syntax_statement_leftover_after_for_step": {
+  "dir": "cases",
+  "match": "expected an indented block under this header",
+  "why": "a number left on the `for` header line"
+ },
+ "syntax_statement_leftover_after_if_condition": {
+  "dir": "cases",
+  "match": "expected an indented block under this header",
+  "why": "a token left on the `if` header line after the condition"
+ },
+ "syntax_statement_leftover_after_string": {
+  "dir": "cases",
+  "match": "unexpected IDENTIFIER 'b' after the end of a statement",
+  "why": "a name after a complete string"
+ },
+ "syntax_statement_leftover_after_switch_subject": {
+  "dir": "cases",
+  "match": "unexpected IDENTIFIER 'foo' after the end of a statement",
+  "why": "a token left on the `switch` header line"
+ },
+ "syntax_statement_leftover_after_ternary": {
+  "dir": "cases",
+  "match": "unexpected NUMBER '3' after the end of a statement",
+  "why": "a number after a complete ternary"
+ },
+ "syntax_statement_leftover_after_var_decl": {
+  "dir": "cases",
+  "match": "unexpected NUMBER '2' after the end of a statement",
+  "why": "a number after a `var` declaration"
+ },
+ "syntax_statement_leftover_after_walrus": {
+  "dir": "cases",
+  "match": "unexpected NUMBER '3' after the end of a statement",
+  "why": "a number after a reassignment"
+ },
+ "syntax_statement_leftover_after_while_condition": {
+  "dir": "cases",
+  "match": "expected an indented block under this header",
+  "why": "a token left on the `while` header line"
+ },
+ "syntax_statement_leftover_color_literals": {
+  "dir": "cases",
+  "match": "unexpected COLOR '#00FF00' after the end of a statement",
+  "why": "two color literals, no operator"
+ },
+ "syntax_statement_leftover_in_block": {
+  "dir": "cases",
+  "match": "unexpected NUMBER '2' after the end of a statement",
+  "why": "a leftover token inside an indented block"
+ },
+ "syntax_statement_leftover_in_function_block": {
+  "dir": "cases",
+  "match": "unexpected NUMBER '2' after the end of a statement",
+  "why": "a leftover token inside a multi-line function body"
+ },
+ "syntax_statement_leftover_in_nested_call": {
+  "dir": "cases",
+  "match": "expected RPAREN to close call arguments, got NUMBER \\(3\\)",
+  "why": "no comma after a nested call"
+ },
+ "syntax_statement_leftover_in_switch_block": {
+  "dir": "cases",
+  "match": "unexpected NUMBER '3' after the end of a statement",
+  "why": "a leftover token inside a switch arm block"
+ },
+ "syntax_statement_leftover_na_na": {
+  "dir": "cases",
+  "match": "unexpected NA 'na' after the end of a statement",
+  "why": "`na` twice in a row, with no operator between"
+ },
+ "syntax_statement_leftover_paren_after_if_condition": {
+  "dir": "cases",
+  "match": "expected an indented block under this header",
+  "why": "a stray ')' after the `if` condition"
+ },
+ "syntax_switch_case_values_without_comma": {
+  "dir": "cases",
+  "match": "expected FAT_ARROW in switch case \\(expected '=>'\\), got NUMBER \\(2\\)",
+  "why": "two case values with no ',' between"
+ },
+ "syntax_switch_case_without_arrow": {
+  "dir": "cases",
+  "match": "expected FAT_ARROW in switch case \\(expected '=>'\\), got NUMBER \\(2\\)",
+  "why": "a switch case with no '=>'"
+ },
+ "syntax_switch_multi_value_arm_ok": {
+  "dir": "near_miss",
+  "why": "a switch arm with several comma-separated values"
+ },
+ "syntax_switch_with_default_ok": {
+  "dir": "near_miss",
+  "why": "twin of syntax_switch_*: switch with and without a subject, one default arm each"
+ },
+ "syntax_ternary_chain_ok": {
+  "dir": "near_miss",
+  "why": "twin of syntax_ternary_*: a complete chained ternary"
+ },
+ "syntax_ternary_without_colon": {
+  "dir": "cases",
+  "match": "expected COLON in ternary expression \\(expected ':'\\), got NEWLINE \\(\\\\n\\)",
+  "why": "ternary with no ':' branch"
+ },
+ "syntax_ternary_without_condition": {
+  "dir": "cases",
+  "match": "unexpected token QUESTION \\(\\?\\)",
+  "why": "ternary with no condition"
+ },
+ "syntax_ternary_without_else_value_eof": {
+  "dir": "cases",
+  "match": "unexpected token EOF \\(\\)",
+  "why": "ternary whose else value is missing, end of file"
+ },
+ "syntax_ternary_without_then_value": {
+  "dir": "cases",
+  "match": "unexpected token COLON \\(:\\)",
+  "why": "ternary whose then value is missing"
+ },
+ "syntax_then_keyword": {
+  "dir": "cases",
+  "match": "expected an indented block under this header",
+  "why": "`then` does not exist in Pine"
+ },
+ "syntax_triple_equals": {
+  "dir": "cases",
+  "match": "unexpected token ASSIGN \\(=\\)",
+  "why": "'===' does not exist in Pine"
+ },
+ "syntax_tuple_destructure_ok": {
+  "dir": "near_miss",
+  "why": "twin of type_destructure_builtin_*: ta.macd into exactly three targets"
+ },
+ "syntax_type_and_enum_declarations_ok": {
+  "dir": "near_miss",
+  "why": "twin of syntax_type_*: well-formed type and enum declarations"
+ },
+ "syntax_type_field_number_name": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in type field \\(expected field name\\), got NUMBER \\(5\\)",
+  "why": "a number where a field name belongs"
+ },
+ "syntax_type_field_without_name": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in type field \\(expected field name\\), got NEWLINE \\(\\\\n\\)",
+  "why": "a field with a type and no name"
+ },
+ "syntax_type_without_name": {
+  "dir": "cases",
+  "match": "unexpected indented block",
+  "why": "`type` with no name"
+ },
+ "syntax_typed_and_default_parameters_ok": {
+  "dir": "near_miss",
+  "why": "typed parameters and parameters with defaults"
+ },
+ "syntax_unclosed_destructure_bracket": {
+  "dir": "cases",
+  "match": "unexpected token ASSIGN \\(=\\)",
+  "why": "destructuring bracket never closed"
+ },
+ "syntax_unclosed_group": {
+  "dir": "cases",
+  "match": "expected RPAREN to close parenthesized expression, got IDENTIFIER \\(plot\\)",
+  "why": "grouping parenthesis never closed"
+ },
+ "syntax_unclosed_index_bracket": {
+  "dir": "cases",
+  "match": "expected RBRACKET to close index expression, got IDENTIFIER \\(plot\\)",
+  "why": "history-index bracket never closed"
+ },
+ "syntax_unclosed_paren_eof": {
+  "dir": "cases",
+  "match": "expected RPAREN to close call arguments, got EOF \\(\\)",
+  "why": "call parenthesis never closed, end of file"
+ },
+ "syntax_unclosed_paren_next_statement": {
+  "dir": "cases",
+  "match": "expected RPAREN to close call arguments, got IDENTIFIER \\(plot\\)",
+  "why": "call parenthesis never closed; the next line is read as more arguments"
+ },
+ "syntax_unclosed_tuple_literal": {
+  "dir": "cases",
+  "match": "unexpected token EOF \\(\\)",
+  "why": "tuple literal bracket never closed"
+ },
+ "syntax_unexpected_indent_four_spaces": {
+  "dir": "cases",
+  "match": "unexpected indented block",
+  "why": "an indented line with no block header above it"
+ },
+ "syntax_unexpected_indent_two_spaces": {
+  "dir": "cases",
+  "match": "unexpected indented block",
+  "why": "a wrapped line that reads `x = 1 y = 2`, still a missing operator"
+ },
+ "syntax_user_function_tuple_return_ok": {
+  "dir": "near_miss",
+  "why": "twin of type_destructure_*: a tuple-returning function into three targets"
+ },
+ "syntax_var_var": {
+  "dir": "cases",
+  "match": "expected ASSIGN in var declaration \\(expected '='\\), got IDENTIFIER \\(x\\)",
+  "why": "`var` written twice"
+ },
+ "syntax_var_with_number_name": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in var declaration, got NUMBER \\(1\\)",
+  "why": "a number where a name belongs"
+ },
+ "syntax_var_without_identifier": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in var declaration, got ASSIGN \\(=\\)",
+  "why": "`var` with no name before '='"
+ },
+ "syntax_var_without_initializer": {
+  "dir": "cases",
+  "match": "expected ASSIGN in var declaration \\(expected '='\\), got NEWLINE \\(\\\\n\\)",
+  "why": "`var x` with no '=' and no type"
+ },
+ "syntax_var_without_name": {
+  "dir": "cases",
+  "match": "expected IDENTIFIER in var declaration, got NEWLINE \\(\\\\n\\)",
+  "why": "`var` with no declaration after it"
+ },
+ "syntax_walrus_colon_equals": {
+  "dir": "cases",
+  "match": "unexpected token COLON \\(:\\)",
+  "why": "':=:' is not an operator"
+ },
+ "syntax_walrus_then_equals": {
+  "dir": "cases",
+  "match": "unexpected token ASSIGN \\(=\\)",
+  "why": "':= =' is not an operator"
+ },
+ "syntax_walrus_to_expression": {
+  "dir": "cases",
+  "match": "unexpected WALRUS ':=' after the end of a statement",
+  "why": "':=' needs a name on the left"
+ },
+ "syntax_while_without_body": {
+  "dir": "cases",
+  "match": "expected an indented block under this header, got IDENTIFIER 'plot'",
+  "why": "`while` header with no body (it would also loop forever if it ran)"
+ },
+ "syntax_while_without_condition": {
+  "dir": "cases",
+  "match": "unexpected token NEWLINE \\(\\\\n\\)",
+  "why": "`while` with no condition"
+ },
+ "syntax_wrapped_line_with_leading_and_ok": {
+  "dir": "near_miss",
+  "why": "twin of syntax_leading_and: `and` leading a wrapped line"
+ },
+ "syntax_wrapped_line_with_leading_ternary_ok": {
+  "dir": "near_miss",
+  "why": "twin of syntax_ternary_*: a ternary wrapped with leading ? and :"
+ },
+ "syntax_wrapped_line_with_trailing_operator_ok": {
+  "dir": "near_miss",
+  "why": "twin of syntax_dangling_plus_eof: a binary operator at the end of a line, the operand on a wrapped line"
+ },
+ "type_break_and_continue_inside_loops_ok": {
+  "dir": "near_miss",
+  "why": "twin of type_break_*_outside_loop"
+ },
+ "type_break_in_function_body": {
+  "dir": "cases",
+  "match": "'break' can only be used inside a loop \\(while\\/for\\)",
+  "why": "`break` in a function body that is not inside a loop"
+ },
+ "type_break_in_if_outside_loop": {
+  "dir": "cases",
+  "match": "'break' can only be used inside a loop \\(while\\/for\\)",
+  "why": "`break` in an `if` that is not inside a loop"
+ },
+ "type_break_outside_loop": {
+  "dir": "cases",
+  "match": "'break' can only be used inside a loop \\(while\\/for\\)",
+  "why": "`break` at top level"
+ },
+ "type_continue_outside_loop": {
+  "dir": "cases",
+  "match": "'continue' can only be used inside a loop \\(while\\/for\\)",
+  "why": "`continue` at top level"
+ },
+ "type_declared_types_in_declarations_ok": {
+  "dir": "near_miss",
+  "why": "twin of type_udt_field_of_undeclared_type: only declared type names appear"
+ },
+ "type_destructure_bb_two_targets": {
+  "dir": "cases",
+  "match": "tuple destructure arity mismatch: 2 targets, function returns 3",
+  "why": "ta.bb returns three values"
+ },
+ "type_destructure_builtin_single_target": {
+  "dir": "cases",
+  "match": "tuple destructure arity mismatch: 1 targets, function returns 3",
+  "why": "ta.macd returns three values"
+ },
+ "type_destructure_builtin_too_few_targets": {
+  "dir": "cases",
+  "match": "tuple destructure arity mismatch: 2 targets, function returns 3",
+  "why": "ta.macd returns three values"
+ },
+ "type_destructure_builtin_too_many_targets": {
+  "dir": "cases",
+  "match": "tuple destructure arity mismatch: 4 targets, function returns 3",
+  "why": "ta.macd returns three values"
+ },
+ "type_destructure_non_tuple_call": {
+  "dir": "cases",
+  "match": "tuple destructure value must be a UDF call returning a tuple",
+  "why": "ta.sma returns one value"
+ },
+ "type_destructure_non_tuple_math_call": {
+  "dir": "cases",
+  "match": "tuple destructure value must be a UDF call returning a tuple",
+  "why": "math.max returns one value"
+ },
+ "type_destructure_number": {
+  "dir": "cases",
+  "match": "tuple destructure value must be a UDF call returning a tuple",
+  "why": "a number is not a tuple"
+ },
+ "type_destructure_series": {
+  "dir": "cases",
+  "match": "tuple destructure value must be a UDF call returning a tuple",
+  "why": "a series is not a tuple"
+ },
+ "type_destructure_too_few_targets": {
+  "dir": "cases",
+  "match": "tuple destructure arity mismatch: 2 targets, function returns 3",
+  "why": "three values into two targets"
+ },
+ "type_destructure_too_many_targets": {
+  "dir": "cases",
+  "match": "tuple destructure arity mismatch: 3 targets, function returns 2",
+  "why": "two values into three targets"
+ },
+ "type_enum_duplicate_member": {
+  "dir": "cases",
+  "match": "duplicate enum member: 'E\\.a'",
+  "why": "two members with the same name"
+ },
+ "type_enum_known_member_ok": {
+  "dir": "near_miss",
+  "why": "twin of type_enum_unknown_member"
+ },
+ "type_enum_unknown_member": {
+  "dir": "cases",
+  "match": "enum member not found on 'E': 'c'",
+  "why": "E has no member c"
+ },
+ "type_method_declaration_ok": {
+  "dir": "near_miss",
+  "why": "twin of type_method_*: typed receivers, distinct names"
+ },
+ "type_method_defined_twice": {
+  "dir": "cases",
+  "match": "method already defined: 'A\\.m'",
+  "why": "the same method on the same type twice"
+ },
+ "type_method_first_parameter_untyped": {
+  "dir": "cases",
+  "match": "first parameter of 'method m' requires an already-declared UDT type hint, an arr",
+  "why": "a method's first parameter must name its type"
+ },
+ "type_method_receiver_undeclared_type": {
+  "dir": "cases",
+  "match": "first parameter of 'method m' requires an already-declared UDT type hint, an arr",
+  "why": "a method receiver of an undeclared type"
+ },
+ "type_method_without_parameters": {
+  "dir": "cases",
+  "match": "first parameter of 'method m' requires an already-declared UDT type hint, an arr",
+  "why": "a method needs a receiver parameter"
+ },
+ "type_methods_of_one_name_on_two_types_ok": {
+  "dir": "near_miss",
+  "why": "twin of type_method_defined_twice: one name on two different receiver types"
+ },
+ "type_single_default_switch_arm_ok": {
+  "dir": "near_miss",
+  "why": "twin of type_switch_two_default_arms"
+ },
+ "type_strategy_properties_ok": {
+  "dir": "near_miss",
+  "why": "twin of type_strategy_unknown_property: real strategy properties"
+ },
+ "type_strategy_unknown_property": {
+  "dir": "cases",
+  "match": "unsupported strategy property: 'strategy\\.nothing' — only the long\\/short\\/fixed\\/ca",
+  "why": "strategy has no property `nothing`"
+ },
+ "type_switch_two_default_arms": {
+  "dir": "cases",
+  "match": "switch allows at most one default \\(bare '=>'\\) branch",
+  "why": "two default arms in one switch"
+ },
+ "type_udt_constructor_matching_type_ok": {
+  "dir": "near_miss",
+  "why": "twin of type_udt_constructor_wrong_type"
+ },
+ "type_udt_constructor_wrong_type": {
+  "dir": "cases",
+  "match": "declared type 'A' differs from constructor type 'B': 'x'",
+  "why": "A x declared, B.new constructed"
+ },
+ "type_udt_declared_twice": {
+  "dir": "cases",
+  "match": "'type' declaration conflicts with a name already in use: 'A'",
+  "why": "two types with the same name"
+ },
+ "type_udt_duplicate_field": {
+  "dir": "cases",
+  "match": "duplicate UDT field: 'A\\.a'",
+  "why": "two fields with the same name"
+ },
+ "type_udt_field_of_misspelled_builtin": {
+  "dir": "cases",
+  "match": "UDT field type must be float\\/int\\/bool\\/string\\/color, another UDT type \\(including ",
+  "why": "a field type misspelled"
+ },
+ "type_udt_field_of_undeclared_type": {
+  "dir": "cases",
+  "match": "UDT field type must be float\\/int\\/bool\\/string\\/color, another UDT type \\(including ",
+  "why": "a field whose type is not declared anywhere"
+ },
+ "type_udt_known_field_ok": {
+  "dir": "near_miss",
+  "why": "twin of type_udt_unknown_field*"
+ },
+ "type_udt_unknown_constructor": {
+  "dir": "cases",
+  "match": "unsupported call: 'Foo\\.new'",
+  "why": "Foo is not a declared type"
+ },
+ "type_udt_unknown_field": {
+  "dir": "cases",
+  "match": "field not found on 'A': 'b'",
+  "why": "A has no field b"
+ },
+ "type_udt_unknown_field_local": {
+  "dir": "cases",
+  "match": "field not found on 'A': 'b'",
+  "why": "A has no field b"
+ }
+}

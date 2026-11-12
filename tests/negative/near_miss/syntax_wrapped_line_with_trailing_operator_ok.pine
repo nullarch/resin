@@ -1,0 +1,5 @@
+//@version=6
+indicator("t")
+x = close +
+  open
+plot(x)

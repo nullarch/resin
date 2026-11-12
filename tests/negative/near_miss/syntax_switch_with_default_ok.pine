@@ -1,0 +1,10 @@
+//@version=6
+indicator("t")
+x = switch close > open
+    true => 1
+    => 0
+label = switch
+    close > open => "up"
+    close < open => "down"
+    => "flat"
+plot(x)
