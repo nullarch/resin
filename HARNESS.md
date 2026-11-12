@@ -31,6 +31,13 @@ and `resin check` counts them. Run-time counterpart: `RunResult.warnings` — ba
 compiled `chartTf`, `time` in seconds or out of order, an `inputs` override that matched no input, a
 `request.security` symbol with no feed. Tests: `tests/unit/surface.test.ts` (also fails when a runtime
 module that holds stubs gains an export nobody classified), `tests/unit/run_diagnostics.test.ts`.
+Built-in calls are checked against one signature table (`src/transpiler/builtins/signatures.ts`, 444
+functions, generated from the oracle's library by `scripts/gen-builtin-signatures.py`): a keyword the
+function does not have, too many arguments or a required one left out is a `signature` warning, an
+error under `strict`. `tests/unit/builtin_call_check.test.ts` pins the calls resin's own cases make
+that the table does not allow (13 kinds, taken over from pine2py; the list may only shrink) and the
+one place resin's keyword names differ from the oracle's. On 2,987 valid real-world scripts the check
+reports nothing (resin-harness, 2026-11-12).
 A name that is wrong and unregistered still compiles silently: an empty `warnings` is not a certificate.
 
 ### L1 — ground truth, and how much of it this repository holds

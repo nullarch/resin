@@ -115,6 +115,11 @@ hashes are added when this is committed.
 - New unit suites: `surface`, `limits`, `run_diagnostics`, `identifier_hygiene`, `known_gaps`,
   `golden_provenance`, `negative_corpus`; lexer and parser strictness cases.
 
+### Built-in signatures
+
+- One table of built-in signatures, `src/transpiler/builtins/signatures.ts` (444 functions), generated from the reference engine's library, and a check of every built-in call against it. A call the table does not allow (`ticker.new()`, `ta.sma(close, len=14)`, `label.set_text(l)`) is a `signature` warning and an error under `strict`. A v5 script may still pass `when=` and `transp=`. Nothing a script computes changes.
+- `ta.alma` takes its first argument by the keyword `series`, as the reference and the reference engine name it (was `source`).
+
 ### Measured against TradingView exports (head-to-head)
 
 #### Added

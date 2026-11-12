@@ -179,7 +179,7 @@
       "id": "KG-BUILTIN-ARITY",
       "kind": "candidate",
       "title": "Some builtins are accepted with fewer arguments than their Pine signature has required parameters",
-      "expectation": "`label.new()`, `line.new(1)`, `alert()` are refused (category builtin-arity). The argument counts come from the author of the test's memory of the Pine reference, not from a source in this repository.",
+      "expectation": "`label.new()`, `line.new(1)`, `alert()` are refused (category builtin-arity). Since the signature table (src/transpiler/builtins/signatures.ts, generated from the oracle's library) the ones it describes are a `signature` warning and refused under `strict`; by default they are still accepted, and `alert()` and `timeframe.change()` are not described by the table.",
       "documented": {},
       "repro": "negative",
       "category": "builtin-arity",

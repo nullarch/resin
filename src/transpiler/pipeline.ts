@@ -26,6 +26,7 @@ import { BUILTIN_NAMESPACES, type LinkResult, describeLibraryLines, libraryLocat
 import { renameShadowingDecls } from "./passes/shadowing";
 import { ParseError, parse } from "./parser";
 import { STRICT_REFUSED_TIERS, collectSurfaceWarnings, type TranspileWarning } from "./surface";
+import { checkBuiltinCalls } from "./builtins/check";
 
 export type { TranspileWarning } from "./surface";
 
@@ -171,8 +172,15 @@ function transpileUnguarded(source: string, options?: AnalyzeOptions): Transpile
       message: `'//@version=${script.version}' is not implemented: resin runs v5 and v6, and compiles this script as one of them [version]`,
     });
   }
+  // A built-in call its signature does not allow: a keyword the function does not have, too many
+  // arguments, a required one left out (builtins/check.ts). TradingView refuses these; resin still
+  // runs the ones it has always run and says so, and `strict` refuses them.
+  for (const f of checkBuiltinCalls(script)) {
+    const at = libraryLocation(f.line, link.linked);
+    warnings.push({ kind: "signature", name: f.name, line: at === null ? f.line : at.line, message: `${at === null ? "" : `library ${at.path}: `}${f.message} [signature]` });
+  }
   if (options?.strict === true) {
-    const refused = warnings.filter((w) => w.kind === "option" || w.kind === "version" || w.kind === "import" || (STRICT_REFUSED_TIERS as readonly string[]).includes(w.kind));
+    const refused = warnings.filter((w) => w.kind === "option" || w.kind === "version" || w.kind === "import" || w.kind === "signature" || (STRICT_REFUSED_TIERS as readonly string[]).includes(w.kind));
     if (refused.length > 0) {
       return { ok: false, errors: refused.map((w) => (w.line > 0 ? `${w.message} (L${w.line}, strict)` : `${w.message} (strict)`)) };
     }

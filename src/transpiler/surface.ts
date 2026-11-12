@@ -105,7 +105,8 @@ export const SURFACE_DEGRADED: readonly SurfaceEntry[] = [
 export interface TranspileWarning {
   // A SurfaceTier, or "option" for an option key resin ignores, "version" for a version annotation
   // resin does not implement, or "import" for a library with no source whose alias reads builtins.
-  kind: SurfaceTier | "option" | "version" | "import";
+  // "signature": a built-in call the signature table does not allow (src/transpiler/builtins).
+  kind: SurfaceTier | "option" | "version" | "import" | "signature";
   // The Pine name, or the option key.
   name: string;
   // 1-based source line; 0 when the warning is about an option rather than the source.

@@ -184,7 +184,7 @@ export const TA_REGISTRY: Readonly<Record<string, TaRegistryEntry>> = {
   // The fifth argument `floor` is optional (ref_v6_ta_math.txt "SYNTAX: ta.alma(series, length,
   // offset, sigma, floor)", "ARG floor [simple bool]: An optional parameter ... Default value is
   // false"); it shapes the weights too, so a series value is rejected like the other three.
-  alma: { dispatch: "ta", displayName: "ta.alma", argCount: 5, minArgCount: 4, lengthArgIndex: [1, 2, 3, 4], conditionalForbidden: true, rtPath: "rt.ta.alma", kwargParamNames: ["source", "length", "offset", "sigma", "floor"] },
+  alma: { dispatch: "ta", displayName: "ta.alma", argCount: 5, minArgCount: 4, lengthArgIndex: [1, 2, 3, 4], conditionalForbidden: true, rtPath: "rt.ta.alma", kwargParamNames: ["series", "length", "offset", "sigma", "floor"] },
   // ta.hma(source, length) — pine2py wavealgo/ta/hma.py 소스 대조 결과 HMA = WMA(2*WMA(src,half_len)
   // - WMA(src,length), sqrt_len)(half_len/sqrt_len는 length의 순수 파생값). runtime/ta.ts hma()가
   // rt.ta.wma를 half/full/outer 세 벌 독립 상태로 내부 재호출하므로 codegen 특수 분기 불필요 —

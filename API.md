@@ -127,12 +127,26 @@ order, as `{ kind, name, line, message }`:
 | `noop` | ignored; the script's values do not depend on it | `alert`, `alertcondition`, `polyline.*`, `linefill.*` |
 | `option` | a `transpile()` option key resin does not read, ignored | a typo such as `chartTF`, or `syminfo.currency` |
 | `version` | a `//@version` below 5 or above 6 | `//@version=4` |
+| `signature` | a built-in call its signature does not allow: a keyword the function does not have, too many arguments, a required one left out | `ticker.new()`, `map.get(m, key, fallback)` |
 
-`transpile(source, { strict: true })` turns `stub`, `passthrough`, `import`, `option` and
-`version` warnings into errors, so a service that must not score a script on
+`transpile(source, { strict: true })` turns `stub`, `passthrough`, `import`, `option`,
+`version` and `signature` warnings into errors, so a service that must not score a script on
 made-up numbers can refuse it up front. The registry is
 `src/transpiler/surface.ts`; a name that is wrong in a way nobody has noticed is
 not in it, so an empty `warnings` is not a certificate.
+
+### Built-in signatures
+
+`src/transpiler/builtins/signatures.ts` is one table of the built-in functions' signatures (444
+functions): parameter names in order, which are optional, which functions are variadic. It is
+generated, not written: `scripts/gen-builtin-signatures.py <pynecore checkout>` reads the library of
+the reference engine (PyneCore, certified against TradingView), which takes Pine's own parameter
+names. `builtins/check.ts` checks every built-in call against it and reports a `signature` warning.
+A v5 script may still pass `when=` to `strategy.*` and `transp=`, which v6 removed. TradingView
+refuses these calls; resin has always run some of them (forms taken over from its first reference
+implementation, such as `map.get` with a default or `ta.linreg` without its offset), so by default
+they stay accepted with the warning, and `strict` refuses them. The table is at most as strict as
+TradingView: the reference engine gives a few parameters defaults Pine does not.
 
 ## Run warnings
 
