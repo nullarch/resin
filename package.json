@@ -44,7 +44,11 @@
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "resin": "node bin/resin.mjs"
+    "resin": "node bin/resin.mjs",
+    "smoke:package": "node scripts/package-smoke.mjs",
+    "verify:evidence": "node scripts/verify-evidence.mjs",
+    "mutate": "node scripts/mutate.mjs",
+    "corpus:check": "node scripts/corpus-manifest.mjs check"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

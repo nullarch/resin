@@ -1,0 +1,93 @@
+# Release verification. VERIFY ONLY: this workflow does not publish anything.
+#
+# It does not publish to npm, create a GitHub release, or push; it has a read-only token
+# (permissions: contents: read) and no npm credential exists in it. Publishing @nullarch/resin is a
+# manual step of the owner, run from a terminal with npm 2FA, on purpose: a version can be
+# published exactly once and never taken back, and the 2FA prompt is the human checkpoint. What
+# this workflow does is make sure that, by the time the owner gets there, the tagged commit has
+# been checked from a clean checkout on the oldest and the newest supported Node:
+#
+#   - the tag is v<package.json version> (the repo/tag/registry drift the audit found)
+#   - npm test, npm run typecheck, and the version-consistency test (package.json, VERSION,
+#     CHANGELOG, READMEs)
+#   - scripts/package-smoke.mjs: the packed tarball is what it should be and works once installed
+#   - scripts/verify-evidence.mjs: release-evidence.json certifies exactly this tree and shows full
+#     conformance with TradingView (see docs/EVIDENCE.md), with no regression against the previous
+#     release's evidence when there is one
+#
+# After publishing, the owner checks the registry's copy with
+#   node scripts/package-smoke.mjs --install @nullarch/resin@<version>
+name: Release verification
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: verify (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        # 22.18 is the floor package.json "engines" promises; a bare "22" would resolve to the
+        # newest 22.x and never exercise it.
+        node: ['22.18', '24']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # every tag, to find the previous release's evidence
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: The tag is v<package.json version>
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if [ "${GITHUB_REF_NAME}" != "v${version}" ]; then
+            echo "::error::tag ${GITHUB_REF_NAME} does not match package.json version ${version} (expected v${version})"
+            exit 1
+          fi
+          echo "tag ${GITHUB_REF_NAME} = package.json ${version}"
+
+      - run: npm test
+      - run: npm run typecheck
+
+      - name: Version consistency (package.json, VERSION, CHANGELOG, READMEs)
+        run: npx vitest run tests/unit/version_consistency.test.ts
+
+      - name: Package smoke (pack, allowlist, install the tarball, CLI, library import)
+        run: node scripts/package-smoke.mjs
+
+      - name: Tests did not write into the tree
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::the test run changed the working tree"
+            git status --porcelain
+            exit 1
+          fi
+
+      - name: Release evidence (release-evidence.json certifies this tree)
+        run: |
+          prev_tag="$(git describe --tags --abbrev=0 --match 'v*' "${GITHUB_REF_NAME}^" 2>/dev/null || true)"
+          args=()
+          if [ -n "${prev_tag}" ] && git cat-file -e "${prev_tag}:release-evidence.json" 2>/dev/null; then
+            git show "${prev_tag}:release-evidence.json" > "${RUNNER_TEMP}/previous-evidence.json"
+            args+=(--previous "${RUNNER_TEMP}/previous-evidence.json")
+            echo "regression check against ${prev_tag}"
+          else
+            echo "no evidence in the previous release (${prev_tag:-no previous tag}); skipping the regression check"
+          fi
+          node scripts/verify-evidence.mjs "${args[@]}"

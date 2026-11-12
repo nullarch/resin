@@ -1,0 +1,122 @@
+# Nightly: the checks that are too slow or too random for every pull request. None of them gates a
+# merge; a red nightly is a thing to look at in the morning. Nothing here publishes or pushes.
+#
+#   deep-tests       property + robustness tests with more generated cases than the PR run
+#   mutation         mutation testing of the suite (do the tests notice when the code is broken?)
+#   corpus           re-measure the transpile/run rates on a corpus you keep outside this repo
+#   published-drift  a tagged release must actually be on the npm registry
+#
+# NOTE: tests/property, tests/robustness and scripts/mutate.mjs are being written alongside this
+# file. Until they exist in the tree, "deep-tests" fails with "No test files found" and "mutation"
+# fails with "Cannot find module" - that is the intended signal, not a workflow bug.
+name: Nightly
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+jobs:
+  deep-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Property and robustness tests, 20 runs per property
+        env:
+          RESIN_PROP_RUNS: '20'
+        run: npx vitest run tests/property tests/robustness
+
+  mutation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Mutation testing
+        run: node scripts/mutate.mjs --jobs 2
+
+  # The corpus the README's real-world numbers came from is not in this repository (corpus/scripts
+  # holds the 6,926 regression scripts, not that). To have the nightly re-measure on yours, set the
+  # repository VARIABLE CORPUS_DIR to the directory holding the *.pine files, as seen by the runner:
+  # a path only exists on a runner that has the corpus on disk, so also set CORPUS_RUNNER to the label
+  # of that (self-hosted) runner. Optional variables:
+  #   CORPUS_MANIFEST       manifest.json made by `corpus-manifest.mjs build`; any difference from the
+  #                         directory fails the job instead of silently measuring other files
+  #   CORPUS_BARS           synthetic bars per script (default 1500, the README's method)
+  #   CORPUS_MIN_TRANSPILE  fail below this transpile rate, in percent of all scripts
+  #   CORPUS_MIN_RUN        fail below this run rate, in percent of all scripts
+  # Without CORPUS_DIR the job is skipped. (A secret cannot be tested in a job-level `if:`, so this is
+  # a variable; use a secret only to fetch the corpus in a step you add before the check.)
+  corpus:
+    if: ${{ vars.CORPUS_DIR != '' }}
+    runs-on: ${{ vars.CORPUS_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Re-measure the corpus
+        env:
+          CORPUS_DIR: ${{ vars.CORPUS_DIR }}
+          CORPUS_MANIFEST: ${{ vars.CORPUS_MANIFEST }}
+          CORPUS_BARS: ${{ vars.CORPUS_BARS }}
+          CORPUS_MIN_TRANSPILE: ${{ vars.CORPUS_MIN_TRANSPILE }}
+          CORPUS_MIN_RUN: ${{ vars.CORPUS_MIN_RUN }}
+        run: |
+          args=(check "${CORPUS_DIR}" --bars "${CORPUS_BARS:-1500}" --out "${RUNNER_TEMP}/corpus-results.json")
+          [ -n "${CORPUS_MANIFEST}" ] && args+=(--manifest "${CORPUS_MANIFEST}")
+          [ -n "${CORPUS_MIN_TRANSPILE}" ] && args+=(--min-transpile "${CORPUS_MIN_TRANSPILE}")
+          [ -n "${CORPUS_MIN_RUN}" ] && args+=(--min-run "${CORPUS_MIN_RUN}")
+          node scripts/corpus-manifest.mjs "${args[@]}"
+
+  # The failure this catches: the repo and its tag said 0.3.0 while npm `latest` was still 0.2.2 and
+  # nothing noticed. Once v<package.json version> is tagged, that version must be on the registry
+  # and `latest` must point at it. Before the tag exists the version is simply not released yet.
+  # (After publishing, `node scripts/package-smoke.mjs --install <spec>` checks the contents too.)
+  published-drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: A tagged release is published, and is npm latest
+        run: |
+          name="$(node -p "require('./package.json').name")"
+          version="$(node -p "require('./package.json').version")"
+          if ! git rev-parse -q --verify "refs/tags/v${version}" > /dev/null; then
+            echo "no tag v${version}: ${version} is not released yet, nothing to compare"
+            exit 0
+          fi
+          published="$(npm view "${name}@${version}" version 2>/dev/null || true)"
+          latest="$(npm view "${name}" dist-tags.latest)"
+          echo "tag v${version} exists; registry has ${published:-nothing at ${version}}, latest is ${latest}"
+          if [ "${published}" != "${version}" ]; then
+            echo "::error::v${version} is tagged but ${name}@${version} is not on the npm registry (publish is a manual step of the owner)"
+            exit 1
+          fi
+          if [ "${latest}" != "${version}" ]; then
+            echo "::error::${name}@${version} is published but npm latest is ${latest}"
+            exit 1
+          fi
