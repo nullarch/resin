@@ -39,6 +39,7 @@ plot(close, "P", color.red, 3, plot.style_histogram, true, 50, 2)
         forceOverlay: false,
         color: "#FF5252",
         colorSlot: null,
+        display: "all",
       },
     ]);
   });
@@ -56,6 +57,7 @@ plot(close, "P", color.red, 3, plot.style_histogram, true, 50, 2)
         forceOverlay: false,
         color: null,
         colorSlot: null,
+        display: "all",
       },
     ]);
   });
@@ -157,3 +159,29 @@ plot(close, "P", color = close > open ? color.green : color.red)
     expect(res.plots[0]!.values.length).toBe(4); // value channel unaffected
   });
 });
+
+describe("viz: what the chart adapter needs beyond the first slices", () => {
+  it("keeps a negative offset, the steplinebr style and display.none", () => {
+    const r = ok('//@version=6\nindicator("m")\nplot(close, "a", offset=-2)\nplot(close, "b", style=plot.style_steplinebr)\nplot(close, "c", display=display.none)');
+    expect(r.viz.plots.map((p) => [p.offset, p.style, p.display])).toEqual([
+      [-2, "line", "all"],
+      [0, "steplinebr", "all"],
+      [0, "line", "none"],
+    ]);
+  });
+
+  it("carries the values of a location.absolute shape, and only of that", () => {
+    const src = '//@version=6\nindicator("m", overlay=true)\nplotshape(bar_index % 2 == 0 ? low - 1 : na, "a", shape.circle, location.absolute)\nplotshape(close > open, "b", shape.circle, location.abovebar)';
+    const res = run(ok(src), DATA);
+    expect(res.viz!.shapes[0]!.values!.map((v, i) => (i % 2 === 0 ? v === DATA.low[i]! - 1 : Number.isNaN(v)))).toEqual(Array.from(DATA.low, () => true));
+    expect(res.viz!.shapes[1]!.values).toBeNull();
+  });
+
+  it("reads a level that is not a literal at run time, inputs overridden or not", () => {
+    const src = '//@version=6\nindicator("m")\nlvl = input.int(104, "Mid")\nhline(lvl, "Mid")\nhline(70)\nplot(close)';
+    const t = ok(src);
+    expect(run(t, DATA).viz!.hlines.map((h) => h.price)).toEqual([104, 70]);
+    expect(run(t, DATA, { inputs: { Mid: 90 } }).viz!.hlines.map((h) => h.price)).toEqual([90, 70]);
+  });
+});
+

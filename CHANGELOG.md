@@ -124,6 +124,10 @@ hashes are added when this is committed.
 
 - `src/transpiler/types/infer.ts` records the evident type of every expression (literals, built-in variables, operators, built-in calls whose return the signature table states plainly, variables introduced once); `types/check.ts` reports what the manual forbids on it: `int x = "a"`, `x = 1` then `x := "a"`, `if "a"`, `s = str.tostring(close)` then `s * 2`, `"Price: " + close`, `ta.sma(close, "5")`. A `type` warning, an error under `strict`. Nothing a script computes changes, and an expression whose type is not evident is never judged.
 
+### Visualization data (`RunResult.viz`), additive
+
+- `viz.plots[].display` (`"all"` or `"none"`), a negative `offset` (it was reported as 0), the `steplinebr` style (it was reported as `line`); `viz.shapes[].values` and `viz.chars[].values`, the series of a `location.absolute` shape; `viz.hlines[].price` for a level that is not a literal (an input, with the run's overrides). No existing field changes.
+
 ### Measured against TradingView exports (head-to-head)
 
 #### Added

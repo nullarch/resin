@@ -43,6 +43,7 @@ export interface RunResult {
       histbase: number;
       trackprice: boolean;
       forceOverlay: boolean;
+      display: "all" | "none"; // "none": display=display.none, the plot is not drawn
       color: string | null; // compile-time color, when statically known
       colors: (string | null)[] | null; // per-bar colors when computed at runtime, else null
       // The value series itself (same array as RunResult.plots[i].values), so viz is
@@ -89,6 +90,7 @@ export interface RunResult {
       color: string | null;
       colors: (string | null)[] | null;
       condition: boolean[];
+      values: number[] | null; // location.absolute: the series' values (the price of each shape)
     }>;
     chars: Array<{
       title: string | null;
@@ -102,6 +104,7 @@ export interface RunResult {
       color: string | null;
       colors: (string | null)[] | null;
       condition: boolean[];
+      values: number[] | null; // location.absolute: the series' values (the price of each shape)
     }>;
     arrows: Array<{
       title: string | null;
@@ -251,6 +254,7 @@ export function run(
         histbase: m.histbase,
         trackprice: m.trackprice,
         forceOverlay: m.forceOverlay,
+        display: m.display,
         color: m.color,
         colors: m.colorSlot !== null ? ctx.plotColors[m.colorSlot]! : null,
         values: base.plots[i]!.values,
@@ -268,7 +272,22 @@ export function run(
         color: m.color,
         colors: m.colorSlot !== null ? ctx.plotColors[m.colorSlot]! : null,
       })),
-      hlines: r.viz.hlines.map((m) => ({ ...m })),
+      hlines: r.viz.hlines.map((m) => {
+        // A level that is not a literal: the last value the script gave it (an input's value, with
+        // the run's overrides applied).
+        let price = m.price;
+        if (price === null && m.priceSlot !== null) {
+          const series = ctx.vizSeries[m.priceSlot]!;
+          for (let i = series.length - 1; i >= 0; i--) {
+            const v = series[i]!;
+            if (v === v) {
+              price = v;
+              break;
+            }
+          }
+        }
+        return { title: m.title, price, color: m.color, linestyle: m.linestyle, linewidth: m.linewidth };
+      }),
       fills: r.viz.fills.map((m) => ({
         a: m.a,
         b: m.b,
@@ -282,6 +301,8 @@ export function run(
         color: m.color,
         colors: m.colorSlot !== null ? ctx.plotColors[m.colorSlot]! : null,
         condition: ctx.vizSeries[m.conditionSlot]!.map((v) => v === 1),
+        // location.absolute: the series' own values, where the shape is drawn; null otherwise.
+        values: m.seriesSlot !== null && m.seriesSlot !== undefined ? ctx.vizSeries[m.seriesSlot]! : null,
       })),
       chars: r.viz.chars.map((m) => ({
         title: m.title, char: m.char, location: m.location, size: m.size,
@@ -289,6 +310,8 @@ export function run(
         color: m.color,
         colors: m.colorSlot !== null ? ctx.plotColors[m.colorSlot]! : null,
         condition: ctx.vizSeries[m.conditionSlot]!.map((v) => v === 1),
+        // location.absolute: the series' own values, where the shape is drawn; null otherwise.
+        values: m.seriesSlot !== null && m.seriesSlot !== undefined ? ctx.vizSeries[m.seriesSlot]! : null,
       })),
       arrows: r.viz.arrows.map((m) => ({
         title: m.title, colorup: m.colorup, colordown: m.colordown,

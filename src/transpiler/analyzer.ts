@@ -2200,6 +2200,7 @@ export interface PlotMeta {
   forceOverlay: boolean;
   color: string | null; // 컴파일타임에 확정된 CSS 색 — 미지정이거나 런타임 값이면 null
   colorSlot: number | null; // 런타임 색일 때 $.plotColors 채널 인덱스, 아니면 null
+  display: "all" | "none"; // display=display.none hides the plot
 }
 
 // viz S2 — bgcolor()/barcolor()/hline() 콜사이트 메타데이터. plot의 PlotMeta와 동일한
@@ -2221,6 +2222,7 @@ export interface BarcolorMeta {
 export interface HlineMeta {
   title: string | null;
   price: number | null; // 리터럴로 확정 못 하면 null (input.* 변수 등)
+  priceSlot: number | null; // $.vizSeries channel of a level that is not a literal, else null
   color: string | null;
   linestyle: string; // "solid" | "dotted" | "dashed"
   linewidth: number;
@@ -2249,6 +2251,7 @@ export interface PlotshapeMeta {
   color: string | null;
   colorSlot: number | null;
   conditionSlot: number; // $.vizSeries — 바별 0/1
+  seriesSlot: number | null; // $.vizSeries — the series' values, for location.absolute; else null
 }
 export interface PlotcharMeta {
   title: string | null;
@@ -2262,6 +2265,7 @@ export interface PlotcharMeta {
   color: string | null;
   colorSlot: number | null;
   conditionSlot: number;
+  seriesSlot: number | null; // as PlotshapeMeta
 }
 export interface PlotarrowMeta {
   title: string | null;

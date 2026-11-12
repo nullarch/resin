@@ -528,6 +528,13 @@ const HLINE_STYLE_NAMES: ReadonlyMap<string, string> = new Map([
   ["style_dashed", "dashed"],
 ]);
 
+// A number written out, with its sign: `2`, `-2`. An offset to the left is a negative literal.
+function signedNumberLiteral(e: Expr): number | null {
+  if (e.kind === "NumberLiteral") return e.value;
+  if (e.kind === "UnaryOp" && e.op === "-" && e.operand.kind === "NumberLiteral") return -e.operand.value;
+  return null;
+}
+
 const PLOT_STYLE_NAMES: ReadonlyMap<string, string> = new Map([
   ["style_line", "line"],
   ["style_stepline", "stepline"],
@@ -539,6 +546,7 @@ const PLOT_STYLE_NAMES: ReadonlyMap<string, string> = new Map([
   ["style_cross", "cross"],
   ["style_circles", "circles"],
   ["style_linebr", "linebr"],
+  ["style_steplinebr", "steplinebr"],
 ]);
 
 export const PLOT_PARAM_NAMES: readonly string[] = [
@@ -5931,7 +5939,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         };
         const litNum = (name: string, dflt: number): number => {
           const a = argOf(name);
-          return a !== undefined && a.kind === "NumberLiteral" ? a.value : dflt;
+          return a === undefined ? dflt : (signedNumberLiteral(a) ?? dflt);
         };
         const litTitle = (): string | null => {
           const a = argOf("title");
@@ -6005,9 +6013,12 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
               ? (HLINE_STYLE_NAMES.get(ls.attr) ?? "solid")
               : "solid";
           const priceArg = argOf("price");
+          const literalPrice = priceArg === undefined ? null : signedNumberLiteral(priceArg);
           prog.hlineMeta.push({
             title: litTitle(),
-            price: priceArg !== undefined && priceArg.kind === "NumberLiteral" ? priceArg.value : null,
+            price: literalPrice,
+            // A level that is not written out (an input, a constant variable) is read at run time.
+            priceSlot: literalPrice === null && priceArg !== undefined ? seriesWrite("price", "num") : null,
             color, linestyle, linewidth: litNum("linewidth", 1),
           });
           prog.hlineCallSlots.set(expr, prog.hlineMeta.length - 1);
@@ -6025,7 +6036,10 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
             color,
             colorSlot: slot,
             conditionSlot: seriesWrite("series", "flag"),
+            // location.absolute draws the shape at the series' own value, so the values are kept too.
+            seriesSlot: null as number | null,
           };
+          if (common.location === "absolute") common.seriesSlot = seriesWrite("series", "num");
           if (callee.name === "plotshape") {
             prog.plotshapeMeta.push({ ...common, style: nsAttr("style", SHAPE_STYLE_NAMES, "shape", "xcross") });
           } else {
@@ -6244,7 +6258,7 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
         };
         const numOr = (name: string, dflt: number): number => {
           const a = plotArg(name);
-          return a !== undefined && a.value.kind === "NumberLiteral" ? a.value.value : dflt;
+          return a === undefined ? dflt : (signedNumberLiteral(a.value) ?? dflt);
         };
         const boolOr = (name: string, dflt: boolean): boolean => {
           const a = plotArg(name);
@@ -6287,6 +6301,9 @@ export function analyzeCallExpr(expr: CallExpr, prog: AnalyzedProgram, scope: Le
           forceOverlay: boolOr("force_overlay", false),
           color: staticColor,
           colorSlot,
+          // display=display.none hides the plot ("display.none ... the plot is not displayed", Pine
+          // reference); any other value, or none, shows it on the chart.
+          display: ((d) => (d !== undefined && d.value.kind === "DotAccess" && d.value.obj.kind === "Identifier" && d.value.obj.name === "display" && d.value.attr === "none" ? "none" : "all"))(plotArg("display")),
         });
       }
       for (const arg of expr.args) analyzeExpr(arg, prog, scope, false);

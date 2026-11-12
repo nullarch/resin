@@ -83,12 +83,13 @@ hline(30)
 plot(close)
 `);
     expect(r.viz.hlines).toEqual([
-      { title: "Overbought", price: 70, color: "#FF5252", linestyle: "dashed", linewidth: 2 },
-      { title: null, price: 30, color: null, linestyle: "solid", linewidth: 1 },
+      { title: "Overbought", price: 70, priceSlot: null, color: "#FF5252", linestyle: "dashed", linewidth: 2 },
+      { title: null, price: 30, priceSlot: null, color: null, linestyle: "solid", linewidth: 1 },
     ]);
   });
 
-  it("leaves a non-literal price as null instead of erroring", () => {
+  // The metadata cannot know it; the run result reads it from a channel (viz_plot_style.test.ts).
+  it("leaves a non-literal price as null in the metadata instead of erroring", () => {
     const r = ok(`//@version=5
 indicator("h")
 lvl = input.float(70, "L")
