@@ -12,6 +12,8 @@ or the Pine manual) and lists what moved.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-18
+
 Two bodies of work, merged: a verification pass over the converter, and fixes measured against the
 TradingView exports of a head-to-head harness.
 
@@ -19,8 +21,8 @@ TradingView exports of a head-to-head harness.
 
 A verification pass over the converter: what it accepts, what it silently changes, and what it
 does to the host that runs it. Outside "Fixed", nothing here changes a value a valid, in-limits script
-computes (the 10,189-script snapshot of `corpus/` and `oracle/` is identical before and after). Commit
-hashes are added when this is committed.
+computes (the 10,189-script snapshot of `corpus/` and `oracle/` is identical before and after). The
+commits are in the git history between `v0.3.0` and `v0.4.0`.
 
 #### Added
 
